@@ -101,22 +101,6 @@ define('TPPS_SUBMISSION_FORM_CURRENT_VERSION', 2);
 module_load_include('inc', 'tpps', 'includes/submission_form_version_changes');
 
 /**
- * Checks if 'Submission Interface Debug Mode' is enabled.
- *
- * 'Submission Interface Debug Mode' allows to get debug messages in browser
- * and is always enabled on dev-server (not live site) and could be enabled
- * on live site at admin settings page (admin/config/tpps/form/main).
- *
- * @return bool
- *   Returns TRUE if 'Submission Interface Debug Mode' is enabled.
- *   Returns FALSe otherwise.
- */
-function tpps_is_si_debug_mode() {
-  module_load_include('inc', 'tpps', 'includes/common');
-  return !is_live_site() || variable_get('tpps_si_debug_mode', FALSE);
-}
-
-/**
  * Checks if Debug Mode is enabled.
  *
  * @return bool

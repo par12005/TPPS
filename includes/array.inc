@@ -177,22 +177,18 @@ function tpps_array_unset(array &$array, array $action_data) {
   module_load_include('inc', 'tpps', 'includes/form');
   foreach ($action_data as $key => $item) {
     if (empty($item)) {
-      if (tpps_is_si_debug_mode()) {
-        $message = 'SI Action "unset" #@key failed. One of the required '
-          . 'fields is empty.<br />Value: <pre>@item</pre>.';
-        $params = ['@key' => $key, '@item' => print_r($item, 1)];
-        tpps_message($message, $params, 'error');
-      }
+      $message = 'SI Action "unset" #@key failed. One of the required '
+        . 'fields is empty.<br />Value: <pre>@item</pre>.';
+      $params = ['@key' => $key, '@item' => print_r($item, 1)];
+      tpps_message($message, $params, 'debug');
       continue;
     }
     $target = &tpps_form_get_path($array, $item);
     if (empty($target['parent_element']) || empty($target['field_name'])) {
-      if (tpps_is_si_debug_mode()) {
-        $message = "SIA Action 'unset' can't find element for #@key."
-          . '<br />Value: <pre>@item</pre>. ';
-        $params = ['@key' => $key, '@item' => print_r($item, 1)];
-        tpps_message($message, $params, 'info');
-      }
+      $message = "SIA Action 'unset' can't find element for #@key."
+        . '<br />Value: <pre>@item</pre>. ';
+      $params = ['@key' => $key, '@item' => print_r($item, 1)];
+      tpps_message($message, $params, 'debug');
       continue;
     }
     // Note:
@@ -239,58 +235,49 @@ function tpps_array_move(array &$array, array $action_data) {
       empty($source['parent_element']) || empty($source['field_name'])
       || empty($target['parent_element']) || empty($target['field_name'])
     ) {
-      if (tpps_is_debug_mode()) {
-
-
-
-        $message = 'SIA Action "move" #@key failed. One of the required '
-          . 'fields is empty.<br />Value: <pre>@item</pre>.';
-        $params = ['@key' => $key, '@item' => print_r($item, 1)];
-        tpps_message($message, $params, 'notice');
-      }
+      $message = 'SIA Action "move" #@key failed. One of the required '
+        . 'fields is empty.<br />Value: <pre>@item</pre>.';
+      $params = ['@key' => $key, '@item' => print_r($item, 1)];
+      tpps_message($message, $params, 'debug');
       continue;
     }
     // Note: $source['parent_element'] and $target['parent_element']
     // are a references to the elements inside $array.
     if (!array_key_exists($source['field_name'], $source['parent_element'])) {
-      if (tpps_is_debug_mode()) {
-        $message = 'SIA Action "move" #@key failed. Source field not found.'
-          . '<br />Value: <pre>@item</pre>.';
-        $params = ['@key' => $key, '@item' => print_r($item, 1)];
-        tpps_message($message, $params, 'notice');
-      }
+      $message = 'SIA Action "move" #@key failed. Source field not found.'
+        . '<br />Value: <pre>@item</pre>.';
+      $params = ['@key' => $key, '@item' => print_r($item, 1)];
+      tpps_message($message, $params, 'debug');
       continue;
     }
 
     $target_field_value = $target['parent_element'][$target['field_name']] ?? NULL;
     if (!empty($target_field_value)) {
-      if (tpps_is_debug_mode()) {
-        if ($target['field_name'] == 'doi' || $source['field_name'] == 'doi') {
-          $message = 'SIA Action "move": '
-            . 'target field is not empty and will be overwritten.<br />'
-            . 'Direction: @direction. <br />'
-            . 'Form Version: @form_version. <br />'
-            . "Target's field value: <pre>@field_value</pre>"
-            . "Source's field value: <pre>@source_field_value</pre>"
-            . "Action's meta-data: <pre>@meta</pre>"
-            . "Saved Values: <pre>@saved_values</pre>";
-          $params = [
-            '@key' => $key,
-            '@meta' => var_export($item, 1),
-            '@field_value' => var_export($target_field_value, 1),
-            '@source_field_value' => var_export(
-              $source['parent_element'][$source['field_name']] ?? NULL, 1
-            ),
-            '@saved_values' => (
-              $target['field_name'] == 'doi'
-              ? var_export($array['saved_values'][1]['publication'] ?? NULL, 1)
-              : ''
-            ),
-            '@direction' => (!empty($array['saved_values'][1]['doi']) ? 'upgrade' : 'downgrade'),
-            '@form_version' => $array['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY],
-          ];
-          tpps_message($message, $params, 'warning');
-        }
+      if ($target['field_name'] == 'doi' || $source['field_name'] == 'doi') {
+        $message = 'SIA Action "move": '
+          . 'target field is not empty and will be overwritten.<br />'
+          . 'Direction: @direction. <br />'
+          . 'Form Version: @form_version. <br />'
+          . "Target's field value: <pre>@field_value</pre>"
+          . "Source's field value: <pre>@source_field_value</pre>"
+          . "Action's meta-data: <pre>@meta</pre>"
+          . "Saved Values: <pre>@saved_values</pre>";
+        $params = [
+          '@key' => $key,
+          '@meta' => var_export($item, 1),
+          '@field_value' => var_export($target_field_value, 1),
+          '@source_field_value' => var_export(
+            $source['parent_element'][$source['field_name']] ?? NULL, 1
+          ),
+          '@saved_values' => (
+            $target['field_name'] == 'doi'
+            ? var_export($array['saved_values'][1]['publication'] ?? NULL, 1)
+            : ''
+          ),
+          '@direction' => (!empty($array['saved_values'][1]['doi']) ? 'upgrade' : 'downgrade'),
+          '@form_version' => $array['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY],
+        ];
+        tpps_message($message, $params, 'debug');
       }
       // Skip this because field already exists.
       // @TODO Minor. Check also value of the target field.

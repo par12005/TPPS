@@ -86,9 +86,9 @@ function tpps_get_user_email($uid, $reset = FALSE) {
 }
 
 /**
- * Puts message using watchdog() and drupal_set_message().
+ * Puts message using both watchdog() and drupal_set_message().
  *
- * Not for CLI. For UI only.
+ * WARNING: Not for CLI (messages will be ignored).
  *
  * @param string $message
  *   Not localized message text.
@@ -96,18 +96,22 @@ function tpps_get_user_email($uid, $reset = FALSE) {
  *   List of the tokens which will be replaces in $message.
  * @param string $type
  *   Predefined message type. Possible values are:
- *   'error', 'notice', 'info', 'warning'.
+ *   'error', 'notice', 'info' (default), 'warning' and 'debug'
+ *   Note: 'debug' messages will be shown at page only when 'Debug Mode' enabled.
+ *   To enable 'Debug Mode': variable_set('tpps_debug_mode', TRUE)
+ *   or use admin settings page.
  */
-function tpps_message($message, array $params = [], $type = 'status') {
-  $types = [
-    'error' => WATCHDOG_ERROR,
-    'status' => WATCHDOG_INFO,
-    // @TODO 'notice' require CSS rules to have color.
-    'notice' => WATCHDOG_NOTICE,
-    'warning' => WATCHDOG_WARNING,
-  ];
-  watchdog('tpps', $message, $params, ($types[$type] ?? WATCHDOG_NOTICE));
-  drupal_set_message(t($message, $params), $type);
+function tpps_message($message, array $params = [], $type = 'info') {
+  if (php_sapi_name() == 'cli') {
+    // Do nothing in CLI mode.
+    return;
+  }
+  $watchdog_type = constant('WATCHDOG_' . strtoupper($type)) ?? WATCHDOG_NOTICE;
+  watchdog('tpps', $message, $params, $watchdog_type);
+  if ($type != 'debug' || (tpps_is_debug_mode() && $type == 'debug')) {
+    $type = ($type == 'info') ? 'status' : $type;
+    drupal_set_message(t($message, $params), $type);
+  }
 }
 
 /**

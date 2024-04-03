@@ -48,14 +48,6 @@ function tpps_form_main_settings_form(array $form, array &$form_state) {
       . 'When checked then all error messages will be sent to browser and '
       . 'some extra debug messages could be shown.'),
   ];
-  $form['tpps_si_debug_mode'] = [
-    '#type' => 'checkbox',
-    '#title' => t('Submission Interface Debug Mode'),
-    '#default_value' => variable_get('tpps_si_debug_mode', FALSE),
-    '#description' => t('Default is unchecked. Must be disabled at live site. '
-      . 'When checked then Submission Interface debug messages will be shown ' .
-      'in browser. When unchecked no messages will be shown (only watchdog).'),
-  ];
   $form['tpps_cache_submissions'] = [
     '#type' => 'checkbox',
     '#title' => t("Cache Submission's Info and State"),

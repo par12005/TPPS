@@ -28,7 +28,6 @@ function tpps_install() {
   variable_set('tpps_top_bar', 'status');
   variable_set('tpps_dark_theme', FALSE);
   variable_set('tpps_debug_mode', FALSE);
-  variable_set('tpps_si_debug_mode', FALSE);
   variable_set('tpps_cache_submissions', FALSE);
   // Front page.
   variable_set('tpps_front_cache_accession_list', TRUE);
@@ -342,7 +341,6 @@ function tpps_uninstall() {
   variable_del('tpps_top_bar');
   variable_del('tpps_dark_theme');
   variable_del('tpps_debug_mode');
-  variable_del('tpps_si_debug_mode');
   variable_del('tpps_cache_submissions');
   // Front page.
   variable_del('tpps_front_cache_accession_list');
