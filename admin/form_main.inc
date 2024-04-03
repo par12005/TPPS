@@ -57,6 +57,14 @@ function tpps_form_main_settings_form(array $form, array &$form_state) {
       . 'statically (per page request) and permanently (using "tpps" cache bin) '
       . "cached. When unchecked no Submission's data won't be cached at all."),
   ];
+  $form['tpps_autofocus_delay'] = [
+    '#type' => 'textfield',
+    '#title' => t('Autofocus Delay, msec'),
+    '#default_value' => variable_get('tpps_autofocus_delay', 1000),
+    '#description' => t('Default is 1000 (1 second). '
+      . '<br />When page loaded scripts waits for a while and then hightlights '
+      . 'specified field. When there is no delay it looks ugly.'),
+  ];
   $form['#submit'][] = 'tpps_form_main_settings_form_submit';
   return system_settings_form($form);
 }

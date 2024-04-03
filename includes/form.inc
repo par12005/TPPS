@@ -660,7 +660,7 @@ function tpps_form_build_file_field(array $form_bus) {
  * @return mixed
  *   Returns value if element not found.
  *
- * @TODO Replace with class Chest and find better name.
+ * @TODO Replace with class FormBus.
  */
 function &tpps_form_bus_get(array $form_bus, $name) {
   // Define NULL as variable to return it as reference.
@@ -716,8 +716,6 @@ function &tpps_form_bus_get(array $form_bus, $name) {
  * @TODO Minor. Use CSS id intead of name attribute to set focus.
  */
 function tpps_form_autofocus(array &$form = NULL, array $path) {
-  // Delay in msec.
-  $timeout = 1000;
   if (empty($field = drupal_array_get_nested_value($form, $path) ?? NULL)) {
     return;
   }
@@ -741,7 +739,7 @@ function tpps_form_autofocus(array &$form = NULL, array $path) {
       'tpps' => [
         'autoFocus' => [
           'FieldName' => check_plain($html_name),
-          'Timeout' => check_plain($timeout),
+          'Timeout' => check_plain(variable_get('tpps_autofocus_delay', 1000)),
         ],
       ],
     ],
