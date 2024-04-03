@@ -378,7 +378,6 @@ function tpps_form_add_yesno_field(array $form_bus) {
     '#options' => $options,
     '#default_value' => ($form_bus['page4_values'][$field_name] ?? NULL),
     '#tree' => TRUE,
-
   ];
   $field = array_filter($form_bus, function ($e) {
     return strpos($e, '#') !== FALSE;

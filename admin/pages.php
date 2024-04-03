@@ -8,6 +8,8 @@
 /**
  * Menu callback. Shows list of files used by study.
  *
+ * WARNING: Submission Shared State used.
+ *
  * This function will check study submission state from database
  * find the file ids and also check the managed tables to see what is
  * missing. This will thus detect old files.

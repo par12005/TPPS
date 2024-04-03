@@ -112,7 +112,7 @@ function tpps_genotype_subform(array $form_bus) {
   foreach ($marker_type_field_list as $field_name => $marker_name) {
     $default_value = (
       in_array($marker_name, $genotype_marker_type)
-      ? 'yes' : (count($genotype_marker_type) ? 'no' : 0)
+      ? 'yes' : (count($genotype_marker_type) ? 'no' : 'no')
     );
     tpps_form_add_yesno_field(array_merge($form_bus,
       [
@@ -128,7 +128,8 @@ function tpps_genotype_subform(array $form_bus) {
             ? t('other genotypic') : str_replace('s', '', $marker_name)),
           ]
         ),
-        '#default_value' => $default_value,
+        '#default_value' => $default_value ?? 'no',
+        '#required' => TRUE,
       ]
     ));
   }
