@@ -6,35 +6,6 @@
  */
 
 /**
- * This function creates fields describing the primary author.
- *
- * @param array $form
- *   The form to be populated.
- * @param array $values
- *   The form_state values of the form to be populated.
- *
- * @return array
- *   The populated form.
- */
-function tpps_user_info(array &$form, array $values) {
-  $form['primaryAuthor'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Primary Author: *'),
-    '#autocomplete_path' => 'tpps/autocomplete/author',
-    '#attributes' => array(
-      'data-toggle' => array('tooltip'),
-      'data-placement' => array('right'),
-      'title' => array('First Author of the publication'),
-    ),
-  );
-  // if(isset($values['primaryAuthor']) && $values['primaryAuthor'] != "") {
-  //   $form['primaryAuthor']['#value'] = $values['primaryAuthor'];
-  // }
-
-  return $form;
-}
-
-/**
  * This function creates fields describing the publication.
  *
  * This includes the secondary authors, status, year, title, abstract, and

@@ -45,11 +45,22 @@ function tpps_page_1_create_form(array &$form, array &$form_state) {
  * @todo Change code to remove this function.
  */
 function tpps_page_1_create_regular_form(array $form, array &$form_state) {
-  // TPPS Version.
-  $saved_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
+  // WARNING: This is TPPS Version.
+
+  $form['primaryAuthor'] = [
+    '#type' => 'textfield',
+    '#title' => t('Primary Author: *'),
+    '#autocomplete_path' => 'tpps/autocomplete/author',
+    '#attributes' => [
+      'data-toggle' => ['tooltip'],
+      'data-placement' => ['right'],
+      'title' => ['First Author of the publication'],
+    ],
+    '#default_value' => tpps_get_ajax_value($form_state, ['primaryAuthor']),
+  ];
 
   // @TODO [VS] Get rid of '$saved_values'.
-  tpps_user_info($form, $saved_values);
+  $saved_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
   tpps_publication($form, $saved_values, $form_state);
 
   $file_upload_location = 'public://' . variable_get('tpps_study_photo_files_dir', 'tpps_study_photos');
@@ -175,7 +186,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Primary Author.
-  // Element '#parents' doesn't work but '#tree' => FALSE works.
   $form['publication']['primaryAuthor'] = [
     '#type' => 'textfield',
     '#title' => t('Primary Author: *'),
@@ -187,7 +197,9 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       'title' => ['First Author of the publication'],
     ],
     '#description' => t('Note: please format in ‘Last, First’ format.'),
-    '#default_value' => tpps_get_ajax_value($form_state, ['primaryAuthor'], NULL),
+    '#default_value' => tpps_get_ajax_value($form_state,
+      ['publication', 'primaryAuthor'], NULL
+    ),
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
