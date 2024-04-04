@@ -239,7 +239,6 @@ function tpps_details_tabs(array &$state) {
       $tabs_list['mass_spectrometry'] = 'Mass Spectrometry';
     }
   }
-  $tabs_list['submission'] = 'Submission';
   // Build HTML.
   // Only first element must have class 'active'.
   $content_class = 'tab-pane fade in active';
@@ -280,14 +279,9 @@ function tpps_details_tabs(array &$state) {
  *   The type of details we want to print.
  */
 function tpps_details_tab($accession, $type) {
-  if ($type == 'submission') {
-    print(tpps_submission_overview_page());
-  }
-  else {
-    $function = "tpps_details_$type";
-    $submission = new Submission($accession);
-    print($function($submission->sharedState));
-  }
+  $function = "tpps_details_$type";
+  $submission = new Submission($accession);
+  print($function($submission->sharedState));
 }
 
 /**

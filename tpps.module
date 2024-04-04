@@ -2019,7 +2019,7 @@ function tpps_menu_add_submission_pages(array &$items = []) {
   // View.
   $items['tpps/submission/%/view'] = [
     'title callback' => 'tpps_submission_title',
-    'title arguments' => [2, 3],
+    'title arguments' => [2, 3, 4],
     'description' => 'View TPPS Submission',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_view_form', 2],
@@ -2045,17 +2045,6 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
     'file' => 'pages/submission/import.inc',
-  ];
-  // Manual Export.
-  $items['tpps/submission/%/manual_export'] = [
-    'title callback' => 'tpps_submission_title',
-    'title arguments' => [2, 3],
-    'description' => 'Manual Export of TPPS Submission',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_manual_export_form', 2],
-    'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'pages/submission/manual_export.inc',
   ];
   // Compare.
   $items['tpps/submission/%/compare'] = [
@@ -2122,25 +2111,6 @@ function tpps_reports_overview_page() {
       l(t('Order/Family Exist Report'), 'admin/reports/tpps/order-family-not-exist'),
       l(t('Missing DOI Report'), 'admin/reports/tpps/missing-doi'),
       l(t('Imported Studies'), 'admin/reports/tpps/imported-studies'),
-    ],
-  ]);
-}
-
-/**
- * Menu callback. Shows list of Submission operations.
- *
- * Used by tpps_details_tab($accession, $type);
- */
-function tpps_submission_overview_page() {
-  return theme('item_list', [
-    'title' => t('The TPPS Submission operations'),
-    'items' => [
-      l(t('Export'), 'admin/config/tpps/submission/export'),
-      l(t('Import'), 'admin/config/tpps/submission/import'),
-      l(t('Manual Export'), 'admin/config/tpps/submission/manual_export'),
-      l(t('Compare'), 'admin/config/tpps/submission/compare'),
-      l(t('View'), 'admin/config/tpps/submission/view'),
-      l(t('Purge'), 'admin/config/tpps/submission/purge'),
     ],
   ]);
 }
