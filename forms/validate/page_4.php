@@ -1203,7 +1203,10 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
           );
         }
 
-        if (!empty($genotype[$snps_fieldset]['snps-kinship'])) {
+        if ($genotype[$snps_fieldset]['upload_snp_kinship'] == 'Yes'
+          && !tpps_is_required_field_empty(
+            $form_state, [$id, 'genotype', $snps_fieldset, 'snps-kinship'])
+        ) {
           // Preserve file if it is valid.
           tpps_preserve_valid_file(
             $form_state,

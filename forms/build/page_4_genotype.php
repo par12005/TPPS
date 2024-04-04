@@ -220,6 +220,11 @@ function tpps_genotype_subform(array $form_bus) {
     [$organism_name, 'genotype', $snps_fieldset, 'upload_snp_association'],
     'Yes'
   );
+  $upload_snp_kinship = tpps_get_ajax_value(
+    $form_state,
+    [$organism_name, 'genotype', $snps_fieldset, 'upload_snp_kinship'],
+    'Yes'
+  );
   if (tpps_is_genotype_data_type($form_state)) {
     $fields[$snps_fieldset]['upload_snp_association'] = [
       '#type' => 'select',
@@ -229,12 +234,15 @@ function tpps_genotype_subform(array $form_bus) {
         'No' => t('No'),
       ],
       '#default_value' => $upload_snp_association,
-// @TODO Test if form really updates and new fields are shown.
-      '#ajax' => [
-        'callback' => 'tpps_genotype_snps_fieldset_callback',
-        'wrapper' => "$organism_name-genotype-$snps_fieldset",
-        'effect' => 'slide',
+    ];
+    $fields[$snps_fieldset]['upload_snp_kinship'] = [
+      '#type' => 'select',
+      '#title' => t('Would you like to upload a SNPs Kinship File?'),
+      '#options' => [
+        'Yes' => t('Yes'),
+        'No' => t('No'),
       ],
+      '#default_value' => $upload_snp_kinship,
     ];
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -386,140 +394,162 @@ function tpps_genotype_subform(array $form_bus) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // SNP Association File.
-  if ($upload_snp_association == 'Yes') {
-    $file_field_name = 'snps-association';
-    $title = t('SNP Association File');
-    // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
-    tpps_form_build_file_field([
-      'form' => &$form,
-      'form_state' => $form_state,
-      'parents' => [$organism_name, 'genotype', $snps_fieldset],
-      'field_name' => $file_field_name,
-      'title' => $title,
-      'organism_name' => $organism_name,
-      'type' => $form_bus['type'],
-      'description' => t('Please upload a spreadsheet file containing '
-        . 'SNPs Association data. When your file is uploaded, you will '
-        . 'be shown a table with your column header names, several '
-        . 'drop-downs, and the first few rows of your file. You will be '
-        . 'asked to define the data type for each column, using the '
-        . 'drop-downs provided to you. If a column data type does not '
-        . 'fit any of the options in the drop-down menu, you may set that '
-        . 'drop-down menu to "N/A". Your file must contain columns with '
-        . 'the SNP ID, Scaffold, Position (formatted like "start:stop"), '
-        . 'Allele (formatted like "major:minor"), Associated Trait Name '
-        . '(must match a phenotype from the above section), and '
-        . 'Confidence Value. Optionally, you can also specify a Gene ID '
-        . '(which should match the gene reference) and '
-        . 'a SNP Annotation (non synonymous, coding, etc).'),
-      '#tree' => TRUE,
-      'optional' => TRUE,
-    ]);
+  $file_field_name = 'snps-association';
+  $title = t('SNP Association File');
+  // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
+  tpps_form_build_file_field([
+    'form' => &$form,
+    'form_state' => $form_state,
+    'parents' => [$organism_name, 'genotype', $snps_fieldset],
+    'field_name' => $file_field_name,
+    'title' => $title,
+    'organism_name' => $organism_name,
+    'type' => $form_bus['type'],
+    'description' => t('Please upload a spreadsheet file containing '
+      . 'SNPs Association data. When your file is uploaded, you will '
+      . 'be shown a table with your column header names, several '
+      . 'drop-downs, and the first few rows of your file. You will be '
+      . 'asked to define the data type for each column, using the '
+      . 'drop-downs provided to you. If a column data type does not '
+      . 'fit any of the options in the drop-down menu, you may set that '
+      . 'drop-down menu to "N/A". Your file must contain columns with '
+      . 'the SNP ID, Scaffold, Position (formatted like "start:stop"), '
+      . 'Allele (formatted like "major:minor"), Associated Trait Name '
+      . '(must match a phenotype from the above section), and '
+      . 'Confidence Value. Optionally, you can also specify a Gene ID '
+      . '(which should match the gene reference) and '
+      . 'a SNP Annotation (non synonymous, coding, etc).'),
+    '#tree' => TRUE,
+    'optional' => TRUE,
+    'states' => [
+      'visible' => [
+        ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
+          . '][upload_snp_association]"]' => ['value' => 'Yes'],
 
-    $fields[$snps_fieldset][$file_field_name] = array_merge(
-      $fields[$snps_fieldset][$file_field_name],
-      [
-        'empty' => [
-          '#default_value' => tpps_array_get_value(
-            $form_bus['page4_values'],
-            [$organism_name, 'genotype', $snps_fieldset, $file_field_name, 'empty'])
-            ?? 'NA',
-        ],
-        'columns' => [
-          '#description' => t('Please define which columns hold the '
-            . 'required data: SNP ID, Scaffold, Position, Allele, '
-            . 'Associated Trait, Confidence Value.'),
-        ],
-        'columns-options' => [
-          '#type' => 'hidden',
-          '#value' => [
-            'N/A',
-            'SNP ID',
-            'Scaffold',
-            'Position',
-            'Allele',
-            'Associated Trait',
-            'Confidence Value',
-            'Gene ID',
-            'Annotation',
-          ],
-          'no-header' => [],
-        ],
-      ]
-    );
-    // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
-    $fields[$snps_fieldset]['snps-association-type'] = [
-      '#type' => 'select',
-      '#title' => t('Confidence Value Type: *'),
-      '#options' => [
-        0 => t('- Select -'),
-        'P value' => t('P value'),
-        'Genomic Inflation Factor (GIF)' => t('Genomic Inflation Factor (GIF)'),
-        'P-adjusted (FDR) / Q value' => t('P-adjusted (FDR) / Q value'),
-        'P-adjusted (FWE)' => t('P-adjusted (FWE)'),
-        'P-adjusted (Bonferroni)' => t('P-adjusted (Bonferroni)'),
       ],
-    ];
+    ],
+  ]);
 
-    // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
-    $fields[$snps_fieldset]['snps-association-tool'] = [
-      '#type' => 'select',
-      '#title' => t('Association Analysis Tool: *'),
-      '#options' => [
-        0 => t('- Select -'),
-        'GEMMA' => t('GEMMA'),
-        'EMMAX' => t('EMMAX'),
-        'Plink' => t('Plink'),
-        'Tassel' => t('Tassel'),
-        'Sambada' => t('Sambada'),
-        'Bayenv' => t('Bayenv'),
-        'BayeScan' => t('BayeScan'),
-        'LFMM' => t('LFMM'),
+  $fields[$snps_fieldset][$file_field_name] = array_merge(
+    $fields[$snps_fieldset][$file_field_name],
+    [
+      'empty' => [
+        '#default_value' => tpps_array_get_value(
+          $form_bus['page4_values'],
+          [$organism_name, 'genotype', $snps_fieldset, $file_field_name, 'empty'])
+          ?? 'NA',
       ],
-    ];
+      'columns' => [
+        '#description' => t('Please define which columns hold the '
+          . 'required data: SNP ID, Scaffold, Position, Allele, '
+          . 'Associated Trait, Confidence Value.'),
+      ],
+      'columns-options' => [
+        '#type' => 'hidden',
+        '#value' => [
+          'N/A',
+          'SNP ID',
+          'Scaffold',
+          'Position',
+          'Allele',
+          'Associated Trait',
+          'Confidence Value',
+          'Gene ID',
+          'Annotation',
+        ],
+        'no-header' => [],
+      ],
+    ]
+  );
+  // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
+  $fields[$snps_fieldset]['snps-association-type'] = [
+    '#type' => 'select',
+    '#title' => t('Confidence Value Type: *'),
+    '#options' => [
+      0 => t('- Select -'),
+      'P value' => t('P value'),
+      'Genomic Inflation Factor (GIF)' => t('Genomic Inflation Factor (GIF)'),
+      'P-adjusted (FDR) / Q value' => t('P-adjusted (FDR) / Q value'),
+      'P-adjusted (FWE)' => t('P-adjusted (FWE)'),
+      'P-adjusted (Bonferroni)' => t('P-adjusted (Bonferroni)'),
+    ],
+    '#states' => [
+      'visible' => [
+        ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
+          . '][upload_snp_association]"]' => ['value' => 'Yes'],
 
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // SNPs Population Structure File.
-    $file_field_name = 'snps-pop-struct';
-    $title = t('SNPs Population Structure File');
-    // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
-    tpps_form_build_file_field([
-      'form' => &$form,
-      'form_state' => $form_state,
-      'parents' => [$organism_name, 'genotype', $snps_fieldset],
-      'organism_name' => $organism_name,
-      'type' => $form_bus['type'],
-      'field_name' => $file_field_name,
-      'title' => $title,
-      // @todo [VS] Replace with 'required' with default value 'TRUE'.
-      'optional' => TRUE,
-    ]);
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // SNPs Kinship File.
-    $file_field_name = 'snps-kinship';
-    $title = t('SNPs Kinship File');
-    // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
-    tpps_form_build_file_field([
-      'form' => &$form,
-      'form_state' => $form_state,
-      'parents' => [$organism_name, 'genotype', $snps_fieldset],
-      'organism_name' => $organism_name,
-      'type' => $form_bus['type'],
-      'field_name' => $file_field_name,
-      'title' => $title,
-      'optional' => TRUE,
-    ]);
-  }
-  else {
-    $file_field_list = ['snps-association', 'snps-pop-struct', 'snps-kinship'];
-    foreach ($file_field_list as $file_field_name) {
-      $fields[$snps_fieldset][$file_field_name] = [
-        '#type' => 'managed_file',
-        '#tree' => TRUE,
-        '#access' => FALSE,
-      ];
-    }
-  }
+      ],
+    ],
+  ];
+
+  // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
+  $fields[$snps_fieldset]['snps-association-tool'] = [
+    '#type' => 'select',
+    '#title' => t('Association Analysis Tool: *'),
+    '#options' => [
+      0 => t('- Select -'),
+      'GEMMA' => t('GEMMA'),
+      'EMMAX' => t('EMMAX'),
+      'Plink' => t('Plink'),
+      'Tassel' => t('Tassel'),
+      'Sambada' => t('Sambada'),
+      'Bayenv' => t('Bayenv'),
+      'BayeScan' => t('BayeScan'),
+      'LFMM' => t('LFMM'),
+    ],
+    '#states' => [
+      'visible' => [
+        ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
+          . '][upload_snp_association]"]' => ['value' => 'Yes'],
+
+      ],
+    ],
+  ];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // SNPs Population Structure File.
+  $file_field_name = 'snps-pop-struct';
+  $title = t('SNPs Population Structure File');
+  // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
+  tpps_form_build_file_field([
+    'form' => &$form,
+    'form_state' => $form_state,
+    'parents' => [$organism_name, 'genotype', $snps_fieldset],
+    'organism_name' => $organism_name,
+    'type' => $form_bus['type'],
+    'field_name' => $file_field_name,
+    'title' => $title,
+    // @todo [VS] Replace with 'required' with default value 'TRUE'.
+    'optional' => TRUE,
+    'states' => [
+      'visible' => [
+        ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
+          . '][upload_snp_association]"]' => ['value' => 'Yes'],
+
+      ],
+    ],
+  ]);
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // SNPs Kinship File.
+  $title = t('SNPs Kinship File');
+  $file_field_name = 'snps-kinship';
+  // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
+  tpps_form_build_file_field([
+    'form' => &$form,
+    'form_state' => $form_state,
+    'parents' => [$organism_name, 'genotype', $snps_fieldset],
+    'organism_name' => $organism_name,
+    'type' => $form_bus['type'],
+    'field_name' => $file_field_name,
+    'title' => $title,
+    'optional' => TRUE,
+    'states' => [
+      'visible' => [
+        ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
+          . '][upload_snp_kinship]"]' => ['value' => 'Yes'],
+      ],
+    ],
+  ]);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Other Fieldset.

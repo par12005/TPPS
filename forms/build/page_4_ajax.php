@@ -89,22 +89,6 @@ function tpps_phenotype_file_format_callback(array $form, array &$form_state) {
 }
 
 /**
- * Ajax callback. Updated genotype 'SNPs' fieldset.
- *
- * @param array $form
- *   The form to be updated.
- * @param array $form_state
- *   The state of the form to be updated.
- *
- * @return array
- *   The element in the form to be updated.
- */
-function tpps_genotype_snps_fieldset_callback(array $form, array &$form_state) {
-  $id = $form_state['triggering_element']['#parents'][0];
-  return $form[$id]['genotype']['SNPs'];
-}
-
-/**
  * Indicate the managed_file element to be updated.
  *
  * This function is called after a no_header element is changed, triggering an
