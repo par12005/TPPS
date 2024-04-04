@@ -1215,12 +1215,13 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
       }
     }
   }
-
+  // Assay Design File.
   if (!empty($genotyping_type['Genotyping Assay'])) {
     $file_field_name = 'assay-design';
-    if (!tpps_is_required_field_empty($form_state,
-        [$id, 'genotype', $snps_fieldset, $file_field_name])
-    ) {
+    $file_field_value = drupal_array_get_nested_value(
+      $form_state, ['values', $id, 'genotype', $snps_fieldset, $file_field_name]
+    );
+    if ($file_field_value) {
       // Preserve file if it is valid.
       tpps_preserve_valid_file(
         $form_state,

@@ -86,6 +86,7 @@ function tpps_genotype_subform(array $form_bus) {
         'field_name' => 'are_genotype_markers_identical',
         '#title' => t('Are your genotype markers identical across species?'),
         '#default_value' => (($organism_number == 1) ? 'yes' : 0),
+        '#required' => TRUE,
       ]
     ));
     // Оnly for non-first questions. Next 3 questions are dependent on 1st one.
@@ -129,7 +130,7 @@ function tpps_genotype_subform(array $form_bus) {
           ]
         ),
         '#default_value' => $default_value ?? 'no',
-        '#required' => TRUE,
+        '#required' => FALSE,
       ]
     ));
   }
