@@ -762,8 +762,10 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
         tpps_is_required_genotype_file_empty($form_state, $org_num, 'snps-association-tool');
       }
       tpps_is_required_genotype_file_empty($form_state, $org_num, 'genotyping-type');
-      tpps_is_required_genotype_file_empty($form_state, $org_num, 'snps-assay');
-      tpps_is_required_genotype_file_empty($form_state, $org_num, 'assay-design');
+      // https://app.clickup.com/t/86b00yxvd
+      // Those fields are not required when VCF file uploaded.
+      //tpps_is_required_genotype_file_empty($form_state, $org_num, 'snps-assay');
+      //tpps_is_required_genotype_file_empty($form_state, $org_num, 'assay-design');
     }
 
     if (!tpps_is_required_field_empty($form_state,
