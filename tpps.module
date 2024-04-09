@@ -867,18 +867,16 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
         $saved_value_parents
       );
     }
-    if (!empty($element['no-header'])) {
-      $element['no-header'] = [
-        '#type' => 'checkbox',
-        '#title' => 'My file has no header row',
-        '#ajax' => [
-          'wrapper' => $wrapper,
-          'callback' => 'tpps_no_header_callback',
-        ],
-        '#states' => $element['#states'] ?? NULL,
-        '#default_value' => $no_header ?? NULL,
-      ];
-    }
+    $element['no-header'] = [
+      '#type' => 'checkbox',
+      '#title' => 'My file has no header row',
+      '#ajax' => [
+        'wrapper' => $wrapper,
+        'callback' => 'tpps_no_header_callback',
+      ],
+      '#states' => $element['#states'] ?? NULL,
+      '#default_value' => $no_header ?? NULL,
+    ];
     if ($file = tpps_file_load(($fid ?? ''))) {
       $saved_vals = $form_state['saved_values'][$form_state['stage']];
       $element['columns']['#type'] = 'fieldset';
@@ -973,7 +971,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
 
   if (isset($element['empty'])) {
     $element['empty']['#type'] = 'textfield';
-    $element['empty']['#title'] = t('File Upload empty field:');
+    $element['empty']['#title'] = t('Null values denoted by:');
     $element['empty']['#states'] = $element['#states'] ?? NULL;
     $element['empty']['#description'] = t('By default, TPPS will treat  '
       . 'cells with the value "NA" as empty. If you used a different empty '

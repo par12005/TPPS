@@ -428,11 +428,7 @@ function tpps_genotype_subform(array $form_bus) {
 
       ],
     ],
-  ]);
-
-  $fields[$snps_fieldset][$file_field_name] = array_merge(
-    $fields[$snps_fieldset][$file_field_name],
-    [
+    'extra_elements' => [
       'empty' => [
         '#default_value' => tpps_array_get_value(
           $form_bus['page4_values'],
@@ -457,10 +453,11 @@ function tpps_genotype_subform(array $form_bus) {
           'Gene ID',
           'Annotation',
         ],
-        'no-header' => [],
       ],
-    ]
-  );
+      'no-header' => [],
+    ],
+  ]);
+
   // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
   $fields[$snps_fieldset]['snps-association-type'] = [
     '#type' => 'select',
@@ -477,7 +474,6 @@ function tpps_genotype_subform(array $form_bus) {
       'visible' => [
         ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
           . '][upload_snp_association]"]' => ['value' => 'Yes'],
-
       ],
     ],
   ];
@@ -501,7 +497,6 @@ function tpps_genotype_subform(array $form_bus) {
       'visible' => [
         ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
           . '][upload_snp_association]"]' => ['value' => 'Yes'],
-
       ],
     ],
   ];
@@ -525,7 +520,6 @@ function tpps_genotype_subform(array $form_bus) {
       'visible' => [
         ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
           . '][upload_snp_association]"]' => ['value' => 'Yes'],
-
       ],
     ],
   ]);
