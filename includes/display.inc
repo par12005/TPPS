@@ -573,11 +573,37 @@ function tpps_table_display(array &$state, array $options = array()) {
       // [VS] Added extra space which must not be visible at site but
       // will divide key and it's value in CLI.
       $key_str = filter_xss(check_plain($key)) . ' ';
-      $val_str = filter_xss(check_plain($val));
 
-      if (preg_match('/File/', $key) and ($file = file_load($val) === FALSE) and stripos($key_str, 'VCF File (cluster)') === FALSE) {
-        // FILE NOT FOUND
-        $val_str .= ' <span style="font-size: 32px;">🆘</span><span>(File missing)</span>';
+      // Some items are arrays and this cause a lot of warnings about using
+      // check_plain() for arrays. Other way is to skip array processing at all
+      // or use empty string for arrays.
+      // @TODO Probably better way is to use check_plain() for each field and
+      // count it's content.
+      if (
+        // Exclude VCF files which has a hyperlink instead of File Id.
+        stripos($key_str, 'VCF File (cluster)') === FALSE
+        && stripos($key_str, 'VCF File (uploaded)') === FALSE
+      ) {
+        $val_str = filter_xss(check_plain(
+          (is_array($val) ? var_export($val, 1) : $val)
+        ));
+      }
+      else {
+        $val_str = $val;
+      }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Files.
+      if (
+        preg_match('/File/', $key)
+        && ($file = tpps_file_load($val) === FALSE)
+        // VCF files are gzipped value is not the File Id but a hyperlink to
+        // file which could be downloaded and manually reviewed because
+        // preview not work for gzipped files.
+        && stripos($key_str, 'VCF File (cluster)') === FALSE
+        && stripos($key_str, 'VCF File (uploaded)') === FALSE
+      ) {
+        // SOS. FILE NOT FOUND.
+         $val_str .= ' <span style="font-size: 32px;">🆘</span><span>(File missing)</span>';
       }
       if (preg_match('/File/', $key) and ($file = file_load($val))) {
 
