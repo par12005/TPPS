@@ -1421,3 +1421,33 @@ function tpps_file_get_header($data, array &$options = []) {
     $options['header'] = $data;
   }
 }
+
+/**
+ * More safe way to load managed file object.
+ *
+ * Checks $fid and file size.
+ *
+ * Usage:
+ *   $file = tpps_file_load($fid);
+ *   if ($file && $file->status != $status) {}
+ * Note: don't use in one condition.
+ * Wrong:
+ *   if ($file = tpps_file_load($fid) && $file->status != $status) {}
+ *
+ * @param int $fid
+ *   File Id.
+ *
+ * @return mixed
+ *   Returns FALSE in case of errors.
+ *   Returns Managed File object.
+ */
+function tpps_file_load($fid = NULL) {
+  if (!empty($fid) && is_numeric($fid) && $file = file_load($fid)) {
+    if ($file->filesize ?? FALSE) {
+      // Do not allows empty files with zero-size.
+      return $file;
+    }
+  }
+  return FALSE;
+}
+
