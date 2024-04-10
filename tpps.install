@@ -30,6 +30,8 @@ function tpps_install() {
   variable_set('tpps_debug_mode', FALSE);
   variable_set('tpps_cache_submissions', FALSE);
   variable_set('tpps_autofocus_delay', 1000);
+  variable_set('tpps_dump_max_len_state', 300000);
+  variable_set('tpps_dump_max_len_sharedState', 300000);
   // Front page.
   variable_set('tpps_front_cache_accession_list', TRUE);
   variable_set('tpps_front_show_pending_status_mine', FALSE);
@@ -344,6 +346,8 @@ function tpps_uninstall() {
   variable_del('tpps_debug_mode');
   variable_del('tpps_cache_submissions');
   variable_del('tpps_autofocus_delay');
+  variable_del('tpps_dump_max_len_state', 150000);
+  variable_del('tpps_dump_max_len_sharedState', 150000);
   // Front page.
   variable_del('tpps_front_cache_accession_list');
   variable_del('tpps_front_show_pending_status_mine');

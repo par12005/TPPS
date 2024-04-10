@@ -65,6 +65,20 @@ function tpps_form_main_settings_form(array $form, array &$form_state) {
       . '<br />When page loaded scripts waits for a while and then hightlights '
       . 'specified field. When there is no delay it looks ugly.'),
   ];
+
+  // Submission.
+  foreach (['sharedState', 'state'] as $data_type) {
+    $form['tpps_dump_max_len_' . $data_type] = [
+      '#type' => 'textfield',
+      '#title' => t('Submission Dump max lenght, chars'),
+      '#default_value' => variable_get('tpps_dump_max_len_' . $data_type, 300000),
+      '#description' => t('Default is "300 000". '
+        . "<br />Huge dump lenght: 5M."
+        . "<br />Used on Submission View page. When dump's length exceeds this "
+        . "limit then it will be shown as a flat dump instead of HTML tables in "
+        . "fieldsets"),
+    ];
+  }
   $form['#submit'][] = 'tpps_form_main_settings_form_submit';
   return system_settings_form($form);
 }

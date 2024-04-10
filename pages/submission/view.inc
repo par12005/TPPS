@@ -87,7 +87,7 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
 
   foreach (['sharedState', 'state'] as $data_type) {
     // Huge: 5M, Normal: 25K.
-    $max_len = variable_get('tpps_dump_max_len_' . $data_type, 50000);
+    $max_len = variable_get('tpps_dump_max_len_' . $data_type, 100000);
     $state = $submission->$data_type;
     // Remove huge element which added by Tripal Job.
     unset($state['data']);
@@ -97,7 +97,12 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
       '#collapsed' => FALSE,
       '#collapsible' => TRUE,
     ];
-    if (strlen(json_encode($state)) > $max_len) {
+
+    $data_len = strlen(json_encode($state));
+    if ($data_len > $max_len) {
+      drupal_set_message(t('@data_type length: $len.',
+        ['@data_type' => $data_type, '@len' => $data_len])
+      );
       $form[$data_type]['container'] = [
         // Need to set manually text color because theme 'dawn' set
         // grey for PRE elements.
