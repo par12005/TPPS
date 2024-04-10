@@ -89,17 +89,16 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
     // Huge: 5M, Normal: 25K.
     $max_len = variable_get('tpps_dump_max_len_' . $data_type, 50000);
     $state = $submission->$data_type;
-
     // Remove huge element which added by Tripal Job.
     unset($state['data']);
-    $form[$type] = [
+    $form[$data_type] = [
       '#type' => 'fieldset',
-      '#title' => t(ucfirst($type)),
+      '#title' => t(ucfirst($data_type)),
       '#collapsed' => FALSE,
       '#collapsible' => TRUE,
     ];
     if (strlen(json_encode($state)) > $max_len) {
-      $form[$type]['container'] = [
+      $form[$data_type]['container'] = [
         // Need to set manually text color because theme 'dawn' set
         // grey for PRE elements.
         '#markup' => '<pre style="color: white;">'
@@ -109,7 +108,7 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
     else {
       $data = tpps_array_dump($state);
       foreach ($data as $key => $item) {
-        $form[$type][$key . '_container'] = [
+        $form[$data_type][$key . '_container'] = [
           '#type' => 'fieldset',
           '#title' => ($item['title'] ?? $key)
             . ($item['count'] ? ' (' . $item['count'] . ')' : ''),
