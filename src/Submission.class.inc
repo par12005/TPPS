@@ -429,7 +429,7 @@ class Submission {
    *   Return accession number.
    */
   public function &getAccessionNumber() {
-    return str_replace('TGDR', '', $this->accession);
+    return str_replace('TGDR', '', ($this->accession ?? NULL));
   }
 
   /**

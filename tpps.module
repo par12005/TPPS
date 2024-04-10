@@ -2083,6 +2083,22 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'pages/submission/purge_multiple.inc',
   ];
+  // To preselect range of accessions:
+  // tpps/submission/purge_multiple/900 = [900 .. latest];
+  // tpps/submission/purge_multiple/900-950 = [900 .. 950];
+  // tpps/submission/purge_multiple/950-900 = [900 .. 950];
+  // tpps/submission/purge_multiple/-900 = [0 .. 900];
+  // tpps/submission/purge_multiple/900- = [900 .. latest];
+  // tpps/submission/purge_multiple/TGDR900-TGDR950 = [900 .. 950].
+  $items['tpps/submission/purge_multiple/%'] = [
+    'title callback' => 'Purge Multiple',
+    'description' => 'Purge multple TPPS Submissions',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_purge_multiple_form', 3],
+    'access arguments' => ['tpps delete submission'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'pages/submission/purge_multiple.inc',
+  ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Files.
   $items['tpps/file/%/get/%'] = [

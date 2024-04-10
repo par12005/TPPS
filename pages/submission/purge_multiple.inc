@@ -25,7 +25,7 @@ function tpps_submission_purge_multiple_get_range() {
 /**
  * Menu callback. TPPS Study View Form.
  */
-function tpps_submission_purge_multiple_form(array $form, array &$form_state) {
+function tpps_submission_purge_multiple_form(array $form, array &$form_state, $range = '') {
   $data = tpps_submission_purge_multiple_get_range();
 
   if ($data['latest_accession'] > $data['last_real_accession']) {
@@ -52,6 +52,39 @@ function tpps_submission_purge_multiple_form(array $form, array &$form_state) {
     '#options' => $accession_list,
     '#required' => TRUE,
   ];
+
+  // Pre select items specified in URL.
+  // Note: given values will be included.
+  $range = str_replace('TGDR', '', check_plain(trim($range)));
+  if ($range) {
+    $max_accession_number = str_replace('TGDR', '',
+      array_keys($accession_list)[0]
+    );
+    if (strpos($range, '-') === FALSE) {
+      // Single value. This is min value.
+      if ($range < $max_accession_number) {
+        $range = [
+          '0' => check_plain(trim($range)),
+          '1' => $max_accession_number,
+        ];
+      }
+      else {
+        $range = [];
+      }
+    }
+    else {
+      $range = explode('-', $range);
+      $range[0] = empty($range[0]) ? 0 : $range[0];
+      $range[1] = empty($range[1]) ? $max_accession_number : $range[1];
+      sort($range);
+    }
+    if (is_numeric($range[0] ?? NULL) && is_numeric($range[1] ?? NULL)) {
+      for ($i = $range[0]; $i <= $range[1]; $i++) {
+        $default_value[] = 'TGDR' . $i;
+      }
+      $form['tpps_submission_accession']['#default_value'] = $default_value ?? NULL;
+    }
+  }
 
   $form['actions'] = ['#type' => 'container'];
   $buttons = ['back', 'purge'];
