@@ -25,17 +25,21 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
   $form['tpps_submission_accession'] = [
     '#type' => 'select',
     '#title' => t('Accession'),
-    '#options' => array_merge([
-      'new' => t(
-        'New (@next_accession)',
-        ['@next_accession' => 'TGDR' . tpps_init_project_get_next_accession()]
-      ),
-    ], $accession_list),
+    '#options' => $accession_list,
     '#default_value' => $accession ?? array_key_first($accession_list) ?? '',
     '#required' => TRUE,
   ];
   // Get Submission State.
   $submission = new Submission($accession);
+  if ($submission->doesNotExist()) {
+    $message = t(
+      'Submission @accession not found. Please choose from the list below.',
+      ['@accession' => $accession]
+    );
+    drupal_set_message($message, 'warning');
+    drupal_goto('tpps/submission');
+  }
+
   tpps_submission_export_fixes($submission->state);
 
   // Files.
@@ -52,7 +56,7 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
   $form['tpps_submission_export_state'] = [
     '#type' => 'textarea',
     '#title' => t('State PHP Array'),
-    '#value' => var_export($state, 1),
+    '#value' => var_export($submission->state, 1),
     '#rows' => 10,
     '#resizable' => TRUE,
     '#attributes' => ['readonly' => 'readonly'],
