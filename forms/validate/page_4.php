@@ -780,9 +780,6 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
       tpps_is_required_field_empty($form_state,
         [$id, 'genotype', $snps_fieldset, 'genotyping-type']
       );
-      tpps_is_required_field_empty($form_state,
-        [$id, 'genotype', $snps_fieldset, 'snps-assay']
-      );
     }
 
     if (!tpps_is_required_field_empty($form_state,

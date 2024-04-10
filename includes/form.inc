@@ -186,7 +186,7 @@ function tpps_form_error(array $form_state, array $path, $message) {
       ['@path' => implode(' / ', $path)]
     );
     watchdog('tpps', $message, NULL, WATCHDOG_ERROR);
-    drupal_set_message($message, 'error');
+    // drupal_set_message($message, 'error');
     return;
   }
   // Remove colon ':' and required field label.
