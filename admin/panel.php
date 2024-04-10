@@ -734,16 +734,27 @@ function tpps_admin_panel_top(array &$form) {
     }
     $submitting_user = $submitting_user_cache[$uid] ?? NULL;
 
+    $view_link = l($accession, 'tpps-admin-panel/' . $accession);
+    $action_list = [
+      l(t('Edit'), 'tppsc/' . $accession),
+      l(t('Dump'), 'tpps/submission/' . $accession . '/view'),
+      l(t('Export'), 'tpps/submission/' . $accession . '/export'),
+      l(t('Files'), 'tpps-admin-panel/file-diagnostics/' . $accession),
+    ];
+
+    // To add items use $action_list and recreate element.
+    $actions = theme('item_list', ['items' => $action_list]);
     if ($submission->doesExist()) {
       switch ($submission->status) {
         case 'Pending Approval':
           $row = [
-            l($accession, 'tpps-admin-panel/' . $accession),
+            $view_link,
             $submitting_user,
             $submission->state['saved_values'][TPPS_PAGE_1]['publication']['title'],
             !empty($submission->state['completed'])
             ? date("F j, Y, g:i a", $submission->state['completed']) : "Unknown",
             tpps_show_tags(tpps_submission_get_tags($accession)),
+            $actions,
           ];
           $output['pending'][(int) substr($accession, 4)] = $row;
           break;
@@ -796,18 +807,20 @@ function tpps_admin_panel_top(array &$form) {
                 }
                 // [/VS]
               }
+              if (tpps_access('view own tpps submission', $accession)) {
+                $action_list[] = l(t('Edit publication information'),
+                  'tpps/' . $accession . '/edit-publication'
+                );
+              }
+              $actions = theme('item_list', ['items' => $action_list]);
               $row = [
-                l($accession, 'tpps-admin-panel/' . $accession),
+                $view_link,
                 date("F j, Y", $submission->state['loaded'])
                   . " (" . round($days_since_load) . " days ago)",
                 $pub_status,
                 $owner,
+                $actions,
               ];
-              if (tpps_access('view own tpps submission', $accession)) {
-                $row[] = l(t('Edit publication information'),
-                  'tpps/' . $accession . '/edit-publication'
-                );
-              }
               $output['unpublished_old'][(int) substr($accession, 4)] = $row;
             }
           }
@@ -827,11 +840,12 @@ function tpps_admin_panel_top(array &$form) {
             $status_label = "Approved - Delayed Submission Release on " . date("F j, Y", $release);
           }
           $row = [
-            l($accession, 'tpps-admin-panel/' . $accession),
+            $view_link,
             $submitting_user,
             $submission->state['saved_values'][TPPS_PAGE_1]['publication']['title'],
             $status_label,
             tpps_show_tags(tpps_submission_get_tags($accession)),
+            $actions,
           ];
           $output['approved'][(int) substr($accession, 4)] = $row;
           break;
@@ -871,12 +885,13 @@ function tpps_admin_panel_top(array &$form) {
           $title = $submission->state['saved_values'][TPPS_PAGE_1]['publication']['title']
             ?? t('Title not provided yet');
           $output['incomplete'][(int) substr($accession, 4)] = [
-            l($accession, '/tpps-admin-panel/' . $accession),
+            $view_link,
             $submitting_user,
             $title,
             $stage,
             $date,
             tpps_show_tags(tpps_submission_get_tags($accession)),
+            $actions,
           ];
           break;
       }
@@ -919,6 +934,7 @@ function tpps_admin_panel_top(array &$form) {
       t('Title'),
       t('Date Submitted'),
       t('Tags'),
+      t('Actions'),
     ],
     'approved' => [
       t('Accession Number'),
@@ -926,6 +942,7 @@ function tpps_admin_panel_top(array &$form) {
       t('Title'),
       t('Status'),
       t('Tags'),
+      t('Actions'),
     ],
     'incomplete' => [
       t('Accession Number'),
@@ -934,6 +951,7 @@ function tpps_admin_panel_top(array &$form) {
       t('Stage'),
       t('Last Updated'),
       t('Tags'),
+      t('Actions'),
     ],
   ];
   // Fieldset title.
