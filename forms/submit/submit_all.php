@@ -1544,11 +1544,13 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
         ),
       );
 
-      $pop_struct_fid = $genotype['files']['snps-pop-struct'];
-      tpps_add_project_file($shared_state, $pop_struct_fid);
-
-      $kinship_fid = $genotype['files']['snps-kinship'];
-      tpps_add_project_file($shared_state, $kinship_fid);
+      // Files are optional:
+      if ($pop_struct_fid = ($genotype['files']['snps-pop-struct'] ?? NULL)) {
+        tpps_add_project_file($shared_state, $pop_struct_fid);
+      }
+      if ($kinship_fid = ($genotype['files']['snps-kinship'] ?? NULL)) {
+        tpps_add_project_file($shared_state, $kinship_fid);
+      }
     }
     // DROP INDEXES FROM GENOTYPE_CALL TABLE.
     // tpps_drop_genotype_call_indexes($job);

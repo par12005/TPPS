@@ -213,39 +213,6 @@ function tpps_genotype_subform(array $form_bus) {
   $file_type_value = tpps_get_ajax_value($form_state, $file_type_parents);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Note: Marker Type allows multiple values to be selected.
-  // Relocated in v2. ['genotype', 'files'] -> ['genotype', $snps_fieldset].
-  $upload_snp_association = tpps_get_ajax_value(
-    $form_state,
-    [$organism_name, 'genotype', $snps_fieldset, 'upload_snp_association'],
-    'Yes'
-  );
-  $upload_snp_kinship = tpps_get_ajax_value(
-    $form_state,
-    [$organism_name, 'genotype', $snps_fieldset, 'upload_snp_kinship'],
-    'Yes'
-  );
-  if (tpps_is_genotype_data_type($form_state)) {
-    $fields[$snps_fieldset]['upload_snp_association'] = [
-      '#type' => 'select',
-      '#title' => t('Would you like to upload a SNP association file?'),
-      '#options' => [
-        'Yes' => t('Yes'),
-        'No' => t('No'),
-      ],
-      '#default_value' => $upload_snp_association,
-    ];
-    $fields[$snps_fieldset]['upload_snp_kinship'] = [
-      '#type' => 'select',
-      '#title' => t('Would you like to upload a SNPs Kinship File?'),
-      '#options' => [
-        'Yes' => t('Yes'),
-        'No' => t('No'),
-      ],
-      '#default_value' => $upload_snp_kinship,
-    ];
-  }
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Genotyping Type.
   // Field was relocated (v.2).
   // ['files'] -> [$snps_fieldset].
@@ -393,6 +360,22 @@ function tpps_genotype_subform(array $form_bus) {
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  if (tpps_is_genotype_data_type($form_state)) {
+    $fields[$snps_fieldset]['upload_snp_association'] = [
+      '#type' => 'select',
+      '#title' => t('Would you like to upload a SNP association file?'),
+      '#options' => [
+        0 => t('- Select -'),
+        'Yes' => t('Yes'),
+        'No' => t('No'),
+      ],
+      '#default_value' => tpps_get_ajax_value(
+        $form_state,
+        [$organism_name, 'genotype', $snps_fieldset, 'upload_snp_association'],
+        'Yes'
+      ),
+    ];
+  }
   // SNP Association File.
   $file_field_name = 'snps-association';
   $title = t('SNP Association File');
@@ -501,7 +484,25 @@ function tpps_genotype_subform(array $form_bus) {
     ],
   ];
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Would you like to upload a SNPs Population Structure file?
+  // New field in v2.
+  if (tpps_is_genotype_data_type($form_state)) {
+    $fields[$snps_fieldset]['upload_snp_population'] = [
+      '#type' => 'select',
+      '#title' => t('Would you like to upload a SNPs Population Structure file?'),
+      '#options' => [
+        0 => t('- Select -'),
+        'Yes' => t('Yes'),
+        'No' => t('No'),
+      ],
+      '#default_value' => tpps_get_ajax_value(
+        $form_state,
+        [$organism_name, 'genotype', $snps_fieldset, 'upload_snp_population'],
+        'Yes'
+      ),
+    ];
+  }
   // SNPs Population Structure File.
   $file_field_name = 'snps-pop-struct';
   $title = t('SNPs Population Structure File');
@@ -519,11 +520,29 @@ function tpps_genotype_subform(array $form_bus) {
     'states' => [
       'visible' => [
         ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
-          . '][upload_snp_association]"]' => ['value' => 'Yes'],
+          . '][upload_snp_population]"]' => ['value' => 'Yes'],
       ],
     ],
   ]);
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Would you like to upload a SNPs Kinship File?
+  // Relocated in v2. ['genotype', 'files'] -> ['genotype', $snps_fieldset].
+  if (tpps_is_genotype_data_type($form_state)) {
+    $fields[$snps_fieldset]['upload_snp_kinship'] = [
+      '#type' => 'select',
+      '#title' => t('Would you like to upload a SNPs Kinship File?'),
+      '#options' => [
+        0 => t('- Select -'),
+        'Yes' => t('Yes'),
+        'No' => t('No'),
+      ],
+      '#default_value' => tpps_get_ajax_value($form_state,
+        [$organism_name, 'genotype', $snps_fieldset, 'upload_snp_kinship'],
+        'Yes'
+      ),
+    ];
+  }
   // SNPs Kinship File.
   $title = t('SNPs Kinship File');
   $file_field_name = 'snps-kinship';
