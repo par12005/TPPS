@@ -1148,3 +1148,17 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   ];
   return $form;
 }
+
+/**
+ * Gets list of Submission Statuses for dropdown form elements.
+ *
+ * @return array
+ *   Returns list of statuses where keys are machine status names and
+ *   values are human-readable and localized names of statuses.
+ */
+function tpps_form_get_submission_status_list() {
+  foreach (Submission::getStatusList() as $item) {
+    $output[$item] = t($item);
+  }
+  return $output;
+}

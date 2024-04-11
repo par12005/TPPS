@@ -4,14 +4,17 @@
  * @file
  * TPPS Submission Import Form and related functions.
  *
- * @TODO Minor. There is no ability to specify accession. Only next one could
- * be used or existing one overritten.
- * @TODO Minor. Review function tpps_form_state_info() which could be used
- * to reduce size of the SIA.
+ * @TODO Minor. Implement ability to set accession number. Currently there is
+ * no ability to specify accession. Only next one could be used
+ * or existing one overritten.
+ * @TODO Minor. Set 'Approved' status and do necessary changes.
+ * Just setting 'Approved' status don't allow to run Tripal Job just
+ * after import. Required more work with code.
  */
 
 module_load_include('inc', 'tpps', 'pages/submission/list');
 module_load_include('inc', 'tpps', 'includes/imported_studies_list');
+define('TPPS_DO_NOT_CHANGE_STATUS', 'Do not change');
 
 /**
  * TPPS Submission Import Form.
@@ -23,7 +26,8 @@ function tpps_submission_import_form(array $form, array &$form_state, $accession
 
   if ($accession) {
     // @TODO Minor. Check if accession already in use.
-    drupal_set_message(t('WARNING: <br />Existing study @accession will be overwriten.',
+    drupal_set_message(t('WARNING: <br />'
+      . 'If study @accession exists it  will be overwriten.',
       ['@accession' => $accession]), 'warning'
     );
     $form['tpps_submission_import_notice'] = [
@@ -69,17 +73,12 @@ function tpps_submission_import_form(array $form, array &$form_state, $accession
   $form['tpps_submission_import_status'] = [
     '#type' => 'select',
     '#title' => t('Status after import'),
-    '#options' => [
-      'Do not change' => t('Do not change'),
-      'Pending Approval' => t('Pending Approval'),
-      'Incomplete' => t('Incomplete'),
-      // Just setting 'Approved' status don't allow to run Tripal Job just
-      // after import. Required more work with code.
-      'Approved' => t('Approved'),
-      'Submission Job Running' => t('Submission Job Running'),
-    ],
-    '#default_value' => $form_state['input']
-    ['tpps_submission_import_status'] ?? 'Do not change',
+    '#options' => array_merge(
+      [TPPS_DO_NOT_CHANGE_STATUS => t(TPPS_DO_NOT_CHANGE_STATUS)],
+      tpps_form_get_submission_status_list()
+    ),
+    '#default_value' => $form_state['input']['tpps_submission_import_status']
+    ?? TPPS_DO_NOT_CHANGE_STATUS,
     '#description' => t('Default is "Approved" which allows to run Tripal job just after import.'),
   ];
   $form['#validate'][] = 'tpps_submission_import_form_validate';
@@ -111,14 +110,12 @@ function tpps_submission_import_form_validate(array &$form, array &$form_state) 
   // Submission Status field is required.
   if (
     empty($values['tpps_submission_import_status'])
-    || !in_array($values['tpps_submission_import_status'],
-      [
-        'Do not change',
-        'Pending Approval',
-        'Incomplete',
-        'Approved',
-        'Submission Job Running',
-      ]
+    || (
+      $values['tpps_submission_import_status'] != TPPS_DO_NOT_CHANGE_STATUS
+      && !in_array(
+        $values['tpps_submission_import_status'],
+        Submission::getStatusList()
+      )
     )
   ) {
     form_set_error('tpps_submission_import_status', t('Submission status is wrong.'));
@@ -138,7 +135,10 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   $upgrade_version = $values['tpps_submission_import_upgrade_version'] ?? TRUE;
   // @TODO Add to import form as a checkbox.
   $submit_form = $values['tpps_submission_import_submit_form'] ?? FALSE;
-  $submission_new_status = $values['tpps_submission_import_status'] ?? 'Do not change';
+  $submission_new_status = $values['tpps_submission_import_status']
+    ?? TPPS_DO_NOT_CHANGE_STATUS;
+  dpm(
+    $submission_new_status);
 
   // Get local accession.
   if ($values['tpps_submission_import_accession'] == 'new') {
@@ -202,8 +202,6 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   $submission->state['saved_values']['tpps_submission_import']['original_accession']
     = $submission->accession;
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Add record to DB table. Status will be 'Incomplete'.
-  // @TODO Create earlier. or better use save().
   $submission->create($submission->state, $user->uid);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -212,11 +210,12 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   // but this status requires a lot of extra work to run Tripal job so
   // better to have 'Pending Approval' status or maybe even 'Approved'
   //
-  if ($submission_new_status != 'Do not change') {
-    $submission->state['status'] = $submission_new_status;
+  if (in_array($submission_new_status, Submission::getStatusList())) {
+    $submission->status = $submission_new_status;
   }
   $submission->info['status'] = $submission->state['values']['status']
-    = $submission->state['saved_values']['status'] = $submission->state['status'];
+    = $submission->state['saved_values']['status'] = $submission->state['status']
+      = $submission->status;
 
   // Update a list of imported studies.
   tpps_imported_studies_list_add_item($accession, $submission->accession);

@@ -6,6 +6,8 @@
  *
  * @todo
  * 1. Add submission's tag code from include/submission.inc
+ * @TODO Minor. Review function tpps_form_state_info() which could be used
+ * to reduce size of the sharedState.
  *
  * Concepts:
  * 1. Do not use watchdog()/tpps_message()/dpm()/drupal_set_message(). Use exceptions.
@@ -201,6 +203,44 @@ class Submission {
   }
 
   /**
+   * Setter for $status.
+   *
+   * @param string $status
+   *   Submission's status. See Submission::getStatusList().
+   */
+  public function setStatus($status) {
+    if (in_array($status, $this->getStatusList())) {
+      $this->status = $status;
+      $this->info['status'] = $status;
+      // $state.
+      $this->state['status'] = $status;
+      $this->state['values']['status'] = $status;
+      $this->state['saved_values']['status'] = $status;
+      // $sharedState.
+      $this->sharedState['status'] = $status;
+      $this->sharedState['values']['status'] = $status;
+      $this->sharedState['saved_values']['status'] = $status;
+    }
+  }
+
+  /**
+   * Gets list of Submission Statuses.
+   *
+   * To just get a list: Submission::getStatusList().
+   *
+   * @return array
+   *   Returns machine names of Submission statuses.
+   */
+  public static function getStatusList() {
+    return [
+      'Pending Approval',
+      'Incomplete',
+      'Approved',
+      'Submission Job Running',
+    ];
+  }
+
+  /**
    * Get Submission's state.
    *
    * Will be called any type $submission->state requested.
@@ -256,10 +296,11 @@ class Submission {
     $this->state['updated'] = $this->sharedState['updated'] = time();
 
     // Prepare data for query.
-    $fields = [];
-    $fields['status'] = ($this->info['status'] ?? 'Incomplete');
-    $fields['submission_state'] = serialize($this->state ?? []);
-    $fields['shared_state'] = serialize($this->sharedState ?? []);
+    $fields = [
+      'status' => $this->status ?? 'Incomplete',
+      'submission_state' => serialize($this->state ?? []),
+      'shared_state' => serialize($this->sharedState ?? []),
+    ];
 
     db_update('tpps_submission')
       ->fields($fields)
@@ -334,6 +375,8 @@ class Submission {
   /**
    * Create new record in database.
    *
+   * Will populate $state and $sharedState.
+   *
    * @param array $state
    *   Submission State array.
    * @param int $uid
@@ -346,7 +389,7 @@ class Submission {
     $this->accession = $this->state['accession'];
     $fields = [
       'uid' => $uid ?? $user->uid,
-      'status' => 'Incomplete',
+      'status' => $this->state['status'] ?? 'Incomplete',
       'accession' => $this->state['accession'],
       'dbxref_id' => $this->state['dbxref_id'],
       'submission_state' => serialize($this->state),
@@ -428,8 +471,8 @@ class Submission {
    * @return int
    *   Return accession number.
    */
-  public function &getAccessionNumber() {
-    return str_replace('TGDR', '', ($this->accession ?? NULL));
+  public function getAccessionNumber() {
+    return str_replace('TGDR', '', ($this->accession));
   }
 
   /**
