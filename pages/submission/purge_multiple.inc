@@ -14,11 +14,13 @@ function tpps_submission_purge_multiple_get_range() {
   $output = [
     'accession_list' => tpps_submission_get_accession_list(),
     // Note: without 'TGDR' - only number.
+    // Value from DB autoincrement.
     'latest_accession' => tpps_init_project_get_next_accession() - 1,
   ];
   // Note: without 'TGDR' - only number.
+  // Value from the list of accession.
   $output['last_real_accession'] = str_replace('TGDR', '',
-    array_keys($output['accession_list'])[0]) + 1;
+    array_keys($output['accession_list'])[0]);
   return $output;
 }
 
@@ -113,10 +115,10 @@ function tpps_submission_purge_multiple_form_submit(array $form, array &$form_st
     array_values($form_state['input']['tpps_submission_accession'] ?? [])
   );
   if (!empty($accession_list)) {
+    $submission = new Submission();
     foreach ($accession_list as $accession) {
       if ($accession == 'all_broken') {
         $data = tpps_submission_purge_multiple_get_range();
-        $submission = new Submission();
         for ($i = $data['latest_accession']; $i >= $data['last_real_accession']; $i--) {
           $submission->accession = 'TGDR' . $i;
           $submission->purge();
@@ -126,7 +128,7 @@ function tpps_submission_purge_multiple_form_submit(array $form, array &$form_st
         }
       }
       else {
-        $submission = new Submission($accession);
+        $submission->accession = $accession;
         $submission->purge();
         drupal_set_message(
           t("Submission @accession and it's files was removed and cache was cleared.",
