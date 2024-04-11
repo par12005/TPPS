@@ -6327,11 +6327,20 @@ function tpps_generate_genotype_materialized_view($project_id) {
     return;
   }
   $view_name = 'chado.genotypes_' . $project_id;
+  $view_name_without_schema = 'genotypes_' . $project_id;
 
   // Added to fix previous queries that used stock_genotype which we don't
   // want to keep using.
   echo "Attempting to drop materialized view (if exist): " . $view_name . "\n";
-  chado_query("DROP MATERIALIZED VIEW IF EXISTS " . $view_name . ";");
+  // Check first to see if it is a materialized view
+  $mat_view_results = chado_query("select count(*) as c1 from pg_matviews where matviewname = :view_name;", [
+    ':view_name' => $view_name_without_schema
+  ]);
+  $mat_view_count = $mat_view_results->fetchObject()->c1;
+  // If count is more than 0, then the materialized view exists, so drop it
+  if ($mat_view_count > 0) {
+    chado_query("DROP MATERIALIZED VIEW IF EXISTS " . $view_name . ";");
+  }
 
   // V3 - Emily decided to use tables (3/20/2024)
   $table_name = $view_name; // the table names will be the same as what the view names used to be
