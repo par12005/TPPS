@@ -136,8 +136,6 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   $submit_form = $values['tpps_submission_import_submit_form'] ?? FALSE;
   $submission_new_status = $values['tpps_submission_import_status']
     ?? TPPS_DO_NOT_CHANGE_STATUS;
-  dpm(
-    $submission_new_status);
 
   // Get local accession.
   if ($values['tpps_submission_import_accession'] == 'new') {

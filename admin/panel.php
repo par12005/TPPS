@@ -1081,6 +1081,8 @@ function tpps_admin_panel_validate($form, &$form_state) {
       );
     }
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Button 'Approve'.
     if ($form_state['triggering_element']['#name'] == 'approve') {
       $accession = $form_state['values']['accession'];
       $submission = new Submission($accession);
@@ -1112,6 +1114,7 @@ function tpps_admin_panel_validate($form, &$form_state) {
         }
       }
     }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
     if ($form_state['triggering_element']['#name'] == 'save_alternative_accessions') {
       $alt_acc = explode(',', $form_state['values']['alternative_accessions']);
@@ -1493,82 +1496,53 @@ function tpps_admin_panel_submit($form, &$form_state) {
     case 'approve':
       module_load_include('php', 'tpps', 'forms/submit/submit_all');
       global $user;
-      $submission->sharedState['submitting_uid']
-        = $submission->state['submitting_uid']
-          = $user->uid;
       $submission->status = TPPS_SUBMISSION_STATUS_APPROVED;
 
       // Email notification.
       $params['subject'] = "$type_label Submission Approved: "
-        . "{$submission->state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
-      $params['accession'] = $submission->state['accession'];
+        . $submission->get(['saved_values', TPPS_PAGE_1, 'publication', 'title']);
+      $params['accession'] = $accession;
       drupal_set_message(t('Submission Approved! Message has been sent to user.'));
       $lang = user_preferred_language(user_load_by_name($to));
       drupal_mail('tpps', 'user_approved', $to, $lang, $params, $from, TRUE);
 
-      $submission->sharedState['revised_files']
-        = $submission->state['revised_files']
-          = $submission->state['revised_files'] ?? [];
+      // Can't move to Submission::setStatus because it uses $form_state of
+      // just submitted form (not Submission).
+      $revised_files = $submission->state['revised_files'] ?? [];
+      $submission->set(['revised_files'], $revised_files, TRUE);
       foreach ($submission->state['file_info'] as $files) {
         foreach ($files as $fid => $file_type) {
           if (!empty($form_state['values']["edit_file_{$fid}_check"])) {
-            $submission->shardState['revised_files'][$fid]
-              = $submission->state['revised_files'][$fid]
-                = $form_state['values']["edit_file_{$fid}_file"];
+            $submission->set(
+              ['revised_files', $fid],
+              $form_state['values']["edit_file_{$fid}_file"], TRUE
+            );
           }
         }
       }
       if (!empty($form_state['values']['study_location'])) {
-        $submission->sharedState['saved_values'][TPPS_PAGE_3]['study_location']['type']
-          = $submission->state['saved_values'][TPPS_PAGE_3]['study_location']['type']
-            = $form_state['values']['study_location']['type'];
-        for ($i = 1; $i <= $form_state['values']['study_location']['locations']['number']; $i++) {
-          $submission->sharedState['saved_values'][TPPS_PAGE_3]['study_location']['locations'][$i]
-            = $submission->state['saved_values'][TPPS_PAGE_3]['study_location']['locations'][$i]
-              = $form_state['values']['study_location']['locations'][$i];
+        $submission->set(
+          ['saved_values', TPPS_PAGE_3, 'study_location', 'type'],
+          $form_state['values']['study_location']['type'], TRUE
+        );
+        $locations_number = $form_state['values']['study_location']['locations']['number'];
+        for ($i = 1; $i <= $locations_number; $i++) {
+          $submission->set(
+            ['saved_values', TPPS_PAGE_3, 'study_location', 'locations', $i],
+            $form_state['values']['study_location']['locations'][$i], TRUE
+          );
         }
       }
 
-      $includes = [];
-      $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
-      $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
-      $args = [$accession];
-      if ($submission->state['saved_values']['summarypage']['release']) {
-        $jid = tripal_add_job("$type_label Record Submission - $accession",
-          'tpps', 'tpps_submit_all',
-          $args, $submission->state['submitting_uid'], 10, $includes, TRUE
-        );
-        $submission->sharedState['job_id']
-          = $submission->state['job_id']
-            = $jid;
-      }
-      else {
-        $date = $submission->state['saved_values']['summarypage']['release-date'];
-        $time = strtotime("{$date['year']}-{$date['month']}-{$date['day']}");
-        if (time() > $time) {
-          $jid = tripal_add_job("$type_label Record Submission - $accession",
-            'tpps', 'tpps_submit_all',
-            $args, $submission->state['submitting_uid'], 10, $includes, TRUE
-          );
-          $submission->sharedState['job_id']
-            = $submission->state['job_id']
-              = $jid;
-        }
-        else {
-          $delayed_submissions = variable_get('tpps_delayed_submissions', []);
-          $delayed_submissions[$accession] = $accession;
-          variable_set('tpps_delayed_submissions', $delayed_submissions);
-          $submission->state['status'] = 'Approved - Delayed Submission Release';
-        }
-      }
-      $submission->save($submission->state['status']);
+      $submission->save();
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'change_date':
+      $submission->state['saved_values']['summarypage']['release-date']
+        = $form_state['values']['date'];
       $submission->sharedState['saved_values']['summarypage']['release-date']
-        = $submission->state['saved_values']['summarypage']['release-date']
-          = $form_state['values']['date'];
+        = $form_state['values']['date'];
       $submission->save();
       break;
 
@@ -1581,9 +1555,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
     case 'change_study_view_role':
       $view_role = $form_state['values']['CHANGE_STUDY_VIEW_ROLE'];
       if ($view_role > 0) {
-        $submission->sharedState['study_view_role']
-          = $submission->state['study_view_role']
-            = $view_role;
+        $submission->set(['study_view_role'], $view_role, TRUE);
         drupal_set_message(t(
           'Study view role has been set to @role',
           ['@role' => user_roles(TRUE)[$view_role]]
@@ -1605,9 +1577,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
         tpps_submission_add_alternative_accession(
           $submission->state, explode(',', $new_alt_acc)
         );
-        $submission->sharedState['alternative_accessions']
-          = $submission->state['alternative_accessions']
-            = $new_alt_acc;
+        $submission->set(['alternative_accessions'], $new_alt_acc, TRUE);
         $submission->save();
       }
       break;

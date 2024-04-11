@@ -15,6 +15,12 @@
  * 3. Setting of the sub-element of property won't call getter-method.
  */
 
+
+define(
+  'TPPS_SUBMISSION_STATUS_APPROVED_DELAYED',
+  'Approved - Delayed Submission Release'
+);
+
 /**
  * Manages TPPS Submission.
  *
@@ -184,6 +190,7 @@ class Submission {
     }
   }
 
+
   /**
    * Setter for $accession.
    *
@@ -209,17 +216,75 @@ class Submission {
    *   Submission's status. See Submission::getStatusList().
    */
   public function setStatus($status) {
-    if (in_array($status, $this->getStatusList())) {
-      $this->status = $status;
-      $this->info['status'] = $status;
-      // $state.
-      $this->state['status'] = $status;
-      $this->state['values']['status'] = $status;
-      $this->state['saved_values']['status'] = $status;
-      // $sharedState.
-      $this->sharedState['status'] = $status;
-      $this->sharedState['values']['status'] = $status;
-      $this->sharedState['saved_values']['status'] = $status;
+    if (
+      !in_array($status, $this->getStatusList())
+      && $status != TPPS_SUBMISSION_STATUS_APPROVED_DELAYED
+    ) {
+      return;
+    }
+    $this->status = $status;
+    $this->info['status'] = $status;
+    // $state.
+    $this->state['status'] = $status;
+    $this->state['values']['status'] = $status;
+    $this->state['saved_values']['status'] = $status;
+    // $sharedState.
+    $this->sharedState['status'] = $status;
+    $this->sharedState['values']['status'] = $status;
+    $this->sharedState['saved_values']['status'] = $status;
+    if ($status == TPPS_SUBMISSION_STATUS_APPROVED) {
+      module_load_include('php', 'tpps', 'forms/submit/submit_all');
+      global $user;
+      $this->set(['submitting_uid'], $user->uid, TRUE);
+
+      // Prepare data for Tripal Job.
+      $includes = [
+        module_load_include('php', 'tpps', 'forms/submit/submit_all'),
+        module_load_include('inc', 'tpps', 'includes/file_parsing'),
+      ];
+      $args = [$this->accession];
+      $type = $this->state['tpps_type'] ?? 'tpps';
+      $type_label = ($type == 'tpps') ? t('TPPS') : t('TPPSC');
+
+// @TODO Avoid code duplication.
+
+      if ($this->state['saved_values']['summarypage']['release']) {
+
+        $jid = tripal_add_job("$type_label Record Submission - $this->accession",
+          'tpps', 'tpps_submit_all',
+          $args, $this->state['submitting_uid'], 10, $includes, TRUE
+        );
+        $this->set(['job_id'], $jid, TRUE);
+      }
+      else {
+        $date = $this->state['saved_values']['summarypage']['release-date'];
+        $time = strtotime("{$date['year']}-{$date['month']}-{$date['day']}");
+        if (time() > $time) {
+
+          $jid = tripal_add_job("$type_label Record Submission - $this->accession",
+            'tpps', 'tpps_submit_all',
+            $args, $this->state['submitting_uid'], 10, $includes, TRUE
+          );
+          $this->set(['job_id'], $jid, TRUE);
+
+        }
+        else {
+          $this->delayRelease();
+        }
+      }
+    }
+  }
+
+  /**
+   * Delays Submission's release and changes status.
+   */
+  public function delayRelease() {
+    if (!empty($this->accession)) {
+      $var_name = 'tpps_delayed_submissions';
+      $list = variable_get($var_name, []);
+      $list[$this->accession] = $this->accession;
+      variable_set($var_name, $list);
+      $this->status = TPPS_SUBMISSION_STATUS_APPROVED_DELAYED;
     }
   }
 
@@ -232,6 +297,10 @@ class Submission {
    *   Returns machine names of Submission statuses.
    */
   public static function getStatusList() {
+    // Special extra status:
+    // TPPS_SUBMISSION_STATUS_APPROVED_DELAYED
+    // ('Approved - Delayed Submission Release')
+    // We don't use it because it's rarely used.
     return [
       TPPS_SUBMISSION_STATUS_INCOMPLETE,
       TPPS_SUBMISSION_STATUS_PENDING_APPROVAL,
@@ -295,15 +364,12 @@ class Submission {
     // processing could take long time from script call.
     $this->state['updated'] = $this->sharedState['updated'] = time();
 
-    // Prepare data for query.
-    $fields = [
-      'status' => $this->status ?? TPPS_SUBMISSION_STATUS_INCOMPLETE,
-      'submission_state' => serialize($this->state ?? []),
-      'shared_state' => serialize($this->sharedState ?? []),
-    ];
-
     db_update('tpps_submission')
-      ->fields($fields)
+      ->fields([
+        'status' => $this->status ?? TPPS_SUBMISSION_STATUS_INCOMPLETE,
+        'submission_state' => serialize($this->state ?? []),
+        'shared_state' => serialize($this->sharedState ?? []),
+      ])
       ->condition('accession', $this->accession)
       ->execute();
   }
@@ -590,17 +656,43 @@ class Submission {
     $this->getInfo($reset = TRUE);
   }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
   /**
-   * Sets State item value.
+   * Sets value of the sub-element of $state (and $sharedState if exists).
    *
    * @param array $parents
    *   Path to the element including element name.
+   *   Non empty list of the parent elements on path to the element including
+   *   element's name. If $parents are empty [] then use:
+   *   Submision::setState or $submission->state = $state.
    * @param mixed $value
    *   Value to be set.
    */
-  public function set(array $parents, $value) {
-    // @todo Update cache if it's in use.
-    drupal_array_set_nested_value($this->state, ($parents ?? []), $value);
+  public function set(array $parents, $value, $force = FALSE) {
+    drupal_array_set_nested_value($this->state, $parents, $value);
+    // Update sharedState only if this value was there before.
+    $key_exists = FALSE;
+    drupal_array_get_nested_value($this->sharedState, $parents, $key_exists);
+    if ($key_exists || $force) {
+      drupal_array_set_nested_value($this->sharedState, $parents, $value);
+    }
+  }
+
+  /**
+   * Unsets the sub-element of $state (and $sharedState).
+   */
+  public function unset(array $parents) {
+
+    // Not yet implemented.
+    return;
+    // @TODO See admin/panel.php:1565.
+    if (empty(drupal_array_get_nested_value($array, $path))) {
+      drupal_array_set_nested_value($array, $path, NULL);
+    }
+    // Last element is always a field name.
+    $result['field_name'] = end($path);
+    array_pop($path);
   }
 
   /**
@@ -608,10 +700,23 @@ class Submission {
    *
    * @param array $parents
    *   Path to the element including element name.
+   *
+   * @return mixed
+   *   Returns reference to the sub-element of the $state.
    */
-  public function get(array $parents = []) {
-    return drupal_array_get_nested_value($this->state, $parents);
+  public function &get(array $parents = []) {
+    $key_exists = FALSE;
+    $element = drupal_array_get_nested_value($this->state, $parents, $key_exists);
+    if ($key_exists) {
+      return $element;
+    }
+    else {
+      $null = NULL;
+      return $null;
+    }
   }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   /**
    * Gets Import Metadata.
