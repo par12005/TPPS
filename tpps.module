@@ -42,6 +42,11 @@ define('TPPS_COLUMN_SOURCE_PLANT_IDENTIFIER', 11);
 define('TPPS_COLUMN_POPULATION_GROUP', 12);
 define('TPPS_COLUMN_CLONE_NUMBER', 13);
 
+// Submission Statuses.
+define('TPPS_SUBMISSION_STATUS_INCOMPLETE', 'Incomplete');
+define('TPPS_SUBMISSION_STATUS_PENDING_APPROVAL', 'Pending Approval');
+define('TPPS_SUBMISSION_STATUS_APPROVED', 'Approved');
+define('TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING', 'Submission Job Running');
 
 module_load_include('inc', 'tpps', 'includes/common');
 
@@ -502,7 +507,7 @@ function tpps_access() {
       }
       else {
         // TPPS Form.
-        if ($submission->info['status'] == "Incomplete"
+        if ($submission->info['status'] == TPPS_SUBMISSION_STATUS_INCOMPLETE
           && $submission->info['uid'] == $user->uid
         ) {
           return TRUE;
@@ -525,7 +530,7 @@ function tpps_access() {
       // Check if user submitted this study.
       $submission = new Submission($accession);
       return (bool) (
-        $submission->info['status'] != "Incomplete"
+        $submission->info['status'] != TPPS_SUBMISSION_STATUS_INCOMPLETE
         && $submission->info['uid'] == $user->uid
       );
 
@@ -534,7 +539,7 @@ function tpps_access() {
       $accession = $args[1] ?? NULL;
       $submission = new Submission($accession);
       return (bool) (
-        $submission->info['status'] == "Incomplete"
+        $submission->info['status'] == TPPS_SUBMISSION_STATUS_INCOMPLETE
         && $user->uid == $submission->info['uid']
       );
 
@@ -1288,7 +1293,7 @@ function tpps_main_submit($form, &$form_state) {
   $submission->save();
 
   if ($submission->isTppsc()) {
-    $form_state['status'] = 'Incomplete';
+    $form_state['status'] = TPPS_SUBMISSION_STATUS_INCOMPLETE;
     // Use old TGDR.
     if ($form_state['stage'] == 'frontpage' && $values['use_old_tgdr']) {
       $form_state['dbxref_id'] = $form_state['values']['old_tgdr'];
@@ -1361,12 +1366,12 @@ function tpps_main_submit($form, &$form_state) {
         $form_state['stage'] = TPPS_PAGE_4;
       }
       else {
-        $submission->state['status'] = 'Pending Approval';
+        $submission->state['status'] = TPPS_SUBMISSION_STATUS_PENDING_APPROVAL;
         $submission->state['completed'] = time();
         tpps_submission_file_set_status($submission->state, FILE_STATUS_PERMANENT);
         // Save Submission Info.
         $submission->generateSharedState();
-        $submission->save('Pending Approval');
+        $submission->save(TPPS_SUBMISSION_STATUS_PENDING_APPROVAL);
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         tpps_submit_email($form_state);
         drupal_goto('completed-submission/' . $submission->accession);

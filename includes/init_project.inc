@@ -48,7 +48,7 @@ function tpps_init_project(array &$form_state, $accession = NULL) {
   $form_state['created'] = time();
   $form_state['accession'] = $accession;
   $form_state['saved_values']['frontpage']['accession'] = $accession;
-  $form_state['status'] = 'Incomplete';
+  $form_state['status'] = TPPS_SUBMISSION_STATUS_INCOMPLETE;
   return $form_state['dbxref_id'];
 }
 

@@ -139,12 +139,12 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
 
   // @TODO First update accession in 'tpps_submission' then:
   // $submission->accession = $new_accession;
-  // $submission->status = 'Approved';
+  // $submission->status = TPPS_SUBMISSION_STATUS_APPROVED;
   // $submission->save();
   $state['updated'] = time();
   db_update('tpps_submission')
     ->fields([
-      'status' => 'Approved',
+      'status' => TPPS_SUBMISSION_STATUS_APPROVED,
       // Note: REQUEST_TIME couldn't be used because this function also
       // called from submit_all.php and time() != REQUEST_TIME.
       'submission_state' => serialize($submission->state),

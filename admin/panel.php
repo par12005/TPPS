@@ -130,7 +130,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     }
   }
 
-  if ($submission->info['status'] == "Pending Approval") {
+  if ($submission->info['status'] == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
     $options['files'] = [
       'revision_destination' => TRUE,
     ];
@@ -163,7 +163,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   $display .= tpps_table_display($submission->sharedState, $options);
 
   if (
-    $submission->info['status'] == 'Pending Approval'
+    $submission->info['status'] == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL
     && preg_match('/P/', $submission->sharedState['saved_values'][TPPS_PAGE_2]['data_type'])
   ) {
     $new_cvterms = array();
@@ -342,7 +342,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Reject/Approve and comments.
-  if ($submission->info['status'] == "Pending Approval") {
+  if ($submission->info['status'] == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
 
     if ($page2_values['study_type'] != 1) {
       module_load_include('php', 'tpps', 'forms/build/page_3_helper');
@@ -440,7 +440,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#prefix' => '<div id="tpps-admin-comments">',
     '#suffix' => '</div>',
   ];
-  if ($submission->info['status'] == "Pending Approval") {
+  if ($submission->info['status'] == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
     $form['APPROVE'] = [
       '#type' => 'submit',
       '#value' => t('Approve'),
@@ -453,7 +453,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     ];
   }
 
-  if ($submission->info['status'] != "Pending Approval") {
+  if ($submission->info['status'] != TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
     $form['SAVE_COMMENTS'] = [
       '#type' => 'button',
       '#value' => t('Save Comments'),
@@ -473,7 +473,10 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   $date = $submission->sharedState['saved_values']['summarypage']['release-date'] ?? NULL;
   if (!empty($date)) {
     $datestr = "{$date['day']}-{$date['month']}-{$date['year']}";
-    if ($submission->info['status'] != 'Approved' || strtotime($datestr) > time()) {
+    if (
+      $submission->info['status'] != TPPS_SUBMISSION_STATUS_APPROVED
+      || strtotime($datestr) > time()
+    ) {
       tpps_admin_panel_add_section($form, $section);
       $form[$section['key']]['date'] = [
         '#type' => 'date',
@@ -490,7 +493,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     'key' => 'save_alternative_accessions',
     'title' => t('Save Alternative Accessions'),
   ];
-  if ($submission->info['status'] == "Approved") {
+  if ($submission->info['status'] == TPPS_SUBMISSION_STATUS_APPROVED) {
     tpps_admin_panel_add_section($form, $section);
     $form[$section['key']]['alternative_accessions'] = [
       '#type' => 'textfield',
@@ -609,13 +612,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   $form[$section['key']]['state-status'] = [
     '#type' => 'select',
     '#title' => $section['title'],
-    // @TODO Convert statuses into constants and use function to get list.
-    '#options' => [
-      'Incomplete' => t('Incomplete'),
-      'Pending Approval' => t('Pending Approval'),
-      'Approved' => t('Approved'),
-      'Submission Job Running' => t('Submission Job Running'),
-    ],
+    '#options' => tpps_form_get_submission_status_list(),
     '#default_value' => $submission->info['status'],
     '#description' => t('Warning: This feature is experimental and may '
       . 'cause unforseen issues. Please do not change the status of this '
@@ -746,7 +743,7 @@ function tpps_admin_panel_top(array &$form) {
     $actions = theme('item_list', ['items' => $action_list]);
     if ($submission->doesExist()) {
       switch ($submission->status) {
-        case 'Pending Approval':
+        case TPPS_SUBMISSION_STATUS_PENDING_APPROVAL:
           $row = [
             $view_link,
             $submitting_user,
@@ -759,11 +756,11 @@ function tpps_admin_panel_top(array &$form) {
           $output['pending'][(int) substr($accession, 4)] = $row;
           break;
 
-        case 'Approved':
+        case TPPS_SUBMISSION_STATUS_APPROVED:
           $status_label = !empty($submission->state['loaded'])
             ? "Approved - load completed on "
               . date("F j, Y, \a\\t g:i a", $submission->state['loaded'])
-            : "Approved";
+            : TPPS_SUBMISSION_STATUS_APPROVED;
           if (!empty($submission->state['loaded'])) {
             $days_since_load = (time() - $submission->state['loaded']) / (60 * 60 * 24);
             $unpublished_threshold = variable_get('tpps_unpublished_days_threshold', 180);
@@ -825,12 +822,12 @@ function tpps_admin_panel_top(array &$form) {
             }
           }
 
-        case 'Submission Job Running':
+        case TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING:
           $status_label = $status_label ?? (
             !empty($submission->state['approved'])
             ? ("Submission Job Running - job started on "
               . date("F j, Y, \a\t g:i a", $submission->state['approved']))
-            : "Submission Job Running"
+            : TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING
           );
 
         case 'Approved - Delayed Submission Release':
@@ -1483,7 +1480,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'reject':
-      $submission->save('Incomplete');
+      $submission->save(TPPS_SUBMISSION_STATUS_INCOMPLETE);
       // Email notification.
       $lang = user_preferred_language($owner);
       drupal_mail('tpps', 'user_rejected', $to, $lang, $params, $from, TRUE);
@@ -1499,9 +1496,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       $submission->sharedState['submitting_uid']
         = $submission->state['submitting_uid']
           = $user->uid;
-      $submission->sharedState['status']
-        = $submission->state['status']
-          = 'Approved';
+      $submission->status = TPPS_SUBMISSION_STATUS_APPROVED;
 
       // Email notification.
       $params['subject'] = "$type_label Submission Approved: "

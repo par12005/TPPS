@@ -12,9 +12,6 @@
 // Global variables.
 $tpps_job_logger = NULL;
 $tpps_job = NULL;
-// @TODO Move statuses to tpps.module and reuse in other code.
-define('TPPS_STATUS_PENDING_APPROVAL', 'Pending Approval');
-define('TPPS_STATUS_PENDING_APPROVED', 'Approved');
 
 /**
  * Creates a record for the project and calls the submission helper functions.
@@ -76,7 +73,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   }
 
   // Update 'updated' field with current time and 'status' field.
-  $submission->save('Submission Job Running');
+  $submission->save(TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING);
   $transaction = db_transaction();
   try {
 
@@ -151,7 +148,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     // Functions starting from tpps_submit_page_1() update $shared_state array
     // with new data so now we are going to update db record.
     $submission->sharedState['loaded'] = time();
-    $submission->save(TPPS_STATUS_PENDING_APPROVED);
+    $submission->save(TPPS_SUBMISSION_STATUS_APPROVED);
     tpps_log("[INFO] Complete!");
 
     fclose($tpps_job_logger['log_file_handle']);
@@ -161,7 +158,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     $transaction->rollback();
     // Restore status of study because processing failed.
     $submission = new Submission($accession);
-    $submission->save(TPPS_STATUS_PENDING_APPROVAL);
+    $submission->save(TPPS_SUBMISSION_STATUS_PENDING_APPROVAL);
 
     tpps_log('[ERROR] Job failed', [], TRIPAL_ERROR);
     tpps_log('[ERROR] Error message: @msg', ['@msg' => $e->getMessage()], TRIPAL_ERROR);

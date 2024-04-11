@@ -53,7 +53,7 @@ class SubmissionsTest extends TripalTestCase {
     $result = $query->fetchObject();
 
     // Verify submission status and uid.
-    $this->assertEquals('Incomplete', $result->status);
+    $this->assertEquals(TPPS_SUBMISSION_STATUS_INCOMPLETE, $result->status);
     $this->assertEquals($user->uid, $result->uid);
 
     // Verify created timestamp exists and is earlier than current time.
@@ -125,9 +125,9 @@ class SubmissionsTest extends TripalTestCase {
     $submisison->load();
     $this->assertGreaterThan($updated, $submission->state['updated']);
 
-    $submission->state['status'] = 'Approved';
+    $submission->state['status'] = TPPS_SUBMISSION_STATUS_APPROVED;
     $submission->save();
-    $this->assertEquals('Approved', $submission->status);
+    $this->assertEquals(TPPS_SUBMISSION_STATUS_APPROVED, $submission->status);
   }
 
   /**

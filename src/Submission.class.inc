@@ -233,10 +233,10 @@ class Submission {
    */
   public static function getStatusList() {
     return [
-      'Pending Approval',
-      'Incomplete',
-      'Approved',
-      'Submission Job Running',
+      TPPS_SUBMISSION_STATUS_INCOMPLETE,
+      TPPS_SUBMISSION_STATUS_PENDING_APPROVAL,
+      TPPS_SUBMISSION_STATUS_APPROVED,
+      TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING,
     ];
   }
 
@@ -297,7 +297,7 @@ class Submission {
 
     // Prepare data for query.
     $fields = [
-      'status' => $this->status ?? 'Incomplete',
+      'status' => $this->status ?? TPPS_SUBMISSION_STATUS_INCOMPLETE,
       'submission_state' => serialize($this->state ?? []),
       'shared_state' => serialize($this->sharedState ?? []),
     ];
@@ -389,7 +389,7 @@ class Submission {
     $this->accession = $this->state['accession'];
     $fields = [
       'uid' => $uid ?? $user->uid,
-      'status' => $this->state['status'] ?? 'Incomplete',
+      'status' => $this->state['status'] ?? TPPS_SUBMISSION_STATUS_INCOMPLETE,
       'accession' => $this->state['accession'],
       'dbxref_id' => $this->state['dbxref_id'],
       'submission_state' => serialize($this->state),
@@ -456,7 +456,7 @@ class Submission {
       $this->status = $this->info['status']
         ?? $this->state['status']
         ?? $this->sharedState['status']
-        ?? 'Incomplete';
+        ?? TPPS_SUBMISSION_STATUS_INCOMPLETE;
       return TRUE;
     }
     return FALSE;

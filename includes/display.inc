@@ -326,7 +326,10 @@ function tpps_tab_create($uid) {
   }
 
   $submission_list = tpps_load_submission_multiple(
-    ['status' => 'Incomplete', 'uid' => $user->uid]
+    [
+      'status' => TPPS_SUBMISSION_STATUS_INCOMPLETE,
+      'uid' => $user->uid,
+    ]
   );
 
   $rows = [];
@@ -400,7 +403,7 @@ function tpps_tab_create($uid) {
   $submission_list = [];
 
   $submission_list = tpps_load_submission_multiple([
-    'status' => ['Pending Approval', 'Approved'],
+    'status' => [TPPS_SUBMISSION_STATUS_PENDING_APPROVAL, TPPS_SUBMISSION_STATUS_APPROVED],
     'uid' => $user->uid,
   ]);
 
