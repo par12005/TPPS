@@ -74,11 +74,15 @@ function tpps_submission_purge_multiple_form(array $form, array &$form_state, $r
     }
     else {
       $range = explode('-', $range);
-      $range[0] = empty($range[0]) ? 0 : $range[0];
+      $range[0] = empty($range[0]) ? 0 : min($range[0], $max_accession_number);
       $range[1] = empty($range[1]) ? $max_accession_number : $range[1];
       sort($range);
     }
-    if (is_numeric($range[0] ?? NULL) && is_numeric($range[1] ?? NULL)) {
+    if (
+      $range[0] != $range[1]
+      && is_numeric($range[0] ?? NULL)
+      && is_numeric($range[1] ?? NULL)
+    ) {
       for ($i = $range[0]; $i <= $range[1]; $i++) {
         $default_value[] = 'TGDR' . $i;
       }
