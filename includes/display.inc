@@ -284,7 +284,7 @@ function tpps_completed_display($accession = NULL) {
   }
   if (
     $saved_values[TPPS_PAGE_1]['publication']['status'] != 'Published'
-    && $user->uid == $submission->info['uid']
+    && $submission->isCreator()
   ) {
     // @TODO Minor. Do we really need an absolute link here?
     $output .= l(t('Edit publication information'),

@@ -13,13 +13,56 @@
  * 1. Do not use watchdog()/tpps_message()/dpm()/drupal_set_message(). Use exceptions.
  * 2. Update internal properties and don't return data from methods.
  * 3. Setting of the sub-element of property won't call getter-method.
+ *
+ * To set/get sub-elements: $submission->set() and ->get().
+ *
+ *
+ * ----------------------------------------------------------------------------
+ * Properties of th object Submission.
+ *
+ * Each column in DB table 'tpps_submission' represented with object's property
+ * but names was shortened and camelCase used to meet PHP's Coding Standards.
+ *
+ * Mapping:
+ * +----------------+--------------------+
+ * | Object         | DB                 |
+ * +----------------+--------------------+
+ * | id             | tpps_submission_id |
+ * | uid            | uid                |
+ * | status         | status             |
+ * | accession      | accession          |
+ * | dbxrefId       | dbxref_id          |
+ * | state          | submission_state   |
+ * | shared_state   | shared_state       |
+ * +----------------+--------------------+
+ *
+ * Methods of the object Submission.
+ *
+ * ----------------------------------------------------------------------------
+ * Submision Common methods.
+ *
+ * create() - fills object's properties and creates record in DB. Status 'Incomplete'.
+ * save() - Sync object to DB.
+ * load() - Sync DB to object.
+ * delete() - remove from DB (old)
+ * purge() - remove study and files in DB (newer version).
+ *
+ * ----------------------------------------------------------------------------
+ * Submission's Status.
+ *
+ * To get: $submission->status;
+ * To set: $submission->status = 'Approved';
+ * Note: status is also stored in $state, $sharedState and those properties
+ * will also be updated and no need to update them manually.
+ *
+ * ----------------------------------------------------------------------------
+ * State's sub-elements methods.
+ *
+ * set() - sets value of sub-element of $state.
+ * get() - gets value of sub-element of $state.
+ * unset() - Unset's sub-element in $state. To get this change in $sharedState
+ *           just regenerate it.
  */
-
-
-define(
-  'TPPS_SUBMISSION_STATUS_APPROVED_DELAYED',
-  'Approved - Delayed Submission Release'
-);
 
 /**
  * Manages TPPS Submission.
@@ -37,10 +80,12 @@ define(
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
 class Submission {
+
   /**
    * Submission accession.
    *
    * Format: 'TGDRxxxx'.
+   * Stored in tpps_submission.accession as string.
    *
    * @var string
    */
@@ -48,6 +93,8 @@ class Submission {
 
   /**
    * Submission's State Array.
+   *
+   * Stored in tpps_submission.submission_state as serialized string.
    *
    * @var array
    */
@@ -58,19 +105,50 @@ class Submission {
    *
    * This state is a 1st version of Submission Form State but without some
    * useless (but huge) for processing items/
+   * Stored in tpps_submission.shared_state as serialized string.
    *
    * @var array
    */
   protected $sharedState = [];
 
   /**
-   * Submission's Information.
+   * Internal Submission Id.
    *
-   * Metadate store in table 'tpps_submission'.
+   * Seems not used so much but $accession is used a lot.
+   * Stored in tpps_submission.tpps_submission_id.
    *
-   * @var mixed
+   * @var int
    */
-  protected $info = [];
+  protected $id = 0;
+
+  /**
+   * Drupal User Id of the Submission creator.
+   *
+   * Stored in tpps_submission.uid.
+   *
+   * @var int
+   */
+  protected $uid = 0;
+
+  /**
+   * The dbxref_id from chado.dbxref.
+   *
+   * Stored in tpps_submission.dbxref_id.
+   *
+   * @var int
+   */
+  protected $dbxrefId = 0;
+
+  /**
+   * Submission status.
+   *
+   * Stored in public.tpps_submision.status as string.
+   * Note: status also stored in $state and $sharedState but no need to update
+   * them manually because method setStatus() does it.
+   *
+   * @var string
+   */
+  protected $status = '';
 
   /**
    * Should data be cached in 'tpps' cache bin?
@@ -78,18 +156,6 @@ class Submission {
    * @var bool
    */
   protected $useCache = FALSE;
-
-  /**
-   * Submission status.
-   *
-   * Places where submision's status is stored (and must be updated):
-   *   - public.tpps_submision.status
-   *   - public.tpps_submision.submission_state subitem 'status'.
-   *   - public.tpps_submision.shared_state subitem 'status'.
-   *
-   * @var string
-   */
-  protected $status;
 
   /**
    * Class constructor.
@@ -159,6 +225,71 @@ class Submission {
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // State's sub-elements.
+
+  /**
+   * Sets value of the sub-element of $state (and $sharedState if exists).
+   *
+   * @param array $parents
+   *   Path to the element including element name.
+   *   Non empty list of the parent elements on path to the element including
+   *   element's name. If $parents are empty [] then use:
+   *   Submision::setState or $submission->state = $state.
+   * @param mixed $value
+   *   Value to be set.
+   * @param bool $force
+   *   When TRUE then sharedState will be updated even if sub-element not exists.
+   *   Default is FALSE.
+   */
+  public function set(array $parents, $value, $force = FALSE) {
+    drupal_array_set_nested_value($this->state, $parents, $value);
+    // Update sharedState only if this value was there before.
+    $key_exists = FALSE;
+    drupal_array_get_nested_value($this->sharedState, $parents, $key_exists);
+    if ($key_exists || $force) {
+      drupal_array_set_nested_value($this->sharedState, $parents, $value);
+    }
+  }
+
+  /**
+   * Unsets the sub-element of $state (and $sharedState).
+   */
+  public function unset(array $parents) {
+
+    // Not yet implemented.
+    return;
+    // @TODO See admin/panel.php:1565.
+    if (empty(drupal_array_get_nested_value($array, $path))) {
+      drupal_array_set_nested_value($array, $path, NULL);
+    }
+    // Last element is always a field name.
+    $result['field_name'] = end($path);
+    array_pop($path);
+  }
+
+  /**
+   * Gets State item value.
+   *
+   * @param array $parents
+   *   Path to the element including element name.
+   *
+   * @return mixed
+   *   Returns reference to the sub-element of the $state.
+   */
+  public function &get(array $parents = []) {
+    $key_exists = FALSE;
+    $element = drupal_array_get_nested_value($this->state, $parents, $key_exists);
+    if ($key_exists) {
+      return $element;
+    }
+    else {
+      $null = NULL;
+      return $null;
+    }
+  }
+
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // State.
   //
   // Properties:
@@ -190,6 +321,21 @@ class Submission {
     }
   }
 
+  /**
+   * Setter for $uid.
+   *
+   * @param int $uid
+   *   The Drupal User Id of the Submission Creator.
+   */
+  public function setUid($uid) {
+    if ($this->uid == $uid) {
+      return;
+    }
+
+    // @TODO validate $uid.
+    $this->uid = $uid;
+    $this->set(['submitting_uid'], $uid);
+  }
 
   /**
    * Setter for $accession.
@@ -223,7 +369,6 @@ class Submission {
       return;
     }
     $this->status = $status;
-    $this->info['status'] = $status;
     // $state.
     $this->state['status'] = $status;
     $this->state['values']['status'] = $status;
@@ -232,6 +377,7 @@ class Submission {
     $this->sharedState['status'] = $status;
     $this->sharedState['values']['status'] = $status;
     $this->sharedState['saved_values']['status'] = $status;
+
     if ($status == TPPS_SUBMISSION_STATUS_APPROVED) {
       module_load_include('php', 'tpps', 'forms/submit/submit_all');
       global $user;
@@ -331,11 +477,6 @@ class Submission {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Submision Common methods.
-  // create() - object and DB
-  // save() - Sync object to DB
-  // load() - Sync DB to object.
-  // delete() - remove from DB
-  // purge() - remove study and files in DB.
 
   /**
    * Saves Submission.
@@ -350,15 +491,12 @@ class Submission {
       return;
     }
 
-    // @TODO Do we need to recreate/merge SharedState when Submission::state was changed?
-    //if (empty($this->sharedState) || empty($this->sharedState['accession'])) {
-    //  $this->generateSharedState();
-    //}
-
-    // Study status.
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Set status.
+    // Note: setStatus() will be called in any case and all places where status
+    // is stored will be update.
     $this->status = $status ?? $this->status;
-    $this->state['status'] = $this->sharedState['status']
-      = $this->info['status'] = $this->status;
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Update time.
     // Note: REQUEST_TIME couldn't be used because called from CLI script and
     // processing could take long time from script call.
@@ -379,7 +517,7 @@ class Submission {
    */
   public function delete() {
     if (empty($this->state['saved_values']['frontpage']['use_old_tgdr'])) {
-      $dbxref_id = $this->info['dbxref_id'] ?? NULL;
+      $dbxref_id = $this->dbxref_id ?? NULL;
       if ($dbxref_id) {
         db_delete('chado.dbxref')
           ->condition('dbxref_id', $dbxref_id)
@@ -480,17 +618,20 @@ class Submission {
    *   Returns FALSE if Submission's load failed.
    */
   public function load() {
+    global $user;
     if (empty($this->accession)) {
       return FALSE;
     }
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Get data from DB.
     $result = db_select('tpps_submission', 's')
       ->fields('s')
       ->condition('accession', $this->accession)
       ->range(0, 1)
       ->execute()
       ->fetchAssoc();
-
+    // Backup option.
     if (!$result) {
       // Search for alternative accessions.
       $query = db_select('tpps_submission', 's');
@@ -509,20 +650,25 @@ class Submission {
         ->execute()
         ->fetchAssoc();
     }
-    if ($result) {
-      $this->info = $result;
-      unset($this->info['submission_state']);
-      unset($this->info['shared_state']);
-      $this->state = unserialize($result['submission_state'] ?? '') ?? [];
-      $this->sharedState = unserialize($result['shared_state'] ?? '') ?? [];
 
-      if (empty($this->sharedState) || empty($this->sharedState['accession'])) {
-        $this->generateSharedState();
-      }
-      $this->status = $this->info['status']
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Load object's properties.
+    if ($result) {
+      // Note: no need to set $this->accession.
+      $this->id = $result['tpps_submission_id'] ?? 0;
+      $this->uid = $result['uid'] ?? $user->uid;
+      $this->dbxrefId = $result['dbxref_id'] ?? 0;
+      $this->status = $result['status']
         ?? $this->state['status']
         ?? $this->sharedState['status']
         ?? TPPS_SUBMISSION_STATUS_INCOMPLETE;
+      $this->state = unserialize($result['submission_state'] ?? '') ?? [];
+      $this->sharedState = unserialize($result['shared_state'] ?? '') ?? [];
+
+      // Generate sharedState if it's really empty.
+      if (empty($this->sharedState) || empty($this->sharedState['accession'])) {
+        $this->generateSharedState();
+      }
       return TRUE;
     }
     return FALSE;
@@ -608,7 +754,12 @@ class Submission {
   public function doesExist() {
     $this->load();
     return (bool) (
-      !empty($this->accession) && !empty($this->info) && !empty($this->state)
+      !empty($this->accession)
+      && !empty($this->id)
+      && !empty($this->status)
+      && !empty($this->uid)
+      && !empty($this->dbxreId)
+      && !empty($this->state)
     );
   }
 
@@ -620,100 +771,6 @@ class Submission {
    */
   public function doesNotExist() {
     return !($this->doesExist());
-  }
-
-  /**
-   * Loads a TPPS Submission Info.
-   *
-   * @param bool $reset
-   *   Flag is cache must be resetted. Default if FALSE.
-   *
-   * @return array
-   *   Returns an reference to the Submission's Info.
-   */
-  public function &getInfo(bool $reset = FALSE) {
-    if ($reset || (empty($this->info) && !empty($this->accession))) {
-      $this->load();
-    }
-    return $this->info;
-  }
-
-  /**
-   * Updates Submission Information.
-   *
-   * @param array $updated_fields
-   *   Values for existing columns in DB table 'tpps_submission'.
-   */
-  public function updateInfo(array $updated_fields = []) {
-    if (empty($this->accession)) {
-      return;
-    }
-    db_update('tpps_submission')
-      ->fields($updated_fields)
-      ->condition('accession', $this->accession)
-      ->execute();
-    // Reset cached data.
-    $this->getInfo($reset = TRUE);
-  }
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-  /**
-   * Sets value of the sub-element of $state (and $sharedState if exists).
-   *
-   * @param array $parents
-   *   Path to the element including element name.
-   *   Non empty list of the parent elements on path to the element including
-   *   element's name. If $parents are empty [] then use:
-   *   Submision::setState or $submission->state = $state.
-   * @param mixed $value
-   *   Value to be set.
-   */
-  public function set(array $parents, $value, $force = FALSE) {
-    drupal_array_set_nested_value($this->state, $parents, $value);
-    // Update sharedState only if this value was there before.
-    $key_exists = FALSE;
-    drupal_array_get_nested_value($this->sharedState, $parents, $key_exists);
-    if ($key_exists || $force) {
-      drupal_array_set_nested_value($this->sharedState, $parents, $value);
-    }
-  }
-
-  /**
-   * Unsets the sub-element of $state (and $sharedState).
-   */
-  public function unset(array $parents) {
-
-    // Not yet implemented.
-    return;
-    // @TODO See admin/panel.php:1565.
-    if (empty(drupal_array_get_nested_value($array, $path))) {
-      drupal_array_set_nested_value($array, $path, NULL);
-    }
-    // Last element is always a field name.
-    $result['field_name'] = end($path);
-    array_pop($path);
-  }
-
-  /**
-   * Gets State item value.
-   *
-   * @param array $parents
-   *   Path to the element including element name.
-   *
-   * @return mixed
-   *   Returns reference to the sub-element of the $state.
-   */
-  public function &get(array $parents = []) {
-    $key_exists = FALSE;
-    $element = drupal_array_get_nested_value($this->state, $parents, $key_exists);
-    if ($key_exists) {
-      return $element;
-    }
-    else {
-      $null = NULL;
-      return $null;
-    }
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1568,6 +1625,26 @@ class Submission {
       }
     }
     return $data;
+  }
+
+  /**
+   * Checks if user is a submission creator.
+   *
+   * Note: Creator information also stored in $state and $sharedState but
+   * we do not use it here and only check value of the
+   * public.tpps_submission.uid field.
+   *
+   * @param int $uid
+   *   The Drupal User Id.
+   *
+   * @return bool
+   *   Returns TRUE if user is the creator and FALSE otherwise.
+   *   Non-existing submission will give FALSE.
+   */
+  public function isCreator($uid = NULL) {
+    global $user;
+    $uid = $uid ?? $user->uid;
+    return (bool) ($this->doesExist() && ($submission->uid == $uid));
   }
 
 }

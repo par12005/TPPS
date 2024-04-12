@@ -210,10 +210,6 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   if (in_array($submission_new_status, Submission::getStatusList())) {
     $submission->status = $submission_new_status;
   }
-  $submission->info['status'] = $submission->state['values']['status']
-    = $submission->state['saved_values']['status'] = $submission->state['status']
-      = $submission->status;
-
   // Update a list of imported studies.
   tpps_imported_studies_list_add_item($accession, $submission->accession);
   // Clear cached list of studies to have new items at 'frontpage'.

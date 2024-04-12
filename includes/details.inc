@@ -177,7 +177,7 @@ function tpps_details($accession = NULL) {
     $page1_values = &$submission->state['saved_values'][TPPS_PAGE_1];
     if (
       $page1_values['publication']['status'] != 'Published'
-      && $user->uid == $submission->info['uid']
+      && $submission->isCreator()
     ) {
       $items[] = l(t('Edit publication information'), 'tpps/' . $accession . '/edit-publication');
     }

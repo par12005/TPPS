@@ -207,7 +207,7 @@ function tpps_submission_add_alternative_accession(array $state, $alt_accession)
 
   // Remove the existing alternative accessions.
   db_delete('tpps_submission_dbxref')
-    ->condition('tpps_submission_id', $submission->info['tpps_submission_id'])
+    ->condition('tpps_submission_id', $submission->id)
     ->execute();
 
   foreach ($alt_accession as $accession) {
@@ -225,11 +225,12 @@ function tpps_submission_add_alternative_accession(array $state, $alt_accession)
       $dbxref_id = $dbx['dbxref_id'];
     }
 
-    $fields = [
-      'tpps_submission_id' => $submission->info['tpps_submission_id'],
-      'dbxref_id' => $dbxref_id,
-    ];
-    db_insert('tpps_submission_dbxref')->fields($fields)->execute();
+    db_insert('tpps_submission_dbxref')
+      ->fields([
+        'tpps_submission_id' => $submission->id,
+        'dbxref_id' => $dbxref_id,
+      ])
+      ->execute();
   }
 }
 
@@ -509,12 +510,13 @@ function tpps_submission_add_tag($accession, $tag) {
   $tags = tpps_submission_get_tags($accession) ?? [];
   if (!array_key_exists($tag, $tags)) {
     $submission = new Submission($accession);
-    if (!empty($submission->info['tpps_submission_id'])) {
-      $fields = [
-        'tpps_submission_id' => $submission->info['tpps_submission_id'],
-        'tpps_tag_id' => $tag,
-      ];
-      db_insert('tpps_submission_tag')->fields($fields)->execute();
+    if (!empty($submission->id)) {
+      db_insert('tpps_submission_tag')
+        ->fields([
+          'tpps_submission_id' => $submission->id,
+          'tpps_tag_id' => $tag,
+        ])
+        ->execute();
     }
   }
 }
@@ -536,7 +538,7 @@ function tpps_submission_remove_tag($accession, $tag) {
   }
   $submission = new Submission($accession);
   db_delete('tpps_submission_tag')
-    ->condition('tpps_submission_id', $submission->info['tpps_submission_id'])
+    ->condition('tpps_submission_id', $submission->id)
     ->condition('tpps_tag_id', $tag)
     ->execute();
 }

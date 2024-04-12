@@ -47,6 +47,11 @@ define('TPPS_SUBMISSION_STATUS_INCOMPLETE', 'Incomplete');
 define('TPPS_SUBMISSION_STATUS_PENDING_APPROVAL', 'Pending Approval');
 define('TPPS_SUBMISSION_STATUS_APPROVED', 'Approved');
 define('TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING', 'Submission Job Running');
+// Special statuses:
+define(
+  'TPPS_SUBMISSION_STATUS_APPROVED_DELAYED',
+  'Approved - Delayed Submission Release'
+);
 
 module_load_include('inc', 'tpps', 'includes/common');
 
@@ -507,8 +512,9 @@ function tpps_access() {
       }
       else {
         // TPPS Form.
-        if ($submission->info['status'] == TPPS_SUBMISSION_STATUS_INCOMPLETE
-          && $submission->info['uid'] == $user->uid
+        if (
+          $submission->status == TPPS_SUBMISSION_STATUS_INCOMPLETE
+          && $submission->isCreator()
         ) {
           return TRUE;
         }
@@ -530,8 +536,8 @@ function tpps_access() {
       // Check if user submitted this study.
       $submission = new Submission($accession);
       return (bool) (
-        $submission->info['status'] != TPPS_SUBMISSION_STATUS_INCOMPLETE
-        && $submission->info['uid'] == $user->uid
+        $submission->status != TPPS_SUBMISSION_STATUS_INCOMPLETE
+        && $submission->isCreator()
       );
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -539,8 +545,8 @@ function tpps_access() {
       $accession = $args[1] ?? NULL;
       $submission = new Submission($accession);
       return (bool) (
-        $submission->info['status'] == TPPS_SUBMISSION_STATUS_INCOMPLETE
-        && $user->uid == $submission->info['uid']
+        $submission->status == TPPS_SUBMISSION_STATUS_INCOMPLETE
+        && $submission->isCreator()
       );
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

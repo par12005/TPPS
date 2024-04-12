@@ -47,7 +47,7 @@ function tpps_admin_imported_studies_report() {
       $job_status ?? '-',
       $import_meta[TPPS_SUBMISSION_FORM_VERSION_KEY] ?? NULL,
       $import_meta['current_version'] ?? NULL,
-      $submission->info['uid'] ?? NULL,
+      $submission->uid ?? NULL,
       $import_meta['full_date'] ?? NULL,
       $import_meta['accession_link'] ?? NULL,
       l($import_meta['site'] ?? NULL, $import_meta['site'] ?? NULL),

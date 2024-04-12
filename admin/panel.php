@@ -96,7 +96,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   $page4_values = &$submission->sharedState['saved_values'][TPPS_PAGE_4] ?? NULL;
 
   if (empty($submission->sharedState['status'])) {
-    $submission->save($submission->info['status']);
+    $submission->save($submission->status);
   }
   $options = [];
   $display = l(t('Back to TPPS Admin Panel'), 'tpps-admin-panel');
@@ -130,7 +130,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     }
   }
 
-  if ($submission->info['status'] == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
+  if ($submission->status == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
     $options['files'] = [
       'revision_destination' => TRUE,
     ];
@@ -163,7 +163,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   $display .= tpps_table_display($submission->sharedState, $options);
 
   if (
-    $submission->info['status'] == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL
+    $submission->status == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL
     && preg_match('/P/', $submission->sharedState['saved_values'][TPPS_PAGE_2]['data_type'])
   ) {
     $new_cvterms = array();
@@ -282,7 +282,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     LEFT JOIN tpps_tag tg ON (tsg.tpps_tag_id = tg.tpps_tag_id)
     WHERE tpps_submission_id = :tpps_submission_id
     AND tsg.tpps_tag_id > 2',
-    [':tpps_submission_id' => $submission->info['tpps_submission_id']]
+    [':tpps_submission_id' => $submission->id]
   );
   foreach ($current_tags_results as $row) {
     $current_tags_options[$row->tpps_tag_id] = $row->name;
@@ -317,7 +317,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
       SELECT tpps_tag_id FROM tpps_submission_tag
       WHERE tpps_submission_id = :tpps_submission_id
     ) AND tpps_tag_id > 2',
-    [':tpps_submission_id' => $submission->info['tpps_submission_id']]
+    [':tpps_submission_id' => $submission->id]
   );
   foreach ($all_add_tags_results as $row) {
     $all_add_tags_options[$row->tpps_tag_id] = $row->name;
@@ -342,7 +342,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Reject/Approve and comments.
-  if ($submission->info['status'] == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
+  if ($submission->status == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
 
     if ($page2_values['study_type'] != 1) {
       module_load_include('php', 'tpps', 'forms/build/page_3_helper');
@@ -440,7 +440,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#prefix' => '<div id="tpps-admin-comments">',
     '#suffix' => '</div>',
   ];
-  if ($submission->info['status'] == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
+  if ($submission->status == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
     $form['APPROVE'] = [
       '#type' => 'submit',
       '#value' => t('Approve'),
@@ -453,7 +453,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     ];
   }
 
-  if ($submission->info['status'] != TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
+  if ($submission->status != TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
     $form['SAVE_COMMENTS'] = [
       '#type' => 'button',
       '#value' => t('Save Comments'),
@@ -474,7 +474,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   if (!empty($date)) {
     $datestr = "{$date['day']}-{$date['month']}-{$date['year']}";
     if (
-      $submission->info['status'] != TPPS_SUBMISSION_STATUS_APPROVED
+      $submission->status != TPPS_SUBMISSION_STATUS_APPROVED
       || strtotime($datestr) > time()
     ) {
       tpps_admin_panel_add_section($form, $section);
@@ -493,7 +493,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     'key' => 'save_alternative_accessions',
     'title' => t('Save Alternative Accessions'),
   ];
-  if ($submission->info['status'] == TPPS_SUBMISSION_STATUS_APPROVED) {
+  if ($submission->status == TPPS_SUBMISSION_STATUS_APPROVED) {
     tpps_admin_panel_add_section($form, $section);
     $form[$section['key']]['alternative_accessions'] = [
       '#type' => 'textfield',
@@ -552,7 +552,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   $form[$section['key']]['new_owner'] = [
     '#type' => 'textfield',
     '#title' => t('Choose a new owner for the submission'),
-    '#default_value' => tpps_get_user_email($submission->info['uid']),
+    '#default_value' => tpps_get_user_email($submission->uid),
     '#autocomplete_path' => 'tpps/autocomplete/user',
   ];
 
@@ -613,12 +613,12 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#type' => 'select',
     '#title' => $section['title'],
     '#options' => tpps_form_get_submission_status_list(),
-    '#default_value' => $submission->info['status'],
+    '#default_value' => $submission->status,
     '#description' => t('Warning: This feature is experimental and may '
       . 'cause unforseen issues. Please do not change the status of this '
       . 'submission unless you are willing to risk the loss of existing data. '
       . '<br /><strong>The current status of the submission is @status</strong>.',
-      ['@status' => $submission->info['status']]
+      ['@status' => $submission->status]
     ),
   ];
 
@@ -714,7 +714,7 @@ function tpps_admin_panel_top(array &$form) {
   $mail_cvterm = tpps_load_cvterm('email')->cvterm_id;
 
   foreach ($submission_list as $accession => $submission) {
-    $uid = $submission->info['uid'] ?? NULL;
+    $uid = $submission->uid ?? NULL;
 
     if (empty($submitting_user_cache[$uid])) {
       $mail = tpps_get_user_email($uid);
@@ -830,7 +830,7 @@ function tpps_admin_panel_top(array &$form) {
             : TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING
           );
 
-        case 'Approved - Delayed Submission Release':
+        case TPPS_SUBMISSION_STATUS_APPROVED_DELAYED:
           if (empty($status_label)) {
             $release = $submission->state['saved_values']['summarypage']['release-date'] ?? NULL;
             $release = strtotime("{$release['day']}-{$release['month']}-{$release['year']}");
@@ -1159,8 +1159,8 @@ function tpps_admin_panel_submit($form, &$form_state) {
 
   $accession = $form_state['values']['accession'];
   $submission = new Submission($accession);
-  $tpps_submission_id = $submission->info['tpps_submission_id'];
-  $owner = user_load($submission->info['uid']);
+  $tpps_submission_id = $submission->id;
+  $owner = user_load($submission->uid);
   $to = $owner->mail;
 
   $submission->state['admin_comments'] = $form_state['values']['admin-comments'] ?? NULL;
@@ -1585,10 +1585,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'change_submission_owner':
       $new_user = user_load_by_mail($form_state['values']['new_owner']);
-      $submission->state['submitting_uid']
-        = $submission->sharedState['submitting_uid']
-          = $submission->info['uid']
-            = $new_user->uid;
+      $submission->uid = $new_user->uid;
       $submission->save();
       break;
 
