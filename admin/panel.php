@@ -89,6 +89,11 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   global $base_url;
 
   $submission = new Submission($accession);
+  if ($submission->doesNotExist()) {
+    drupal_set_message(t('Study "@accession" not found.',
+      ['@accession' => $accession]), 'error');
+    drupal_goto('tpps-admin-panel');
+  }
 
   $page1_values = &$submission->sharedState['saved_values'][TPPS_PAGE_1] ?? NULL;
   $page2_values = &$submission->sharedState['saved_values'][TPPS_PAGE_2] ?? NULL;

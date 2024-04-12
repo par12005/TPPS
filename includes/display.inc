@@ -19,6 +19,9 @@
 function tpps_table_display(array &$state, array $options = []) {
   $accession = $state['accession'] ?? NULL;
   $submission = new Submission($accession);
+  if ($submission->doesNotExist()) {
+    return;
+  }
   // Note: $state could be modified version of original sharedState received
   // by accession so we use it here without saving/updating original study.
   // @TODO Check the difference and move to Submission::flatten().
@@ -56,17 +59,19 @@ function tpps_table_display(array &$state, array $options = []) {
       if ($key == 'tpps_submission_import') {
         $key_str = t('Submission Import Metadata');
         $import_meta = $submission->getImportMeta();
-        $version = $import_meta[TPPS_SUBMISSION_FORM_VERSION_KEY] ?? '-';
-        $val_str = theme('item_list', [
-          'items' => [
-            t('Original Accession: !url', ['!url' => $import_meta['accession_link']]),
-            t('Import Date: @date.', ['@date' => $import_meta['full_date']]),
-            t('Original site: !site.',
-              ['!site' => l($import_meta['site'], $import_meta['site'])]
-            ),
-            t('Original Submision Form Version: @version.', ['@version' => $version]),
-          ],
-        ]);
+        if (!empty($import_meta)) {
+          $version = $import_meta[TPPS_SUBMISSION_FORM_VERSION_KEY] ?? '-';
+          $val_str = theme('item_list', [
+            'items' => [
+              t('Original Accession: !url', ['!url' => $import_meta['accession_link']]),
+              t('Import Date: @date.', ['@date' => $import_meta['full_date']]),
+              t('Original site: !site.',
+                ['!site' => l($import_meta['site'], $import_meta['site'])]
+              ),
+              t('Original Submision Form Version: @version.', ['@version' => $version]),
+            ],
+          ]);
+        }
       }
       if ($key == 'submission_form_version') {
         // This is not Submission State Array but Submission Interface which
@@ -259,6 +264,11 @@ function tpps_completed_display($accession = NULL) {
   $output = '';
 
   $submission = new Submission($accession);
+  if ($submission->doesNotExist()) {
+    drupal_set_message(t('Study "@accession" not found.',
+      ['@accession' => $accession]), 'error');
+    drupal_goto('tpps-admin-panel');
+  }
   $saved_values = $submission->sharedState['saved_values'];
 
   // @TODO Move CSS to /css/tpps.css. Check if scope must be 'header'.
