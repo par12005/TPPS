@@ -151,13 +151,6 @@ class Submission {
   protected $status = '';
 
   /**
-   * Should data be cached in 'tpps' cache bin?
-   *
-   * @var bool
-   */
-  protected $useCache = FALSE;
-
-  /**
    * Class constructor.
    *
    * @param string $accession
@@ -167,12 +160,11 @@ class Submission {
    *   populate $this->accession with value form $state array.
    */
   public function __construct(string $accession = NULL) {
-    // @TODO Validate $accession.
+    // @TODO Minor. Validate $accession.
     if (!empty($accession)) {
       $this->accession = $accession;
       $this->load(RESET_CACHE);
     }
-    $this->useCache = variable_get('tpps_cache_submissions', FALSE);
   }
 
   /**
@@ -517,10 +509,9 @@ class Submission {
    */
   public function delete() {
     if (empty($this->state['saved_values']['frontpage']['use_old_tgdr'])) {
-      $dbxref_id = $this->dbxref_id ?? NULL;
-      if ($dbxref_id) {
+      if (!empty($this->dbxrefId)) {
         db_delete('chado.dbxref')
-          ->condition('dbxref_id', $dbxref_id)
+          ->condition('dbxref_id', $this->dbxrefId)
           ->execute();
       }
     }
@@ -758,7 +749,7 @@ class Submission {
       && !empty($this->id)
       && !empty($this->status)
       && !empty($this->uid)
-      && !empty($this->dbxreId)
+      && !empty($this->dbxrefId)
       && !empty($this->state)
     );
   }

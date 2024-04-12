@@ -24,6 +24,7 @@ function tpps_admin_imported_studies_report() {
         'Submission @accession not exists.',
         ['@accession' => $local], 'error'
       );
+      tpps_imported_studies_list_remove_item($local);
       continue;
     }
     $import_meta = $submission->getImportMeta();

@@ -28,7 +28,6 @@ function tpps_install() {
   variable_set('tpps_top_bar', 'status');
   variable_set('tpps_dark_theme', FALSE);
   variable_set('tpps_debug_mode', FALSE);
-  variable_set('tpps_cache_submissions', FALSE);
   variable_set('tpps_autofocus_delay', 1000);
   variable_set('tpps_dump_max_len_state', 300000);
   variable_set('tpps_dump_max_len_sharedState', 300000);
@@ -344,7 +343,6 @@ function tpps_uninstall() {
   variable_del('tpps_top_bar');
   variable_del('tpps_dark_theme');
   variable_del('tpps_debug_mode');
-  variable_del('tpps_cache_submissions');
   variable_del('tpps_autofocus_delay');
   variable_del('tpps_dump_max_len_state', 150000);
   variable_del('tpps_dump_max_len_sharedState', 150000);
