@@ -311,6 +311,10 @@ class Submission {
     if (!empty($this->state['accession'])) {
       $this->accession = $this->state['accession'];
     }
+    // Status must be reset because when study opened for edit status became empty.
+    $this->status = $this->status
+      ?? $this->state['status']
+      ?? TPPS_SUBMISSION_STATUS_INCOMPLETE;
   }
 
   /**
