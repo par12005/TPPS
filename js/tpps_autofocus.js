@@ -14,7 +14,7 @@
     setTimeout(
       function() {
         var $element = $('[name="' + Drupal.settings.tpps.autoFocus.FieldName + '"');
-        if (typeof $element != 'undefined' ) {
+        if (typeof $element.get(0) != 'undefined') {
           $element.get(0).focus();
         }
       },

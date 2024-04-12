@@ -728,8 +728,9 @@ function tpps_form_autofocus(array &$form = NULL, array $path) {
     $html_name = $path[0];
   }
   else {
-    // E.g., 'organism-1[genotype][SNPs][vcf]'.
-    $html_name = str_replace($path[0] . '[', $path[0], implode('][', $path)) . ']';
+    // E.g., 'organism-1[genotype][SNPs][vcf]', 'publication[status]', 'accession'.
+    $html_name = str_replace($path[0] . ']', $path[0], implode('][', $path));
+    $html_name .= ']';
   }
   tpps_add_css_js('autofocus', $form);
   $form['#attached']['js'][] = [
