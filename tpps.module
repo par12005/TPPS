@@ -1372,6 +1372,7 @@ function tpps_main_submit($form, &$form_state) {
         $form_state['stage'] = TPPS_PAGE_4;
       }
       else {
+        // Complete button.
         $submission->status = TPPS_SUBMISSION_STATUS_PENDING_APPROVAL;
         $submission->state['completed'] = time();
         tpps_submission_file_set_status($submission->state, FILE_STATUS_PERMANENT);
@@ -2226,4 +2227,30 @@ function tpps_is_main_form(array $form_state) {
     $form_state['build_info']['form_id'] ?? NULL,
     ['tppsc_main', 'tpps_main']
   );
+}
+
+/**
+ * Creates new submission object.
+ *
+ * How to use:
+ * tpps_submission($a)->set(['status'], $status)->save();
+ *
+ * @param string $accession
+ *   Submission Accession.
+ *
+ * @return object
+ *   Returns Submission object or throw an exception if it's not found.
+ */
+function tpps_submission($accession = '') {
+  $submission = new Submission();
+  if ($accession) {
+    $submission->accession = $accession;
+    $submission->load();
+    if ($submission->doesNotExist()) {
+      throw new Exception(
+        t('Submission @accession not found.', ['@accession' => $accession])
+      );
+    }
+  }
+  return $submission;
 }

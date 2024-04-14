@@ -163,8 +163,9 @@ class Submission {
     // @TODO Minor. Validate $accession.
     if (!empty($accession)) {
       $this->accession = $accession;
-      $this->load(RESET_CACHE);
+      $this->load();
     }
+    return $this;
   }
 
   /**
@@ -186,9 +187,12 @@ class Submission {
         $this->$name = $value;
       }
       else {
-        throw new InexistentPropertyException("Inexistent property: $name");
+        throw new InexistentPropertyException(
+          t('Inexistent property: @name', ['@name' => $name])
+        );
       }
     }
+    return $this;
   }
 
   /**
@@ -214,6 +218,7 @@ class Submission {
         throw new Exception("Inexistent property: $name");
       }
     }
+    return $this;
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -241,6 +246,7 @@ class Submission {
     if ($key_exists || $force) {
       drupal_array_set_nested_value($this->sharedState, $parents, $value);
     }
+    return $this;
   }
 
   /**
@@ -257,6 +263,7 @@ class Submission {
     // Last element is always a field name.
     $result['field_name'] = end($path);
     array_pop($path);
+    return $this;
   }
 
   /**
@@ -315,6 +322,7 @@ class Submission {
     $this->status = $this->status
       ?? $this->state['status']
       ?? TPPS_SUBMISSION_STATUS_INCOMPLETE;
+    return $this;
   }
 
   /**
@@ -331,6 +339,7 @@ class Submission {
     // @TODO validate $uid.
     $this->uid = $uid;
     $this->set(['submitting_uid'], $uid);
+    return $this;
   }
 
   /**
@@ -349,6 +358,7 @@ class Submission {
   public function setAccession($accession) {
     $this->accession = $accession;
     $this->state['accession'] = $this->sharedState['accession'] = $accession;
+    return $this;
   }
 
   /**
@@ -362,17 +372,17 @@ class Submission {
       !in_array($status, $this->getStatusList())
       && $status != TPPS_SUBMISSION_STATUS_APPROVED_DELAYED
     ) {
-      return;
+      throw new Exception(
+        t('Submission status @status is not allowed.', ['@status' => $status])
+      );
     }
-    $this->status = $status;
-    // $state.
-    $this->state['status'] = $status;
-    $this->state['values']['status'] = $status;
-    $this->state['saved_values']['status'] = $status;
-    // $sharedState.
-    $this->sharedState['status'] = $status;
-    $this->sharedState['values']['status'] = $status;
-    $this->sharedState['saved_values']['status'] = $status;
+    if ($this->status != $status) {
+      $this->status = $status;
+      // Update $state and $sharedState.
+      $this->set(['status'], $status);
+      $this->set(['values', 'status'], $status);
+      $this->set(['saved_values', 'status'], $status);
+    }
 
     if ($status == TPPS_SUBMISSION_STATUS_APPROVED) {
       module_load_include('php', 'tpps', 'forms/submit/submit_all');
@@ -415,6 +425,7 @@ class Submission {
         }
       }
     }
+    return $this;
   }
 
   /**
@@ -428,6 +439,7 @@ class Submission {
       variable_set($var_name, $list);
       $this->status = TPPS_SUBMISSION_STATUS_APPROVED_DELAYED;
     }
+    return $this;
   }
 
   /**
@@ -484,9 +496,8 @@ class Submission {
    */
   public function save($status = NULL) {
     if (empty($this->accession)) {
-      return;
+      throw new Exception(t('Study accession is empty.'));
     }
-
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Set status.
     // Note: setStatus() will be called in any case and all places where status
@@ -506,6 +517,7 @@ class Submission {
       ])
       ->condition('accession', $this->accession)
       ->execute();
+    return $this;
   }
 
   /**
@@ -598,6 +610,7 @@ class Submission {
     // Add default tag.
     $tag = $this->isTppsc() ? 'TPPSc' : 'TPPS';
     tpps_submission_add_tag($this->accession, $tag);
+    return $this;
   }
 
   /**
@@ -607,15 +620,11 @@ class Submission {
    * instead of 3 requests if data loaded separately.
    *
    * To avoid reload the same study use global $submission object.
-   *
-   * @return bool
-   *   Returns TRUE in case of success load (even if there is no data).
-   *   Returns FALSE if Submission's load failed.
    */
   public function load() {
     global $user;
     if (empty($this->accession)) {
-      return FALSE;
+      throw new Exception(t('Study accession is empty.'));
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -649,6 +658,8 @@ class Submission {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Load object's properties.
     if ($result) {
+      $this->state = unserialize($result['submission_state'] ?? '') ?? [];
+      $this->sharedState = unserialize($result['shared_state'] ?? '') ?? [];
       // Note: no need to set $this->accession.
       $this->id = $result['tpps_submission_id'] ?? 0;
       $this->uid = $result['uid'] ?? $user->uid;
@@ -657,16 +668,13 @@ class Submission {
         ?? $this->state['status']
         ?? $this->sharedState['status']
         ?? TPPS_SUBMISSION_STATUS_INCOMPLETE;
-      $this->state = unserialize($result['submission_state'] ?? '') ?? [];
-      $this->sharedState = unserialize($result['shared_state'] ?? '') ?? [];
 
       // Generate sharedState if it's really empty.
       if (empty($this->sharedState) || empty($this->sharedState['accession'])) {
         $this->generateSharedState();
       }
-      return TRUE;
     }
-    return FALSE;
+    return $this;
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -862,6 +870,7 @@ class Submission {
       ->fields(['shared_state' => 'a:0:{}'])
       ->condition('accession', $this->accession)
       ->execute();
+    return $this;
   }
 
   /**
@@ -891,6 +900,7 @@ class Submission {
     tpps_submission_form_version_downgrade_to_latest($this->state, $this->sharedState);
     $this->purifySharedState();
     return $this->sharedState;
+    // @TODO Change to allow chaining.
   }
 
   /**
@@ -992,6 +1002,7 @@ class Submission {
 
     module_load_include('inc', 'tpps', 'includes/array');
     tpps_array_apply_changes($change_list, $this->sharedState);
+    return $this;
   }
 
   /**
@@ -1010,6 +1021,7 @@ class Submission {
     else {
       drupal_set_message(t("Property @name doesn't exist.", ['@name' => $name]));
     }
+    return $this;
   }
 
   /**
