@@ -1047,7 +1047,7 @@ function tpps_submission_edit_publication_submit($form, &$form_state) {
       $args, $submission->state['submitting_uid'], 10, $includes, TRUE
     );
     $submission->state['job_id'] = $jid;
-    $submision->save();
+    $submission->save();
   }
 }
 

@@ -252,7 +252,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
 // Helper functions.
 
 /**
- * Form submitter. Shows submision dump with line numbers.
+ * Form submitter. Shows submission dump with line numbers.
  */
 function tpps_submission_import_review_dump(array $form, array &$form_state) {
   if ($state = trim($form_state['values']['tpps_submission_import_state'])) {

@@ -111,7 +111,7 @@ class SubmissionsTest extends TripalTestCase {
     $submission->save();
 
     $submission->load();
-    $this->assertNotEmpty($submision->state['updated']);
+    $this->assertNotEmpty($submission->state['updated']);
     $this->assertNotEmpty($submission->state['saved_values'][TPPS_PAGE_1]['publication']);
     $this->assertEquals(
       $submission->state['saved_values'][TPPS_PAGE_1]['publication'],
@@ -152,7 +152,7 @@ class SubmissionsTest extends TripalTestCase {
     $submission->delete();
 
     $submission = new Submission($accession);
-    $this->assertEmpty($submision->doesExist());
+    $this->assertEmpty($submission->doesExist());
 
     $query = db_select('chado.dbxref', 'dbx')
       ->fields('dbx')

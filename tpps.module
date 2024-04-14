@@ -1295,8 +1295,7 @@ function tpps_main_submit($form, &$form_state) {
   tpps_submission_form_version_upgrade_to_latest($form_state, $new_form_state);
   $form_state = $new_form_state;
 
-  $submission->state = $form_state;
-  $submission->save();
+  $submission->setState($form_state)->save();
 
   if ($submission->isTppsc()) {
     $form_state['status'] = TPPS_SUBMISSION_STATUS_INCOMPLETE;
@@ -1334,8 +1333,7 @@ function tpps_main_submit($form, &$form_state) {
     }
     $saved_values['form_build_id'] = $values['form_build_id'];
     $form_state['rebuild'] = TRUE;
-    $submission->state = $form_state;
-    $submission->save();
+    $submission->setState($form_state)->save();
     // File status must not be changed here because we need to have termporary
     // status of file until study completely submitted. See 'summarypage'
     // processing.
@@ -1373,8 +1371,8 @@ function tpps_main_submit($form, &$form_state) {
       }
       else {
         // Complete button.
-        $submission->status = TPPS_SUBMISSION_STATUS_PENDING_APPROVAL;
-        $submission->state['completed'] = time();
+        $submission->setStatus(TPPS_SUBMISSION_STATUS_PENDING_APPROVAL);
+        $submission->set('state', ['completed'], time());
         tpps_submission_file_set_status($submission->state, FILE_STATUS_PERMANENT);
         // Save Submission Info.
         $submission->generateSharedState();
@@ -1398,8 +1396,7 @@ function tpps_main_submit($form, &$form_state) {
   }
   $saved_values['form_build_id'] = $values['form_build_id'];
 
-  $submission->state = $form_state;
-  $submission->save();
+  $submission->setState($form_state)->save();
 
   if ($form_state['stage'] == TPPS_PAGE_1) {
     // When non-empty (after Page1 submit) study was added we need to

@@ -160,7 +160,7 @@ class Submission {
   /**
    * Submission status.
    *
-   * Stored in public.tpps_submision.status as string.
+   * Stored in public.tpps_submission.status as string.
    * Note: status also stored in $state and $sharedState but no need to update
    * them manually because method setStatus() does it.
    *
@@ -305,7 +305,6 @@ class Submission {
     }
   }
 
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // State.
   //
@@ -337,9 +336,13 @@ class Submission {
       $this->accession = $this->state['accession'];
     }
     // Status must be reset because when study opened for edit status became empty.
-    $this->status = $this->status
-      ?? $this->state['status']
-      ?? TPPS_SUBMISSION_STATUS_INCOMPLETE;
+    // Status could be empty if Submission Object was created without $accession
+    // and submission wasn't fully loaded.
+    if (empty($this->status)) {
+      $this->status = $this->get(['status']) ?? TPPS_SUBMISSION_STATUS_INCOMPLETE;
+    }
+
+    // @TODO Minor. Get also uid, dbxref_id from state and update them in save().
     return $this;
   }
 
@@ -525,7 +528,7 @@ class Submission {
     // Update time.
     // Note: REQUEST_TIME couldn't be used because called from CLI script and
     // processing could take long time from script call.
-    $this->state['updated'] = $this->sharedState['updated'] = time();
+    $this->set(['updated'], time());
 
     db_update('tpps_submission')
       ->fields([
@@ -1050,6 +1053,8 @@ class Submission {
       $flags = !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS;
       $caller_function = debug_backtrace($flags, 2)[1]['function'];
       drupal_set_message('Caller function: ' . $caller_function);
+
+      dpm(print_r(debug_backtrace($flags, 3), TRUE));
       // Value.
       if (is_array($this->$name) && !empty($parents)) {
         $title = $name . '[' . implode('][', $parents) . ']';
