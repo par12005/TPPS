@@ -62,6 +62,24 @@
  * get() - gets value of sub-element of $state.
  * unset() - Unset's sub-element in $state. To get this change in $sharedState
  *           just regenerate it.
+ *
+ *
+ * ----------------------------------------------------------------------------
+ * Usage Example.
+ *
+ * $a = 'TGDR906';
+ * $list = Submission::getStatusList();
+ * $status =array_rand(array_flip($list), 1);
+ * dpm($status);
+ * $s = tpps_submission($a)
+ * ->dump('state', ['status'])
+ * ->setStatus($status)->save()
+ * ->dump('state', ['status']);
+ *
+ * $s2 = new Submission($a);
+ * $s2->load();
+ * dpm($s2->status, 's2 status');
+ * dpm($s2->get(['status']), 's2 state');
  */
 
 /**
@@ -312,8 +330,8 @@ class Submission {
    * @param array $state
    *   Submission State Array.
    */
-  public function setState(array $state) {
-    $this->state = $state;
+  public function setState(array &$state) {
+    $this->state = &$state;
     // Accession.
     if (!empty($this->state['accession'])) {
       $this->accession = $this->state['accession'];
@@ -759,7 +777,12 @@ class Submission {
     return (bool) (
       !empty($this->accession)
       && !empty($this->id)
-      && !empty($this->status)
+
+
+// @TODO Uncomment before release.
+
+
+      //&& !empty($this->status)
       && !empty($this->uid)
       && !empty($this->dbxrefId)
       && !empty($this->state)
@@ -1008,15 +1031,35 @@ class Submission {
   /**
    * Dumps object properties into browser.
    *
+   * Usage example:
+   * $a = 'TGDR906';
+   * $s = tpps_submission($a)
+   * ->dump('state', ['status'])
+   * ->setStatus($status)
+   * ->save()
+   * ->dump('state', ['status']);
+   *
    * @param string $name
    *   Name of the property.
+   * @param array $parents
+   *   List of parents of the sub-element.
    */
-  public function dump($name) {
+  public function dump($name, array $parents = []) {
     if (property_exists($this, $name)) {
-      $caller_function = debug_backtrace(
-        !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'];
-      drupal_set_message('Caller: ' . $caller_function);
-      drupal_set_message(print_r($this->$name, 1), $name);
+      // Caller function.
+      $flags = !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS;
+      $caller_function = debug_backtrace($flags, 2)[1]['function'];
+      drupal_set_message('Caller function: ' . $caller_function);
+      // Value.
+      if (is_array($this->$name) && !empty($parents)) {
+        $title = $name . '[' . implode('][', $parents) . ']';
+        $value = drupal_array_get_nested_value($this->$name, $parents);
+      }
+      else {
+        $title = $name;
+        $value = $this->$name;
+      }
+      drupal_set_message($title . ': ' . print_r($value, TRUE));
     }
     else {
       drupal_set_message(t("Property @name doesn't exist.", ['@name' => $name]));

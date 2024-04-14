@@ -1053,9 +1053,9 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
 
   // Upgrade to latest Submission Form Version.
   tpps_submission_form_version_upgrade_to_latest($form_state, $form_state);
-  $submission = new Submission();
-  $submission->state = &$form_state;
-  $submission->save();
+  // Note:
+  // Saving changes $form_state items and we need to get those changes back.
+  $submission = tpps_submission()->setState($form_state)->save();
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Must be after tpps_init_project() which sets accession for new studies.
