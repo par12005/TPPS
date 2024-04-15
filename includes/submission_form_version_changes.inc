@@ -56,6 +56,12 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
             'saved_values', TPPS_PAGE_1, 'publication', 'dataset_doi',
           ],
         ],
+        'primaryAuthor' => [
+          'source' => ['saved_values', TPPS_PAGE_1, 'primaryAuthor'],
+          'target' => [
+            'saved_values', TPPS_PAGE_1, 'publication', 'primaryAuthor',
+          ],
+        ],
       ],
     ],
   ];
