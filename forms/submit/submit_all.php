@@ -3989,7 +3989,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           // Lookup whether marker is already inserted into the features table
           $result = chado_query("SELECT * FROM chado.feature WHERE uniquename = :marker_name", [
             ':marker_name' => $variant_name, // column 3 of VCF
-            ':organism_id' => $current_id
+            // ':organism_id' => $current_id
           ]);
 
           $feature_exists = false;
