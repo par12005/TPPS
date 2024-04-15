@@ -1365,7 +1365,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     'seq_var_cvterm' => $seq_var_cvterm,
     'multi_insert' => &$multi_insert_options,
     'job' => &$job,
-    'study_accession' => $form_state['saved_values'][TPPS_PAGE_1]['accession']
+    'study_accession' => $form_state['saved_values'][1]['accession']
   );
 
   // 2/29/2024 Add reference genome more consitently for all scenarios
@@ -3691,6 +3691,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
     'seq_var_cvterm' => $seq_var_cvterm,
     'multi_insert' => &$multi_insert_options,
     'job' => &$job,
+    'study_accession' => $form_state['saved_values'][1]['accession']
   );
 
   // check to make sure admin has not set disable_vcf_importing.
