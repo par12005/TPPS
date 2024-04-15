@@ -780,7 +780,6 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
   }
   // End of 'Reference Assembly used' field validation.
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  tpps_is_required_field_empty($form_state, [$id, 'genotype', 'marker-type']);
   if ($does_study_include_snp_data == 'yes') {
     if ($is_step2_genotype) {
       if ($genotype[$snps_fieldset]['upload_snp_association'] == 'Yes') {

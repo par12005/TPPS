@@ -98,7 +98,13 @@
                     }
                     else {
                       // Remove.
-                      markers.splice($.inArray(markerName, markers), 1);
+                      let index = markers.indexOf(markerName);
+                      // Need to check index because when 'no' item is not
+                      // in the list and index will be '-1' which cause
+                      // all items removement from the list.
+                      if (index >= 0) {
+                        markers.splice(index, 1);
+                      }
                     }
                   }
                   $markerTypeField.val(markers).trigger('change');
