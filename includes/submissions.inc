@@ -1095,12 +1095,17 @@ function tpps_submission_get_accession_list(array $conditions = [], $remove_empt
     }
     $results = $query->orderBy('tpps_submission_id', 'desc')->execute();
     foreach ($results as $item) {
-      // @TODO Could try-catch block be used here?
-      // When 'submission_state' is broken it produces:
-      // Notice: unserialize(): Error at offset 6 of 13667 bytes in
-      // tpps_submission_get_accession_list() (line 1098 of
-      // /var/www/Drupal/sites/all/modules/TGDR/includes/submissions.inc).
-      if ($state = unserialize($item->submission_state)) {
+      if (
+        // Note:
+        // When 'submission_state' became "broken" when edited (and saved)
+        // directly in phpPgAdmin it produces:
+        // Notice: unserialize(): Error at offset 6 of 13667 bytes in
+        // tpps_submission_get_accession_list() (line 1098 of
+        // /var/www/Drupal/sites/all/modules/TGDR/includes/submissions.inc).
+        // So to avoid this we do simple check:
+        strpos($item->submission_state, '&quot;accession&quot;') === FALSE
+        && $state = unserialize($item->submission_state)
+      ) {
         $page1_values = $state['saved_values'][TPPS_PAGE_1] ?? NULL;
         if ($title = ($page1_values['publication']['title'] ?? NULL)) {
           $list[$state['accession']] = $state['accession'] . ' - ' . (

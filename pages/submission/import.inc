@@ -242,7 +242,12 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     // will be called before tpps_main_submit().
     // @TODO Check if incompleted submissions processed correctly.
     drupal_set_message(t('Submission was submitted.'));
-    drupal_form_submit(tpps_form_get_id($state), $state);
+    drupal_form_submit(tpps_form_get_id($submission->state), $state);
+  }
+  else {
+    // If we don't submit form we need manually change status of attached files
+    // from temporaty to permanent to avoid it's automatic removement.
+    tpps_submission_file_set_status($submission->state, FILE_STATUS_PERMANENT);
   }
 
   drupal_goto('completed-submission/' . $accession);
