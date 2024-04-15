@@ -132,7 +132,7 @@
 
 
   Drupal.tpps.resetForm = function() {
-    $('#edit-primaryauthor').val('');
+    $('#edit-publication-primaryauthor').val('');
     $('#edit-publication-abstract').val('');
     // Default value for year is '0' ('- Select -').
     $('#edit-publication-year').val(0);
@@ -165,7 +165,7 @@
       }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Fill text fields.
-      $('#edit-primaryauthor')
+      $('#edit-publication-primaryauthor')
         .val(data.doi_info.primary ?? '')
         .removeClass('error');
       $('#edit-publication-abstract')
