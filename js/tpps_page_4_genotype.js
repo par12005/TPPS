@@ -113,7 +113,6 @@
             }
           }
           // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-          // Update 'Ploidy' field description.
           if (
             typeof(settings.tpps) != 'undefined'
             && typeof(settings.tpps.organismNumber) != 'undefined'
@@ -122,6 +121,8 @@
             // We can't use Drupal States API because it doesn't work with
             // multiple select form elements.
             for (let i = 1; i <= settings.tpps.organismNumber; i++) {
+              // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+              // Update 'Ploidy' field description.
               let ploidySelector = '[name="organism-' + i + '[genotype]['
                 + settings.tpps.ssrsFieldset + '][ploidy]"]';
               $(ploidySelector).change(function() {
@@ -142,6 +143,20 @@
                   }
                 }
               });
+              // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+              // Change name of the other file-field when dropdown changes.
+              let otherMarkerSelector = '[name="organism-' + i
+                + '[genotype][other][other-marker]';
+              $(otherMarkerSelector).change(function() {
+                let name = $(this).val();
+                let $label = $('#edit-organism-' + i
+                  + '-genotype-other-other-upload').prev('label');
+                $label.html($label.html()
+                  .replace(/^.* (spreadsheet\::?\s)/, $(this).val() + ' $1')
+                );
+              });
+              $(otherMarkerSelector).change();
+              // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
             }
           }
           // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
