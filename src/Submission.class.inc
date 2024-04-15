@@ -446,32 +446,28 @@ class Submission {
       $args = [$this->accession];
       $type = $this->state['tpps_type'] ?? 'tpps';
       $type_label = ($type == 'tpps') ? t('TPPS') : t('TPPSC');
-
-// @TODO Avoid code duplication.
-
-      if ($this->state['saved_values']['summarypage']['release']) {
-
-        $jid = tripal_add_job("$type_label Record Submission - $this->accession",
+      $date = $this->state['saved_values']['summarypage']['release-date'] ?? NULL;
+      $release_time = ($date)
+        ? strtotime("{$date['year']}-{$date['month']}-{$date['day']}")
+        : NULL;
+      if (
+        $this->state['saved_values']['summarypage']['release']
+        || (
+          !$this->state['saved_values']['summarypage']['release']
+          && time() > $release_time
+        )
+      ) {
+        $jid = tripal_add_job(
+          t('@type_label Record Submission - @accession',
+            ['@type_label' => $type_label, '@accession' => $this->accession]
+          ),
           'tpps', 'tpps_submit_all',
           $args, $this->state['submitting_uid'], 10, $includes, TRUE
         );
         $this->set(['job_id'], $jid, TRUE);
       }
       else {
-        $date = $this->state['saved_values']['summarypage']['release-date'];
-        $time = strtotime("{$date['year']}-{$date['month']}-{$date['day']}");
-        if (time() > $time) {
-
-          $jid = tripal_add_job("$type_label Record Submission - $this->accession",
-            'tpps', 'tpps_submit_all',
-            $args, $this->state['submitting_uid'], 10, $includes, TRUE
-          );
-          $this->set(['job_id'], $jid, TRUE);
-
-        }
-        else {
-          $this->delayRelease();
-        }
+        $this->delayRelease();
       }
     }
     return $this;
