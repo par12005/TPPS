@@ -245,6 +245,10 @@ class Submission {
   /**
    * Sets value of the sub-element of $state (and $sharedState if exists).
    *
+   * WARNING:
+   * Only non-modified emements in sharedState could be updated using this
+   * method. To update modified elements use $submission->setSharedState().
+   *
    * @param array $parents
    *   Path to the element including element name.
    *   Non empty list of the parent elements on path to the element including
@@ -269,18 +273,42 @@ class Submission {
 
   /**
    * Unsets the sub-element of $state (and $sharedState).
+   *
+   * WARNING:
+   * Only non-modified emements in sharedState could be updated using this
+   * method. To update modified elements use $submission->setSharedState().
+   *
+   * @param array $parents
+   *   List of the parents including field name.
+   *
+   * @TODO Test.
    */
   public function unset(array $parents) {
 
-    // Not yet implemented.
-    return;
-    // @TODO See admin/panel.php:1565.
-    if (empty(drupal_array_get_nested_value($array, $path))) {
-      drupal_array_set_nested_value($array, $path, NULL);
-    }
+    throw Exception('Not yet tested');
+
     // Last element is always a field name.
-    $result['field_name'] = end($path);
-    array_pop($path);
+    $field_name = end($parents);
+    array_pop($parents);
+    // State.
+    // Check if there is a list of parents.
+    if (count($parents) >= 1) {
+      $parent_element = &drupal_array_get_nested_value($this->state, $parents);
+    }
+    if (!empty($parent_element) && !empty($field_name)) {
+      unset($parent_element[$field_name]);
+    }
+    // sharedState.
+    $key_exists = FALSE;
+    drupal_array_get_nested_value($this->sharedState, $parents, $key_exists);
+    if ($key_exists) {
+      if (count($parents) >= 1) {
+        $parent_element = &drupal_array_get_nested_value($this->sharedState, $parents);
+      }
+      if (!empty($parent_element) && !empty($field_name)) {
+        unset($parent_element[$field_name]);
+      }
+    }
     return $this;
   }
 
