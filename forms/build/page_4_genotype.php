@@ -12,6 +12,7 @@
  *    So no need to do this at form building step.
  */
 
+
 /**
  * Creates fields describing the genotype data for the submission.
  *
@@ -220,8 +221,8 @@ function tpps_genotype_subform(array $form_bus) {
     '#type' => 'select',
     '#title' => t('Genotyping Type: *'),
     '#options' => [
-      'Genotyping Assay' => t('Genotyping Assay'),
-      'Genotyping' => t('Genotyping'),
+      TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY => t('Genotyping Assay'),
+      TPPS_GENOTYPING_TYPE_GENOTYPING => t('Genotyping'),
     ],
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -310,7 +311,8 @@ function tpps_genotype_subform(array $form_bus) {
       'visible' => [
         [
           ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
-            . '][genotyping-type]"]' => ['value' => 'Genotyping Assay'],
+          . '][genotyping-type]"]'
+          => ['value' => TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY],
         ],
         'or',
         [
@@ -326,38 +328,53 @@ function tpps_genotype_subform(array $form_bus) {
   // Assay Design File.
   $title = t('Assay Design File');
   $file_field_name = 'assay-design';
-  $condition = (
-    $genotyping_type_check == "Genotyping Assay"
-    || $file_type_value == 'SNP Assay file and Assay design file'
-  );
-  if ($condition) {
-    // Add file upload field.
-    // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
-    tpps_form_build_file_field([
-      'form' => &$form,
-      'form_state' => $form_state,
-      'parents' => [$organism_name, 'genotype', $snps_fieldset],
-      'field_name' => $file_field_name,
-      'title' => $title,
-      'organism_name' => $organism_name,
-      'type' => $form_bus['type'],
-      'optional' => TRUE,
-    ]);
-    // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
-    $fields[$snps_fieldset]['assay-citation'] = [
-      '#type' => 'textfield',
-      '#title' => t('Assay Design Citation (Optional):'),
-      '#description' => t('If your assay design file is from a different '
-      . 'paper, please include the citation for that paper here.'),
-    ];
-  }
-  else {
-    $fields[$snps_fieldset][$file_field_name] = [
-      '#type' => 'managed_file',
-      '#tree' => TRUE,
-      '#access' => FALSE,
-    ];
-  }
+  // Add file upload field.
+  // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
+  tpps_form_build_file_field([
+    'form' => &$form,
+    'form_state' => $form_state,
+    'parents' => [$organism_name, 'genotype', $snps_fieldset],
+    'field_name' => $file_field_name,
+    'title' => $title,
+    'organism_name' => $organism_name,
+    'type' => $form_bus['type'],
+    'optional' => TRUE,
+    'states' => [
+      'visible' => [
+        [
+          ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
+          . '][genotyping-type]"]'
+          => ['value' => TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY],
+        ],
+        'or',
+        [
+          ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
+            . '][file-type]"]' => ['value' => 'SNP Assay file and Assay design file'],
+        ],
+      ],
+    ],
+  ]);
+  // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
+  $fields[$snps_fieldset]['assay-citation'] = [
+    '#type' => 'textfield',
+    '#title' => t('Assay Design Citation (Optional):'),
+    '#description' => t('If your assay design file is from a different '
+    . 'paper, please include the citation for that paper here.'),
+    '#states' => [
+      'visible' => [
+        [
+          ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
+            . '][genotyping-type]"]'
+          => ['value' => TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY],
+        ],
+        'or',
+        [
+          ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
+            . '][file-type]"]' => ['value' => 'SNP Assay file and Assay design file'],
+        ],
+      ],
+    ],
+  ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   if (tpps_is_genotype_data_type($form_state)) {
@@ -663,14 +680,7 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
   $fields[$snps_fieldset]['genotyping-design'] = [
     '#type' => 'select',
     '#title' => t('Define Experimental Design: *'),
-    '#options' => [
-      0 => t('- Select -'),
-      1 => t('GBS'),
-      2 => t('Targeted Capture'),
-      3 => t('Whole Genome Resequencing'),
-      4 => t('RNA-Seq'),
-      5 => t('Genotyping Array'),
-    ],
+    '#options' => tpps_form_get_genotyping_design_field_options(),
     '#default_value' => tpps_get_ajax_value($form_state,
       [$id, 'genotype', $snps_fieldset, 'genotyping-design']
     ),
@@ -680,21 +690,14 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
   $fields[$snps_fieldset]['GBS'] = [
     '#type' => 'select',
     '#title' => t('GBS Type: *'),
-    '#options' => [
-      0 => t('- Select -'),
-      1 => t('RADSeq'),
-      2 => t('ddRAD-Seq'),
-      3 => t('NextRAD'),
-      4 => t('RAPTURE'),
-      5 => t('Other'),
-    ],
+    '#options' => tpps_form_get_gbs_type_field_options(),
     '#default_value' => tpps_get_ajax_value($form_state,
       [$id, 'genotype', $snps_fieldset, 'GBS']
     ),
     '#states' => [
       'visible' => [
         ':input[name="' . $id . '[genotype][' . $snps_fieldset . '][genotyping-design]"]' =>
-          ['value' => '1'],
+        ['value' => TPPS_GENOTYPING_DESIGN_GBS],
       ],
     ],
   ];
@@ -709,7 +712,7 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
         ':input[name="' . $id . '[genotype][' . $snps_fieldset . '][GBS]"]' =>
           ['value' => '5'],
         ':input[name="' . $id . '[genotype][' . $snps_fieldset . '][genotyping-design]"]' =>
-          ['value' => '1'],
+          ['value' => TPPS_GENOTYPING_DESIGN_GBS],
       ],
     ],
   ];
@@ -729,7 +732,7 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
     '#states' => [
       'visible' => [
         ':input[name="' . $id . '[genotype][' . $snps_fieldset . '][genotyping-design]"]' =>
-          ['value' => '2'],
+          ['value' => TPPS_GENOTYPING_DESIGN_TARGETED_CAPTURE],
       ],
     ],
   ];
@@ -745,7 +748,7 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
         ':input[name="' . $id . '[genotype][' . $snps_fieldset . '][targeted-capture]"]' =>
           ['value' => '2'],
         ':input[name="' . $id . '[genotype][' . $snps_fieldset . '][genotyping-design]"]' =>
-          ['value' => '2'],
+          ['value' => TPPS_GENOTYPING_DESIGN_TARGETED_CAPTURE],
       ],
     ],
   ];

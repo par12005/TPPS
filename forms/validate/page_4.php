@@ -134,9 +134,15 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
     // definitly not needed.
     for ($i = 1; $i <= $organism_number; $i++) {
       $genotype = &$form_state['values']["organism-$i"]['genotype'];
-      $genotyping_type = $genotype[$snps_fieldset]['genotyping-type'] ?? [];
+      $genotyping_type = $genotype[$snps_fieldset]['genotyping-type'] ?? NULL;
       $file_type = $genotype[$snps_fieldset]['file-type'] ?? NULL;
-      if ($genotyping_type == 'Genotyping' && $file_type == 'VCF') {
+      $does_study_include_snp_data
+        = $genotype['does_study_include_snp_data'] ?? NULL;
+      if (
+        $does_study_include_snp_data == 'yes'
+        && $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING
+        && $file_type == TPPS_GENOTYPING_FILE_TYPE_VCF
+      ) {
         if (tpps_file_remove($genotype[$snps_fieldset]['snps-assay'])) {
           $genotype[$snps_fieldset]['snps-assay'] = 0;
         }
@@ -649,7 +655,15 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
   $other_fieldset = 'other';
   $snps = $genotype[$snps_fieldset] ?? NULL;
   $ref_genome = $genotype['ref-genome'] ?? NULL;
-  $genotyping_type = $genotype[$snps_fieldset]['genotyping-type'] ?? [];
+
+  $does_study_include_snp_data
+    = $genotype['does_study_include_snp_data'] ?? NULL;
+  $does_study_include_ssr_cpssr_data
+    = $genotype['does_study_include_ssr_cpssr_data'] ?? NULL;
+  $does_study_include_other_genotypic_data
+    = $genotype['does_study_include_other_genotypic_data'] ?? NULL;
+
+  $genotyping_type = $genotype[$snps_fieldset]['genotyping-type'] ?? NULL;
   // WARNING: 'maker-type' is array because multiple values could be selected.
   $marker_type = $genotype['marker-type'] ?? NULL;
   // $file_type is a string (not array) and not always defined:
@@ -767,7 +781,7 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
   // End of 'Reference Assembly used' field validation.
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   tpps_is_required_field_empty($form_state, [$id, 'genotype', 'marker-type']);
-  if (!empty($marker_type['SNPs'])) {
+  if ($does_study_include_snp_data == 'yes') {
     if ($is_step2_genotype) {
       if ($genotype[$snps_fieldset]['upload_snp_association'] == 'Yes') {
         tpps_is_required_field_empty($form_state,
@@ -785,7 +799,7 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
     if (!tpps_is_required_field_empty($form_state,
       [$id, 'genotype', $snps_fieldset, 'genotyping-design'])
     ) {
-      if ($snps['genotyping-design'] == '1') {
+      if ($snps['genotyping-design'] == TPPS_GENOTYPING_DESIGN_GBS) {
         $condition = (
           !tpps_is_required_field_empty(
             $form_state, [$id, 'genotype', $snps_fieldset, 'GBS']
@@ -799,7 +813,7 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
           );
         }
       }
-      elseif ($snps['genotyping-design'] == '2') {
+      elseif ($snps['genotyping-design'] == TPPS_GENOTYPING_DESIGN_TARGETED_CAPTURE) {
         $condition = (
           !tpps_is_required_field_empty(
             $form_state, [$id, 'genotype', $snps_fieldset, 'targeted-capture']
@@ -807,8 +821,8 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
           && $snps['targeted-capture'] == '2'
         );
         if ($condition) {
-          !tpps_is_required_field_empty(
-            $form_state, [$id, 'genotype', $snps_fieldset, 'targeted-capture-other']
+          !tpps_is_required_field_empty($form_state,
+            [$id, 'genotype', $snps_fieldset, 'targeted-capture-other']
           );
         }
       }
@@ -820,7 +834,7 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
 
   // @TODO Check why fields are missing.
 
-  //if (!empty($marker_type['SSRs/cpSSRs'])) {
+  //if ($does_study_include_ssr_cpssr_data == 'yes') {
   //  tpps_is_required_field_empty($form_state, [$id, 'genotype', 'SSRs/cpSSRs']);
   //  if (in_array($genotype['SSRs/cpSSRs'], ['cpSSRs', 'Both SSRs and cpSSRs'])) {
   //    tpps_validate_ssr($form_state, $org_num, 'ssrs_extra');
@@ -831,7 +845,7 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
   //}
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  if (!empty($marker_type['Other'])) {
+  if ($does_study_include_other_genotypic_data == 'yes') {
     tpps_is_required_field_empty($form_state,
       [$id, 'genotype', $other_fieldset, 'other-marker']
     );
@@ -870,13 +884,19 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
   }
 
   if (
-    $file_type == 'VCF' &&  !$vcf
+    $does_study_include_snp_data == 'yes'
+    && $file_type == TPPS_GENOTYPING_FILE_TYPE_VCF
+    && !$vcf
     && trim($form_state['values'][$id]['genotype'][$snps_fieldset]['local_vcf']) == ''
   ) {
-    tpps_form_error_required($form_state, [$id, 'genotype', $snps_fieldset, 'vcf']);
+    tpps_form_error_required($form_state,
+      [$id, 'genotype', $snps_fieldset, 'vcf']
+    );
   }
-
-  elseif ($file_type == 'VCF') {
+  elseif (
+    $does_study_include_snp_data == 'yes'
+    && $file_type == TPPS_GENOTYPING_FILE_TYPE_VCF
+  ) {
     if (
       !empty($assembly) && !form_get_errors()
       && in_array($ref_genome, ['manual', 'manual2', 'url'])
@@ -1026,204 +1046,210 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
     tpps_preserve_valid_file($form_state, $vcf, $org_num, "Genotype_VCF");
   }
 
-  // @TODO Update because field 'file-type' has only this options:
-  // 'SNP Assay file and Assay design file' and 'VCF'.
-  if ($file_type == 'SNPs Genotype Assay' && !$snps_assay) {
-    // Field 'snps_assay' is required when:
-    // Genotyping Type: Genotyping Assay
-    // or (
-    //   Genotyping Type: Genotyping
-    //   && Genotyping file type: SNP Assay file and Assay design file
-    // )
-    // So current check covers all the cases but it's hard to read :( ...
-    tpps_form_error_required($form_state,
-      [$id, 'genotype', $snps_fieldset, 'snps-assay']
-    );
-  }
-  // @TODO Update because field 'file-type' has only this options:
-  // 'SNP Assay file and Assay design file' and 'VCF'.
-  elseif ($file_type == 'SNPs Genotype Assay') {
-    $headers = tpps_file_headers($snps_assay);
-    $id_col_name = key($headers);
-    while (($k = array_search(NULL, $headers))) {
-      $message = t('Following header column is Null which needs to be fixed. '
-        . '%data', ['%data' => $k]);
-      drupal_set_message($message, 'error');
-      unset($headers[$k]);
+  if (
+    $does_study_include_snp_data == 'yes'
+    && (
+      $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
+      || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
+    )
+  ) {
+    if (!$snps_assay) {
+      tpps_form_error_required($form_state,
+        [$id, 'genotype', $snps_fieldset, 'snps-assay']
+      );
     }
-    $num_columns = tpps_file_width($snps_assay) - 1;
-    $num_unique_columns = count(array_unique($headers)) - 1;
-    if ($num_unique_columns != $num_columns) {
-      $duplicates = array_diff_assoc($headers, array_unique($headers));
-      if (!empty($duplicates)) {
-        drupal_set_message(
-          t('Following header values are duplicate in provided snp file. %data',
-          array('%data' => implode(',', $duplicates))),
-        'error'
-        );
+    else {
+      $headers = tpps_file_headers($snps_assay);
+      $id_col_name = key($headers);
+      while (($k = array_search(NULL, $headers))) {
+        $message = t('Following header column is Null which needs to be fixed. '
+          . '%data', ['%data' => $k]);
+        drupal_set_message($message, 'error');
+        unset($headers[$k]);
       }
-      form_set_error("$id][genotype][$snps_fieldset][snps-assay",
-        t("SNPs Assay file: some columns in the file you provided are "
-          . "missing or have duplicate header values. Please either enter "
-          . "valid header values for those columns or remove those columns, "
-          . "then reupload your file."
-        )
-      );
-    }
-
-    // #86782z4xu Skip this check if we reuse files from existing study.
-    // @todo Minor. Maybe better to get new list of trees and use it in
-    // all other checks to be sure we have the same list in other files.
-    if (!form_get_errors() && empty($page3['existing_trees'])) {
-      $acc_no_header = $page3['tree-accession'][$species_index]['file-no-header'];
-      $missing_trees = tpps_compare_files(
-        $snps_assay,
-        $tree_accession_file,
-        $id_col_name,
-        $id_col_accession_name,
-        FALSE,
-        $acc_no_header
-      );
-      if ($missing_trees !== []) {
+      $num_columns = tpps_file_width($snps_assay) - 1;
+      $num_unique_columns = count(array_unique($headers)) - 1;
+      if ($num_unique_columns != $num_columns) {
+        $duplicates = array_diff_assoc($headers, array_unique($headers));
+        if (!empty($duplicates)) {
+          drupal_set_message(
+            t('Following header values are duplicate in provided snp file. %data',
+            array('%data' => implode(',', $duplicates))),
+          'error'
+          );
+        }
         form_set_error("$id][genotype][$snps_fieldset][snps-assay",
-          t(
-            "SNPs Assay file: We detected Plant Identifiers that were "
-            . "not in your Plant Accession file. Please either remove these "
-            . "plants from your Genotype file, or add them to your "
-            . "Plant Accession file. "
-            . "The Plant Identifiers we found were: @tree_id_str",
-            ['@tree_id_str' => implode(', ', $missing_trees)]
+          t("SNPs Assay file: some columns in the file you provided are "
+            . "missing or have duplicate header values. Please either enter "
+            . "valid header values for those columns or remove those columns, "
+            . "then reupload your file."
           )
         );
       }
-    }
-    // Preserve file if it is valid.
-    tpps_preserve_valid_file($form_state, $snps_assay, $org_num, "Genotype_SNPs_Assay");
 
-    if (!form_get_errors()) {
-      // @TODO Update because field 'file-type' has only this options:
-      // 'SNP Assay file and Assay design file' and 'VCF'.
-      if ($file_type == 'SNPs Associations' && $assoc_file) {
-        $required_groups = [
-          'SNP ID' => ['id' => [1]],
-          'Scaffold' => ['scaffold' => [2]],
-          'Position' => ['position' => [3]],
-          'Allele' => ['allele' => [4]],
-          'Associated Trait' => ['trait' => [5]],
-          'Confidence Value' => ['confidence' => [6]],
-        ];
-        $file_element = $form[$id]['genotype'][$snps_fieldset]['snps-association'];
-        $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
+      // #86782z4xu Skip this check if we reuse files from existing study.
+      // @todo Minor. Maybe better to get new list of trees and use it in
+      // all other checks to be sure we have the same list in other files.
+      if (!form_get_errors() && empty($page3['existing_trees'])) {
+        $acc_no_header = $page3['tree-accession'][$species_index]['file-no-header'];
+        $missing_trees = tpps_compare_files(
+          $snps_assay,
+          $tree_accession_file,
+          $id_col_name,
+          $id_col_accession_name,
+          FALSE,
+          $acc_no_header
+        );
+        if ($missing_trees !== []) {
+          form_set_error("$id][genotype][$snps_fieldset][snps-assay",
+            t(
+              "SNPs Assay file: We detected Plant Identifiers that were "
+              . "not in your Plant Accession file. Please either remove these "
+              . "plants from your Genotype file, or add them to your "
+              . "Plant Accession file. "
+              . "The Plant Identifiers we found were: @tree_id_str",
+              ['@tree_id_str' => implode(', ', $missing_trees)]
+            )
+          );
+        }
+      }
+      // Preserve file if it is valid.
+      tpps_preserve_valid_file($form_state, $snps_assay, $org_num, "Genotype_SNPs_Assay");
 
-        if (!form_get_errors()) {
-          // Check that SNP IDs match Genotype Assay.
-          $snps_id_col = $groups['SNP ID'][1];
-          $assoc_no_header = $genotype[$snps_fieldset]['snps-association-no-header'] ?? FALSE;
+      if (!form_get_errors()) {
+        if (
+          $does_study_include_snp_data == 'yes'
+          && $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
+          && $assoc_file
+        ) {
+          $required_groups = [
+            'SNP ID' => ['id' => [1]],
+            'Scaffold' => ['scaffold' => [2]],
+            'Position' => ['position' => [3]],
+            'Allele' => ['allele' => [4]],
+            'Associated Trait' => ['trait' => [5]],
+            'Confidence Value' => ['confidence' => [6]],
+          ];
+          $file_element = $form[$id]['genotype'][$snps_fieldset]['snps-association'];
+          $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
 
-          $assay_snps = tpps_file_headers($snps_assay);
-          unset($assay_snps[key($assay_snps)]);
-          $assoc_snps = tpps_parse_file_column($assoc_file, $snps_id_col, $assoc_no_header);
-          $missing_snps = array_diff($assoc_snps, $assay_snps);
+          if (!form_get_errors()) {
+            // Check that SNP IDs match Genotype Assay.
+            $snps_id_col = $groups['SNP ID'][1];
+            $assoc_no_header = $genotype[$snps_fieldset]['snps-association-no-header'] ?? FALSE;
 
-          if ($missing_snps !== array()) {
-            $snps_id_str = implode(', ', $missing_snps);
-            form_set_error("$id][genotype][$snps_fieldset][snps-association",
-              t("SNP Association File: We detected SNP IDs that were not in "
-              . "your Genotype Assay. Please either remove these SNPs from "
-              . "your Association file, or add them to your Genotype Assay. "
-              . "The SNP Identifiers we found were: @snps_id_str",
-              ['@snps_id_str' => $snps_id_str]));
-          }
+            $assay_snps = tpps_file_headers($snps_assay);
+            unset($assay_snps[key($assay_snps)]);
+            $assoc_snps = tpps_parse_file_column($assoc_file, $snps_id_col, $assoc_no_header);
+            $missing_snps = array_diff($assoc_snps, $assay_snps);
 
-          // Check that Phenotype names match phenotype metadata section.
-          $trait_id_col = $groups['Associated Trait'][5];
-          $association_phenotypes = tpps_parse_file_column($assoc_file, $trait_id_col, $assoc_no_header);
-
-          $phenotype = $form_state['values'][$id]['phenotype'];
-          $phenotype_meta = $phenotype['metadata'];
-          $phenotype_number = $phenotype['phenotypes-meta']['number'];
-
-          $phenotype_meta_names = array();
-          $phenotype_name_col = $form_state['values'][$id]['phenotype']['metadata-groups']['Phenotype Id']['1'] ?? NULL;
-          if (isset($phenotype_name_col)) {
-            $phenotype_meta_names = tpps_parse_file_column($phenotype_meta, $phenotype_name_col);
-          }
-
-          for ($i = 1; $i <= $phenotype_number; $i++) {
-            $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
-          }
-
-          $missing_phenotypes = array_diff($association_phenotypes, $phenotype_meta_names);
-          if ($missing_phenotypes !== array()) {
-            $phenotype_names_str = implode(', ', $missing_phenotypes);
-            form_set_error("$id][genotype][$snps_fieldset][snps-association",
-              t("SNP Association File: We detected Associated Traits that were "
-              . "not specified in the Phenotype Metadata Section. Please "
-              . "either remove these Traits from your Association file, "
-              . "or add them to your Phenotype Metadata section. The Trait "
-              . "names we foud were: $phenotype_names_str")
-            );
-          }
-
-          // Check that position values are correctly formatted.
-          $position_col = $groups['Position'][3];
-          $positions = tpps_parse_file_column($assoc_file, $position_col, $assoc_no_header);
-          foreach ($positions as $position) {
-            if (!preg_match('/^(\d+):(\d+)$/', $position)) {
+            if ($missing_snps !== array()) {
+              $snps_id_str = implode(', ', $missing_snps);
               form_set_error("$id][genotype][$snps_fieldset][snps-association",
-                t('SNP Association File: We detected SNP positions that do '
-                . 'not match the required format. '
-                . 'The correct format is: "start:stop".')
+                t("SNP Association File: We detected SNP IDs that were not in "
+                . "your Genotype Assay. Please either remove these SNPs from "
+                . "your Association file, or add them to your Genotype Assay. "
+                . "The SNP Identifiers we found were: @snps_id_str",
+                ['@snps_id_str' => $snps_id_str]));
+            }
+
+            // Check that Phenotype names match phenotype metadata section.
+            $trait_id_col = $groups['Associated Trait'][5];
+            $association_phenotypes = tpps_parse_file_column($assoc_file, $trait_id_col, $assoc_no_header);
+
+            $phenotype = $form_state['values'][$id]['phenotype'];
+            $phenotype_meta = $phenotype['metadata'];
+            $phenotype_number = $phenotype['phenotypes-meta']['number'];
+
+            $phenotype_meta_names = array();
+            $phenotype_name_col = $form_state['values'][$id]['phenotype']['metadata-groups']['Phenotype Id']['1'] ?? NULL;
+            if (isset($phenotype_name_col)) {
+              $phenotype_meta_names = tpps_parse_file_column($phenotype_meta, $phenotype_name_col);
+            }
+
+            for ($i = 1; $i <= $phenotype_number; $i++) {
+              $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
+            }
+
+            $missing_phenotypes = array_diff($association_phenotypes, $phenotype_meta_names);
+            if ($missing_phenotypes !== array()) {
+              $phenotype_names_str = implode(', ', $missing_phenotypes);
+              form_set_error("$id][genotype][$snps_fieldset][snps-association",
+                t("SNP Association File: We detected Associated Traits that were "
+                . "not specified in the Phenotype Metadata Section. Please "
+                . "either remove these Traits from your Association file, "
+                . "or add them to your Phenotype Metadata section. The Trait "
+                . "names we foud were: $phenotype_names_str")
               );
-              break;
+            }
+
+            // Check that position values are correctly formatted.
+            $position_col = $groups['Position'][3];
+            $positions = tpps_parse_file_column($assoc_file, $position_col, $assoc_no_header);
+            foreach ($positions as $position) {
+              if (!preg_match('/^(\d+):(\d+)$/', $position)) {
+                form_set_error("$id][genotype][$snps_fieldset][snps-association",
+                  t('SNP Association File: We detected SNP positions that do '
+                  . 'not match the required format. '
+                  . 'The correct format is: "start:stop".')
+                );
+                break;
+              }
             }
           }
-        }
 
-        // Preserve file if it is valid.
-        tpps_preserve_valid_file($form_state, $assoc_file, $org_num, "SNPs_Association");
+          // Preserve file if it is valid.
+          tpps_preserve_valid_file($form_state, $assoc_file, $org_num, "SNPs_Association");
 
-        tpps_is_required_field_empty($form_state,
-          [$id, 'genotype', $snps_fieldset, 'snps-association-type']
-        );
-        tpps_is_required_field_empty($form_state,
-          [$id, 'genotype', $snps_fieldset, 'snps-association-tool']
-        );
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        // SNPs Population Structure file.
-        if (
-          $genotype[$snps_fieldset]['upload_snp_population'] == 'Yes'
-          && !tpps_is_required_field_empty($form_state,
-            [$id, 'genotype', $snps_fieldset, 'snps-pop-struct']
-          )
-        ) {
-          // Preserve file if it is valid.
-          tpps_preserve_valid_file(
-            $form_state,
-            $genotype[$snps_fieldset]['snps-pop-struct'],
-            $org_num,
-            'SNPs_Population_Structure'
+          tpps_is_required_field_empty($form_state,
+            [$id, 'genotype', $snps_fieldset, 'snps-association-type']
           );
-        }
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        // SNPs Kinship File.
-        if ($genotype[$snps_fieldset]['upload_snp_kinship'] == 'Yes'
-          && !tpps_is_required_field_empty(
-            $form_state, [$id, 'genotype', $snps_fieldset, 'snps-kinship'])
-        ) {
-          // Preserve file if it is valid.
-          tpps_preserve_valid_file(
-            $form_state,
-            $genotype[$snps_fieldset]['snps-kinship'],
-            $org_num,
-            'SNPs_Kinship'
+          tpps_is_required_field_empty($form_state,
+            [$id, 'genotype', $snps_fieldset, 'snps-association-tool']
           );
+          // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+          // SNPs Population Structure file.
+          if (
+            $genotype[$snps_fieldset]['upload_snp_population'] == 'Yes'
+            && !tpps_is_required_field_empty($form_state,
+              [$id, 'genotype', $snps_fieldset, 'snps-pop-struct']
+            )
+          ) {
+            // Preserve file if it is valid.
+            tpps_preserve_valid_file(
+              $form_state,
+              $genotype[$snps_fieldset]['snps-pop-struct'],
+              $org_num,
+              'SNPs_Population_Structure'
+            );
+          }
+          // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+          // SNPs Kinship File.
+          if ($genotype[$snps_fieldset]['upload_snp_kinship'] == 'Yes'
+            && !tpps_is_required_field_empty(
+              $form_state, [$id, 'genotype', $snps_fieldset, 'snps-kinship'])
+          ) {
+            // Preserve file if it is valid.
+            tpps_preserve_valid_file(
+              $form_state,
+              $genotype[$snps_fieldset]['snps-kinship'],
+              $org_num,
+              'SNPs_Kinship'
+            );
+          }
         }
       }
     }
   }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Assay Design File.
-  if (!empty($genotyping_type['Genotyping Assay'])) {
+  if (
+    $does_study_include_snp_data == 'yes'
+    && (
+      $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
+      || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
+    )
+  ) {
     $file_field_name = 'assay-design';
     $file_field_value = drupal_array_get_nested_value(
       $form_state, ['values', $id, 'genotype', $snps_fieldset, $file_field_name]
@@ -1245,7 +1271,7 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
   // 'SNP Assay file and Assay design file' and 'VCF'.
   $other_fieldset = 'other';
   if (
-    $file_type == 'Other Marker Genotype Spreadsheet'
+    $does_study_include_other_genotypic_data == 'yes'
     && !tpps_is_required_field_empty($form_state,
       [$id, 'genotype', $other_fieldset, 'other']
     )

@@ -53,6 +53,32 @@ define(
   'Approved - Delayed Submission Release'
 );
 
+// Values of the 'Define Experimental Design' field.
+define('TPPS_GENOTYPING_DESIGN_GBS', 1);
+define('TPPS_GENOTYPING_DESIGN_TARGETED_CAPTURE', 2);
+define('TPPS_GENOTYPING_DESIGN_WHOLE_GENOME_RESEQUENCING', 3);
+define('TPPS_GENOTYPING_DESIGN_RNA_SEQ', 4);
+define('TPPS_GENOTYPING_DESIGN_GENOTYPING_ARRAY', 5);
+
+// Values of the 'GBS Type' field.
+define('TPPS_GBS_TYPE_RADSEQ', 1);
+define('TPPS_GBS_TYPE_DDRAD_SEQ', 2);
+define('TPPS_GBS_TYPE_NEXTRAD', 3);
+define('TPPS_GBS_TYPE_RAPTURE', 4);
+define('TPPS_GBS_TYPE_OTHER', 5);
+
+// Values of the 'Genotyping Type' field.
+define('TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY', 'Genotyping Assay');
+define('TPPS_GENOTYPING_TYPE_GENOTYPING', 'Genotyping');
+
+// Values of the 'Genotyping file type' field.
+define(
+  'TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE',
+  'SNP Assay file and Assay design file'
+);
+define('TPPS_GENOTYPING_FILE_TYPE_VCF', 'VCF');
+
+
 module_load_include('inc', 'tpps', 'includes/common');
 
 // WARNING:

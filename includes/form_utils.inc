@@ -949,3 +949,49 @@ function tpps_pre_validate($accession, $fid, $org_num, $job = NULL) {
     $submission->save();
   }
 }
+
+/**
+ * Gets list of options for 'Genotyping Design' field on Page 4.
+ *
+ * @param int $key
+ *   Key of the value.
+ *
+ * @return mixed
+ *   Returns array with the list of all options when $key is empty.
+ *   Returns string when $key specified and item with this key exists in the list.
+ *   Returns NULL when $key was specified but item not found.
+ */
+function tpps_form_get_genotyping_design_field_options($key = NULL) {
+  $list = [
+    0 => t('- Select -'),
+    TPPS_GENOTYPING_DESIGN_GBS => t('GBS'),
+    TPPS_GENOTYPING_DESIGN_TARGETED_CAPTURE => t('Targeted Capture'),
+    TPPS_GENOTYPING_DESIGN_WHOLE_GENOME_RESEQUENCING => t('Whole Genome Resequencing'),
+    TPPS_GENOTYPING_DESIGN_RNA_SEQ => t('RNA-Seq'),
+    TPPS_GENOTYPING_DESIGN_GENOTYPING_ARRAY => t('Genotyping Array'),
+  ];
+  return ($key) ? ($list[$key] ?? NULL) : $list;
+}
+
+/**
+ * Gets list of options for 'GBS Type' field on Page 4.
+ *
+ * @param int $key
+ *   Key of the value.
+ *
+ * @return mixed
+ *   Returns array with the list of all options when $key is empty.
+ *   Returns string when $key specified and item with this key exists in the list.
+ *   Returns NULL when $key was specified but item not found.
+ */
+function tpps_form_get_gbs_type_field_options($key = NULL) {
+  $list = [
+    0 => t('- Select -'),
+    TPPS_GBS_TYPE_RADSEQ  => t('RADSeq'),
+    TPPS_GBS_TYPE_DDRAD_SEQ => t('ddRAD-Seq'),
+    TPPS_GBS_TYPE_NEXTRAD => t('NextRAD'),
+    TPPS_GBS_TYPE_RAPTURE => t('RAPTURE'),
+    TPPS_GBS_TYPE_OTHER => t('Other'),
+  ];
+  return ($key) ? ($list[$key] ?? NULL) : $list;
+}

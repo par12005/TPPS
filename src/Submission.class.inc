@@ -1452,44 +1452,38 @@ class Submission {
               = implode(', ', ($marker_types ?? []));
 
             if (!empty($geno['marker-type']['SNPs'])) {
-              if (!empty($snps_fieldset['genotyping-design'])) {
-                $geno_design_options =[
-                  1 => 'GBS',
-                  2 => 'Targeted Capture',
-                  3 => 'Whole Genome Resequencing',
-                  4 => 'RNA-Seq',
-                  5 => 'Genotyping Array',
-                ];
-                if (isset($geno_design_options[$snps_fieldset['genotyping-design']])) {
-                  $data["$org_name Genotyping Design"]
-                    = $geno_design_options[$snps_fieldset['genotyping-design']];
-                }
+              $genotyping_design_field_value
+                = $snps_fieldset['genotyping-design'] ?? NULL;
+              $genotyping_design_field_title
+                = tpps_form_get_genotyping_design_field_options(
+                  $genotyping_design_field_value
+                );
+              if (!empty($genotyping_design_field_title)) {
+                // @TODO Compare with function tpps_page_4_marker_info().
+                $data["$org_name Genotyping Design"]
+                  = $genotyping_design_field_title;
 
+                // GBS Type field.
+                $gbs_type_field_value = $snps_fieldset['GBS'] ?? NULL;
+                $gbs_type_field_title
+                  = tpps_form_get_gbs_type_field_options($gbs_type_field_value);
                 if (
-                  ($data["$org_name Genotyping Design"] ?? NULL) == 'GBS'
-                  && !empty($snps_fieldset['GBS'])
+                  $genotyping_design_field_value == TPPS_GENOTYPING_DESIGN_GBS
+                  && !empty($gbs_type_field_title)
                 ) {
-                  $gbs_options = [
-                    1 => 'RADSeq',
-                    2 => 'ddRAD-Seq',
-                    3 => 'NextRAD',
-                    4 => 'RAPTURE',
-                    5 => 'Other',
-                  ];
-                  if (isset($gbs_options[$snps_fieldset['GBS']])) {
-                    $data["$org_name GBS Type"] = $gbs_options[$snps_fieldset['GBS']];
-                  }
+                  $data["$org_name GBS Type"] = $gbs_type_title;
 
                   if (
-                    ($data["$org_name GBS Type"] ?? NULL) == 'Other'
+                    $gbs_type_field_value == TPPS_GBS_TYPE_OTHER
                     && !empty($snps_fieldset['GBS-other'])
                   ) {
+                    // @TODO Use check_plain() for all output.
                     $data["$org_name Custom GBS Type"] = $snps_fieldset['GBS-other'];
                   }
                 }
 
                 if (
-                  ($data["$org_name Genotyping Design"] ?? NULL) == 'Targeted Capture'
+                  $genotyping_design_field_value == TPPS_GENOTYPING_DESIGN_TARGETED_CAPTURE
                   && !empty($snps_fieldset['targeted-capture'])
                 ) {
                   $targeted_capture_options = array(
