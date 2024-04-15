@@ -3702,7 +3702,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
   if ($genotype['files']['file-type'] == 'VCF') {
     if ($disable_vcf_import == 0) {
-      tpps_drop_genotype_call_indexes($job);
+      // tpps_drop_genotype_call_indexes($job);
 
       // @todo we probably want to use tpps_file_iterator to parse vcf files.
       $vcf_fid = $genotype['files']['vcf'];
