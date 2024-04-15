@@ -1390,7 +1390,7 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
     'seq_var_cvterm' => $seq_var_cvterm,
     'multi_insert' => &$multi_insert_options,
     'job' => &$job,
-    'study_accession' => $form_state['saved_values'][TPPS_PAGE_1]['accession']
+    'study_accession' => $form_state['saved_values'][1]['accession']
   );
 
   // 2/29/2024 Add reference genome more consitently for all scenarios
@@ -3689,6 +3689,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
     'seq_var_cvterm' => $seq_var_cvterm,
     'multi_insert' => &$multi_insert_options,
     'job' => &$job,
+    'study_accession' => $form_state['saved_values'][1]['accession']
   );
 
   // check to make sure admin has not set disable_vcf_importing.
@@ -3700,7 +3701,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
   if ($genotype['files']['file-type'] == 'VCF') {
     if ($disable_vcf_import == 0) {
-      tpps_drop_genotype_call_indexes($job);
+      // tpps_drop_genotype_call_indexes($job);
 
       // @todo we probably want to use tpps_file_iterator to parse vcf files.
       $vcf_fid = $genotype['files']['vcf'];
@@ -3984,7 +3985,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           $row_object = $results->fetchObject();
           $variant_id = $row_object->feature_id;
 
-          // Lookup whether marker is already inserted into the features table
+          // Lookup whether marker is already inserted into the features table.
           $result = chado_query(
             "SELECT * FROM chado.feature WHERE uniquename = :marker_name",
             // Column 3 of VCF.
