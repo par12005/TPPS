@@ -666,13 +666,6 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
   $genotyping_type = $genotype[$snps_fieldset]['genotyping-type'] ?? NULL;
   // WARNING: 'maker-type' is array because multiple values could be selected.
   $marker_type = $genotype['marker-type'] ?? NULL;
-  // $file_type is a string (not array) and not always defined:
-  // Shown when: Marker Type: SNPs && Genotyping Type: Genotyping.
-  // Possiblem values:
-  // 'VCF', 'SNP Assay file and Assay design file'.
-  // @TODO Check if those values are possible and remove validation if not:
-  // ... and 'SNPs Associations'
-  // ... and 'Other Marker Genotype Spreadsheet'.
   $file_type = $genotype[$snps_fieldset]['file-type'] ?? NULL;
   // File fields:
   $vcf = $genotype[$snps_fieldset]['vcf'] ?? 0;
@@ -1266,8 +1259,6 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Files / Other.
-  // @TODO Update because field 'file-type' has only this options:
-  // 'SNP Assay file and Assay design file' and 'VCF'.
   $other_fieldset = 'other';
   if (
     $does_study_include_other_genotypic_data == 'yes'

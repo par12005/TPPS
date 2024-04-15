@@ -2115,7 +2115,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
   tpps_job_logger_write('[INFO] Disable VCF Import is set to ' . $disable_vcf_import . ' (0 means allow vcf import, 1 ignore vcf import)');
   // RISH: 12/6/2023
   $accession = $form_state['accession'];
-  if ($genotype['files']['file-type'] == 'VCF') {
+  if ($genotype['files']['file-type'] == TPPS_GENOTYPING_FILE_TYPE_VCF) {
     // @TODO Comment out after testing
     // echo "Skipping VCF processing during debug\n";
     // return;
@@ -3699,7 +3699,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
   }
   tpps_job_logger_write('[INFO] Disable VCF Import is set to ' . $disable_vcf_import . ' (0 means allow vcf import, 1 ignore vcf import)');
 
-  if ($genotype['files']['file-type'] == 'VCF') {
+  if ($genotype['files']['file-type'] == TPPS_GENOTYPING_FILE_TYPE_VCF) {
     if ($disable_vcf_import == 0) {
       // tpps_drop_genotype_call_indexes($job);
 
@@ -4453,6 +4453,8 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
       $organism_name = $page1_values['organism'][$i]['name'];
       echo "Organism name: $organism_name\n";
       $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+      // Note: Value of this field is string (not array). Correct check:
+      //if ($genotype['files']['file-type'] == TPPS_GENOTYPING_FILE_TYPE_VCF) {
       if (empty($genotype['files']['file-type']['VCF'])) {
         echo "Could not find a VCF file for organism-$i\n";
       }
@@ -7091,7 +7093,7 @@ function tpps_vcf_exists($form_state, $i) {
   if (!isset($genotype)) {
     return false;
   }
-  if ($genotype['files']['file-type'] == 'VCF') {
+  if ($genotype['files']['file-type'] == TPPS_GENOTYPING_FILE_TYPE_VCF) {
     $vcf_fid = $genotype['files']['vcf'];
     // This means it was uploaded
     if ($vcf_fid > 0) {
@@ -7279,7 +7281,7 @@ function tpps_vcf_location($form_state, $i) {
   if (!isset($genotype)) {
     return false;
   }
-  if ($genotype['files']['file-type'] == 'VCF') {
+  if ($genotype['files']['file-type'] == TPPS_GENOTYPING_FILE_TYPE_VCF) {
     $vcf_fid = $genotype['files']['vcf'];
     // This means it was uploaded.
     if ($vcf_fid > 0) {

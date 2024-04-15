@@ -166,6 +166,11 @@ function tpps_doi_upload_files($id, array &$state) {
         $files[] = $genotype['tripal_fasta']['file_upload_existing'] ?? NULL;
       }
       // @TODO Could we skip all this extra checks and just collect files?
+      // WARNING:
+      // This won't work. Field 'file-type' has only 2 options:
+      // TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
+      // and TPPS_GENOTYPING_FILE_TYPE_VCF.
+      // @TODO Ask curation team what to do with this.
       if (!empty($genotype['files']['file-type']['SNPs Genotype Assay'])) {
         $files[] = $genotype['SNPs']['snps-assay'] ?? NULL;
       }

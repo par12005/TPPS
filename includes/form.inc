@@ -81,7 +81,7 @@ function tpps_form_add_buttons(array $form_bus) {
           $pre_valid_states = [];
           for ($i = 1; $i <= $form_bus['organism_number']; $i++) {
             $pre_valid_states["[name=\"organism-{$i}[genotype][SNPs][file-type]\"]"]
-              = ['value' => 'VCF'];
+              = ['value' => TPPS_GENOTYPING_FILE_TYPE_VCF];
           }
           $form[$scope]['pre_validate'] = [
             '#type' => 'button',
@@ -628,10 +628,10 @@ function tpps_form_build_file_field(array $form_bus) {
       '#states' => [
         'visible' => [
           ':input[name="' . $organism_name . '[genotype][SNPs][genotyping-type]"]'
-            => ['!value' => 'Genotyping Assay'],
+            => ['!value' => TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY],
           // &&
           ':input[name="' . $organism_name . '[genotype][SNPs][file-type]"]'
-            => ['!value' => 'SNP Assay file and Assay design file'],
+            => ['!value' => TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE],
         ],
       ],
     ];

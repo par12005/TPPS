@@ -233,8 +233,9 @@ function tpps_genotype_subform(array $form_bus) {
     '#type' => 'select',
     '#title' => t('Genotyping file type: *'),
     '#options' => [
-      'SNP Assay file and Assay design file' => t('SNP Assay file and Assay design file'),
-      'VCF' => t('VCF'),
+      TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
+        => t('SNP Assay file and Assay design file'),
+      TPPS_GENOTYPING_FILE_TYPE_VCF => t('VCF'),
     ],
     '#states' => [
       'visible' => [
@@ -278,7 +279,8 @@ function tpps_genotype_subform(array $form_bus) {
       [
         'visible' => [
           ':input[name="' . $organism_name
-            . '[genotype][' . $snps_fieldset . '][file-type]"]' => ['value' => 'VCF'],
+          . '[genotype][' . $snps_fieldset . '][file-type]"]' =>
+            ['value' => TPPS_GENOTYPING_FILE_TYPE_VCF],
           ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset . ']['
             . $file_field_name . '_file-location]"]' => ['value' => 'local'],
         ],
@@ -317,7 +319,8 @@ function tpps_genotype_subform(array $form_bus) {
         'or',
         [
           ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
-            . '][file-type]"]' => ['value' => 'SNP Assay file and Assay design file'],
+            . '][file-type]"]' =>
+            ['value' => TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE],
         ],
       ],
     ],
@@ -349,7 +352,8 @@ function tpps_genotype_subform(array $form_bus) {
         'or',
         [
           ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
-            . '][file-type]"]' => ['value' => 'SNP Assay file and Assay design file'],
+          . '][file-type]"]' =>
+            ['value' => TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE],
         ],
       ],
     ],
@@ -370,7 +374,8 @@ function tpps_genotype_subform(array $form_bus) {
         'or',
         [
           ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
-            . '][file-type]"]' => ['value' => 'SNP Assay file and Assay design file'],
+            . '][file-type]"]' =>
+            ['value' => TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE],
         ],
       ],
     ],
@@ -997,7 +1002,7 @@ function tpps_add_dropdown_file_selector(array $form_bus) {
     '#states' => [
       'visible' => [
         ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
-          . '][file-type]"]' => ['value' => 'VCF'],
+        . '][file-type]"]' => ['value' => TPPS_GENOTYPING_FILE_TYPE_VCF],
       ],
     ],
   ];
