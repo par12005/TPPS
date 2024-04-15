@@ -189,7 +189,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $form['publication']['primaryAuthor'] = [
     '#type' => 'textfield',
     '#title' => t('Primary Author: *'),
-    '#tree' => FALSE,
     '#autocomplete_path' => 'tpps/autocomplete/author',
     '#attributes' => [
       'data-toggle' => ['tooltip'],

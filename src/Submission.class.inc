@@ -541,6 +541,9 @@ class Submission {
    */
   public function save($status = NULL) {
     if (empty($this->accession)) {
+      $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
+      // Function drupal_set_message escapes HTML tags.
+      dpm(print_r($stack, 1));
       throw new Exception(t('Study accession is empty.'));
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -804,12 +807,7 @@ class Submission {
     return (bool) (
       !empty($this->accession)
       && !empty($this->id)
-
-
-// @TODO Uncomment before release.
-
-
-      //&& !empty($this->status)
+      && !empty($this->status)
       && !empty($this->uid)
       && !empty($this->dbxrefId)
       && !empty($this->state)

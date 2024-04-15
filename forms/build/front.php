@@ -28,8 +28,7 @@ function tpps_front_create_form(array &$form, array $form_state) {
   global $base_url;
   global $user;
 
-  $submission = new Submission();
-  $submission->state = $form_state;
+  $submission = tpps_submission()->setState($form_state);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   if ($submission->isTppsc()) {
     if (user_is_logged_in()) {
