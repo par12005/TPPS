@@ -1062,7 +1062,9 @@ function tpps_page_4_genotype_ssrs(array $form_bus) {
       'Both SSRs and cpSSRs' => t('Both SSRs and cpSSRs'),
     ],
     '#default_value' => tpps_get_ajax_value(
-      $form_bus['form_state'], [$organism_name, 'genotype', $ssr_type_select], 'SSRs'
+      $form_bus['form_state'],
+      [$organism_name, 'genotype', $ssrs_fieldset, $ssr_type_select],
+      'SSRs'
     ),
     '#states' => [
       'visible' => [
