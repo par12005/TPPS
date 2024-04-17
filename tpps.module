@@ -932,14 +932,22 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
         $parents
       );
     }
-
-
-// @TODO Convert to yes/no dropdown.
-
-
     $element['no-header'] = [
-      '#type' => 'checkbox',
-      '#title' => 'My file has no header row',
+      '#type' => 'select',
+      '#title' => 'Does your file have a header row?',
+      // Note: Non-standard keys for options was used to have backward
+      // compatibility for existing studies which was submitted then this
+      // field was a checkbox.
+      // Mapping of the checkbox "No header row?":
+      // Checked (1)- header is 1st row.
+      // Unchecked (0) - 1st row is the header.
+      // @TODO Minor. Add this change to the Submision Versions and change
+      // keys of the options to [0, 'yes', 'no'].
+      '#options' => [
+        'select' => t('- Select -'),
+        0 => t('Yes'),
+        1 => t('No'),
+      ],
       '#ajax' => [
         'wrapper' => $wrapper,
         'callback' => 'tpps_no_header_callback',
