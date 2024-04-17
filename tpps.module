@@ -893,7 +893,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
 
 
   $fid = $element['#value']['fid'] ?? '';
-  if (($file = tpps_file_load($fid)) && isset($element['columns'])) {
+  if (($file = tpps_file_load($fid))) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // "Null values denoted by" AKA "empty" field.
     if (!empty($form_state['saved_values'][$page])) {
@@ -944,16 +944,17 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
       // @TODO Minor. Add this change to the Submision Versions and change
       // keys of the options to [0, 'yes', 'no'].
       '#options' => [
-        'select' => t('- Select -'),
+        //'select' => t('- Select -'),
         0 => t('Yes'),
         1 => t('No'),
       ],
+
       '#ajax' => [
         'wrapper' => $wrapper,
         'callback' => 'tpps_no_header_callback',
       ],
       '#states' => $element['#states'] ?? NULL,
-      '#default_value' => $no_header ?? NULL,
+      '#default_value' => $no_header ?? 0,
       '#weight' => 300,
     ];
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -966,7 +967,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
     $accession = substr($form_state['accession'], 4);
     file_usage_delete($file, 'tpps', 'tpps_project', $accession);
     $content = tpps_parse_file($fid, 3, !empty($no_header));
-    $options = $element['columns-options']['#value'];
+    $options = $element['columns-options']['#value'] ?? [];
     $first = TRUE;
     foreach ($content['headers'] as $key => $item) {
       $item_parents = $element['#parents'];
@@ -1000,17 +1001,22 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
           'title' => $item_title,
         ],
       ];
-
+      if (empty($options)) {
+        // Do not show empty dropdown in header.
+        unset($element['columns'][$key]['#type']);
+        unset($element['columns'][$key]['#title']);
+        $element['columns'][$key]['#markup'] = $item;
+        unset($element['columns'][$key]['#options']);
+        unset($element['columns'][$key]['#default_value']);
+      }
       if ($first) {
         $first = FALSE;
         $first_col = $key;
       }
-
       if (!empty($no_header)) {
         $element['columns'][$key]['#title'] = '';
         $element['columns'][$key]['#attributes']['title'] = $item_title;
       }
-
       if ($form_state['stage'] == TPPS_PAGE_3) {
         $species_num = $element['#parents'];
         array_pop($species_num);
@@ -1437,7 +1443,7 @@ function tpps_main_submit($form, &$form_state) {
       else {
         // Complete button.
         $submission->setStatus(TPPS_SUBMISSION_STATUS_PENDING_APPROVAL);
-        $submission->set('state', ['completed'], time());
+        $submission->set(['completed'], time());
         tpps_submission_file_set_status($submission->state, FILE_STATUS_PERMANENT);
         // Save Submission Info.
         $submission->generateSharedState();

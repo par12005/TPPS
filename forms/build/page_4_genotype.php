@@ -1152,32 +1152,6 @@ function tpps_page_4_genotype_ssrs(array $form_bus) {
         => ['value' => 'cpSSRs'],
       ],
     ],
-
-    // no header checkbox.
-
-    //'extra_elements' => [
-    //      'columns' => [
-    //        '#description' => t('Please define which columns hold the '
-    //          . 'required data: SNP ID, Scaffold, Position, Allele, '
-    //          . 'Associated Trait, Confidence Value.'),
-    //      ],
-    //      'columns-options' => [
-    //        '#type' => 'hidden',
-    //        '#value' => [
-    //          'N/A',
-    //          'SNP ID',
-    //          'Scaffold',
-    //          'Position',
-    //          'Allele',
-    //          'Associated Trait',
-    //          'Confidence Value',
-    //          'Gene ID',
-    //          'Annotation',
-    //        ],
-    //        'no-header' => [],
-    //      ],
-    //],
-
   ]));
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // csSSR Field.
