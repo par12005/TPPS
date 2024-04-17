@@ -458,7 +458,6 @@ function tpps_form_add_report(array &$form, array $meta) {
  *     'description' => $description,
  *     'extensions' => $extensions, // Default: ['csv tsv xlsx']
  *     'states' => $states, // Default is ''.
- *     'empty_field_value' => TRUE,
  *     // Element 'extra_elements' allow to add any not expected form elements.
  *     'extra_elements' => [],
  *     'use_fid' => FALSE, // Default is FALSE. See below.
@@ -500,7 +499,6 @@ function tpps_form_build_file_field(array $form_bus) {
   $extensions = $form_bus['extensions'] ?? ['csv tsv'];
   $description = $form_bus['description'] ?? '';
   $states = $form_bus['states'] ?? '';
-  $empty_field_value = $form_bus['empty_field_value'] ?? FALSE;
   // Some fields have used this piece of code before.
   // To use: $meta['use_fid'] = TRUE; Default is FALSE.
   $use_fid = $form_bus['use_fid'] ?? FALSE;
@@ -554,20 +552,6 @@ function tpps_form_build_file_field(array $form_bus) {
   // dpm(print_r($parents, 1), 'parents of ' . $field_name);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Customization.
-  //
-  // Add a text-field for an empty field value. Default is FALSE.
-  if ($empty_field_value) {
-    // When form wasn't yet submitted or saved then there is no value.
-    if (!empty($form_state['saved_values'][$page])) {
-      $empty_field_parent = drupal_array_get_nested_value(
-        $form_state['saved_values'][$page], $parents
-      );
-      $empty_field_default_value = $empty_field_parent[$field_name]['other'] ?? NULL;
-    }
-    $parent_element[$field_name]['empty']['#default_value']
-      = $empty_field_default_value ?? 'NA';
-  }
-
   // @TODO Minor. Think about using elements with leading '#' to use them as
   // defaults for fields.
   if (!empty($extra_elements)) {

@@ -622,7 +622,6 @@ function tpps_genotype_subform(array $form_bus) {
     'organism_name' => $organism_name,
     'type' => $form_bus['type'],
     'description' => $description,
-    'empty_field_value' => TRUE,
   ]);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1144,7 +1143,6 @@ function tpps_page_4_genotype_ssrs(array $form_bus) {
     'type' => $form_bus['type'],
     'description' => t($ssr_field_description, ['@type' => 'SSR']),
     // Add extra text field for empty field value.
-    'empty_field_value' => TRUE,
     'show_extensions_in_description' => TRUE,
     'use_fid' => TRUE,
     // Visible when: 'SSRs' or 'Both SSRs and cpSSRs'.
@@ -1196,7 +1194,6 @@ function tpps_page_4_genotype_ssrs(array $form_bus) {
     'type' => $form_bus['type'],
     'description' => t($ssr_field_description, ['@type' => 'cpSSR']),
     // Add extra text field for empty field value.
-    'empty_field_value' => TRUE,
     'show_extensions_in_description' => TRUE,
     'use_fid' => TRUE,
     // Visible when: 'cpSSRs' or 'Both SSRs and cpSSRs'.

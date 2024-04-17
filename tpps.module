@@ -878,34 +878,65 @@ function tpps_element_info_alter(&$type) {
  *   The extended managed_file element.
  */
 function tpps_managed_file_process(array $element, array &$form_state, array $form) {
-  if (!tpps_is_main_form($form_state)) {
-    // Only make changes if it is part of the 'tppsc_main' or 'tpps_main' form.
+  if (!tpps_is_main_form($form_state) && empty($element['#value']['fid'])) {
+    // Show extra fields only after file upload and
+    // when it's a 'tppsc_main' or 'tpps_main' form.
     return $element;
   }
+  $page = $form_state['stage'] ?? TPPS_PAGE_3;
+  $parents = $element['#parents'];
+  $field_name = $parents[0];
+  // Note: if this include removed "no-header" fieature doesn't update
+  // columns table. Better to just load this file on each request but
+  // only this function requires this file. So let's just leave it here.
+  require_once 'ajax/tpps_ajax.php';
 
-  if (isset($element['columns'])) {
-    require_once 'ajax/tpps_ajax.php';
-    if (empty($fid = $element['#value']['fid'])) {
-      return $element;
+
+  $fid = $element['#value']['fid'] ?? '';
+  if (($file = tpps_file_load($fid)) && isset($element['columns'])) {
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // "Null values denoted by" AKA "empty" field.
+    if (!empty($form_state['saved_values'][$page])) {
+      // @TODO Remove this if possible.
+      // When form wasn't yet submitted or saved then there is no value.
+      $empty_field_parent = drupal_array_get_nested_value(
+        $form_state['saved_values'][$page], $parents
+      );
+      $empty_field_default_value = $empty_field_parent[$field_name]['other'] ?? NULL;
     }
-    $wrapper = substr($element['#id'], 0, -7) . '-ajax-wrapper';
+    $element['empty'] = [
+      '#type' => 'textfield',
+      '#title' => t('Null values denoted by:'),
+      // @TODO use '#container' with '#states' for an extra elements.
+      '#states' => $element['#states'] ?? NULL,
+      '#description' => t('By default, TPPS will treat  '
+        . 'cells with the value "NA" as empty. If you used a different empty '
+        . 'value indicator, please provide it here.'),
+      '#default_value' => $empty_field_default_value ?? 'NA',
+      '#weight' => 200,
+    ];
 
-    $saved_value_parents = $no_header_parents = $element['#parents'];
-    $no_header_parents[] = '#value';
-    $no_header_parents[] = 'no-header';
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // "No Header" checkbox.
     $no_header = drupal_array_get_nested_value(
       $form_state['complete form'],
-      $no_header_parents
+      array_merge($element['#parents'], ['#value', 'no-header'])
     );
+    $wrapper = substr($element['#id'], 0, -7) . '-ajax-wrapper';
     $callback = $form_state['triggering_element']['#ajax']['callback'] ?? NULL;
     if (!$no_header && ($callback != 'tpps_no_header_callback')) {
-      $end = array_pop($saved_value_parents);
-      $saved_value_parents[] = $end . '-no-header';
+      $end = array_pop($parents);
+      $parents[] = $end . '-no-header';
       $no_header = drupal_array_get_nested_value(
         $form_state['saved_values'][$form_state['stage']],
-        $saved_value_parents
+        $parents
       );
     }
+
+
+// @TODO Convert to yes/no dropdown.
+
+
     $element['no-header'] = [
       '#type' => 'checkbox',
       '#title' => 'My file has no header row',
@@ -915,107 +946,102 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
       ],
       '#states' => $element['#states'] ?? NULL,
       '#default_value' => $no_header ?? NULL,
+      '#weight' => 300,
     ];
-    if ($file = tpps_file_load(($fid ?? ''))) {
-      $saved_vals = $form_state['saved_values'][$form_state['stage']];
-      $element['columns']['#type'] = 'fieldset';
-      $element['columns']['#title'] = t('Define Data');
-      $element['columns']['#collapsible'] = TRUE;
-      // Stop using the file so it can be deleted if the user clicks 'remove'.
-      $accession = substr($form_state['accession'], 4);
-      file_usage_delete($file, 'tpps', 'tpps_project', $accession);
-      $content = tpps_parse_file($fid, 3, !empty($no_header));
-      $options = $element['columns-options']['#value'];
-      $first = TRUE;
-      foreach ($content['headers'] as $key => $item) {
-        $item_parents = $element['#parents'];
-        array_pop($item_parents);
-        $item_parents[] = end($element['#parents']) . '-columns';
-        $item_parents[] = $key;
-        $default = drupal_array_get_nested_value($saved_vals, $item_parents);
-        if (!isset($default)) {
-          foreach ($options as $k => $val) {
-            similar_text(strtolower($val), strtolower($item), $percent);
-            if ($percent > 85) {
-              $default = $k;
-              break;
-            }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Columns table.
+    $saved_vals = $form_state['saved_values'][$form_state['stage']];
+    $element['columns']['#type'] = 'fieldset';
+    $element['columns']['#title'] = t('Define Data');
+    $element['columns']['#collapsible'] = TRUE;
+    // Stop using the file so it can be deleted if the user clicks 'remove'.
+    $accession = substr($form_state['accession'], 4);
+    file_usage_delete($file, 'tpps', 'tpps_project', $accession);
+    $content = tpps_parse_file($fid, 3, !empty($no_header));
+    $options = $element['columns-options']['#value'];
+    $first = TRUE;
+    foreach ($content['headers'] as $key => $item) {
+      $item_parents = $element['#parents'];
+      array_pop($item_parents);
+      $item_parents[] = end($element['#parents']) . '-columns';
+      $item_parents[] = $key;
+      $default = drupal_array_get_nested_value($saved_vals, $item_parents);
+      if (!isset($default)) {
+        foreach ($options as $k => $val) {
+          similar_text(strtolower($val), strtolower($item), $percent);
+          if ($percent > 85) {
+            $default = $k;
+            break;
           }
         }
-        $item_title = [
-          t('Select the type of data column @item holds', ['@item' => $item]),
-        ];
-        $element['columns'][$key] = [
-          '#type' => 'select',
-          '#title' => $item,
-          '#options' => $options,
-          '#default_value' => $default,
-          '#prefix' => '<th>',
-          '#suffix' => '</th>',
-          '#attributes' => [
-            'data-toggle' => ['tooltip'],
-            'data-placement' => ['top'],
-            'title' => $item_title,
-          ],
-        ];
+      }
+      $item_title = [
+        t('Select the type of data column @item holds', ['@item' => $item]),
+      ];
 
-        if ($first) {
-          $first = FALSE;
-          $first_col = $key;
-        }
+      $element['columns'][$key] = [
+        '#type' => 'select',
+        '#title' => $item,
+        '#options' => $options,
+        '#default_value' => $default,
+        '#prefix' => '<th>',
+        '#suffix' => '</th>',
+        '#attributes' => [
+          'data-toggle' => ['tooltip'],
+          'data-placement' => ['top'],
+          'title' => $item_title,
+        ],
+      ];
 
-        if (!empty($no_header)) {
-          $element['columns'][$key]['#title'] = '';
-          $element['columns'][$key]['#attributes']['title'] = $item_title;
-        }
-
-        if ($form_state['stage'] == TPPS_PAGE_3) {
-          $species_num = $element['#parents'];
-          array_pop($species_num);
-          $species_num = '-' . end($species_num);
-          $element['columns'][$key]['#ajax'] = [
-            'callback' => 'tpps_accession_pop_group',
-            'wrapper' => "population-mapping$species_num",
-          ];
-        }
+      if ($first) {
+        $first = FALSE;
+        $first_col = $key;
       }
 
-      $rows = $content;
-      unset($rows['headers']);
-      $vars = [
-        'header' => $content['headers'],
-        'rows' => $rows,
-        'attributes' => ['class' => ['view']],
-        'caption' => '',
-        'colgroups' => NULL,
-        'sticky' => FALSE,
-        'empty' => '',
-      ];
-      $table = theme('table', $vars);
-      preg_match(
-        '/(*UTF8)\A(.*<thead[A-Z|a-z|"|\'|-|_|0-9]*>).*(<\/thead>.*<\/table>)/us',
-        $table, $matches
-      );
+      if (!empty($no_header)) {
+        $element['columns'][$key]['#title'] = '';
+        $element['columns'][$key]['#attributes']['title'] = $item_title;
+      }
 
-      $element['columns'][$first_col]['#prefix'] =
-        "<div style=\"overflow-x:auto\">" . $matches[1] . "<tr>"
-        . $element['columns'][$first_col]['#prefix'];
-      $element['columns'][$key]['#suffix'] = '</tr>' . $matches[2] . '</div>';
-      $element['columns'][$key]['#suffix'] = $element['columns'][$key]['#suffix']
-        . t('Please note that if you remain idle on a TPPS page with files '
-        . 'for more than 6 hours, you run the risk of having those files '
-        . 'reset if you do not click "Save".');
+      if ($form_state['stage'] == TPPS_PAGE_3) {
+        $species_num = $element['#parents'];
+        array_pop($species_num);
+        $species_num = '-' . end($species_num);
+        $element['columns'][$key]['#ajax'] = [
+          'callback' => 'tpps_accession_pop_group',
+          'wrapper' => "population-mapping$species_num",
+        ];
+      }
     }
+
+    $rows = $content;
+    unset($rows['headers']);
+    $vars = [
+      'header' => $content['headers'],
+      'rows' => $rows,
+      'attributes' => ['class' => ['view']],
+      'caption' => '',
+      'colgroups' => NULL,
+      'sticky' => FALSE,
+      'empty' => '',
+    ];
+    $table = theme('table', $vars);
+    preg_match(
+      '/(*UTF8)\A(.*<thead[A-Z|a-z|"|\'|-|_|0-9]*>).*(<\/thead>.*<\/table>)/us',
+      $table, $matches
+    );
+
+    $element['columns'][$first_col]['#prefix'] =
+      "<div style=\"overflow-x:auto\">" . $matches[1] . "<tr>"
+      . $element['columns'][$first_col]['#prefix'];
+    $element['columns'][$key]['#suffix'] = '</tr>' . $matches[2] . '</div>';
+    $element['columns'][$key]['#suffix'] = $element['columns'][$key]['#suffix']
+      . t('Please note that if you remain idle on a TPPS page with files '
+      . 'for more than 6 hours, you run the risk of having those files '
+      . 'reset if you do not click "Save".');
+    $element['columns']['#weight'] = 100;
   }
 
-  if (isset($element['empty'])) {
-    $element['empty']['#type'] = 'textfield';
-    $element['empty']['#title'] = t('Null values denoted by:');
-    $element['empty']['#states'] = $element['#states'] ?? NULL;
-    $element['empty']['#description'] = t('By default, TPPS will treat  '
-      . 'cells with the value "NA" as empty. If you used a different empty '
-      . 'value indicator, please provide it here.');
-  }
   return $element;
 }
 
