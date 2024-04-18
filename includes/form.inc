@@ -809,7 +809,9 @@ function &tpps_form_get_path(array &$array = NULL, $path = NULL) {
       ],
       WATCHDOG_ERROR
     );
-    return NULL;
+    // Can't return NULL by referrence.
+    $null = NULL;
+    return $null;
   }
   // Suppose that $path is a string with field name at the 1st level
   // of $interface array.
