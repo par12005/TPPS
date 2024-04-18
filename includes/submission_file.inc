@@ -180,7 +180,8 @@ function tpps_submission_file_set_status(array $state, $status = FILE_STATUS_PER
  *
  * @return array
  *   Returns empty array if number of organisms is zero.
- *   Returns list of parents (from $form_state['values']);
+ *   Returns list of parents
+ *   (from  $form_state['values'] or/and $form_state['saved_values']).
  */
 function tpps_submission_file_get_parents($organism_number = 1) {
   $result = [];
@@ -215,6 +216,12 @@ function tpps_submission_file_get_parents($organism_number = 1) {
 
       [$organism_id, 'genotype', 'files', 'other'],
     ]);
+  }
+  // Summary page.
+  // It seems we have unlimited number of extra files which could be added to
+  // study but dump has 10 items.
+  for ($i = 1; $i <= 10; $i++) {
+    $result[] = ['summarypage', 'files', $i];
   }
   // Analysis.
   // @TODO Prepare and check.
