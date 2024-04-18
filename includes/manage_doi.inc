@@ -95,7 +95,10 @@ function tpps_doi_get_accession($doi, $reset = FALSE) {
   if ($reset || !$is_cache_allowed || empty($cache)) {
     $all_submissions = chado_query('SELECT shared_state FROM public.tpps_submission');
     foreach ($all_submissions as $item) {
-      $shared_state = unserialize($item->shared_state);
+      // Check broken 'submission_state' after edit directly in phpPgAdmin.
+      if (strpos($item->shared_state, '&quot;accession&quot;') === FALSE) {
+        $shared_state = unserialize($item->shared_state);
+      }
       $submission_doi = strtolower($shared_state['saved_values'][TPPS_PAGE_1]['doi'] ?? NULL);
       if ($submission_doi) {
         $cache->data[$submission_doi] = $item->accession ?? NULL;

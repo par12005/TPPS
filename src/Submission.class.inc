@@ -706,8 +706,21 @@ class Submission {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Load object's properties.
     if ($result) {
-      $this->state = unserialize($result['submission_state'] ?? '') ?? [];
-      $this->sharedState = unserialize($result['shared_state'] ?? '') ?? [];
+      // Note:
+      // When 'submission_state' became "broken" when edited (and saved)
+      // directly in phpPgAdmin it produces:
+      // Notice: unserialize(): Error at offset 6 of 13667 bytes in
+      // tpps_submission_get_accession_list() (line 1098 of
+      // /var/www/Drupal/sites/all/modules/TGDR/includes/submissions.inc).
+      // So to avoid this we do simple check:
+      $this->state = [];
+      if (strpos($result['submission_state'], '&quot;accession&quot;') === FALSE) {
+        $this->state = unserialize($result['submission_state'] ?? '') ?? [];
+      }
+      $this->sharedState = [];
+      if (strpos($result['shared_state'], '&quot;accession&quot;') === FALSE) {
+        $this->sharedState = unserialize($result['shared_state'] ?? '') ?? [];
+      }
       // Note: no need to set $this->accession.
       $this->id = $result['tpps_submission_id'] ?? 0;
       $this->uid = $result['uid'] ?? $user->uid;

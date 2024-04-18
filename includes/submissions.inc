@@ -1096,13 +1096,7 @@ function tpps_submission_get_accession_list(array $conditions = [], $remove_empt
     $results = $query->orderBy('tpps_submission_id', 'desc')->execute();
     foreach ($results as $item) {
       if (
-        // Note:
-        // When 'submission_state' became "broken" when edited (and saved)
-        // directly in phpPgAdmin it produces:
-        // Notice: unserialize(): Error at offset 6 of 13667 bytes in
-        // tpps_submission_get_accession_list() (line 1098 of
-        // /var/www/Drupal/sites/all/modules/TGDR/includes/submissions.inc).
-        // So to avoid this we do simple check:
+        // Check broken 'submission_state' after edit directly in phpPgAdmin.
         strpos($item->submission_state, '&quot;accession&quot;') === FALSE
         && $state = unserialize($item->submission_state)
       ) {
