@@ -30,8 +30,7 @@ module_load_include('inc', 'tpps', 'includes/submission_form_version');
  * @TODO Move to other file.
  */
 function tpps_api_get_submission_state($accession) {
-  $submission = new Submission($accession);
-  return $submission->state;
+  return tpps_submission($accession)->getState();
 }
 
 /**
