@@ -1510,7 +1510,7 @@ class Submission {
                   $genotyping_design_field_value == TPPS_GENOTYPING_DESIGN_GBS
                   && !empty($gbs_type_field_title)
                 ) {
-                  $data["$org_name GBS Type"] = $gbs_type_title;
+                  $data["$org_name GBS Type"] = $gbs_type_field_title;
 
                   if (
                     $gbs_type_field_value == TPPS_GBS_TYPE_OTHER
