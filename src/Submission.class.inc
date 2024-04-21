@@ -1159,7 +1159,7 @@ class Submission {
     if (isset($pub['secondaryAuthors']['number'])) {
       $data['#number_secondary_authors'] = $pub['secondaryAuthors']['number'];
       for ($i = 1; $i <= $data['#number_secondary_authors']; $i++) {
-        if (isset($pub['secondaryAuthors']["$i"]) and $pub['secondaryAuthors']["$i"] != '') {
+        if (!empty($pub['secondaryAuthors'][$i])) {
           $data["Secondary Author $i"] = $pub['secondaryAuthors']["$i"];
         }
       }
@@ -1168,7 +1168,7 @@ class Submission {
     if (isset($org['number'])) {
       $data['#number_organisms'] = $org['number'];
       for ($i = 1; $i <= $data['#number_organisms']; $i++) {
-        if (isset($org["$i"]['name']) and $org["$i"]['name'] != '') {
+        if (!empty($org[$i]['name'])) {
           $data["Species $i"] = $org["$i"]['name'];
         }
       }
@@ -1732,7 +1732,7 @@ class Submission {
   public function isCreator($uid = NULL) {
     global $user;
     $uid = $uid ?? $user->uid;
-    return (bool) ($this->doesExist() && ($submission->uid == $uid));
+    return (bool) ($this->doesExist() && ($this->uid == $uid));
   }
 
 }
