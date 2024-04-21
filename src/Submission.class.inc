@@ -570,6 +570,8 @@ class Submission {
 
   /**
    * Delete submission from database.
+   *
+   * @TODO Minor. Destroy object and do not allow chaining.
    */
   public function delete() {
     if (empty($this->state['saved_values']['frontpage']['use_old_tgdr'])) {
@@ -587,6 +589,8 @@ class Submission {
     module_load_include('inc', 'tpps', 'includes/imported_studies_list');
     tpps_imported_studies_list_remove_item($this->accession);
     $this->accession = $this->state = $this->sharedState = NULL;
+    // Do not allow chaining.
+    return;
   }
 
   /**

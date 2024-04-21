@@ -1085,29 +1085,33 @@ function tpps_submission_get_accession_list(array $conditions = [], $remove_empt
   $key = serialize($conditions);
   $is_cache_allowed = variable_get('tpps_front_cache_accession_list', FALSE);
   if (!$is_cache_allowed || $reset || empty($cache) || empty($cache->data[$key])) {
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $fields = array_diff(
       array_keys(drupal_get_schema('tpps_submission')['fields']), ['shared_state']
     );
-    $query = db_select('tpps_submission', 's')->fields('s', $fields);
+    $query = db_select('tpps_submission', 's')
+      ->fields('s', $fields)
+      ->orderBy('tpps_submission_id', 'desc');
     foreach ($conditions as $item) {
-      $query->condition($item[0], $item[1], ($item[2] ?? '='));
+      if (!empty($item)) {
+        $query->condition($item[0], $item[1], ($item[2] ?? '='));
+      }
     }
-    $results = $query->orderBy('tpps_submission_id', 'desc')->execute();
-    foreach ($results as $item) {
-      if (
-        // Check broken 'submission_state' after edit directly in phpPgAdmin.
-        strpos($item->submission_state, '&quot;accession&quot;') === FALSE
-        && $state = unserialize($item->submission_state)
-      ) {
+    $results = $query->execute()->fetchAllAssoc('accession');
+    foreach ($results as $key => $study) {
+      // Check broken 'submission_state' after edit directly in phpPgAdmin.
+      if (strpos($study->submission_state, '&quot;accession&quot;') !== FALSE) {
+        $message = t(
+          'Study @accession with escaped "submission_state" field.',
+          ['@accession' => $study->accession]
+        );
+        tpps_message($message, 'error');
+      }
+      else {
+        $state = unserialize($study->submission_state);
         $page1_values = $state['saved_values'][TPPS_PAGE_1] ?? NULL;
-        if ($title = ($page1_values['publication']['title'] ?? NULL)) {
-          $list[$state['accession']] = $state['accession'] . ' - ' . (
-            (strlen($title) > 97)
-            ? substr($title, 0, 97) . '...'
-            : (!empty($title) ? $title : t('No Title'))
-          );
-        }
-        elseif (empty($page1_values) && $remove_empty) {
+
+        if ((empty($state) || empty($page1_values)) && $remove_empty) {
           // Study is treated as orphan (or empty) and will be removed when:
           // 1. It has no publication title.
           // 2. Page 1 wasn't submitted or saved yet.
@@ -1117,12 +1121,24 @@ function tpps_submission_get_accession_list(array $conditions = [], $remove_empt
           // but users could also create empty studies. Not sure if accession
           // number of those studies could be reused but it's better to avoid
           // useless records in DB.
-          $submission = new Submission($item->accession);
-          $submission->delete();
+          $message = t('Removed empty submission @accession.',
+            ['@accession' => $study->accession]
+          );
+          tpps_message($message, 'error');
+          tpps_submission($study->accession)->delete();
+          unset($results[$key]);
+          continue;
         }
+        $title = $page1_values['publication']['title'] ?? t('No Title');
+        $title = (strlen($title) > 97) ? substr($title, 0, 97) . '...' : $title;
+        $list[$study->accession] = $study->accession . ' - ' . $title;
       }
     }
-    $cache->data[$key] = $list;
+    if (count($results) != count($list)) {
+      tpps_message(t('There are studies with the same accession.'), 'error');
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    $cache->data[$key] = $list ?? NULL;
     cache_set($cid, $cache->data, $cache_bin);
   }
   return $cache->data[$key] ?? [];
