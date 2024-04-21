@@ -93,8 +93,12 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
           'year', 'title', 'abstract', 'journal',
         ];
         foreach ($field_list as $name) {
-          $form_state['values']['publication'][$name] = NULL;
-          $form_state['saved_values']['publication'][$name] = NULL;
+          if (!empty($form_state['values']['publication'][$name])) {
+            $form_state['values']['publication'][$name] = NULL;
+          }
+          if (!empty($form_state['saved_values']['publication'][$name])) {
+            $form_state['saved_values']['publication'][$name] = NULL;
+          }
         }
       }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

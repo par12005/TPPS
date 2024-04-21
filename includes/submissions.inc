@@ -963,7 +963,7 @@ function tpps_submission_edit_publication(array $form, array &$form_state, $acce
       'In Press' => t('In Press'),
       'Published' => t('Published'),
     ),
-    '#default_value' => $state['saved_values'][TPPS_PAGE_1]['publication']['status'],
+    '#default_value' => $state['saved_values'][TPPS_PAGE_1]['publication']['status'] ?? NULL,
     '#required' => TRUE,
     '#prefix' => "<a href=\"$base_url/tpps/details/$accession\">Back to TPPS Details Page</a>",
   );
@@ -977,8 +977,9 @@ function tpps_submission_edit_publication(array $form, array &$form_state, $acce
     '#type' => 'select',
     '#title' => t('Year of Publication'),
     '#options' => $year_options,
-    '#description' => t('If your publication has not been published yet, please choose the expected year of publication.'),
-    '#default_value' => $state['saved_values'][TPPS_PAGE_1]['publication']['year'],
+    '#description' => t('If your publication has not been published yet, '
+    . 'please choose the expected year of publication.'),
+    '#default_value' => $state['saved_values'][TPPS_PAGE_1]['publication']['year'] ?? NULL,
     '#required' => TRUE,
   );
 
@@ -1017,7 +1018,7 @@ function tpps_submission_edit_publication_submit($form, &$form_state) {
   $accession = $form_state['values']['accession'];
   $submission = new Submission($accession);
   $submit_job = FALSE;
-  $page1_values = &$submission->state['saved_values'][TPPS_PAGE_1] ?? NULL;
+  $page1_values = $submission->state['saved_values'][TPPS_PAGE_1] ?? NULL;
 
   if ($page1_values['publication']['status'] != $form_state['values']['status']) {
     $page1_values['publication']['status'] = $form_state['values']['status'];
@@ -1046,8 +1047,9 @@ function tpps_submission_edit_publication_submit($form, &$form_state) {
       $args, $submission->state['submitting_uid'], 10, $includes, TRUE
     );
     $submission->state['job_id'] = $jid;
-    $submission->save();
   }
+  $submission->state['saved_values'][TPPS_PAGE_1] = $page1_values;
+  $submission->save();
 }
 
 /**
@@ -1101,11 +1103,11 @@ function tpps_submission_get_accession_list(array $conditions = [], $remove_empt
     foreach ($results as $key => $study) {
       // Check broken 'submission_state' after edit directly in phpPgAdmin.
       if (strpos($study->submission_state, '&quot;accession&quot;') !== FALSE) {
-        $message = t(
+        tpps_message(
           'Study @accession with escaped "submission_state" field.',
-          ['@accession' => $study->accession]
+          ['@accession' => $study->accession],
+          'error'
         );
-        tpps_message($message, 'error');
       }
       else {
         $state = unserialize($study->submission_state);
@@ -1121,10 +1123,11 @@ function tpps_submission_get_accession_list(array $conditions = [], $remove_empt
           // but users could also create empty studies. Not sure if accession
           // number of those studies could be reused but it's better to avoid
           // useless records in DB.
-          $message = t('Removed empty submission @accession.',
-            ['@accession' => $study->accession]
+          tpps_message(
+            'Removed empty submission @accession.',
+            ['@accession' => $study->accession],
+            'error'
           );
-          tpps_message($message, 'error');
           tpps_submission($study->accession)->delete();
           unset($results[$key]);
           continue;
@@ -1135,7 +1138,7 @@ function tpps_submission_get_accession_list(array $conditions = [], $remove_empt
       }
     }
     if (count($results) != count($list)) {
-      tpps_message(t('There are studies with the same accession.'), 'error');
+      tpps_message('There are studies with the same accession.', [], 'error');
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $cache->data[$key] = $list ?? NULL;
