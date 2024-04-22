@@ -340,12 +340,22 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
   $organism_number = $firstpage['organism']['number'];
 
   for ($i = 1; $i <= $organism_number; $i++) {
-    $parts = explode(" ", $firstpage['organism'][$i]['name']);
+    $parts = explode(" ", trim($firstpage['organism'][$i]['name']));
     $genus = $parts[0];
     $species = implode(" ", array_slice($parts, 1));
     $infra = NULL;
-    if (isset($parts[2]) and ($parts[2] == 'var.' or $parts[2] == 'subsp.')) {
+    $parts_count = count($parts);
+    if (isset($parts[2]) and ($parts[2] == 'var.' or $parts[2] == 'subsp.' or $parts[2] == 'spp.' or $parts[2] == 'sp.')) {
       $infra = implode(" ", array_slice($parts, 2));
+    }
+    else if (isset($parts[2]) and $parts_count <= 3) {
+      // cater for examples like Taxus baccata L or Taxus baccata L.
+      // where we want to remove the L or L.
+
+      // Set infra to NULL
+      $infra = NULL;
+      // Set the species to the second part which is in $parts[1];
+      $species = $parts[1];
     }
 
     $record = array(
@@ -353,11 +363,14 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
       'species' => $species,
       'infraspecific_name' => $infra,
     );
+    echo "This is the record data to check for OR ELSE insert this data into the db\n";
+    print_r($record);
 
     if (preg_match('/ x /', $species)) {
       $record['type_id'] = tpps_load_cvterm('speciesaggregate')->cvterm_id;
     }
 
+    echo "Checking to see if records exist for genus $genus, species $species, infr $infra\n";
     // Let's check to see if genus and species match, if so, get the id
     // if it does not return any rows, then create organism
     $organism_results = chado_query('SELECT * FROM chado.organism WHERE genus = :genus AND species = :species
@@ -371,6 +384,8 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
     foreach ($organism_results as $organism_row) {
       $organism_results_id = $organism_row->organism_id;
     }
+    echo "Found organism results id: " . $organism_results_id . "\n";
+    // throw new Exception('DEBUG');
 
     // If no organism id was found in database, perform an insert
     if ($organism_results_id == -1) {
