@@ -1008,13 +1008,16 @@ function tpps_add_dropdown_file_selector(array $form_bus) {
   // Field was relocated (v.2).
   // ['saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype', 'files'] =>
   // ['saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype', $snps_fieldset].
+  // For search: 'local_vcf'.
   $form[$snps_fieldset]['local_' . $file_field_name] = [
     '#type' => 'textfield',
     '#title' => t('Path to @file_name at @hostname: *', $params),
     '#states' => [
       'visible' => [
+        ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
+          . '][file-type]"]' => ['value' => TPPS_GENOTYPING_FILE_TYPE_VCF],
         ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset . ']['
-        . $file_field_name . '_file-location]"]' => ['value' => 'remote'],
+          . $file_field_name . '_file-location]"]' => ['value' => 'remote'],
       ],
     ],
     '#description' => t('Please provide the full path to your @file_name file '
