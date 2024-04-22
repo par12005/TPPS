@@ -89,37 +89,41 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     tpps_log('[INFO] Clearing Database...');
     tpps_submission_clear_db($accession);
     tpps_log('[INFO] Database Cleared');
-    $project_id = $submission->sharedState['ids']['project_id'] ?? NULL;
-
 
     tpps_submission_clear_default_tags($accession);
     $submission->sharedState['file_rank'] = 0;
     $submission->sharedState['ids'] = [];
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Create project and get project_id.
     tpps_log('[INFO] Creating project record...');
-    $submission->sharedState['title'] = $page1_values['publication']['title'];
-    $submission->sharedState['abstract'] = $page1_values['publication']['abstract'];
-    $project_record = array(
-      'name' => $page1_values['publication']['title'],
-      'description' => $page1_values['publication']['abstract'],
-    );
+    $project_id = $submission->sharedState['ids']['project_id'] ?? NULL;
+    // When 'publication status' is 'In press' we have no 'title'
+    // and no 'abstract' yet so default values must be used.
+    $publication_title = $page1_values['publication']['title'] ?? 'No title';
+    $publication_abstract = $page1_values['publication']['abstract'] ?? 'No abstract';
+    $submission->sharedState['title'] = $publication_title;
+    $submission->sharedState['abstract'] = $publication_abstract;
+    $project_record = [
+      'name' => $publication_title,
+      'description' => $publication_abstract,
+    ];
     if (!empty($project_id)) {
       $project_record['project_id'] = $project_id;
     }
-    $submission->sharedState['ids']['project_id'] = tpps_chado_insert_record(
-      'project', $project_record
-    );
+    $submission->sharedState['ids']['project_id']
+      = tpps_chado_insert_record('project', $project_record);
     tpps_log(
-      '[INFO] Project record created. project_id: @pid\n',
+      '[INFO] Project record created. project_id: @pid.' . PHP_EOL,
       ['@pid' => $submission->sharedState['ids']['project_id']]
     );
-
-    tpps_tripal_entity_publish('Project', [
-      $page1_values['publication']['title'],
-      $submission->sharedState['ids']['project_id'],
-    ]);
-
-
+    tpps_tripal_entity_publish('Project',
+      [
+        $submission->sharedState['title'],
+        $submission->sharedState['ids']['project_id'],
+      ]
+    );
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     tpps_log("[INFO] Submitting Publication/Species information...");
     tpps_submit_page_1($submission->sharedState, $job);
     tpps_log("[INFO] Publication/Species information submitted!\n");
@@ -162,7 +166,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
 
     tpps_log('[ERROR] Job failed', [], TRIPAL_ERROR);
     tpps_log('[ERROR] Error message: @msg', ['@msg' => $e->getMessage()], TRIPAL_ERROR);
-    tpps_log("[ERROR] Trace: \n@trace", ['@trace' => $e->getTraceAsString()], TRIPAL_ERROR);
+    tpps_log("[ERROR] Trace: \n!trace", ['!trace' => $e->getTraceAsString()], TRIPAL_ERROR);
 
     fclose($tpps_job_logger['log_file_handle']);
     watchdog_exception('tpps', $e);
@@ -294,21 +298,20 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
     }
   }
 
-  $publication_id = tpps_chado_insert_record('pub', array(
-    'title' => $page1_values['publication']['title'],
-    'series_name' => $page1_values['publication']['journal'],
+  $publication_title = $page1_values['publication']['title'] ?? 'No title';
+  $publication_journal = $page1_values['publication']['journal'] ?? 'No journal';
+  $publication_year = $page1_values['publication']['year'] ?? NULL;
+  $publication_id = tpps_chado_insert_record('pub', [
+    'title' => $publication_title,
+    'series_name' => $publication_journal,
     'type_id' => tpps_load_cvterm('article')->cvterm_id,
-    'pyear' => $page1_values['publication']['year'],
+    'pyear' => $publication_year,
     'uniquename' => implode('; ', $authors)
-      . " {$page1_values['publication']['title']}. "
-      . "{$page1_values['publication']['journal']}; "
-      . "{$page1_values['publication']['year']}",
-  ));
+      . " $publication_title. $publication_journal; $publication_year",
+  ]);
   $shared_state['ids']['pub_id'] = $publication_id;
-  tpps_tripal_entity_publish('Publication', array(
-    $page1_values['publication']['title'],
-    $publication_id,
-  ));
+  tpps_tripal_entity_publish('Publication', [$publication_title, $publication_id]);
+
   // @TODO Check why this data dupliated to the 1st level of $shared_state.
   $shared_state['pyear'] = $page1_values['publication']['year'];
   $shared_state['journal'] = $page1_values['publication']['journal'];
@@ -6466,7 +6469,7 @@ function tpps_process_environment_layers($row, array &$options = array()) {
 
   foreach ($layers_params as $layer_id => $params) {
     $layer_query = db_select('cartogratree_layers', 'l')
-      ->fields('l', array('title'))
+      ->fields('l', ['title'])
       ->condition('layer_id', $layer_id)
       ->execute();
 
