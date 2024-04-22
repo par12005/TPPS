@@ -878,6 +878,11 @@ function tpps_element_info_alter(&$type) {
  *   The extended managed_file element.
  */
 function tpps_managed_file_process(array $element, array &$form_state, array $form) {
+  // 'VCF' files are compressed and shouldn't have extra elements.
+  $field_name = end($element['#array_parents']);
+  if (in_array($field_name, ['vcf'])) {
+    return $element;
+  }
   if (!tpps_is_main_form($form_state) && empty($element['#value']['fid'])) {
     // Show extra fields only after file upload and
     // when it's a 'tppsc_main' or 'tpps_main' form.
@@ -890,7 +895,6 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
   // columns table. Better to just load this file on each request but
   // only this function requires this file. So let's just leave it here.
   require_once 'ajax/tpps_ajax.php';
-
 
   $fid = $element['#value']['fid'] ?? '';
   if (($file = tpps_file_load($fid))) {
