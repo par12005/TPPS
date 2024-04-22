@@ -3893,7 +3893,11 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           $count_columns = count($vcf_line);
           for ($j = 9; $j < $count_columns; $j++) {
 
-            $genotype_combination = tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt); // eg AG (removed the : part of code on 5/31/2023)
+            $j_column_data = $vcf_line[$j];
+            // @TODO We need to cater for extra metadata eg. 1/1:0,98:98:99:3055,289,0 <-- the data after the : is metadata
+            $j_read = explode(':',$j_column_data)[0]; // gets the 1/1 part
+
+            $genotype_combination = tpps_submit_vcf_render_genotype_combination($j_read, $ref, $alt); // eg AG (removed the : part of code on 5/31/2023)
 
             // Check if marker type is indel
             // split ref by comma (based on Emily's demo), go through each split value
@@ -4166,7 +4170,11 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
               // This gets the name of the current genotype for the tree_id column
               // being checked.
 
-              $val_combination = tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
+              $j_column_data = $vcf_line[$j];
+              // @TODO We need to cater for extra metadata eg. 1/1:0,98:98:99:3055,289,0 <-- the data after the : is metadata
+              $j_read = explode(':',$j_column_data)[0]; // gets the 1/1 part
+
+              $val_combination = tpps_submit_vcf_render_genotype_combination($j_read, $ref, $alt);
               $column_genotype_name = $marker_type . '-' . $marker_name . '-' . $val_combination;
               // echo 'Column Genotype Name: ' . $column_genotype_name . " Genotype Name: $genotype_name\n";
               if($column_genotype_name == $genotype_name) {
@@ -4227,17 +4235,17 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
                 //   'marker_id' => $marker_id,
                 // );
 
-                // THIS ABOUT REMOVING THIS - but it is in use for genotype materialized views
+                // It is in use for genotype materialized views and Emily's function to generate tables
                 // which is used for tpps/details page
-                // $records['stock_genotype']["{$stocks[$j - 9]}-$genotype_name"] = array(
-                //   'stock_id' => $stocks[$j - 9],
-                //   // PETER
-                //   // '#fk' => array(
-                //   //   'genotype' => $genotype_desc,
-                //   // ),
-                //   // RISH
-                //   'genotype_id' => $genotype_id,
-                // );
+                $records['stock_genotype']["{$stocks[$j - 9]}-$genotype_name"] = array(
+                  'stock_id' => $stocks[$j - 9],
+                  // PETER
+                  // '#fk' => array(
+                  //   'genotype' => $genotype_desc,
+                  // ),
+                  // RISH
+                  'genotype_id' => $genotype_id,
+                );
               }
             }
             // throw new Exception('DEBUG');
