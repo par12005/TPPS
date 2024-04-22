@@ -24,12 +24,10 @@ function tpps_table_display(array &$state, array $options = []) {
   }
   // Note: $state could be modified version of original sharedState received
   // by accession so we use it here without saving/updating original study.
-  // @TODO Check the difference and move to Submission::flatten().
+  // @TODO Check if this code could be merged (and cached) with Submission::flatten().
   $submission->sharedState = $state;
 
   $flat = $submission->flatten();
-
-  $map_api_key = variable_get('tpps_maps_api_key', NULL);
 
   $rows = [];
   $content = '';
@@ -44,17 +42,23 @@ function tpps_table_display(array &$state, array $options = []) {
       // @TODO Probably better way is to use check_plain() for each field and
       // count it's content.
       if (
-        // Exclude VCF files which has a hyperlink instead of File Id.
-        stripos($key_str, 'VCF File (cluster)') === FALSE
-        && stripos($key_str, 'VCF File (uploaded)') === FALSE
+        // VCF files have a hyperlink instead of File Id. Exclude from processing.
+        stripos($key_str, 'VCF File (cluster)') !== FALSE
+        || stripos($key_str, 'VCF File (uploaded)') !== FALSE
       ) {
-        $val_str = filter_xss(check_plain(
-          (is_array($val) ? var_export($val, 1) : $val)
-        ));
-      }
-      else {
         $val_str = $val;
       }
+      elseif (is_array($val)) {
+        foreach ($val as $key => $value) {
+          $value = is_array($value) ? var_export($value) : $value;
+          $items[] = check_plain($key . ': ' . $value);
+        }
+        $val_str = theme('item_list', ['items' => ($items ?? [])]);
+      }
+      else {
+        $val_str = filter_xss(check_plain($val));
+      }
+
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       if ($key == 'tpps_submission_import') {
         $key_str = t('Submission Import Metadata');
@@ -211,7 +215,7 @@ function tpps_table_display(array &$state, array $options = []) {
         continue;
       }
 
-      $rows[] = [$key_str, $val_str];
+      $rows[] = [ucwords(str_replace('_', ' ', $key_str)), $val_str];
     }
     elseif (preg_match('/^#(.*)accession_(.*)/', $key, $matches)) {
       $val_str = filter_xss(check_plain($val));
@@ -220,6 +224,7 @@ function tpps_table_display(array &$state, array $options = []) {
       $content .= "<div id=\"$item_id\" style=\"display:none;\">$val_str</div>";
     }
   }
+  $map_api_key = variable_get('tpps_maps_api_key', NULL);
   if (!empty($map_api_key)) {
     $content .= "<script src=\"https://developers.google.com/maps/"
       . "documentation/javascript/examples/markerclusterer/markerclusterer.js\">"

@@ -1138,12 +1138,7 @@ class Submission {
     $pub = &$page_1['publication'];
     $org = &$page_1['organism'];
 
-    if (isset($page_1['#cleared']) and $page_1['#cleared']) {
-      $data['#page_1_cleared'] = TRUE;
-    }
-    else {
-      $data['#page_1_cleared'] = FALSE;
-    }
+    $data['#page_1_cleared'] = (bool) (isset($page_1['#cleared']) && $page_1['#cleared']);
     $data['Project ID'] = $state['ids']['project_id'] ?? NULL;
     $data['#study_photo'] = $page_1['photo'] ?? NULL;
     $data['Publication DOI'] = $page_1['doi'] ?? NULL;
@@ -1712,6 +1707,7 @@ class Submission {
         unset($data[$key]);
       }
     }
+    // @TODO Cache this data or even store beside 'shared_state' in DB.
     return $data;
   }
 
