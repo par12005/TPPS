@@ -959,7 +959,7 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
     if (
       empty($loaded_state['vcf_replace'])
       && trim($form_state['values']["organism-$org_num"]['genotype'][$snps_fieldset]['local_vcf']) != ''
-      && $loaded_state['vcf_validated'] !== TRUE
+      && ($loaded_state['vcf_validated'] ?? NULL) !== TRUE
     ) {
       form_set_error(
         "$id][genotype][$snps_fieldset][local_vcf",
