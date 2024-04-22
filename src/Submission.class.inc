@@ -1125,14 +1125,18 @@ class Submission {
    */
   public function flatten() {
     $state = $this->sharedState;
-
-    $data = isset($state['saved_values']) ? $state['saved_values'] : NULL;
-
-    if (!$data) {
+    if (empty($state['saved_values'])) {
       return [];
     }
+    $data = $state['saved_values'];
+
     unset($data['frontpage']);
     unset($data['form_build_id']);
+
+    // Note: Seems 'dbxref_id' and 'status' didn't show before class
+    // Submission was implemented.
+    unset($data['status']);
+    unset($data['dbxref_id']);
 
     $page_1 = &$data[TPPS_PAGE_1];
     $pub = &$page_1['publication'];
@@ -1707,7 +1711,6 @@ class Submission {
         unset($data[$key]);
       }
     }
-    // @TODO Cache this data or even store beside 'shared_state' in DB.
     return $data;
   }
 
