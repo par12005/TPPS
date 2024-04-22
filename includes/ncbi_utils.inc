@@ -100,3 +100,39 @@ function tpps_ncbi_get_taxon_id($organism, $list = FALSE) {
     drupal_set_message($err_msg . ' EUtils Error: ' . $e->getMessage());
   }
 }
+
+/**
+ * A relaxed version used for testing: Retrieves the NCBI Taxonomy Id of an organism based on its name.
+ *
+ * @param string $organism
+ *   The name of the organism.
+ *
+ * @return mixed
+ *   The NCBI Taxonomy Id, or FALSE on failure.
+ */
+function tpps_ncbi_get_taxon_id_v2($organism, $list = FALSE) {
+  $formatted_org = implode('+', explode(' ', $organism));
+  // $formatted_org = implode(' ', explode(' ', $organism));
+  echo "NCBI Search String Formatted: $formatted_org\n";
+  // $search = new ESearch('taxonomy');
+  // $search->addParam('term', "$formatted_org");
+  $response_raw = file_get_contents("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=taxonomy&term=" . $formatted_org);
+  print_r($response_raw);
+  $err_msg = 'Unable to load Taxon ID from NCBI for organism named: ' . $organism;
+  try {
+    // $response = $search->get()->xml();
+    $response = simplexml_load_string($response_raw);
+    print_r($response);
+    if (empty($response->IdList->Id)) {
+      drupal_set_message($err_msg);
+      return FALSE;
+    }
+    if (!$list) {
+      return $response->IdList->Id;
+    }
+    return $response->IdList;
+  }
+  catch (\Exception $e) {
+    drupal_set_message($err_msg . ' EUtils Error: ' . $e->getMessage());
+  }
+}

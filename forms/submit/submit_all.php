@@ -340,7 +340,8 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
   $organism_number = $firstpage['organism']['number'];
 
   for ($i = 1; $i <= $organism_number; $i++) {
-    $parts = explode(" ", trim($firstpage['organism'][$i]['name']));
+    $raw_name = trim($firstpage['organism'][$i]['name']);
+    $parts = explode(" ", $raw_name);
     $genus = $parts[0];
     $species = implode(" ", array_slice($parts, 1));
     $infra = NULL;
@@ -387,7 +388,23 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
     echo "Found organism results id: " . $organism_results_id . "\n";
     // throw new Exception('DEBUG');
 
+    
     // If no organism id was found in database, perform an insert
+
+    // TEST CODE @TODO, ADD THIS TO WHEN $organism_results_id == -1
+    if ($infra != "" and $infra != NULL and $organism_results_id == -1) {
+      // Lookup to see if this species exists on NCBI
+      $taxons = tpps_ncbi_get_taxon_id($raw_name, TRUE);
+      // print_r($taxons);
+      $taxons = json_decode(json_encode($taxons))->Id;
+      // print_r($taxons);
+
+      if (empty($taxons) || count($taxons) === 0) {
+        throw new Exception("This study contains a variation-type species in which we could not find a matching record on NCBI: " . $raw_name);
+      }
+    }
+    
+
     if ($organism_results_id == -1) {
       $form_state['ids']['organism_ids'][$i] = tpps_chado_insert_record('organism', $record);
     }
