@@ -245,10 +245,9 @@ function tpps_table_display(array &$state, array $options = []) {
     'sticky' => FALSE,
     'empty' => '',
   ];
-  if (!empty($flat['#study_photo'])) {
-    $url = check_plain(file_create_url(file_load($flat['#study_photo'])->uri));
-    $photo = "<img src=\"$url\" style=\"display: block; margin-left: "
-      . "auto; margin-right: auto;\"></img>";
+  if (!empty($flat['#study_photo']) && $file = file_load($flat['#study_photo'])) {
+    $photo = '<img src="' . check_plain(file_create_url($file->uri)) . '" '
+      . 'style="display: block; margin-left: auto; margin-right: auto;"></img>';
   }
   $display = ($photo ?? '') . theme('table', $vars) . $content;
   return $display;
