@@ -2139,6 +2139,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
     'seq_var_cvterm' => $seq_var_cvterm,
     'multi_insert' => &$multi_insert_options,
     'job' => &$job,
+    'study_accession' => $form_state['saved_values'][1]['accession']
   );
 
   // check to make sure admin has not set disable_vcf_importing.
@@ -2579,9 +2580,9 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
           $variant_id = $row_object->feature_id;
 
           // Lookup whether marker is already inserted into the features table
-          $result = chado_query("SELECT * FROM chado.feature WHERE uniquename = :marker_name AND organism_id = :organism_id", [
+          $result = chado_query("SELECT * FROM chado.feature WHERE uniquename = :marker_name", [
             ':marker_name' => $variant_name, // column 3 of VCF
-            ':organism_id' => $current_id
+            // ':organism_id' => $current_id
           ]);
 
           $feature_exists = false;
@@ -2755,12 +2756,65 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
               // This gets the name of the current genotype for the tree_id column
               // being checked.
 
+              $j_column_data = $vcf_line[$j];
+              // @TODO We need to cater for extra metadata eg. 1/1:0,98:98:99:3055,289,0 <-- the data after the : is metadata
+              $j_read = explode(':',$j_column_data)[0]; // gets the 1/1 part
 
+              $val_combination = tpps_submit_vcf_render_genotype_combination($j_read, $ref, $alt);
               $column_genotype_name = $marker_type . '-' . $marker_name . '-' . tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
               // echo 'Column Genotype Name: ' . $column_genotype_name . " Genotype Name: $genotype_name\n";
               if($column_genotype_name == $genotype_name) {
                 // Found a match between the tree_id genotype and the genotype_name from records
                 // echo "Found match (and using variant_name $variant_name ($variant_id) to add to genotype call\n";
+
+                // [RISH] 02/26/2024
+                // Insert genotype reads into chado.genotype_reads_per_plant
+                // We need plant name, study, marker_name
+                // $options['tree_id'], $options['study_accession'], $marker_name
+                // Check if a record already exists, if not, create initial record
+                
+                $study_accession = $options['study_accession'];
+                $tree_id = $study_accession . '-' . $tree_ids[$j - 9];
+                $per_plant_results = chado_query('
+                  SELECT COUNT(*) as c1 FROM chado.genotype_reads_per_plant 
+                  WHERE tree_acc = :tree_id AND study_accession = :study_accession
+                ', [
+                  ':tree_id' => $tree_id,
+                  ':study_accession' => $study_accession
+                ]);
+                $per_plant_records_count = $per_plant_results->fetchObject()->c1;
+                if ($per_plant_records_count == 0) {
+                  // CREATE AN EMPTY RECORD IN TABLE
+                  chado_query("
+                    INSERT INTO chado.genotype_reads_per_plant 
+                    (tree_acc, study_accession, marker_array, read_array) 
+                    VALUES 
+                    ('$tree_id', '$study_accession', ARRAY[]::text[], ARRAY[]::text[])
+                  ");
+                }
+                // So now we have a record in the table for the plant, so append the new values
+                chado_query("
+                  UPDATE chado.genotype_reads_per_plant 
+                  set marker_array = array_append(marker_array, '$marker_name') 
+                  WHERE tree_acc = '$tree_id' AND study_accession = '$study_accession'
+                ");                 
+                chado_query("
+                  UPDATE chado.genotype_reads_per_plant 
+                  set read_array = array_append(read_array, '$val_combination') 
+                  WHERE tree_acc = '$tree_id' AND study_accession = '$study_accession'
+                ");
+                
+                // It is in use for genotype materialized views and Emily's function to generate tables
+                // which is used for tpps/details page
+                $records['stock_genotype']["{$stocks[$j - 9]}-$genotype_name"] = array(
+                  'stock_id' => $stocks[$j - 9],
+                  // PETER
+                  // '#fk' => array(
+                  //   'genotype' => $genotype_desc,
+                  // ),
+                  // RISH
+                  'genotype_id' => $genotype_id,
+                );
 
 
                 // ob_start();
@@ -4276,6 +4330,17 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
                   // RISH
                   'genotype_id' => $genotype_id,
                 );
+
+                
+                chado_insert_record('feature_genotype', [
+                  'feature_id' => $variant_id,
+                  'genotype_id' => $genotype_id,
+                  'chromosome_id' => NULL,
+                  'rank' => 0,
+                  'cgroup' => 0,
+                  'cvterm_id' => $snp_cvterm,
+                ]);
+                
               }
             }
             // throw new Exception('DEBUG');
