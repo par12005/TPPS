@@ -4332,14 +4332,14 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
                 );
 
                 
-                chado_insert_record('feature_genotype', [
-                  'feature_id' => $variant_id,
-                  'genotype_id' => $genotype_id,
-                  'chromosome_id' => NULL,
-                  'rank' => 0,
-                  'cgroup' => 0,
-                  'cvterm_id' => $snp_cvterm,
-                ]);
+                // chado_insert_record('feature_genotype', [
+                //   'feature_id' => $variant_id,
+                //   'genotype_id' => $genotype_id,
+                //   'chromosome_id' => NULL,
+                //   'rank' => 0,
+                //   'cgroup' => 0,
+                //   'cvterm_id' => $snp_cvterm,
+                // ]);
                 
               }
             }
