@@ -191,8 +191,7 @@ function tpps_form_error(array $form_state, array $path, $message) {
   }
   // Remove colon ':' and required field label.
   $title = strtok($field['#title'], ':');
-  $form_path = implode('][', tpps_get_field_path($field, $path));
-  form_set_error($form_path,
+  form_set_error(implode('][', $field['#array_parents']),
     t('@title: @message', ['@title' => $title, '@message' => $message])
   );
 }

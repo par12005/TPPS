@@ -821,22 +821,28 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
     }
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Validate SSR/cpSSR fieldset fields.
+  $ssrs_fieldset = 'ssrs_cpssrs';
+  if ($does_study_include_ssr_cpssr_data == 'yes') {
+    // 'Define SSRs/cpSSRs Type' field.
+    $field_name = 'SSRs/cpSSRs';
+    tpps_is_required_field_empty($form_state,
+      [$id, 'genotype', $ssrs_fieldset, $field_name]
+    );
+    $field_value = drupal_array_get_nested_value($genotype,
+      [$ssrs_fieldset, $field_name]
+    );
 
-
-
-  // @TODO Check why fields are missing.
-
-  //if ($does_study_include_ssr_cpssr_data == 'yes') {
-  //  tpps_is_required_field_empty($form_state, [$id, 'genotype', 'SSRs/cpSSRs']);
-  //  if (in_array($genotype['SSRs/cpSSRs'], ['cpSSRs', 'Both SSRs and cpSSRs'])) {
-  //    tpps_validate_ssr($form_state, $org_num, 'ssrs_extra');
-  //  }
-  //  if (in_array($genotype['SSRs/cpSSRs'], ['SSRs', 'Both SSRs and cpSSRs'])) {
-  //    tpps_validate_ssr($form_state, $org_num, 'ssrs');
-  //  }
-  //}
+    if (in_array($field_value, ['cpSSRs', 'Both SSRs and cpSSRs'])) {
+      tpps_validate_ssr($form_state, $org_num, 'ssrs_extra');
+    }
+    if (in_array($field_value, ['SSRs', 'Both SSRs and cpSSRs'])) {
+      tpps_validate_ssr($form_state, $org_num, 'ssrs');
+    }
+  }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Validate 'Other' fieldset fields.
   if ($does_study_include_other_genotypic_data == 'yes') {
     tpps_is_required_field_empty($form_state,
       [$id, 'genotype', $other_fieldset, 'other-marker']
@@ -875,11 +881,26 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
     }
   }
 
+  // Validate 'Remote/cluster VCF' field.
   if (
     $does_study_include_snp_data == 'yes'
     && $file_type == TPPS_GENOTYPING_FILE_TYPE_VCF
+    && $genotype[$snps_fieldset]['vcf_file-location'] == 'remote'
+    && trim($genotype[$snps_fieldset]['local_vcf']) == ''
     && !$vcf
-    && trim($form_state['values'][$id]['genotype'][$snps_fieldset]['local_vcf']) == ''
+  ) {
+    tpps_form_error_required($form_state,
+      [$id, 'genotype', $snps_fieldset, 'local_vcf']
+    );
+  }
+
+  // Validate 'uploaded VCF' field.
+  if (
+    $does_study_include_snp_data == 'yes'
+    && $file_type == TPPS_GENOTYPING_FILE_TYPE_VCF
+    && $genotype[$snps_fieldset]['vcf_file-location'] == 'local'
+    && !$vcf
+    //&& trim($form_state['values'][$id]['genotype'][$snps_fieldset]['local_vcf']) == ''
   ) {
     tpps_form_error_required($form_state,
       [$id, 'genotype', $snps_fieldset, 'vcf']
@@ -893,10 +914,8 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
       !empty($assembly) && !form_get_errors()
       && in_array($ref_genome, ['manual', 'manual2', 'url'])
     ) {
-      if (trim($form_state['values'][$id]['genotype'][$snps_fieldset]['local_vcf']) != '') {
-        $local_vcf_path = trim(
-          $form_state['values'][$id]['genotype'][$snps_fieldset]['local_vcf']
-        );
+      if (trim($genotype[$snps_fieldset]['local_vcf']) != '') {
+        $local_vcf_path = trim($genotype[$snps_fieldset]['local_vcf']);
         $vcf_content = gzopen($local_vcf_path, 'r');
       }
       else {
@@ -980,8 +999,8 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
       if ($vcf) {
         $vcf_file = file_load($vcf);
       }
-      if (trim($form_state['values'][$id]['genotype'][$snps_fieldset]['local_vcf']) != '') {
-        $location = trim($form_state['values'][$id]['genotype'][$snps_fieldset]['local_vcf']);
+      if (trim($genotype[$snps_fieldset]['local_vcf']) != '') {
+        $location = trim($genotype[$snps_fieldset]['local_vcf']);
       }
       else {
         $location = tpps_get_location($vcf_file->uri);
