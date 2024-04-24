@@ -23,6 +23,8 @@ function tpps_install() {
   variable_set('tpps_report_order_family_not_exist_title',
     'Order/Family not exist'
   );
+  // Submission Tools.
+  variable_set('tpps_submission_secret_key', 'hX99S976sDXtedW4BSf3BGDKLwjR8Gs0');
   // Main settings.
   variable_set('tpps_theme', 'default');
   variable_set('tpps_top_bar', 'status');
@@ -338,6 +340,8 @@ function tpps_uninstall() {
   variable_del('tpps_report_no_synonym_title');
   variable_del('tpps_report_unit_warning_title');
   variable_del('tpps_report_order_family_not_exist_title');
+  // Submission Tools.
+  variable_del('tpps_submission_secret_key');
   // Main settings.
   variable_del('tpps_theme');
   variable_del('tpps_top_bar');

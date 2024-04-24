@@ -1917,6 +1917,15 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/config.php',
   ];
+  $items['admin/config/tpps/submission'] = [
+    'title' => 'Submission',
+    'description' => 'Submission Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/submission.inc',
+  ];
   $items['admin/config/tpps/form'] = [
     'title' => 'Form',
     'description' => 'Form Settings',
@@ -2123,6 +2132,16 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'access arguments' => ['administer tpps module'],
     'file' => 'pages/submission/export.inc',
   ];
+  $items['tpps/submission/%/export/json'] = [
+    'type' => MENU_CALLBACK,
+    'title' => 'TPPS Submission Export',
+    'description' => 'TPPS Submission Export in JSON format',
+    'page callback' => 'tpps_submission_export_json',
+    'page arguments' => [2],
+    'access callback' => TRUE,
+    'file' => 'pages/submission/export.json.inc',
+  ];
+  // Import.
   $items['tpps/submission/%/import'] = [
     'title callback' => 'tpps_submission_title',
     'title arguments' => [2, 3],
@@ -2152,7 +2171,6 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'access arguments' => ['administer tpps module'],
     'file' => 'pages/submission/compare.inc',
   ];
-
   $items['tpps/submission/%/purge'] = [
     'title callback' => 'tpps_submission_title',
     'title arguments' => [2, 3],
