@@ -348,8 +348,8 @@ function tpps_uninstall() {
   variable_del('tpps_dark_theme');
   variable_del('tpps_debug_mode');
   variable_del('tpps_autofocus_delay');
-  variable_del('tpps_dump_max_len_state', 150000);
-  variable_del('tpps_dump_max_len_sharedState', 150000);
+  variable_del('tpps_dump_max_len_state');
+  variable_del('tpps_dump_max_len_sharedState');
   // Front page.
   variable_del('tpps_front_cache_accession_list');
   variable_del('tpps_front_show_pending_status_mine');

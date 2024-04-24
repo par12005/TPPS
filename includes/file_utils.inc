@@ -593,10 +593,12 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
         if ($file) {
           file_usage_add($file, 'tpps', 'tpps_project', $accession);
           $values["organism-$i"]['genotype']['SNPs']['snps-assay-columns'] = [];
-          $column_list = &$form["organism-$i"]['genotype']['SNPs']['snps-assay']['#value']['columns'] ?? [];
-          foreach ($colum_list as $key => $value) {
-            if ($key[0] != '#') {
-              $values["organism-$i"]['genotype']['SNPs']['snps-assay-columns'][$key] = $value;
+          if (!empty($form["organism-$i"]['genotype']['SNPs']['snps-assay']['#value']['columns'])) {
+            $column_list = &$form["organism-$i"]['genotype']['SNPs']['snps-assay']['#value']['columns'];
+            foreach ($column_list as $key => $value) {
+              if ($key[0] != '#') {
+                $values["organism-$i"]['genotype']['SNPs']['snps-assay-columns'][$key] = $value;
+              }
             }
           }
         }
