@@ -85,12 +85,15 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
     $dumps = ['sharedState', 'state'];
   }
 
-  foreach (['sharedState', 'state'] as $data_type) {
+  foreach ($dumps as $data_type) {
     // Huge: 5M, Normal: 25K.
     $max_len = variable_get('tpps_dump_max_len_' . $data_type, 100000);
     $state = $submission->$data_type;
     // Remove huge element which added by Tripal Job.
-    unset($state['data']);
+    if (!empty($state['data'])) {
+      drupal_set_message('Huge element "data" was cut off.');
+      unset($state['data']);
+    }
     $form[$data_type] = [
       '#type' => 'fieldset',
       '#title' => t(ucfirst($data_type)),
