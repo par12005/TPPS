@@ -2141,6 +2141,15 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'access callback' => TRUE,
     'file' => 'pages/submission/export.json.inc',
   ];
+  $items['tpps/submission/%/json'] = [
+    'type' => MENU_CALLBACK,
+    'title' => 'TPPS Submission JSON',
+    'description' => 'TPPS Submission in JSON format',
+    'page callback' => 'tpps_submission_json',
+    'page arguments' => [2],
+    'access arguments' => ['administer tpps module'],
+    'file' => 'pages/submission/json.inc',
+  ];
   // Import.
   $items['tpps/submission/%/import'] = [
     'title callback' => 'tpps_submission_title',

@@ -12,8 +12,6 @@
  *   Subission Accession. E.g., 'TGDRxxx'.
  */
 function tpps_submission_export_json($accession = '') {
-  global $base_url;
-
   $output = [];
   $key = variable_get('tpps_submission_secret_key', 'hX99S976sDXtedW4BSf3BGDKLwjR8Gs0');
 
