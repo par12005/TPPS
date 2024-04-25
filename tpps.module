@@ -1210,6 +1210,10 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
     '#type' => 'hidden',
     '#value' => $form_state['accession'],
   ];
+  $form['stage'] = [
+    '#type' => 'hidden',
+    '#value' => $form_state['stage'] ?? 'frontpage',
+  ];
   $js_data = [
     'tpps' => [
       'accession' => $form_state['accession'] ?? NULL,
