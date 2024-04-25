@@ -13,7 +13,9 @@
  */
 function tpps_submission_export_json($accession = '') {
   $output = [];
-  $key = variable_get('tpps_submission_secret_key', 'hX99S976sDXtedW4BSf3BGDKLwjR8Gs0');
+  if (empty($key = variable_get('tpps_submission_secret_key'))) {
+    tpps_message('Secret Key not set.');
+  }
 
   // Allowed only POST for live-site and both (POST and GET) for dev-site.
   if (is_live_site()) {

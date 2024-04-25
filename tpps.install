@@ -24,7 +24,7 @@ function tpps_install() {
     'Order/Family not exist'
   );
   // Submission Tools.
-  variable_set('tpps_submission_secret_key', 'hX99S976sDXtedW4BSf3BGDKLwjR8Gs0');
+  variable_set('tpps_submission_secret_key', '');
   // Main settings.
   variable_set('tpps_theme', 'default');
   variable_set('tpps_top_bar', 'status');

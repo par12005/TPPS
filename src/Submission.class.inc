@@ -1372,7 +1372,9 @@ class Submission {
           $loc_type = $page_3["species-$i"]['file-groups'][$name]['#type'] ?? NULL;
           if (
             !empty($loc_type)
-            and ($loc_type == "gps" or (array_search('gps', $loc_type) !== FALSE))
+            && (
+              $loc_type == "gps" ||  in_array('gps', $loc_type)
+            )
           ) {
             $fid = $page_3["species-$i"]['file'];
             drupal_add_js(array(

@@ -12,10 +12,9 @@ function tpps_submission_settings_form(array $form, array &$form_state) {
   $form['tpps_submission_secret_key'] = [
     '#type' => 'textfield',
     '#title' => t('TPPS Submission Secret Key'),
-    '#default_value' => variable_get('tpps_submission_secret_key',
-      'hX99S976sDXtedW4BSf3BGDKLwjR8Gs0'
-    ),
-    '#description' => t('This key is used to export Submission from remote server.'),
+    '#default_value' => variable_get('tpps_submission_secret_key'),
+    '#description' => t('This key must be sent in POST requests to export '
+      . 'Submission in JSON format.'),
   ];
   // For searching: 'tpps_dump_max_len_state', 'tpps_dump_max_len_sharedState'.
   foreach (['sharedState', 'state'] as $data_type) {
