@@ -20,13 +20,13 @@
  * @param array $form_state
  *   The form state array of the provided form.
  * @param string $id
- *   The id of the dynamic list.
+ *   The id of the dynamic list. E.g., 'ogranism'.
  * @param array $repeat
- *   The field to repeat.
+ *   The field to be repeated.
  * @param array $options
  *   Additional options.
  */
-function tpps_dynamic_list(array &$form, array &$form_state, $id, array $repeat, array $options = array()) {
+function tpps_dynamic_list(array &$form, array &$form_state, $id, array $repeat, array $options = []) {
   $label = $options['label'] ?? $id;
   $parents = $options['parents'] ?? [];
   $number_parents = $parents;
@@ -39,13 +39,16 @@ function tpps_dynamic_list(array &$form, array &$form_state, $id, array $repeat,
   $fieldset_title = $options['title'] ?? "$label information:";
   $button_callback = $options['callback'] ?? "tpps_{$id}_callback";
   $list_wrapper = $options['wrapper'] ?? "$id-wrapper";
-  $sub_keys = $options['substitute_keys'] ?? array();
-  $sub_fields = $options['substitute_fields'] ?? array();
+  $sub_keys = $options['substitute_keys'] ?? [];
+  $sub_fields = $options['substitute_fields'] ?? [];
   $replace_pattern = $options['replacement_pattern'] ?? '/!num/';
-  $alt_buttons = $options['alternative_buttons'] ?? array();
-  $button_weights = $options['button_weights'] ?? array();
+  $alt_buttons = $options['alternative_buttons'] ?? [];
+  $biutton_weights = $options['button_weights'] ?? [];
 
-  $element = array(
+  // Get current stage/step.
+  $stage = $form['stage']['#value'] ?? 'frontpage';
+
+  $element = [
     '#type' => 'fieldset',
     '#tree' => TRUE,
     '#title' => "<div class=\"fieldset-title\">$fieldset_title</div>",
@@ -54,80 +57,109 @@ function tpps_dynamic_list(array &$form, array &$form_state, $id, array $repeat,
     '#suffix' => '</div>',
     // [VS] Added ability to set Drupal States for fieldsets.
     '#states' => $options['states'] ?? [],
-    // [/VS]
-    'add' => array(
-      '#type' => 'button',
-      '#button_type' => 'button',
-      '#value' => $up,
-      '#name' => $up . $name_suffix,
-      '#ajax' => array(
-        'wrapper' => $list_wrapper,
-        'callback' => $button_callback,
-      ),
-      '#weight' => $button_weights[$up] ?? NULL,
-    ),
-    'remove' => array(
-      '#type' => 'button',
-      '#button_type' => 'button',
-      '#value' => $down,
-      '#name' => $down . $name_suffix,
-      '#ajax' => array(
-        'wrapper' => $list_wrapper,
-        'callback' => $button_callback,
-      ),
-      '#weight' => $button_weights[$down] ?? NULL,
-    ),
-  );
+  ];
 
-  $number_options = array();
+  // Buttons: 'Add/Remove'.
+  $buttons = [
+    'add' => $up,
+    'remote' => $down,
+  ];
+  foreach ($buttons as $key => $value) {
+    $element[$key] = [
+      '#type' => 'button',
+      '#button_type' => 'button',
+      '#value' => $value,
+      '#name' => $value . $name_suffix,
+      '#ajax' => [
+        'wrapper' => $list_wrapper,
+        'callback' => $button_callback,
+      ],
+      '#weight' => $button_weights[$value] ?? NULL,
+    ];
+  }
+
+  // Extra buttons.
+  $number_options = [];
   foreach ($alt_buttons as $button => $inc_value) {
-    $element[$button] = array(
+    $element[$button] = [
       '#type' => 'button',
       '#button_type' => 'button',
       '#value' => $button,
       '#name' => $button . $name_suffix,
-      '#ajax' => array(
+      '#ajax' => [
         'wrapper' => $list_wrapper,
         'callback' => $button_callback,
-      ),
+      ],
       '#weight' => $button_weights[$button] ?? NULL,
-    );
+    ];
     $number_options[$button . $name_suffix] = $inc_value;
   }
 
-  $number = tpps_get_ajax_number($form_state, $number_parents, $up . $name_suffix, $down . $name_suffix, $default, $minimum, $number_options);
-
-  $element['number'] = array(
-    '#type' => 'hidden',
-    '#value' => $number,
+  // Get total number of elements.
+  $number = tpps_get_ajax_number(
+    $form_state,
+    $number_parents,
+    $up . $name_suffix,
+    $down . $name_suffix,
+    $default,
+    $minimum,
+    $number_options
   );
 
+  // Store total number of elemnts.
+  $element['number'] = ['#type' => 'hidden', '#value' => $number];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Change number inside element.
   for ($i = 1; $i <= $number; $i++) {
     $instance = $repeat;
     foreach ($sub_fields as $field) {
       if (!is_array($field)) {
-        $instance[$field] = preg_replace($replace_pattern, $i, $repeat[$field]);
+        $instance[$field] = preg_replace(
+          $replace_pattern,
+          $i,
+          $repeat[$field]
+        );
       }
       else {
-        $new_value = preg_replace($replace_pattern, $i, drupal_array_get_nested_value($repeat, $field));
+        $new_value = preg_replace(
+          $replace_pattern,
+          $i,
+          drupal_array_get_nested_value($repeat, $field)
+        );
         drupal_array_set_nested_value($instance, $field, $new_value);
       }
     }
     foreach ($sub_keys as $key) {
       $value = drupal_array_get_nested_value($instance, $key);
       drupal_array_set_nested_value($instance, $key, NULL);
-      $new_key = array();
+      $new_key = [];
       foreach ($key as $key_item) {
         $new_key[] = preg_replace($replace_pattern, $i, $key_item);
       }
       drupal_array_set_nested_value($instance, $new_key, $value);
     }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Get field value.
+    // WARNING: Only 1st level of fields is supported.
+    // @TODO Minor. Allow nested fields processing.
+    foreach ($instance as $field_name => $field_body) {
+      if ($field_name[0] == '#' || empty($field_body['#type'])) {
+        continue;
+      }
+      $key_exists = FALSE;
+      $value = drupal_array_get_nested_value($form_state,
+        ['saved_values', $stage, $id, $i, $field_name], $key_exists
+      );
+      if ($key_exists && $value) {
+        $instance[$field_name]['#default_value']
+          = $value;
+      }
+    }
     $element[$i] = $instance;
   }
-
-  $element_parents = $parents;
-  array_push($element_parents, $id);
-  drupal_array_set_nested_value($form, $element_parents, $element);
+  drupal_array_set_nested_value($form, array_merge($parents, [$id]), $element);
 }
 
 /**

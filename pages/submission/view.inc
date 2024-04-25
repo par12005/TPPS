@@ -94,11 +94,11 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
       drupal_set_message('Huge element "data" was cut off.');
       unset($state['data']);
     }
+    // State and Shared State fieldsets.
     $form[$data_type] = [
       '#type' => 'fieldset',
       '#title' => t(ucfirst($data_type)),
       '#collapsed' => FALSE,
-      '#collapsible' => TRUE,
     ];
 
     $data_len = strlen(json_encode($state));
@@ -121,7 +121,8 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
           '#title' => ($item['title'] ?? $key)
             . ($item['count'] ? ' (' . $item['count'] . ')' : ''),
           '#collapsible' => TRUE,
-          '#collapsed' => TRUE,
+          // 'saved_values' item always open.
+          '#collapsed' => ($key == 'saved_values') ? FALSE : TRUE,
           'plain_items' => ['#markup' => ($item['data'] ?? NULL)],
         ];
       }

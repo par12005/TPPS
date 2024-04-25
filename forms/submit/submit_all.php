@@ -358,12 +358,23 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
   $organism_number = $page1_values['organism']['number'];
 
   for ($i = 1; $i <= $organism_number; $i++) {
-    $parts = explode(" ", $page1_values['organism'][$i]['name']);
+    $raw_name = trim($firstpage['organism'][$i]['name']);
+    $parts = explode(" ", $raw_name);
     $genus = $parts[0];
     $species = implode(" ", array_slice($parts, 1));
     $infra = NULL;
-    if (isset($parts[2]) and ($parts[2] == 'var.' or $parts[2] == 'subsp.')) {
+    $parts_count = count($parts);
+    if (isset($parts[2]) and ($parts[2] == 'var.' or $parts[2] == 'subsp.' or $parts[2] == 'spp.' or $parts[2] == 'sp.')) {
       $infra = implode(" ", array_slice($parts, 2));
+    }
+    else if (isset($parts[2]) and $parts_count <= 3) {
+      // cater for examples like Taxus baccata L or Taxus baccata L.
+      // where we want to remove the L or L.
+
+      // Set infra to NULL
+      $infra = NULL;
+      // Set the species to the second part which is in $parts[1];
+      $species = $parts[1];
     }
 
     $record = [
@@ -371,11 +382,14 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
       'species' => $species,
       'infraspecific_name' => $infra,
     ];
+    echo "This is the record data to check for OR ELSE insert this data into the db\n";
+    print_r($record);
 
     if (preg_match('/ x /', $species)) {
       $record['type_id'] = tpps_load_cvterm('speciesaggregate')->cvterm_id;
     }
 
+    echo "Checking to see if records exist for genus $genus, species $species, infr $infra\n";
     // Let's check to see if genus and species match, if so, get the id
     // if it does not return any rows, then create organism
     $organism_results = chado_query('SELECT * FROM chado.organism WHERE genus = :genus AND species = :species
@@ -389,8 +403,26 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
     foreach ($organism_results as $organism_row) {
       $organism_results_id = $organism_row->organism_id;
     }
+    echo "Found organism results id: " . $organism_results_id . "\n";
+    // throw new Exception('DEBUG');
+
 
     // If no organism id was found in database, perform an insert
+
+    // TEST CODE @TODO, ADD THIS TO WHEN $organism_results_id == -1
+    if ($infra != "" and $infra != NULL and $organism_results_id == -1) {
+      // Lookup to see if this species exists on NCBI
+      $taxons = tpps_ncbi_get_taxon_id($raw_name, TRUE);
+      // print_r($taxons);
+      $taxons = json_decode(json_encode($taxons))->Id;
+      // print_r($taxons);
+
+      if (empty($taxons) || count($taxons) === 0) {
+        throw new Exception("This study contains a variation-type species in which we could not find a matching record on NCBI: " . $raw_name);
+      }
+    }
+
+
     if ($organism_results_id == -1) {
       $shared_state['ids']['organism_ids'][$i] = tpps_chado_insert_record('organism', $record);
     }
@@ -2108,6 +2140,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
     'seq_var_cvterm' => $seq_var_cvterm,
     'multi_insert' => &$multi_insert_options,
     'job' => &$job,
+    'study_accession' => $form_state['saved_values'][1]['accession']
   );
 
   // check to make sure admin has not set disable_vcf_importing.
@@ -2548,9 +2581,9 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
           $variant_id = $row_object->feature_id;
 
           // Lookup whether marker is already inserted into the features table
-          $result = chado_query("SELECT * FROM chado.feature WHERE uniquename = :marker_name AND organism_id = :organism_id", [
+          $result = chado_query("SELECT * FROM chado.feature WHERE uniquename = :marker_name", [
             ':marker_name' => $variant_name, // column 3 of VCF
-            ':organism_id' => $current_id
+            // ':organism_id' => $current_id
           ]);
 
           $feature_exists = false;
@@ -2724,12 +2757,65 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
               // This gets the name of the current genotype for the tree_id column
               // being checked.
 
+              $j_column_data = $vcf_line[$j];
+              // @TODO We need to cater for extra metadata eg. 1/1:0,98:98:99:3055,289,0 <-- the data after the : is metadata
+              $j_read = explode(':',$j_column_data)[0]; // gets the 1/1 part
 
+              $val_combination = tpps_submit_vcf_render_genotype_combination($j_read, $ref, $alt);
               $column_genotype_name = $marker_type . '-' . $marker_name . '-' . tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
               // echo 'Column Genotype Name: ' . $column_genotype_name . " Genotype Name: $genotype_name\n";
               if($column_genotype_name == $genotype_name) {
                 // Found a match between the tree_id genotype and the genotype_name from records
                 // echo "Found match (and using variant_name $variant_name ($variant_id) to add to genotype call\n";
+
+                // [RISH] 02/26/2024
+                // Insert genotype reads into chado.genotype_reads_per_plant
+                // We need plant name, study, marker_name
+                // $options['tree_id'], $options['study_accession'], $marker_name
+                // Check if a record already exists, if not, create initial record
+
+                $study_accession = $options['study_accession'];
+                $tree_id = $study_accession . '-' . $tree_ids[$j - 9];
+                $per_plant_results = chado_query('
+                  SELECT COUNT(*) as c1 FROM chado.genotype_reads_per_plant
+                  WHERE tree_acc = :tree_id AND study_accession = :study_accession
+                ', [
+                  ':tree_id' => $tree_id,
+                  ':study_accession' => $study_accession
+                ]);
+                $per_plant_records_count = $per_plant_results->fetchObject()->c1;
+                if ($per_plant_records_count == 0) {
+                  // CREATE AN EMPTY RECORD IN TABLE
+                  chado_query("
+                    INSERT INTO chado.genotype_reads_per_plant
+                    (tree_acc, study_accession, marker_array, read_array)
+                    VALUES
+                    ('$tree_id', '$study_accession', ARRAY[]::text[], ARRAY[]::text[])
+                  ");
+                }
+                // So now we have a record in the table for the plant, so append the new values
+                chado_query("
+                  UPDATE chado.genotype_reads_per_plant
+                  set marker_array = array_append(marker_array, '$marker_name')
+                  WHERE tree_acc = '$tree_id' AND study_accession = '$study_accession'
+                ");
+                chado_query("
+                  UPDATE chado.genotype_reads_per_plant
+                  set read_array = array_append(read_array, '$val_combination')
+                  WHERE tree_acc = '$tree_id' AND study_accession = '$study_accession'
+                ");
+
+                // It is in use for genotype materialized views and Emily's function to generate tables
+                // which is used for tpps/details page
+                $records['stock_genotype']["{$stocks[$j - 9]}-$genotype_name"] = array(
+                  'stock_id' => $stocks[$j - 9],
+                  // PETER
+                  // '#fk' => array(
+                  //   'genotype' => $genotype_desc,
+                  // ),
+                  // RISH
+                  'genotype_id' => $genotype_id,
+                );
 
 
                 // ob_start();
@@ -4246,6 +4332,17 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
                   // RISH
                   'genotype_id' => $genotype_id,
                 );
+
+
+                // chado_insert_record('feature_genotype', [
+                //   'feature_id' => $variant_id,
+                //   'genotype_id' => $genotype_id,
+                //   'chromosome_id' => NULL,
+                //   'rank' => 0,
+                //   'cgroup' => 0,
+                //   'cvterm_id' => $snp_cvterm,
+                // ]);
+
               }
             }
             // throw new Exception('DEBUG');

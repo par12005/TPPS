@@ -962,11 +962,13 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
     // Hidden form accession element.
     // Note: Adding this elements to $form heare require all sub-functions to
     // use reference and not return $form array.
-    // @TODO [VS] Use common function which called from subfunctions to add
-    // common elements instead of pass $form by reference.
     $form['accession'] = [
       '#type' => 'hidden',
       '#value' => $form_state['accession'],
+    ];
+    $form['stage'] = [
+      '#type' => 'hidden',
+      '#value' => $form_state['stage'] ?? 'frontpage',
     ];
   }
   elseif (!$is_tppsc) {
@@ -1048,7 +1050,14 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   // Hidden form accession element.
   // Note: Adding this elements to $form heare require all sub-functions to
   // use reference and not return $form array.
-  $form['accession'] = ['#type' => 'hidden', '#value' => $accession];
+  $form['accession'] = [
+    '#type' => 'hidden',
+    '#value' => $accession
+  ];
+  $form['stage'] = [
+    '#type' => 'hidden',
+    '#value' => $form_state['stage'] ?? 'frontpage',
+  ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   if (!$is_tppsc) {
