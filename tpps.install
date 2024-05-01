@@ -23,6 +23,9 @@ function tpps_install() {
   variable_set('tpps_report_order_family_not_exist_title',
     'Order/Family not exist'
   );
+  // Submit All settings.
+  // @TODO Add this variable to the 'Submit All' settings page.
+  variable_set('tpps_submitall_skip_gps_request', FALSE);
   // Main settings.
   variable_set('tpps_theme', 'default');
   variable_set('tpps_top_bar', 'status');
@@ -320,6 +323,8 @@ function tpps_install() {
 function tpps_uninstall() {
 
   // [VS] Remove module's variables.
+  // Submit All settings.
+  variable_del('tpps_submitall_skip_gps_request');
   // Reports.
   variable_del('tpps_report_no_synonym_title');
   variable_del('tpps_report_unit_warning_title');
