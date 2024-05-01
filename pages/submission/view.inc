@@ -90,9 +90,25 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
     $max_len = variable_get('tpps_dump_max_len_' . $data_type, 100000);
     $state = $submission->$data_type;
     // Remove huge element which added by Tripal Job.
-    if (!empty($state['data'])) {
-      drupal_set_message('Huge element "data" was cut off.');
-      unset($state['data']);
+    // @TODO Check real size of element and exclude only when it's huge.
+    foreach (['data', 'tree_info'] as $name) {
+      if (!empty($state[$name])) {
+        $json_url = 'tpps/submission/' . $accession . '/json/' . $data_type . '/' . $name;
+        drupal_set_message(
+          t(
+            'Huge element "@name" (@number items) was excluded. !link.',
+            [
+              '@name' => $name,
+              '@number' => count($state[$name] ?? NULL),
+              '!link' => l(t('View @element in JSON format',
+                  ['@element' => '$' . $data_type . '[' . $name . ']']),
+                $json_url
+              ),
+            ]
+          )
+        );
+        unset($state[$name]);
+      }
     }
     // State and Shared State fieldsets.
     $form[$data_type] = [
