@@ -23,9 +23,9 @@ function tpps_install() {
   variable_set('tpps_report_order_family_not_exist_title',
     'Order/Family not exist'
   );
-  // Submit All settings.
-  // @TODO Add this variable to the 'Submit All' settings page.
-  variable_set('tpps_submitall_skip_gps_request', FALSE);
+  // Submission Import/Export.
+  variable_set('tpps_submission_export_exclude_data', TRUE);
+  variable_set('tpps_submission_export_exclude_tree_info', TRUE);
   // Main settings.
   variable_set('tpps_theme', 'default');
   variable_set('tpps_top_bar', 'status');
@@ -47,7 +47,9 @@ function tpps_install() {
   // Study Export.
   variable_set('tpps_submission_export_show_file_search_report', FALSE);
   // Submit All.
-  variable_set('tpps_submit_all_log_cli_show_time', FALSE);
+  variable_set('tpps_submitall_log_cli_show_time', FALSE);
+  variable_set('tpps_submitall_skip_gps_request', FALSE);
+  variable_set('tpps_submitall_phenotype_debug_mode', FALSE);
   // Theme Settings.
   variable_set('tpps_theme_fix_pager', FALSE);
   // [/VS]
@@ -322,9 +324,9 @@ function tpps_install() {
  */
 function tpps_uninstall() {
 
-  // [VS] Remove module's variables.
-  // Submit All settings.
-  variable_del('tpps_submitall_skip_gps_request');
+  // Submission Import/Export.
+  variable_del('tpps_submission_export_exclude_data');
+  variable_del('tpps_submission_export_exclude_tree_info');
   // Reports.
   variable_del('tpps_report_no_synonym_title');
   variable_del('tpps_report_unit_warning_title');
@@ -349,8 +351,10 @@ function tpps_uninstall() {
   variable_del('tpps_page_4_cache_unit_list');
   // Study Export.
   variable_del('tpps_submission_export_show_file_search_report');
-  // Submit All.
-  variable_del('tpps_submit_all_log_cli_show_time');
+  // Submit All settings.
+  variable_del('tpps_submitall_skip_gps_request');
+  variable_del('tpps_submitall_phenotype_debug_mode');
+  variable_del('tpps_submitall_log_cli_show_time');
   // Theme Settings.
   variable_del('tpps_theme_fix_pager');
   // [/VS]

@@ -167,6 +167,10 @@ function tpps_submission_export_fixes(array &$state) {
   // parsing of state on import. See TGDR1089.
   unset($state['complete form']['comments']['#prefix']);
   // Remove huge but useless for import dataset added by Tripal pipeline processing.
-  unset($state['data']);
-  unset($state['tree_info']);
+  if (variable_get('tpps_submission_export_exclude_data', TRUE)) {
+    unset($state['data']);
+  }
+  if (variable_get('tpps_submission_export_exclude_tree_info', TRUE)) {
+    unset($state['tree_info']);
+  }
 }

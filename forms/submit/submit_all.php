@@ -1070,6 +1070,8 @@ function tpps_submit_page_4(array &$form_state, TripalJob &$job = NULL) {
  *   The TripalJob object for the submission job.
  */
 function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
+  // Debug Mode allows to call this function from browser for testing.
+  $debug_mode = variable_get('tpps_submitall_phenotype_debug_mode', FALSE);
   tpps_log('[INFO] - Submitting phenotype data...');
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
@@ -1119,7 +1121,9 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     $data_fid = $phenotype['file'];
     // Get all phenotype data provided by admin to override submitted data.
     $phenos_edit = $form_state['phenotypes_edit'] ?? NULL;
-    tpps_add_project_file($form_state, $data_fid);
+    if (!($debug_mode ?? NULL)) {
+      tpps_add_project_file($form_state, $data_fid);
+    }
     $env_phenotypes = FALSE;
     // Populate $phenotypes_meta with manually entered metadata.
     for ($j = 1; $j <= $phenotype_number; $j++) {
@@ -1162,7 +1166,9 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
       $meta_fid = intval($phenotype['metadata']);
       // Added because TGDR009 META FID was 0 which caused failures
       if ($meta_fid > 0) {
-        tpps_add_project_file($form_state, $meta_fid);
+        if (!($debug_mode ?? NULL)) {
+          tpps_add_project_file($form_state, $meta_fid);
+        }
         // Get metadata column values.
         $groups = $phenotype['metadata-groups'];
         $column_vals = $phenotype['metadata-columns'];
@@ -1183,6 +1189,10 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
         $meta_options = array(
           'no_header' => $phenotype['metadata-no-header'],
           'meta_columns' => $columns,
+          // [VS] $phenotypes_meta seems empty when metadata file used.
+          // But later tpps_process_phenotype_meta() will fill 'meta' element
+          // with data from phenotype metadata file. Keys will be phenotype
+          // names from file in lowercase.
           'meta' => &$phenotypes_meta,
         );
 
@@ -1197,7 +1207,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
       }
     }
 
-    if ($debug_mode || 0) {
+    if (($debug_mode ?? NULL) || 0) {
       print_r("Phenotypes Meta:\n");
       print_r($phenotypes_meta);
       print_r("\n");
@@ -1290,7 +1300,6 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
   }
   // Store relations between Phenotype, Synonym, Unit.
   if ($id_list) {
-    dpm(reset($id_list));
     tpps_synonym_save($phenotypes_meta, $id_list);
   }
   // [/VS].
@@ -7585,7 +7594,7 @@ function tpps_log($message, array $variables = [], $severity = TRIPAL_INFO) {
   // Writes to file and will be shown at site.
   tpps_job_logger_write($message, $variables);
   // Add time to CLI output. Tripal logs will be unchanged.
-  if (variable_get('tpps_submit_all_log_cli_show_time', FALSE)) {
+  if (variable_get('tpps_submitall_log_cli_show_time', FALSE)) {
     $time = format_date(time(), 'custom', "Y/m/d H:i:s O");
     $message = $time . ' ' . $message;
   }
