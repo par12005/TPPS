@@ -38,6 +38,31 @@ function tpps_form_main_settings_form(array $form, array &$form_state) {
     '#description' => t('Dark theme only changes backgraund color of the TPPS '
       . 'forms. Enabled by default at dev-server.'),
   ];
+
+  // Submission Export/Import.
+
+  // @TODO Move this settings to 'Submission Settings' page.
+
+  $form['tpps_submission_export_exclude_data'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Exclude "data" element from Submission Export array.'),
+    '#default_value' => variable_get('tpps_submission_export_exclude_data', TRUE),
+    '#description' => t('Element "data" of the submission State array '
+      . 'contains huge amount of data added during Tripal pipeline processing. '
+      . 'Those data is NOT required to import study but slow down processing. '
+      . 'Those data could be easily re-generated again but sometimes it '
+      . 'could be useful for debugging.'),
+  ];
+  $form['tpps_submission_export_exclude_tree_info'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Exclude "data" element from Submission Export array.'),
+    '#default_value' => variable_get('tpps_submission_export_exclude_tree_info', TRUE),
+    '#description' => t('Element "tree_info" of the submission State array '
+      . 'contains huge amount of data added during Tripal pipeline processing. '
+      . 'Those data is NOT required to import study but slow down processing. '
+      . 'Those data could be easily re-generated again but sometimes it '
+      . 'could be useful for debugging.'),
+  ];
   $form['#submit'][] = 'tpps_form_main_settings_form_submit';
   return system_settings_form($form);
 }
