@@ -16,26 +16,26 @@ function tpps_submission_json($accession) {
   $output = [];
 
   // Get parents.
-  $menu_path = 'tpps/submission/' . $accession . '/json/';
-  foreach (['state', 'shared_state'] as $type) {
-    if (($path = str_replace($menu_path . $type . '/', '', $url)) != $url) {
-      break;
-    }
+  $menu_path = 'tpps/submission/' . $accession . '/json';
+  $parents = explode('/', str_replace($menu_path, '', $url));
+  $parents = array_filter($parents);
+  if (empty($parents)) {
+    drupal_goto('tpps/submission/' . $accession . '/json/state');
   }
-  // Get data.
-  if ($path != $url) {
-    $parents = explode('/', $path);
-    $submission = new Submission($accession);
-    if ($submission->doesExist()) {
-      if ($type == 'state') {
-        $data = $submission->state;
-      }
-      elseif ($type == 'shared_state') {
-        $data = $submission->sharedState;
-      }
+  $submission = new Submission($accession);
+  if ($submission->doesExist()) {
+    if ($parents[1] == 'state') {
+      $data = $submission->state;
+    }
+    elseif ($parents[1] == 'shared_state') {
+      $data = $submission->sharedState;
+    }
+    else {
+      drupal_goto('tpps/submission/' . $accession . '/json/state');
+    }
+    if ($data) {
+      array_shift($parents);
       $output = drupal_array_get_nested_value($data, $parents);
-      // Dump at regular page.
-      // dpm(print_r($output, 1)); return '  ';
     }
   }
   drupal_json_output($output);
