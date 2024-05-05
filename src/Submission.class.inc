@@ -1347,7 +1347,9 @@ class Submission {
       $data['#page_3_cleared'] = FALSE;
     }
 
-    $data['#skip_loc'] = FALSE;
+    // Do not show button to show on map because it works only when we have
+    // exact coordinates in accession file.
+    $data['#skip_loc'] = TRUE;
     $loc = &$page_3['study_location'];
     $data['#location_type'] = $loc['type'] ?? NULL;
 
@@ -1369,29 +1371,33 @@ class Submission {
 
           $data[$organism_name] = $page_3["species-$i"]['file'];
           $name = 'Location (latitude/longitude or country/state or population group)';
-          $loc_type = $page_3["species-$i"]['file-groups'][$name]['#type'] ?? [];
+          $loc_type = $page_3["species-$i"]['file-groups'][$name]['#type'] ?? NULL;
           if (
-            !empty($loc_type)
-            && (
-              $loc_type == "gps" ||  in_array('gps', $loc_type)
-            )
+            $loc_type == "gps"
+            // Note: $loc_type is  a string not an array.
+            // This condition was left because I wasn't able to find code
+            // which sets/changes this field.
+            ||  (is_array($loc_type) && in_array('gps', $loc_type))
           ) {
             $fid = $page_3["species-$i"]['file'];
-            drupal_add_js(array(
-              'tpps' => array(
-                'accession_files' => array(
-                  $fid => array(
-                    'no_header' => $page_3["species-$i"]['file-no-header'] ?? '0',
-                    'id_col' => $page_3["species-$i"]['file-groups']['Tree Id'][1],
-                    'lat_col' => $page_3["species-$i"]['file-groups'][$name][4],
-                    'long_col' => $page_3["species-$i"]['file-groups'][$name][5],
-                  ),
-                ),
-              ),
-            ), 'setting');
+            $js_settings = [
+              'accession_files' => [
+                $fid => [
+                  'no_header' => $page_3["species-$i"]['file-no-header'] ?? '0',
+                  'id_col'
+                  => $page_3["species-$i"]['file-groups']['Tree Id'][TPPS_COLUMN_PLANT_IDENTIFIER],
+                  'lat_col'
+                  => $page_3["species-$i"]['file-groups'][$name][TPPS_COLUMN_LATITUDE],
+                  'long_col'
+                  => $page_3["species-$i"]['file-groups'][$name][TPPS_COLUMN_LONGITUDE],
+                ],
+              ],
+            ];
+            drupal_add_js(['tpps' => $js_settings], 'setting');
+            // Do not skip and show button to view on map.
+            $data['#skip_loc'] = FALSE;
           }
         }
-
         if (empty($page_3['check'])) {
           break;
         }

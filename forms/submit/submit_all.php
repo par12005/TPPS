@@ -895,20 +895,20 @@ function tpps_submit_page_3(array &$shared_state, TripalJob &$job = NULL) {
     }
     // [/VS] #8669py308
 
-    $county = array_search('8', $column_vals);
-    $district = array_search('9', $column_vals);
-    $clone = array_search('13', $column_vals);
-    $options['column_ids'] = array(
-      'id' => $groups['Tree Id']['1'],
-      'lat' => $groups[$loc_name]['4'] ?? NULL,
-      'lng' => $groups[$loc_name]['5'] ?? NULL,
-      'country' => $groups[$loc_name]['2'] ?? NULL,
-      'state' => $groups[$loc_name]['3'] ?? NULL,
+    $county = array_search(TPPS_COLUMN_COUNTY, $column_vals);
+    $district = array_search(TPPS_COLUMN_DISTRICT, $column_vals);
+    $clone = array_search(TPPS_COLUMN_CLONE_NUMBER, $column_vals);
+    $options['column_ids'] = [
+      'id' => $groups['Tree Id'][TPPS_COLUMN_PLANT_IDENTIFIER],
+      'lat' => $groups[$loc_name][TPPS_COLUMN_LATITUDE] ?? NULL,
+      'lng' => $groups[$loc_name][TPPS_COLUMN_LONGITUDE] ?? NULL,
+      'country' => $groups[$loc_name][TPPS_COLUMN_COUNTRY] ?? NULL,
+      'state' => $groups[$loc_name][TPPS_COLUMN_STATE] ?? NULL,
       'county' => ($county !== FALSE) ? $county : NULL,
       'district' => ($district !== FALSE) ? $district : NULL,
       'clone' => ($clone !== FALSE) ? $clone : NULL,
-      'pop_group' => $groups[$loc_name]['12'] ?? NULL,
-    );
+      'pop_group' => $groups[$loc_name][TPPS_COLUMN_POPULATION_GROUP] ?? NULL,
+    ];
 
     if ($organism_number != 1 and empty($page3_values['tree-accession']['check'])) {
       if ($groups['Genus and Species']['#type'] == 'separate') {

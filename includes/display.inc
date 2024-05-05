@@ -128,18 +128,16 @@ function tpps_table_display(array &$state, array $options = []) {
               . "<input id=\"$button_id\" type=\"button\" "
               . " class=\"form-button form-submit\" value=\""
               . t('Click here to view plants on map!') . "\"></input>";
-
-            drupal_add_js([
-              'tpps' => [
-                'map_buttons' => [
-                  $fid => [
-                    'wrapper' => $wrapper_id,
-                    'button' => $button_id,
-                    'fid' => $fid,
-                  ],
+            $js_settings = [
+              'map_buttons' => [
+                $fid => [
+                  'wrapper' => $wrapper_id,
+                  'button' => $button_id,
+                  'fid' => $fid,
                 ],
               ],
-            ], 'setting');
+            ];
+            drupal_add_js(['tpps' => $js_setting], 'setting');
           }
           else {
             $val_str .= "<br>This submission was submitted without "
