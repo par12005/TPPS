@@ -137,7 +137,7 @@ function tpps_table_display(array &$state, array $options = []) {
                 ],
               ],
             ];
-            drupal_add_js(['tpps' => $js_setting], 'setting');
+            drupal_add_js(['tpps' => $js_settings], 'setting');
           }
           else {
             $val_str .= "<br>This submission was submitted without "

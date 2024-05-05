@@ -732,9 +732,11 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         $time_options[strtolower($name)] = $name;
       }
       $form[$id]['phenotype']['time']['time_phenotypes'] = [
-        '#type' => 'select',
+        '#type' => 'checkboxes',
         '#title' => t('Time-based Phenotypes: *'),
+        // @TODO Convert to 'select' but with '#multiple' => TRUE.
         // @TODO Dropdown menu is always empty but $time_options is not empty...
+        // See TGDR1224 which has timebased phenotypes.
         '#options' => $time_options,
         '#description' => t('Please select the phenotypes which are time-based'),
       ];

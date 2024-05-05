@@ -484,13 +484,14 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
     }
 
     if ($phenotype['time']['time-check']) {
+      $time = &$form_state['values'][$id]['phenotype']['time'];
       foreach ($phenotype['time']['time_phenotypes'] as $key => $val) {
         if (!$val) {
-          unset($form_state['values'][$id]['phenotype']['time']['time_phenotypes'][$key]);
-          unset($form_state['values'][$id]['phenotype']['time']['time_values'][$key]);
+          unset($time['time_phenotypes'][$key]);
+          unset($time['time_values'][$key]);
         }
       }
-      if (empty($form_state['values'][$id]['phenotype']['time']['time_phenotypes'])) {
+      if (empty($time['time_phenotypes'])) {
         form_set_error("$id][phenotype][time][time_phenotypes",
           t("Time-based Phenotypes: field is required.")
         );
