@@ -1369,7 +1369,7 @@ class Submission {
 
           $data[$organism_name] = $page_3["species-$i"]['file'];
           $name = 'Location (latitude/longitude or country/state or population group)';
-          $loc_type = $page_3["species-$i"]['file-groups'][$name]['#type'] ?? NULL;
+          $loc_type = $page_3["species-$i"]['file-groups'][$name]['#type'] ?? [];
           if (
             !empty($loc_type)
             && (
