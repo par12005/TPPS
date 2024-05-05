@@ -760,7 +760,7 @@ function tpps_submit_page_3(array &$shared_state, TripalJob &$job = NULL) {
         'rank' => $i,
       ));
 
-      if (isset($geo_api_key)) {
+      if (variable_get('tpps_submitall_skip_gps_request') && isset($geo_api_key)) {
         $query = urlencode($loc);
         $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
         $response = json_decode(file_get_contents($url));
@@ -1105,6 +1105,8 @@ function tpps_submit_page_4(array &$shared_state, TripalJob &$job = NULL) {
  *   The TripalJob object for the submission job.
  */
 function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL) {
+  // Debug Mode allows to call this function from browser for testing.
+  $debug_mode = variable_get('tpps_submitall_phenotype_debug_mode', FALSE);
   tpps_log('[INFO] - Submitting phenotype data...');
   $page1_values = $shared_state['saved_values'][TPPS_PAGE_1];
   $page4_values = $shared_state['saved_values'][TPPS_PAGE_4];
@@ -1129,15 +1131,15 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
     'intensity' => tpps_load_cvterm('intensity')->cvterm_id,
   );
 
-  $records = array(
-    'phenotype' => array(),
-    'phenotypeprop' => array(),
-    'stock_phenotype' => array(),
-    'phenotype_cvterm' => array(),
-  );
+  $records = [
+    'phenotype' => [],
+    'phenotypeprop' => [],
+    'stock_phenotype' => [],
+    'phenotype_cvterm' => [],
+  ];
   $phenotype_count = 0;
 
-  $options = array(
+  $options = [
     'records' => $records,
     'cvterms' => $phenotype_cvterms,
     'accession' => $shared_state['accession'],
@@ -1146,14 +1148,16 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
     'phenotype_count' => $phenotype_count,
     'data' => &$shared_state['data']['phenotype'],
     'job' => &$job,
-  );
+  ];
 
   $phenotype_number = $phenotype['phenotypes-meta']['number'];
   if (!empty($phenotype['normal-check'])) {
     $phenotypes_meta = [];
     $data_fid = $phenotype['file'];
     // Get all phenotype data provided by admin to override submitted data.
-    tpps_add_project_file($shared_state, $data_fid);
+    if (!($debug_mode ?? NULL)) {
+      tpps_add_project_file($shared_state, $data_fid);
+    }
     $env_phenotypes = FALSE;
     // Populate $phenotypes_meta with manually entered metadata.
     for ($j = 1; $j <= $phenotype_number; $j++) {
@@ -1192,7 +1196,9 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
       $meta_fid = intval($phenotype['metadata']);
       // Added because TGDR009 META FID was 0 which caused failures
       if ($meta_fid > 0) {
-        tpps_add_project_file($shared_state, $meta_fid);
+        if (!($debug_mode ?? NULL)) {
+          tpps_add_project_file($shared_state, $meta_fid);
+        }
         // Get metadata column values.
         $groups = $phenotype['metadata-groups'];
         $column_vals = $phenotype['metadata-columns'];
@@ -1213,6 +1219,10 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
         $meta_options = array(
           'no_header' => $phenotype['metadata-no-header'],
           'meta_columns' => $columns,
+          // [VS] $phenotypes_meta seems empty when metadata file used.
+          // But later tpps_process_phenotype_meta() will fill 'meta' element
+          // with data from phenotype metadata file. Keys will be phenotype
+          // names from file in lowercase.
           'meta' => &$phenotypes_meta,
         );
 
@@ -1227,7 +1237,7 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
       }
     }
 
-    if ($debug_mode || 0) {
+    if (($debug_mode ?? NULL) || 0) {
       print_r("Phenotypes Meta:\n");
       print_r($phenotypes_meta);
       print_r("\n");
@@ -6970,7 +6980,7 @@ function tpps_process_accession($row, array &$options, $job = NULL) {
 
       $tree_info[$tree_id]['location'] = $location;
 
-      if (isset($geo_api_key)) {
+      if (variable_get('tpps_submitall_skip_gps_request') && isset($geo_api_key)) {
         $result = $options['locations'][$location] ?? NULL;
         if (empty($result)) {
           $query = urlencode($location);
@@ -7457,16 +7467,16 @@ function tpps_genotype_get_vcf_tree_ids($location) {
     'count' => $count
   ];
   return $result_arr;
-
 }
 
-
 /**
- * Helper function to return the VCF markers (called variants)
- * from a file specified by location.
- * @param string location (File location)
+ * Returns the VCF markers (called variants) from a file specified by location.
  *
- * @return array values,unique_count,count
+ * @param string $location
+ *   File location.
+ *
+ * @return array
+ *   Values, unique_count, count.
  */
 function tpps_genotype_get_vcf_markers($location) {
   $vcf_content = gzopen($location, 'r');
@@ -7474,7 +7484,12 @@ function tpps_genotype_get_vcf_markers($location) {
   $duplicate_variants = []; // record duplicates
   $count = 0;
   while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
-    if ($vcf_line[0] != '#' && stripos($vcf_line,'.vcf') === FALSE && trim($vcf_line) != "" && str_replace("\0", "", $vcf_line) != "") {
+    if (
+      $vcf_line[0] != '#'
+      && stripos($vcf_line, '.vcf') === FALSE
+      && trim($vcf_line) != ""
+      && str_replace("\0", "", $vcf_line) != ""
+    ) {
       $vcf_line = explode("\t", $vcf_line);
       $variant_name = &$vcf_line[2];
       if (isset($variants[$variant_name])) {
@@ -7495,30 +7510,31 @@ function tpps_genotype_get_vcf_markers($location) {
     'count' => $count
   ];
   return $result_arr;
-
 }
 
 /**
- * Helper function to return the snps assay markers
- * from a file specified by the FILE ID.
- * @param int FID (File ID)
+ * Return the snps assay markers from a file specified by the FILE ID.
  *
- * @return array values,unique_count,count
+ * @param int $fid
+ *   FID (File ID).
+ *
+ * @return array
+ *   Values, unique_count, count.
  */
 function tpps_genotype_get_snps_assay_markers($fid) {
   $snp_assay_header = tpps_file_headers($fid);
-  // Ignore the first column which contains the tree_id
+  // Ignore the first column which contains the tree_id.
   $results = [];
   $duplicates = [];
   $count = 0;
   foreach ($snp_assay_header as $column_letters => $column_value) {
     $column_value = trim($column_value);
     if ($count == 0) {
-      // ignore (this is the first column which is the tree id header)
+      // ignore (this is the first column which is the tree id header).
     }
     else {
       if (isset($results[$column_value])) {
-        // duplicate detected
+        // duplicate detected.
         $duplicates[$column_value] = 1;
       }
       else {
@@ -7590,7 +7606,7 @@ function tpps_log($message, array $variables = [], $severity = TRIPAL_INFO) {
   // Writes to file and will be shown at site.
   tpps_job_logger_write($message, $variables);
   // Add time to CLI output. Tripal logs will be unchanged.
-  if (variable_get('tpps_submit_all_log_cli_show_time', FALSE)) {
+  if (variable_get('tpps_submitall_log_cli_show_time', FALSE)) {
     $time = format_date(time(), 'custom', "Y/m/d H:i:s O");
     $message = $time . ' ' . $message;
   }

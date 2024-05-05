@@ -56,7 +56,6 @@ function tpps_form_main_settings_form(array $form, array &$form_state) {
       . '<br />When page loaded scripts waits for a while and then hightlights '
       . 'specified field. When there is no delay it looks ugly.'),
   ];
-
   $form['#submit'][] = 'tpps_form_main_settings_form_submit';
   return system_settings_form($form);
 }
