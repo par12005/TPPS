@@ -1611,8 +1611,8 @@ class Submission {
               $data["$org_name Reference Genome"] = $geno['ref-genome'];
             }
 
-            if (!empty($geno['SNPs']['snps-assay'])) {
-              $data["$org_name SNP Genotype Assay File"] = $geno['SNPs']['snps-assay'];
+            if (!empty($geno['files']['snps-assay'])) {
+              $data["$org_name SNP Genotype Assay File"] = $geno['files']['snps-assay'];
             }
 
             if (!empty($geno['files']['assay-design'])) {

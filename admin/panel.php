@@ -31,7 +31,7 @@ module_load_include('inc', 'tpps', 'includes/common');
  */
 function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
   if (empty($accession)) {
-    // List of all studies.
+    // Show list of all studies.
     tpps_admin_panel_top($form);
   }
   else {
