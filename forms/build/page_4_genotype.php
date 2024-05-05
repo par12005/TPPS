@@ -806,9 +806,10 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Field 'Reference Assembly used:'.
-  // Perform a database lookup as well using new query from Emily Grau (6/6/2023).
+  $time_now = time();
   // @TODO Move this to constant or (better) to settings page.
   $time_expire_period = 3 * 24 * 60 * 60;
+  // Perform a database lookup as well using new query from Emily Grau (6/6/2023).
   $time_genome_query_results_time = cache_get('tpps_genome_query_results_time')->data;
   if ($time_now > ($time_genome_query_results_time + $time_expire_period)) {
     chado_query("DROP TABLE IF EXISTS chado.tpps_ref_genomes;", []);
