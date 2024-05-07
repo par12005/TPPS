@@ -861,17 +861,12 @@ function tpps_details_get_study_file_ids(array $state) {
       );
     }
   }
-  // Check summarypage for supplemental files.
-  // @TODO Minor. Remove this code.
-  if (count($saved_values['summarypage']['files']) > 2) {
-    $files = $saved_values['summarypage']['files'];
-    foreach ($files as $file_index => $file_id) {
-      if (is_numeric($file_id) && $file_id > 0) {
-        // print_r($file_index);
-        // array_push($file_ids, $file_id);
-      }
-    }
+
+  // Supplemental files at 'summarypage'.
+  for ($i = 1; $i <= 10; $i++) {
+    $file_ids[] = $saved_values['summarypage']['files'][$i];
   }
+
   // Remove empty elements.
   return array_filter($file_ids);
 }

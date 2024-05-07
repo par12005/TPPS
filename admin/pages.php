@@ -73,6 +73,12 @@ function tpps_admin_files_diagnostics_page($accession = NULL) {
       }
     }
   }
+  // Supplemental files at 'summarypage'.
+  for ($i = 1; $i <= 10; $i++) {
+    if (!empty($saved_values['summarypage']['files'][$i])) {
+      $file_ids[] = $saved_values['summarypage']['files'][$i];
+    }
+  }
 
   sort($file_ids);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

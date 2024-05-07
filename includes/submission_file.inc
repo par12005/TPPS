@@ -39,6 +39,9 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
   tpps_add_css_js('theme', $form);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Complete Form.
+  //
+  //
+  // @TODO There is no 'complete form' element in sharedState. Use 'state'.
   $method_name = 'complete form';
   $fid_list = [];
   if ($complete_form) {
@@ -107,6 +110,39 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
           if (!is_array($fid)) {
             $fid_list[] = $fid;
           }
+        }
+      }
+    }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Summary page.
+    // It seems we have unlimited number of extra files which could be
+    // added to study but dump has 10 items.
+    for ($i = 1; $i <= 10; $i++) {
+      $parent_list[] = ['summarypage', 'files', $i];
+    }
+    if ($values) {
+      foreach ($parent_list as $parents) {
+        $fid = drupal_array_get_nested_value($values, $parents);
+        // Page 4/Genotype/Other (managed file field) has subfields and
+        // returns array so we need to skip this to avoid:
+        // Warning: array_flip(): Can only flip STRING and INTEGER values! in
+        // DrupalDefaultEntityController->load()
+        // (line 175 of /var/www/Drupal/includes/entity.inc).
+        if (!is_array($fid)) {
+          $fid_list[] = $fid;
+        }
+      }
+    }
+    if ($saved_values) {
+      foreach ($parent_list as $parents) {
+        // When form became outdated (6+ hours) and cron removed temporary
+        // files then resubmitting form cause errors at site. Probably
+        // correct solution is to redirect to submittion edit page
+        // Note: Redirect using GET request not yet implemented. Only POST.
+        $fid = drupal_array_get_nested_value($saved_values, $parents);
+        if (!is_array($fid)) {
+          $fid_list[] = $fid;
         }
       }
     }
@@ -216,12 +252,6 @@ function tpps_submission_file_get_parents($organism_number = 1) {
 
       [$organism_id, 'genotype', 'files', 'other'],
     ]);
-  }
-  // Summary page.
-  // It seems we have unlimited number of extra files which could be added to
-  // study but dump has 10 items.
-  for ($i = 1; $i <= 10; $i++) {
-    $result[] = ['summarypage', 'files', $i];
   }
   // Analysis.
   // @TODO Prepare and check.
