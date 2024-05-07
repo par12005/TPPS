@@ -26,10 +26,12 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
   $submission = new Submission();
   $submission->state = $state;
 
-  $complete_form = $submission->sharedState['complete form'] ?? NULL;
+  $complete_form = $submission->state['complete form'] ?? NULL;
   $saved_values = $submission->sharedState['saved_values'] ?? NULL;
-  $values = $submission->sharedState['values'] ?? NULL;
-  $interface_files = $submission->sharedState['files'] ?? [];
+  // Note: Shared State doesn't have 'values' element but State could have
+  // newer version of form and other paths.
+  $values = $submission->state['values'] ?? NULL;
+  $interface_files = $submission->state['files'] ?? [];
   $file_info = $submission->sharedState['file_info'] ?? NULL;
 
   module_load_include('inc', 'tpps', 'includes/form');
@@ -39,12 +41,9 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
   tpps_add_css_js('theme', $form);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Complete Form.
-  //
-  //
-  // @TODO There is no 'complete form' element in sharedState. Use 'state'.
   $method_name = 'complete form';
   $fid_list = [];
-  if ($complete_form) {
+  if ($complete_form && $values) {
     $files = tpps_form_search_field($complete_form, 'managed_file');
     foreach ($files as $parents) {
       $fid_list[] = drupal_array_get_nested_value($values, $parents);
