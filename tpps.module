@@ -1738,12 +1738,13 @@ if (!function_exists('array_key_first')) {
 
 /**
  * Implements hook_init().
- *
- * Removed (but not fixed!) spam message:
- *   Notice: Undefined variable: show_nafgs_menu in include() (line 147 of
- *   /var/www/Drupal/sites/all/themes/sites/all/themes/dawn/tpl/page.tpl.php).
  */
 function tpps_init() {
+  // Removed spam message:
+  // Notice: Undefined variable: show_nafgs_menu in include() (line 147 of
+  // :w
+  // /var/www/Drupal/sites/all/themes/sites/all/themes/dawn/tpl/page.tpl.php).
+  // It can't be fixed because there is no write access to this module.
   if (!empty($_SESSION['messages']['error'])) {
     $spam = 'Undefined variable: show_nafgs_menu in';
     foreach ($_SESSION['messages']['error'] as $index => $item) {
@@ -1754,6 +1755,51 @@ function tpps_init() {
     if (empty($_SESSION['messages']['error'])) {
       unset($_SESSION['messages']['error']);
     }
+  }
+  if (!is_live_site()) {
+    tpps_watchdog_cleanup();
+  }
+}
+
+/**
+ * Removes spam-messages in watchdog log.
+ */
+function tpps_watchdog_cleanup() {
+  // To get new data for filtering:
+  // $wid = 55333636;
+  // $result = db_query("SELECT * FROM public.watchdog where wid= " . $wid)->fetchAssoc();
+  // dpm(var_export($result, 1));
+  $filter = [
+    [
+      'uid' => '0',
+      'type' => 'php',
+      'message' => '%type: !message in %function (line %line of %file).',
+      'variables' => 'a:6:{s:5:"%type";s:6:"Notice";s:8:"!message";s:19:"Undefined offset: 1";s:9:"%function";s:46:"tripal_galaxy_form_webform_client_form_alter()";s:5:"%file";s:68:"/var/www/Drupal/sites/all/modules/tripal_galaxy/tripal_galaxy.module";s:5:"%line";i:614;s:14:"severity_level";i:5;}',
+      'severity' => '5',
+    ],
+    // Warning: Invalid argument supplied for foreach() in file_entity_set_title_alt_properties_on_file_fields() (line 248 of /var/www/Drupal/sites/all/modules/file_entity/file_entity.file.inc).
+    [
+      'uid' => '0',
+      'type' => 'php',
+      'message' => '%type: !message in %function (line %line of %file).',
+      'variables' => 'a:6:{s:5:"%type";s:7:"Warning";s:8:"!message";s:39:"Invalid argument supplied for foreach()";s:9:"%function";s:53:"file_entity_set_title_alt_properties_on_file_fields()";s:5:"%file";s:66:"/var/www/Drupal/sites/all/modules/file_entity/file_entity.file.inc";s:5:"%line";i:248;s:14:"severity_level";i:4;}',
+      'severity' => '4',
+    ],
+    // Cron thread 1 started.
+    [
+      'uid' => '0',
+      'type' => 'serial_launcher',
+      'message' => 'Cron thread %thread started',
+      'variables' => 'a:1:{s:7:"%thread";i:1;}',
+      'severity' => '7',
+    ],
+  ];
+  foreach ($filter as $filter_item) {
+    $query = db_delete('watchdog');
+    foreach ($filter_item as $field => $value) {
+      $query->condition($field, $value);
+    }
+    $query->execute();
   }
 }
 
