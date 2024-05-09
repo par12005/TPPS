@@ -224,12 +224,11 @@ form.tppsc-form       .form-button:focus {
 
 /* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: * /
 /* Start of TPPS Navigation Bar */
-.tppsc-form .navigation-bar .item {
+.tppsc-form .navigation-bar .stage {
   /* Light Gray */
   color: #c9c9c9;
-  font-size: 18px;
 }
-.tppsc-form .navigation-bar .item:active {
+.tppsc-form .navigation-bar .stage:active {
   /* Dark Gray */
   color: #3b413b;
 }

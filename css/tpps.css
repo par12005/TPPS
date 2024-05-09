@@ -219,20 +219,21 @@ a.fieldset-title {
   display: inline-block;
   float: both;
 }
-.tppsc-form .navigation-bar .item {
+.tppsc-form .navigation-bar .stage {
   margin: 5px 25px;
   white-space: nowrap;
   float: left;
   display: inline-block;
+  font-size: 18px;
 }
-.tppsc-form .navigation-bar .item.completed-stage {
-  font-style: italic;
+.tppsc-form .navigation-bar .stage.complete {
+  font-style: normal;
 }
-.tppsc-form .navigation-bar .item.current-stage {
+.tppsc-form .navigation-bar .stage.current {
   font-weight: bold;
 }
-.tppsc-form .navigation-bar .item.incompleted-stage {
-  font-style: normal;
+.tppsc-form .navigation-bar .stage.incomplete {
+  font-style: italic;
 }
 
 /* Round error/status/warning messages */

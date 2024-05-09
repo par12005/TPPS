@@ -244,17 +244,17 @@ function tpps_form_navigation_bar(array &$form, $submission) {
   foreach ($stage_list as $number => $label) {
     // WARNING: Recreate $options to clean previos item settings.
     $options = ['query' => ['stage' => $number]];
-    $options['attributes']['class'][] = 'item';
+    $options['attributes']['class'][] = 'stage';
     // Add CSS classes to style completed and current page links.
     if ($number < $last_completed_stage) {
-      $options['attributes']['class'][] = 'completed-stage';
+      $options['attributes']['class'][] = 'complete';
     }
     if ($number == $current_stage) {
-      $options['attributes']['class'][] = 'current-stage';
+      $options['attributes']['class'][] = 'current';
     }
     if ($number > $last_completed_stage) {
       $markup = ($markup ?? '')
-        . '<div class="incomplete-stage item">' . $label . '</div>';
+        . '<div class="incomplete stage">' . $label . '</div>';
     }
     else {
       $item_url = 'tppsc/' . $submission->accession;
