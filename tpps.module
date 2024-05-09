@@ -1378,6 +1378,7 @@ function tpps_main_submit($form, &$form_state) {
 
   $submission = tpps_submission()->setState($form_state);
 
+  // @TODO Use $submission->state;
   $saved_values = &$form_state['saved_values'] ?? NULL;
   $values = &$form_state['values'] ?? NULL;
   module_load_include('inc', 'tpps', 'includes/form');
@@ -1408,10 +1409,7 @@ function tpps_main_submit($form, &$form_state) {
   tpps_submission_form_version_upgrade_to_latest($form_state, $new_form_state);
   $form_state = $new_form_state;
 
-  $submission->setState($form_state);
-  if ($submission->accession) {
-    $submission->save();
-  }
+  tpps_submission()->setState($form_state)->save();
 
   if ($submission->isTppsc()) {
     $form_state['status'] = TPPS_SUBMISSION_STATUS_INCOMPLETE;
@@ -1449,10 +1447,7 @@ function tpps_main_submit($form, &$form_state) {
     }
     $saved_values['form_build_id'] = $values['form_build_id'];
     $form_state['rebuild'] = TRUE;
-    $submission->setState($form_state);
-    if ($submission->accession) {
-      $submission->save();
-    }
+    tpps_submission()->setState($form_state)->save();
     // File status must not be changed here because we need to have termporary
     // status of file until study completely submitted. See 'summarypage'
     // processing.
@@ -1515,10 +1510,7 @@ function tpps_main_submit($form, &$form_state) {
   }
   $saved_values['form_build_id'] = $values['form_build_id'];
 
-  $submission->setState($form_state);
-  if ($submission->accession) {
-    $submission->save();
-  }
+  tpps_submission()->setState($form_state)->save();
 
   if ($form_state['stage'] == TPPS_PAGE_1) {
     // When non-empty (after Page1 submit) study was added we need to

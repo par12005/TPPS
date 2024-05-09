@@ -370,7 +370,7 @@ class Submission {
    *   Submission State Array.
    */
   public function setState(array &$state) {
-    $this->state = &$state;
+    $this->state = $state;
     // Accession.
     if (!empty($this->state['accession'])) {
       $this->accession = $this->state['accession'];

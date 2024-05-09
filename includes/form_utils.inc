@@ -330,22 +330,26 @@ function tpps_get_ajax_value(array &$state, array $parents, $default = NULL, $fi
  *   The new form state to be populated.
  * @param array $old
  *   The old form state with the old information.
+ *
+ * @TODO Check is this could be removed because it seems it's custom
+ * implementation of '#rebuild' => TRUE for multistep forms.
  */
 function tpps_form_state_info(array &$new, array &$old) {
-  // @TODO Check is this could be removed because it seems it's custom
-  // implementation of '#rebuild' => TRUE for multistep forms.
-  $new['saved_values'] = $old['saved_values'];
-  $submission = new Submission($old['accession']);
- // $submission->getLastCompletedStage();
-
-
+  $submission = tpps_submission($old['accession'])->load();
   // Get stage from URL if possible.
-  if (!empty($_GET['stage']) && $_GET['stage'] <= $old['stage']) {
-    $old['stage'] = $_GET['stage'];
+  if (
+    !empty($_GET['stage'])
+    && in_array($_GET['stage'], range(1, 4))
+    && $_GET['stage'] <= $submission->getLastCompletedStage()
+  ) {
+    $new['stage'] = (int) check_plain($_GET['stage']);
   }
-  $new['stage'] = $old['stage'];
+  else {
+    $new['stage'] = $old['stage'];
+  }
 
   // Other fields.
+  $new['saved_values'] = $old['saved_values'];
   $new['accession'] = $old['accession'];
   $new['dbxref_id'] = $old['dbxref_id'];
   $new['stats'] = $old['stats'] ?? NULL;

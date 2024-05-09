@@ -78,7 +78,8 @@ function tpps_front_create_form(array &$form, array $form_state) {
           '#title' => t('Would you like to load an old TPPSC submission, '
             . 'or create a new one?'),
           '#options' => $options,
-          '#default_value' => $form_state['saved_values']['frontpage']['accession'] ?? 'new',
+          '#default_value' => $submission->get(
+            ['saved_values', 'frontpage', 'accession']) ?? 'new',
         ];
       }
       tpps_form_autofocus($form, ['accession']);
@@ -155,8 +156,8 @@ function tpps_front_create_form(array &$form, array $form_state) {
           '#title' => t('Would you like to load an old TPPS submission, '
             . 'or create a new one?'),
           '#options' => $options_arr,
-          '#default_value' =>
-          $form_state['saved_values']['frontpage']['accession'] ?? 'new',
+          '#default_value' => $submission->get(
+            ['saved_values', 'frontpage', 'accession']) ?? 'new',
         ];
       }
       if (tpps_access('administer tpps module')) {

@@ -226,8 +226,8 @@ function tpps_get_field_path(array $field, array $path) {
  *
  * @param array $form
  *   The form being populated.
- * @param array $form_state
- *   The state of the form being populated.
+ * @param object $submission
+ *   Submission object.
  */
 function tpps_form_navigation_bar(array &$form, $submission) {
   $current_stage = $submission->getCurrentStage();
@@ -249,7 +249,7 @@ function tpps_form_navigation_bar(array &$form, $submission) {
     if ($number < $last_completed_stage) {
       $options['attributes']['class'][] = 'completed-stage';
     }
-    elseif ($number == $last_completed_stage) {
+    if ($number == $current_stage) {
       $options['attributes']['class'][] = 'current-stage';
     }
     if ($number > $last_completed_stage) {
@@ -560,9 +560,7 @@ function tpps_form_build_file_field(array $form_bus) {
         ['@list' => implode(', ', $extensions)]) : ''),
     '#tree' => TRUE,
     '#states' => $states,
-    //'#parents' => $parents,
   ];
-  // dpm(print_r($parents, 1), 'parents of ' . $field_name);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Customization.
   // @TODO Minor. Think about using elements with leading '#' to use them as
@@ -896,8 +894,8 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   global $user;
 
   // Check if this is TPPS or TPPSC Form using Url.
-  // $form_state could have no necessary data yet when loaded first step of
-  // the multistep form.
+  // $form_state could doesn't have required data yet when loaded first
+  // step of the multistep form.
   if (isset($form_state['tpps_type'])) {
     $is_tppsc = ($form_state['tpps_type'] == 'tppsc');
   }
@@ -908,6 +906,7 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   if (!$is_tppsc) {
     module_load_include('php', 'tpps', 'forms/build/front');
   }
+
   module_load_include('inc', 'tpps', 'includes/form');
   $form = $form ?? [];
   $frontpage_values = &$form_state['saved_values']['frontpage'] ?? NULL;
@@ -950,7 +949,6 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
     else {
       if (!isset($form_state['stage'])) {
         $form_state['stage'] = 'frontpage';
-
         // Create the front page.
         module_load_include('php', 'tpps', 'forms/build/front');
         tpps_front_create_form($form, $form_state);
@@ -972,7 +970,6 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
         }
       }
     }
-
     // Hidden form accession element.
     // Note: Adding this elements to $form heare require all sub-functions to
     // use reference and not return $form array.
@@ -1057,7 +1054,6 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   // Note:
   // Saving changes $form_state items and we need to get those changes back.
   $submission = tpps_submission()->setState($form_state)->save();
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Must be after tpps_init_project() which sets accession for new studies.
   $accession = $form_state['accession'] ?? $frontpage_values['accession'] ?? NULL;
@@ -1075,6 +1071,8 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   if (!$is_tppsc) {
+    // Note: it means form was created usint TPPS but currently could be
+    // edited using TPPSc.
     $form_state['tpps_type'] = 'tpps';
 
     module_load_include('inc', 'tpps', 'includes/status_bar');
@@ -1101,13 +1099,11 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   }
   elseif ($is_tppsc) {
     $form_state['tpps_type'] = 'tppsc';
-
-    $submission->state = $form_state;
-    $submission->save();
+    $submission->setState($form_state)->save();
 
     if (variable_get('tpps_top_bar', 'status') == 'status') {
       module_load_include('inc', 'tpps', 'includes/status_bar');
-      tpps_status_bar($form, $form_state);
+      tpps_status_bar($form, $submission->state);
     }
     else {
       tpps_form_navigation_bar($form, $submission);
