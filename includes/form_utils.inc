@@ -335,20 +335,7 @@ function tpps_get_ajax_value(array &$state, array $parents, $default = NULL, $fi
  * implementation of '#rebuild' => TRUE for multistep forms.
  */
 function tpps_form_state_info(array &$new, array &$old) {
-  $submission = tpps_submission($old['accession'])->load();
-  // Get stage from URL if possible.
-  if (
-    !empty($_GET['stage'])
-    && in_array($_GET['stage'], range(1, 4))
-    && $_GET['stage'] <= $submission->getLastCompletedStage()
-  ) {
-    $new['stage'] = (int) check_plain($_GET['stage']);
-  }
-  else {
-    $new['stage'] = $old['stage'];
-  }
-
-  // Other fields.
+  $new['stage'] = $old['stage'];
   $new['saved_values'] = $old['saved_values'];
   $new['accession'] = $old['accession'];
   $new['dbxref_id'] = $old['dbxref_id'];

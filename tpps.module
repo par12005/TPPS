@@ -1275,6 +1275,19 @@ function tpps_page_build(&$page) {
  *   Returns the completed form.
  */
 function tpps_main(array $form, array &$form_state, $accession = NULL) {
+  // Get stage from URL if possible.
+  if (!empty($_GET['stage'])) {
+    $submission = tpps_submission($accession)->load();
+    if (
+      in_array($_GET['stage'], range(1, 4))
+      && $_GET['stage'] <= $submission->getLastCompletedStage()
+    ) {
+      $submission->state['stage'] = (int) check_plain($_GET['stage']);
+      $submission->save();
+    }
+    // Get rid of 'stage' param in URL.
+    drupal_goto($_GET['q']);
+  }
   // @todo Minor.Use the same function to build form but set form_id manually.
   module_load_include('inc', 'tpps', 'includes/form');
   // Note: we use the same function to build TPPS and TPPSc forms.
@@ -1543,6 +1556,19 @@ function tpps_main_submit($form, &$form_state) {
  *   Returns the completed form.
  */
 function tppsc_main(array $form, array &$form_state, $accession = NULL) {
+  // Get stage from URL if possible.
+  if (!empty($_GET['stage'])) {
+    $submission = tpps_submission($accession)->load();
+    if (
+      in_array($_GET['stage'], range(1, 4))
+      && $_GET['stage'] <= $submission->getLastCompletedStage()
+    ) {
+      $submission->state['stage'] = (int) check_plain($_GET['stage']);
+      $submission->save();
+    }
+    // Get rid of 'stage' param in URL.
+    drupal_goto($_GET['q']);
+  }
   // @todo Minor.Use the same function to build form but set form_id manually.
   module_load_include('inc', 'tpps', 'includes/form');
   // Note: we use the same function to build TPPS and TPPSc forms.
