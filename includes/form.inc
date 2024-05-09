@@ -238,23 +238,29 @@ function tpps_form_navigation_bar(array &$form, $submission) {
   $stage_list = [
     TPPS_PAGE_1 => t('Publication Information'),
     TPPS_PAGE_2 => t('Experimental Design'),
-    TPPS_PAGE_3 => t('Data'),
-    TPPS_PAGE_4 => t('Review and Submit'),
+    TPPS_PAGE_3 => t('Plant Accession'),
+    TPPS_PAGE_4 => t('Data'),
   ];
   foreach ($stage_list as $number => $label) {
     // WARNING: Recreate $options to clean previos item settings.
     $options = ['query' => ['stage' => $number]];
     $options['attributes']['class'][] = 'stage';
     // Add CSS classes to style completed and current page links.
-    if ($number < $last_completed_stage) {
+    if ($number <= $last_completed_stage) {
       $options['attributes']['class'][] = 'complete';
+    }
+    else {
+      $options['attributes']['class'][] = 'incomplete';
     }
     if ($number == $current_stage) {
       $options['attributes']['class'][] = 'current';
     }
-    if ($number > $last_completed_stage) {
+    // Plain or Active link.
+    // Allow to got to next incompleted stage using link.
+    if ($number > $last_completed_stage + 1) {
       $markup = ($markup ?? '')
-        . '<div class="incomplete stage">' . $label . '</div>';
+        . '<div class="' . implode(' ', $options['attributes']['class'])
+        . '">' . $label . '</div>';
     }
     else {
       $item_url = 'tppsc/' . $submission->accession;

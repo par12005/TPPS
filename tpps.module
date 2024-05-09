@@ -1276,11 +1276,12 @@ function tpps_page_build(&$page) {
  */
 function tpps_main(array $form, array &$form_state, $accession = NULL) {
   // Get stage from URL if possible.
-  if (!empty($_GET['stage'])) {
+  if (!empty($_GET['stage']) && $accession) {
     $submission = tpps_submission($accession)->load();
     if (
       in_array($_GET['stage'], range(1, 4))
-      && $_GET['stage'] <= $submission->getLastCompletedStage()
+      // Allow to go directly to next stage after last completed.
+      && $_GET['stage'] <= $submission->getLastCompletedStage() + 1
     ) {
       $submission->state['stage'] = (int) check_plain($_GET['stage']);
       $submission->save();
@@ -1389,7 +1390,10 @@ function tpps_main_validate(&$form, &$form_state) {
 function tpps_main_submit($form, &$form_state) {
   global $user;
 
-  $accession = $form_state['accession'];
+  $triggering_element = $form_state['triggering_element']['#value'] ?? NULL;
+  $is_back_button = ($triggering_element == 'Back');
+
+  $accession = $form_state['accession'] ?? NULL;
   $submission = new Submission($accession);
   $submission->state = $form_state;
   // Update $form_state and then save it at the end.
@@ -1412,7 +1416,6 @@ function tpps_main_submit($form, &$form_state) {
     else {
       $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
         = TPPS_SUBMISSION_FORM_CURRENT_VERSION;
-
     }
   }
 
@@ -1424,7 +1427,9 @@ function tpps_main_submit($form, &$form_state) {
   tpps_submission_form_version_upgrade_to_latest($form_state, $new_form_state);
   $form_state = $new_form_state;
 
-  $form_state = tpps_submission()->setState($form_state)->save()->getState();
+  if ($accession) {
+    $form_state = tpps_submission()->setState($form_state)->save()->getState();
+  }
 
   if ($submission->isTppsc()) {
     $form_state['status'] = TPPS_SUBMISSION_STATUS_INCOMPLETE;
@@ -1438,8 +1443,6 @@ function tpps_main_submit($form, &$form_state) {
       tpps_create_submission($form_state, $user->uid);
     }
   }
-
-  $triggering_element = $form_state['triggering_element']['#value'] ?? NULL;
 
   if (
     ($form_state['stage'] == 'frontpage' && $accession)
@@ -1471,9 +1474,6 @@ function tpps_main_submit($form, &$form_state) {
     cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
     return;
   }
-
-  // ELSE, it will do the below logic, read the comment after this switch statement.
-  $is_back_button = ($triggering_element == 'Back');
 
 
   switch ($form_state['stage']) {
@@ -1530,7 +1530,9 @@ function tpps_main_submit($form, &$form_state) {
   $saved_values['form_build_id'] = $values['form_build_id'];
 
   // Save before resetting cache to have cached version up-to-date.
-  $submission->setState($form_state)->save();
+  if ($accession) {
+    $submission->setState($form_state)->save();
+  }
 
   if ($form_state['stage'] == TPPS_PAGE_1) {
     // When non-empty (after Page1 submit) study was added we need to
@@ -1561,7 +1563,8 @@ function tppsc_main(array $form, array &$form_state, $accession = NULL) {
     $submission = tpps_submission($accession)->load();
     if (
       in_array($_GET['stage'], range(1, 4))
-      && $_GET['stage'] <= $submission->getLastCompletedStage()
+      // Allow to go directly to next stage after last completed.
+      && $_GET['stage'] <= $submission->getLastCompletedStage() + 1
     ) {
       $submission->state['stage'] = (int) check_plain($_GET['stage']);
       $submission->save();
