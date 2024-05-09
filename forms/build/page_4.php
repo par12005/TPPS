@@ -178,7 +178,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Button's weight: -1000 (header) and 1000 (footer).
   tpps_form_add_buttons(array_merge($form_bus, [
-    'page' => 'page_4',
+    'stage' => TPPS_PAGE_4,
     'organism_number' => tpps_form_bus_get($form_bus, 'organism_number'),
   ]));
   // Curation Tool's weight: 1100 (under button's in footer).

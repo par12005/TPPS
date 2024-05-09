@@ -332,8 +332,16 @@ function tpps_get_ajax_value(array &$state, array $parents, $default = NULL, $fi
  *   The old form state with the old information.
  */
 function tpps_form_state_info(array &$new, array &$old) {
+  // @TODO Check is this could be removed because it seems it's custom
+  // implementation of '#rebuild' => TRUE for multistep forms.
   $new['saved_values'] = $old['saved_values'];
+
+  // Get stage from URL if possible.
+  if (!empty($_GET['stage']) && $_GET['stage'] <= $old['stage']) {
+    $old['stage'] = $_GET['stage'];
+  }
   $new['stage'] = $old['stage'];
+
   $new['accession'] = $old['accession'];
   $new['dbxref_id'] = $old['dbxref_id'];
   $new['stats'] = $old['stats'] ?? NULL;

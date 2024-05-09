@@ -17,8 +17,8 @@
  *   Metadata where keys are:
  *   'form' array
  *     Drupal Form Array.
- *   'page' string
- *     Page number with 'page_' prefix to improve readability.
+ *   'stage' string
+ *     Number of step of multistep form.
  *   'organism_number' int
  *     Organism Number.
  *   'data_type' string
@@ -29,7 +29,7 @@
  */
 function tpps_form_add_buttons(array $form_bus) {
   $form = &$form_bus['form'];
-  $page = $form_bus['page'];
+  $stage = $form_bus['stage'];
   $scope_list = [
     'header' => -1000,
     'footer' => 1000,
@@ -41,21 +41,21 @@ function tpps_form_add_buttons(array $form_bus) {
       '#tree' => FALSE,
       '#weight' => $weight,
     ];
-    if ($page != 'summary') {
+    if ($stage != 'summary') {
       // @todo [VS] Use Drupal Form API 'required' attribute.
       $form[$scope]['input_description'] = [
         '#markup' => '<div class="input-description">* : Required Field</div>',
         '#weight' => -($weight),
       ];
     }
-    switch ($page) {
-      case 'page_2':
-      case 'page_3':
+    switch ($stage) {
+      case TPPS_PAGE_2:
+      case TPPS_PAGE_3:
         // Back, Save, Next.
         $form[$scope]['Back'] = ['#type' => 'submit', '#value' => t('Back')];
 
       default:
-      case 'page_1':
+      case TPPS_PAGE_1:
         // Save, Next.
         $form[$scope]['Save'] = ['#type' => 'submit', '#value' => t('Save')];
         $form[$scope]['Next'] = [
@@ -65,7 +65,7 @@ function tpps_form_add_buttons(array $form_bus) {
         ];
         break;
 
-      case 'page_4':
+      case TPPS_PAGE_4:
         // Back, Save, Review, Submit, Pre-validate my VCF files.
         $form[$scope]['Back'] = ['#type' => 'submit', '#value' => t('Back')];
         $form[$scope]['Save'] = ['#type' => 'submit', '#value' => t('Save')];
@@ -230,22 +230,30 @@ function tpps_get_field_path(array $field, array $path) {
  *   The state of the form being populated.
  */
 function tpps_form_navigation_bar(array &$form, array $form_state) {
-  $current_page = $form_state['stage'] ?? 1;
+  $current_stage = $form_state['stage'] ?? 1;
+  $accession = $form_state['accession'] ?? NULL;
 
   // @TODO Each stage has '#cleared' option which indicates that form step
   // passed validation when it's set and value is TRUE. Remove for TPPSc.
-  $page_list = [
+  $stage_list = [
     '1' => t('Publication Information'),
     '2' => t('Experimental Design'),
     '3' => t('Data'),
     '4' => t('Review and Submit'),
   ];
-  foreach ($page_list as $number => $label) {
-    $options['query'] = ['page' => $number];
-    if ($current_page == $number) {
-      $options['attributes']['class'] = ['current_page'];
+  foreach ($stage_list as $number => $label) {
+    $options = ['query' => ['stage' => $number]];
+    // Add CSS classes to style completed and current page links.
+    if ($number < $current_stage) {
+      $options['attributes']['class'][] = 'completed-stage';
     }
-    $markup = ($markup ?? '') . l($label, 'tppsc', $options);
+    if ($number == $current_stage) {
+      $options['attributes']['class'][] = 'current-stage';
+    }
+    // There is no sense to have active hyperlink for the current stage but
+    // we left it to allow to share link to this page because currently
+    // URL don't have stage number when stage submitted.
+    $markup = ($markup ?? '') . l($label, 'tppsc/' . $accession, $options);
   }
   $form['navigation_bar'] = [
     '#markup' => '<div class="navigation-bar">' . $markup . '</div>',

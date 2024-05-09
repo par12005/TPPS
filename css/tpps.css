@@ -225,6 +225,12 @@ a.fieldset-title {
   float: left;
   display: inline-block;
 }
+.tppsc-form .navigation-bar .completed-stage {
+  font-style: italic;
+}
+.tppsc-form .navigation-bar .current-stage {
+  font-weight: bold;
+}
 /* Round error/status/warning messages */
 form div.error,
 form div.status,
@@ -265,3 +271,5 @@ form .fieldset-title {
   text-transform: none !important;
 }
 /* [/VS] */
+
+

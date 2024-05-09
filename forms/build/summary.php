@@ -203,6 +203,6 @@ function tpps_summary_create_form(array &$form, array $form_state) {
       }
     }
   }
-  tpps_form_add_buttons(['form' => &$form, 'page' => 'summary']);
+  tpps_form_add_buttons(['form' => &$form, 'stage' => 'summary']);
   return $form;
 }

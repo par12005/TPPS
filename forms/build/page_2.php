@@ -106,6 +106,6 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
         break;
     }
   }
-  tpps_form_add_buttons(['form' => &$form, 'page' => 'page_2']);
+  tpps_form_add_buttons(['form' => &$form, 'stage' => TPPS_PAGE_2]);
   return $form;
 }

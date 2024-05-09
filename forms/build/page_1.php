@@ -83,7 +83,7 @@ function tpps_page_1_create_regular_form(array $form, array &$form_state) {
   );
 
   tpps_organism($form, $form_state);
-  tpps_form_add_buttons(['form' => &$form, 'page' => 'page_1']);
+  tpps_form_add_buttons(['form' => &$form, 'stage' => TPPS_PAGE_1]);
   return $form;
 }
 
@@ -106,7 +106,7 @@ function tpps_page_1_create_regular_form(array $form, array &$form_state) {
  */
 function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $saved_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
-  $values = $form_state['values'];
+  $values = $form_state['values'] ?? [];
 
   $js_data = [
     'tpps' => [
@@ -294,7 +294,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     // and fills form fields was removed in branch VS/page1_improvements.
   }
 
-  tpps_form_add_buttons(['form' => &$form, 'page' => 'page_1']);
+  tpps_form_add_buttons(['form' => &$form, 'stage' => TPPS_PAGE_1]);
   return $form;
 }
 
