@@ -95,7 +95,6 @@ require_once 'includes/display.inc';
 require_once 'includes/chado_utils.inc';
 require_once 'includes/init_project.inc';
 require_once 'includes/standard_coord.inc';
-require_once 'includes/cron.inc';
 require_once 'includes/file_utils.inc';
 require_once 'includes/submit_email.inc';
 require_once 'includes/accession_coordinates.inc';
@@ -583,62 +582,107 @@ function tpps_access() {
 }
 
 /**
- * Inform Ultimate Cron about cron jobs.
- *
- * Updates TPPS landing page once per day.
+ * Implements hook_cronapi().
  */
 function tpps_cronapi() {
-  $items = array();
+  // @todo Minor. Rename variables to have 'tpps_cron_' prefix.
+  // Use hook_update() to preserver existing values from DB.
+  // Update admin/cron.inc.
+  $filepath = drupal_get_path('module', 'tpps') . '/includes';
 
-  $freq = variable_get('tpps_latest_job_status_slack_updates_job_frequency', '*/15 * * * *');
-  $items['tpps_latest_job_status_slack_updates'] = array(
+  // TPPS Jobs Slack Updates.
+  $rule = variable_get(
+    'tpps_latest_job_status_slack_updates_job_frequency',
+    // Every 15 minutes.
+    '*/15 * * * *'
+  );
+  $items['tpps_latest_job_status_slack_updates'] = [
     'title' => t('TPPS Jobs Slack Updates'),
-    'callback' => 'tpps_latest_job_status_slack_updates',
-    'scheduler' => array(
+    'callback' => 'tpps_cron_latest_job_status_slack_updates',
+    'scheduler' => [
       'name' => 'crontab',
-      'crontab' => array(
-        'rules' => array($freq),
-      ),
-    ),
-  );
+      'crontab' => [
+        'rules' => [$rule],
+      ],
+    ],
+    'file' => 'cron.inc',
+    'file path' => $filepath,
+  ];
 
-  $freq = variable_get('tpps_refresh_views_job_frequency', '0 */12 * * *');
-  $items['tpps_refresh_views'] = array(
+  // Refresh TPPS and CartograPlant views.
+  $rule = variable_get(
+    'tpps_refresh_views_job_frequency',
+    // Every 12h full hour.
+    '0 */12 * * *'
+  );
+  $items['tpps_refresh_views'] = [
     'title' => t('Refresh TPPS and CartograPlant views'),
-    'callback' => 'tpps_refresh_views',
-    'scheduler' => array(
+    'callback' => 'tpps_cron_refresh_views',
+    'scheduler' => [
       'name' => 'crontab',
-      'crontab' => array(
-        'rules' => array($freq),
-      ),
-    ),
+      'crontab' => [
+        'rules' => [$rule],
+      ],
+    ],
+    'file' => 'cron.inc',
+    'file path' => $filepath,
+  ];
+
+  // Refresh TPPS PlusGeno View (TPPS directory listing).
+  $rule = variable_get(
+    'tpps_refresh_plusgeno_view_frequency',
+    // Every Saturday at midnight.
+    '0 0 * * SAT'
   );
-
-
-
-  $freq = variable_get('tpps_refresh_plusgeno_view_frequency', '0 0 * * SAT');
-  $items['tpps_refresh_plusgeno_view'] = array(
+  $items['tpps_refresh_plusgeno_view'] = [
     'title' => t('Refresh TPPS PlusGeno View (TPPS directory listing)'),
-    'callback' => 'tpps_refresh_plusgeno_view',
-    'scheduler' => array(
+    'callback' => 'tpps_cron_refresh_plusgeno_view',
+    'scheduler' => [
       'name' => 'crontab',
-      'crontab' => array(
-        'rules' => array($freq),
-      ),
-    ),
-  );
+      'crontab' => [
+        'rules' => [$rule],
+      ],
+    ],
+    'file' => 'cron.inc',
+    'file path' => $filepath,
+  ];
 
-  $freq = variable_get('tpps_delayed_submissions_job_frequency', '0 */6 * * *');
-  $items['tpps_delayed_submissions'] = array(
-    'title' => t('Check to see if any of the delayed TPPS submissions should be published yet'),
-    'callback' => 'tpps_delayed_submissions',
-    'scheduler' => array(
-      'name' => 'crontab',
-      'crontab' => array(
-        'rules' => array($freq),
-      ),
-    ),
+  // Check to see if any of the delayed TPPS submissions should be published yet.
+  $rule = variable_get(
+    'tpps_delayed_submissions_job_frequency',
+    // Every 6 hours at full hour.
+    '0 */6 * * *'
   );
+  $items['tpps_delayed_submissions'] = [
+    'title' => t('Check to see if any of the delayed TPPS submissions should be published yet'),
+    'callback' => 'tpps_cron_delayed_submissions',
+    'scheduler' => [
+      'name' => 'crontab',
+      'crontab' => [
+        'rules' => [$rule],
+      ],
+    ],
+    'file' => 'cron.inc',
+    'file path' => $filepath,
+  ];
+
+  // Recreate table "chado.tpps_ref_genomes".
+  $rule = variable_get('tpps_cron_rule_ref_genomes_recreate',
+    // Every 3 days at midnight.
+    '0 0 */3 * *'
+  );
+  $items['tpps_cron_table_tpps_ref_genomes_recreate'] = [
+    'title' => t('Recreate table "chado.tpps_ref_genomes".'),
+    'callback' => 'tpps_cron_table_tpps_ref_genomes_recreate',
+    'scheduler' => [
+      'name' => 'crontab',
+      'crontab' => [
+        'rules' => [$rule],
+      ],
+    ],
+    'file' => 'cron.inc',
+    'file path' => $filepath,
+  ];
 
   return $items;
 }
@@ -2059,6 +2103,16 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/submit_all.inc',
+  ];
+  // Cron.
+  $items['admin/config/tpps/cron'] = [
+    'title' => 'Cron',
+    'description' => 'Cron Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_cron_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/cron.inc',
   ];
 }
 

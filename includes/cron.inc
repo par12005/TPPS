@@ -6,11 +6,26 @@
  */
 
 /**
+ * Recreates table "chado.tpps_ref_genomes".
+ */
+function tpps_cron_table_tpps_ref_genomes_recreate() {
+  chado_query("DROP TABLE IF EXISTS chado.tpps_ref_genomes;", []);
+  chado_query("CREATE TABLE chado.tpps_ref_genomes AS (
+    select distinct a.name, a.analysis_id, a.programversion,
+       o.genus||' '||o.species as species from chado.analysis a
+    join chado.analysisfeature af on a.analysis_id = af.analysis_id
+    join chado.feature f on af.feature_id = f.feature_id
+    join chado.organism o on f.organism_id = o.organism_id
+    where f.type_id in (379,595,597,825,1245,422) AND a.name LIKE '% v%'
+  );", []);
+}
+
+/**
  * Refreshes TPPS and CartograPlant views.
  *
  * Make a call to CartograPlant trees/reload API endpoint.
  */
-function tpps_refresh_views() {
+function tpps_cron_refresh_views() {
   global $base_url;
   if (module_exists('cartogratree') and ($ct_api_key = variable_get('tpps_ct_api_key', NULL))) {
     file_get_contents("$base_url/cartogratree/api/v2/trees/reload?api_key=$ct_api_key");
@@ -19,13 +34,12 @@ function tpps_refresh_views() {
   db_query('refresh materialized view chado.tpps_search_genotype_marker;');
 }
 
-
 /**
- * Check for latest Tripal Job status to Slack
+ * Check for latest Tripal Job status to Slack.
  *
  * Make a call to CartograPlant trees/reload API endpoint.
  */
-function tpps_latest_job_status_slack_updates() {
+function tpps_cron_latest_job_status_slack_updates() {
   global $base_url;
 
   $slack_url = variable_get('tpps_latest_job_status_slack_updates_api_url', NULL);
@@ -58,7 +72,9 @@ function tpps_latest_job_status_slack_updates() {
           if ($status == 'Error') {
             $message .= "An error occurred, please check on ";
           }
-          $message .= "TPPS JOB $job_id: " . $row->job_name . " from " . $user_tmp->name . " - status changed to " . strtoupper($row->status) . "\n";
+          $message .= "TPPS JOB $job_id: " . $row->job_name . " from "
+            . $user_tmp->name . " - status changed to "
+            . strtoupper($row->status) . "\n";
           $old_status[$job_id] = $row->status;
         }
         else {
@@ -73,7 +89,9 @@ function tpps_latest_job_status_slack_updates() {
       // If old_status data does not exist, this is a new job found
       else {
         if ($row->status == 'Waiting') {
-          $message .= "Found new TPPS job $job_id [" . $row->job_name . "] from " . $user_tmp->name . " to monitor with status " . strtoupper($row->status) . ". Monitoring for status change.\n";
+          $message .= "Found new TPPS job $job_id [" . $row->job_name
+            . "] from " . $user_tmp->name . " to monitor with status "
+            . strtoupper($row->status) . ". Monitoring for status change.\n";
         }
         $old_status[$job_id] = $row->status;
       }
@@ -83,7 +101,7 @@ function tpps_latest_job_status_slack_updates() {
     }
   }
 
-  // Remove ids that are not in the current job ids from $old_status
+  // Remove ids that are not in the current job ids from $old_status.
   $diff = array_diff(array_keys($old_status), $current_job_ids);
   // watchdog('tpps', print_r($diff, true));
   $old_ids = count($diff);
@@ -98,37 +116,37 @@ function tpps_latest_job_status_slack_updates() {
   variable_set('tpps_latest_job_status_slack_updates_previous_job_status', $old_status);
   // variable_set('tpps_latest_job_status_slack_updates_previous_job_status', NULL);
 
-  watchdog('tpps', $message .  print_r($old_status, true));
+  watchdog('tpps', $message . print_r($old_status, true));
 
   if ($message != "") {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $slack_url);
     curl_setopt($ch, CURLOPT_POST, 1);
-    $payload = json_encode( array("text"=> $message));
-    curl_setopt( $ch, CURLOPT_POSTFIELDS, $payload );
-    curl_setopt( $ch, CURLOPT_HTTPHEADER, array('Content-Type:application/json'));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $payload = json_encode(array("text" => $message));
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type:application/json']);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
     $server_output = curl_exec($ch);
     curl_close($ch);
   }
-
-
 }
 
-
 /**
- * Refreshes TPPS plusgeno_view which refreshes the TPPS Details Directory listing
+ * Refreshes "chado.plusgeno_view".
+ *
+ * TPPS "plusgeno_view" refreshes the TPPS Details Directory listing.
  */
-function tpps_refresh_plusgeno_view() {
+function tpps_cron_refresh_plusgeno_view() {
   global $base_url;
   db_query('refresh materialized view concurrently chado.plusgeno_view;');
 }
 
 /**
  * Submits delayed TPPS submissions if they are past their release date.
+ *
+ * @todo Use Drupal Queue instead.
  */
-function tpps_delayed_submissions() {
-  // This is a custom implementation of the Drupal's built-in queue.
+function tpps_cron_delayed_submissions() {
   $accession_list = variable_get('tpps_delayed_submissions', []);
   foreach ($accession_list as $accession) {
     $submission = new Submission($accession);
@@ -145,7 +163,6 @@ function tpps_delayed_submissions() {
       );
       $submission->state['job_id'] = $jid;
       $submission->save();
-      // @TODO Use Drupal Queue instead.
       unset($accession_list[$accession]);
     }
   }

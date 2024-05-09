@@ -13,6 +13,12 @@
  */
 function tpps_install() {
   // [VS]
+  // Cronjob.
+  variable_set('tpps_latest_job_status_slack_updates_job_frequency', '*/15 * * * *');
+  variable_set('tpps_refresh_views_job_frequency', '0 */12 * * *');
+  variable_set('tpps_refresh_plusgeno_view_frequency', '0 0 * * SAT');
+  variable_set('tpps_delayed_submissions_job_frequency', '0 */6 * * *');
+  variable_set('tpps_cron_rule_ref_genomes_recreate', '0 0 */3 * *');
   // Reports.
   variable_set('tpps_report_no_synonym_title',
     'List of phenotypes without Synonyms'
@@ -53,8 +59,7 @@ function tpps_install() {
   variable_set('tpps_submitall_skip_gps_request', FALSE);
   variable_set('tpps_submitall_phenotype_debug_mode', FALSE);
 
-// #TODO Update to 'submitall;.
-
+// #TODO Update to 'submitall.
   variable_set('tpps_submit_all_log_cli_show_time', TRUE);
   // Theme Settings.
   variable_set('tpps_theme_fix_pager', FALSE);
@@ -342,6 +347,12 @@ function tpps_install() {
  * usage from public.file_usage.
  */
 function tpps_uninstall() {
+  // Cronjob.
+  variable_del('tpps_latest_job_status_slack_updates_job_frequency');
+  variable_del('tpps_refresh_views_job_frequency');
+  variable_del('tpps_refresh_plusgeno_view_frequency');
+  variable_del('tpps_delayed_submissions_job_frequency');
+  variable_del('tpps_cron_rule_ref_genomes_recreate');
   // Reports.
   variable_del('tpps_report_no_synonym_title');
   variable_del('tpps_report_unit_warning_title');
