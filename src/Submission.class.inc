@@ -245,6 +245,9 @@ class Submission {
   /**
    * Sets value of the sub-element of $state (and $sharedState if exists).
    *
+   * Note: Submission State and SharedState will be loaded if $accession
+   * was set but state not yet loaded.
+   *
    * WARNING:
    * Only non-modified emements in sharedState could be updated using this
    * method. To update modified elements use $submission->setSharedState().
@@ -261,6 +264,10 @@ class Submission {
    *   Default is FALSE.
    */
   public function set(array $parents, $value, $force = FALSE) {
+    // Load Submission's State and SharedState if not loaded yet.
+    $this->getState();
+    $this->getSharedState();
+
     drupal_array_set_nested_value($this->state, $parents, $value);
     // Update sharedState only if this value was there before.
     $key_exists = FALSE;
@@ -313,7 +320,10 @@ class Submission {
   }
 
   /**
-   * Gets State item value.
+   * Gets value of the item from 'State'.
+   *
+   * Note: using get() method forces to load Submission's State array if
+   * accession was set and not empty.
    *
    * @param array $parents
    *   Path to the element including element name.
@@ -322,6 +332,8 @@ class Submission {
    *   Returns reference to the sub-element of the $state.
    */
   public function &get(array $parents = []) {
+    // Load Submission's State if not loaded yet.
+    $this->getState();
     $key_exists = FALSE;
     $element = drupal_array_get_nested_value($this->state, $parents, $key_exists);
     if ($key_exists) {
@@ -543,7 +555,7 @@ class Submission {
     if (empty($this->accession)) {
       $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
       // Function drupal_set_message escapes HTML tags.
-      dpm(print_r($stack, 1));
+      //dpm(print_r($stack, 1));
       throw new Exception(t('Study accession is empty.'));
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -679,6 +691,9 @@ class Submission {
       throw new Exception(t('Study accession is empty.'));
     }
 
+    $this->state = [];
+    $this->sharedState = [];
+
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get data from DB.
     $result = db_select('tpps_submission', 's')
@@ -717,11 +732,9 @@ class Submission {
       // tpps_submission_get_accession_list() (line 1098 of
       // /var/www/Drupal/sites/all/modules/TGDR/includes/submissions.inc).
       // So to avoid this we do simple check:
-      $this->state = [];
       if (strpos($result['submission_state'], '&quot;accession&quot;') === FALSE) {
         $this->state = unserialize($result['submission_state'] ?? '') ?? [];
       }
-      $this->sharedState = [];
       if (strpos($result['shared_state'], '&quot;accession&quot;') === FALSE) {
         $this->sharedState = unserialize($result['shared_state'] ?? '') ?? [];
       }
@@ -1740,6 +1753,45 @@ class Submission {
     global $user;
     $uid = $uid ?? $user->uid;
     return (bool) ($this->doesExist() && ($this->uid == $uid));
+  }
+
+  /**
+   * Get name of current form's stage.
+   *
+   * Note: Current stage could differ from last completed stage.
+   * To get latest stage passed validation use getLastCompletedStage() method.
+   * Stage is a step of the multistep form.
+   * Stages: 'frontpage', 1, 2, 3, 4, 'summarypage'.
+   *
+   * @return mixed
+   *   Returns current stage.
+   */
+  public function getCurrentStage() {
+    return $this->get(['stage']);
+  }
+
+  /**
+   * Gets name of last completed form's stage.
+   *
+   * Completed stage is a step of multistep form which passed validation
+   * and was sucessfully submitted.
+   * To get current stage use getLastCompletedStage() method.
+   *
+   * Stage is a step of the multistep form.
+   * Stages: 'frontpage', 1, 2, 3, 4, 'summarypage'.
+   *
+   * @return mixed
+   *   Returns name of the last completed stage.
+   */
+  public function getLastCompletedStage() {
+    $last_completed_stage = NULL;
+    $stage_list = ['frontpage', 1, 2, 3, 4, 'summarypage'];
+    foreach ($stage_list as $stage) {
+      if ($this->get(['saved_values', $stage, '#cleared'])) {
+        $last_completed_stage = $stage;
+      }
+    }
+    return $last_completed_stage;
   }
 
 }

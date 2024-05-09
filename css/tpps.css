@@ -219,18 +219,22 @@ a.fieldset-title {
   display: inline-block;
   float: both;
 }
-.tppsc-form .navigation-bar a {
+.tppsc-form .navigation-bar .item {
   margin: 5px 25px;
   white-space: nowrap;
   float: left;
   display: inline-block;
 }
-.tppsc-form .navigation-bar .completed-stage {
+.tppsc-form .navigation-bar .item.completed-stage {
   font-style: italic;
 }
-.tppsc-form .navigation-bar .current-stage {
+.tppsc-form .navigation-bar .item.current-stage {
   font-weight: bold;
 }
+.tppsc-form .navigation-bar .item.incompleted-stage {
+  font-style: normal;
+}
+
 /* Round error/status/warning messages */
 form div.error,
 form div.status,

@@ -229,31 +229,37 @@ function tpps_get_field_path(array $field, array $path) {
  * @param array $form_state
  *   The state of the form being populated.
  */
-function tpps_form_navigation_bar(array &$form, array $form_state) {
-  $current_stage = $form_state['stage'] ?? 1;
-  $accession = $form_state['accession'] ?? NULL;
+function tpps_form_navigation_bar(array &$form, $submission) {
+  $current_stage = $submission->getCurrentStage();
+  $last_completed_stage = $submission->getLastCompletedStage();
 
   // @TODO Each stage has '#cleared' option which indicates that form step
   // passed validation when it's set and value is TRUE. Remove for TPPSc.
   $stage_list = [
-    '1' => t('Publication Information'),
-    '2' => t('Experimental Design'),
-    '3' => t('Data'),
-    '4' => t('Review and Submit'),
+    TPPS_PAGE_1 => t('Publication Information'),
+    TPPS_PAGE_2 => t('Experimental Design'),
+    TPPS_PAGE_3 => t('Data'),
+    TPPS_PAGE_4 => t('Review and Submit'),
   ];
   foreach ($stage_list as $number => $label) {
+    // WARNING: Recreate $options to clean previos item settings.
     $options = ['query' => ['stage' => $number]];
+    $options['attributes']['class'][] = 'item';
     // Add CSS classes to style completed and current page links.
-    if ($number < $current_stage) {
+    if ($number < $last_completed_stage) {
       $options['attributes']['class'][] = 'completed-stage';
     }
-    if ($number == $current_stage) {
+    elseif ($number == $last_completed_stage) {
       $options['attributes']['class'][] = 'current-stage';
     }
-    // There is no sense to have active hyperlink for the current stage but
-    // we left it to allow to share link to this page because currently
-    // URL don't have stage number when stage submitted.
-    $markup = ($markup ?? '') . l($label, 'tppsc/' . $accession, $options);
+    if ($number > $last_completed_stage) {
+      $markup = ($markup ?? '')
+        . '<div class="incomplete-stage item">' . $label . '</div>';
+    }
+    else {
+      $item_url = 'tppsc/' . $submission->accession;
+      $markup = ($markup ?? '') . l($label, $item_url, $options);
+    }
   }
   $form['navigation_bar'] = [
     '#markup' => '<div class="navigation-bar">' . $markup . '</div>',
@@ -1104,7 +1110,7 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
       tpps_status_bar($form, $form_state);
     }
     else {
-      tpps_form_navigation_bar($form, $form_state);
+      tpps_form_navigation_bar($form, $submission);
     }
   }
 
@@ -1165,3 +1171,10 @@ function tpps_form_get_submission_status_list() {
   }
   return $output;
 }
+
+// @TODO Move to Submission class.
+
+function tpps_submission_get_current_stage(array $form_state) {
+  return $form_state['stage'] ?? 1;
+}
+

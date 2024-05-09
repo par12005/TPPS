@@ -142,8 +142,8 @@ form.tppsc-form textarea {
   color: black;
 }
 
-.tpps-form .navigation-bar a:active {
-.tppsc-form .navigation-bar a:active {
+.tpps-form .navigation-bar .item:active {
+.tppsc-form .navigation-bar .item:active {
   /* Light Gray */
   color: #c9c9c9;
 }

@@ -335,6 +335,9 @@ function tpps_form_state_info(array &$new, array &$old) {
   // @TODO Check is this could be removed because it seems it's custom
   // implementation of '#rebuild' => TRUE for multistep forms.
   $new['saved_values'] = $old['saved_values'];
+  $submission = new Submission($old['accession']);
+ // $submission->getLastCompletedStage();
+
 
   // Get stage from URL if possible.
   if (!empty($_GET['stage']) && $_GET['stage'] <= $old['stage']) {
@@ -342,6 +345,7 @@ function tpps_form_state_info(array &$new, array &$old) {
   }
   $new['stage'] = $old['stage'];
 
+  // Other fields.
   $new['accession'] = $old['accession'];
   $new['dbxref_id'] = $old['dbxref_id'];
   $new['stats'] = $old['stats'] ?? NULL;
