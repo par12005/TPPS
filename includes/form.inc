@@ -230,23 +230,45 @@ function tpps_get_field_path(array $field, array $path) {
  *   The state of the form being populated.
  */
 function tpps_form_navigation_bar(array &$form, array $form_state) {
-  $current_page = $form_state['stage'] ?? 1;
+  $submission = new Submission($form_state['accession']);
+  $current_stage = $submission->getCurrentStage();
+  $last_completed_stage = $submission->getLastCompletedStage();
 
   // @TODO Each stage has '#cleared' option which indicates that form step
   // passed validation when it's set and value is TRUE. Remove for TPPSc.
-  $page_list = [
+  $stage_list = [
     '1' => t('Publication Information'),
     '2' => t('Experimental Design'),
-    '3' => t('Data'),
-    '4' => t('Review and Submit'),
+    '3' => t('Plant Accession'),
+    '4' => t('Data'),
   ];
-  foreach ($page_list as $number => $label) {
-    $options['query'] = ['page' => $number];
-    if ($current_page == $number) {
-      $options['attributes']['class'] = ['current_page'];
+  foreach ($stage_list as $number => $label) {
+    // WARNING: Recreate $options to clean previos item settings.
+    $options = ['query' => ['stage' => $number]];
+    $options['attributes']['class'][] = 'stage';
+    // Add CSS classes to style completed and current page links.
+    if ($number <= $last_completed_stage) {
+      $options['attributes']['class'][] = 'complete';
     }
-    $markup = ($markup ?? '') . l($label, 'tppsc', $options);
+    else {
+      $options['attributes']['class'][] = 'incomplete';
+    }
+    if ($number == $current_stage) {
+      $options['attributes']['class'][] = 'current';
+    }
+    // Plain or Active link.
+    // Allow to got to next incompleted stage using link.
+    if ($number > $last_completed_stage + 1) {
+      $markup = ($markup ?? '')
+        . '<div class="' . implode(' ', $options['attributes']['class'])
+        . '">' . $label . '</div>';
+    }
+    else {
+      $item_url = 'tppsc/' . $submission->accession;
+      $markup = ($markup ?? '') . l($label, $item_url, $options);
+    }
   }
+
   $form['navigation_bar'] = [
     '#markup' => '<div class="navigation-bar">' . $markup . '</div>',
     '#weight' => -1000,
@@ -880,6 +902,26 @@ function tpps_form_get_accession(array $form_state, $only_number = FALSE) {
  */
 function tpps_form_build_main(array $form, array &$form_state, $accession = NULL) {
   global $user;
+
+
+  // Get stage from URL if possible.
+  if (!empty($_GET['stage'])) {
+    $submission = tpps_submission($accession)->load();
+    if (
+      in_array($_GET['stage'], range(1, 4))
+      // Allow to go directly to next stage after last completed.
+      && $_GET['stage'] <= $submission->getLastCompletedStage() + 1
+    ) {
+      $submission->state['stage'] = (int) check_plain($_GET['stage']);
+      $submission->save();
+    }
+    // Get rid of 'stage' param in URL.
+    drupal_goto($_GET['q']);
+  }
+
+
+
+
 
   // Check if this is TPPS or TPPSC Form using Url.
   // $form_state could have no necessary data yet when loaded first step of

@@ -1742,4 +1742,43 @@ class Submission {
     return (bool) ($this->doesExist() && ($this->uid == $uid));
   }
 
+  /**
+   * Get name of current form's stage.
+   *
+   * Note: Current stage could differ from last completed stage.
+   * To get latest stage passed validation use getLastCompletedStage() method.
+   * Stage is a step of the multistep form.
+   * Stages: 'frontpage', 1, 2, 3, 4, 'summarypage'.
+   *
+   * @return mixed
+   *   Returns current stage.
+   */
+  public function getCurrentStage() {
+    return $this->get(['stage']);
+  }
+
+  /**
+   * Gets name of last completed form's stage.
+   *
+   * Completed stage is a step of multistep form which passed validation
+   * and was sucessfully submitted.
+   * To get current stage use getLastCompletedStage() method.
+   *
+   * Stage is a step of the multistep form.
+   * Stages: 'frontpage', 1, 2, 3, 4, 'summarypage'.
+   *
+   * @return mixed
+   *   Returns name of the last completed stage.
+   */
+  public function getLastCompletedStage() {
+    $last_completed_stage = NULL;
+    $stage_list = ['frontpage', 1, 2, 3, 4, 'summarypage'];
+    foreach ($stage_list as $stage) {
+      if ($this->get(['saved_values', $stage, '#cleared'])) {
+        $last_completed_stage = $stage;
+      }
+    }
+    return $last_completed_stage;
+  }
+
 }

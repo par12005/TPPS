@@ -141,3 +141,10 @@ form.tppsc-form textarea {
   border: 2px solid white;
   color: black;
 }
+
+.tpps-form .navigation-bar .stage:focus,
+.tpps-form .navigation-bar .stage:active,
+.tppsc-form .navigation-bar .stage:focus,
+.tppsc-form .navigation-bar .stage:active {
+  color: white;
+}
