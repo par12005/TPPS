@@ -10,3 +10,5 @@ tags
 cscope.files
 cscope.out
 *NetrwTreeListing
+**.patch
+**.diff
