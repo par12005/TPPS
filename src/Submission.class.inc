@@ -1565,10 +1565,8 @@ class Submission {
             }
 
             if (
-              isset($geno['ref-genome'])
-              && $geno['ref-genome'] === 'bio'
-              && isset($geno['BioProject-id'])
-              && $geno['BioProject-id'] != ''
+              ($snps_fieldset['ref-genome'] ?? NULL) === 'bio'
+              && ($geno['BioProject-id'] ?? NULL) != ''
             ) {
               $data["$org_name BioProject Id"] = $geno['BioProject-id'];
 
@@ -1583,13 +1581,12 @@ class Submission {
               }
             }
             elseif (
-              isset($geno['ref-genome'])
-              && in_array($geno['ref-genome'], ['manual', 'manual2'])
-              && isset($geno['tripal_fasta']['file']['file_upload'])
-              and isset($geno['tripal_fasta']['file']['file_upload_existing'])
-              and (
-                $geno['tripal_fasta']['file']['file_upload']
-                || $geno['tripal_fasta']['file']['file_upload_existing']
+              in_array(
+                ($snps_fieldset['ref-genome'] ?? NULL), ['manual', 'manual2']
+              )
+              && (
+                ($geno['tripal_fasta']['file']['file_upload'] ?? NULL)
+                || ($geno['tripal_fasta']['file']['file_upload_existing'] ?? NULL)
               )
             ) {
               if ($geno['tripal_fasta']['file']['file_upload']) {
@@ -1602,13 +1599,13 @@ class Submission {
               }
             }
             elseif (
-              ($geno['ref-genome'] ?? NULL) == 'url'
+              ($snps_fieldset['ref-genome'] ?? NULL) == 'url'
               && !empty($geno['tripal_fasta']['file']['file_remote'])
             ) {
               $data["$org_name Website of reference file"] = $geno['tripal_fasta']['file']['file_remote'];
             }
-            elseif (!empty($geno['ref-genome'])) {
-              $data["$org_name Reference Genome"] = $geno['ref-genome'];
+            elseif (!empty($snps_fieldset['ref-genome'])) {
+              $data["$org_name Reference Genome"] = $snps_fieldset['ref-genome'];
             }
 
             if (!empty($geno['files']['snps-assay'])) {

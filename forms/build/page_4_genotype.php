@@ -811,7 +811,8 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   }
   ksort($existing_genomes);
   $ref_genome_arr = array_merge(['0' => '- Select -'], $existing_genomes, [
-    // @todo Use t() for option's names. Check if they are used by other code.
+    // @todo Use t() for option's names but first check if name not used in
+    // other code but only keys.
     "url" => 'I can provide a URL to the website of my reference file(s)',
     "bio" => 'I can provide a GenBank accession number (BioProject, WGS, TSA) '
       . 'and select assembly file(s) from a list',
@@ -819,7 +820,10 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
     "manual2" => 'I can upload my own reference transcriptome file',
     "none" => 'I am unable to provide a reference assembly',
   ]);
-  $fields['ref-genome'] = [
+  // Field was relocated (v.2).
+  // 'source' => [$id, 'genotype', 'ref-genome'],
+  // 'target' => [$id, 'genotype', $snps_fieldset, 'ref-genome'],
+  $fields[$snps_fieldset]['ref-genome'] = [
     '#type' => 'select',
     '#title' => t('Reference Assembly used: *'),
     '#options' => $ref_genome_arr,
@@ -836,7 +840,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   $eutils['#title'] = t('TRIPAL EUTILS BIOPROJECT LOADER');
   $eutils['#states'] = [
     'visible' => [
-      ':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'bio'],
+      ':input[name="' . $id . '[genotype][' . $snps_fieldset . '][ref-genome]"]' => ['value' => 'bio'],
     ],
   ];
   $eutils['accession']['#description'] = t('Valid examples: 12384, 394253, 66853, PRJNA185471');
@@ -887,11 +891,11 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   $fasta['#states'] = [
     'visible' => [
       [
-        [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'url']],
+        [':input[name="' . $id . '[genotype][' . $snps_fieldset . '][ref-genome]"]' => ['value' => 'url']],
         'or',
-        [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'manual']],
+        [':input[name="' . $id . '[genotype][' . $snps_fieldset . '][ref-genome]"]' => ['value' => 'manual']],
         'or',
-        [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'manual2']],
+        [':input[name="' . $id . '[genotype][' . $snps_fieldset . '][ref-genome]"]' => ['value' => 'manual2']],
       ],
     ],
   ];
@@ -928,15 +932,15 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
     = $fasta['file']['file_upload_existing']['#states'] = [
       'visible' => [
         [
-          [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'manual']],
+          [':input[name="' . $id . '[genotype][' . $snps_fieldset . '][ref-genome]"]' => ['value' => 'manual']],
           'or',
-          [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'manual2']],
+          [':input[name="' . $id . '[genotype][' . $snps_fieldset . '][ref-genome]"]' => ['value' => 'manual2']],
         ],
       ],
     ];
   $fasta['file']['file_remote']['#states'] = [
     'visible' => [
-      ':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'url'],
+      ':input[name="' . $id . '[genotype][' . $snps_fieldset . '][ref-genome]"]' => ['value' => 'url'],
     ],
   ];
 

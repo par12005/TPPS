@@ -94,8 +94,10 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
     ];
     $to_other_fieldset = [
       // Textfield (must be select).
-      ['files', 'other-marker'], // Select.
-      ['files', 'other'], // Managed file.
+      // Select.
+      ['files', 'other-marker'],
+      // Managed file.
+      ['files', 'other'],
       ['files', 'other-columns'],
       // Other file-field subfields. Those fields commented out and not shown
       // at form right now.
@@ -118,6 +120,14 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
     for ($i = 1; $i <= $organism_number; $i++) {
       $genotype_parents = [
         'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype',
+      ];
+      // Single 'ref-genome' ("Reference Assembly used:") field.
+      $field_name = 'ref-genome';
+      $version_change_list['2']['move'][] = [
+        'source' => array_merge($genotype_parents, [$field_name]),
+        'target' => array_merge(
+          $genotype_parents, [$snps_fieldset, $field_name]
+        ),
       ];
       // 'files' to 'SNPs' fields.
       foreach ($files_to_snps_fields as $field_name) {

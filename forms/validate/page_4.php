@@ -655,7 +655,7 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
   $snps_fieldset = 'SNPs';
   $other_fieldset = 'other';
   $snps = $genotype[$snps_fieldset] ?? NULL;
-  $ref_genome = $genotype['ref-genome'] ?? NULL;
+  $ref_genome = $snps['ref-genome'] ?? NULL;
 
   $does_study_include_snp_data
     = $genotype['does_study_include_snp_data'] ?? NULL;
@@ -696,7 +696,7 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
   // This field must be shown on any value of 'Marker Type' field.
   if (!$ref_genome) {
     tpps_form_error_required($form_state,
-      [$id, 'genotype', 'ref-genome']
+      [$id, 'genotype', 'SNPs', 'ref-genome']
     );
   }
   elseif ($ref_genome === 'bio') {
