@@ -692,89 +692,91 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
   $id_col_accession_name = $page3['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Validate 'Reference Assembly used' field.
-  // This field must be shown on any value of 'Marker Type' field.
-  if (!$ref_genome) {
-    tpps_form_error_required($form_state,
-      [$id, 'genotype', 'SNPs', 'ref-genome']
-    );
-  }
-  elseif ($ref_genome === 'bio') {
-    tpps_is_required_field_empty(
-      $form_state, [$id, 'genotype', 'tripal_eutils', 'accession']
-    );
-    $connection = new \EUtils();
-    try {
-      $connection->setPreview();
-      $parsed = $connection->get(
-        $genotype['tripal_eutils']['db'],
-        $genotype['tripal_eutils']['accession']
-      );
-      foreach ($_SESSION['messages']['status'] as $key => $message) {
-        if ($message == '<pre>biosample</pre>') {
-          unset($_SESSION['messages']['status'][$key]);
-          if (empty($_SESSION['messages']['status'])) {
-            unset($_SESSION['messages']['status']);
-          }
-          break;
-        }
-      }
-      $form_state['values']['parsed'] = $parsed;
-    }
-    catch (\Exception $e) {
-      form_set_error("$id][genotype][tripal_eutils][accession", $e->getMessage());
-    }
-  }
-  elseif (in_array($ref_genome, ['url', 'manual', 'manual2'])) {
-    $class = 'FASTAImporter';
-    tripal_load_include_importer_class($class);
-    $fasta_vals = $genotype['tripal_fasta'];
-
-    $file_upload = isset($fasta_vals['file']['file_upload'])
-      ? trim($fasta_vals['file']['file_upload']) : 0;
-    $file_existing = isset($fasta_vals['file']['file_upload_existing'])
-      ? trim($fasta_vals['file']['file_upload_existing']) : 0;
-    $file_remote = isset($fasta_vals['file']['file_remote'])
-      ? trim($fasta_vals['file']['file_remote']) : 0;
-    $db_id = trim($fasta_vals['db']['db_id']);
-    $re_accession = trim($fasta_vals['db']['re_accession']);
-    $analysis_id = trim($fasta_vals['analysis_id']);
-    $seqtype = trim($fasta_vals['seqtype']);
-
-    if (!$file_upload and !$file_existing and !$file_remote) {
-      tpps_form_error_required($form_state,
-        [$id, 'genotype', 'tripal_fasta', 'file']
-      );
-    }
-
-    if ($db_id and !$re_accession) {
-      tpps_form_error_required($form_state,
-        [$id, 'genotype', 'tripal_fasta', 'additional', 're_accession']
-      );
-    }
-    if ($re_accession and !$db_id) {
-      tpps_form_error_required($form_state,
-        [$id, 'genotype', 'tripal_fasta', 'additional', 'db_id']
-      );
-    }
-
-    if (!$analysis_id) {
-      tpps_form_error_required($form_state,
-        [$id, 'genotype', 'tripal_fasta', 'analysis_id']
-      );
-    }
-    if (!$seqtype) {
-      tpps_form_error_required($form_state,
-        [$id, 'genotype', 'tripal_fasta', 'seqtype']
-      );
-    }
-    if (!form_get_errors()) {
-      $assembly = $file_existing ? $file_existing : ($file_upload ? $file_upload : $file_remote);
-    }
-  }
-  // End of 'Reference Assembly used' field validation.
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   if ($does_study_include_snp_data == 'yes') {
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Validate 'Reference Assembly used' field.
+    // This field must be shown on any value of 'Marker Type' field.
+    if (!$ref_genome) {
+      tpps_form_error_required($form_state,
+        [$id, 'genotype', 'SNPs', 'ref-genome']
+      );
+    }
+    elseif ($ref_genome === 'bio') {
+      tpps_is_required_field_empty(
+        $form_state, [$id, 'genotype', 'tripal_eutils', 'accession']
+      );
+      $connection = new \EUtils();
+      try {
+        $connection->setPreview();
+        $parsed = $connection->get(
+          $genotype['tripal_eutils']['db'],
+          $genotype['tripal_eutils']['accession']
+        );
+        foreach ($_SESSION['messages']['status'] as $key => $message) {
+          if ($message == '<pre>biosample</pre>') {
+            unset($_SESSION['messages']['status'][$key]);
+            if (empty($_SESSION['messages']['status'])) {
+              unset($_SESSION['messages']['status']);
+            }
+            break;
+          }
+        }
+        $form_state['values']['parsed'] = $parsed;
+      }
+      catch (\Exception $e) {
+        form_set_error("$id][genotype][tripal_eutils][accession", $e->getMessage());
+      }
+    }
+    elseif (in_array($ref_genome, ['url', 'manual', 'manual2'])) {
+      $class = 'FASTAImporter';
+      tripal_load_include_importer_class($class);
+      $fasta_vals = $genotype['tripal_fasta'];
+
+      $file_upload = isset($fasta_vals['file']['file_upload'])
+        ? trim($fasta_vals['file']['file_upload']) : 0;
+      $file_existing = isset($fasta_vals['file']['file_upload_existing'])
+        ? trim($fasta_vals['file']['file_upload_existing']) : 0;
+      $file_remote = isset($fasta_vals['file']['file_remote'])
+        ? trim($fasta_vals['file']['file_remote']) : 0;
+      $db_id = trim($fasta_vals['db']['db_id']);
+      $re_accession = trim($fasta_vals['db']['re_accession']);
+      $analysis_id = trim($fasta_vals['analysis_id']);
+      $seqtype = trim($fasta_vals['seqtype']);
+
+      if (!$file_upload and !$file_existing and !$file_remote) {
+        tpps_form_error_required($form_state,
+          [$id, 'genotype', 'tripal_fasta', 'file']
+        );
+      }
+
+      if ($db_id and !$re_accession) {
+        tpps_form_error_required($form_state,
+          [$id, 'genotype', 'tripal_fasta', 'additional', 're_accession']
+        );
+      }
+      if ($re_accession and !$db_id) {
+        tpps_form_error_required($form_state,
+          [$id, 'genotype', 'tripal_fasta', 'additional', 'db_id']
+        );
+      }
+
+      if (!$analysis_id) {
+        tpps_form_error_required($form_state,
+          [$id, 'genotype', 'tripal_fasta', 'analysis_id']
+        );
+      }
+      if (!$seqtype) {
+        tpps_form_error_required($form_state,
+          [$id, 'genotype', 'tripal_fasta', 'seqtype']
+        );
+      }
+      if (!form_get_errors()) {
+        $assembly = $file_existing ? $file_existing : ($file_upload ? $file_upload : $file_remote);
+      }
+    }
+    // End of 'Reference Assembly used' field validation.
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     if ($is_step2_genotype) {
       if ($genotype[$snps_fieldset]['upload_snp_association'] == 'Yes') {
         tpps_is_required_field_empty($form_state,

@@ -111,7 +111,10 @@ function tpps_genotype_subform(array $form_bus) {
     'data' => ['tpps' => ['markerTypeFieldList' => $marker_type_field_list]],
     'scope' => 'footer',
   ];
+
+  // Weight of the yes/no selectors. From 0 (default) to heavier.
   foreach ($marker_type_field_list as $field_name => $marker_name) {
+    $weight = ($weight ?? 0) + 100;
     $default_value = (
       in_array($marker_name, $genotype_marker_type)
       ? 'yes' : (count($genotype_marker_type) ? 'no' : 'no')
@@ -132,6 +135,7 @@ function tpps_genotype_subform(array $form_bus) {
         ),
         '#default_value' => $default_value ?? 'no',
         '#required' => FALSE,
+        '#weight' => $weight,
       ]
     ));
   }
@@ -172,6 +176,8 @@ function tpps_genotype_subform(array $form_bus) {
         . '[does_study_include_snp_data]"]' => ['value' => 'yes'],
       ],
     ],
+    // After own yes/no selector.
+    '#weight' => 150,
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -201,6 +207,8 @@ function tpps_genotype_subform(array $form_bus) {
         . '[does_study_include_other_genotypic_data]"]' => ['value' => 'yes'],
       ],
     ],
+    // After own yes/no selector.
+    '#weight' => 350,
   ];
   tpps_page_4_ref($fields, $form_state, $organism_name);
 
@@ -688,6 +696,8 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
     '#default_value' => tpps_get_ajax_value($form_state,
       [$id, 'genotype', $snps_fieldset, 'genotyping-design']
     ),
+    '#weight' => -200,
+
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // GBS Type.
@@ -1034,6 +1044,8 @@ function tpps_page_4_genotype_ssrs(array $form_bus) {
         . '[does_study_include_ssr_cpssr_data]"]' => ['value' => 'yes'],
       ],
     ],
+    // After own yes/no selector.
+    '#weight' => 250,
   ];
   // @TODO Minor. Better to rename field to avoid '/' in name
   // and make it more meaningful.
