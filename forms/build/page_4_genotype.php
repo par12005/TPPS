@@ -281,16 +281,19 @@ function tpps_genotype_subform(array $form_bus) {
     'extensions' => ['gz tar zip'],
   ]));
   if ($is_tppsc) {
+    $snps_fieldset_name = ':input[name="' . $organism_name . '[genotype]['
+      . $snps_fieldset . ']';
     tpps_array_set_value(
       $form_bus['form'],
       [$organism_name, 'genotype', $snps_fieldset, $file_field_name, '#states'],
       [
         'visible' => [
-          ':input[name="' . $organism_name
-          . '[genotype][' . $snps_fieldset . '][file-type]"]' =>
+          $snps_fieldset_name . '[genotyping-type]"]' =>
+            ['value' => TPPS_GENOTYPING_TYPE_GENOTYPING],
+          $snps_fieldset_name . '[file-type]"]' =>
             ['value' => TPPS_GENOTYPING_FILE_TYPE_VCF],
-          ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset . ']['
-            . $file_field_name . '_file-location]"]' => ['value' => 'local'],
+          $snps_fieldset_name . '[' . $file_field_name . '_file-location]"]' =>
+            ['value' => 'local'],
         ],
       ]
     );
@@ -983,6 +986,8 @@ function tpps_add_dropdown_file_selector(array $form_bus) {
     '@file_name' => $file_name,
     '@hostname' => tpps_get_hostname(),
   ];
+  $snps_fieldset_name = ':input[name="' . $organism_name . '[genotype]['
+    . $snps_fieldset . ']';
   // Field was relocated (v.2).
   // ['saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype', 'files'] =>
   // ['saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype', $snps_fieldset].
@@ -996,8 +1001,10 @@ function tpps_add_dropdown_file_selector(array $form_bus) {
     '#default_value' => '',
     '#states' => [
       'visible' => [
-        ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
-        . '][file-type]"]' => ['value' => TPPS_GENOTYPING_FILE_TYPE_VCF],
+        $snps_fieldset_name . '[genotyping-type]"]' =>
+          ['value' => TPPS_GENOTYPING_TYPE_GENOTYPING],
+        $snps_fieldset_name . '[file-type]"]' =>
+          ['value' => TPPS_GENOTYPING_FILE_TYPE_VCF],
       ],
     ],
   ];
@@ -1010,10 +1017,12 @@ function tpps_add_dropdown_file_selector(array $form_bus) {
     '#title' => t('Path to @file_name at @hostname: *', $params),
     '#states' => [
       'visible' => [
-        ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
-          . '][file-type]"]' => ['value' => TPPS_GENOTYPING_FILE_TYPE_VCF],
-        ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset . ']['
-          . $file_field_name . '_file-location]"]' => ['value' => 'remote'],
+        $snps_fieldset_name . '[genotyping-type]"]' =>
+          ['value' => TPPS_GENOTYPING_TYPE_GENOTYPING],
+        $snps_fieldset_name . '[file-type]"]' =>
+          ['value' => TPPS_GENOTYPING_FILE_TYPE_VCF],
+        $snps_fieldset_name . '[' . $file_field_name . '_file-location]"]' =>
+          ['value' => 'remote'],
       ],
     ],
     '#description' => t('Please provide the full path to your @file_name file '
