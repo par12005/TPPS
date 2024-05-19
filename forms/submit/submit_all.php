@@ -570,7 +570,7 @@ function tpps_submit_page_2(array &$shared_state, TripalJob &$job = NULL) {
   tpps_chado_insert_record('projectprop', [
     'project_id' => $shared_state['ids']['project_id'],
     'type_id' => tpps_load_cvterm('study_type')->cvterm_id,
-    'value' => tpps_form_get_study_type($page2_values['study_type']),
+    'value' => tpps_form_get_experimental_design_options($page2_values['study_type']),
   ]);
 
   if (!empty($page2_values['study_info']['season'])) {

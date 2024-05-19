@@ -128,3 +128,20 @@ function tpps_is_admin_or_curation() {
     || in_array('Curation', $user->roles)
   );
 }
+
+/**
+ * Checks if 'catrogratree' module exists and in use.
+ *
+ * @return bool
+ *   Returns TRUE if module 'catrogratree' installed and working.
+ *   Returns FALSE otherwise.
+ */
+function tpps_is_catrogratree_exists() {
+
+  // @TODO Cache result because it doesn't change often.
+  return (bool) (
+    module_exists('cartogratree')
+    && db_table_exists('cartogratree_groups')
+    && db_table_exists('cartogratree_layers')
+  );
+}

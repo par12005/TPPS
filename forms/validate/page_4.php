@@ -232,7 +232,7 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
       if (empty($phenotype['metadata'])) {
         // $phenotype['metadata'] holds File Id of Phenotype Metadata file.
         // @TODO Use:
-        // tpps_form_error_required($form_state, [$id, 'phenotype', 'metadata']);
+        // tpps_form_show_error_required($form_state, [$id, 'phenotype', 'metadata']);
         form_set_error("$id][phenotype][metadata",
           t('Phenotype Metadata File: field is required.')
         );
@@ -698,7 +698,7 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
     // Validate 'Reference Assembly used' field.
     // This field must be shown on any value of 'Marker Type' field.
     if (!$ref_genome) {
-      tpps_form_error_required($form_state,
+      tpps_form_show_error_required($form_state,
         [$id, 'genotype', 'SNPs', 'ref-genome']
       );
     }
@@ -745,29 +745,29 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
       $seqtype = trim($fasta_vals['seqtype']);
 
       if (!$file_upload and !$file_existing and !$file_remote) {
-        tpps_form_error_required($form_state,
+        tpps_form_show_error_required($form_state,
           [$id, 'genotype', 'tripal_fasta', 'file']
         );
       }
 
       if ($db_id and !$re_accession) {
-        tpps_form_error_required($form_state,
+        tpps_form_show_error_required($form_state,
           [$id, 'genotype', 'tripal_fasta', 'additional', 're_accession']
         );
       }
       if ($re_accession and !$db_id) {
-        tpps_form_error_required($form_state,
+        tpps_form_show_error_required($form_state,
           [$id, 'genotype', 'tripal_fasta', 'additional', 'db_id']
         );
       }
 
       if (!$analysis_id) {
-        tpps_form_error_required($form_state,
+        tpps_form_show_error_required($form_state,
           [$id, 'genotype', 'tripal_fasta', 'analysis_id']
         );
       }
       if (!$seqtype) {
-        tpps_form_error_required($form_state,
+        tpps_form_show_error_required($form_state,
           [$id, 'genotype', 'tripal_fasta', 'seqtype']
         );
       }
@@ -892,7 +892,7 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
     && trim($genotype[$snps_fieldset]['local_vcf']) == ''
     && !$vcf
   ) {
-    tpps_form_error_required($form_state,
+    tpps_form_show_error_required($form_state,
       [$id, 'genotype', $snps_fieldset, 'local_vcf']
     );
   }
@@ -905,7 +905,7 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
     && !$vcf
     //&& trim($form_state['values'][$id]['genotype'][$snps_fieldset]['local_vcf']) == ''
   ) {
-    tpps_form_error_required($form_state,
+    tpps_form_show_error_required($form_state,
       [$id, 'genotype', $snps_fieldset, 'vcf']
     );
   }
@@ -1068,7 +1068,7 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
     )
   ) {
     if (!$snps_assay) {
-      tpps_form_error_required($form_state,
+      tpps_form_show_error_required($form_state,
         [$id, 'genotype', $snps_fieldset, 'snps-assay']
       );
     }

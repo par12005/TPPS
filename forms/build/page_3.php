@@ -27,10 +27,12 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     $values = $form_state['saved_values'][TPPS_PAGE_3];
   }
   else {
-    $values = array();
+    $values = [];
   }
+  $page2_values = $form_state['saved_values'][TPPS_PAGE_2] ?? NULL;
+  $experimental_design = $page2_values['study_design']['experimental_design'];
 
-  if ($form_state['saved_values'][TPPS_PAGE_2]['study_type'] != 1) {
+  if ($experimental_design != TPPS_EXP_DESIGN_NATURAL_POPULATION) {
     tpps_study_location($form, $form_state);
   }
 
@@ -72,7 +74,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     . 'contain columns with information about at least the Plant Identifier '
     . 'and the Location of the plant (either gps coordinates or country/state).';
 
-  if ($form_state['saved_values'][TPPS_PAGE_2]['study_type'] == '4') {
+  if ($experimental_design == TPPS_EXP_DESIGN_EXPERIMENTAL) {
     $file_description .= ' Location columns should describe the location '
       . 'of the source plant for the Common Garden.';
   }
@@ -117,7 +119,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       $column_options[TPPS_COLUMN_GENUS_AND_SPECIES] = t('Genus + Species');
     }
 
-    if ($form_state['saved_values'][TPPS_PAGE_2]['study_type'] != '1') {
+    if ($experimental_design != TPPS_EXP_DESIGN_NATURAL_POPULATION) {
       $column_options[TPPS_COLUMN_SOURCE_PLANT_IDENTIFIER]
         = t('Source Plant Identifier');
     }

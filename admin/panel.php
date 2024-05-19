@@ -75,8 +75,11 @@ function tpps_manage_generate_all_materialized_views(array $form, array &$form_s
  * Shows huge form which allows to manage submission.
  * Menu path: /tpps-admin-panel/TGDRxxxxx.
  *
- * This includes options to change the status or release date of the
- * submission, as well as options to upload revised versions of files.
+ * Options:
+ * - Change the status,
+ * - Release date of the submission,
+ * - Upload revised versions of files,
+ * - etc.
  *
  * @param array $form
  *   The form element to be populated.
@@ -95,10 +98,10 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     drupal_goto('tpps-admin-panel');
   }
 
-  $page1_values = &$submission->sharedState['saved_values'][TPPS_PAGE_1] ?? NULL;
-  $page2_values = &$submission->sharedState['saved_values'][TPPS_PAGE_2] ?? NULL;
-  $page3_values = &$submission->sharedState['saved_values'][TPPS_PAGE_3] ?? NULL;
-  $page4_values = &$submission->sharedState['saved_values'][TPPS_PAGE_4] ?? NULL;
+  $page1_shared_values = &$submission->sharedState['saved_values'][TPPS_PAGE_1] ?? NULL;
+  $page2_shared_values = &$submission->sharedState['saved_values'][TPPS_PAGE_2] ?? NULL;
+  $page3_shared_values = &$submission->sharedState['saved_values'][TPPS_PAGE_3] ?? NULL;
+  $page4_shared_values = &$submission->sharedState['saved_values'][TPPS_PAGE_4] ?? NULL;
 
   if (empty($submission->sharedState['status'])) {
     $submission->save($submission->status);
@@ -349,14 +352,14 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   // Reject/Approve and comments.
   if ($submission->status == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
 
-    if ($page2_values['study_type'] != 1) {
+    if ($page2_shared_values['study_type'] != TPPS_EXP_DESIGN_NATURAL_POPULATION) {
       module_load_include('php', 'tpps', 'forms/build/page_3_helper');
       module_load_include('php', 'tpps', 'forms/build/page_3_ajax');
       $submission->sharedState['values'] = $form_state['values'] ?? $submission->sharedState['values'];
       $submission->sharedState['complete form']
         = $form_state['complete form'] ?? $submission->sharedState['complete form'];
       tpps_study_location($form, $submission->sharedState);
-      $study_location = $page3_values['study_location'];
+      $study_location = $page3_shared_values['study_location'];
       $form['study_location']['type']['#default_value'] = $study_location['type'] ?? NULL;
       for ($i = 1; $i <= $study_location['locations']['number']; $i++) {
         $form['study_location']['locations'][$i]['#default_value']
@@ -375,16 +378,20 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
       '#description' => '',
     ];
 
-    $orgamism_num = $page1_values['organism']['number'];
+    $orgamism_num = $page1_shared_values['organism']['number'];
     $show_layers = FALSE;
     for ($i = 1; $i <= $orgamism_num; $i++) {
-      if (!empty($page4_values["organism-$i"]['environment'])) {
-        foreach ($page4_values["organism-$i"]['environment']['env_layers'] as $layer => $layer_id) {
+      $environment = &$page4_shared_values["organism-$i"]['environment'] ?? NULL;
+      if ($environment) {
+        foreach ($environment['env_layers'] as $layer => $layer_id) {
           if (!empty($layer_id)) {
-            foreach ($page4_values["organism-$i"]['environment']['env_params'][$layer] as $param_id) {
+            foreach ($environment['env_params'][$layer] as $param_id) {
               if (!empty($param_id)) {
                 $type = variable_get("tpps_param_{$param_id}_type", NULL);
                 if (empty($type)) {
+
+                  // @TODO Rewrite this query to collect $param_id and query
+                  // only once instead of using 3 level loops for simple query.
                   $query = db_select('cartogratree_fields', 'f')
                     ->fields('f', ['display_name'])
                     ->condition('field_id', $param_id)
@@ -519,7 +526,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   $form[$section['key']]['DISABLE_VCF_IMPORT'] = [
     '#type' => 'checkbox',
     '#title' => t('Disable VCF Import in Tripal Job Submission'),
-    '#default_value' => $page1_values['disable_vcf_import'] ?? 0,
+    '#default_value' => $page1_shared_values['disable_vcf_import'] ?? 0,
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

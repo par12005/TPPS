@@ -78,6 +78,31 @@ define(
 );
 define('TPPS_GENOTYPING_FILE_TYPE_VCF', 'VCF');
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// Page 2. Field "Data Types" options.
+// See tpps_form_get_data_type_options().
+define('TPPS_DATA_TYPE_GENOTYPE', 'Genotype');
+define('TPPS_DATA_TYPE_PHENOTYPE', 'Phenotype');
+define('TPPS_DATA_TYPE_ENVIRONMENT', 'Environment');
+define('TPPS_DATA_TYPE_G_P', 'Genotype x Phenotype');
+define('TPPS_DATA_TYPE_G_E', 'Genotype x Environment');
+define('TPPS_DATA_TYPE_P_E', 'Phenotype x Environment');
+define('TPPS_DATA_TYPE_G_P_E', 'Genotype x Phenotype x Environment');
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// Page 2. Field "Experimental Design" options.
+// See tpps_form_get_experimental_design_options().
+//
+// Natural Population (Landscape).
+define('TPPS_EXP_DESIGN_NATURAL_POPULATION', 1);
+// Growth Chamber.
+define('TPPS_EXP_DESIGN_GROWTH_CHAMBER', 2);
+// Greenhouse.
+define('TPPS_EXP_DESIGN_GREENHOUSE', 3);
+// Experimental/Common Garden.
+define('TPPS_EXP_DESIGN_EXPERIMENTAL', 4);
+// Plantation.
+define('TPPS_EXP_DESIGN_PLANTATION', 5);
 
 module_load_include('inc', 'tpps', 'includes/common');
 
@@ -2402,7 +2427,9 @@ function tpps_menu_add_detials_pages(array &$items = []) {
     'access arguments' => ['access tpps details'],
     'type' => MENU_NORMAL_ITEM,
   ];
-  // AJAX-callback for Tabs. See /js/tpps.js function detailsTab().
+  // AJAX-callback for Tabs.
+  // See /js/tpps.js function detailsTab().
+  //
   $items['tpps/details/%/%'] = [
     'title' => 'TPPS Details Tab Callback',
     'page callback' => 'tpps_details_tab',

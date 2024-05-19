@@ -172,12 +172,12 @@ function tpps_growth_chamber(array &$form) {
   tpps_control($form, 'humidity', 'Air humidity');
   tpps_control($form, 'light', 'Light Intensity');
 
-  $form['temp'] = array(
+  $form['temp'] = [
     '#type' => 'fieldset',
     '#title' => t('<div class="fieldset-title">TEMPERATURE INFORMATION:</div>'),
     '#description' => t('Please provide temperatures in Degrees Celsius'),
     '#tree' => TRUE,
-  );
+  ];
 
   $form['temp']['high'] = array(
     '#type' => 'textfield',

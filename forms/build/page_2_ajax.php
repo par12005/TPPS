@@ -42,10 +42,10 @@ function tpps_date_month_callback(array &$form, array $form_state) {
 }
 
 /**
- * Ajax callback for study type.
+ * Ajax callback for TPPS/Page2/'Study Type' field.
  *
- * This function updates the study_info fieldset when the study type dropdown
- * menu element is changed.
+ * Updates the 'study_info' fieldset.
+ * Note: TPPSc not used AJAX and field was renamed and relocated.
  *
  * @param array $form
  *   The form being updated.

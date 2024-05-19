@@ -46,7 +46,7 @@ function tpps_generate_doi($accession) {
   }
 
   module_load_include('inc', 'tpps', 'includes/form');
-  $keywords[] = tpps_form_get_study_type($page2_values['study_type']);
+  $keywords[] = tpps_form_get_experimental_design_options($page2_values['study_type']);
 
   $metadata = (object) array(
     'title' => $state['saved_values'][TPPS_PAGE_1]['publication']['title'],
