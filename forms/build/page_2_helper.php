@@ -168,27 +168,10 @@ function tpps_growth_chamber(array &$form) {
 
   $form['#title'] = t('<div class="fieldset-title">Growth Chamber Information:</div>');
 
-  tpps_control($form, 'co2', 'CO2');
-  tpps_control($form, 'humidity', 'Air humidity');
-  tpps_control($form, 'light', 'Light Intensity');
-
-  $form['temp'] = [
-    '#type' => 'fieldset',
-    '#title' => t('<div class="fieldset-title">TEMPERATURE INFORMATION:</div>'),
-    '#description' => t('Please provide temperatures in Degrees Celsius'),
-    '#tree' => TRUE,
-  ];
-
-  $form['temp']['high'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Average High Temperature: *'),
-  );
-
-  $form['temp']['low'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Average Low Temperature: *'),
-  );
-
+  tpps_page2_add_control_fields($form, 'co2', 'CO2');
+  tpps_page2_add_control_fields($form, 'humidity', 'Air humidity');
+  tpps_page2_add_control_fields($form, 'light', 'Light Intensity');
+  tpps_page2_add_temp($form);
   tpps_rooting($form);
 }
 
@@ -202,26 +185,9 @@ function tpps_greenhouse(array &$form) {
 
   $form['#title'] = t('<div class="fieldset-title">Greenhouse Information:</div>');
 
-  tpps_control($form, 'humidity', 'Air humidity');
-  tpps_control($form, 'light', 'Light Intensity');
-
-  $form['temp'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('<div class="fieldset-title">TEMPERATURE INFORMATION:</div>'),
-    '#description' => t('Please provide temperatures in Degrees Celsius'),
-    '#tree' => TRUE,
-  );
-
-  $form['temp']['high'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Average High Temperature: *'),
-  );
-
-  $form['temp']['low'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Average Low Temperature: *'),
-  );
-
+  tpps_page2_add_control_fields($form, 'humidity', 'Air humidity');
+  tpps_page2_add_control_fields($form, 'light', 'Light Intensity');
+  tpps_page2_add_temp($form);
   tpps_rooting($form);
 }
 
@@ -262,7 +228,7 @@ function tpps_common_garden(array &$form) {
     ),
   );
 
-  tpps_control($form, 'salinity', 'Salinity');
+  tpps_page2_add_control_fields($form, 'salinity', 'Salinity');
 
   $form['biotic_env'] = array(
     '#type' => 'fieldset',
@@ -505,7 +471,7 @@ function tpps_rooting(array &$form) {
     '#title' => t('Soil Container Type: *'),
   );
 
-  tpps_control($form['rooting'], 'ph', 'pH');
+  tpps_page2_add_control_fields($form['rooting'], 'ph', 'pH');
 
   $treatment_options = drupal_map_assoc(array(
     t('Seasonal Environment'),
@@ -555,9 +521,10 @@ function tpps_rooting(array &$form) {
 }
 
 /**
- * This function creates fields for the items that have control options.
+ * Creates fields for the items that have control options.
  *
- * This includes co2, humidity, light intensity, salinity, and pH.
+ * Fields which could be added:
+ * co2, humidity, light intensity, salinity, and pH.
  *
  * @param array $form
  *   The form to be updated.
@@ -566,48 +533,69 @@ function tpps_rooting(array &$form) {
  * @param string $label
  *   The human-readable label for the control options.
  */
-function tpps_control(array &$form, $type, $label) {
-  $form[$type] = array(
+function tpps_page2_add_control_fields(array &$form, $type, $label) {
+  $form[$type] = [
     '#type' => 'fieldset',
     '#tree' => TRUE,
-  );
-
-  $form[$type]['option'] = array(
+  ];
+  $form[$type]['option'] = [
     '#type' => 'select',
-    '#title' => t('@label controlled or uncontrolled: *', array('@label' => $label)),
-    '#options' => array(
+    '#title' => t('@label controlled or uncontrolled: *', ['@label' => $label]),
+    '#options' => [
       0 => t('- Select -'),
       1 => t('Controlled'),
       2 => t('Uncontrolled'),
-    ),
-  );
-
-  $form[$type]['controlled'] = array(
+    ],
+  ];
+  $form[$type]['controlled'] = [
     '#type' => 'textfield',
-    '#title' => t('Controlled @label Value: *', array('@label' => $label)),
-    '#states' => array(
-      'visible' => array(
-        ":input[name=\"study_info[$type][option]\"]" => array('value' => '1'),
-      ),
-    ),
-  );
-
-  $form[$type]['uncontrolled'] = array(
+    '#title' => t('Controlled @label Value: *', ['@label' => $label]),
+    '#states' => [
+      'visible' => [
+        ":input[name=\"study_info[$type][option]\"]" => ['value' => 1],
+      ],
+    ],
+  ];
+  $form[$type]['uncontrolled'] = [
     '#type' => 'textfield',
-    '#title' => t('Average @label Value: *', array('@label' => $label)),
-    '#states' => array(
-      'visible' => array(
-        ":input[name=\"study_info[$type][option]\"]" => array('value' => '2'),
-      ),
-    ),
-  );
+    '#title' => t('Average @label Value: *', ['@label' => $label]),
+    '#states' => [
+      'visible' => [
+        ":input[name=\"study_info[$type][option]\"]" => ['value' => 2],
+      ],
+    ],
+  ];
 
   if ($type == 'ph') {
-    $form[$type]['controlled']['#states']['visible'] = array(
-      ':input[name="study_info[rooting][ph][option]"]' => array('value' => '1'),
-    );
-    $form[$type]['uncontrolled']['#states']['visible'] = array(
-      ':input[name="study_info[rooting][ph][option]"]' => array('value' => '2'),
-    );
+    // Replace (not add).
+    $form[$type]['controlled']['#states']['visible'] = [
+      ':input[name="study_info[rooting][ph][option]"]' => ['value' => 1],
+    ];
+    $form[$type]['uncontrolled']['#states']['visible'] = [
+      ':input[name="study_info[rooting][ph][option]"]' => ['value' => 2],
+    ];
   }
+}
+
+/**
+ * Adds 'Temperature Information' fieldset to form.
+ *
+ * @param array $form
+ *   Drupal Form Array.
+ */
+function tpps_page2_add_temp(array &$form) {
+  $form['temp'] = [
+    '#type' => 'fieldset',
+    '#title' => t('<div class="fieldset-title">TEMPERATURE INFORMATION:</div>'),
+    '#description' => t('Please provide temperatures in Degrees Celsius'),
+    '#tree' => TRUE,
+  ];
+  $form['temp']['high'] = [
+    '#type' => 'textfield',
+    '#title' => t('Average High Temperature: *'),
+  ];
+  $form['temp']['low'] = [
+    '#type' => 'textfield',
+    '#title' => t('Average Low Temperature: *'),
+  ];
 }

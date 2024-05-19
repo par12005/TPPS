@@ -363,6 +363,7 @@ function tpps_form_search_field(array $array, $field_type = 'managed_file') {
  *      Required. Drupal Form Array. E.g., &$form.
  *   'form_state' array
  *      Optional. Drupal Form Array. E.g., &$form_state.
+ *
  *   Element with prefix '#' which are Drupal Form API fields.
  *   See https://api.drupal.org/api/drupal/developer%21topics%21forms_api_reference.html/7.x
  *     'field_name' string

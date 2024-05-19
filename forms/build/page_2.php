@@ -86,6 +86,7 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
     tpps_form_autofocus($form, ['data_type']);
   }
 
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // TPPSc Form.
   else {
@@ -93,7 +94,7 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
       '#type' => 'fieldset',
       '#tree' => TRUE,
       '#collapsible' => TRUE,
-      '#title' => t('Study Desigin'),
+      '#title' => t('Study Design'),
     ];
     // Relocated v.2:
     // $form['data_type'] -> $form['study_design']['data_type'].
@@ -134,11 +135,12 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
       '#tree' => TRUE,
       '#collapsible' => TRUE,
       '#states' => [
-        'invisible' => [
+        'visible' => [
           ':input[name="study_design[experimental_design]"]' => ['visible' => TRUE],
         ],
       ],
     ];
+    //tpps_growth_chamber($form['study_info'], $is_tppsC);
 
     tpps_form_autofocus($form, ['study_design', 'data_type']);
   }
