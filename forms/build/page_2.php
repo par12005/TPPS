@@ -7,6 +7,7 @@
 
 require_once 'page_2_ajax.php';
 require_once 'page_2_helper.php';
+require_once 'page_2_tppsc_helper.php';
 
 /**
  * Creates the Study Design form page.
@@ -140,7 +141,12 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
         ],
       ],
     ];
-    //tpps_growth_chamber($form['study_info'], $is_tppsC);
+    // @TODO Add more fields.
+    tppsc_growth_chamber([
+      'form' => &$form,
+      'is_tppsC' => $is_tppsC,
+      'parents' => ['study_info'],
+    ]);
 
     tpps_form_autofocus($form, ['study_design', 'data_type']);
   }

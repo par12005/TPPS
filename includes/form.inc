@@ -387,23 +387,23 @@ function tpps_form_add_yesno_field(array $form_bus) {
   else {
     $form = &$form_bus['form'];
   }
+  if (empty($form_bus['stage'])) {
+    watchdog('tpps', 'Empty stage received', [], WATCHDOG_ERROR);
+    return;
+  }
+  else {
+    $stage = $form_bus['stage'];
+  }
   if (empty($form_bus['field_name']) || empty($form_bus['#title'])) {
     watchdog('tpps', 'Empty "name" or "#title" received', [], WATCHDOG_ERROR);
     return;
   }
-  if (!isset($form_bus['organism_id'])) {
-    return;
-  }
+
   $field_name = $form_bus['field_name'];
-  $i = $form_bus['organism_id'];
-
-  $organism_name = 'organism-' . $i;
-
-  // $form_state is optional and used for default value only.
   $form_state = &$form_bus['form_state'] ?? [];
-  unset($form_bus['form_state']);
-  // Default value.
-  $page4_values = $form_state['saved_values'][TPPS_PAGE_4] ?? NULL;
+  $parents = array_merge(
+    [$stage], ($form_bus['parents'] ?? []), [$field_name]
+  );
   // Options.
   // Machine names are in lower case to indicate that it's not human readable
   // name which could be localized.
@@ -415,14 +415,17 @@ function tpps_form_add_yesno_field(array $form_bus) {
   $defaults = [
     '#type' => 'select',
     '#options' => $options,
-    '#default_value' => ($form_bus['page4_values'][$field_name] ?? NULL),
+    // This default value will be overwritten by value from $form_bus.
+    // Note: $form_state used $stage but $form not.
+    '#default_value' => drupal_array_get_nested_value(
+      $form_state['saved_values'], array_merge([$stage], $parents)
+    ),
     '#tree' => TRUE,
   ];
   $field = array_filter($form_bus, function ($e) {
     return strpos($e, '#') !== FALSE;
   }, ARRAY_FILTER_USE_KEY);
   $field = array_merge($defaults, $field);
-  $parents = array_merge(($form_bus['parents'] ?? []), [$field_name]);
   drupal_array_set_nested_value($form, $parents, $field);
 }
 

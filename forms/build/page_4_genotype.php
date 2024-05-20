@@ -83,6 +83,7 @@ function tpps_genotype_subform(array $form_bus) {
   if ($i == 1 && $organism_number > 1) {
     tpps_form_add_yesno_field(array_merge($form_bus,
       [
+        'stage' => TPPS_PAGE_4,
         'parents' => [$organism_name, $type],
         'field_name' => 'are_genotype_markers_identical',
         '#title' => t('Are your genotype markers identical across species?'),
@@ -121,6 +122,7 @@ function tpps_genotype_subform(array $form_bus) {
     );
     tpps_form_add_yesno_field(array_merge($form_bus,
       [
+        'stage' => TPPS_PAGE_4,
         'parents' => [$organism_name, $type],
         'field_name' => $field_name,
         // For search purpose only list of dynamically built items:
