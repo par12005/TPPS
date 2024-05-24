@@ -27,23 +27,23 @@
 function tpps_front_create_form(array &$form, array $form_state) {
   global $base_url;
   global $user;
-  module_load_include('inc', 'tpps', 'includes/form');
-  $is_tppsc = tpps_form_is_tppsc($form_state);
+
+  $submission = tpps_submission()->setState($form_state);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  if ($is_tppsc) {
+  if ($submission->isTppsc()) {
     if (user_is_logged_in()) {
       // Logged in.
       $options = [
         'new' => 'Create new TPPSC Submission',
         ' YOUR / INCOMPLETE ' => tpps_submission_get_accession_list([
-          ['status', 'Incomplete'],
+          ['status', TPPS_SUBMISSION_STATUS_INCOMPLETE],
           ['uid', $user->uid],
         ]),
       ];
       if (variable_get('tpps_front_show_pending_status_mine', FALSE)) {
         $options = $options + [
           ' YOUR / PENDING APPROVAL' => tpps_submission_get_accession_list([
-            ['status', 'Pending Approval'],
+            ['status', TPPS_SUBMISSION_STATUS_PENDING_APPROVAL],
             ['uid', $user->uid],
           ]),
         ];
@@ -51,7 +51,7 @@ function tpps_front_create_form(array &$form, array $form_state) {
       if (variable_get('tpps_front_show_approved_status_mine', FALSE)) {
         $options = $options + [
           ' YOUR / APPROVED ' => tpps_submission_get_accession_list([
-            ['status', 'Approved'],
+            ['status', TPPS_SUBMISSION_STATUS_APPROVED],
             ['uid', $user->uid],
           ]),
         ];
@@ -59,7 +59,7 @@ function tpps_front_create_form(array &$form, array $form_state) {
       if (variable_get('tpps_front_show_others_studies', TRUE)) {
         $options = $options + [
           ' OTHERS / INCOMPLETE ' => tpps_submission_get_accession_list([
-            ['status', 'Incomplete'],
+            ['status', TPPS_SUBMISSION_STATUS_INCOMPLETE],
             ['uid', $user->uid, '<>'],
           ]),
         ];
@@ -67,7 +67,7 @@ function tpps_front_create_form(array &$form, array $form_state) {
       if (variable_get('tpps_front_show_pending_status_others', FALSE)) {
         $options = $options + [
           ' OTHERS / PENDING APPROVAL' => tpps_submission_get_accession_list([
-            ['status', 'Pending Approval'],
+            ['status', TPPS_SUBMISSION_STATUS_PENDING_APPROVAL],
             ['uid', $user->uid, '<>'],
           ]),
         ];
@@ -81,7 +81,7 @@ function tpps_front_create_form(array &$form, array $form_state) {
           '#default_value' => $form_state['saved_values']['frontpage']['accession'] ?? 'new',
         ];
       }
-      tpps_form_autofocus($form, 'accession');
+      tpps_form_autofocus($form, ['accession']);
       $form['use_old_tgdr'] = [
         '#type' => 'checkbox',
         '#title' => t('I would like to use an existing TGDR number'),
@@ -146,7 +146,7 @@ function tpps_front_create_form(array &$form, array $form_state) {
     if (user_is_logged_in()) {
       $options_arr = ['new' => 'Create new TPPS Submission']
         + tpps_submission_get_accession_list([
-          ['status', 'Incomplete', '='],
+          ['status', TPPS_SUBMISSION_STATUS_INCOMPLETE, '='],
           ['uid', $user->uid, '='],
         ]);
       if (count($options_arr) > 1) {

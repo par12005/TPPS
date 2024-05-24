@@ -20,6 +20,18 @@ function tpps_get_hostname() {
 }
 
 /**
+ * Checks if it's a live site.
+ *
+ * @return bool
+ *   Returns TRUE code runs at production server and FALSE otherwise.
+ */
+function is_live_site() {
+  // @TODO Minor. Move value of the live domain to the settings page.
+  $live_domain = 'treegenesdb.org';
+  return (bool) (tpps_get_hostname() == $live_domain);
+}
+
+/**
  * Dumps variable using dpm to browser.
  *
  * @param mixed $dump
@@ -29,26 +41,6 @@ function tpps_get_hostname() {
  */
 function dpv($dump, $message = '') {
   dpm(print_r($dump, 1), $message ?? NULL);
-}
-
-/**
- * Replaces $old with $new in array's values and keys.
- *
- * @param array $array
- *   Array to be updated.
- * @param mixed $old
- *   Old token.
- * @param mixed $new
- *   New token.
- *
- * @return array
- *   Returns updated array.
- */
-function tpps_array_replace(array $array, $old, $new) {
-  // Source: tpps_change_tgdr_number();
-  $state_json = json_encode($array);
-  $state_json = str_replace($old, $new, $state_json);
-  return json_decode($state_json, TRUE);
 }
 
 /**
@@ -69,85 +61,70 @@ function tpps_string_format_indent($string) {
 }
 
 /**
- * Parses huge array to show a well-formatted dump.
+ * Gets Drupal User Acount Email-address.
  *
- * Good for huge arrays. For small use dpm() or similar.
+ * @param int $uid
+ *   Drupal User Id.
+ * @param bool $reset
+ *   Flag to reset cache.
  *
- * @param array $array
- *   Array to be dumped.
- * @param bool $sticky
- *   Should table has sticky header or not.
- *
- * @return array
- *   Returns array with keys:
- *    'plain_items' and names of sub-array items.
+ * @return string
+ *   Returns email-address or empty string if user wasn't found.
  */
-function tpps_array_dump(array $array, $sticky = TRUE) {
-  $output = [];
-  // Get list of sub-arrays ($part list)
-  foreach (array_keys($array) as $key) {
-    if (is_array($array[$key])) {
-      $part_list[$key] = count($array[$key]);
-    }
-    else {
-      $plain[] = $key;
-    }
+function tpps_get_user_email($uid, $reset = FALSE) {
+  $key = $uid;
+  $static_cache = &drupal_static(__FUNCTION__);
+  if ($reset || !isset($static_cache[$key])) {
+    $static_cache[$key] = (string) db_select('users', 'u')
+      ->fields('u', ['mail'])
+      ->condition('uid', $uid)
+      ->range(0, 1)
+      ->execute()
+      ->fetchField();
   }
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Plain Items.;
-  if (!empty($plain ?? NULL)) {
-    ksort($plain);
-    foreach ($plain as $line => $key) {
-      $plain_rows[] = [
-        [
-          'data' => $line + 1,
-          'style' => 'padding: 0 10px; font-weight: bold;',
-        ],
-        [
-          'data' => check_plain($key),
-          'style' => 'padding: 0 10px; font-weight: bold;',
-        ],
-        [
-          'data' => check_plain(var_export($array[$key], 1)),
-          'style' => 'padding: 0 10px; width:100%;',
-        ],
-      ];
-    }
-    $output['plain_items'] = [
-      'title' => t('Plain Items'),
-      'data' => theme('table', ['rows' => $plain_rows, 'sticky' => $sticky]),
-      'count' => count($plain),
-    ];
-  }
+  return $static_cache[$key];
+}
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Sub-arrays.
-  if (!empty($part_list ?? NULL)) {
-    ksort($part_list);
-    foreach ($part_list as $key => $count) {
-      $rows = [];
-      $state_part = $array[$key] ?? [];
-      $state_array = preg_split("/\r\n|\n|\r/", var_export($state_part, 1));
-      if ($state_part) {
-        foreach ($state_array as $line => $content) {
-          $rows[] = [
-            [
-              'data' => $line + 1,
-              'style' => 'padding: 0 10px; font-weight: bold;',
-            ],
-            [
-              'data' => tpps_string_format_indent($content),
-              'style' => 'padding: 0 10px; width:100%;',
-            ],
-          ];
-        }
-        $output[$key] = [
-          'title' => $key,
-          'data' => theme('table', ['rows' => $rows, 'sticky' => $sticky]),
-          'count' => count($array[$key]),
-        ];
-      }
-    }
+/**
+ * Puts message using both watchdog() and drupal_set_message().
+ *
+ * WARNING: Not for CLI (messages will be ignored).
+ *
+ * @param string $message
+ *   Not localized message text.
+ * @param array $params
+ *   List of the tokens which will be replaces in $message.
+ * @param string $type
+ *   Predefined message type. Possible values are:
+ *   'error', 'notice', 'info' (default), 'warning' and 'debug'
+ *   Note: 'debug' messages will be shown at page only when 'Debug Mode' enabled.
+ *   To enable 'Debug Mode': variable_set('tpps_debug_mode', TRUE)
+ *   or use admin settings page.
+ */
+function tpps_message($message, array $params = [], $type = 'info') {
+  if (php_sapi_name() == 'cli') {
+    // Do nothing in CLI mode.
+    return;
   }
-  return $output;
+  $watchdog_type = constant('WATCHDOG_' . strtoupper($type)) ?? WATCHDOG_NOTICE;
+  watchdog('tpps', $message, $params, $watchdog_type);
+  if ($type != 'debug' || (tpps_is_debug_mode() && $type == 'debug')) {
+    $type = ($type == 'info') ? 'status' : $type;
+    drupal_set_message(t($message, $params), $type);
+  }
+}
+
+/**
+ * Checks if curation team member or administrator.
+ *
+ * @return bool
+ *   Returns TRUE if current user belongs to 'Curation' or 'administrator'
+ *   groups and FALSE otherwise.
+ */
+function tpps_is_admin_or_curation() {
+  global $user;
+  return (
+    in_array('administrator', $user->roles)
+    || in_array('Curation', $user->roles)
+  );
 }

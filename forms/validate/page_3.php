@@ -48,9 +48,7 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
       );
     }
     else {
-      $file = file_load($fid);
-      // Check if file has zero length (empty).
-      if ($file->filesize == 0) {
+      if (!($file = tpps_file_load($fid))) {
         form_set_error("tree-accession][species-$i][file",
           t('Plant Accession File: File is empty.')
         );
@@ -63,8 +61,6 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
             'id' => [TPPS_COLUMN_PLANT_IDENTIFIER],
           ],
           'Location (latitude/longitude or country/state or population group)' => [
-           // @TODO [VS] Replace 'magic' numbers with constant with more
-            // descriptive names. See tpps_page_3_create_form() for columns.
             'approx' => [TPPS_COLUMN_COUNTRY, TPPS_COLUMN_STATE],
             'gps' => [TPPS_COLUMN_LATITUDE, TPPS_COLUMN_LONGITUDE],
             'pop_group' => [TPPS_COLUMN_POPULATION_GROUP],

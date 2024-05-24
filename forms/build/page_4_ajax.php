@@ -3,6 +3,8 @@
 /**
  * @file
  * Defines ajax functions necessary for the fourth page of the form.
+ *
+ * @TODO Use single function but send required element in request.
  */
 
 /**
@@ -21,9 +23,9 @@
  */
 function tpps_ajax_bioproject_callback(array &$form, array $form_state) {
 
-  $ajax_id = $form_state['triggering_element']['#parents'][0];
+  $id = $form_state['triggering_element']['#parents'][0];
 
-  return $form[$ajax_id]['genotype']['tripal_eutils'];
+  return $form[$id]['genotype']['tripal_eutils'];
 }
 
 /**
@@ -87,45 +89,6 @@ function tpps_phenotype_file_format_callback(array $form, array &$form_state) {
 }
 
 /**
- * Ajax callback for genotype files fieldset.
- *
- * Indicates the element to be updated when the genotype marker types checkboxes
- * or the genotype file types checkboxes are updated.
- *
- * @param array $form
- *   The form to be updated.
- * @param array $form_state
- *   The state of the form to be updated.
- *
- * @return array
- *   The element in the form to be updated.
- */
-function tpps_genotype_files_callback(array $form, array &$form_state) {
-  $id = $form_state['triggering_element']['#parents'][0];
-  return $form[$id]['genotype']['files'];
-}
-
-/**
- * Ajax callback for genotype files fieldset.
- *
- * Indicates the element to be updated when the genotype marker types checkboxes
- * or the genotype file types checkboxes are updated.
- *
- * @param array $form
- *   The form to be updated.
- * @param array $form_state
- *   The state of the form to be updated.
- *
- * @return array
- *   The element in the form to be updated.
- */
-function tpps_genotype_files_type_change_callback(array $form, array &$form_state) {
-  $id = $form_state['triggering_element']['#parents'][0];
-
-  return $form[$id]['genotype']['files'];
-}
-
-/**
  * Indicate the managed_file element to be updated.
  *
  * This function is called after a no_header element is changed, triggering an
@@ -140,10 +103,10 @@ function tpps_genotype_files_type_change_callback(array $form, array &$form_stat
  *   The element in the form to be updated.
  */
 function tpps_page_4_file_dynamic(array $form, array &$form_state) {
-
   $parents = $form_state['triggering_element']['#parents'];
   array_pop($parents);
 
   $element = drupal_array_get_nested_value($form, $parents);
+  // $element contains 'Other Information' fieldset which is parent.
   return $element;
 }

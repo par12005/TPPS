@@ -8,9 +8,13 @@
 /**
  * Menu callback. Shows list of files used by study.
  *
+ * WARNING: Submission Shared State used.
+ *
  * This function will check study submission state from database
  * find the file ids and also check the managed tables to see what is
  * missing. This will thus detect old files.
+ * Menu path:
+ * /tpps-admin-panel/file-diagnostics/TGDR%%%
  *
  * @param string $accession
  *   Study accession in format 'TGDRxxxx'.
@@ -19,31 +23,35 @@
  *   Returns rendered list of files.
  */
 function tpps_admin_files_diagnostics_page($accession = NULL) {
-  $results = chado_query(
-    'SELECT * FROM tpps_submission WHERE accession = :accession',
-    [':accession' => $accession]
-  );
-  $serialized_data = "";
-  foreach ($results as $row) {
-    $serialized_data = unserialize($row->submission_state);
+  if (empty($accession)) {
+    drupal_set_message(t('Empty accession.'), 'error');
+    return '';
   }
+  $submission = new Submission($accession);
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $project_file_ids = [];
   // Get file_ids from project_id.
-  $project_id = $serialized_data['ids']['project_id'];
+  $project_id = $submission->sharedState['ids']['project_id'] ?? NULL;
   $results = chado_query(
     'SELECT * FROM tpps_project_file_managed WHERE project_id = :project_id',
     [':project_id' => $project_id]
   );
+  // @TODO Minor. Use Drupal DB API to get result in an array. fetchCol();
   foreach ($results as $row) {
     array_push($project_file_ids, $row->fid);
   }
   sort($project_file_ids);
-  $saved_values = $serialized_data['saved_values'];
+  $saved_values = $submission->sharedState['saved_values'] ?? NULL;
+  if (empty($saved_values)) {
+    drupal_set_message(t('Empty "saved_values" in Submission Shared State.'));
+    return ' ';
+  }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $file_ids = [];
-  $organism_count = $saved_values['1']['organism']['number'];
-  for ($j = 1; $j <= $organism_count; $j++) {
+  for ($j = 1; $j <= $saved_values[TPPS_PAGE_1]['organism']['number']; $j++) {
+    // WARNING:
+    // DO NOT update because it uses Submission Form Version 1.
     $parents = [
       // Page 3. Accession file.
       [TPPS_PAGE_3, 'tree-accession', 'species-' . $j, 'file'],
@@ -51,7 +59,9 @@ function tpps_admin_files_diagnostics_page($accession = NULL) {
       [TPPS_PAGE_4, 'organism-' . $j, 'phenotype', 'file'],
       [TPPS_PAGE_4, 'organism-' . $j, 'phenotype', 'metadata'],
       // Page 4. Genotype files.
+      // @TODO Minor. Add other files.
       [TPPS_PAGE_4, 'organism-' . $j, 'genotype', 'files', 'snps-assay'],
+      [TPPS_PAGE_4, 'organism-' . $j, 'genotype', 'files', 'assay-design'],
       [TPPS_PAGE_4, 'organism-' . $j, 'genotype', 'files', 'snps-association'],
       [TPPS_PAGE_4, 'organism-' . $j, 'genotype', 'files', 'vcf'],
       [TPPS_PAGE_4, 'organism-' . $j, 'genotype', 'files', 'ssrs'],
@@ -63,10 +73,17 @@ function tpps_admin_files_diagnostics_page($accession = NULL) {
       }
     }
   }
+  // Supplemental files at 'summarypage'.
+  for ($i = 1; $i <= 10; $i++) {
+    if (!empty($saved_values['summarypage']['files'][$i])) {
+      $file_ids[] = $saved_values['summarypage']['files'][$i];
+    }
+  }
+
   sort($file_ids);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // History/State files.
-  $overall_file_ids = $serialized_data['files'] ?? [];
+  $overall_file_ids = $submission->sharedState['files'] ?? [];
   sort($overall_file_ids);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output report.
@@ -79,8 +96,7 @@ function tpps_admin_files_diagnostics_page($accession = NULL) {
   foreach ($file_lists as $title => $fid_list) {
     $sublist = [];
     foreach ($fid_list as $fid) {
-      $file = file_load($fid ?? '');
-      if ($file && $file->filesize) {
+      if ($file = tpps_file_load($fid)) {
         $sublist[] = '<strong>' . $fid . '</strong> - '
           . l($file->filename, file_create_url($file->uri), $options);
       }

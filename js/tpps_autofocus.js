@@ -3,14 +3,20 @@
  *
  * TPPS AutoFocus feature.
  *
- * See function tpps_form_autofocus().
+ * Sets focus to the field specified in
+ * Drupal.settings.tpps.autoFocus.FieldName.
+ * See
+ * - tpps_add_css_js(),
+ * - tpps_form_autofocus().
  */
 (function($, Drupal) {
   $(document).ready(function() {
     setTimeout(
       function() {
-        $('[name="' + Drupal.settings.tpps.autoFocus.FieldName + '"')
-          .get(0).focus();
+        var $element = $('[name="' + Drupal.settings.tpps.autoFocus.FieldName + '"');
+        if (typeof $element.get(0) != 'undefined') {
+          $element.get(0).focus();
+        }
       },
       Drupal.settings.tpps.autoFocus.Timeout
     );

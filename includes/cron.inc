@@ -123,9 +123,9 @@ function tpps_cron_latest_job_status_slack_updates() {
     curl_setopt($ch, CURLOPT_URL, $slack_url);
     curl_setopt($ch, CURLOPT_POST, 1);
     $payload = json_encode(array("text" => $message));
-    curl_setopt( $ch, CURLOPT_POSTFIELDS, $payload);
-    curl_setopt( $ch, CURLOPT_HTTPHEADER, array('Content-Type:application/json'));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type:application/json']);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
     $server_output = curl_exec($ch);
     curl_close($ch);
   }
@@ -143,26 +143,28 @@ function tpps_cron_refresh_plusgeno_view() {
 
 /**
  * Submits delayed TPPS submissions if they are past their release date.
+ *
+ * @todo Use Drupal Queue instead.
  */
 function tpps_cron_delayed_submissions() {
-  $submissions = variable_get('tpps_delayed_submissions', []);
-  foreach ($submissions as $accession) {
-    $state = tpps_load_submission($accession);
-    $date = $state['saved_values']['summarypage']['release-date'];
+  $accession_list = variable_get('tpps_delayed_submissions', []);
+  foreach ($accession_list as $accession) {
+    $submission = new Submission($accession);
+    $date = $submission->state['saved_values']['summarypage']['release-date'];
     $time = strtotime("{$date['year']}-{$date['month']}-{$date['day']}");
     if (time() > $time) {
-      $state = tpps_load_submission($accession);
-      $includes = array();
+      $includes = [];
       $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
       $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
-      $args = array($accession);
+      $args = [$accession];
       $jid = tripal_add_job("TPPS Record Submission - $accession", 'tpps',
-        'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE
+        'tpps_submit_all', $args, $submission->state['submitting_uid'], 10,
+        $includes, TRUE
       );
-      $state['job_id'] = $jid;
-      tpps_update_submission($state);
-      unset($submissions[$accession]);
+      $submission->state['job_id'] = $jid;
+      $submission->save();
+      unset($accession_list[$accession]);
     }
   }
-  variable_set('tpps_delayed_submissions', $submissions);
+  variable_set('tpps_delayed_submissions', $accession_list);
 }

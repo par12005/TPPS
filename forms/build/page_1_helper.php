@@ -6,35 +6,6 @@
  */
 
 /**
- * This function creates fields describing the primary author.
- *
- * @param array $form
- *   The form to be populated.
- * @param array $values
- *   The form_state values of the form to be populated.
- *
- * @return array
- *   The populated form.
- */
-function tpps_user_info(array &$form, array $values) {
-  $form['primaryAuthor'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Primary Author: *'),
-    '#autocomplete_path' => 'tpps/autocomplete/author',
-    '#attributes' => array(
-      'data-toggle' => array('tooltip'),
-      'data-placement' => array('right'),
-      'title' => array('First Author of the publication'),
-    ),
-  );
-  // if(isset($values['primaryAuthor']) && $values['primaryAuthor'] != "") {
-  //   $form['primaryAuthor']['#value'] = $values['primaryAuthor'];
-  // }
-
-  return $form;
-}
-
-/**
  * This function creates fields describing the publication.
  *
  * This includes the secondary authors, status, year, title, abstract, and
@@ -52,24 +23,25 @@ function tpps_user_info(array &$form, array $values) {
  */
 function tpps_publication(array &$form, array $values, array $form_state) {
 
-  $form['publication'] = array(
+  $form['publication'] = [
     '#type' => 'fieldset',
-    '#title' => t('<div class="fieldset-title">Publication Information:</div>'),
+    '#title' => '<div class="fieldset-title">'
+      . t('PUBLICATION INFORMATION:') . '</div>',
     '#tree' => TRUE,
     '#collapsible' => TRUE,
-  );
+  ];
 
   tpps_secondary_authors($form, $values, $form_state);
 
   $form['publication']['status'] = [
     '#type' => 'select',
     '#title' => t('Publication Status: *'),
-    '#options' => array(
+    '#options' => [
       0 => t('- Select -'),
       'In Preparation or Submitted' => t('In Preparation or Submitted'),
       'In Press' => t('In Press'),
       'Published' => t('Published'),
-    ),
+    ],
     '#ajax' => [
       'callback' => 'tpps_pub_status',
       'wrapper' => 'pubyear',
@@ -78,18 +50,18 @@ function tpps_publication(array &$form, array $values, array $form_state) {
 
   tpps_year($form, $values, $form_state);
 
-  $form['publication']['title'] = array(
+  $form['publication']['title'] = [
     '#type' => 'textfield',
     '#title' => t('Title of Publication/Study: *'),
-  );
+  ];
   // if(isset($values['publication']['title']) && $values['publication']['title'] != "") {
   //   $form['publication']['title']['#value'] = $values['publication']['title'];
   // }
 
-  $form['publication']['abstract'] = array(
+  $form['publication']['abstract'] = [
     '#type' => 'textarea',
     '#title' => t('Abstract/Description: *'),
-  );
+  ];
   // if(isset($values['publication']['abstract']) && $values['publication']['abstract'] != "") {
   //   $form['publication']['abstract']['#value'] = $values['publication']['abstract'];
   // }
@@ -275,7 +247,8 @@ function tppsc_organism(array &$form, array &$form_state) {
   $form['organism'] = array(
     '#type' => 'fieldset',
     '#tree' => TRUE,
-    '#title' => t('<div class="fieldset-title">Organism information:</div>'),
+    '#title' => '<div class="fieldset-title">' . t('ORGANISM INFORMATION:')
+    . '</div>',
     '#description' => t('Please provide the name(s) of the species included in this publication.'),
     '#collapsible' => TRUE,
     '#prefix' => '<div id="organism-wrapper">',
@@ -306,10 +279,10 @@ function tppsc_organism(array &$form, array &$form_state) {
     ),
   );
 
-  //$doi = tpps_get_ajax_value($form_state, ['doi']);
+  //$publication_doi = tpps_get_ajax_value($form_state, ['publication', 'publication_doi']);
   //$form['organism']['number'] = array(
   //  '#type' => 'hidden',
-  //  '#value' => !empty($doi) ? $org_number : NULL,
+  //  '#value' => !empty($publication_doi) ? $org_number : NULL,
   //);
 
   for ($i = 1; $i <= $org_number; $i++) {

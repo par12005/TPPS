@@ -22,8 +22,9 @@
 function tpps_submit_email(array &$form_state) {
   global $user;
 
-  module_load_include('inc', 'tpps', 'includes/form');
-  $is_tppsc = tpps_form_is_tppsc($form_state);
+  $submission = new Submission();
+  $submission->state = $form_state;
+  $is_tppsc = $submission->isTppsc();
 
   $page1_values = $form_state['saved_values'][TPPS_PAGE_1] ?? NULL;
   $page2_values = $form_state['saved_values'][TPPS_PAGE_2] ?? NULL;

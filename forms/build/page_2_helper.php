@@ -174,7 +174,7 @@ function tpps_growth_chamber(array &$form) {
 
   $form['temp'] = array(
     '#type' => 'fieldset',
-    '#title' => t('<div class="fieldset-title">Temperature Information:</div>'),
+    '#title' => t('<div class="fieldset-title">TEMPERATURE INFORMATION:</div>'),
     '#description' => t('Please provide temperatures in Degrees Celsius'),
     '#tree' => TRUE,
   );
@@ -207,7 +207,7 @@ function tpps_greenhouse(array &$form) {
 
   $form['temp'] = array(
     '#type' => 'fieldset',
-    '#title' => t('<div class="fieldset-title">Temperature Information:</div>'),
+    '#title' => t('<div class="fieldset-title">TEMPERATURE INFORMATION:</div>'),
     '#description' => t('Please provide temperatures in Degrees Celsius'),
     '#tree' => TRUE,
   );
@@ -326,7 +326,7 @@ function tpps_common_garden(array &$form) {
 
   $form['treatment'] = array(
     '#type' => 'fieldset',
-    '#title' => t('<div class="fieldset-title">Treatments:</div>'),
+    '#title' => t('<div class="fieldset-title">TREATMENTS:</div>'),
   );
 
   $form['treatment']['check'] = array(
@@ -454,7 +454,7 @@ function tpps_rooting(array &$form) {
 
   $form['rooting'] = array(
     '#type' => 'fieldset',
-    '#title' => t('<div class="fieldset-title">Rooting Information:</div>'),
+    '#title' => t('<div class="fieldset-title">ROOTING INFORMATION:</div>'),
     '#tree' => TRUE,
   );
 
@@ -534,7 +534,7 @@ function tpps_rooting(array &$form) {
 
   $form['rooting']['treatment'] = array(
     '#type' => 'fieldset',
-    '#title' => t('<div class="fieldset-title">Treatments: *</div>'),
+    '#title' => t('<div class="fieldset-title">TREATMENTS: *</div>'),
   );
 
   foreach ($treatment_options as $option) {

@@ -23,9 +23,9 @@ require_once 'page_2_helper.php';
  *   The completed Study Design form.
  */
 function tpps_page_2_create_form(array &$form, array $form_state) {
-  module_load_include('inc', 'tpps', 'includes/form');
-  $is_tppsc = tpps_form_is_tppsc($form_state);
-  if (!$is_tppsc) {
+  $submission = new Submission();
+  $submission->state = $form_state;
+  if (!$submission->isTppsc()) {
     tpps_study_date('Starting', $form, $form_state);
     tpps_study_date('Ending', $form, $form_state);
   }
@@ -50,19 +50,20 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
     );
   }
 
+  // @TODO Add fieldset and move those fields under this fieldset.
   $form['data_type'] = array(
     '#type' => 'select',
     '#title' => t('Data Type: *'),
     '#options' => $options,
     '#prefix' => '<legend><span class="fieldset-legend"><div class="fieldset-title">Study Design</div></span></legend>',
   );
-  tpps_form_autofocus($form, 'data_type');
+  tpps_form_autofocus($form, ['data_type']);
   $form['study_type'] = [
     '#type' => 'select',
     '#title' => t('Study Type: *'),
     '#options' => tpps_form_get_study_type(),
   ];
-  if (!$is_tppsc) {
+  if (!$submission->isTppsc()) {
     $form['study_type']['#ajax'] = [
       'wrapper' => 'study_info',
       'callback' => 'tpps_study_type_callback',
@@ -105,6 +106,6 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
         break;
     }
   }
-  tpps_add_buttons($form, 'page_2');
+  tpps_form_add_buttons(['form' => &$form, 'page' => 'page_2']);
   return $form;
 }

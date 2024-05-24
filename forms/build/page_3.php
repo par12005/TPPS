@@ -42,7 +42,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
 
   $form['tree-accession'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Plant Accession Information'),
+    '#title' => t('PLANT ACCESSION INFORMATION'),
     '#tree' => TRUE,
     '#prefix' => '<div id="tpps_accession">',
     '#suffix' => '</div>',
@@ -190,9 +190,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       NULL
     );
     // [/VS]
-    // When $fid is NULL it cause warning message.
-    $file = file_load(($fid ?? ''));
-    if ($file && ($file->filesize ?? FALSE) && empty($skip)) {
+    if ($file = tpps_file_load($fid) && empty($skip)) {
       $wrapper_id = "{$fid}_map_wrapper";
       $button_id = "{$fid}_map_button";
       $form['tree-accession']["species-$i"]['coord-format']['#suffix']
@@ -309,8 +307,6 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
         tpps_file_iterator($fid, 'tpps_accession_pop_groups', $options);
         foreach ($pop_groups as $pop_group) {
           $form['tree-accession']["species-$i"]['pop-group'][$pop_group] = array(
-            '#type' => 'textfield',
-            '#title' => "Location for $name plants from group $pop_group:",
             '#description' => t('The location for this population. This should be GPS coordinates if possbile, otherwise this can be the name of a location.'),
           );
         }
@@ -380,7 +376,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       }
     </style>';
   }
-  tpps_form_autofocus($form, 'tree-accession_species-1_file', ['files']);
-  tpps_add_buttons($form, 'page_3');
+  tpps_form_autofocus($form, ['tree-accession', 'species-1', 'file']);
+  tpps_form_add_buttons(['form' => &$form, 'page' => 'page_3']);
   return $form;
 }
