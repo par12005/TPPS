@@ -47,7 +47,7 @@ function tpps_submission_list_form(array $form, array &$form_state = [], $access
       ];
     }
   }
-  tpps_form_autofocus($form, 'tpps_submission_accession');
+  tpps_form_autofocus($form, ['tpps_submission_accession']);
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
   return $form;
@@ -110,7 +110,6 @@ function tpps_submission_list_add_buttons(array &$form, $add_action = TRUE) {
  */
 function tpps_submission_list_validate_accession($accession) {
   if (empty($accession)) {
-
     drupal_set_message(t('Empty accession in @function().',
       [
         '@function' => debug_backtrace(
@@ -118,7 +117,6 @@ function tpps_submission_list_validate_accession($accession) {
         )[1]['function'],
       ]
     ), 'warning');
-
     drupal_goto('tpps/submission');
   }
 }

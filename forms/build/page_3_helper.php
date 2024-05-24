@@ -20,7 +20,7 @@ function tpps_study_location(array &$form, array &$form_state) {
 
   $form['study_location'] = array(
     '#type' => 'fieldset',
-    '#title' => t('<div class="fieldset-title">Study Location:</div>'),
+    '#title' => t('<div class="fieldset-title">STUDY LOCATION:</div>'),
     '#tree' => TRUE,
     '#collapsible' => TRUE,
     '#description' => t('This should be the location(s) of your common garden, plantation, etc.'),

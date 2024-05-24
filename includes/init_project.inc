@@ -48,7 +48,7 @@ function tpps_init_project(array &$form_state, $accession = NULL) {
   $form_state['created'] = time();
   $form_state['accession'] = $accession;
   $form_state['saved_values']['frontpage']['accession'] = $accession;
-  $form_state['status'] = 'Incomplete';
+  $form_state['status'] = TPPS_SUBMISSION_STATUS_INCOMPLETE;
   return $form_state['dbxref_id'];
 }
 
@@ -83,19 +83,19 @@ function tpps_init_project_get_dbxref_id($accession) {
  */
 function tpps_init_project_get_next_accession() {
   // Rish: New patch that sorts based on integer instead of string values.
+  // Note: Seems postreSQL can't sort by integer inside string correctly.
+  // So it shows, for example '980' instead '12650' when sorting by
+  // 'accession' column instead of 'accession_number'.
   $sql = "SELECT *, substr(accession, 5)::INTEGER as accession_number "
     . "FROM chado.dbxref WHERE accession LIKE 'TGDR%' "
     . "ORDER BY accession_number DESC LIMIT 1;";
   $result_query = chado_query($sql, []);
-  if (empty($result_query)) {
-    $accession = '001';
-  }
-  else {
+  if (!empty($result_query)) {
     $result = $result_query->fetchObject();
-    $accession = substr($result->accession, 4) + 1;
+    $accession = $result->accession_number + 1;
     while (strlen($accession) < 3) {
       $accession = "0$accession";
     }
   }
-  return $accession;
+  return $accession ?? '001';
 }

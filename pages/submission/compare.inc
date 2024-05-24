@@ -12,8 +12,6 @@
  * reviewed studies files was detected correclty using 'comolete form'.
  */
 
-module_load_include('inc', 'tpps', 'includes/common');
-module_load_include('inc', 'tpps', 'includes/form');
 module_load_include('inc', 'tpps', 'pages/submission/list');
 
 /**
@@ -36,7 +34,7 @@ function tpps_submission_compare_form(array $form, array &$form_state, $accessio
     '#default_value' => $accession_2 ?? array_key_first($accession_list) ?? '',
     '#required' => TRUE,
   ];
-  tpps_form_autofocus($form, 'tpps_submission_accession_2');
+  tpps_form_autofocus($form, ['tpps_submission_accession_2']);
   tpps_submission_list_add_buttons($form);
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
@@ -54,8 +52,7 @@ function tpps_submission_compare_form_submit(array $form, array &$form_state) {
     drupal_set_message(t('Submission @accession_1 and @accession_2 are equal.',
       ['@accession_1' => $accession_1, '@accession_2' => $accession_2]
     ));
-    $form_state['rebuild'] = 1;
-    return;
+    drupal_goto('tpps/submission/' . $accession_1);
   }
   if ($accession_1 && !$accession_2) {
     drupal_goto('tpps/submission/' . $accession_1 . '/compare');
@@ -124,16 +121,16 @@ function tpps_submission_compare(array $form, array &$form_state, $accession_1 =
     '#value' => $accession_2,
   ];
   module_load_include('inc', 'tpps', 'includes/submission');
-  $result_1 = array_diff_assoc_recursive(
-    tpps_submission_get_state($accession_1),
-    tpps_submission_get_state($accession_2)
+  $submission_1 = new Submission($accession_1);
+  $submission_2 = new Submission($accession_2);
+  $form_state_diff_1 = array_diff_assoc_recursive(
+    $submission_1->state, $submission_2->state
   );
-  $result_2 = array_diff_assoc_recursive(
-    tpps_submission_get_state($accession_2),
-    tpps_submission_get_state($accession_1)
+  $form_state_diff_2 = array_diff_assoc_recursive(
+    $submission_2->state, $submission_1->state
   );
 
-  if (empty($result_1) && empty($result_2)) {
+  if (empty($form_state_diff_1) && empty($form_state_diff_2)) {
     drupal_set_message(t('Submissions "@accession_1" and "@accession_2" are equal.',
       ['@accession_1' => $accession_1, '@accession_2' => $accession_2]
     ));
@@ -157,10 +154,40 @@ function tpps_submission_compare(array $form, array &$form_state, $accession_1 =
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show comparison report.
-  $parsed_1 = tpps_array_dump($result_1, $sticky = FALSE);
-  $parsed_2 = tpps_array_dump($result_2, $sticky = FALSE);
-  // Process items only in $result_2.
-  tpps_submission_compare_show_diff($form, $parsed_1, $parsed_2);
+  $submission_1 = new Submission($accession_1);
+  $shared_state1 = $submission_1->sharedState;
+
+  $submission_2 = new Submission($accession_2);
+  $shared_state2 = $submission_2->sharedState;
+
+  $shared_statediff_1 = array_diff_assoc_recursive($shared_state1, $shared_state2);
+  $shared_statediff_2 = array_diff_assoc_recursive($shared_state2, $shared_state1);
+
+  $dumps = [
+    'Submission Interface' => [
+      'parsed_1' => tpps_array_dump($shared_statediff_1, $sticky = FALSE),
+      'parsed_2' => tpps_array_dump($shared_statediff_2, $sticky = FALSE),
+    ],
+    'Form State' => [
+      'parsed_1' => tpps_array_dump($form_state_diff_1, $sticky = FALSE),
+      'parsed_2' => tpps_array_dump($form_state_diff_2, $sticky = FALSE),
+    ],
+  ];
+  foreach ($dumps as $type => $data) {
+    $form[$type] = [
+      '#type' => 'fieldset',
+      '#title' => t(ucfirst($type)),
+      '#collapsed' => FALSE,
+      '#collapsible' => FALSE,
+    ];
+    tpps_submission_compare_show_diff(
+      $form[$type],
+      $accession_1,
+      $accession_2,
+      $data['parsed_1'],
+      $data['parsed_2']
+    );
+  }
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
   return $form;
@@ -171,6 +198,10 @@ function tpps_submission_compare(array $form, array &$form_state, $accession_1 =
  *
  * @param array $form
  *   Drupal Form API Array.
+ * @param string $accession_1
+ *   Submission 1 Accession.
+ * @param string $accession_2
+ *   Submission 2 Accession.
  * @param array $parsed_1
  *   Prepared array. See tpps_array_dump().
  *   Keys are: 'title', 'data' and 'count'.
@@ -178,12 +209,8 @@ function tpps_submission_compare(array $form, array &$form_state, $accession_1 =
  *   Prepared array. See tpps_array_dump().
  *   Keys are: 'title', 'data' and 'count'.
  */
-function tpps_submission_compare_show_diff(array &$form, array &$parsed_1, array &$parsed_2) {
-  if (
-    (empty($parsed_1) && empty($parsed_2))
-    || empty($accession_1 = ($form['tpps_submission_accession_1']['#value'] ?? ''))
-    || empty($accession_2 = ($form['tpps_submission_accession_2']['#value'] ?? ''))
-  ) {
+function tpps_submission_compare_show_diff(array &$form, $accession_1, $accession_2, array &$parsed_1, array &$parsed_2) {
+  if (empty($parsed_1) && empty($parsed_2)) {
     return;
   }
   $key_list = !empty($parsed_1) ? array_keys($parsed_1) : array_keys($parsed_2);
@@ -224,5 +251,5 @@ function tpps_submission_compare_show_diff(array &$form, array &$parsed_1, array
   // Do not change $parsed_1 array to not break the loop but for now
   // it was completely processed.
   $parsed_1 = [];
-  tpps_submission_compare_show_diff($form, $parsed_1, $parsed_2);
+  tpps_submission_compare_show_diff($form, $accession_1, $accession_2, $parsed_1, $parsed_2);
 }

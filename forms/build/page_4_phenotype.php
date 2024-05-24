@@ -1,8 +1,7 @@
 <?php
-
 /**
  * @file
- * Page 4 Phenotype related functions.
+ * Define the helper functions for the GxPxE Data page.
  */
 
 /**
@@ -21,14 +20,11 @@
  *   The populated form.
  */
 function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
-  $phenotype_upload_location = 'public://' . variable_get(
-    'tpps_phenotype_files_dir',
-    'tpps_phenotype'
-  );
+  $phenotype_dir = variable_get('tpps_phenotype_files_dir', 'tpps_phenotype');
 
   $form[$id]['phenotype'] = [
     '#type' => 'fieldset',
-    '#title' => t('<div class="fieldset-title">Phenotype Information:</div>'),
+    '#title' => t('<div class="fieldset-title">PHENOTYPE INFORMATION:</div>'),
     '#tree' => TRUE,
     '#prefix' => "<div id=\"phenotype-main-$id\">",
     '#suffix' => '</div>',
@@ -71,10 +67,8 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     $form[$id]['phenotype']['iso'] = array(
       '#type' => 'managed_file',
       '#title' => t('Phenotype Isotope/Mass Spectrometry file: *'),
-      '#upload_location' => $phenotype_upload_location,
-      '#upload_validators' => array(
-        'file_validate_extensions' => array('csv tsv'),
-      ),
+      '#upload_location' => 'public://' . $phenotype_dir,
+      '#upload_validators' => ['file_validate_extensions' => ['csv tsv']],
       '#description' => t('Please upload a file containing all of your '
         . 'isotope/mass spectrometry data. The format of this file is very '
         . 'important! The first column of your file should contain plant '
@@ -615,7 +609,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#title' => t('Phenotype Metadata File: <br/ >Please upload a file '
       . 'containing columns with the name, attribute, structure, '
       . 'description, and units of each of your phenotypes: *'),
-      '#upload_location' => "$phenotype_upload_location",
+      '#upload_location' => 'public://' . $phenotype_dir,
       '#upload_validators' => ['file_validate_extensions' => ['csv tsv']],
       '#states' => [
         'visible' => [
@@ -644,12 +638,12 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'Maximum Value',
     );
 
-    $form[$id]['phenotype']['metadata']['columns-options'] = [
+    $form[$id]['phenotype']['metadata']['columns-options'] = array(
       '#type' => 'hidden',
       '#value' => $column_options,
-    ];
+    );
 
-    $form[$id]['phenotype']['metadata']['no-header'] = [];
+    $form[$id]['phenotype']['metadata']['no-header'] = array();
 
     // Get names of manual phenotypes.
     $meta = tpps_get_ajax_value($form_state, array(
@@ -691,8 +685,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     }
 
     // Merge names.
-    // @TODO Check file size not zero.
-    if (!empty($name_col) and !is_array($meta_fid) and !empty(file_load($meta_fid))) {
+    if (!empty($name_col) && tpps_file_load($meta_fid)) {
       $names = tpps_parse_file_column($meta_fid, $name_col);
       $phenotype_names = array_merge($phenotype_names, $names);
     }
@@ -707,7 +700,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
 
     $form[$id]['phenotype']['time'] = array(
       '#type' => 'fieldset',
-      '#title' => t('Time options'),
+      '#title' => t('TIME OPTIONS'),
     );
 
     if ($time_default) {
@@ -739,16 +732,18 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         $time_options[strtolower($name)] = $name;
       }
       $form[$id]['phenotype']['time']['time_phenotypes'] = [
-        '#type' => 'select',
+        '#type' => 'checkboxes',
         '#title' => t('Time-based Phenotypes: *'),
+        // @TODO Convert to 'select' but with '#multiple' => TRUE.
         // @TODO Dropdown menu is always empty but $time_options is not empty...
+        // See TGDR1224 which has timebased phenotypes.
         '#options' => $time_options,
         '#description' => t('Please select the phenotypes which are time-based'),
       ];
 
       $form[$id]['phenotype']['time']['time_values'] = array(
         '#type' => 'fieldset',
-        '#title' => t('Phenotype Time values:'),
+        '#title' => t('PHENOTYPE TIME VALUES:'),
       );
 
       foreach ($time_options as $key => $name) {

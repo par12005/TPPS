@@ -758,8 +758,7 @@ function tpps_get_taxon($org_name, $rank) {
  */
 function tpps_add_project_file(array &$state, &$fid) {
   if (!empty($fid)) {
-    $file = file_load($fid);
-    if ($file && $file->filesize) {
+    if ($file = tpps_file_load($fid)) {
       tpps_chado_insert_record('projectprop', array(
         'project_id' => $state['ids']['project_id'],
         'type_id' => tpps_load_cvterm('file_path')->cvterm_id,
@@ -778,8 +777,7 @@ function tpps_add_project_file(array &$state, &$fid) {
   elseif (!empty($state['revised_files'][$fid])) {
     // Note: $fid is a reference and will be used in a caller function.
     $fid = $state['revised_files'][$fid];
-    $file = file_load($fid);
-    if ($file && $file->filesize) {
+    if ($file = tpps_file_load($fid)) {
       tpps_chado_insert_record('projectprop', array(
         'project_id' => $state['ids']['project_id'],
         'type_id' => tpps_load_cvterm('file_path')->cvterm_id,

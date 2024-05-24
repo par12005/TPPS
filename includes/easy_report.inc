@@ -58,7 +58,7 @@ function easy_report(array $meta) {
   return theme('pager') . theme('table',
     [
       'header' => $header,
-      'empty' => ($empty_message ? $empty_message : t('No data found.')),
+      'empty' => $empty_message ?? t('No data found.'),
       'attributes' => $table_attributes,
       'rows' => $rows,
     ]

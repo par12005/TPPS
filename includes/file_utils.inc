@@ -63,14 +63,14 @@ function tpps_parse_file_helper($row, array &$options) {
  *   The number of lines or rows in the file.
  */
 function tpps_file_len($fid) {
-  $file = file_load($fid);
+  $file = tpps_file_load($fid);
   $location = tpps_get_location($file->uri);
   $extension = tpps_get_path_extension($location);
   $count = 0;
   $options = array(
     'count' => &$count,
   );
-  if ($extension == 'vcf') {
+  if (in_array($extension, ['vcf', 'gz', 'zip', 'tar'])) {
     $options['skip_prefix'] = '#';
   }
   tpps_file_iterator($fid, 'tpps_file_len_helper', $options);
@@ -113,7 +113,7 @@ function tpps_file_len_helper($row, array &$options = array()) {
  *   The length of the longest line in the file.
  */
 function tpps_file_width($fid) {
-  $file = file_load($fid);
+  $file = tpps_file_load($fid);
   $location = tpps_get_location($file->uri);
   $extension = tpps_get_path_extension($location);
   switch ($extension) {
@@ -281,7 +281,7 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
     $options['preserve'] = FALSE;
   }
 
-  if (!empty($fid) and ($file = file_load($fid))) {
+  if ($file = tpps_file_load($fid)) {
     $new_filename = $new_name . "." . tpps_get_path_extension($file->uri);
     if (!preg_match('/^(.*\/)(.*)$/', $new_name, $matches)) {
       preg_match('/^(.*\/).*$/', $file->uri, $matches);
@@ -295,8 +295,8 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
       $result = db_query('SELECT f.fid
               FROM {file_managed} f WHERE f.uri = :uri', array(':uri' => $new_filename));
       $record = $result->fetchObject();
-      if(isset($record)) {
-        return file_load($record->fid);
+      if (isset($record)) {
+        return tpps_file_load($record->fid);
       }
       return file_copy($file, $new_filename, FILE_EXISTS_RENAME);
     }
@@ -305,9 +305,9 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
     FROM {file_managed} f WHERE f.uri = :uri', array(':uri' => $new_filename));
     $record = $result->fetchObject();
 
-    if(isset($record->fid)) {
+    if (isset($record->fid)) {
       // print_r("FID:" . $record->fid . "\n");
-      return file_load($record->fid);
+      return tpps_file_load($record->fid);
     }
     $file_object = file_move($file, $new_filename, FILE_EXISTS_RENAME);
     // print_r("FILE OBJECT:\n");
@@ -332,12 +332,12 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
  *   An array of values found in the parsed column.
  */
 function tpps_parse_file_column($fid, $column, $no_header = FALSE) {
-  $content = array();
-  $options = array(
+  $content = [];
+  $options = [
     'no_header' => $no_header,
-    'columns' => array($column),
+    'columns' => [$column],
     'content' => &$content,
-  );
+  ];
   tpps_file_iterator($fid, 'tpps_parse_file_column_helper', $options);
   return $content;
 }
@@ -479,21 +479,28 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
     }
   }
 
-  foreach ($cols as $name => $type) {
-    $state_column_values[$name] = $type;
-    foreach ($required_groups_flat as $group => $types) {
-      if (in_array($type, $types)) {
-        if (!isset($groups[$group][$type])) {
-          $groups[$group][$type] = array($name);
+  if ($cols) {
+    // Note: $cols will be empty when user just added file (not clicked 'Upload'
+    // button and submitted form (clicked 'Next' button).
+    // Probably columns could be detected automatically because they are shown
+    // at page and so we could use default values here.
+    // @TODO Get default set of columns.
+    foreach ($cols as $name => $type) {
+      $state_column_values[$name] = $type;
+      foreach ($required_groups_flat as $group => $types) {
+        if (in_array($type, $types)) {
+          if (!isset($groups[$group][$type])) {
+            $groups[$group][$type] = array($name);
+          }
+          else {
+            $groups[$group][$type][] = $name;
+          }
+          break;
         }
-        else {
-          $groups[$group][$type][] = $name;
-        }
-        break;
       }
     }
   }
-  // dpm($required_groups);
+
   foreach ($required_groups as $group => $combinations) {
     $group_valid = FALSE;
     $groups[$group]['#type'] = [];
@@ -555,7 +562,7 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
   if ($form_state['stage'] == TPPS_PAGE_3) {
     for ($i = 1; $i <= $form_state['stats']['species_count']; $i++) {
       if (
-        ($file = file_load($form_state['values']['tree-accession']["species-$i"]['file']))
+        ($file = tpps_file_load($form_state['values']['tree-accession']["species-$i"]['file']))
         && $form_state['values']['tree-accession']["species-$i"]['file'] != 0
       ) {
         file_usage_add($file, 'tpps', 'tpps_project', $accession);
@@ -578,19 +585,19 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
     }
   }
   elseif ($form_state['stage'] == TPPS_PAGE_4) {
+    $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] ?? NULL;
+    $values = &$form_state['values'] ?? NULL;
     if (isset($form['organism-1']['genotype'])) {
-      for ($i = 1; $i <= $form_state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
-        $file = file_load($form_state['values']["organism-$i"]['genotype']['files']['snps-assay'] ?? '');
+      for ($i = 1; $i <= $organism_number; $i++) {
+        $file = tpps_file_load($values["organism-$i"]['genotype']['SNPs']['snps-assay'] ?? '');
         if ($file) {
           file_usage_add($file, 'tpps', 'tpps_project', $accession);
-
-          $form_state['values']["organism-$i"]['genotype']['files']['snps-assay-columns'] = [];
-
-          if (isset($form["organism-$i"]['genotype']['files']['snps-assay']['#value']['columns'])) {
-            foreach ($form["organism-$i"]['genotype']['files']['snps-assay']['#value']['columns'] as $col => $val) {
-              if ($col[0] != '#') {
-                $form_state['values']["organism-$i"]['genotype']['files']['snps-assay-columns'][$col]
-                  = $form["organism-$i"]['genotype']['files']['snps-assay']['#value']['columns'][$col];
+          $values["organism-$i"]['genotype']['SNPs']['snps-assay-columns'] = [];
+          if (!empty($form["organism-$i"]['genotype']['SNPs']['snps-assay']['#value']['columns'])) {
+            $column_list = &$form["organism-$i"]['genotype']['SNPs']['snps-assay']['#value']['columns'];
+            foreach ($column_list as $key => $value) {
+              if ($key[0] != '#') {
+                $values["organism-$i"]['genotype']['SNPs']['snps-assay-columns'][$key] = $value;
               }
             }
           }
@@ -618,8 +625,9 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
       for ($i = 1; $i <= $form_state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
         if (!empty($form_state['values']["organism-$i"]['phenotype']['normal-check'])) {
           if (
-            ($file = file_load($form_state['values']["organism-$i"]['phenotype']['file'] ?? ''))
-            && $form_state['values']["organism-$i"]['phenotype']['file'] != 0
+            $file = tpps_file_load(
+              $form_state['values']["organism-$i"]['phenotype']['file']
+            )
           ) {
             file_usage_add($file, 'tpps', 'tpps_project', $accession);
           }
@@ -637,8 +645,8 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
 
           if ($form_state['values']["organism-$i"]['phenotype']['check'] != '0') {
             if (
-              ($file = file_load($form_state['values']["organism-$i"]['phenotype']['metadata'] ?? ''))
-              && $form_state['values']["organism-$i"]['phenotype']['metadata'] != 0
+              $file = tpps_file_load(
+                $form_state['values']["organism-$i"]['phenotype']['metadata'])
             ) {
               file_usage_add($file, 'tpps', 'tpps_project', $accession);
             }
@@ -1056,7 +1064,7 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
     $options['job']->setItemsHandled(0);
   }
 
-  $file = file_load($fid);
+  $file = tpps_file_load($fid);
   $file_location = tpps_get_location($file->uri);
 
   // Item / line counter
@@ -1126,7 +1134,7 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
  *   The generator for the file.
  */
 function tpps_file_generator($fid, array $options = array()) {
-  $file = file_load($fid);
+  $file = tpps_file_load($fid);
   $location = tpps_get_location($file->uri);
   $extension = tpps_get_path_extension($location);
   switch ($extension) {
@@ -1354,7 +1362,7 @@ function tpps_flat_generator($location, array $options = array()) {
  *   or an array if the file is being used by any modules.
  */
 function tpps_file_remove($fid) {
-  if ($fid && $file = file_load($fid)) {
+  if ($file = tpps_file_load($fid)) {
     file_usage_delete($file, 'tpps', 'tpps_project');
     if ($result = file_delete($file)) {
       watchdog('tpps', 'Removed file: <pre>@file</pre>',
@@ -1451,3 +1459,30 @@ function tpps_file_load($fid = NULL) {
   return FALSE;
 }
 
+/**
+ * Gets file content from remote server.
+ *
+ * @param string $url
+ *   File URL.
+ *
+ * @return string
+ *   Returns file content.
+ */
+function tpps_file_get_contents($url) {
+  $staging_domain = 'https://tgwebdev.cam.uchc.edu';
+  $username = variable_get('tpps_staging_http_username', '');
+  $password = variable_get('tpps_staging_http_password', '');
+
+  // @TODO Minor. Replace file_get_contents() with curl which is faster.
+  $use_include_path = FALSE;
+  $context = NULL;
+  // Staging server has Basic HTTP Authorization.
+  if (strpos($url, $staging_domain) === 0 && $username && $password) {
+    $auth = base64_encode($username . ':' . $password);
+    $context = stream_context_create(
+      ['http' => ['header' => 'Authorization: Basic ' . $auth]]
+    );
+  }
+  $content = file_get_contents($url, $use_include_path, $context);
+  return $content;
+}

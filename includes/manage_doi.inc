@@ -6,6 +6,8 @@
  *
  * To use:
  * module_load_include('inc', 'tpps', 'includes/manage_doi');
+ *
+ * @todo Convert to 'doi' class.
  */
 
 /**
@@ -22,21 +24,28 @@
 function tpps_manage_doi($accession) {
   $output = "";
 
-  $form_state = tpps_load_submission($accession);
+  $submission = new Submission($accession);
 
   $token = variable_get('tpps_zenodo_api_key', NULL);
-  if (!empty($token) and empty($form_state['zenodo_id'])) {
-    $form_state['zenodo_id'] = tpps_generate_doi($accession)->id;
-    $doi_object = tpps_doi_publish($form_state['zenodo_id']);
-    tpps_update_submission($form_state);
-    $output .= "<h4>DOI successfully published!</h4>";
-  }
-  elseif (!empty($token) and !empty($form_state['zenodo_id'])) {
-    $doi_object = tpps_doi_load($form_state['zenodo_id']);
+  if (!empty($token)) {
+    if (empty($submission->state['zenodo_id'])) {
+      $submission->state['zenodo_id'] = tpps_generate_doi($accession)->id;
+      $doi_object = tpps_doi_publish($submission->state['zenodo_id']);
+      $submission->save();
+      $output .= "<h4>DOI successfully published!</h4>";
+    }
+    else {
+      $doi_object = tpps_doi_load($form_state['zenodo_id']);
+    }
   }
 
-  if (empty($token) or empty($doi_object) or (isset($doi_object->status) and $doi_object->status != 200)) {
-    $output .= "<h4>Unable to load Zenodo DOI. There is likely a problem with the Zenodo API key. Please contact your system administrator.</h4>";
+  if (
+    empty($token)
+    || empty($doi_object)
+    || (isset($doi_object->status) && $doi_object->status != 200)
+  ) {
+    $output .= "<h4>Unable to load Zenodo DOI. There is likely a problem with "
+      . "the Zenodo API key. Please contact your system administrator.</h4>";
   }
   else {
     $doi = $doi_object->doi;
@@ -45,10 +54,8 @@ function tpps_manage_doi($accession) {
     $output .= "DOI: <a target=\"blank\" href=\"$url\">$doi</a><br>"
     . "DOI Badge: <a target=\"blank\" href=\"$badge\"><img src=\"$badge\"></a><br>";
   }
-
   return render($output);
 }
-
 
 /**
  * Returns expression for matching DOIs.
@@ -86,10 +93,13 @@ function tpps_doi_get_accession($doi, $reset = FALSE) {
   $cache = cache_get($cid, $cache_bin);
   $is_cache_allowed = variable_get('tpps_page_1_cache_ajax_responses', TRUE);
   if ($reset || !$is_cache_allowed || empty($cache)) {
-    $all_submissions = chado_query("SELECT * FROM public.tpps_submission;");
+    $all_submissions = chado_query('SELECT shared_state FROM public.tpps_submission');
     foreach ($all_submissions as $item) {
-      $form_state = unserialize($item->submission_state);
-      $submission_doi = strtolower($form_state['saved_values']['1']['doi'] ?? NULL);
+      // Check broken 'submission_state' after edit directly in phpPgAdmin.
+      if (strpos($item->shared_state, '&quot;accession&quot;') === FALSE) {
+        $shared_state = unserialize($item->shared_state);
+      }
+      $submission_doi = strtolower($shared_state['saved_values'][TPPS_PAGE_1]['doi'] ?? NULL);
       if ($submission_doi) {
         $cache->data[$submission_doi] = $item->accession ?? NULL;
       }

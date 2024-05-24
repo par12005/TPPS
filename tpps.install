@@ -29,13 +29,16 @@ function tpps_install() {
   variable_set('tpps_report_order_family_not_exist_title',
     'Order/Family not exist'
   );
-  // Submission Import/Export.
-  variable_set('tpps_submission_export_exclude_data', TRUE);
-  variable_set('tpps_submission_export_exclude_tree_info', TRUE);
+  // Submission Tools.
+  variable_set('tpps_submission_secret_key', '');
   // Main settings.
   variable_set('tpps_theme', 'default');
   variable_set('tpps_top_bar', 'status');
   variable_set('tpps_dark_theme', FALSE);
+  variable_set('tpps_debug_mode', FALSE);
+  variable_set('tpps_autofocus_delay', 1000);
+  variable_set('tpps_dump_max_len_state', 300000);
+  variable_set('tpps_dump_max_len_sharedState', 300000);
   // Front page.
   variable_set('tpps_front_cache_accession_list', TRUE);
   variable_set('tpps_front_show_pending_status_mine', FALSE);
@@ -50,14 +53,29 @@ function tpps_install() {
   // Page 4 Settings.
   variable_set('tpps_page_4_cache_synonym_list', FALSE);
   variable_set('tpps_page_4_cache_unit_list', FALSE);
-  // Study Export.
-  variable_set('tpps_submission_export_show_file_search_report', FALSE);
+  variable_set('tpps_page_4_update_ploidy_description', TRUE);
   // Submit All.
   variable_set('tpps_submitall_log_cli_show_time', FALSE);
   variable_set('tpps_submitall_skip_gps_request', FALSE);
   variable_set('tpps_submitall_phenotype_debug_mode', FALSE);
+
+// #TODO Update to 'submitall.
+  variable_set('tpps_submit_all_log_cli_show_time', TRUE);
   // Theme Settings.
   variable_set('tpps_theme_fix_pager', FALSE);
+  // Submission Export.
+  // @TODO Add ability to change those variables at settings page.
+  variable_set('tpps_submission_export_show_file_search_report', FALSE);
+  variable_set('tpps_submission_file_check_token', TRUE);
+  variable_set('tpps_submission_file_salt', md5(REQUEST_TIME));
+  variable_set('tpps_submission_export_exclude_data', TRUE);
+  variable_set('tpps_submission_export_exclude_tree_info', TRUE);
+  // Submission Import.
+  variable_set('tpps_staging_http_username', '');
+  variable_set('tpps_staging_http_password', '');
+  // Files.
+  variable_set('tpps_file_use_api', FALSE);
+
   // [/VS]
   tpps_alter_tpps_submissions();
   tpps_alter_tpps_submission_dbxref();
@@ -329,24 +347,26 @@ function tpps_install() {
  * usage from public.file_usage.
  */
 function tpps_uninstall() {
-
   // Cronjob.
   variable_del('tpps_latest_job_status_slack_updates_job_frequency');
   variable_del('tpps_refresh_views_job_frequency');
   variable_del('tpps_refresh_plusgeno_view_frequency');
   variable_del('tpps_delayed_submissions_job_frequency');
   variable_del('tpps_cron_rule_ref_genomes_recreate');
-  // Submission Import/Export.
-  variable_del('tpps_submission_export_exclude_data');
-  variable_del('tpps_submission_export_exclude_tree_info');
   // Reports.
   variable_del('tpps_report_no_synonym_title');
   variable_del('tpps_report_unit_warning_title');
   variable_del('tpps_report_order_family_not_exist_title');
+  // Submission Tools.
+  variable_del('tpps_submission_secret_key');
   // Main settings.
   variable_del('tpps_theme');
   variable_del('tpps_top_bar');
   variable_del('tpps_dark_theme');
+  variable_del('tpps_debug_mode');
+  variable_del('tpps_autofocus_delay');
+  variable_del('tpps_dump_max_len_state');
+  variable_del('tpps_dump_max_len_sharedState');
   // Front page.
   variable_del('tpps_front_cache_accession_list');
   variable_del('tpps_front_show_pending_status_mine');
@@ -361,14 +381,26 @@ function tpps_uninstall() {
   // Page 4 Settings.
   variable_del('tpps_page_4_cache_synonym_list');
   variable_del('tpps_page_4_cache_unit_list');
-  // Study Export.
-  variable_del('tpps_submission_export_show_file_search_report');
+  variable_del('tpps_page_4_update_ploidy_description');
   // Submit All settings.
   variable_del('tpps_submitall_skip_gps_request');
   variable_del('tpps_submitall_phenotype_debug_mode');
   variable_del('tpps_submitall_log_cli_show_time');
+  variable_del('tpps_submit_all_log_cli_show_time');
   // Theme Settings.
   variable_del('tpps_theme_fix_pager');
+  variable_del('tpps_imported_studies_list');
+  // Submission Import/Export.
+  variable_del('tpps_submission_export_show_file_search_report');
+  variable_del('tpps_submission_file_check_token');
+  variable_del('tpps_submission_file_salt');
+  variable_del('tpps_submission_export_exclude_data');
+  variable_del('tpps_submission_export_exclude_tree_info');
+  // Submission Import.
+  variable_del('tpps_staging_http_username');
+  variable_del('tpps_staging_http_password');
+  // Files.
+  variable_del('tpps_file_use_api');
   // [/VS]
 
   // Remove all incomplete submissions connected to user profiles.
@@ -432,12 +464,18 @@ function tpps_schema() {
         'size' => 'big',
         'not null' => TRUE,
       ),
-      'submission_state' => array(
+      'submission_state' => [
         'description' => 'The form_state of the submission.',
         'type' => 'blob',
         'size' => 'big',
         'not null' => TRUE,
-      ),
+      ],
+      'shared_state' => [
+        'description' => 'Submission Shared State for pipeline processing.',
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => TRUE,
+      ],
     ),
     'foreign keys' => array(
       'uid' => array(
@@ -2147,4 +2185,15 @@ function tpps_update_7122() {
   variable_set('tpps_page_4_cache_unit_list', FALSE);
   // Front page.
   variable_set('tpps_front_cache_accession_list', TRUE);
+}
+
+/**
+ * Adds new column 'shared_state' to 'tpps_submission' table.
+ */
+function tpps_update_7123() {
+  $table_name = 'public.tpps_submission';
+  $column_name = 'shared_state';
+  if (!db_field_exists($table_name, $column_name)) {
+    db_query('ALTER TABLE tpps_submission ADD COLUMN shared_state text;');
+  }
 }

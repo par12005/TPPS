@@ -1,7 +1,5 @@
 <?php
 
-module_load_include('inc', 'tpps', 'includes/submission_file');
-
 /**
  * @file
  * Functions for manipulation of TPPS Submissions.
@@ -10,90 +8,47 @@ module_load_include('inc', 'tpps', 'includes/submission_file');
  * module_load_include('inc', 'tpps', 'includes/submissions');
  *
  * @TODO Minor. Rename functions to use pattern 'tpps_submission_[action]'.
+ * @TODO Move tag-functions to separate file.
  */
 
+module_load_include('inc', 'tpps', 'includes/submission_file');
+module_load_include('inc', 'tpps', 'includes/submission_form_version');
+
 /**
- * This function loads a TPPS Submission based on the provided accession number.
+ * Menu API callback. Shows Submission State array in JSON format.
  *
- * If the state option is set to false, this function will return the full
- * tpps_submission table record for the submission. Otherwise, the function will
- * return only the form_state of the submission. The state option defaults to
- * True.
+ * Path: tpps/api/submission
+ * If a valid TPPS submission exists for the accession, it will return
+ * the form_state of the submission.
  *
  * @param string $accession
  *   The accession number of the submission.
- * @param bool $state
- *   An option to return only the state of the TPPS Submission. Default to True.
  *
- * @global stdClass $user
- *   The user trying to access the submission.
+ * @return mixed
+ *   Returns Submission From State array or NULL if not found.
  *
- * @return array|object
- *   The form_state of the TPPS Submission form.
+ * @TODO Move to other file.
  */
-function tpps_load_submission($accession, $state = TRUE) {
-  $result = db_select('tpps_submission', 's')
-    ->fields('s')
-    ->condition('accession', $accession)
-    ->range(0, 1)
-    ->execute()->fetchObject();
-
-  if ($result) {
-    if ($state) {
-      return unserialize($result->submission_state);
-    }
-    return $result;
-  }
-
-  // Search for alternative accessions.
-  $query = db_select('tpps_submission', 's');
-  $query->join('tpps_submission_dbxref', 's_dbx', 's.tpps_submission_id = s_dbx.tpps_submission_id');
-  $query->join('chado.dbxref', 'dbx', 'dbx.dbxref_id = s_dbx.dbxref_id');
-  $query->fields('s');
-  $query->condition('dbx.accession', $accession);
-  $query->condition('s.status', 'Approved');
-  $query->range(0, 1);
-  $query = $query->execute();
-  $result = $query->fetchObject();
-
-  if ($result) {
-    if ($state) {
-      return unserialize($result->submission_state);
-    }
-    return $result;
-  }
-
-  // Provide legacy support for older TPPS submissions.
-  global $user;
-  $state = variable_get('tpps_incomplete_' . $user->mail . $accession, NULL);
-  if (!empty($state)) {
-    return $state;
-  }
-  else {
-    return variable_get('tpps_complete_' . $user->mail . $accession, NULL);
-  }
+function tpps_api_get_submission_state($accession) {
+  return tpps_submission($accession)->getState();
 }
 
 /**
  * This function loads multiple TPPS submissions based on conditions.
  *
- * Collects accessions based on conditions, then makes multiple calls to
- * tpps_load_submission() to load all of the submissions that meet the
- * conditions.
- *
  * @param array $conditions
  *   The conditions that each TPPS submission must meet.
- * @param bool $state
- *   An option to return only the state of the TPPS Submissions, default True.
  *
  * @return array
  *   An array of loaded TPPS submissions or their form_states.
+ *
+ * @TODO Cache this list.
+ * @TODO load_multiple() usually accepts list of Ids but not $conditions.
+ * Better to rename to *_search().
  */
-function tpps_load_submission_multiple(array $conditions = array(), $state = TRUE) {
-  $submissions = array();
-  $query = db_select('tpps_submission', 's')
-    ->fields('s');
-
+function tpps_load_submission_multiple(array $conditions = []) {
+  $list = [];
+  $query = db_select('tpps_submission', 's')->fields('s', ['accession']);
   if (!empty($conditions)) {
     foreach ($conditions as $key => $cond) {
       if (!empty($cond)) {
@@ -111,15 +66,11 @@ function tpps_load_submission_multiple(array $conditions = array(), $state = TRU
     }
   }
 
-  $results = $query->execute();
-  while (($result = $results->fetchObject())) {
-    if ($state) {
-      $submissions[] = unserialize($result->submission_state);
-      continue;
-    }
-    $submissions[] = $result;
+  $result = $query->execute()->fetchCol('accession');
+  foreach ($result as $accession) {
+    $list[$accession] = new Submission($accession);
   }
-  return $submissions;
+  return $list;
 }
 
 /**
@@ -131,23 +82,10 @@ function tpps_load_submission_multiple(array $conditions = array(), $state = TRU
  *   The id of the user creating the submission.
  */
 function tpps_create_submission(array $state, $uid) {
-  $values = array(
-    'uid' => $uid,
-    'status' => 'Incomplete',
-    'accession' => $state['accession'],
-    'dbxref_id' => $state['dbxref_id'],
-    'submission_state' => serialize($state),
-  );
-
-  db_insert('tpps_submission')
-    ->fields($values)
-    ->execute();
-
-  if ((!isset($state['tpps_type']) or $state['tpps_type'] != 'tppsc')) {
-    tpps_submission_add_tag($state['accession'], 'TPPS');
-  }
-  else {
-    tpps_submission_add_tag($state['accession'], 'TPPSc');
+  $accession = $state['accession'] ?? NULL;
+  $submission = new Submission($accession);
+  if ($submission->doesNotExist()) {
+    $submission->create($state, $uid);
   }
 }
 
@@ -167,38 +105,56 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
   // Clear the db of all data for the old study accession
   // tpps_submission_clear_db($old_accession);
 
-  $job->logMessage('[INFO] Alter submission state data from ' . $old_accession . ' to ' . $new_accession);
+  $message = t('[INFO] Alter submission state data from @old_accession '
+    . 'to @new_accession.',
+    ['@old_accession' => $old_accession, '@new_accession' => $new_accession]
+  );
+  $job->logMessage($message);
+
   // Update the form state data for the study.
-  $submission = tpps_load_submission($old_accession, FALSE);
-  $state = unserialize($submission->submission_state);
+  $submission = new Submission($old_accession);
 
   $job->logMessage('Original submission data for ' . $old_accession);
-  $job->logMessage(print_r($state, 1));
+  $job->logMessage(print_r($submission->state, 1));
 
   // Update the TGDR with the new_accession.
-  module_load_include('inc', 'tpps', 'includes/common');
-  $state = tpps_array_replace($state, $old_accession, $new_accession);
+  module_load_include('inc', 'tpps', 'includes/array');
+  $submission->state = tpps_array_replace(
+    $submission->state, $old_accession, $new_accession
+  );
+  $submission->sharedState = tpps_array_replace(
+    $submission->sharedState, $old_accession, $new_accession
+  );
 
   $job->logMessage('New submission data for ' . $new_accession);
-  $job->logMessage(print_r($state, 1));
+  $job->logMessage(print_r($submission->state, 1));
 
-  // This function will not work here because it tries to update
-  // a non existing TGDR (the new one has not been created as yet)
-  // The update SQL after this, will make it exist because
-  // it renames the old tgdr number to the new tgdr number
+  // The call of tpps_update_submission() below will not work here
+  // because it tries to update a non-existing TGDR (the new one has
+  // not been created as yet). The update SQL after this, will make
+  // it exist because it renames the old tgdr number to the new tgdr number
   // So instead of this function tpps_update_submission, manually do it
   // tpps_update_submission($state);
 
-  $options['status'] = 'Approved';
+  // @TODO First update accession in 'tpps_submission' then:
+  // $submission->accession = $new_accession;
+  // $submission->status = TPPS_SUBMISSION_STATUS_APPROVED;
+  // $submission->save();
   $state['updated'] = time();
-  $options['submission_state'] = serialize($state);
-
   db_update('tpps_submission')
-    ->fields($options)
+    ->fields([
+      'status' => TPPS_SUBMISSION_STATUS_APPROVED,
+      // Note: REQUEST_TIME couldn't be used because this function also
+      // called from submit_all.php and time() != REQUEST_TIME.
+      'submission_state' => serialize($submission->state),
+      'shared_state' => serialize($submission->sharedState),
+    ])
     ->condition('accession', $old_accession)
     ->execute();
 
-  $job->logMessage('[INFO] Update tpps_submission table study ' . $old_accession . ' to ' . $new_accession);
+  $job->logMessage('[INFO] Update tpps_submission table study '
+    . $old_accession . ' to ' . $new_accession
+  );
   // Now change the accession number in the tpps_submission table.
   $transaction = db_transaction();
   try {
@@ -213,54 +169,10 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
     throw $e;
   }
 
-  $job->logMessage('Completed! The next job in the queue should reimport the study data for ' . $new_accession);
-}
-
-/**
- * This function updates the form_state of a submission.
- *
- * Additional attributes of the submission record can be updated by populating
- * the options parameter.
- *
- * @param array $state
- *   The form_state of the submission.
- * @param array $options
- *   Additional submission attributes to update.
- */
-function tpps_update_submission(array $state, array $options = array()) {
-  if (empty($options['status']) and !empty($state['status'])) {
-    $options['status'] = $state['status'];
-  }
-  $state['updated'] = time();
-  $options['submission_state'] = serialize($state);
-  db_update('tpps_submission')
-    ->fields($options)
-    ->condition('accession', $state['accession'])
-    ->execute();
-}
-
-/**
- * Deletes a TPPS Submission.
- *
- * Removes records from tables:
- * 1. chado.dbxref,
- * 2. chado.tpps_submission.
- *
- * @param string $accession
- *   The accession of the submission. Format: TGDR12345.
- */
-function tpps_delete_submission($accession) {
-  $submission = tpps_load_submission($accession, FALSE);
-  $dbxref_id = $submission->dbxref_id;
-  $state = unserialize($submission->submission_state);
-  db_delete('tpps_submission')
-    ->condition('accession', $accession)
-    ->execute();
-  if (empty($state['saved_values']['frontpage']['use_old_tgdr'])) {
-    db_delete('chado.dbxref')
-      ->condition('dbxref_id', $dbxref_id)
-      ->execute();
-  }
+  $message = t('Completed! The next job in the queue should reimport the '
+    . 'study data for @accession.', ['@accession' => $new_accession]
+  );
+  $job->logMessage($message);
 }
 
 /**
@@ -271,50 +183,9 @@ function tpps_delete_submission($accession) {
  */
 function tpps_submission_delete_callback($accession) {
   global $user;
-  tpps_delete_submission($accession);
+  $submission = new Submission($accession);
+  $submission->delete();
   drupal_goto("user/{$user->uid}/tpps");
-}
-
-/**
- * Removes TPPS Submission and it's files.
- *
- * @param string $accession
- *   The accession of the submission. Format: TGDR12345.
- * @param bool $force
- *   Boolean indicating that the file should be deleted
- *   if the file not in use by the file_usage table.
- *   Removement of not used files are safe but I'm not sure that old studies
- *   created correct records about usage of files so do NOT delete files
- *   by default.
- *   But for testing and Study Import file removement should be allowed.
- */
-function tpps_submission_purge($accession, $force = FALSE) {
-  $state = tpps_submission_get_state($accession);
-  if (empty($state)) {
-    // Submission not exists. Nothing to do.
-    // @TODO Minor. Query DB table 'file_usage' to find if there is orphan
-    // files related to this non-existing submission.
-    return;
-  }
-  // Remove usage of files first.
-  $fid_list = tpps_submission_file_get_id_list($state);
-  foreach ($fid_list as $fid) {
-    if ($file = file_load($fid)) {
-      // Remove file usage record (not file itself).
-      file_usage_delete($file, 'tpps', 'tpps_project', substr($accession, 4), 1);
-      if ($force) {
-        // Remove file from disk.
-        file_delete($file);
-      }
-    }
-  }
-  // Remove submission state from DB.
-  db_delete('tpps_submission')
-    ->condition('accession', $accession)
-    ->execute();
-  db_delete('chado.dbxref')
-    ->condition('accession', $accession)
-    ->execute();
 }
 
 /**
@@ -328,36 +199,36 @@ function tpps_submission_purge($accession, $force = FALSE) {
 function tpps_submission_add_alternative_accession(array $state, $alt_accession) {
   $tpps_local_db = variable_get('tpps_local_db');
   if (!is_array($alt_accession)) {
-    $alt_accession = array($alt_accession);
+    $alt_accession = [$alt_accession];
   }
 
-  $state_id = tpps_load_submission($state['accession'], FALSE)->tpps_submission_id;
+  $submission = new Submission($state['accession']);
 
   // Remove the existing alternative accessions.
   db_delete('tpps_submission_dbxref')
-    ->condition('tpps_submission_id', $state_id)
+    ->condition('tpps_submission_id', $submission->id)
     ->execute();
 
-  foreach ($alt_accession as $acc) {
-    $dbx = chado_select_record('dbxref', array('*'), array(
+  foreach ($alt_accession as $accession) {
+    $dbx = chado_select_record('dbxref', ['*'], [
       'db_id' => $tpps_local_db->db_id,
-      'accession' => $acc,
-    ));
+      'accession' => $accession,
+    ]);
     $dbxref_id = current($dbx)->dbxref_id ?? NULL;
 
     if (empty($dbxref_id)) {
-      $dbx = chado_insert_record('dbxref', array(
+      $dbx = chado_insert_record('dbxref', [
         'db_id' => $tpps_local_db->db_id,
-        'accession' => $acc,
-      ));
+        'accession' => $accession,
+      ]);
       $dbxref_id = $dbx['dbxref_id'];
     }
 
     db_insert('tpps_submission_dbxref')
-      ->fields(array(
-        'tpps_submission_id' => $state_id,
+      ->fields([
+        'tpps_submission_id' => $submission->id,
         'dbxref_id' => $dbxref_id,
-      ))
+      ])
       ->execute();
   }
 }
@@ -421,6 +292,8 @@ function tpps_submission_tag_manage() {
  *
  * @return array
  *   The populated form object.
+ *
+ * @todo Minor. Move to includes/form.inc and rename to tpps_form_tag_create().
  */
 function tpps_submission_tag_create(array $form, array &$form_state) {
   // This will add the color picker to the TPPS submission tags edit-color
@@ -431,7 +304,7 @@ function tpps_submission_tag_create(array $form, array &$form_state) {
   );
   // @TODO [VS] This file must be stored under /sites/all/libraries to allow
   // other modules to reuse it and get updates independently from this module.
-  drupal_add_js(TPPS_MODULE_PATH. '/js/tag_colorpicker.js');
+  drupal_add_js(TPPS_MODULE_PATH . '/js/tag_colorpicker.js');
 
   $form['name'] = array(
     '#type' => 'textfield',
@@ -569,17 +442,7 @@ function tpps_submission_get_tags($accession) {
   $query->join('tpps_tag', 't', 't.tpps_tag_id = st.tpps_tag_id');
   $query->fields('t');
   $query->condition('s.accession', $accession);
-  $query = $query->execute();
-  $results = array();
-  while (($result = $query->fetchObject())) {
-    $results[$result->tpps_tag_id] = array(
-      'id' => $result->tpps_tag_id,
-      'name' => $result->name,
-      'color' => $result->color,
-      'static' => $result->static,
-    );
-  }
-  return $results;
+  return $query->execute()->fetchAllAssoc('tpps_tag_id', PDO::FETCH_ASSOC);
 }
 
 /**
@@ -643,15 +506,17 @@ function tpps_submission_add_tag($accession, $tag) {
       $tag = $id;
     }
   }
-
-  $tags = tpps_submission_get_tags($accession);
+  $tags = tpps_submission_get_tags($accession) ?? [];
   if (!array_key_exists($tag, $tags)) {
-    db_insert('tpps_submission_tag')
-      ->fields(array(
-        'tpps_submission_id' => tpps_load_submission($accession, FALSE)->tpps_submission_id,
-        'tpps_tag_id' => $tag,
-      ))
-      ->execute();
+    $submission = new Submission($accession);
+    if (!empty($submission->id)) {
+      db_insert('tpps_submission_tag')
+        ->fields([
+          'tpps_submission_id' => $submission->id,
+          'tpps_tag_id' => $tag,
+        ])
+        ->execute();
+    }
   }
 }
 
@@ -670,8 +535,9 @@ function tpps_submission_remove_tag($accession, $tag) {
       $tag = $id;
     }
   }
+  $submission = new Submission($accession);
   db_delete('tpps_submission_tag')
-    ->condition('tpps_submission_id', tpps_load_submission($accession, FALSE)->tpps_submission_id)
+    ->condition('tpps_submission_id', $submission->id)
     ->condition('tpps_tag_id', $tag)
     ->execute();
 }
@@ -705,21 +571,22 @@ function tpps_get_tag_id($name) {
  *   The accession number of the submission to change file names.
  */
 function tpps_submission_rename_files($accession) {
-  $state = tpps_load_submission($accession);
-  if (!empty($state['file_info'])) {
-    $state['files'] = array();
-    foreach ($state['file_info'] as $page_files) {
+  $submission = new Submission($accession);
+  if (!empty($submission->sharedState['file_info'])) {
+    $submission->sharedState['files'] = array();
+    foreach ($submission->sharedState['file_info'] as $page_files) {
       foreach ($page_files as $fid => $name) {
-        $state['files'][] = $fid;
+        $submission->sharedState['files'][] = $fid;
         if ($name === '#NO_RENAME') {
           continue;
         }
-        $old_file = file_load($fid);
+        $old_file = tpps_file_load($fid);
         if ($old_file->uri[0] != '/') {
           $old_path = file_create_url($old_file->uri);
           // Prepare new file_name.
-          $file_load = file_load($fid);
-          $new_filename = $accession .'_'.$name . "." . tpps_get_path_extension($file_load->uri);
+          $file_load = tpps_file_load($fid);
+          $new_filename = $accession . '_' . $name . "."
+            . tpps_get_path_extension($file_load->uri);
           if (!preg_match('/^(.*\/)(.*)$/', $new_name, $matches)) {
             preg_match('/^(.*\/).*$/', $file->uri, $matches);
             $new_filename = $matches[1] . $new_filename;
@@ -731,8 +598,8 @@ function tpps_submission_rename_files($accession) {
             $record = $result->fetchObject();
           }
 
-          if(isset($record)) {
-            $file = file_load($record->fid);
+          if (isset($record)) {
+            $file = tpps_file_load($record->fid);
           }
           else {
             $file = tpps_rename_file($fid, "{$accession}_{$name}");
@@ -742,61 +609,62 @@ function tpps_submission_rename_files($accession) {
 
           $new_path = file_create_url($file->uri);
           chado_update_record('projectprop', array(
-            'project_id' => $state['ids']['project_id'],
+            'project_id' => $submission->sharedState['ids']['project_id'],
             'value' => $old_path,
           ), array(
             'value' => $new_path,
           ));
         }
-        if (!empty($state['revised_files'][$fid])) {
-          $rev_fid = $state['revised_files'][$fid];
-          $state['files'][] = $rev_fid;
+        if (!empty($submission->sharedState['revised_files'][$fid])) {
+          $rev_fid = $submission->sharedState['revised_files'][$fid];
+          $submission->sharedState['files'][] = $rev_fid;
           $file = tpps_rename_file($rev_fid, "{$accession}_{$name}_revised");
           $file->status = FILE_STATUS_PERMANENT;
           file_save($file);
         }
       }
     }
-    tpps_update_submission($state);
+    $submission->save();
   }
 }
 
 /**
- * This function will clear additional db information for a specific study
- * such as genotypeprop data as well as feature data
- * @param mixed $accession
+ * Clears additional db information for a specific study.
+ *
+ * Such as genotypeprop data as well as feature data.
+ *
+ * @param string $accession
+ *   Study accession.
  * @return void
  */
 function tpps_submission_clear_db_extra($accession) {
-  // FOR LATER USE MAYBE
+  // FOR LATER USE MAYBE.
   echo "Deleting genotypeprop data...\n";
   $start_time = time();
-  chado_query("
-  delete from chado.genotypeprop where genotype_id in
-  (select genotype_id from chado.genotype where genotype_id not in
-  (select genotype_id from chado.genotype_call));",
+  chado_query('
+    delete from chado.genotypeprop where genotype_id in
+    (select genotype_id from chado.genotype where genotype_id not in
+    (select genotype_id from chado.genotype_call));',
   []);
   $end_time = time();
   echo "Time taken to complete: " . ($end_time - $start_time) . "\n";
 
-
-  // FOR EACH ORGANISM IN THIS STUDY
-  $organism_count = $state['saved_values']['1']['organism']['number'];
-  for ($i = 1; $i <= $organism_count; $i++) {
-    // GET THE ORGANISM NAME / GENUS SPECIES
-    $organism = $state['saved_values'][1]['organism'][$i];
+  // FOR EACH ORGANISM IN THIS STUDY.
+  for ($i = 1; $i <= ($state['saved_values'][TPPS_PAGE_1]['organism']['number'] ?? 1); $i++) {
+    // GET THE ORGANISM NAME / GENUS SPECIES.
+    $organism = $state['saved_values'][TPPS_PAGE_1]['organism'][$i];
     $organism_name = $organism['name'];
-    // Lookup the organism_id from the organism_name
-    $organism_name_parts = explode(' ',$organism_name);
+    // Lookup the organism_id from the organism_name.
+    $organism_name_parts = explode(' ', $organism_name);
     $genus = $organism_name_parts[0];
     $species = '';
     $organism_name_parts_count = count($organism_name_parts);
-    for ($j=1; $j < $organism_name_parts_count; $j++) {
+    for ($j = 1; $j < $organism_name_parts_count; $j++) {
       $species .= $organism_name_parts[$j] . ' ';
     }
     $species = trim($species);
 
-    // LOOKUP ORGANISM_ID
+    // LOOKUP ORGANISM_ID.
     $results = chado_query('SELECT * FROM chado.organism WHERE genus ILIKE :genus AND species ILIKE :species LIMIT 1;',[
       ':genus' => $genus,
       ':species' => $species
@@ -829,11 +697,11 @@ function tpps_submission_clear_db_extra($accession) {
       }
 
       echo "Deleting features data for organism_id = $organism_id ($genus $species)... \n";
-      chado_query("
-      delete from chado.feature where organism_id = :organism_id and type_id = :cvterm_id
-      and feature_id not in
-      ((select marker_id from chado.genotype_call) union (select variant_id from chado.genotype_call));
-      ", [
+      chado_query('
+        delete from chado.feature where organism_id = :organism_id and type_id = :cvterm_id
+        and feature_id not in
+        ((select marker_id from chado.genotype_call) union (select variant_id from chado.genotype_call));
+      ', [
         ':organism_id' => $organism_id,
         ':cvterm_id' => $cvterm_id
       ]);
@@ -906,11 +774,9 @@ function tpps_submission_full_clear_db($project_id) {
  *   Returns TRUE if submission successfully cleared.
  */
 function tpps_submission_clear_db($accession) {
-  $state = tpps_load_submission($accession);
-  // print_r(array_keys($state['saved_values'][1]['organism']));
-
-  $state['file_rank'] = 0;
-  $project_id = $state['ids']['project_id'] ?? NULL;
+  $submission = new Submission($accession);
+  $submission->sharedState['file_rank'] = 0;
+  $project_id = $submission->sharedState['ids']['project_id'] ?? NULL;
   if (empty($project_id)) {
     return FALSE;
   }
@@ -924,7 +790,7 @@ function tpps_submission_clear_db($accession) {
   // from TGDR665 and 674 6/29/2023)
   // tpps_submission_full_clear_db($project_id);
 
-
+  // @TODO Execute $stocks_sql and use plain list of ids instead of query.
   $stocks_sql = "SELECT stock_id FROM chado.project_stock WHERE project_id = $project_id";
   echo $stocks_sql . "\n";
   chado_query("UPDATE chado.project_dbxref SET is_current = FALSE WHERE project_id = $project_id");
@@ -953,22 +819,22 @@ function tpps_submission_clear_db($accession) {
   echo "DELETE chado.stock values for project...\n";
   chado_query("DELETE FROM chado.stock WHERE stock_id IN ($stocks_sql)");
   echo "DELETE chado.phenotype values for project...\n";
-  chado_query("DELETE FROM chado.phenotype WHERE uniquename LIKE '" . $accession ."-%';");
+  chado_query("DELETE FROM chado.phenotype WHERE uniquename LIKE '" . $accession . "-%';");
 
   echo "FINISHED DB CLEAR DELETES\n";
   $time_end = time();
   echo "Time taken to delete records: " . ($time_end - $time_start) . "\n";
 
-  // Force delete stock just in case by study accession name
-  // Make sure to ensure $accession is properly populated before doing this
-  if(strpos($accession,'TGDR') !== FALSE && strlen($accession) >= 7) {
+  // Force delete stock just in case by study accession name.
+  // Make sure to ensure $accession is properly populated before doing this.
+  if (strpos($accession, 'TGDR') !== FALSE && strlen($accession) >= 7) {
     chado_query("DELETE FROM chado.stock WHERE uniquename LIKE :accession", [
       ':accession' => $accession . '-%'
     ]);
   }
 
-  $state['ids'] = array('project_id' => $project_id);
-  tpps_update_submission($state);
+  $submission->sharedState['ids'] = ['project_id' => $project_id];
+  $submission->save();
   return TRUE;
 }
 
@@ -1032,7 +898,7 @@ function tpps_submission_update_stats(array &$form_state) {
       for ($i = 1; $i <= $form_state['stats']['species_count']; $i++) {
         $phenotype = $form_state['values']["organism-$i"]['phenotype'] ?? NULL;
         $form_state['stats']['unique_phenotypes'] += $phenotype['phenotypes-meta']['number'] ?? 0;
-        if (!empty($phenotype['file']) and file_load($phenotype['file'])) {
+        if (tpps_file_load($phenotype['file'])) {
           $rows = tpps_file_len($phenotype['file']) + !empty($phenotype['file-no-header']);
           if ($phenotype['format'] == 0) {
             $phenotype_file_name_cols = $phenotype['file-groups']['Phenotype Data']['0'];
@@ -1042,13 +908,13 @@ function tpps_submission_update_stats(array &$form_state) {
             $form_state['stats']['phenotype_count'] += $rows;
           }
 
-          if (!empty($phenotype['metadata']) and file_load($phenotype['metadata'])) {
+          if (tpps_file_load($phenotype['metadata'])) {
             $form_state['stats']['unique_phenotypes'] += tpps_file_len($phenotype['metadata']) + !empty($phenotype['metadata-no-header']);
           }
 
           continue;
         }
-        if (!empty($phenotype['iso']) and file_load($phenotype['iso'])) {
+        if (tpps_file_load($phenotype['iso'])) {
           $headers = tpps_file_headers($phenotype['iso']);
           while (($k = array_search(NULL, $headers))) {
             unset($headers[$k]);
@@ -1080,12 +946,13 @@ function tpps_submission_update_stats(array &$form_state) {
  */
 function tpps_submission_edit_publication(array $form, array &$form_state, $accession = NULL) {
   global $base_url;
-  $state = tpps_load_submission($accession);
+  $submission = new Submission($accession);
+  $state = $submission->state;
 
-  $form['accession'] = array(
+  $form['accession'] = [
     '#type' => 'hidden',
     '#value' => $accession,
-  );
+  ];
 
   $form['status'] = array(
     '#type' => 'select',
@@ -1096,7 +963,7 @@ function tpps_submission_edit_publication(array $form, array &$form_state, $acce
       'In Press' => t('In Press'),
       'Published' => t('Published'),
     ),
-    '#default_value' => $state['saved_values'][TPPS_PAGE_1]['publication']['status'],
+    '#default_value' => $state['saved_values'][TPPS_PAGE_1]['publication']['status'] ?? NULL,
     '#required' => TRUE,
     '#prefix' => "<a href=\"$base_url/tpps/details/$accession\">Back to TPPS Details Page</a>",
   );
@@ -1110,8 +977,9 @@ function tpps_submission_edit_publication(array $form, array &$form_state, $acce
     '#type' => 'select',
     '#title' => t('Year of Publication'),
     '#options' => $year_options,
-    '#description' => t('If your publication has not been published yet, please choose the expected year of publication.'),
-    '#default_value' => $state['saved_values'][TPPS_PAGE_1]['publication']['year'],
+    '#description' => t('If your publication has not been published yet, '
+    . 'please choose the expected year of publication.'),
+    '#default_value' => $state['saved_values'][TPPS_PAGE_1]['publication']['year'] ?? NULL,
     '#required' => TRUE,
   );
 
@@ -1148,35 +1016,40 @@ function tpps_submission_edit_publication_validate(&$form, &$form_state) {
  */
 function tpps_submission_edit_publication_submit($form, &$form_state) {
   $accession = $form_state['values']['accession'];
-  $state = tpps_load_submission($accession);
+  $submission = new Submission($accession);
   $submit_job = FALSE;
+  $page1_values = $submission->state['saved_values'][TPPS_PAGE_1] ?? NULL;
 
-  if ($state['saved_values'][TPPS_PAGE_1]['publication']['status'] != $form_state['values']['status']) {
-    $state['saved_values'][TPPS_PAGE_1]['publication']['status'] = $form_state['values']['status'];
+  if ($page1_values['publication']['status'] != $form_state['values']['status']) {
+    $page1_values['publication']['status'] = $form_state['values']['status'];
     $submit_job = TRUE;
   }
 
-  if ($state['saved_values'][TPPS_PAGE_1]['publication']['year'] != $form_state['values']['year']) {
-    $state['saved_values'][TPPS_PAGE_1]['publication']['year'] = $form_state['values']['year'];
+  if ($page1_values['publication']['year'] != $form_state['values']['year']) {
+    $page1_values['publication']['year'] = $form_state['values']['year'];
     $submit_job = TRUE;
   }
 
-  if ($state['saved_values'][TPPS_PAGE_1]['publication']['journal'] != $form_state['values']['journal']) {
-    $state['saved_values'][TPPS_PAGE_1]['publication']['journal'] = $form_state['values']['journal'];
+  if ($page1_values['publication']['journal'] != $form_state['values']['journal']) {
+    $page1_values['publication']['journal'] = $form_state['values']['journal'];
     $submit_job = TRUE;
   }
 
   if ($submit_job) {
     module_load_include('php', 'tpps', 'forms/submit/submit_all');
 
-    $includes = array();
+    $includes = [];
     $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
     $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
-    $args = array($accession);
-    $jid = tripal_add_job("Update Publication Information - $accession", 'tpps', 'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE);
-    $state['job_id'] = $jid;
-    tpps_update_submission($state);
+    $args = [$accession];
+    $jid = tripal_add_job(t("Update Publication Information - @accession",
+      ['@accession' => $accession]), 'tpps', 'tpps_submit_all',
+      $args, $submission->state['submitting_uid'], 10, $includes, TRUE
+    );
+    $submission->state['job_id'] = $jid;
   }
+  $submission->state['saved_values'][TPPS_PAGE_1] = $page1_values;
+  $submission->save();
 }
 
 /**
@@ -1214,22 +1087,33 @@ function tpps_submission_get_accession_list(array $conditions = [], $remove_empt
   $key = serialize($conditions);
   $is_cache_allowed = variable_get('tpps_front_cache_accession_list', FALSE);
   if (!$is_cache_allowed || $reset || empty($cache) || empty($cache->data[$key])) {
-    $query = db_select('tpps_submission', 's')->fields('s');
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    $fields = array_diff(
+      array_keys(drupal_get_schema('tpps_submission')['fields']), ['shared_state']
+    );
+    $query = db_select('tpps_submission', 's')
+      ->fields('s', $fields)
+      ->orderBy('tpps_submission_id', 'desc');
     foreach ($conditions as $item) {
-      $query->condition($item[0], $item[1], ($item[2] ?? '='));
+      if (!empty($item)) {
+        $query->condition($item[0], $item[1], ($item[2] ?? '='));
+      }
     }
-    $results = $query->orderBy('tpps_submission_id', 'desc')->execute();
-    foreach ($results as $item) {
-      if ($state = unserialize($item->submission_state)) {
+    $results = $query->execute()->fetchAllAssoc('accession');
+    foreach ($results as $key => $study) {
+      // Check broken 'submission_state' after edit directly in phpPgAdmin.
+      if (strpos($study->submission_state, '&quot;accession&quot;') !== FALSE) {
+        tpps_message(
+          'Study @accession with escaped "submission_state" field.',
+          ['@accession' => $study->accession],
+          'error'
+        );
+      }
+      else {
+        $state = unserialize($study->submission_state);
         $page1_values = $state['saved_values'][TPPS_PAGE_1] ?? NULL;
-        if ($title = ($page1_values['publication']['title'] ?? NULL)) {
-          $list[$state['accession']] = $state['accession'] . ' - ' . (
-            (strlen($title) > 97)
-            ? substr($title, 0, 97) . '...'
-            : (!empty($title) ? $title : t('No Title'))
-          );
-        }
-        elseif (empty($page1_values) && $remove_empty) {
+
+        if ((empty($state) || empty($page1_values)) && $remove_empty) {
           // Study is treated as orphan (or empty) and will be removed when:
           // 1. It has no publication title.
           // 2. Page 1 wasn't submitted or saved yet.
@@ -1239,11 +1123,25 @@ function tpps_submission_get_accession_list(array $conditions = [], $remove_empt
           // but users could also create empty studies. Not sure if accession
           // number of those studies could be reused but it's better to avoid
           // useless records in DB.
-          tpps_delete_submission($item->accession);
+          tpps_message(
+            'Removed empty submission @accession.',
+            ['@accession' => $study->accession],
+            'error'
+          );
+          tpps_submission($study->accession)->delete();
+          unset($results[$key]);
+          continue;
         }
+        $title = $page1_values['publication']['title'] ?? t('No Title');
+        $title = (strlen($title) > 97) ? substr($title, 0, 97) . '...' : $title;
+        $list[$study->accession] = $study->accession . ' - ' . $title;
       }
     }
-    $cache->data[$key] = $list;
+    if (count($results) != count($list)) {
+      tpps_message('There are studies with the same accession.', [], 'error');
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    $cache->data[$key] = $list ?? NULL;
     cache_set($cid, $cache->data, $cache_bin);
   }
   return $cache->data[$key] ?? [];
@@ -1270,24 +1168,4 @@ function tpps_submission_get_tgdr_number_list($is_optional = TRUE) {
     $list = [0 => '- Select -'] + $list;
   }
   return $list;
-}
-
-/**
- * Gets submission state array.
- *
- * @param string $accession
- *   Study submission. Format: 'TGDRxxxx'.
- *
- * @return array
- *   Returns Drupal Form API State array.
- */
-function tpps_submission_get_state($accession) {
-  $result = db_select('tpps_submission', 'ts')
-    ->fields('ts', ['submission_state'])
-    ->condition('accession', $accession)
-    ->range(0, 1)
-    ->execute()
-    ->fetchField();
-  $state = unserialize(html_entity_decode($result));
-  return $state;
 }

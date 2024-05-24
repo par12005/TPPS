@@ -64,13 +64,13 @@ function tpps_details($accession = NULL) {
   }
 
   $output = l(t('Return to TPPS Details'), $base_url . '/tpps/details');
-  $state = tpps_load_submission($accession);
-  if (!empty($state)) {
-    if (isset($state['study_view_role'])) {
+  $submission = new Submission($accession);
+  if (!empty($submission->state)) {
+    if (isset($submission->state['study_view_role'])) {
       // If more than 0, then a view role was set by curation team
-      if ($state['study_view_role'] > 0) {
+      if ($submission->state['study_view_role'] > 0) {
         if (
-          !in_array(user_roles($true)[$state['study_view_role']], $user->roles)
+          !in_array(user_roles($true)[$submission->state['study_view_role']], $user->roles)
           // @TODO Minor. Admins must always has access so this check could
           // be done earlier and avoid extra checks.
           && !in_array('administrator', $user->roles)
@@ -84,7 +84,7 @@ function tpps_details($accession = NULL) {
       }
     }
 
-    if ($state['status'] != 'Approved') {
+    if ($submission->state['status'] != TPPS_SUBMISSION_STATUS_APPROVED) {
       drupal_set_message(
         t('This submission is still under construction. Some of the information '
         . 'may be available here, but please keep in mind that it may be '
@@ -106,14 +106,17 @@ function tpps_details($accession = NULL) {
       async defer></script>"
       . "<div id=\"_map_wrapper\"></div>";
     $tree_info = [];
-    if (!empty($state['tree_info'])) {
-      foreach ($state['tree_info'] as $name => $info) {
-        if (!empty($info['lat']) and !empty($info['lng'])) {
-          $tree_info[] = array(
+    if (!empty($submission->state['tree_info'])) {
+      foreach ($submission->state['tree_info'] as $name => $info) {
+        if (
+          !empty($info['lat'])
+          and !empty($info['lng'])
+        ) {
+          $tree_info[] = [
             $name,
             $info['lat'],
             $info['lng'],
-          );
+          ];
         }
       }
       drupal_add_js(['tpps' => ['tree_info' => $tree_info]], 'setting');
@@ -123,10 +126,10 @@ function tpps_details($accession = NULL) {
     tpps_add_css_js('main');
     // [/VS].
 
-    if (!empty($pub_link = $state['title'] ?? NULL)) {
+    if (!empty($pub_link = ($submission->state['title'] ?? NULL))) {
       $pub_id = db_select('chado.project_pub', 'p')
         ->fields('p', array('pub_id'))
-        ->condition('project_id', $state['ids']['project_id'])
+        ->condition('project_id', $submission->state['ids']['project_id'])
         ->execute()->fetchObject()->pub_id ?? NULL;
       if (!empty($pub_id)) {
         $bundle = tripal_load_bundle_entity(array('label' => 'Publication'));
@@ -135,8 +138,8 @@ function tpps_details($accession = NULL) {
       }
       $output .= "<h2>$pub_link</h2>";
     }
-    $output .= tpps_show_tags(tpps_submission_get_tags($state['accession']));
-    if ($primary_author = $state['authors'][0] ?? NULL) {
+    $output .= tpps_show_tags(tpps_submission_get_tags($accession));
+    if ($primary_author = $submission->state['authors'][0] ?? NULL) {
       if (preg_match('/,/', $primary_author)) {
         $parts = explode(',', $primary_author);
         $lastname = trim($parts[0]);
@@ -145,15 +148,15 @@ function tpps_details($accession = NULL) {
         $parts = explode(' ', $primary_author);
         $lastname = $parts[count($parts) - 1];
       }
-      $output .= "<h4>$lastname et al {$state['pyear']}";
-      if (!empty($state['journal'])) {
-        $output .= " published in {$state['journal']}";
+      $output .= "<h4>$lastname et al {$submission->state['pyear']}";
+      if (!empty($submission->state['journal'])) {
+        $output .= " published in {$submission->state['journal']}";
       }
       $output .= "</h4>";
       // @TODO Minor. Use l() and drupal_add_js().
       $output .= "<div id=\"abstract\"><a href=\"#abstract\">Click to show abstract</a></div>"
         . "<script>jQuery(document).ready(jQuery('#abstract').on('click', function() {
-            jQuery('#abstract')[0].innerHTML = `{$state['abstract']}`;
+            jQuery('#abstract')[0].innerHTML = `{$submission->state['abstract']}`;
           }));</script>";
     }
     else {
@@ -171,19 +174,24 @@ function tpps_details($accession = NULL) {
       );
     }
 
-    // @TODO We already loaded $state. Try to reuse it instead of loading it again.
+    $page1_values = &$submission->state['saved_values'][TPPS_PAGE_1];
     if (
-      $state['saved_values'][TPPS_PAGE_1]['publication']['status'] != 'Published'
-      && $user->uid == (tpps_load_submission($accession, FALSE)->uid ?? NULL)
+      $page1_values['publication']['status'] != 'Published'
+      && $submission->isCreator()
     ) {
       $items[] = l(t('Edit publication information'), 'tpps/' . $accession . '/edit-publication');
     }
     $output .= theme('item_list', ['items' => $items]);
-    $output .= tpps_details_tabs($state);
+    $output .= tpps_details_tabs($submission->state);
     return $output;
   }
 
-  drupal_set_message(t('This submission is pending resubmission through the new TPPS pipeline. Some of the information may be available here, but please keep in mind that it may be incomplete or subject to change in the near future.'), 'warning');
+  drupal_set_message(t('This submission is pending resubmission through the '
+    . 'new TPPS pipeline. Some of the information may be available here, '
+    . 'but please keep in mind that it may be incomplete or subject to '
+    . 'change in the near future.'),
+    'warning'
+  );
 
   if (function_exists('tpps_details_byaccession_page')) {
     $output .= @tpps_details_byaccession_page()['raw_markup']['#markup'];
@@ -231,7 +239,6 @@ function tpps_details_tabs(array &$state) {
       $tabs_list['mass_spectrometry'] = 'Mass Spectrometry';
     }
   }
-  $tabs_list['submission'] = 'Submission';
   // Build HTML.
   // Only first element must have class 'active'.
   $content_class = 'tab-pane fade in active';
@@ -272,14 +279,9 @@ function tpps_details_tabs(array &$state) {
  *   The type of details we want to print.
  */
 function tpps_details_tab($accession, $type) {
-  if ($type == 'submission') {
-    print(tpps_submission_overview_page());
-  }
-  else {
-    $function = "tpps_details_$type";
-    $state = tpps_load_submission($accession);
-    print($function($state));
-  }
+  $function = "tpps_details_$type";
+  $submission = new Submission($accession);
+  print($function($submission->sharedState));
 }
 
 /**
@@ -445,8 +447,11 @@ function tpps_details_top() {
     }
 
     $warning = "";
-    if (empty(tpps_load_submission($sub->accession))) {
-      $warning = "<img src='$base_url/misc/message-16-warning.png' title='This study has not yet been resubmitted through the new TPPS pipeline'> ";
+    $submission = new Submission($sub->accession);
+    if ($submission->doesNotExist()) {
+      $title = t('This study has not yet been resubmitted through the new TPPS pipeline');
+      $warning = "<img src='$base_url/misc/message-16-warning.png' title='"
+        . $title . "'> ";
     }
 
     $row = array(
@@ -746,6 +751,8 @@ function tpps_details_species(array &$state) {
  *
  * @return string
  *   The HTML table of study information of the submission.
+ *
+ * @TODO Seems function not in use, probably outdated and could be removed.
  */
 function tpps_details_study(array &$state) {
   $rows = array();
@@ -760,8 +767,7 @@ function tpps_details_study(array &$state) {
   $study_file_ids = tpps_details_get_study_file_ids($state);
   // foreach ($state['files'] as $fid) {
   foreach ($study_file_ids as $fid) {
-    $file = file_load($fid ?? '');
-    if ($file && $file->filesize) {
+    if ($file = tpps_file_load($fid)) {
       $file_url = check_plain(file_create_url($file->uri));
       if (stripos($file_url, 'core/labs') === FALSE) {
         $files[] = "<a href='$file_url' target='blank'>$file->filename</a>";
@@ -812,59 +818,57 @@ function tpps_details_study(array &$state) {
   return theme('table', $vars);
 }
 
-function tpps_details_get_study_file_ids($state) {
-  $saved_values = $state['saved_values'];
+/**
+ * Gets list of study's File Ids.
+ *
+ * @param array $state
+ *   Drupal Form State Array of any version.
+ *
+ * @return array
+ *   Returns list of File Ids.
+ *
+ * @todo Minor. Use tpps_submission_file_get_parents().
+ * @todo Probably not in use and outdated. Remove if possible.
+ * (Called by orphan function tpps_details_study()).
+ */
+function tpps_details_get_study_file_ids(array $state) {
+
+  $submission = new Submission();
+  $submission->generateSharedState($state);
+  $submission->save();
+  $saved_values = &$submission->sharedState['saved_values'];
   // print_r($saved_values);
-  $organism_count = $saved_values['1']['organism']['number'];
   $file_ids = [];
-  for($i=1; $i<=4; $i++) {
-    if ($i == 3) {
-      for($j=1; $j<=$organism_count; $j++) {
-        if(isset($saved_values[$i]['tree-accession']['species-' . $j]['file'])) {
-          array_push($file_ids, $saved_values[$i]['tree-accession']['species-' . $j]['file']);
-        }
-      }
-    }
-    if ($i == 4) {
-      // Phenotype files
-      for($j=1; $j<=$organism_count; $j++) {
-        if(isset($saved_values[$i]['organism-' . $j]['phenotype']['file'])) {
-          array_push($file_ids, $saved_values[$i]['organism-' . $j]['phenotype']['file']);
-        }
-        if(isset($saved_values[$i]['organism-' . $j]['phenotype']['metadata'])) {
-          array_push($file_ids, $saved_values[$i]['organism-' . $j]['phenotype']['metadata']);
-        }
-      }
-      for($j=1; $j<=$organism_count; $j++) {
-        if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['snps-assay'])) {
-          array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['snps-assay']);
-        }
-        if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['snps-association'])) {
-          array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['snps-association']);
-        }
-        if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['vcf'])) {
-          array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['vcf']);
-        }
-        if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs'])) {
-          array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs']);
-        }
-        if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs_extra'])) {
-          array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs_extra']);
-        }
-      }
+  $page4_file_list = [
+    // Phenotype files.
+    ['phenotype', 'file'],
+    ['phenotype', 'metadata'],
+    // Genotype files.
+    ['genotype', 'files', 'snps-assay'],
+    ['genotype', 'files', 'snps-association'],
+    ['genotype', 'files', 'vcf'],
+    ['genotype', 'files', 'ssrs'],
+    ['genotype', 'files', 'ssrs_extra'],
+  ];
+  for ($j = 1; $j <= ($saved_values[TPPS_PAGE_1]['organism']['number'] ?? 1); $j++) {
+    // Page 3.
+    $file_ids[] = $saved_values[TPPS_PAGE_3]['tree-accession']['species-' . $j]['file'] ?? NULL;
+    // Page 4.
+    foreach ($page4_file_list as $parents) {
+      $file_ids[] = drupal_array_get_nested_value(
+        $saved_values[TPPS_PAGE_4]['organism-' . $j],
+        $parents
+      );
     }
   }
-  // check summarypage for supplemental files
-  if(count($saved_values['summarypage']['files']) > 2) {
-    $files = $saved_values['summarypage']['files'];
-    foreach ($files as $file_index => $file_id) {
-      if(is_numeric($file_id) && $file_id > 0) {
-        // print_r($file_index);
-        // array_push($file_ids, $file_id);
-      }
-    }
+
+  // Supplemental files at 'summarypage'.
+  for ($i = 1; $i <= 10; $i++) {
+    $file_ids[] = $saved_values['summarypage']['files'][$i];
   }
-  return $file_ids;
+
+  // Remove empty elements.
+  return array_filter($file_ids);
 }
 
 /**

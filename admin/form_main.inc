@@ -38,30 +38,23 @@ function tpps_form_main_settings_form(array $form, array &$form_state) {
     '#description' => t('Dark theme only changes backgraund color of the TPPS '
       . 'forms. Enabled by default at dev-server.'),
   ];
-
-  // Submission Export/Import.
-
-  // @TODO Move this settings to 'Submission Settings' page.
-
-  $form['tpps_submission_export_exclude_data'] = [
+  // @TODO Minor. Move to the common module settings page because it's not
+  // only form related.
+  $form['tpps_debug_mode'] = [
     '#type' => 'checkbox',
-    '#title' => t('Exclude "data" element from Submission Export array.'),
-    '#default_value' => variable_get('tpps_submission_export_exclude_data', TRUE),
-    '#description' => t('Element "data" of the submission State array '
-      . 'contains huge amount of data added during Tripal pipeline processing. '
-      . 'Those data is NOT required to import study but slow down processing. '
-      . 'Those data could be easily re-generated again but sometimes it '
-      . 'could be useful for debugging.'),
+    '#title' => t('Debug Mode'),
+    '#default_value' => variable_get('tpps_debug_mode', FALSE),
+    '#description' => t('Default is unchecked. Must be disabled at live site. '
+      . 'When checked then all error messages will be sent to browser and '
+      . 'some extra debug messages could be shown.'),
   ];
-  $form['tpps_submission_export_exclude_tree_info'] = [
-    '#type' => 'checkbox',
-    '#title' => t('Exclude "data" element from Submission Export array.'),
-    '#default_value' => variable_get('tpps_submission_export_exclude_tree_info', TRUE),
-    '#description' => t('Element "tree_info" of the submission State array '
-      . 'contains huge amount of data added during Tripal pipeline processing. '
-      . 'Those data is NOT required to import study but slow down processing. '
-      . 'Those data could be easily re-generated again but sometimes it '
-      . 'could be useful for debugging.'),
+  $form['tpps_autofocus_delay'] = [
+    '#type' => 'textfield',
+    '#title' => t('Autofocus Delay, msec'),
+    '#default_value' => variable_get('tpps_autofocus_delay', 1000),
+    '#description' => t('Default is 1000 (1 second). '
+      . '<br />When page loaded scripts waits for a while and then hightlights '
+      . 'specified field. When there is no delay it looks ugly.'),
   ];
   $form['#submit'][] = 'tpps_form_main_settings_form_submit';
   return system_settings_form($form);

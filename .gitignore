@@ -9,3 +9,6 @@ tags
 .vimrc*
 cscope.files
 cscope.out
+*NetrwTreeListing
+**.patch
+**.diff

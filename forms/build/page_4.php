@@ -10,7 +10,6 @@ require_once 'page_4_genotype.php';
 require_once 'page_4_environment.php';
 require_once 'page_4_phenotype.php';
 
-
 /**
  * Creates the GxPxE Data form page.
  *
@@ -25,76 +24,59 @@ require_once 'page_4_phenotype.php';
  */
 function tpps_page_4_create_form(array &$form, array &$form_state) {
   global $user;
-  if (isset($form_state['saved_values'][TPPS_PAGE_4])) {
-    $values = $form_state['saved_values'][TPPS_PAGE_4];
-  }
-  else {
-    $values = array();
-  }
-  // dpm("FORM CREATED SAVED VALUES:");
-  // dpm($values);
 
+  // Store valueable data to the $form_bus.
+  $form_bus = ['form' => &$form, 'form_state' => &$form_state];
+  for ($i = 1; $i <= 4; $i++) {
+    if (isset($form_state['saved_values'][$i])) {
+      $form_bus['page' . $i . '_values'] = &$form_state['saved_values'][$i];
+    }
+    else {
+      $form_bus['page' . $i . '_values'] = [];
+    }
+  }
   $form['#tree'] = TRUE;
-  // Submission metadata.
-  $meta = [
-    'organism_number' => $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'],
-    'data_type' => $form_state['saved_values'][TPPS_PAGE_2]['data_type'],
-  ];
-
-  for ($i = 1; $i <= $meta['organism_number']; $i++) {
-    $name = $form_state['saved_values'][TPPS_PAGE_1]['organism']["$i"]['name'];
-    $form["organism-$i"] = array(
+  for ($i = 1; $i <= tpps_form_bus_get($form_bus, 'organism_number'); $i++) {
+    $form_bus['organism_id'] = $i;
+    $name = tpps_form_bus_get($form_bus, 'organism_name', $i);
+    $form["organism-$i"] = [
       '#type' => 'fieldset',
-      '#title' => "<div class=\"fieldset-title\">$name:</div>",
+      '#title' => t(strtoupper($name)),
       '#tree' => TRUE,
       '#collapsible' => TRUE,
-    );
-    if (preg_match('/P/', $meta['data_type'])) {
-      if ($i > 1) {
-        $form["organism-$i"]['phenotype-repeat-check'] = array(
-          '#type' => 'checkbox',
-          '#title' => "Phenotype information for $name is the same as phenotype information for {$form_state['saved_values'][TPPS_PAGE_1]['organism'][$i - 1]['name']}.",
-          '#default_value' => ($values["organism-$i"]['phenotype-repeat-check'] ?? 1),
-        );
-      }
-
-      $form["organism-$i"]['phenotype'] = tpps_phenotype($form, $form_state, $values, "organism-$i");
-
-      if ($i > 1) {
-        $form["organism-$i"]['phenotype']['#states'] = array(
-          'invisible' => array(
-            ":input[name=\"organism-$i\[phenotype-repeat-check]\"]" => array('checked' => TRUE),
-          ),
-        );
-      }
-
-      $normal_check = tpps_get_ajax_value($form_state, array(
-        "organism-$i",
-        'phenotype',
-        'normal-check',
-      ), TRUE);
+    ];
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Data Type includes phenotype.
+    if (tpps_is_phenotype_data_type($form_state)) {
+      tpps_page4_add_data_type(array_merge(
+        $form_bus, ['type' => 'phenotype', 'type_name' => t('Phenotype')]
+      ));
+      $normal_check = tpps_get_ajax_value(
+        $form_state,
+        ["organism-$i", 'phenotype', 'normal-check'],
+        TRUE
+      );
       if (!empty($normal_check)) {
-        $form["organism-$i"]['phenotype']['format'] = array(
+        $form["organism-$i"]['phenotype']['format'] = [
           '#type' => 'radios',
           '#title' => t('Phenotype file format: *'),
-          '#options' => array(
-            'Type 1',
-            'Type 2',
-          ),
-          '#ajax' => array(
+          '#options' => ['Type 1', 'Type 2'],
+          '#ajax' => [
             'callback' => 'tpps_phenotype_file_format_callback',
             'wrapper' => "edit-organism-$i-phenotype-file-ajax-wrapper",
+          ],
+          '#default_value' => ($form_bus['page4_values']["organism-$i"]['phenotype']['format'] ?? 0),
+          '#description' => t('Please select a file format type from the '
+            . 'listed options. Below please see examples of each format type.'
           ),
-          '#default_value' => $form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'] ?? 0,
-          '#description' => t('Please select a file format type from the listed options. Below please see examples of each format type.'),
-          '#states' => array(
-            'invisible' => array(
-              ":input[name=\"organism-{$i}[phenotype][phenotypes-meta][number]\"]" => array('value' => '0'),
-              ":input[name=\"organism-{$i}[phenotype][check]\"]" => array('checked' => FALSE),
-            ),
-          ),
-        );
-
+          '#states' => [
+            'invisible' => [
+              ":input[name=\"organism-{$i}[phenotype][phenotypes-meta][number]\"]" => ['value' => '0'],
+              ":input[name=\"organism-{$i}[phenotype][check]\"]" => ['checked' => FALSE],
+            ],
+          ],
+        ];
+        $phenotype_dir = variable_get('tpps_phenotype_files_dir', 'tpps_phenotype');
         $form["organism-$i"]['phenotype']['format'][0]['#prefix'] =
           '<figure><img src="/' . TPPS_IMAGES_PATH . 'phenotype_format_1.png">'
           . '<figcaption></figcaption></figure>';
@@ -102,24 +84,23 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
           '<figure><img src="/' . TPPS_IMAGES_PATH . 'phenotype_format_2.png">'
           . '<figcaption></figcaption></figure>';
 
-        $form["organism-$i"]['phenotype']['file'] = array(
+        $form["organism-$i"]['phenotype']['file'] = [
           '#type' => 'managed_file',
-          '#title' => t('Phenotype file: Please upload a file containing columns for Plant Identifier, Phenotype Data: *'),
-          '#upload_location' => 'public://' . variable_get('tpps_phenotype_files_dir', 'tpps_phenotype'),
-          '#upload_validators' => array(
-            'file_validate_extensions' => array('csv tsv'),
-          ),
+          '#title' => t('Phenotype file: Please upload a file containing '
+            . 'columns for Plant Identifier, Phenotype Data: *'),
+          '#upload_location' => 'public://' . $phenotype_dir,
+          '#upload_validators' => ['file_validate_extensions' => ['csv tsv']],
           '#tree' => TRUE,
-          '#states' => array(
-            'invisible' => array(
-              ":input[name=\"organism-{$i}[phenotype][phenotypes-meta][number]\"]" => array('value' => '0'),
-              ":input[name=\"organism-{$i}[phenotype][check]\"]" => array('checked' => FALSE),
-            ),
-          ),
-        );
+          '#states' => [
+            'invisible' => [
+              ":input[name=\"organism-{$i}[phenotype][phenotypes-meta][number]\"]" => ['value' => '0'],
+              ":input[name=\"organism-{$i}[phenotype][check]\"]" => ['checked' => FALSE],
+            ],
+          ],
+        ];
 
         $form["organism-$i"]['phenotype']['file']['empty'] = [
-          '#default_value' => $values["organism-$i"]['phenotype']['file']['empty'] ?? t('NA'),
+          '#default_value' => $form_bus['page4_values']["organism-$i"]['phenotype']['file']['empty'] ?? t('NA'),
         ];
 
         $form["organism-$i"]['phenotype']['file']['columns'] = [
@@ -128,38 +109,34 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
           ),
         ];
 
-
-        $format = tpps_get_ajax_value($form_state, [
-          "organism-$i",
-          'phenotype',
-          'format',
-        ], 0);
+        $format = tpps_get_ajax_value(
+          $form_state, ["organism-$i", 'phenotype', 'format'], 0
+        );
 
         if ($format == 0) {
-          $column_options = array(
+          $column_options = [
             'Phenotype Data',
             'Plant Identifier',
             'Timepoint',
             'Clone Number',
             'N/A',
-          );
+          ];
         }
         else {
-          $column_options = array(
+          $column_options = [
             'N/A',
             'Plant Identifier',
             'Phenotype Name/Identifier',
             'Value(s)',
             'Timepoint',
             'Clone Number',
-          );
+          ];
           $form["organism-$i"]['phenotype']['file']['#title'] =
             t('Phenotype file: Please upload a file containing columns '
               . 'for Plant Identifier, Phenotype Name, and value for all '
               . 'of your phenotypic data: *'
-            );
+          );
         }
-
         $form["organism-$i"]['phenotype']['file']['columns-options'] = [
           '#type' => 'hidden',
           '#value' => $column_options,
@@ -170,90 +147,44 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
         //$form["organism-$i"]['phenotype']['file']['no-header'] = [];
       }
 
-      // This will check if there are Time Phenotypes saved from the saved values
-      // and use this to re-check the checkboxes on the form.
-      if (isset($form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['time']['time_phenotypes'])) {
-        $count_time_phenotypes = count($form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['time']['time_phenotypes']);
-        // dpm('TIME PHENOTYPES DETECTED: ' . $count_time_phenotypes);
-        if($count_time_phenotypes > 0) {
-          $time_phenotypes = $form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['time']['time_phenotypes'];
-          // dpm($time_phenotypes);
-          // Go through all time phenotypes
+      // This will check if there are Time Phenotypes saved from the
+      // saved values and use this to re-check the checkboxes on the form.
+      if (isset($form_bus['page4_values']["organism-$i"]['phenotype']['time']['time_phenotypes'])) {
+        $time_phenotypes = $form_bus['page4_values']["organism-$i"]['phenotype']['time']['time_phenotypes'] ?? [];
+        $count_time_phenotypes = count($time_phenotypes);
+        if ($count_time_phenotypes > 0) {
           foreach ($time_phenotypes as $time_phenotype) {
-            // dpm($time_phenotype);
-            // if time_phenotype is not 0, meaning the phenotype name and phenotype value would be the same, so not 0
-            if($time_phenotype != "0") {
-              // dpm($time_phenotype);
-              // Adjust the checkbox element on the form to TRUE (checkbox)
+            // If time_phenotype is not 0, meaning the phenotype name
+            // and phenotype value would be the same, so not 0.
+            if ($time_phenotype != "0") {
+              // Adjust the checkbox element on the form to TRUE (checkbox).
               $form["organism-$i"]['phenotype']['time']['time_phenotypes'][$time_phenotype]['#default_value'] = TRUE;
             }
           }
         }
       }
     }
-
-    if (preg_match('/G/', $meta['data_type'])) {
-      if ($i > 1) {
-        $form["organism-$i"]['genotype-repeat-check'] = array(
-          '#type' => 'checkbox',
-          '#title' => "Genotype information for $name is the same as genotype information for {$form_state['saved_values'][TPPS_PAGE_1]['organism'][$i - 1]['name']}.",
-          '#default_value' => ($values["organism-$i"]['genotype-repeat-check'] ?? 1),
-        );
-      }
-
-      $form["organism-$i"]['genotype'] = tpps_genotype($form, $form_state, $values, "organism-$i");
-
-      if ($i > 1) {
-        $form["organism-$i"]['genotype']['#states'] = array(
-          'invisible' => array(
-            ":input[name=\"organism-$i\[genotype-repeat-check]\"]" => array('checked' => TRUE),
-          ),
-        );
-      }
+    if (tpps_is_genotype_data_type($form_state)) {
+      tpps_page4_add_data_type(array_merge(
+        $form_bus, ['type' => 'genotype', 'type_name' => t('Genotype')]
+      ));
     }
-
-    if (preg_match('/E/', $meta['data_type'])) {
-      if ($i > 1) {
-        $form["organism-$i"]['environment-repeat-check'] = array(
-          '#type' => 'checkbox',
-          '#title' => "Environmental information for $name is the same as "
-            . "environmental information for "
-            . "{$form_state['saved_values'][TPPS_PAGE_1]['organism'][$i - 1]['name']}.",
-          '#default_value' => ($values["organism-$i"]['environment-repeat-check'] ?? 1),
-        );
-      }
-
-      $form["organism-$i"]['environment'] = tpps_environment($form, $form_state, "organism-$i");
-
-      if ($i > 1) {
-        $form["organism-$i"]['environment']['#states'] = array(
-          'invisible' => array(
-            ":input[name=\"organism-$i\[environment-repeat-check]\"]" => array('checked' => TRUE),
-          ),
-        );
-      }
+    if (tpps_is_environment_data_type($form_state)) {
+      tpps_page4_add_data_type(array_merge(
+        $form_bus, ['type' => 'environment', 'type_name' => t('Environmental')]
+      ));
     }
   }
-
-  // [VS].
-  tpps_add_buttons($form, 'page_4', $meta);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Diagnostic utilities for curation.
-  if (
-    in_array('administrator', $user->roles)
-    || in_array('Curation', $user->roles)
-  ) {
-    $js_data = [
-      'tpps' => [
-        'accession' => $form_state['accession'],
-        'curationDiagnosticResultsElementId' => '#diagnostic-curation-results',
-        'organismNumber' => $meta['organism_number'],
-      ],
-    ];
-    $form['#attached']['js'][] = ['type' => 'setting', 'data' => $js_data];
-    tpps_add_css_js(TPPS_PAGE_4, $form);
-    tpps_add_curation_tool($form);
-  }
+  // Button's weight: -1000 (header) and 1000 (footer).
+  tpps_form_add_buttons(array_merge($form_bus, [
+    'page' => 'page_4',
+    'organism_number' => tpps_form_bus_get($form_bus, 'organism_number'),
+  ]));
+  // Curation Tool's weight: 1100 (under button's in footer).
+  tpps_add_curation_tool($form_bus);
+  // Now JS is empty but could be used later.
+  tpps_add_css_js(TPPS_PAGE_4, $form);
   return $form;
 }
 
@@ -262,17 +193,35 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
  *
  * Note: Form has 7 buttons.
  *
- * @param array $form
- *   Drupal Form API array.
+ * @param array $form_bus
+ *   Container for a data. Keys are:
+ *   'form', 'form_state'.
  */
-function tpps_add_curation_tool(array &$form) {
+function tpps_add_curation_tool(array $form_bus) {
+  global $user;
+  if (!tpps_is_admin_or_curation()) {
+    return;
+  }
+  $form = &$form_bus['form'];
+  $form_state = $form_bus['form_state'];
+  $form['#attached']['js'][] = [
+    'type' => 'setting',
+    'data' => [
+      'tpps' => [
+        'accession' => $form_state['accession'],
+        'curationDiagnosticResultsElementId' => '#diagnostic-curation-results',
+        'organismNumber' => $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'],
+      ],
+    ],
+  ];
+
   $form['diagnostics-curation'] = [
     '#type' => 'fieldset',
-    '#title' => '🌟 Curation Diagnostics',
+    '#title' => '🌟 CURATION DIAGNOSTICS',
     '#description' => 'These diagnostics <b>require you to save this package</b> '
       . 'with data before functions will work',
-    // Must be below navigation buttons Back/Next which has weight 100.
-    '#weight' => 200,
+    // Must be below navigation buttons Back/Next which has weight 1000 in footer.
+    '#weight' => 1100,
   ];
   $list = [
     // 1st row of buttons.
@@ -298,4 +247,135 @@ function tpps_add_curation_tool(array &$form) {
     '#type' => 'container',
     '#attributes' => ['id' => 'diagnostic-curation-results'],
   ];
+  tpps_add_css_js('page_4_curation_tool', $form);
+}
+
+/**
+ * Adds feature '... information is the same as ...'.
+ *
+ * @param array $form_bus
+ *   Metadata where keys are:
+ *   'form' array
+ *     Drupal Form Array passed by reference. E.g., &$form.
+ *   'form_state' array
+ *     Drupal Form State Array. E.g., $form_state.
+ *
+ *   Specific data:
+ *   'organism_id' int
+ *     Currently processed organism number.
+ *
+ *   'name'string
+ *     Localized name of data type. E.g., t('Environmental').
+ *
+ *   'type' string
+ *     Machine data type name. E.g., 'phenotype'.
+ *   'type_name' string
+ *     Localized human readable data type name. E.g., 'Phenotype'.
+ */
+function tpps_page4_add_data_type(array $form_bus) {
+  $i = $form_bus['organism_id'] ?? 0;
+  $organism_name = 'organism-' . $i;
+  $form = &$form_bus['form'] ?? [];
+  $form_state = &$form_bus['form_state'] ?? [];
+
+  $type = $form_bus['type'] ?? '';
+  $type_name = $form_bus['type_name'] ?? '';
+
+  // List of dynamically build function names for code management:
+  // tpps_phenotype(),
+  // tpps_genotype() or tpps_genotype_subform(),
+  // tpps_environment().
+  if ($type == 'genotype') {
+    $function_name = 'tpps_' . $type . '_subform';
+    call_user_func($function_name, $form_bus);
+  }
+  elseif (in_array($type, ['environment', 'phenotype'])) {
+    $function_name = 'tpps_' . $type;
+    // @TODO Rename all functions to have suffix '_subform'.
+    if ($type == 'environment') {
+      $args = [&$form, &$form_state, $organism_name];
+    }
+    elseif ($type == 'phenotype') {
+      $args = [&$form, &$form_state, $form_bus['page4_values'], $organism_name];
+    }
+    $field = call_user_func_array($function_name, $args);
+    $form[$organism_name][$type] = $field;
+  }
+  else {
+    $message = t('Unsupported data type: @type.', ['@type' => $type]);
+    drupal_set_message($message, 'error');
+    return;
+  }
+  // Main fields.
+  // Repeat check.
+  if ($i > 1) {
+    $form[$organism_name][$type . '-repeat-check'] = [
+      '#type' => 'checkbox',
+      '#title' => t('@type_name information for <strong>@current_organism_name'
+        . '</strong> is the same as @type_lower_name information for <strong>'
+        . '@prev_organism_name</strong>.',
+        [
+          '@type_name' => ucfirst($type_name),
+          '@type_lower_name' => strtolower($type_name),
+          '@current_organism_name' => tpps_form_bus_get($form_bus, 'organism_name', $i),
+          '@prev_organism_name' => tpps_form_bus_get($form_bus, 'organism_name', ($i - 1)),
+        ]
+      ),
+      '#default_value' => ($form_bus['page4_values'][$organism_name][$type . '-repeat-check'] ?? 1),
+    ];
+    $form[$organism_name][$type]['#states'] = [
+      'invisible' => [
+        ':input[name="' . $organism_name
+        . '[' . $type . '-repeat-check]"]' => ['checked' => TRUE],
+      ],
+    ];
+  }
+}
+
+/**
+ * Checks if study has phenotype data.
+ *
+ * @param array $form_state
+ *   Drupal Form State.
+ *
+ * @return bool
+ *   Returns TRUE if it has and FALSE otherwise.
+ *
+ * @todo Better to detect is once on Page 2 submit and store in $form_state.
+ */
+function tpps_is_phenotype_data_type(array $form_state) {
+  $data_type = $form_state['saved_values'][TPPS_PAGE_2]['data_type'] ?? '';
+  return (bool) preg_match('/P/', $data_type);
+}
+
+/**
+ * Checks if study has genotype data.
+ *
+ * @param array $form_state
+ *   Drupal Form State.
+ *
+ * @return bool
+ *   Returns TRUE if it has and FALSE otherwise.
+ *
+ * @todo Better to detect is once on Page 2 submit and store in $form_state.
+ */
+function tpps_is_genotype_data_type(array $form_state) {
+  $data_type = $form_state['saved_values'][TPPS_PAGE_2]['data_type'] ?? '';
+  return (bool) preg_match('/G/', $data_type);
+}
+
+/**
+ * Checks if study has environment data.
+ *
+ * @param array $form_state
+ *   Drupal Form State.
+ *
+ * @return bool
+ *   Returns TRUE if it has and FALSE otherwise.
+ *
+ * @todo Better to detect is once on Page 2 submit and store in $form_state.
+ */
+function tpps_is_environment_data_type(array $form_state) {
+  $data_type = $form_state['saved_values'][TPPS_PAGE_2]['data_type'] ?? '';
+  return (bool) preg_match('/E/', $data_type);
 }
