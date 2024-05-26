@@ -106,7 +106,6 @@ function tpps_page_1_create_regular_form(array $form, array &$form_state) {
  */
 function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $saved_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
-  $values = $form_state['values'];
 
   $js_data = [
     'tpps' => [
