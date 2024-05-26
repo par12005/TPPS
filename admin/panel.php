@@ -31,8 +31,7 @@ module_load_include('inc', 'tpps', 'includes/common');
  */
 function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
   if (empty($accession)) {
-    // Show list of all studies.
-    tpps_admin_panel_top($form);
+    tpps_admin_panel_show_all($form);
   }
   else {
     // Shows single study.
@@ -705,7 +704,7 @@ function tpps_save_admin_comments(array $form, array $form_state) {
  * @param bool $reset
  *   Flag is cache must be resetted. Default if FALSE.
  */
-function tpps_admin_panel_top(array &$form, $reset = FALSE) {
+function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
   global $base_url;
 
   tpps_admin_panel_reports($form);

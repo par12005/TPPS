@@ -20,7 +20,7 @@
  */
 function tpps_admin_panel_logs(array $form, array &$form_state, $job_log_file = NULL) {
   //   if (empty($accession)) {
-  //     tpps_admin_panel_top($form);
+  //     tpps_admin_panel_show_all($form);
   //   }
   //   else {
   //     tpps_manage_submission_form($form, $form_state, $accession);
