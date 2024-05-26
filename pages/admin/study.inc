@@ -1095,6 +1095,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'reject':
       $submission->save(TPPS_SUBMISSION_STATUS_INCOMPLETE);
+      cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
       // Email notification.
       $lang = user_preferred_language($owner);
       drupal_mail('tpps', 'user_rejected', $to, $lang, $params, $from, TRUE);
@@ -1146,6 +1147,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       }
 
       $submission->save();
+      cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1166,6 +1168,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
         ]
       ));
       $submission->save($form_state['values']['state-status']);
+      cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

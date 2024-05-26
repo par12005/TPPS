@@ -433,6 +433,10 @@ class Submission {
       $this->set(['saved_values', 'status'], $status);
     }
 
+    // @TODO If status changed, then save and call hook_submission_status_changed()
+    // @TODO Implement this hook and reset cached lists of TPPS admin panel page.
+    // This can't be done in save() method because not always status is changed.
+
     if ($status == TPPS_SUBMISSION_STATUS_APPROVED) {
       module_load_include('php', 'tpps', 'forms/submit/submit_all');
       global $user;
