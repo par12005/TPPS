@@ -43,32 +43,6 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
 }
 
 /**
- * Generates all materialized views.
- */
-function tpps_manage_generate_all_materialized_views(array $form, array &$form_state, $option = NULL) {
-  global $user;
-
-  $form = $form ?? [];
-  tpps_add_css_js('main', $form);
-  module_load_include('php', 'tpps', 'forms/submit/submit_all');
-
-  $includes = [];
-  $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
-  $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
-  $args = array();
-  $jid = tripal_add_job("Generate materialized views for all studies", 'tpps', 'tpps_generate_all_genotype_materialized_views', $args, $user->uid, 10, $includes, TRUE);
-
-  $markup = "";
-  $markup = '<div>A job has been created to (re)generate materialized views for all studies</div>';
-  $form['item1'] = array(
-    '#type' => 'markup',
-    '#markup' => $markup
-  );
-
-  return $form;
-}
-
-/**
  * Build form to manage TPPS submissions from admin panel.
  *
  * Shows huge form which allows to manage submission.
@@ -935,11 +909,8 @@ $time_start2 = microtime(1);
   $params = ['attributes' => ['target' => '_blank']];
   $task_list = theme('item_list', [
     'items' => [
-      l(
-        t('Refresh all genotype materialized views'),
-        'tpps-admin-panel/refresh-genotypes-materialized-views',
-        $params
-      ),
+      l(t('Refresh all genotype materialized views'),
+        'tpps-admin-panel/refresh-genotypes-materialized-views'),
       l(t('TPPS Submission Tools'), 'tpps/submission', $params),
     ],
   ]);

@@ -316,14 +316,15 @@ function tpps_menu() {
     'type' => MENU_NORMAL_ITEM,
     'file' => 'pages/admin/panel.inc',
   ];
+  // @TODO Create common URL for admin tasks like this and send operation as
+  // a part of URL or GET-parameter.
   $items['tpps-admin-panel/refresh-genotypes-materialized-views'] = [
     'title' => 'TPPS Refresh Genotypes Materialized Views',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('tpps_manage_generate_all_materialized_views', 1),
+    'page callback' => 'tpps_manage_generate_all_materialized_views',
     'access callback' => 'tpps_access',
-    'access arguments' => array('approve tpps submissions'),
-    'type' => MENU_NORMAL_ITEM,
-    'file' => 'pages/admin/panel.inc',
+    'access arguments' => ['approve tpps submissions'],
+    'type' => MENU_CALLBACK,
+    'file' => 'pages/admin/generate_all_materialized_views.inc',
   ];
   $items['tpps-admin-panel/%'] = [
     'title' => 'TPPS Admin Panel',
