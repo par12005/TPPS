@@ -2007,6 +2007,15 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/config.php',
   ];
+  $items['admin/config/tpps/admin-panel'] = [
+    'title' => 'Admin Panel',
+    'description' => 'Admin Panel Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_admin_panel_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/panel.inc',
+  ];
   $items['admin/config/tpps/submission'] = [
     'title' => 'Submission',
     'description' => 'Submission Settings',

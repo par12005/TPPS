@@ -12,7 +12,11 @@
  * necessary materialized views.
  */
 function tpps_install() {
-  // [VS]
+  // Admin Panel.
+  variable_set('tpps_admin_panel_cache_lists', FALSE);
+  variable_set('tpps_admin_panel_cache_new_species_list', FALSE);
+  variable_set('tpps_admin_panel_cache_resubmit_list', FALSE);
+  variable_set('tpps_admin_panel_show_execution_time', FALSE);
   // Cronjob.
   variable_set('tpps_latest_job_status_slack_updates_job_frequency', '*/15 * * * *');
   variable_set('tpps_refresh_views_job_frequency', '0 */12 * * *');
@@ -347,6 +351,11 @@ function tpps_install() {
  * usage from public.file_usage.
  */
 function tpps_uninstall() {
+  // Admin Panel.
+  variable_del('tpps_admin_panel_cache_study_lists');
+  variable_del('tpps_admin_panel_cache_new_species_list');
+  variable_del('tpps_admin_panel_cache_resubmit_list');
+  variable_del('tpps_admin_panel_show_execution_time');
   // Cronjob.
   variable_del('tpps_latest_job_status_slack_updates_job_frequency');
   variable_del('tpps_refresh_views_job_frequency');

@@ -2,11 +2,11 @@
 
 /**
  * @file
- * TPPS Page 1 Settings Form.
+ * TPPS Form. Main Settings Form.
  */
 
 /**
- * TPPS Page 1 Settings Form.
+ * TPPS Form. Main Settings Form.
  */
 function tpps_form_main_settings_form(array $form, array &$form_state) {
   // @TODO Build list of themes dynamically.

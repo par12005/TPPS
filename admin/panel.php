@@ -712,11 +712,20 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
   $cid = __FUNCTION__;
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   $cache = cache_get($cid, $cache_bin);
-  $key = $cid;
-  if ($reset || empty($cache) || empty($cache->data[$key])) {
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+  $key = 'tpps_admin_panel_cache_study_lists';
+  $time_start = microtime(1);
+  if (
+    $reset || empty($cache) || empty($cache->data[$key])
+    || !variable_get($key, FALSE)
+  ) {
+
+
     // Get new data.
+$time_start1 = microtime(1);
+    // 2200 msec
     $submission_list = tpps_load_submission_multiple([]);
+dpm('1 Total execution time: ' . (microtime(1) - $time_start1) * 1000 . ' msec');
     // Note: order in this list defines order of the tables at page.
     $output = [
       'unpublished_old' => [],
@@ -725,8 +734,11 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
       'incomplete' => [],
     ];
     $submitting_user_cache = [];
+    // 0.03 msec
     $mail_cvterm = tpps_load_cvterm('email')->cvterm_id;
 
+$time_start2 = microtime(1);
+    // 3000 msec.
     foreach ($submission_list as $accession => $submission) {
       $uid = $submission->uid ?? NULL;
 
@@ -744,7 +756,6 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
         $submitting_user_cache[$uid] = $name ?? $mail;
       }
       $submitting_user = $submitting_user_cache[$uid] ?? NULL;
-
       $view_link = l($accession, 'tpps-admin-panel/' . $accession);
       $action_list = [
         l(t('Edit'), 'tppsc/' . $accession),
@@ -752,7 +763,7 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
         l(t('Export'), 'tpps/submission/' . $accession . '/export'),
         l(t('Files'), 'tpps-admin-panel/file-diagnostics/' . $accession),
       ];
-
+      $action_list = '';
       // To add items use $action_list and recreate element.
       $actions = theme('item_list', ['items' => $action_list]);
       if ($submission->doesExist()) {
@@ -908,10 +919,14 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
         }
       }
     }
+    dpm('2 Total execution time: ' . (microtime(1) - $time_start2) * 1000 . ' msec');
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $cache->data[$key] = $output;
     cache_set($cid, $cache->data, $cache_bin);
+  }
+  if (variable_get('tpps_admin_panel_show_execution_time', FALSE)) {
+    dpm($key . ': ' . (microtime(1) - $time_start) * 1000 . ' msec');
   }
   $output = $cache->data[$key] ?? NULL;
 
@@ -926,7 +941,7 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
         $params
       ),
       l(t('TPPS Submission Tools'), 'tpps/submission', $params),
-    ]
+    ],
   ]);
   $form['general_tasks'] = [
     '#type' => 'fieldset',
@@ -991,85 +1006,90 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
         'header' => $header[$status_name],
         'rows' => $status_list,
         'attributes' => ['class' => ['view', 'tpps_table']],
-        'caption' => '',
-        'colgroups' => NULL,
-        'sticky' => FALSE,
-        'empty' => '',
       ]);
       $form[$status_name]['table'] = ['#markup' => $table];
     }
   }
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Old TGDR Submissions to be resubmitted.
-  $subquery = db_select('tpps_submission', 's');
-  $subquery->fields('s', array('accession'));
-  $query = db_select('chado.dbxref', 'dbx');
-  $query->join('chado.project_dbxref', 'pd', 'pd.dbxref_id = dbx.dbxref_id');
-  $query->condition('dbx.accession', $subquery, 'NOT IN');
-  $query->condition('dbx.accession', 'TGDR%', 'ILIKE');
-  $query->fields('dbx', array('accession'));
-  $query->orderBy('dbx.accession');
-  $query = $query->execute();
-  $to_resubmit = array();
-  while (($result = $query->fetchObject())) {
-    $to_resubmit[] = [$result->accession];
+  $key = 'tpps_admin_panel_cache_resubmit_list';
+  $time_start = microtime(1);
+  if (
+    $reset || empty($cache) || empty($cache->data[$key])
+    || !variable_get($key, FALSE)
+  ) {
+    // Get new data.
+    $subquery = db_select('tpps_submission', 's');
+    $subquery->fields('s', ['accession']);
+
+    $query = db_select('chado.dbxref', 'dbx');
+    $query->join('chado.project_dbxref', 'pd', 'pd.dbxref_id = dbx.dbxref_id');
+    $query->condition('dbx.accession', $subquery, 'NOT IN');
+    $query->condition('dbx.accession', 'TGDR%', 'ILIKE');
+    $query->fields('dbx', ['accession']);
+    $query->orderBy('dbx.accession');
+
+    $cache->data[$key] = $query->execute()->fetchAll(PDO::FETCH_ASSOC);
+    cache_set($cid, $cache->data, $cache_bin);
   }
-  if (!empty($to_resubmit)) {
-    $vars['header'] = ['Accession'];
-    $vars['rows'] = $to_resubmit;
-    $to_resubmit_table = theme('table', $vars);
+  if (!empty($cache->data[$key])) {
     $form['resubmit'] = [
       '#type' => 'fieldset',
       '#title' => "<img src='$base_url/misc/message-16-warning.png'> "
         . t('Old TGDR Submissions to be resubmitted'),
       '#collapsible' => TRUE,
-      'table' => ['#markup' => $to_resubmit_table],
+      'table' => [
+        '#markup' => theme('table',
+          ['header' => ['Accession'], 'rows' => $cache->data[$key]]
+        ),
+      ],
     ];
   }
+  if (variable_get('tpps_admin_panel_show_execution_time', FALSE)) {
+    dpm($key . ': ' . (microtime(1) - $time_start) * 1000 . ' msec');
+  }
 
-  $tpps_new_orgs = variable_get('tpps_new_organisms', NULL);
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // New Species table.
+  $key = 'tpps_admin_panel_cache_new_species_list';
+  $time_start = microtime(1);
   $db = chado_get_db(['name' => 'NCBI Taxonomy']);
   if (!empty($db)) {
-    $rows = array();
-    $query = db_select('chado.organism', 'o');
-    $query->fields('o', ['organism_id', 'genus', 'species']);
+    if (
+      $reset || empty($cache) || empty($cache->data[$key])
+      || !variable_get($key, FALSE)
+    ) {
+      $rows = [];
+      $query = db_select('chado.organism', 'o');
+      $query->fields('o', ['organism_id', 'genus', 'species']);
 
-    $query_e = db_select('chado.organism_dbxref', 'odb');
-    $query_e->join('chado.dbxref', 'd', 'd.dbxref_id = odb.dbxref_id');
-    $query_e->condition('d.db_id', $db->db_id)
-      ->where('odb.organism_id = o.organism_id');
-    $query->notExists($query_e);
-    $query = $query->execute();
+      $query_e = db_select('chado.organism_dbxref', 'odb');
+      $query_e->join('chado.dbxref', 'd', 'd.dbxref_id = odb.dbxref_id');
+      $query_e->condition('d.db_id', $db->db_id)
+        ->where('odb.organism_id = o.organism_id');
 
-    $org_bundle = tripal_load_bundle_entity(array('label' => 'Organism'));
-    while (($org = $query->fetchObject())) {
-      $id = chado_get_record_entity_by_bundle($org_bundle, $org->organism_id);
-      if (!empty($id)) {
-        $rows[] = [
-          "<a href=\"$base_url/bio_data/{$id}/edit\" target=\"_blank\">"
-          . "$org->genus $org->species</a>",
-        ];
-        continue;
+      $query->notExists($query_e);
+      $query = $query->execute();
+
+      $org_bundle = tripal_load_bundle_entity(['label' => 'Organism']);
+      while (($org = $query->fetchObject())) {
+        $id = chado_get_record_entity_by_bundle($org_bundle, $org->organism_id);
+        if (!empty($id)) {
+          $rows[] = [
+            "<a href=\"$base_url/bio_data/{$id}/edit\" target=\"_blank\">"
+            . "$org->genus $org->species</a>",
+          ];
+        }
+        else {
+          $rows[] = ["$org->genus $org->species"];
+        }
       }
-      $rows[] = ["$org->genus $org->species"];
+
+      $cache->data[$key] = $rows;
+      cache_set($cid, $cache->data, $cache_bin);
     }
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // New Species table.
-    if (!empty($rows)) {
-      $vars = [
-        'header' => [],
-        'rows' => $rows,
-        'attributes' => [
-          'class' => ['view', 'tpps_table'],
-          'id' => 'new_species',
-        ],
-        'caption' => '',
-        'colgroups' => NULL,
-        'sticky' => FALSE,
-        'empty' => '',
-      ];
-
+    if (!empty($cache->data[$key])) {
       $form['new_species'] = [
         '#type' => 'fieldset',
         '#title' => t('New Species'),
@@ -1077,10 +1097,23 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
           . 'updated, because they do not have NCBI Taxonomy identifiers '
           . 'in the database.'),
         '#collapsible' => TRUE,
-        'table' => ['#markup' => theme('table', $vars)],
+        'table' => [
+          '#markup' => theme('table',
+            [
+              'header' => [],
+              'rows' => $cache->data[$key],
+              'attributes' => [
+                'class' => ['view', 'tpps_table'],
+                'id' => 'new_species',
+              ],
+            ]
+          ),
+        ],
       ];
     }
-    variable_set('tpps_new_organisms', $tpps_new_orgs);
+  }
+  if (variable_get('tpps_admin_panel_show_execution_time', FALSE)) {
+    dpm($key . ': ' . (microtime(1) - $time_start) * 1000 . ' msec');
   }
 }
 
