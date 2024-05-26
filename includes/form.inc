@@ -224,6 +224,8 @@ function tpps_get_field_path(array $field, array $path) {
  * The navigation bar will be shown inside form, allows to detect
  * current step and switch to already completed steps (move back).
  *
+ * See function tpps_form_build_main() where stage of form is changed.
+ *
  * @param array $form
  *   The form being populated.
  * @param array $form_state
@@ -231,16 +233,22 @@ function tpps_get_field_path(array $field, array $path) {
  */
 function tpps_form_navigation_bar(array &$form, array $form_state) {
   $submission = new Submission($form_state['accession']);
+
   $current_stage = $submission->getCurrentStage();
+  $current_stage = ($current_stage == 'summarypage' ? 5 : $current_stage);
+
   $last_completed_stage = $submission->getLastCompletedStage();
+  $last_completed_stage = ($last_completed_stage == 'summarypage' ? 5 : $last_completed_stage);
 
   // @TODO Each stage has '#cleared' option which indicates that form step
   // passed validation when it's set and value is TRUE. Remove for TPPSc.
   $stage_list = [
-    '1' => t('Publication Information'),
-    '2' => t('Experimental Design'),
-    '3' => t('Plant Accession'),
-    '4' => t('Data'),
+    1 => t('Publication Information'),
+    2 => t('Experimental Design'),
+    3 => t('Plant Accession'),
+    4 => t('Data'),
+    // 'summarypage'
+    5 => t('Review and Submit'),
   ];
   foreach ($stage_list as $number => $label) {
     // WARNING: Recreate $options to clean previos item settings.
@@ -903,25 +911,24 @@ function tpps_form_get_accession(array $form_state, $only_number = FALSE) {
 function tpps_form_build_main(array $form, array &$form_state, $accession = NULL) {
   global $user;
 
-
   // Get stage from URL if possible.
+  // See function tpps_form_navigation_bar() which adds navigation links.
   if (!empty($_GET['stage'])) {
+    $current_stage_name = $_GET['stage'] == 5 ? 'summarypage' : (int) ($_GET['stage']);
     $submission = tpps_submission($accession)->load();
+    $last_completed_stage = $submission->getLastCompletedStage();
+    $last_completed_stage = ($last_completed_stage == 'summarypage' ? 5 : $last_completed_stage);
     if (
-      in_array($_GET['stage'], range(1, 4))
+      in_array($_GET['stage'], range(1, 5))
       // Allow to go directly to next stage after last completed.
-      && $_GET['stage'] <= $submission->getLastCompletedStage() + 1
+      && $_GET['stage'] <= $last_completed_stage + 1
     ) {
-      $submission->state['stage'] = (int) check_plain($_GET['stage']);
+      $submission->state['stage'] = check_plain($current_stage_name);
       $submission->save();
     }
     // Get rid of 'stage' param in URL.
     drupal_goto($_GET['q']);
   }
-
-
-
-
 
   // Check if this is TPPS or TPPSC Form using Url.
   // $form_state could have no necessary data yet when loaded first step of
