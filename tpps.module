@@ -305,37 +305,37 @@ function tpps_menu() {
     'type' => MENU_NORMAL_ITEM,
   ];
 
-  $items['tpps-admin-panel'] = array(
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // TPPS Admin Panel.
+  $items['tpps-admin-panel'] = [
     'title' => 'TPPS Admin Panel',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('tpps_admin_panel'),
+    'page arguments' => ['tpps_admin_panel'],
     'access callback' => 'tpps_access',
-    'access arguments' => array('approve tpps submissions'),
+    'access arguments' => ['approve tpps submissions'],
     'type' => MENU_NORMAL_ITEM,
-    'file' => 'admin/panel.php',
-  );
-
-  $items['tpps-admin-panel/refresh-genotypes-materialized-views'] = array(
+    'file' => 'pages/admin/panel.inc',
+  ];
+  $items['tpps-admin-panel/refresh-genotypes-materialized-views'] = [
     'title' => 'TPPS Refresh Genotypes Materialized Views',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('tpps_manage_generate_all_materialized_views', 1),
     'access callback' => 'tpps_access',
     'access arguments' => array('approve tpps submissions'),
     'type' => MENU_NORMAL_ITEM,
-    'file' => 'admin/panel.php',
-  );
-
-  $items['tpps-admin-panel/%'] = array(
+    'file' => 'pages/admin/panel.inc',
+  ];
+  $items['tpps-admin-panel/%'] = [
     'title' => 'TPPS Admin Panel',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('tpps_admin_panel', 1),
     'access callback' => 'tpps_access',
     'access arguments' => array('approve tpps submissions'),
     'type' => MENU_NORMAL_ITEM,
-    'file' => 'admin/panel.php',
-  );
+    'file' => 'pages/admin/panel.inc',
+  ];
 
-
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $items['tpps-admin-panel-logs/%'] = array(
     'title' => 'TPPS Admin Panel',
     'page callback' => 'drupal_get_form',
@@ -358,7 +358,7 @@ function tpps_menu() {
     'file' => 'admin/pages.php',
   ];
 
-  $items['tpps/doi/%'] = array(
+  $items['tpps/doi/%'] = [
     'title' => 'TPPS DOI',
     'page callback' => 'tpps_manage_doi',
     'page arguments' => [2],
@@ -366,7 +366,7 @@ function tpps_menu() {
     'access arguments' => ['access content'],
     'type' => MENU_NORMAL_ITEM,
     'file' => 'includes/manage_doi.inc',
-  );
+  ];
 
 
 
