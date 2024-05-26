@@ -327,13 +327,13 @@ function tpps_menu() {
     'file' => 'pages/admin/generate_all_materialized_views.inc',
   ];
   $items['tpps-admin-panel/%'] = [
-    'title' => 'TPPS Admin Panel',
+    'title' => 'Study Admin Panel',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('tpps_admin_panel', 1),
+    'page arguments' => ['tpps_manage_submission_form', 1],
     'access callback' => 'tpps_access',
-    'access arguments' => array('approve tpps submissions'),
+    'access arguments' => ['approve tpps submissions'],
     'type' => MENU_NORMAL_ITEM,
-    'file' => 'pages/admin/panel.inc',
+    'file' => 'pages/admin/study.inc',
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
