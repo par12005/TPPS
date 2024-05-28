@@ -1096,8 +1096,8 @@ function tpps_page_4_genotype_ssrs(array $form_bus) {
       'Diploid' => t('Diploid'),
       'Polyploid' => t('Polyploid'),
     ],
-    '#default_value' => tpps_get_ajax_value(
-      $form_bus['form_state'], [$organism_name, 'genotype', 'files', 'ploidy'], 'Haploid'
+    '#default_value' => tpps_get_ajax_value($form_bus['form_state'],
+      [$organism_name, 'genotype', $ssrs_fieldset, 'ploidy'], 'Haploid'
     ),
     '#states' => [
       'invisible' => [
