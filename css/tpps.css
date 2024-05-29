@@ -220,12 +220,14 @@ a.fieldset-title {
   float: both;
 }
 .tppsc-form .navigation-bar .stage {
-  margin: 0 24px;
+  margin: 0 20px;
   /*white-space: nowrap;*/
   float: left;
   display: inline-block;
   font-size: 18px;
+  min-width: 15%;
   max-width: 15%;
+  min-height: 60px;
 }
 .tppsc-form .navigation-bar .stage.complete {
   font-style: normal;
