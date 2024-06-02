@@ -1612,7 +1612,7 @@ class Submission {
               $data["$org_name Reference Genome"] = $snps_fieldset['ref-genome'];
             }
 
-            if (!empty($geno['files']['snps-assay'])) {
+            if (!empty($geno['files']['snps-assay'])) { // Shared State. flatten().
               $data["$org_name SNP Genotype Assay File"] = $geno['files']['snps-assay'];
             }
 
@@ -1636,6 +1636,7 @@ class Submission {
               $data["$org_name Other Marker Genotype File"] = $geno['files']['other'];
             }
 
+            // Note: Shared State.
             if (!empty($geno['files']['local_vcf'])) {
               $data["$org_name VCF File (cluster)"] = $geno['files']['local_vcf'];
             }

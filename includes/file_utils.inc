@@ -603,17 +603,18 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
           }
         }
 
-        $file = file_load($form_state['values']["organism-$i"]['genotype']['files']['other'] ?? '');
+        // Fieldset 'Other Genotypic Data'.
+        $other_fieldset_values = $form_state['values']["organism-$i"]['genotype']['other'] ?? [];
+        $other_fieldset_form = $form["organism-$i"]['genotype']['other'] ?? [];
+        $file = file_load($other_fieldset_values['other'] ?? '');
         if ($file) {
           file_usage_add($file, 'tpps', 'tpps_project', $accession);
-
-          $form_state['values']["organism-$i"]['genotype']['files']['other-columns'] = [];
-
-          if (isset($form["organism-$i"]['genotype']['files']['other']['#value']['columns'])) {
-            foreach ($form["organism-$i"]['genotype']['files']['other']['#value']['columns'] as $col => $val) {
+          $other_fieldset_values['other-columns'] = [];
+          if (isset($other_fieldset_form['other']['#value']['columns'])) {
+            foreach ($other_fieldset_form['other']['#value']['columns'] as $col => $val) {
               if ($col[0] != '#') {
-                $form_state['values']["organism-$i"]['genotype']['files']['other-columns'][$col]
-                  = $form["organism-$i"]['genotype']['files']['other']['#value']['columns'][$col];
+                $other_fieldset_values['other-columns'][$col]
+                  = $other_fieldset_form['other']['#value']['columns'][$col];
               }
             }
           }

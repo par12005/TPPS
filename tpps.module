@@ -241,15 +241,17 @@ function tpps_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $items['tpps/%/assay-design-markers'] = array(
+  // AJAX-callback. See /js/tpps_page_4_curation_tool.js.
+  // First % = accession
+  $items['tpps/%/assay-design-markers'] = [
     'title' => 'TPPS SNPs Design Markers',
     'page callback' => 'tpps_assay_design_markers',
-    'page arguments' => array(1),
-    'access arguments' => array('access content'),
-    // 'access callback' => 'tpps_access',
-    // 'access arguments' => array('access tpps form', 1),
+    // Submission accession. Format: TGDRxxxx.
+    'page arguments' => [1],
+    'access arguments' => ['access content'],
+    // @TODO Send secret key to restrict access.
     'type' => MENU_CALLBACK,
-  );
+  ];
 
   // This will return information about a study's VCF markers vs
   // First % = accession
@@ -942,8 +944,11 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
   require_once 'ajax/tpps_ajax.php';
 
   $fid = $element['#value']['fid'] ?? '';
-  if (($file = tpps_file_load($fid))) {
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+  // Note: edit-organism-1-genotype-tripal-fasta-file-file-upload-upload
+  // has no title.
+  if ($fid && ($file = tpps_file_load($fid))) {
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // "Null values denoted by" AKA "empty" field.
     if (!empty($form_state['saved_values'][$page])) {
       // @TODO Remove this if possible.

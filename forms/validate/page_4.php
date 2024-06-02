@@ -850,9 +850,6 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
     tpps_is_required_field_empty($form_state,
       [$id, 'genotype', $other_fieldset, 'other-marker']
     );
-    tpps_is_required_field_empty($form_state,
-      [$id, 'genotype', $other_fieldset, 'other']
-    );
   }
   // [/VS]
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

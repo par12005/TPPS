@@ -648,6 +648,7 @@ function tpps_snps_assay_markers($accession = NULL, $i = 1) {
 // }
 
 function tpps_assay_design_markers($accession = NULL, $i = 1) {
+  // @TODO Check if including this file is required.
   require_once __DIR__ . '/../forms/submit/submit_all.php';
   $submission = new Submission($accession);
   $output = tpps_get_assay_design_file_markers($submission->state, $i);
@@ -658,7 +659,7 @@ function tpps_assay_design_markers($accession = NULL, $i = 1) {
  * Generates the markers.
  *
  * @param array $form_state
- *   Drupal Form API state array.
+ *   Drupal Form API state array. (Not Shared State).
  * @param int $i
  *   Organism Id.
  *
@@ -668,9 +669,17 @@ function tpps_assay_design_markers($accession = NULL, $i = 1) {
 function tpps_get_assay_design_file_markers(array $form_state, $i) {
   require_once __DIR__ . '/../includes/file_utils.inc';
 
-  $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
-  $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
-  $fid = $genotype['files']['assay-design'];
+  $page4_values = $form_state['saved_values'][TPPS_PAGE_4] ?? NULL;
+  if (!$page4_values) {
+    // Page 4 not yet submitted.
+    return [];
+  }
+  $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+  $fid = $genotype['SNPs']['assay-design'] ?? NULL;
+  if (!$fid) {
+    // Empty field.
+    return [];
+  }
   $file_headers = tpps_file_headers($fid, FALSE);
   // Empty until found, this will contain A or B or C etc.
   $marker_name_column = NULL;
@@ -682,20 +691,15 @@ function tpps_get_assay_design_file_markers(array $form_state, $i) {
       break;
     }
   }
-  // print_r($file_headers);
-  // print_r($marker_name_column);
-  // exit;
-  $options = [
-    'marker_name_column' => $marker_name_column
-  ];
-  $options['no_header'] = FALSE; // detect if there is a header or not
+  $options = ['marker_name_column' => $marker_name_column];
+  // Detect if there is a header or not.
+  $options['no_header'] = FALSE;
   tpps_file_iterator($fid, 'tpps_get_assay_design_file_markers_iterate_line', $options);
-
   $output = [
     'values' => array_keys($options['values']),
     'duplicate_values' => array_keys($options['duplicate_values']),
     'count' => $options['count'],
-    'unique_count' => $options['unique_count']
+    'unique_count' => $options['unique_count'],
   ];
   return $output;
 }
@@ -725,8 +729,10 @@ function tpps_get_assay_design_file_markers_iterate_line($row, &$options, $job =
 }
 
 /**
- * This function will show the diff between vcf markers
- * and snps assay markers - outputs JSON output and used for API call
+ * Shows the diff between vcf markers and snps assay markers.
+ *
+ * @return string
+ *   Outputs JSON output and used for API call.
  */
 function tpps_compare_vcf_markers_vs_snps_assay_markers($accession = NULL, $i = 1) {
   $overall_results = tpps_compare_vcf_markers_vs_snps_assay_markers_results_array($accession = NULL, $i = 1);
@@ -793,23 +799,23 @@ function tpps_vcf_tree_validation($accession = NULL) {
 
   $firstpage = $submission->state['saved_values'][TPPS_PAGE_1];
   $thirdpage = $submission->state['saved_values'][TPPS_PAGE_3];
-  $fourthpage = $submission->state['saved_values'][TPPS_PAGE_4];
+  $page4_values = $submission->state['saved_values'][TPPS_PAGE_4];
   $organism_number = $firstpage['organism']['number'];
 
   for ($i = 1; $i <= $organism_number; $i++) {
-    $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
+    $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
 
     // Check the type of VCF file (uploaded or in the cluser)
-    // Get file location
-    if ($vcf_file = tpps_file_load(($genotype['files']['vcf'] ?? NULL))) {
+    // Get file location.
+    if ($vcf_file = tpps_file_load(($genotype['SNPs']['vcf'] ?? NULL))) {
       // File was uploaded.
       $location = tpps_get_location($vcf_file->uri);
     }
     else {
       // File linked by curation in the cluster.
-      $location = $genotype['files']['local_vcf'];
+      $location = $genotype['SNPs']['local_vcf'];
     }
-    if ($location == null || $location == "") {
+    if ($location == NULL || $location == "") {
       throw new Exception('Could not find location of VCF even though the VCF option was specified.
       File ID was 0 so its not an uploaded file. local_vcf variable returned empty so cannot use that');
     }
@@ -824,7 +830,7 @@ function tpps_vcf_tree_validation($accession = NULL) {
         $columns = explode("\t", $vcf_line);
         $columns_count = count($columns);
         for ($j = 9; $j < $columns_count; $j++) {
-          $tree_ids_vcf[trim($columns[$j])] = true;
+          $tree_ids_vcf[trim($columns[$j])] = TRUE;
         }
         break;
       }
