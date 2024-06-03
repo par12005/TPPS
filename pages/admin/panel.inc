@@ -60,7 +60,6 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
   $cache = cache_get($cid, $cache_bin);
 
   $key = 'tpps_admin_panel_cache_study_lists';
-  $time_start = microtime(1);
   if (
     $reset || empty($cache) || empty($cache->data[$key])
     || !variable_get($key, FALSE)
@@ -68,10 +67,7 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
 
 
     // Get new data.
-$time_start1 = microtime(1);
-    // 2200 msec
     $submission_list = tpps_load_submission_multiple([]);
-dpm('1 Total execution time: ' . (microtime(1) - $time_start1) * 1000 . ' msec');
     // Note: order in this list defines order of the tables at page.
     $output = [
       'unpublished_old' => [],
@@ -83,8 +79,6 @@ dpm('1 Total execution time: ' . (microtime(1) - $time_start1) * 1000 . ' msec')
     // 0.03 msec
     $mail_cvterm = tpps_load_cvterm('email')->cvterm_id;
 
-$time_start2 = microtime(1);
-    // 3000 msec.
     foreach ($submission_list as $accession => $submission) {
       $uid = $submission->uid ?? NULL;
 
@@ -265,14 +259,10 @@ $time_start2 = microtime(1);
         }
       }
     }
-    dpm('2 Total execution time: ' . (microtime(1) - $time_start2) * 1000 . ' msec');
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $cache->data[$key] = $output;
     cache_set($cid, $cache->data, $cache_bin);
-  }
-  if (variable_get('tpps_admin_panel_show_execution_time', FALSE)) {
-    dpm($key . ': ' . (microtime(1) - $time_start) * 1000 . ' msec');
   }
   $output = $cache->data[$key] ?? NULL;
 
@@ -357,7 +347,6 @@ $time_start2 = microtime(1);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Old TGDR Submissions to be resubmitted.
   $key = 'tpps_admin_panel_cache_resubmit_list';
-  $time_start = microtime(1);
   if (
     $reset || empty($cache) || empty($cache->data[$key])
     || !variable_get($key, FALSE)
@@ -389,14 +378,10 @@ $time_start2 = microtime(1);
       ],
     ];
   }
-  if (variable_get('tpps_admin_panel_show_execution_time', FALSE)) {
-    dpm($key . ': ' . (microtime(1) - $time_start) * 1000 . ' msec');
-  }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // New Species table.
   $key = 'tpps_admin_panel_cache_new_species_list';
-  $time_start = microtime(1);
   $db = chado_get_db(['name' => 'NCBI Taxonomy']);
   if (!empty($db)) {
     if (
@@ -454,9 +439,6 @@ $time_start2 = microtime(1);
         ],
       ];
     }
-  }
-  if (variable_get('tpps_admin_panel_show_execution_time', FALSE)) {
-    dpm($key . ': ' . (microtime(1) - $time_start) * 1000 . ' msec');
   }
 }
 
