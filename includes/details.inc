@@ -65,7 +65,7 @@ function tpps_details($accession = NULL) {
 
   $output = l(t('Return to TPPS Details'), $base_url . '/tpps/details');
   $submission = new Submission($accession);
-  if (!empty($submission->state)) {
+  if ($submission->doesExist()) {
     if (isset($submission->state['study_view_role'])) {
       // If more than 0, then a view role was set by curation team
       if ($submission->state['study_view_role'] > 0) {

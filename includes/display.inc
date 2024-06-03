@@ -409,13 +409,16 @@ function tpps_tab_create($uid) {
     'empty' => '',
   );
 
-  $final = isset($submission->state) ? "<div class='tpps_table'><label for="
+  $final = $submission->doesExist() ? "<div class='tpps_table'><label for="
     . "'tpps_incomplete_table'>Incomplete Submissions</label>"
     . theme('table', $vars) . '</div>' : "";
   $submission_list = [];
 
   $submission_list = tpps_load_submission_multiple([
-    'status' => [TPPS_SUBMISSION_STATUS_PENDING_APPROVAL, TPPS_SUBMISSION_STATUS_APPROVED],
+    'status' => [
+      TPPS_SUBMISSION_STATUS_PENDING_APPROVAL,
+      TPPS_SUBMISSION_STATUS_APPROVED,
+    ],
     'uid' => $user->uid,
   ]);
 
@@ -456,13 +459,15 @@ function tpps_tab_create($uid) {
   $vars['rows'] = $rows;
   $vars['attributes']['id'] = 'tpps_complete_table';
 
-  $final .= isset($submission->state)
+  $final .= $submission->doesExist()
     ? "<div class='tpps_table'><label for='tpps_complete_table'>Complete "
     . "Submissions</label>" . theme('table', $vars) . '</div>' : "";
 
   if (empty($final)) {
     $final .= "<h2>Could not find any Submissions</h2>";
-    $final .= "<p>We could not find any incomplete TPPS Submissions or TPPS Submissions pending approval. If you would like to start a new TPPS Submission, you can start <a href=$base_url/tpps>here.</a></p>";
+    $final .= "<p>We could not find any incomplete TPPS Submissions or TPPS "
+      . "Submissions pending approval. If you would like to start a new TPPS "
+      . "Submission, you can start <a href=$base_url/tpps>here.</a></p>";
   }
 
   tpps_add_css_js('main');

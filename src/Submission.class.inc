@@ -4,6 +4,9 @@
  * @file
  * Contains 'Submission' class.
  *
+ * Note:
+ * 'data' element will be added by submit_all.php script to SharedState.
+ *
  * @todo
  * 1. Add submission's tag code from include/submission.inc
  * @TODO Minor. Review function tpps_form_state_info() which could be used
@@ -132,7 +135,6 @@ class Submission {
   /**
    * Internal Submission Id.
    *
-   * Seems not used so much but $accession is used a lot.
    * Stored in tpps_submission.tpps_submission_id.
    *
    * @var int
@@ -1020,7 +1022,7 @@ class Submission {
         // 'created',
         // 'accession',
         // 'status',
-        // 'stats',
+        // 'stats', // Belongs to Submission State.
         // 'ids',
         // 'tpps_type',
         // 'file_info',
