@@ -509,7 +509,7 @@ function tpps_submission_add_tag($accession, $tag) {
   $tags = tpps_submission_get_tags($accession) ?? [];
   if (!array_key_exists($tag, $tags)) {
     $submission = new Submission($accession);
-    if (!empty($submission->id)) {
+    if ($submission->id) {
       db_insert('tpps_submission_tag')
         ->fields([
           'tpps_submission_id' => $submission->id,

@@ -4,6 +4,9 @@
  * @file
  * Contains 'Submission' class.
  *
+ * Note:
+ * 'data' element will be added by submit_all.php script to SharedState.
+ *
  * @todo
  * 1. Add submission's tag code from include/submission.inc
  * @TODO Minor. Review function tpps_form_state_info() which could be used
@@ -132,7 +135,6 @@ class Submission {
   /**
    * Internal Submission Id.
    *
-   * Seems not used so much but $accession is used a lot.
    * Stored in tpps_submission.tpps_submission_id.
    *
    * @var int
@@ -432,6 +434,10 @@ class Submission {
       $this->set(['values', 'status'], $status);
       $this->set(['saved_values', 'status'], $status);
     }
+
+    // @TODO If status changed, then save and call hook_submission_status_changed()
+    // @TODO Implement this hook and reset cached lists of TPPS admin panel page.
+    // This can't be done in save() method because not always status is changed.
 
     if ($status == TPPS_SUBMISSION_STATUS_APPROVED) {
       module_load_include('php', 'tpps', 'forms/submit/submit_all');
@@ -1016,7 +1022,7 @@ class Submission {
         // 'created',
         // 'accession',
         // 'status',
-        // 'stats',
+        // 'stats', // Belongs to Submission State.
         // 'ids',
         // 'tpps_type',
         // 'file_info',
@@ -1608,7 +1614,7 @@ class Submission {
               $data["$org_name Reference Genome"] = $snps_fieldset['ref-genome'];
             }
 
-            if (!empty($geno['files']['snps-assay'])) {
+            if (!empty($geno['files']['snps-assay'])) { // Shared State. flatten().
               $data["$org_name SNP Genotype Assay File"] = $geno['files']['snps-assay'];
             }
 
@@ -1632,6 +1638,7 @@ class Submission {
               $data["$org_name Other Marker Genotype File"] = $geno['files']['other'];
             }
 
+            // Note: Shared State.
             if (!empty($geno['files']['local_vcf'])) {
               $data["$org_name VCF File (cluster)"] = $geno['files']['local_vcf'];
             }

@@ -65,7 +65,7 @@ function tpps_details($accession = NULL) {
 
   $output = l(t('Return to TPPS Details'), $base_url . '/tpps/details');
   $submission = new Submission($accession);
-  if (!empty($submission->state)) {
+  if ($submission->doesExist()) {
     if (isset($submission->state['study_view_role'])) {
       // If more than 0, then a view role was set by curation team
       if ($submission->state['study_view_role'] > 0) {
@@ -844,11 +844,13 @@ function tpps_details_get_study_file_ids(array $state) {
     ['phenotype', 'file'],
     ['phenotype', 'metadata'],
     // Genotype files.
-    ['genotype', 'files', 'snps-assay'],
+    ['genotype', 'files', 'snps-assay'], // Shared State.
     ['genotype', 'files', 'snps-association'],
     ['genotype', 'files', 'vcf'],
     ['genotype', 'files', 'ssrs'],
     ['genotype', 'files', 'ssrs_extra'],
+    // What about 'Other spreadsheet' field?
+    // ['genotype', 'files', 'other'],
   ];
   for ($j = 1; $j <= ($saved_values[TPPS_PAGE_1]['organism']['number'] ?? 1); $j++) {
     // Page 3.

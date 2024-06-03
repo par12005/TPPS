@@ -17,7 +17,8 @@
  *   Returns file content so it could be downloaded.
  */
 function tpps_file_get($fid, $token) {
-  if ($file = tpps_file_load($fid)) {
+  $file = tpps_file_load($fid);
+  if (!$file) {
     drupal_set_message(t('File not found'), 'error');
     drupal_not_found();
   }
