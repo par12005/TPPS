@@ -115,9 +115,8 @@ function tpps_genotype_subform(array $form_bus) {
   // Weight of the yes/no selectors. From 0 (default) to heavier.
   foreach ($marker_type_field_list as $field_name => $marker_name) {
     $weight = ($weight ?? 0) + 100;
-    $default_value = (
-      in_array($marker_name, $genotype_marker_type)
-      ? 'yes' : (count($genotype_marker_type) ? 'no' : 'no')
+    $default_value = tpps_get_ajax_value($form_state,
+      [$organism_name, 'genotype', $field_name]
     );
     tpps_form_add_yesno_field(array_merge($form_bus,
       [

@@ -57,8 +57,9 @@ function tpps_form_add_buttons(array $form_bus) {
           '#value' => t('Back'),
           // Disable validation.
           // Currently useless because all fields are optional but this
-          // could be changed in future.
-          '#limit_validation_errors' => [],
+          // could be changed in future. But it removed saved data of stage
+          // when 'Back' button clicked which is not good.
+          //'#limit_validation_errors' => [],
         ];
 
       default:
@@ -79,8 +80,9 @@ function tpps_form_add_buttons(array $form_bus) {
           '#value' => t('Back'),
           // Disable validation.
           // Currently useless because all fields are optional but this
-          // could be changed in future.
-          '#limit_validation_errors' => [],
+          // could be changed in future. But it removed saved data of stage
+          // when 'Back' button clicked which is not good.
+          //'#limit_validation_errors' => [],
         ];
         $form[$scope]['Save'] = ['#type' => 'submit', '#value' => t('Save')];
         $form[$scope]['submit'] = [
@@ -119,8 +121,9 @@ function tpps_form_add_buttons(array $form_bus) {
           '#value' => t('Back'),
           // Disable validation.
           // Currently useless because all fields are optional but this
-          // could be changed in future.
-          '#limit_validation_errors' => [],
+          // could be changed in future. But it removed saved data of stage
+          // when 'Back' button clicked which is not good.
+          //'#limit_validation_errors' => [],
         ];
         $form[$scope]['Next'] = ['#type' => 'submit', '#value' => t('Submit')];
         break;
