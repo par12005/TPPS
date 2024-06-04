@@ -927,7 +927,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
   if (in_array($field_name, ['vcf'])) {
     return $element;
   }
-  if (!tpps_is_main_form($form_state) && empty($element['#value']['fid'])) {
+  if (!tpps_is_main_form($form_state) || empty($element['#value']['fid'])) {
     // Show extra fields only after file upload and
     // when it's a 'tppsc_main' or 'tpps_main' form.
     return $element;
