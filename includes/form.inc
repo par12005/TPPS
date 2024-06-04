@@ -212,6 +212,20 @@ function tpps_form_error(array $form_state, array $path, $message) {
   }
   // Remove colon ':' and required field label.
   $title = strtok($field['#title'], ':');
+
+  // Since we update title of the field using JS in browser we could update
+  // title of the field which failed validation here.
+  if ($field['#name'] == 'organism-1[genotype][other][other]') {
+    $new_path = $path;
+    array_pop($new_path);
+    $new_path[] = 'other-marker';
+    $new_name = drupal_array_get_nested_value(
+      //$form_state['input'][TPPS_PAGE_4],
+      $form_state['input'],
+      $new_path
+    );
+    $title = str_replace('Other', $new_name, $title);
+  }
   form_set_error(implode('][', $field['#array_parents']),
     t('@title: @message', ['@title' => $title, '@message' => $message])
   );
