@@ -206,7 +206,7 @@ function tpps_genotype_subform(array $form_bus) {
         . '[does_study_include_other_genotypic_data]"]' => ['value' => 'yes'],
       ],
     ],
-    // After own yes/no selector.
+    // After related yes/no selector.
     '#weight' => 350,
   ];
   tpps_page_4_ref($fields, $form_state, $organism_name);
@@ -610,7 +610,7 @@ function tpps_genotype_subform(array $form_bus) {
     ],
   ];
 
-  // Field was relocated (v.2). ['files'] -> ['other'].
+  // Field was relocated (v.2). ['files', 'other] -> ['other', 'other'].
   $file_field_name = 'other';
   $title = t('Other spreadsheet: '
     . '<br />please provide a spreadsheet with columns for the Plant ID '
@@ -623,16 +623,14 @@ function tpps_genotype_subform(array $form_bus) {
     . 'If a column data type does not fit any of the options in the '
     . 'drop-down menu, you may set that drop-down menu to "N/A". '
     . 'Your file must contain one column with the Plant Identifier.');
-  tpps_form_build_file_field([
-    'form' => &$form,
-    'form_state' => $form_state,
+  tpps_form_build_file_field(array_merge($form_bus, [
     'parents' => [$organism_name, 'genotype', $other_fieldset],
     'field_name' => $file_field_name,
     'title' => $title,
     'organism_name' => $organism_name,
     'type' => $form_bus['type'],
     'description' => $description,
-  ]);
+  ]));
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Other Columns.
