@@ -151,9 +151,11 @@
                 let name = $(this).val();
                 let $label = $('#edit-organism-' + i
                   + '-genotype-other-other-upload').prev('label');
-                $label.html($label.html()
-                  .replace(/^.* (spreadsheet\::?\s)/, $(this).val() + ' $1')
-                );
+                if (typeof($label) != 'undefined' && $label.length != 0) {
+                  $label.html($label.html()
+                    .replace(/^.* (spreadsheet\::?\s)/, $(this).val() + ' $1')
+                  );
+                }
               });
               $(otherMarkerSelector).change();
               // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
