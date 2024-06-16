@@ -1246,24 +1246,95 @@ function tpps_form_get_submission_status_list() {
 }
 
 /**
- * Checks if required fields not empty.
+ * Checks field required via Drupal Form States API is not empty.
  *
  * Custom validation is necessary because this fields was set a required by
  * Drupal Form State API.
  */
-function tpps_form_validate_required_fields($element, $form_state) {
-  $trigger = key($element['#states']['required'][0]);
-  $state_name = key($element['#states']['required'][0][$trigger]);
-  $state_condition = explode('"', $trigger);
-
-  $trigger_field_name = $state_condition[1];
-  $condition = (
-    $form_state['values'][$trigger_field_name]
-    == $element['#states']['required'][0][$trigger][$state_name]
+function tpps_form_validate_required_field($element, $form_state) {
+  if (empty($element['#states']['required'])) {
+    return;
+  }
+  $results = [];
+  // @TODO There could be more than 2 conditions and they could have different
+  // grouping. Do not collect only results but combine with previous result
+  // using logic operator.
+  $is_or = FALSE;
+  foreach ($element['#states']['required'] as $trigger => $condition) {
+    if (is_numeric($trigger)) {
+      // There could be 'and', 'or' and 'xor' grouping.
+      // @TODO Minor. Add support of 'xor'.
+      // https://www.drupal.org/docs/drupal-apis/form-api/conditional-form-fields#s-combine-multiple-fields-or-values
+      $is_or = TRUE;
+      // Case 'OR'.
+      foreach ($condition as $key => $value) {
+        $results[$key] = tpps_form_check_state_trigger(
+          $key, $value, $form_state
+        );
+      }
+    }
+    else {
+      $results[$trigger] = tpps_form_check_state_trigger(
+        $trigger, $condition, $form_state
+      );
+    }
+  }
+  $is_required = (
+    ($is_or && array_sum($results) > 0)
+    || (!$is_or && array_sum($results) == count($results))
   );
-  if ($condition) {
-    if ($form_state['values'][$element['#name']] == '') {
-      form_set_error($element['#name'], $element['#title'] . ' is required.');
+  if ($is_required) {
+    // Field was set to required and must be validated.
+    tpps_is_required_field_empty($form_state, $element['#array_parents']);
+  }
+}
+
+/**
+ * Checks condition of the triggering.
+ *
+ * WARNING: There is unsupported states: 'expanded' and  'collapsed'. Those
+ * states of fieldset has no value in $form_state and couldn't be checked on
+ * server side.
+ *
+ * @param string $trigger
+ *   Triggering field name.
+ * @param array $condition
+ *   Associative array of states (keys) and values.
+ * @param array $form_state
+ *   Drupal Form State Array.
+ *
+ * @return bool
+ *   Returns TRUE if condition is TRUE and FALSE otherwise.
+ */
+function tpps_form_check_state_trigger($trigger, array $condition, array $form_state) {
+  $parts = explode('"', $trigger);
+  $parents = explode('[', str_replace(']', '', $parts[1]));
+  $actual_value = drupal_array_get_nested_value($form_state['values'], $parents);
+  foreach ($condition as $key => $value) {
+    // List of states from:
+    // https://www.drupal.org/docs/drupal-apis/form-api/conditional-form-fields
+    switch ($key) {
+      case 'filled':
+      case 'checked':
+      case 'value':
+        return ($actual_value == $value);
+
+      case 'empty':
+        return (
+          $value && empty($actual_value)
+          || !$value && !empty($actual_value)
+        );
+
+      case 'unchecked':
+      case '!value':
+        return ($actual_value != $value);
+
+      case 'expanded':
+      case 'collapsed':
+      default:
+        drupal_set_message('Field "' . $trigger
+          . '" has unsupported condition: ' . print_r($condition, 1)
+        );
     }
   }
 }

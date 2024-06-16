@@ -440,8 +440,41 @@ function tpps_genotype_subform(array $form_bus) {
       'visible' => [
         ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
           . '][upload_snp_association]"]' => ['value' => 'Yes'],
-
       ],
+
+
+      // @TODO UPdate!
+      // Single.
+      //'required' => [
+      //  ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
+      //    . '][upload_snp_association]"]' => ['value' => 'Yes'],
+      //],
+
+
+      // And.
+      'required' => [
+        ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
+          . '][upload_snp_association]"]' => ['value' => 'Yes'],
+        '[name="' . $organism_name . '[genotype][' . $snps_fieldset
+          . '][upload_snp_association]"]' => ['value' => 'Yes'],
+      ],
+
+
+      // OR
+      //'required' => [
+      //  [
+      //    ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
+      //    . '][upload_snp_association]"]' => ['value' => 'Yes'],
+      //  ],
+      //  'or',
+      //  [
+      //    '[name="' . $organism_name . '[genotype][' . $snps_fieldset
+      //    . '][upload_snp_association]"]' => ['value' => 'Yes'],
+      //  ],
+      //],
+
+
+
     ],
     'extra_elements' => [
       'empty' => [

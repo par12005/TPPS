@@ -906,6 +906,31 @@ function tpps_element_info_alter(&$type) {
     $type['textfield']['#maxlength'] = 512;
   }
   $type['managed_file']['#process'][] = 'tpps_managed_file_process';
+  // Add required field validation and (optionally) field's parents and name.
+  $type['managed_file']['#process'][] = 'tpps_form_field_process';
+  $type['textfield']['#process'][] = 'tpps_form_field_process';
+  $type['select']['#process'][] = 'tpps_form_field_process';
+}
+
+/**
+ * Shows form element parents and own name.
+ */
+function tpps_form_field_process(array $element, array &$form_state, array $form) {
+  if (!tpps_is_main_form($form_state)) {
+    return $element;
+  }
+
+  // Show field's parents and name in the field's description.
+  $debug_mode = variable_get('tpps_debug_mode', FALSE);
+  if ($debug_mode) {
+    $element['#description'] = ($element['#description'] ?? '')
+      . '<br />[ ' . implode(' ][ ', $element['#array_parents']) . ' ]';
+  }
+
+  // Adds custom validation of fields required using Drupal Form States AJAX.
+  $element['#element_validate'][] = 'tpps_form_validate_required_field';
+
+  return $element;
 }
 
 /**

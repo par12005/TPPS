@@ -46,7 +46,8 @@ function tpps_form_main_settings_form(array $form, array &$form_state) {
     '#default_value' => variable_get('tpps_debug_mode', FALSE),
     '#description' => t('Default is unchecked. Must be disabled at live site. '
       . 'When checked then all error messages will be sent to browser and '
-      . 'some extra debug messages could be shown.'),
+      . 'some extra debug messages could be shown.')
+      . '<br />' . t("Field's names will be shown in field's description"),
   ];
   $form['tpps_autofocus_delay'] = [
     '#type' => 'textfield',
