@@ -2357,7 +2357,7 @@ function tpps_menu_add_api(array &$items = []) {
     // 2: Managed File Id.
     'page arguments' => [2],
     'access callback' => 'tpps_api_access',
-    //'file' => 'api/file/info.inc',
+    'file' => 'api/file/info.inc',
     'type' => MENU_CALLBACK,
   ];
   $items['api/submission/%tpps_submission/vcf'] = [
@@ -2366,7 +2366,7 @@ function tpps_menu_add_api(array &$items = []) {
     // 3: Submission Accession (TGDRxxxx)
     'page arguments' => [2],
     'access callback' => 'tpps_api_access',
-    //'file' => 'api/submission/vcf.inc',
+    'file' => 'api/submission/vcf.inc',
     'type' => MENU_CALLBACK,
   ];
 }
@@ -2375,7 +2375,7 @@ function tpps_menu_add_api(array &$items = []) {
  * TPPS API access callback.
  *
  * Checks token in GET-parameter 'token' to allow access to API Endpoints.
- * Settings page to set/update token: /admin/config/tpps/api
+ * Settings page to set/update token: /admin/config/tpps/api .
  */
 function tpps_api_access() {
   $token = trim(variable_get('tpps_api_token'));
@@ -2525,88 +2525,4 @@ function tpps_submission_load($accession) {
   // @TODO Minor. Use static caching.
   $submission= new Submission($accession);
   return $submission;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-// @TODO Move to separate files:
-// - /api/file/info.inc
-// - /api/submission/vcf.inc
-// @TODO Update hook_menu().
-
-/**
- * API Callback. Return's file info in JSON format.
- *
- * Note: there is an extra elements:
- * 'path': an absolute path in filesystem.
- * 'url': URL with dynamic token to download file. Managed file and uploaded
- * directly to server (outside of the web-root) could be downloaded.
- *
- * @param object $file
- *   Managed File Object.
- */
-function tpps_api_file_get_info($file) {
-  global $base_url;
-  $output = [];
-  if (!$file) {
-    $output['error'] = 'File not found.';
-  }
-  // Get file info.
-  if (empty($output['error'])) {
-    // Get absolute path.
-    $path = $file->uri;
-    if (strpos($file->uri, 'public://') !== FALSE) {
-      // Managed file.
-      $path = drupal_realpath($file->uri);
-    }
-    $output = $file;
-    module_load_include('inc', 'tpps', 'pages/file/get');
-    $output->url = tpps_file_get_build_url($fid);
-    $output->path = $path;
-  }
-  drupal_json_output($output);
-  drupal_exit();
-}
-
-/**
- * API Callback. Shows list of VCF file Ids in JSON format.
- *
- * @param object $submission
- *   TPPS Submission object.
- */
-function tpps_api_submission_vcf_files_list($submission) {
-  $output = [
-    'accession' => $submision->accession,
-    'error' => 'Submission not found.',
-    'organism_number' => $submission->getOrganismNumber(),
-  ];
-  $shared_state = $submission->getSharedState();
-  $page4_values = $shared_state['saved_values'][TPPS_PAGE_4];
-
-  $organism_number = $submission->getOrganismNumber();
-  // Non-empty organism number means that submission exists.
-  if ($organism_number) {
-    $output = [
-      'accession' => $submision->accession,
-      'organism_number' => $organism_number,
-    ];
-    for ($i = 1; $i <= $submission->getOrganismNumber(); $i++) {
-      $output['vcf'][$i] = $page4_values['organism-' . $i]['genotype']['files']['vcf'] ?? NULL;
-    }
-  }
-  drupal_json_output($output);
-  drupal_exit();
 }

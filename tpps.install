@@ -13,7 +13,8 @@
  */
 function tpps_install() {
   // [VS]
-
+  // API.
+  variable_set('tpps_api_token', '');
   // Cronjob.
   variable_set('tpps_latest_job_status_slack_updates_job_frequency', '*/15 * * * *');
   variable_set('tpps_refresh_views_job_frequency', '0 */12 * * *');
