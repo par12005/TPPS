@@ -2371,19 +2371,14 @@ function tpps_menu_add_api(array &$items = []) {
   ];
 }
 
-
 /**
  * TPPS API access callback.
+ *
+ * Checks token in GET-parameter 'token' to allow access to API Endpoints.
+ * Settings page to set/update token: /admin/config/tpps/api
  */
 function tpps_api_access() {
-
-
-// @TODO [RDC] Remove debug code.
-variable_set('tpps_api_token', '123');
-
-
-  // Check token to allow access to API.
-  $token = variable_get('tpps_api_token');
+  $token = trim(variable_get('tpps_api_token'));
   return (bool) (!empty($token) && ($_GET['token'] ?? NULL) == $token);
 }
 
