@@ -2129,6 +2129,16 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/cron.inc',
   ];
+  // API.
+  $items['admin/config/tpps/api'] = [
+    'title' => 'API',
+    'description' => 'API Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_api_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/api.inc',
+  ];
 }
 
 /**
@@ -2332,14 +2342,59 @@ function tpps_menu_add_submission_pages(array &$items = []) {
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Files.
+  // @TODO Change URL to have prefix 'api'.
   $items['tpps/file/%/get/%'] = [
     'title' => "TPPS Submission's File",
     'page callback' => 'tpps_file_get',
+    // 2: Managed File Id, 4: Dynamyc Token.
     'page arguments' => [2, 4],
     'access callback' => TRUE,
     'file' => 'pages/file/get.inc',
     'type' => MENU_CALLBACK,
   ];
+
+  tpps_menu_add_api($items);
+
+}
+
+/**
+ * Adds API endpoints to hook_menu().
+ *
+ * @param array $items
+ *   Menu items.
+ */
+function tpps_menu_add_api(array &$items = []) {
+  // API.
+  $items['api/file/%file/info'] = [
+    // File Object with extra absolute path and URL for downloading.
+    'title' => 'File Info',
+    'page callback' => 'tpps_api_file_get_info',
+    // 2: Managed File Id.
+    'page arguments' => [2],
+    'access callback' => 'tpps_api_access',
+    'file' => 'api/file/info.inc',
+    'type' => MENU_CALLBACK,
+  ];
+  $items['api/submission/%tpps_submission/vcf'] = [
+    'title' => 'List of VCF Files Ids',
+    'page callback' => 'tpps_api_submission_vcf_files_list',
+    // 3: Submission Accession (TGDRxxxx)
+    'page arguments' => [2],
+    'access callback' => 'tpps_api_access',
+    'file' => 'api/submission/vcf.inc',
+    'type' => MENU_CALLBACK,
+  ];
+}
+
+/**
+ * TPPS API access callback.
+ *
+ * Checks token in GET-parameter 'token' to allow access to API Endpoints.
+ * Settings page to set/update token: /admin/config/tpps/api .
+ */
+function tpps_api_access() {
+  $token = trim(variable_get('tpps_api_token'));
+  return (bool) (!empty($token) && ($_GET['token'] ?? NULL) == $token);
 }
 
 /**
@@ -2469,5 +2524,20 @@ function tpps_submission($accession = '') {
       );
     }
   }
+  return $submission;
+}
+
+/**
+ * Loads TPPS Submission.
+ *
+ * @param string $accession
+ *   Submission Accession.
+ *
+ * @return object
+ *   Returns Submission object.
+ */
+function tpps_submission_load($accession) {
+  // @TODO Minor. Use static caching.
+  $submission= new Submission($accession);
   return $submission;
 }

@@ -277,7 +277,7 @@ function tpps_genotype_subform(array $form_bus) {
     'organism_name' => $organism_name,
     'type' => $form_bus['type'],
     'description' => '',
-    'extensions' => ['gz tar zip'],
+    'extensions' => ['gz tar zip vcf bcf'],
   ]));
   if ($is_tppsc) {
     $snps_fieldset_name = ':input[name="' . $organism_name . '[genotype]['
