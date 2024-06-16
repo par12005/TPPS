@@ -72,7 +72,6 @@ function tpps_install() {
   // Submission Export.
   // @TODO Add ability to change those variables at settings page.
   variable_set('tpps_submission_export_show_file_search_report', FALSE);
-  variable_set('tpps_submission_file_check_token', TRUE);
   variable_set('tpps_submission_file_salt', md5(REQUEST_TIME));
   variable_set('tpps_submission_export_exclude_data', TRUE);
   variable_set('tpps_submission_export_exclude_tree_info', TRUE);
@@ -405,7 +404,6 @@ function tpps_uninstall() {
   variable_del('tpps_imported_studies_list');
   // Submission Import/Export.
   variable_del('tpps_submission_export_show_file_search_report');
-  variable_del('tpps_submission_file_check_token');
   variable_del('tpps_submission_file_salt');
   variable_del('tpps_submission_export_exclude_data');
   variable_del('tpps_submission_export_exclude_tree_info');

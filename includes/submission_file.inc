@@ -263,30 +263,3 @@ function tpps_submission_file_get_parents($organism_number = 1) {
   // ];
   return $result;
 }
-
-/**
- * Generates File Secure Token for Managed Drupal File.
- *
- * @param mixed $file
- *   Managed Drupal File.
- *   We need to use object insted of File Id because on Submission Import we
- *   have only array from remote server and couldn't get it by File Id.
- *
- * @return string
- *   Returns a base-64 encoded sha-256 hmac, with + replaced with -,
- *   / with _ and any = padding characters removed.
- */
-function tpps_file_generate_token($file) {
-  $file = (array) $file;
-  if (empty($file)) {
-    $message = "Can't generate File Secure Token for empty file.";
-    tpps_message($message);
-    return '';
-  }
-  unset($file['timestamp']);
-  unset($file['url']);
-  unset($file['status']);
-  $data = json_encode($file);
-  $key = variable_get('tpps_submission_file_salt', 'yFA5HRQ5k4AWbsBd');
-  return drupal_hmac_base64($data, $key);
-}

@@ -2266,14 +2266,17 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'access callback' => TRUE,
     'file' => 'pages/submission/export.json.inc',
   ];
-  $items['tpps/submission/%/json'] = [
+  // @TODO Remove this menu item.
+  // It's outdated and left for backward compatibility.
+  // Use /api/submission/<accession>/view instead.
+  $items['tpps/submission/%tpps_submission/json'] = [
     'type' => MENU_CALLBACK,
     'title' => 'TPPS Submission JSON',
     'description' => 'TPPS Submission in JSON format',
-    'page callback' => 'tpps_submission_json',
+    'page callback' => 'tpps_api_submission_view',
     'page arguments' => [2],
     'access arguments' => ['administer tpps module'],
-    'file' => 'pages/submission/json.inc',
+    'file' => 'api/submission/view.inc',
   ];
   // Import.
   $items['tpps/submission/%/import'] = [
@@ -2342,16 +2345,6 @@ function tpps_menu_add_submission_pages(array &$items = []) {
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Files.
-  // @TODO Change URL to have prefix 'api'.
-  $items['tpps/file/%/get/%'] = [
-    'title' => "TPPS Submission's File",
-    'page callback' => 'tpps_file_get',
-    // 2: Managed File Id, 4: Dynamyc Token.
-    'page arguments' => [2, 4],
-    'access callback' => TRUE,
-    'file' => 'pages/file/get.inc',
-    'type' => MENU_CALLBACK,
-  ];
 
   tpps_menu_add_api($items);
 
@@ -2374,6 +2367,16 @@ function tpps_menu_add_api(array &$items = []) {
     'access callback' => 'tpps_api_access',
     'file' => 'api/file/info.inc',
     'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  ];
+  $items['api/file/%file/get'] = [
+    'title' => "Download File",
+    'page callback' => 'tpps_api_file_get',
+    // 2: Managed File Id.
+    'page arguments' => [2],
+    'access callback' => 'tpps_api_access',
+    'file' => 'api/file/get.inc',
+    'type' => MENU_CALLBACK,
   ];
   $items['api/submission/%tpps_submission/vcf'] = [
     'title' => 'List of VCF Files Ids',
@@ -2383,6 +2386,18 @@ function tpps_menu_add_api(array &$items = []) {
     'access callback' => 'tpps_api_access',
     'file' => 'api/submission/vcf.inc',
     'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  ];
+  // Use /api/submission/<accession>/view instead.
+  $items['api/submission/%tpps_submission/view'] = [
+    'title' => 'TPPS Submission Data',
+    'description' => 'TPPS Submission Data in JSON format',
+    'page callback' => 'tpps_api_submission_view',
+    'page arguments' => [2],
+    'access callback' => 'tpps_api_access',
+    'file' => 'api/submission/view.inc',
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
   ];
 }
 
@@ -2393,8 +2408,16 @@ function tpps_menu_add_api(array &$items = []) {
  * Settings page to set/update token: /admin/config/tpps/api .
  */
 function tpps_api_access() {
+  global $user;
   $token = trim(variable_get('tpps_api_token'));
-  return (bool) (!empty($token) && ($_GET['token'] ?? NULL) == $token);
+  if (
+    empty($token)
+    && (($_GET['token'] ?? NULL) != $token)
+    && (!user_access('administer tpps module', $user))
+  ) {
+    return FALSE;
+  }
+  return TRUE;
 }
 
 /**
