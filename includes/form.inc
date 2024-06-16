@@ -1244,3 +1244,26 @@ function tpps_form_get_submission_status_list() {
   }
   return $output;
 }
+
+/**
+ * Checks if required fields not empty.
+ *
+ * Custom validation is necessary because this fields was set a required by
+ * Drupal Form State API.
+ */
+function tpps_form_validate_required_fields($element, $form_state) {
+  $trigger = key($element['#states']['required'][0]);
+  $state_name = key($element['#states']['required'][0][$trigger]);
+  $state_condition = explode('"', $trigger);
+
+  $trigger_field_name = $state_condition[1];
+  $condition = (
+    $form_state['values'][$trigger_field_name]
+    == $element['#states']['required'][0][$trigger][$state_name]
+  );
+  if ($condition) {
+    if ($form_state['values'][$element['#name']] == '') {
+      form_set_error($element['#name'], $element['#title'] . ' is required.');
+    }
+  }
+}
