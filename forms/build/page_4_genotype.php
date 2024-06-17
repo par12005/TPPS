@@ -490,6 +490,10 @@ function tpps_genotype_subform(array $form_bus) {
         ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
           . '][upload_snp_association]"]' => ['value' => 'Yes'],
       ],
+      'required' => [
+        ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
+          . '][upload_snp_association]"]' => ['value' => 'Yes'],
+      ],
     ],
   ];
 
@@ -510,6 +514,10 @@ function tpps_genotype_subform(array $form_bus) {
     ],
     '#states' => [
       'visible' => [
+        ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
+          . '][upload_snp_association]"]' => ['value' => 'Yes'],
+      ],
+      'required' => [
         ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
           . '][upload_snp_association]"]' => ['value' => 'Yes'],
       ],
@@ -549,6 +557,7 @@ function tpps_genotype_subform(array $form_bus) {
     'title' => $title,
     // @todo [VS] Replace with 'required' with default value 'TRUE'.
     'optional' => TRUE,
+    'required_when_visible' => TRUE,
     'states' => [
       'visible' => [
         ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
@@ -588,6 +597,7 @@ function tpps_genotype_subform(array $form_bus) {
     'field_name' => $file_field_name,
     'title' => $title,
     'optional' => TRUE,
+    'required_when_visible' => TRUE,
     'states' => [
       'visible' => [
         ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
