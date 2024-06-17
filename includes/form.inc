@@ -616,6 +616,12 @@ function tpps_form_build_file_field(array $form_bus) {
     '#states' => $states,
     //'#parents' => $parents,
   ];
+
+  // Required when visible.
+  if ($form_bus['required_when_visible'] ?? NULL) {
+    $parent_element[$field_name]['#states']['required'] = $states['visible'];
+  }
+
   // dpm(print_r($parents, 1), 'parents of ' . $field_name);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Customization.
@@ -1252,37 +1258,42 @@ function tpps_form_get_submission_status_list() {
  * Drupal Form State API.
  */
 function tpps_form_validate_required_field($element, $form_state) {
-  if (empty($element['#states']['required'])) {
+  if (
+    empty($element['#states']['required'])
+    // Skip this validation when form just saved.
+    // @TODO Add '#name' to button Save and use it's name instead of label.
+    || $form_state['clicked_button']['#value'] == 'Save'
+  ) {
     return;
   }
-  $results = [];
-  // @TODO There could be more than 2 conditions and they could have different
-  // grouping. Do not collect only results but combine with previous result
-  // using logic operator.
-  $is_or = FALSE;
+
+  $logic = NULL;
   foreach ($element['#states']['required'] as $trigger => $condition) {
     if (is_numeric($trigger)) {
+      if (is_string($condition)) {
+        $logic = $condition;
+        continue;
+      }
       // There could be 'and', 'or' and 'xor' grouping.
-      // @TODO Minor. Add support of 'xor'.
       // https://www.drupal.org/docs/drupal-apis/form-api/conditional-form-fields#s-combine-multiple-fields-or-values
-      $is_or = TRUE;
-      // Case 'OR'.
       foreach ($condition as $key => $value) {
-        $results[$key] = tpps_form_check_state_trigger(
+        $current_result = tpps_form_check_state_trigger(
           $key, $value, $form_state
         );
+        // Note: There could be more than 2 conditions and they could
+        // have different grouping.
+        $is_required = (empty($is_required)) ? $current_result
+          : tpps_logical_opeation($is_required, $current_result, $logic);
       }
     }
     else {
-      $results[$trigger] = tpps_form_check_state_trigger(
+      $current_result = tpps_form_check_state_trigger(
         $trigger, $condition, $form_state
       );
+      $is_required = (empty($is_required)) ? $current_result
+        : tpps_logical_opeation($is_required, $current_result, 'and');
     }
   }
-  $is_required = (
-    ($is_or && array_sum($results) > 0)
-    || (!$is_or && array_sum($results) == count($results))
-  );
   if ($is_required) {
     // Field was set to required and must be validated.
     tpps_is_required_field_empty($form_state, $element['#array_parents']);
@@ -1337,4 +1348,32 @@ function tpps_form_check_state_trigger($trigger, array $condition, array $form_s
         );
     }
   }
+}
+
+/**
+ * Apply logic operation to given values.
+ *
+ * @param mixed $value1
+ *   First value.
+ * @param mixed $value2
+ *   Second value.
+ * @param mixed $logic_operator
+ *   Logical operator. Possible values: 'and', 'or' and 'xor'.
+ *   Using unsupported operators will give empty result.
+ *
+ * @return bool
+ *   Returns result which depends on given values and logical opertor.
+ */
+function tpps_logical_opeation($value1, $value2, $logic_operator) {
+  switch ($logic_operator) {
+    case 'and':
+      return ($value1 and $value2);
+
+    case 'or':
+      return ($value1 or $value2);
+
+    case 'xor':
+      return ($value1 xor $value2);
+  }
+  return NULL;
 }
