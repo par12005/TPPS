@@ -13,7 +13,7 @@
  */
 function tpps_api_submission_vcf_files_list($submission) {
   $output = [
-    'accession' => $submision->accession,
+    'accession' => $submission->accession,
     'error' => 'Submission not found.',
     'organism_number' => $submission->getOrganismNumber(),
   ];
@@ -24,7 +24,7 @@ function tpps_api_submission_vcf_files_list($submission) {
   // Non-empty organism number means that submission exists.
   if ($organism_number) {
     $output = [
-      'accession' => $submision->accession,
+      'accession' => $submission->accession,
       'organism_number' => $organism_number,
     ];
     for ($i = 1; $i <= $submission->getOrganismNumber(); $i++) {
