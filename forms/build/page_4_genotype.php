@@ -436,7 +436,6 @@ function tpps_genotype_subform(array $form_bus) {
       . 'a SNP Annotation (non synonymous, coding, etc).'),
     '#tree' => TRUE,
     'optional' => TRUE,
-    'required_when_visible' => TRUE,
     'states' => [
       'visible' => [
         ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
@@ -474,7 +473,8 @@ function tpps_genotype_subform(array $form_bus) {
   ]);
 
   // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
-  $fields[$snps_fieldset]['snps-association-type'] = [
+  $field_name = 'snps-association-type';
+  $fields[$snps_fieldset][$field_name] = [
     '#type' => 'select',
     '#title' => t('Confidence Value Type: *'),
     '#options' => [
@@ -490,15 +490,15 @@ function tpps_genotype_subform(array $form_bus) {
         ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
           . '][upload_snp_association]"]' => ['value' => 'Yes'],
       ],
-      'required' => [
-        ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
-          . '][upload_snp_association]"]' => ['value' => 'Yes'],
-      ],
     ],
   ];
+  // Required when visible.
+  $fields[$snps_fieldset][$field_name]['#states']['required'] =
+    $fields[$snps_fieldset][$field_name]['#states']['visible'];
 
   // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
-  $fields[$snps_fieldset]['snps-association-tool'] = [
+  $field_name = 'snps-association-tool';
+  $fields[$snps_fieldset][$field_name] = [
     '#type' => 'select',
     '#title' => t('Association Analysis Tool: *'),
     '#options' => [
@@ -517,12 +517,11 @@ function tpps_genotype_subform(array $form_bus) {
         ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
           . '][upload_snp_association]"]' => ['value' => 'Yes'],
       ],
-      'required' => [
-        ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
-          . '][upload_snp_association]"]' => ['value' => 'Yes'],
-      ],
     ],
   ];
+  // Required when visible.
+  $fields[$snps_fieldset][$field_name]['#states']['required'] =
+    $fields[$snps_fieldset][$field_name]['#states']['visible'];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Would you like to upload a SNPs Population Structure file?
@@ -555,9 +554,7 @@ function tpps_genotype_subform(array $form_bus) {
     'type' => $form_bus['type'],
     'field_name' => $file_field_name,
     'title' => $title,
-    // @todo [VS] Replace with 'required' with default value 'TRUE'.
     'optional' => TRUE,
-    'required_when_visible' => TRUE,
     'states' => [
       'visible' => [
         ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
@@ -597,7 +594,6 @@ function tpps_genotype_subform(array $form_bus) {
     'field_name' => $file_field_name,
     'title' => $title,
     'optional' => TRUE,
-    'required_when_visible' => TRUE,
     'states' => [
       'visible' => [
         ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
