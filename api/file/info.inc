@@ -32,7 +32,7 @@ function tpps_api_file_get_info($file) {
     }
     $output = $file;
     module_load_include('inc', 'tpps', 'pages/file/get');
-    $output->url = tpps_file_get_build_url($fid);
+    $output->url = tpps_file_get_build_url($file->fid);
     $output->path = $path;
   }
   drupal_json_output($output);
