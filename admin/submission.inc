@@ -47,7 +47,7 @@ function tpps_submission_settings_form(array $form, array &$form_state) {
   ];
   $form['export']['tpps_submission_export_exclude_tree_info'] = [
     '#type' => 'checkbox',
-    '#title' => t('Exclude "data" element from Submission Export array.'),
+    '#title' => t('Exclude "tree_info" element from Submission Export array.'),
     '#default_value' => variable_get('tpps_submission_export_exclude_tree_info'),
     '#description' => t('Element "tree_info" of the submission State array '
       . 'contains huge amount of data added during Tripal pipeline processing. '

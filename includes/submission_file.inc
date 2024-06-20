@@ -31,7 +31,7 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
   // Note: Shared State doesn't have 'values' element but State could have
   // newer version of form and other paths.
   $values = $submission->state['values'] ?? NULL;
-  $interface_files = $submission->state['files'] ?? [];
+  $shared_state_files = $submission->state['files'] ?? [];
   $file_info = $submission->sharedState['file_info'] ?? NULL;
 
   module_load_include('inc', 'tpps', 'includes/form');
@@ -58,7 +58,7 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
   // Use $form_state['files'] if any.
   $method_name = '$form_state["files"]';
   $fid_list = [];
-  $fid_list = array_filter($interface_files);
+  $fid_list = array_filter($shared_state_files);
   $report[$method_name] = $fid_list;
   if (!empty($fid_list)) {
     $result = array_merge($result, $fid_list);
@@ -208,7 +208,7 @@ function tpps_submission_file_set_status(array $state, $status = FILE_STATUS_PER
  * Gets hardcoded list of file field parents.
  *
  * WARNING:
- * Use Submission Form Version 1 (= Submission Interface).
+ * Use Submission Shared State (v.1 not Submission State).
  *
  * @param int $organism_number
  *   Number of species in submission.
@@ -239,7 +239,7 @@ function tpps_submission_file_get_parents($organism_number = 1) {
       [$organism_id, 'genotype', 'tripal_fasta', 'file', 'file_upload'],
       // @TODO Check this field:
       //[$organism_id, 'genotype', 'tripal_fasta', 'file_upload_existing'],
-      [$organism_id, 'genotype', 'files', 'snps-assay'],
+      [$organism_id, 'genotype', 'files', 'snps-assay'], // Shared State.
       [$organism_id, 'genotype', 'files', 'assay-design'],
       [$organism_id, 'genotype', 'files', 'snps-association'],
       [$organism_id, 'genotype', 'files', 'snps-pop-struct'],
@@ -262,31 +262,4 @@ function tpps_submission_file_get_parents($organism_number = 1) {
   //   'phenotype_environment_file' => 0,
   // ];
   return $result;
-}
-
-/**
- * Generates File Secure Token for Managed Drupal File.
- *
- * @param mixed $file
- *   Managed Drupal File.
- *   We need to use object insted of File Id because on Submission Import we
- *   have only array from remote server and couldn't get it by File Id.
- *
- * @return string
- *   Returns a base-64 encoded sha-256 hmac, with + replaced with -,
- *   / with _ and any = padding characters removed.
- */
-function tpps_file_generate_token($file) {
-  $file = (array) $file;
-  if (empty($file)) {
-    $message = "Can't generate File Secure Token for empty file.";
-    tpps_message($message);
-    return '';
-  }
-  unset($file['timestamp']);
-  unset($file['url']);
-  unset($file['status']);
-  $data = json_encode($file);
-  $key = variable_get('tpps_submission_file_salt', 'yFA5HRQ5k4AWbsBd');
-  return drupal_hmac_base64($data, $key);
 }

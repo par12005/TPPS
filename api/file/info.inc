@@ -3,7 +3,7 @@
 /**
  * @file
  * API Callback. Return's file info in JSON format.
-*/
+ */
 
 /**
  * API Callback. Return's file info in JSON format.
@@ -18,23 +18,19 @@
  */
 function tpps_api_file_get_info($file) {
   global $base_url;
-  $output = [];
-  if (!$file) {
-    $output['error'] = 'File not found.';
+  // Get absolute path.
+  if (strpos($file->uri, 'public://') !== FALSE) {
+    // Managed file.
+    $file->path = drupal_realpath($file->uri);
   }
-  // Get file info.
-  if (empty($output['error'])) {
-    // Get absolute path.
-    $path = $file->uri;
-    if (strpos($file->uri, 'public://') !== FALSE) {
-      // Managed file.
-      $path = drupal_realpath($file->uri);
-    }
-    $output = $file;
-    module_load_include('inc', 'tpps', 'pages/file/get');
-    $output->url = tpps_file_get_build_url($file->fid);
-    $output->path = $path;
+  else {
+    // Manually uploaded file.
+    $file->path = $file->uri;
   }
-  drupal_json_output($output);
-  drupal_exit();
+
+  // Build URL to download file using API.
+  $token = trim(variable_get('tpps_api_token'));
+  $file->url = "$base_url/api/file/$file->fid/get/$file->filename?token=$token";
+
+  return $file;
 }
