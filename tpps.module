@@ -2124,12 +2124,25 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/api.inc',
   ];
+  $items['admin/config/tpps/reports'] = [
+    'title' => 'Reports',
+    'description' => 'Reports Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_reports_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/reports.inc',
+  ];
 }
 
 /**
  * Adds report menu items for hook_menu().
  *
  * See function tpps_reports_overview_page() for a list of items.
+ * Add title at 'admin/config/tpps/reports'.
+ * Update hook_install/uninstall.
+ * Update tpps_admin_panel_get_reports().
+ * Clear cache.
  *
  * @param array $items
  *   Menu items.
@@ -2188,12 +2201,32 @@ function tpps_menu_add_report_pages(array &$items = []) {
   // Imported Studies.
   $items['admin/reports/tpps/imported-studies'] =
   $items['tpps-admin-panel/reports/imported-studies'] = [
-    'title' => 'Imported Studies',
+    'title' => variable_get('tpps_report_imported_studies_title', 'Imported Studies'),
     'description' => 'List of Imported Studies Accessions.',
     'page callback' => 'tpps_admin_imported_studies_report',
     'access callback' => 'tpps_access',
     'access arguments' => ['administer tpps module'],
     'file' => 'reports/imported_studies.inc',
+  ];
+  // Missing Files.
+  $items['admin/reports/tpps/missing-files'] =
+  $items['tpps-admin-panel/reports/missing-files'] = [
+    'title' => 'Missing Files',
+    'description' => 'List of files missing in filesystem.',
+    'page callback' => 'tpps_admin_missing_files_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'file' => 'reports/missing_files.inc',
+  ];
+  // Study Missing Files.
+  $items['admin/reports/tpps/study-missing-files'] =
+  $items['tpps-admin-panel/reports/study-missing-files'] = [
+    'title' => 'Study Missing Files',
+    'description' => 'List of files missing in studies.',
+    'page callback' => 'tpps_admin_study_missing_files_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'file' => 'reports/study_missing_files.inc',
   ];
 }
 
@@ -2396,6 +2429,8 @@ function tpps_reports_overview_page() {
       l(t('Order/Family Exist Report'), 'admin/reports/tpps/order-family-not-exist'),
       l(t('Missing DOI Report'), 'admin/reports/tpps/missing-doi'),
       l(t('Imported Studies'), 'admin/reports/tpps/imported-studies'),
+      l(t('Missing Files'), 'admin/reports/tpps/missing-files'),
+      l(t('Study Missing Files'), 'admin/reports/tpps/study-missing-files'),
     ],
   ]);
 }
