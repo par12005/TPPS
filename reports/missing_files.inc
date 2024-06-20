@@ -31,7 +31,15 @@ function tpps_admin_missing_files_report() {
 
   $rows = [];
   foreach ($files as $fid => $uri) {
-    $path = drupal_realpath($uri);
+    // Get absolute path.
+    if (strpos($uri, 'public://') !== FALSE) {
+      // Managed file.
+      $path = drupal_realpath($uri);
+    }
+    else {
+      // Manually uploaded file.
+      $path = $uri;
+    }
     if (!file_exists($path)) {
       $rows[] = [$fid, $path];
     }
