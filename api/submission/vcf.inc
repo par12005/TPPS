@@ -3,7 +3,7 @@
 /**
  * @file
  * API Callback. Shows list of VCF file Ids in JSON format.
-*/
+ */
 
 /**
  * API Callback. Shows list of VCF file Ids in JSON format.
@@ -31,6 +31,5 @@ function tpps_api_submission_vcf_files_list($submission) {
       $output['vcf'][$i] = $page4_values['organism-' . $i]['genotype']['files']['vcf'] ?? NULL;
     }
   }
-  drupal_json_output($output);
-  drupal_exit();
+  return $output;
 }

@@ -1,6 +1,17 @@
 <?php
+
 /**
- * Creates the administrative panel form.
+ * @file
+ * Tripal Job Log.
+ */
+
+/**
+ * Menu callback. Shows Tripal Job log page.
+ *
+ * Shows Tripal Job log file and updates it every 10 seconds.
+ *
+ * WARNING: This log files could be accessed by anonymous visitors:
+ * https://tgwebdev.cam.uchc.edu/sites/default/files/tpps_job_logs/TGDR925_273188.txt
  *
  * If the administrator is looking at one specific TPPS submission, they are
  * provided with options to reject the submission and leave a reason for the
@@ -14,18 +25,16 @@
  *   The form being created.
  * @param array $form_state
  *   The state of the form being created.
+ * @param string $job_log_file
+ *   Name of the Tripal log file under /sites/default/files/tpps_job_logs/'
+ *   folder without '.txt' suffix. E.g., 'TGDR925_273188', where
+ *   'TGDR925' is a study accession and '273188' is Tripal Job Id.
+ *   Log file: /sites/default/files/tpps_job_logs/TGDR925_273188.txt
  *
  * @return array
  *   The administrative panel logs form.
  */
 function tpps_admin_panel_logs(array $form, array &$form_state, $job_log_file = NULL) {
-  //   if (empty($accession)) {
-  //     tpps_admin_panel_top($form);
-  //   }
-  //   else {
-  //     tpps_manage_submission_form($form, $form_state, $accession);
-  //   }
-
   $form = $form ?? [];
   tpps_add_css_js('main', $form);
 
@@ -34,24 +43,27 @@ function tpps_admin_panel_logs(array $form, array &$form_state, $job_log_file = 
   $job_id = $job_log_file_parts[1];
   $job_log_file = $job_log_file . '.txt';
 
-  $markup = "";
-  $markup .= "<a href='/tpps-admin-panel/$accession'>Return to TPPS Admin Panel - $accession</a><br />";
-  $markup .= "<a target='_blank' href='/admin/tripal/tripal_jobs/view/$job_id'>View Tripal Job ID: $job_id</a><br />";
-  $markup .= "This page refreshes every 10 seconds.<br />";
-  $markup .= "<iframe id='iframe_log' height='400px;' width='100%' src='/sites/default/files/tpps_job_logs/" . $job_log_file . "'></iframe>";
-  $markup .= '<script type="text/javascript">';
-  $markup .= "jQuery(document).ready(function() {";
-  $markup .= "  setInterval(function() {";
-  $markup .= "    var url='/sites/default/files/tpps_job_logs/$job_log_file';";
-  $markup .= "    var nocache=Math.floor(Date.now() / 1000);";
-  $markup .= "    jQuery('#iframe_log').attr('src', url + '?nocache=' + nocache);";
-  $markup .= "  }, 10000);";
-  $markup .= "  jQuery('#iframe_log').on('load', function() {";
-  // $markup .= "    console.log('iframe reloaded'); console.log(jQuery('#iframe_log').height());";
-  $markup .= "    jQuery('#iframe_log').contents().scrollTop(jQuery('#iframe_log').contents().height());";
-  $markup .= "  });";
-  $markup .= "});";
-  $markup .= '</script>';
+  // @todo Move JS to separate JS file and use drupal_add_js() instead.
+  $markup = l(
+      t('Return to TPPS Admin Panel - @accession', ['@accession' => $accession]),
+      'tpps-admin-panel/' . $accession
+    ) .'<br />'
+    . "<a target='_blank' href='/admin/tripal/tripal_jobs/view/$job_id'>View Tripal Job ID: $job_id</a><br />"
+    . "This page refreshes every 10 seconds.<br />"
+    . "<iframe id='iframe_log' height='400px;' width='100%' src='/sites/default/files/tpps_job_logs/" . $job_log_file . "'></iframe>"
+    . '<script type="text/javascript">'
+    . "jQuery(document).ready(function() {"
+    . "  setInterval(function() {"
+    . "    var url='/sites/default/files/tpps_job_logs/$job_log_file';"
+    . "    var nocache=Math.floor(Date.now() / 1000);"
+    . "    jQuery('#iframe_log').attr('src', url + '?nocache=' + nocache);"
+    . "  }, 10000);"
+    . "  jQuery('#iframe_log').on('load', function() {"
+    // . "    console.log('iframe reloaded'); console.log(jQuery('#iframe_log').height());"
+    . "    jQuery('#iframe_log').contents().scrollTop(jQuery('#iframe_log').contents().height());"
+    . "  });"
+    . "});"
+    . '</script>';
 
   $form['markup'] = [
     '#type' => 'markup',

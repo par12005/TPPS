@@ -5,6 +5,27 @@
  * Defines functions to create and populate Zenodo DOIs.
  */
 
+define('TPPS_20GB', 20000000000);
+
+/**
+ * Generates URL for different API endpoints.
+ *
+ * @param string $endpoint
+ *   Zenodo Endpoint.
+ *
+ * @return string
+ *   Returns absolute URL with access token.
+ */
+function tpps_zenodo_build_url($endpoint = '') {
+  // @TODO Statically cache this URL.
+  $token = variable_get('tpps_zenodo_api_key', NULL);
+  $prefix = variable_get('tpps_zenodo_prefix', '');
+  // @TODO Use url().
+  return "https://{$prefix}zenodo.org/api/deposit/depositions"
+    . ($endpoint ? "/$endpoint" : "")
+    . "?" . http_build_query(['access_token' => $token]);
+}
+
 /**
  * Creates a Zenodo DOI and loads metadata from a TPPS Submission accession.
  *
@@ -34,10 +55,11 @@ function tpps_generate_doi($accession) {
       // [/VS]
     ),
   );
-  for ($i = 1; $i <= $state['saved_values'][TPPS_PAGE_1]['publication']['secondaryAuthors']['number']; $i++) {
-    $creators[] = (object) array(
-      'name' => tpps_doi_format_name($state['saved_values'][TPPS_PAGE_1]['publication']['secondaryAuthors'][$i]),
-    );
+  $secondary_author_number = $page1_values['publication']['secondaryAuthors']['number'];
+  for ($i = 1; $i <= $secondary_author_number; $i++) {
+    $creators[] = (object) [
+      'name' => tpps_doi_format_name($page1_values['publication']['secondaryAuthors'][$i]),
+    ];
   }
 
   $keywords = [];
@@ -49,9 +71,9 @@ function tpps_generate_doi($accession) {
   $keywords[] = tpps_form_get_study_type($page2_values['study_type']);
 
   $metadata = (object) array(
-    'title' => $state['saved_values'][TPPS_PAGE_1]['publication']['title'],
+    'title' => $page1_values['publication']['title'],
     'upload_type' => 'dataset',
-    'description' => $state['saved_values'][TPPS_PAGE_1]['publication']['abstract'],
+    'description' => $page1_values['publication']['abstract'],
     'creators' => $creators,
     // 'access_right' => 'embargoed', //TODO: collect embargo date from user.
     'keywords' => $keywords,
@@ -78,9 +100,7 @@ function tpps_generate_doi($accession) {
  *   The Zenodo Deposition id number.
  */
 function tpps_doi_create() {
-  $token = variable_get('tpps_zenodo_api_key', NULL);
-  $prefix = variable_get('tpps_zenodo_prefix', '');
-  $ch = curl_init("https://{$prefix}zenodo.org/api/deposit/depositions?" . http_build_query(array('access_token' => $token)));
+  $ch = curl_init(tpps_zenodo_build_url());
   curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
   curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
   curl_setopt($ch, CURLOPT_POST, 1);
@@ -108,9 +128,7 @@ function tpps_doi_metadata($id, $metadata) {
   $data->metadata = $metadata;
   $data_json = json_encode($data);
 
-  $token = variable_get('tpps_zenodo_api_key', NULL);
-  $prefix = variable_get('tpps_zenodo_prefix', '');
-  $ch = curl_init("https://{$prefix}zenodo.org/api/deposit/depositions/$id?" . http_build_query(array('access_token' => $token)));
+  $ch = curl_init(tpps_zenodo_build_url($id));
   curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
   curl_setopt($ch, CURLOPT_HTTPHEADER, array(
     'Content-Type: application/json',
@@ -133,10 +151,7 @@ function tpps_doi_metadata($id, $metadata) {
  *   The form_state of the TPPS Submission form.
  */
 function tpps_doi_upload_files($id, array &$state) {
-  $token = variable_get('tpps_zenodo_api_key', NULL);
-  $prefix = variable_get('tpps_zenodo_prefix', '');
-  $files = array();
-
+  $files = [];
   for ($i = 1; $i <= $state['stats']['species_count']; $i++) {
     $files[] = $state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['file'];
     if (empty($state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
@@ -159,6 +174,7 @@ function tpps_doi_upload_files($id, array &$state) {
       }
     }
 
+    // Genotype.
     if (isset($state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype'])) {
       $genotype = &$state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype'];
       if (in_array($genotype['ref-genome'], ['manual', 'manual2', 'url'])) {
@@ -166,41 +182,39 @@ function tpps_doi_upload_files($id, array &$state) {
         $files[] = $genotype['tripal_fasta']['file_upload_existing'] ?? NULL;
       }
       // @TODO Could we skip all this extra checks and just collect files?
-      // WARNING:
-      // This won't work. Field 'file-type' has only 2 options:
-      // TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
-      // and TPPS_GENOTYPING_FILE_TYPE_VCF.
       // @TODO Ask curation team what to do with this.
-      if (!empty($genotype['files']['file-type']['SNPs Genotype Assay'])) {
-        $files[] = $genotype['SNPs']['snps-assay'] ?? NULL;
+      // WARNING: Submission State (not Shared State, v.1).
+      $file_type = $genotype[$snps_fieldset]['file-type'] ?? NULL;
+      $snps_fieldset = 'SNPs';
+      $ssrs_fieldset = 'ssrs_cpssrs';
+      if ($genotype['does_study_include_snp_data'] == 'yes') {
+        if ($file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE) {
+          $files[] = $genotype[$snps_fieldset]['snps-assay'] ?? NULL;
+          $files[] = $genotype[$snps_fieldset]['assay-design'] ?? NULL;
+        }
+        elseif ($file_type == TPPS_GENOTYPING_FILE_TYPE_VCF) {
+          $files[] = $genotype[$snps_fieldset]['vcf'] ?? NULL;
+        }
       }
-      if (
-        !empty($genotype['files']['file-type']['Assay Design'])
-        && $genotype['marker-type']['SNPs']
-      ) {
-        $files[] = $genotype['files']['assay-design'] ?? NULL;
+      if ($genotype['does_study_include_ssr_cpssr_data'] == 'yes') {
+        $files[] = $genotype[$ssrs_fieldset]['ssrs'] ?? NULL;
+        // @TODO What about cpssrs?
+        // $files[] = $genotype[$ssrs_fieldset]['cpssrs'] ?? NULL;
       }
-      if (!empty($genotype['files']['file-type']['SSRs/cpSSRs Genotype Spreadsheet'])) {
-        $files[] = $genotype['files']['ssrs'] ?? NULL;
-      }
-      if (!empty($genotype['files']['file-type']['Other Marker Genotype Spreadsheet'])) {
-        $files[] = $genotype['files']['other'] ?? NULL;
-      }
-      if (!empty($genotype['files']['file-type']['VCF'])) {
-        $files[] = $genotype['files']['vcf'] ?? NULL;
+      if ($genotype['does_study_include_other_genotypic_data'] == 'yes') {
+        $files[] = $genotype['other']['other'] ?? NULL;
       }
     }
   }
   $files = array_filter($files);
 
-  foreach ($files as $file) {
-    if ($file = tpps_file_load($file) && $file->filesize < 20000000000) {
+  foreach ($files as $fid) {
+    if ($fid && $file = tpps_file_load($fid) && $file->filesize < TPPS_20GB) {
       $path = drupal_realpath($file->uri);
-      $data = array(
+      $data = [
         'file' => curl_file_create($path, $file->filemime, $file->filename),
-      );
-
-      $ch = curl_init("https://{$prefix}zenodo.org/api/deposit/depositions/$id/files?" . http_build_query(array('access_token' => $token)));
+      ];
+      $ch = curl_init(tpps_zenodo_build_url("$id/files"));
       curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
       curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: multipart/form-data'));
       curl_setopt($ch, CURLOPT_POST, 1);
@@ -221,9 +235,7 @@ function tpps_doi_upload_files($id, array &$state) {
  *   The updated Deposition object.
  */
 function tpps_doi_publish($id) {
-  $token = variable_get('tpps_zenodo_api_key', NULL);
-  $prefix = variable_get('tpps_zenodo_prefix', '');
-  $ch = curl_init("https://{$prefix}zenodo.org/api/deposit/depositions/$id/actions/publish?" . http_build_query(array('access_token' => $token)));
+  $ch = curl_init(tpps_zenodo_build_url("$id/actions/publish"));
   curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
   curl_setopt($ch, CURLOPT_POST, 1);
   curl_setopt($ch, CURLOPT_POSTFIELDS, '');
@@ -243,9 +255,7 @@ function tpps_doi_publish($id) {
  *   The loaded Deposition object.
  */
 function tpps_doi_load($id) {
-  $token = variable_get('tpps_zenodo_api_key', NULL);
-  $prefix = variable_get('tpps_zenodo_prefix', '');
-  $ch = curl_init("https://{$prefix}zenodo.org/api/deposit/depositions/$id?" . http_build_query(array('access_token' => $token)));
+  $ch = curl_init(tpps_zenodo_build_url($id));
   curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 
   $out = json_decode(curl_exec($ch));
