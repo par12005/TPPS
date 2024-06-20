@@ -443,6 +443,7 @@ function tpps_menu() {
   tpps_menu_add_settings_pages($items);
   tpps_menu_add_report_pages($items);
   tpps_menu_add_submission_pages($items);
+  tpps_menu_add_api($items);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $items[TPPS_AJAX_URL . '/%'] = [
     // Use POST to send data and GET to just get data.
@@ -2291,8 +2292,7 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'access callback' => TRUE,
     'file' => 'pages/submission/export.json.inc',
   ];
-  // @TODO Remove this menu item.
-  // It's outdated and left for backward compatibility.
+  // @TODO Menu item is depricated and could be removed in future.
   // Use /api/submission/<accession>/view instead.
   $items['tpps/submission/%tpps_submission/json'] = [
     'type' => MENU_CALLBACK,
@@ -2369,10 +2369,6 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'file' => 'pages/submission/purge_multiple.inc',
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Files.
-
-  tpps_menu_add_api($items);
-
 }
 
 /**
@@ -2413,7 +2409,6 @@ function tpps_menu_add_api(array &$items = []) {
     'type' => MENU_CALLBACK,
     'delivery callback' => 'drupal_json_output',
   ];
-  // Use /api/submission/<accession>/view instead.
   $items['api/submission/%tpps_submission/view'] = [
     'title' => 'TPPS Submission Data',
     'description' => 'TPPS Submission Data in JSON format',
