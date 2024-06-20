@@ -820,14 +820,6 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
   // End of 'Reference Assembly used' field validation.
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   if ($is_step2_genotype) {
-    if ($genotype[$snps_fieldset]['upload_snp_association'] == 'Yes') {
-      tpps_is_required_field_empty($form_state,
-        [$id, 'genotype', $snps_fielset, 'snps-association-type']
-      );
-      tpps_is_required_field_empty($form_state,
-        [$id, 'genotype', $snps_fieldset, 'snps-association-tool']
-      );
-    }
     tpps_is_required_field_empty($form_state,
       [$id, 'genotype', $snps_fieldset, 'genotyping-type']
     );
@@ -1138,14 +1130,17 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
 
             // Check that Phenotype names match phenotype metadata section.
             $trait_id_col = $groups['Associated Trait'][5];
-            $association_phenotypes = tpps_parse_file_column($assoc_file, $trait_id_col, $assoc_no_header);
+            $association_phenotypes = tpps_parse_file_column(
+              $assoc_file, $trait_id_col, $assoc_no_header
+            );
 
             $phenotype = $form_state['values'][$id]['phenotype'];
             $phenotype_meta = $phenotype['metadata'];
             $phenotype_number = $phenotype['phenotypes-meta']['number'];
 
             $phenotype_meta_names = array();
-            $phenotype_name_col = $form_state['values'][$id]['phenotype']['metadata-groups']['Phenotype Id']['1'] ?? NULL;
+            $phenotype_name_col = $form_state['values'][$id]['phenotype']
+              ['metadata-groups']['Phenotype Id']['1'] ?? NULL;
             if (isset($phenotype_name_col)) {
               $phenotype_meta_names = tpps_parse_file_column($phenotype_meta, $phenotype_name_col);
             }
@@ -1184,12 +1179,6 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
           // Preserve file if it is valid.
           tpps_preserve_valid_file($form_state, $assoc_file, $org_num, "SNPs_Association");
 
-          tpps_is_required_field_empty($form_state,
-            [$id, 'genotype', $snps_fieldset, 'snps-association-type']
-          );
-          tpps_is_required_field_empty($form_state,
-            [$id, 'genotype', $snps_fieldset, 'snps-association-tool']
-          );
           // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
           // SNPs Population Structure file.
           if (

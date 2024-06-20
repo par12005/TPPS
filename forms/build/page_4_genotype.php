@@ -403,8 +403,8 @@ function tpps_genotype_subform(array $form_bus) {
       ],
       '#default_value' => tpps_get_ajax_value(
         $form_state,
-        [$organism_name, 'genotype', $snps_fieldset, 'upload_snp_association'],
-        'Yes'
+        [$organism_name, 'genotype', $snps_fieldset, 'upload_snp_association']
+        //, 'Yes'
       ),
     ];
   }
@@ -489,6 +489,14 @@ function tpps_genotype_subform(array $form_bus) {
       'visible' => [
         ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
           . '][upload_snp_association]"]' => ['value' => 'Yes'],
+        ':input[name="' . $organism_name . '[genotype]'
+        . '[does_study_include_snp_data]"]' => ['value' => 'yes'],
+      ],
+      'required' => [
+        ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
+          . '][upload_snp_association]"]' => ['value' => 'Yes'],
+        ':input[name="' . $organism_name . '[genotype]'
+        . '[does_study_include_snp_data]"]' => ['value' => 'yes'],
       ],
     ],
   ];
@@ -516,6 +524,14 @@ function tpps_genotype_subform(array $form_bus) {
       'visible' => [
         ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
           . '][upload_snp_association]"]' => ['value' => 'Yes'],
+        ':input[name="' . $organism_name . '[genotype]'
+        . '[does_study_include_snp_data]"]' => ['value' => 'yes'],
+      ],
+      'required' => [
+        ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
+          . '][upload_snp_association]"]' => ['value' => 'Yes'],
+        ':input[name="' . $organism_name . '[genotype]'
+        . '[does_study_include_snp_data]"]' => ['value' => 'yes'],
       ],
     ],
   ];
