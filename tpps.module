@@ -2218,15 +2218,37 @@ function tpps_menu_add_report_pages(array &$items = []) {
     'access arguments' => ['administer tpps module'],
     'file' => 'reports/missing_files.inc',
   ];
-  // Study Missing Files.
-  $items['admin/reports/tpps/study-missing-files'] =
-  $items['tpps-admin-panel/reports/study-missing-files'] = [
-    'title' => 'Study Missing Files',
-    'description' => 'List of files missing in studies.',
-    'page callback' => 'tpps_admin_study_missing_files_report',
+  // Submissions Missing Files.
+  $items['admin/reports/tpps/submissions-missing-files'] =
+  $items['tpps-admin-panel/reports/submissions-missing-files'] = [
+    'title' => 'Submissions Missing Files',
+    'description' => 'List of files missing in submissions.',
+    'page callback' => 'tpps_admin_submissions_missing_files_report',
     'access callback' => 'tpps_access',
     'access arguments' => ['administer tpps module'],
-    'file' => 'reports/study_missing_files.inc',
+    'file' => 'reports/submissions_missing_files.inc',
+  ];
+  // Submissions without files.
+  $items['admin/reports/tpps/submissions-without-files'] =
+  $items['tpps-admin-panel/reports/submissions-without-files'] = [
+    'title' => variable_get('tpps_report_submissions_without_files_title',
+      'Submissions without Files'),
+    'description' => 'List of submissions which has no files.',
+    'page callback' => 'tpps_admin_submissions_without_files_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'file' => 'reports/submissions_without_files.inc',
+  ];
+  // Submission's all files.
+  $items['admin/reports/tpps/submissions-all-files'] =
+  $items['tpps-admin-panel/reports/submissions-all-files'] = [
+    'title' => variable_get('tpps_report_submissions_all_files_title',
+      "Submission's All Files"),
+    'description' => "List of submission's all files.",
+    'page callback' => 'tpps_admin_submissions_all_files_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'file' => 'reports/submissions_all_files.inc',
   ];
 }
 
@@ -2430,7 +2452,9 @@ function tpps_reports_overview_page() {
       l(t('Missing DOI Report'), 'admin/reports/tpps/missing-doi'),
       l(t('Imported Studies'), 'admin/reports/tpps/imported-studies'),
       l(t('Missing Files'), 'admin/reports/tpps/missing-files'),
-      l(t('Study Missing Files'), 'admin/reports/tpps/study-missing-files'),
+      l(t('Submissions Missing Files'), 'admin/reports/tpps/submissions-missing-files'),
+      l(t('Submissions without Files'), 'admin/reports/tpps/submissions-without-files'),
+      l(t("Submission's All Files"), 'admin/reports/tpps/submissions-all-files'),
     ],
   ]);
 }

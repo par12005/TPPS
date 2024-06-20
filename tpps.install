@@ -22,7 +22,18 @@ function tpps_install() {
   variable_set('tpps_delayed_submissions_job_frequency', '0 */6 * * *');
   variable_set('tpps_cron_rule_ref_genomes_recreate', '0 0 */3 * *');
   // Reports.
-  variable_get('tpps_report_study_missing_files_title', 'Study Missing Files');
+  variable_set(
+    'tpps_report_submissions_all_files_title',
+    "Submission's All Files"
+  );
+  variable_set(
+    'tpps_report_submissions_without_files_title',
+    'Submissions without Files'
+  );
+  variable_get(
+    'tpps_report_submissions_missing_files_title',
+    'Submissions Missing Files'
+  );
   variable_set('tpps_report_missing_doi_title', 'Missing DOI');
   variable_set(
     'tpps_report_imported_studies_title', 'Imported Studies'
@@ -364,7 +375,9 @@ function tpps_uninstall() {
   variable_del('tpps_delayed_submissions_job_frequency');
   variable_del('tpps_cron_rule_ref_genomes_recreate');
   // Reports.
-  variable_del('tpps_report_study_missing_files_title');
+  variable_del('tpps_report_submissions_all_files_title');
+  variable_del('tpps_report_submissions_without_files_title');
+  variable_del('tpps_report_submissions_missing_files_title');
   variable_del('tpps_report_missing_doi_title');
   variable_del('tpps_report_imported_studies_title');
   variable_del('tpps_report_missing_files_title');

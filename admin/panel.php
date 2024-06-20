@@ -1720,7 +1720,9 @@ function tpps_admin_panel_get_reports() {
     'unit_warning' => $panel_url . '/unit-warning',
     'order_family_not_exist' => $panel_url . '/order-family-not-exist',
     'missing_files' => $panel_url . '/missing-files',
-    'study_missing_files' => $panel_url . '/study-missing-files',
+    'submissions_missing_files' => $panel_url . '/submissions-missing-files',
+    'submissions_without_files' => $panel_url . '/submissions-without-files',
+    'submissions_all_files' => $panel_url . '/submissions-all-files',
   ];
 }
 

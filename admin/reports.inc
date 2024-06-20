@@ -11,9 +11,26 @@
  * Reports settings.
  */
 function tpps_reports_settings_form(array $form, array &$form_state) {
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // General.
+  $form['general'] = [
+    '#type' => 'fieldset',
+    '#title' => t('General Report Settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+  ];
+  $form['general']['tpps_report_items_per_page'] = [
+    '#type' => 'textfield',
+    '#title' => t('Number of items per page'),
+    '#default_value' => variable_get('tpps_report_items_per_page', 20),
+  ];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Titles.
   $form['titles'] = [
     '#type' => 'fieldset',
     '#title' => t('Reports Titles'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
   ];
   $form['titles']['tpps_report_imported_studies_title'] = [
     '#type' => 'textfield',
@@ -69,6 +86,22 @@ function tpps_reports_settings_form(array $form, array &$form_state) {
     '#default_value' => variable_get(
       'tpps_report_study_missing_files_title',
       'Study Missing Files'
+    ),
+  ];
+  $form['titles']['tpps_report_submissions_without_files_title'] = [
+    '#type' => 'textfield',
+    '#title' => t('Submissions without Files Report Title'),
+    '#default_value' => variable_get(
+      'tpps_report_submissions_without_files_title',
+      'Submissions without Files'
+    ),
+  ];
+  $form['titles']['tpps_report_submissions_all_files_title'] = [
+    '#type' => 'textfield',
+    '#title' => t("Submission's All Files Report Title"),
+    '#default_value' => variable_get(
+      'tpps_report_submissions_all_files_title',
+      "Submission's All Files"
     ),
   ];
 
