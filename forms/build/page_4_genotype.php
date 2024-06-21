@@ -115,9 +115,8 @@ function tpps_genotype_subform(array $form_bus) {
   // Weight of the yes/no selectors. From 0 (default) to heavier.
   foreach ($marker_type_field_list as $field_name => $marker_name) {
     $weight = ($weight ?? 0) + 100;
-    $default_value = (
-      in_array($marker_name, $genotype_marker_type)
-      ? 'yes' : (count($genotype_marker_type) ? 'no' : 'no')
+    $default_value = tpps_get_ajax_value($form_state,
+      [$organism_name, 'genotype', $field_name]
     );
     tpps_form_add_yesno_field(array_merge($form_bus,
       [
@@ -207,7 +206,7 @@ function tpps_genotype_subform(array $form_bus) {
         . '[does_study_include_other_genotypic_data]"]' => ['value' => 'yes'],
       ],
     ],
-    // After own yes/no selector.
+    // After related yes/no selector.
     '#weight' => 350,
   ];
   tpps_page_4_ref($fields, $form_state, $organism_name);
@@ -404,8 +403,8 @@ function tpps_genotype_subform(array $form_bus) {
       ],
       '#default_value' => tpps_get_ajax_value(
         $form_state,
-        [$organism_name, 'genotype', $snps_fieldset, 'upload_snp_association'],
-        'Yes'
+        [$organism_name, 'genotype', $snps_fieldset, 'upload_snp_association']
+        //, 'Yes'
       ),
     ];
   }
@@ -441,7 +440,6 @@ function tpps_genotype_subform(array $form_bus) {
       'visible' => [
         ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
           . '][upload_snp_association]"]' => ['value' => 'Yes'],
-
       ],
     ],
     'extra_elements' => [
@@ -475,7 +473,8 @@ function tpps_genotype_subform(array $form_bus) {
   ]);
 
   // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
-  $fields[$snps_fieldset]['snps-association-type'] = [
+  $field_name = 'snps-association-type';
+  $fields[$snps_fieldset][$field_name] = [
     '#type' => 'select',
     '#title' => t('Confidence Value Type: *'),
     '#options' => [
@@ -490,12 +489,24 @@ function tpps_genotype_subform(array $form_bus) {
       'visible' => [
         ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
           . '][upload_snp_association]"]' => ['value' => 'Yes'],
+        ':input[name="' . $organism_name . '[genotype]'
+        . '[does_study_include_snp_data]"]' => ['value' => 'yes'],
+      ],
+      'required' => [
+        ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
+          . '][upload_snp_association]"]' => ['value' => 'Yes'],
+        ':input[name="' . $organism_name . '[genotype]'
+        . '[does_study_include_snp_data]"]' => ['value' => 'yes'],
       ],
     ],
   ];
+  // Required when visible.
+  $fields[$snps_fieldset][$field_name]['#states']['required'] =
+    $fields[$snps_fieldset][$field_name]['#states']['visible'];
 
   // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
-  $fields[$snps_fieldset]['snps-association-tool'] = [
+  $field_name = 'snps-association-tool';
+  $fields[$snps_fieldset][$field_name] = [
     '#type' => 'select',
     '#title' => t('Association Analysis Tool: *'),
     '#options' => [
@@ -513,9 +524,20 @@ function tpps_genotype_subform(array $form_bus) {
       'visible' => [
         ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
           . '][upload_snp_association]"]' => ['value' => 'Yes'],
+        ':input[name="' . $organism_name . '[genotype]'
+        . '[does_study_include_snp_data]"]' => ['value' => 'yes'],
+      ],
+      'required' => [
+        ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
+          . '][upload_snp_association]"]' => ['value' => 'Yes'],
+        ':input[name="' . $organism_name . '[genotype]'
+        . '[does_study_include_snp_data]"]' => ['value' => 'yes'],
       ],
     ],
   ];
+  // Required when visible.
+  $fields[$snps_fieldset][$field_name]['#states']['required'] =
+    $fields[$snps_fieldset][$field_name]['#states']['visible'];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Would you like to upload a SNPs Population Structure file?
@@ -548,7 +570,6 @@ function tpps_genotype_subform(array $form_bus) {
     'type' => $form_bus['type'],
     'field_name' => $file_field_name,
     'title' => $title,
-    // @todo [VS] Replace with 'required' with default value 'TRUE'.
     'optional' => TRUE,
     'states' => [
       'visible' => [
@@ -611,7 +632,7 @@ function tpps_genotype_subform(array $form_bus) {
     ],
   ];
 
-  // Field was relocated (v.2). ['files'] -> ['other'].
+  // Field was relocated (v.2). ['files', 'other] -> ['other', 'other'].
   $file_field_name = 'other';
   $title = t('Other spreadsheet: '
     . '<br />please provide a spreadsheet with columns for the Plant ID '
@@ -624,16 +645,14 @@ function tpps_genotype_subform(array $form_bus) {
     . 'If a column data type does not fit any of the options in the '
     . 'drop-down menu, you may set that drop-down menu to "N/A". '
     . 'Your file must contain one column with the Plant Identifier.');
-  tpps_form_build_file_field([
-    'form' => &$form,
-    'form_state' => $form_state,
+  tpps_form_build_file_field(array_merge($form_bus, [
     'parents' => [$organism_name, 'genotype', $other_fieldset],
     'field_name' => $file_field_name,
     'title' => $title,
     'organism_name' => $organism_name,
     'type' => $form_bus['type'],
     'description' => $description,
-  ]);
+  ]));
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Other Columns.
