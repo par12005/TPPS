@@ -22,6 +22,7 @@ function tpps_install() {
   variable_set('tpps_delayed_submissions_job_frequency', '0 */6 * * *');
   variable_set('tpps_cron_rule_ref_genomes_recreate', '0 0 */3 * *');
   // Reports.
+  variable_set('tpps_report_items_per_page', 20);
   variable_set(
     'tpps_report_submissions_all_files_title',
     "Submission's All Files"
@@ -375,6 +376,7 @@ function tpps_uninstall() {
   variable_del('tpps_delayed_submissions_job_frequency');
   variable_del('tpps_cron_rule_ref_genomes_recreate');
   // Reports.
+  variable_del('tpps_report_items_per_page');
   variable_del('tpps_report_submissions_all_files_title');
   variable_del('tpps_report_submissions_without_files_title');
   variable_del('tpps_report_submissions_missing_files_title');

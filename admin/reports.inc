@@ -50,10 +50,10 @@ function tpps_reports_settings_form(array $form, array &$form_state) {
   ];
   $form['titles']['tpps_report_missing_files_title'] = [
     '#type' => 'textfield',
-    '#title' => t('Missing Files Report Title'),
+    '#title' => t('Files missing in filesystem Report Title'),
     '#default_value' => variable_get(
       'tpps_report_missing_files_title',
-      'List of missing files'
+      'Files missing in filesystem'
     ),
   ];
   $form['titles']['tpps_report_no_synonym_title'] = [
@@ -80,12 +80,12 @@ function tpps_reports_settings_form(array $form, array &$form_state) {
       'Order/Family not exist'
     ),
   ];
-  $form['titles']['tpps_report_study_missing_files_title'] = [
+  $form['titles']['tpps_report_submissions_missing_files_title'] = [
     '#type' => 'textfield',
-    '#title' => t('Study Missing Files Report Title'),
+    '#title' => t("Submission's Missing Files Report Title"),
     '#default_value' => variable_get(
-      'tpps_report_study_missing_files_title',
-      'Study Missing Files'
+      'tpps_report_submissions_missing_files_title',
+      "Submission's Missing Files"
     ),
   ];
   $form['titles']['tpps_report_submissions_without_files_title'] = [

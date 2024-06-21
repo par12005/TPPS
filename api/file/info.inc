@@ -26,9 +26,12 @@ function tpps_api_file_get_info($file) {
   if (empty($output['error'])) {
     // Get absolute path.
     $path = $file->uri;
-    if (strpos($file->uri, 'public://') !== FALSE) {
+    if (
+      strpos($path, 'public://') !== FALSE
+      || strpos($path, 'temporary://') !== FALSE
+    ) {
       // Managed file.
-      $path = drupal_realpath($file->uri);
+      $path = drupal_realpath($path);
     }
     $output = $file;
     module_load_include('inc', 'tpps', 'pages/file/get');

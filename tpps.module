@@ -2211,7 +2211,9 @@ function tpps_menu_add_report_pages(array &$items = []) {
   // Missing Files.
   $items['admin/reports/tpps/missing-files'] =
   $items['tpps-admin-panel/reports/missing-files'] = [
-    'title' => 'Missing Files',
+    'title' => variable_get('tpps_report_missing_files_title',
+      'Files missing in filesystem'
+    ),
     'description' => 'List of files missing in filesystem.',
     'page callback' => 'tpps_admin_missing_files_report',
     'access callback' => 'tpps_access',
@@ -2221,7 +2223,9 @@ function tpps_menu_add_report_pages(array &$items = []) {
   // Submissions Missing Files.
   $items['admin/reports/tpps/submissions-missing-files'] =
   $items['tpps-admin-panel/reports/submissions-missing-files'] = [
-    'title' => 'Submissions Missing Files',
+    'title' => variable_get('tpps_report_submissions_missing_files_title',
+      "Submission's Missing Files"
+    ),
     'description' => 'List of files missing in submissions.',
     'page callback' => 'tpps_admin_submissions_missing_files_report',
     'access callback' => 'tpps_access',
