@@ -19,7 +19,10 @@
 function tpps_api_file_get_info($file) {
   global $base_url;
   // Get absolute path.
-  if (strpos($file->uri, 'public://') !== FALSE) {
+  if (
+    strpos($path, 'public://') !== FALSE
+    || strpos($path, 'temporary://') !== FALSE
+  ) {
     // Managed file.
     $file->path = drupal_realpath($file->uri);
   }
