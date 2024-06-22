@@ -87,7 +87,6 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
     tpps_form_autofocus($form, ['data_type']);
   }
 
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // TPPSc Form.
   else {
@@ -111,6 +110,9 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
       '#type' => 'select',
       '#title' => t('Experimental Design: *'),
       '#options' => tpps_form_get_experimental_design_options(),
+
+// @TODO Use 'required_when_visible' feature.
+
       '#states' => [
         'visible' => [
           [
@@ -141,7 +143,7 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
         ],
       ],
     ];
-    // @TODO Add more fields.
+// @TODO Add more fields.
     tppsc_growth_chamber([
       'form' => &$form,
       'is_tppsC' => $is_tppsC,

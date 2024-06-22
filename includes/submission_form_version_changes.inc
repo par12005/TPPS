@@ -95,6 +95,7 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       'genotyping-type',
       'file-type',
       'vcf',
+      'local_vcf',
       'vcf_file-location',
       'snps-assay',
       'assay-design',

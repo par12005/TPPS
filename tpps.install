@@ -12,7 +12,13 @@
  * necessary materialized views.
  */
 function tpps_install() {
-  // [VS]
+  // API.
+  variable_set('tpps_api_token', '');
+  // Admin Panel.
+  variable_set('tpps_admin_panel_cache_lists', FALSE);
+  variable_set('tpps_admin_panel_cache_new_species_list', FALSE);
+  variable_set('tpps_admin_panel_cache_resubmit_list', FALSE);
+  variable_set('tpps_admin_panel_show_execution_time', FALSE);
   // Cronjob.
   variable_set('tpps_latest_job_status_slack_updates_job_frequency', '*/15 * * * *');
   variable_set('tpps_refresh_views_job_frequency', '0 */12 * * *');
@@ -20,6 +26,24 @@ function tpps_install() {
   variable_set('tpps_delayed_submissions_job_frequency', '0 */6 * * *');
   variable_set('tpps_cron_rule_ref_genomes_recreate', '0 0 */3 * *');
   // Reports.
+  variable_set('tpps_report_items_per_page', 20);
+  variable_set(
+    'tpps_report_submissions_all_files_title',
+    "Submission's All Files"
+  );
+  variable_set(
+    'tpps_report_submissions_without_files_title',
+    'Submissions without Files'
+  );
+  variable_get(
+    'tpps_report_submissions_missing_files_title',
+    'Submissions Missing Files'
+  );
+  variable_set('tpps_report_missing_doi_title', 'Missing DOI');
+  variable_set(
+    'tpps_report_imported_studies_title', 'Imported Studies'
+  );
+  variable_set('tpps_report_missing_files_title', 'List of missing files');
   variable_set('tpps_report_no_synonym_title',
     'List of phenotypes without Synonyms'
   );
@@ -66,7 +90,6 @@ function tpps_install() {
   // Submission Export.
   // @TODO Add ability to change those variables at settings page.
   variable_set('tpps_submission_export_show_file_search_report', FALSE);
-  variable_set('tpps_submission_file_check_token', TRUE);
   variable_set('tpps_submission_file_salt', md5(REQUEST_TIME));
   variable_set('tpps_submission_export_exclude_data', TRUE);
   variable_set('tpps_submission_export_exclude_tree_info', TRUE);
@@ -347,6 +370,13 @@ function tpps_install() {
  * usage from public.file_usage.
  */
 function tpps_uninstall() {
+  // API.
+  variable_del('tpps_api_token');
+  // Admin Panel.
+  variable_del('tpps_admin_panel_cache_study_lists');
+  variable_del('tpps_admin_panel_cache_new_species_list');
+  variable_del('tpps_admin_panel_cache_resubmit_list');
+  variable_del('tpps_admin_panel_show_execution_time');
   // Cronjob.
   variable_del('tpps_latest_job_status_slack_updates_job_frequency');
   variable_del('tpps_refresh_views_job_frequency');
@@ -354,6 +384,13 @@ function tpps_uninstall() {
   variable_del('tpps_delayed_submissions_job_frequency');
   variable_del('tpps_cron_rule_ref_genomes_recreate');
   // Reports.
+  variable_del('tpps_report_items_per_page');
+  variable_del('tpps_report_submissions_all_files_title');
+  variable_del('tpps_report_submissions_without_files_title');
+  variable_del('tpps_report_submissions_missing_files_title');
+  variable_del('tpps_report_missing_doi_title');
+  variable_del('tpps_report_imported_studies_title');
+  variable_del('tpps_report_missing_files_title');
   variable_del('tpps_report_no_synonym_title');
   variable_del('tpps_report_unit_warning_title');
   variable_del('tpps_report_order_family_not_exist_title');
@@ -392,7 +429,6 @@ function tpps_uninstall() {
   variable_del('tpps_imported_studies_list');
   // Submission Import/Export.
   variable_del('tpps_submission_export_show_file_search_report');
-  variable_del('tpps_submission_file_check_token');
   variable_del('tpps_submission_file_salt');
   variable_del('tpps_submission_export_exclude_data');
   variable_del('tpps_submission_export_exclude_tree_info');

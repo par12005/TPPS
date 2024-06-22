@@ -295,12 +295,9 @@ function tpps_submission_import_download_file(array $state, array $file) {
     || (($url[0] == '/' || strpos($url, 'http') === FALSE) && !empty($site))
     || empty($url)
   ) {
-    $url = $site . '/tpps/file/' . $file['fid'] . '/get/'
-      // Secure Token.
-      . tpps_file_generate_token($file)
-      // This part is not required but allows to get correct
-      // filename of downloaded file.
-      . '/' . $file['filename'];
+    // Trailing filename allows to get original filename when downloading.
+    $url = $site . '/api/file/' . $file['fid'] . '/get/' . $file['filename'];
+    $url .= '?token=' . variable_get('tpps_api_token');
   }
   if (empty($content = tpps_file_get_contents($url))) {
     return NULL;

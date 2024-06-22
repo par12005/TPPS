@@ -266,15 +266,17 @@ function tpps_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $items['tpps/%/assay-design-markers'] = array(
+  // AJAX-callback. See /js/tpps_page_4_curation_tool.js.
+  // First % = accession
+  $items['tpps/%/assay-design-markers'] = [
     'title' => 'TPPS SNPs Design Markers',
     'page callback' => 'tpps_assay_design_markers',
-    'page arguments' => array(1),
-    'access arguments' => array('access content'),
-    // 'access callback' => 'tpps_access',
-    // 'access arguments' => array('access tpps form', 1),
+    // Submission accession. Format: TGDRxxxx.
+    'page arguments' => [1],
+    'access arguments' => ['access content'],
+    // @TODO Send secret key to restrict access.
     'type' => MENU_CALLBACK,
-  );
+  ];
 
   // This will return information about a study's VCF markers vs
   // First % = accession
@@ -330,37 +332,38 @@ function tpps_menu() {
     'type' => MENU_NORMAL_ITEM,
   ];
 
-  $items['tpps-admin-panel'] = array(
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // TPPS Admin Panel.
+  $items['tpps-admin-panel'] = [
     'title' => 'TPPS Admin Panel',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('tpps_admin_panel'),
+    'page arguments' => ['tpps_admin_panel'],
     'access callback' => 'tpps_access',
-    'access arguments' => array('approve tpps submissions'),
+    'access arguments' => ['approve tpps submissions'],
     'type' => MENU_NORMAL_ITEM,
-    'file' => 'admin/panel.php',
-  );
-
-  $items['tpps-admin-panel/refresh-genotypes-materialized-views'] = array(
+    'file' => 'pages/admin/panel.inc',
+  ];
+  // @TODO Create common URL for admin tasks like this and send operation as
+  // a part of URL or GET-parameter.
+  $items['tpps-admin-panel/refresh-genotypes-materialized-views'] = [
     'title' => 'TPPS Refresh Genotypes Materialized Views',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('tpps_manage_generate_all_materialized_views', 1),
+    'page callback' => 'tpps_manage_generate_all_materialized_views',
     'access callback' => 'tpps_access',
-    'access arguments' => array('approve tpps submissions'),
-    'type' => MENU_NORMAL_ITEM,
-    'file' => 'admin/panel.php',
-  );
-
-  $items['tpps-admin-panel/%'] = array(
-    'title' => 'TPPS Admin Panel',
+    'access arguments' => ['approve tpps submissions'],
+    'type' => MENU_CALLBACK,
+    'file' => 'pages/admin/generate_all_materialized_views.inc',
+  ];
+  $items['tpps-admin-panel/%'] = [
+    'title' => 'Study Admin Panel',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('tpps_admin_panel', 1),
+    'page arguments' => ['tpps_manage_submission_form', 1],
     'access callback' => 'tpps_access',
-    'access arguments' => array('approve tpps submissions'),
+    'access arguments' => ['approve tpps submissions'],
     'type' => MENU_NORMAL_ITEM,
-    'file' => 'admin/panel.php',
-  );
+    'file' => 'pages/admin/study.inc',
+  ];
 
-
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $items['tpps-admin-panel-logs/%'] = array(
     'title' => 'TPPS Admin Panel',
     'page callback' => 'drupal_get_form',
@@ -383,7 +386,7 @@ function tpps_menu() {
     'file' => 'admin/pages.php',
   ];
 
-  $items['tpps/doi/%'] = array(
+  $items['tpps/doi/%'] = [
     'title' => 'TPPS DOI',
     'page callback' => 'tpps_manage_doi',
     'page arguments' => [2],
@@ -391,7 +394,7 @@ function tpps_menu() {
     'access arguments' => ['access content'],
     'type' => MENU_NORMAL_ITEM,
     'file' => 'includes/manage_doi.inc',
-  );
+  ];
 
 
 
@@ -465,6 +468,7 @@ function tpps_menu() {
   tpps_menu_add_settings_pages($items);
   tpps_menu_add_report_pages($items);
   tpps_menu_add_submission_pages($items);
+  tpps_menu_add_api($items);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $items[TPPS_AJAX_URL . '/%'] = [
     // Use POST to send data and GET to just get data.
@@ -928,6 +932,31 @@ function tpps_element_info_alter(&$type) {
     $type['textfield']['#maxlength'] = 512;
   }
   $type['managed_file']['#process'][] = 'tpps_managed_file_process';
+  // Add required field validation and (optionally) field's parents and name.
+  $type['managed_file']['#process'][] = 'tpps_form_field_process';
+  $type['textfield']['#process'][] = 'tpps_form_field_process';
+  $type['select']['#process'][] = 'tpps_form_field_process';
+}
+
+/**
+ * Shows form element parents and own name.
+ */
+function tpps_form_field_process(array $element, array &$form_state, array $form) {
+  if (!tpps_is_main_form($form_state)) {
+    return $element;
+  }
+
+  // Show field's parents and name in the field's description.
+  $debug_mode = variable_get('tpps_debug_mode', FALSE);
+  if ($debug_mode) {
+    $element['#description'] = ($element['#description'] ?? '')
+      . '<br />[ ' . implode(' ][ ', $element['#array_parents']) . ' ]';
+  }
+
+  // Adds custom validation of fields required using Drupal Form States AJAX.
+  $element['#element_validate'][] = 'tpps_form_validate_required_field';
+
+  return $element;
 }
 
 /**
@@ -952,7 +981,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
   if (in_array($field_name, ['vcf'])) {
     return $element;
   }
-  if (!tpps_is_main_form($form_state) && empty($element['#value']['fid'])) {
+  if (!tpps_is_main_form($form_state) || empty($element['#value']['fid'])) {
     // Show extra fields only after file upload and
     // when it's a 'tppsc_main' or 'tpps_main' form.
     return $element;
@@ -966,8 +995,10 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
   require_once 'ajax/tpps_ajax.php';
 
   $fid = $element['#value']['fid'] ?? '';
-  if (($file = tpps_file_load($fid))) {
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Note: edit-organism-1-genotype-tripal-fasta-file-file-upload-upload
+  // has no title.
+  if ($fid && ($file = tpps_file_load($fid))) {
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // "Null values denoted by" AKA "empty" field.
     if (!empty($form_state['saved_values'][$page])) {
       // @TODO Remove this if possible.
@@ -1918,7 +1949,6 @@ function tpps_flush_caches() {
  *
  *   Constants like TPPS_PAGE_1 and etc could be used to improve code readablility.
  *   Custom Page Id like 'study_export' for 'TPPS Study Export Page'.
- *
  * @param array $form
  *   Drupal Form API form array.
  *   When NULL then CSS/JS will be added as it's a regular page.
@@ -2032,6 +2062,15 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/config.php',
   ];
+  $items['admin/config/tpps/admin-panel'] = [
+    'title' => 'Admin Panel',
+    'description' => 'Admin Panel Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_admin_panel_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/panel.inc',
+  ];
   $items['admin/config/tpps/submission'] = [
     'title' => 'Submission',
     'description' => 'Submission Settings',
@@ -2139,12 +2178,35 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/cron.inc',
   ];
+  // API.
+  $items['admin/config/tpps/api'] = [
+    'title' => 'API',
+    'description' => 'API Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_api_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/api.inc',
+  ];
+  $items['admin/config/tpps/reports'] = [
+    'title' => 'Reports',
+    'description' => 'Reports Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_reports_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/reports.inc',
+  ];
 }
 
 /**
  * Adds report menu items for hook_menu().
  *
  * See function tpps_reports_overview_page() for a list of items.
+ * Add title at 'admin/config/tpps/reports'.
+ * Update hook_install/uninstall.
+ * Update tpps_admin_panel_get_reports().
+ * Clear cache.
  *
  * @param array $items
  *   Menu items.
@@ -2203,12 +2265,58 @@ function tpps_menu_add_report_pages(array &$items = []) {
   // Imported Studies.
   $items['admin/reports/tpps/imported-studies'] =
   $items['tpps-admin-panel/reports/imported-studies'] = [
-    'title' => 'Imported Studies',
+    'title' => variable_get('tpps_report_imported_studies_title', 'Imported Studies'),
     'description' => 'List of Imported Studies Accessions.',
     'page callback' => 'tpps_admin_imported_studies_report',
     'access callback' => 'tpps_access',
     'access arguments' => ['administer tpps module'],
     'file' => 'reports/imported_studies.inc',
+  ];
+  // Missing Files.
+  $items['admin/reports/tpps/missing-files'] =
+  $items['tpps-admin-panel/reports/missing-files'] = [
+    'title' => variable_get('tpps_report_missing_files_title',
+      'Files missing in filesystem'
+    ),
+    'description' => 'List of files missing in filesystem.',
+    'page callback' => 'tpps_admin_missing_files_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'file' => 'reports/missing_files.inc',
+  ];
+  // Submissions Missing Files.
+  $items['admin/reports/tpps/submissions-missing-files'] =
+  $items['tpps-admin-panel/reports/submissions-missing-files'] = [
+    'title' => variable_get('tpps_report_submissions_missing_files_title',
+      "Submission's Missing Files"
+    ),
+    'description' => 'List of files missing in submissions.',
+    'page callback' => 'tpps_admin_submissions_missing_files_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'file' => 'reports/submissions_missing_files.inc',
+  ];
+  // Submissions without files.
+  $items['admin/reports/tpps/submissions-without-files'] =
+  $items['tpps-admin-panel/reports/submissions-without-files'] = [
+    'title' => variable_get('tpps_report_submissions_without_files_title',
+      'Submissions without Files'),
+    'description' => 'List of submissions which has no files.',
+    'page callback' => 'tpps_admin_submissions_without_files_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'file' => 'reports/submissions_without_files.inc',
+  ];
+  // Submission's all files.
+  $items['admin/reports/tpps/submissions-all-files'] =
+  $items['tpps-admin-panel/reports/submissions-all-files'] = [
+    'title' => variable_get('tpps_report_submissions_all_files_title',
+      "Submission's All Files"),
+    'description' => "List of submission's all files.",
+    'page callback' => 'tpps_admin_submissions_all_files_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'file' => 'reports/submissions_all_files.inc',
   ];
 }
 
@@ -2266,14 +2374,16 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'access callback' => TRUE,
     'file' => 'pages/submission/export.json.inc',
   ];
-  $items['tpps/submission/%/json'] = [
+  // @TODO Menu item is depricated and could be removed in future.
+  // Use /api/submission/<accession>/view instead.
+  $items['tpps/submission/%tpps_submission/json'] = [
     'type' => MENU_CALLBACK,
     'title' => 'TPPS Submission JSON',
     'description' => 'TPPS Submission in JSON format',
-    'page callback' => 'tpps_submission_json',
+    'page callback' => 'tpps_api_submission_view',
     'page arguments' => [2],
     'access arguments' => ['administer tpps module'],
-    'file' => 'pages/submission/json.inc',
+    'file' => 'api/submission/view.inc',
   ];
   // Import.
   $items['tpps/submission/%/import'] = [
@@ -2340,16 +2450,75 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'pages/submission/purge_multiple.inc',
   ];
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Files.
-  $items['tpps/file/%/get/%'] = [
-    'title' => "TPPS Submission's File",
-    'page callback' => 'tpps_file_get',
-    'page arguments' => [2, 4],
-    'access callback' => TRUE,
-    'file' => 'pages/file/get.inc',
+}
+
+/**
+ * Adds API endpoints to hook_menu().
+ *
+ * @param array $items
+ *   Menu items.
+ */
+function tpps_menu_add_api(array &$items = []) {
+  // API.
+  $items['api/file/%file/info'] = [
+    // File Object with extra absolute path and URL for downloading.
+    'title' => 'File Info',
+    'page callback' => 'tpps_api_file_get_info',
+    // 2: Managed File Id.
+    'page arguments' => [2],
+    'access callback' => 'tpps_api_access',
+    'file' => 'api/file/info.inc',
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  ];
+  $items['api/file/%file/get'] = [
+    'title' => "Download File",
+    'page callback' => 'tpps_api_file_get',
+    // 2: Managed File Id.
+    'page arguments' => [2],
+    'access callback' => 'tpps_api_access',
+    'file' => 'api/file/get.inc',
     'type' => MENU_CALLBACK,
   ];
+  $items['api/submission/%tpps_submission/vcf'] = [
+    'title' => 'List of VCF Files Ids',
+    'page callback' => 'tpps_api_submission_vcf_files_list',
+    // 3: Submission Accession (TGDRxxxx)
+    'page arguments' => [2],
+    'access callback' => 'tpps_api_access',
+    'file' => 'api/submission/vcf.inc',
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  ];
+  $items['api/submission/%tpps_submission/view'] = [
+    'title' => 'TPPS Submission Data',
+    'description' => 'TPPS Submission Data in JSON format',
+    'page callback' => 'tpps_api_submission_view',
+    'page arguments' => [2],
+    'access callback' => 'tpps_api_access',
+    'file' => 'api/submission/view.inc',
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  ];
+}
+
+/**
+ * TPPS API access callback.
+ *
+ * Checks token in GET-parameter 'token' to allow access to API Endpoints.
+ * Settings page to set/update token: /admin/config/tpps/api .
+ */
+function tpps_api_access() {
+  global $user;
+  $token = trim(variable_get('tpps_api_token'));
+  if (
+    empty($token)
+    && (($_GET['token'] ?? NULL) != $token)
+    && (!user_access('administer tpps module', $user))
+  ) {
+    return FALSE;
+  }
+  return TRUE;
 }
 
 /**
@@ -2366,6 +2535,10 @@ function tpps_reports_overview_page() {
       l(t('Order/Family Exist Report'), 'admin/reports/tpps/order-family-not-exist'),
       l(t('Missing DOI Report'), 'admin/reports/tpps/missing-doi'),
       l(t('Imported Studies'), 'admin/reports/tpps/imported-studies'),
+      l(t('Missing Files'), 'admin/reports/tpps/missing-files'),
+      l(t('Submissions Missing Files'), 'admin/reports/tpps/submissions-missing-files'),
+      l(t('Submissions without Files'), 'admin/reports/tpps/submissions-without-files'),
+      l(t("Submission's All Files"), 'admin/reports/tpps/submissions-all-files'),
     ],
   ]);
 }
@@ -2481,5 +2654,20 @@ function tpps_submission($accession = '') {
       );
     }
   }
+  return $submission;
+}
+
+/**
+ * Loads TPPS Submission.
+ *
+ * @param string $accession
+ *   Submission Accession.
+ *
+ * @return object
+ *   Returns Submission object.
+ */
+function tpps_submission_load($accession) {
+  // @TODO Minor. Use static caching.
+  $submission = new Submission($accession);
   return $submission;
 }

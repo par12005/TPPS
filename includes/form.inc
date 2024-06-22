@@ -34,6 +34,15 @@ function tpps_form_add_buttons(array $form_bus) {
     'header' => -1000,
     'footer' => 1000,
   ];
+  $back_button = [
+    '#type' => 'submit',
+    '#value' => t('Back'),
+    // Disable validation.
+    // Currently useless because all fields are optional but this
+    // could be changed in future. But it removes saved data of stage
+    // when 'Back' button clicked which is not good.
+    //'#limit_validation_errors' => [],
+  ];
 
   foreach ($scope_list as $scope => $weight) {
     $form[$scope] = [
@@ -52,7 +61,7 @@ function tpps_form_add_buttons(array $form_bus) {
       case 'page_2':
       case 'page_3':
         // Back, Save, Next.
-        $form[$scope]['Back'] = ['#type' => 'submit', '#value' => t('Back')];
+        $form[$scope]['Back'] = $back_button;
 
       default:
       case 'page_1':
@@ -67,7 +76,7 @@ function tpps_form_add_buttons(array $form_bus) {
 
       case 'page_4':
         // Back, Save, Review, Submit, Pre-validate my VCF files.
-        $form[$scope]['Back'] = ['#type' => 'submit', '#value' => t('Back')];
+        $form[$scope]['Back'] = $back_button;
         $form[$scope]['Save'] = ['#type' => 'submit', '#value' => t('Save')];
         $form[$scope]['submit'] = [
           '#type' => 'submit',
@@ -100,7 +109,7 @@ function tpps_form_add_buttons(array $form_bus) {
 
       case 'summary':
         // Back, Submit.
-        $form[$scope]['Back'] = ['#type' => 'submit', '#value' => t('Back')];
+        $form[$scope]['Back'] = $back_button;
         $form[$scope]['Next'] = ['#type' => 'submit', '#value' => t('Submit')];
         break;
     }
@@ -208,6 +217,20 @@ function tpps_form_error(array $form_state, array $path, $message) {
   }
   // Remove colon ':' and required field label.
   $title = strtok($field['#title'], ':');
+
+  // Since we update title of the field using JS in browser we could update
+  // title of the field which failed validation here.
+  if ($field['#name'] == 'organism-1[genotype][other][other]') {
+    $new_path = $path;
+    array_pop($new_path);
+    $new_path[] = 'other-marker';
+    $new_name = drupal_array_get_nested_value(
+      //$form_state['input'][TPPS_PAGE_4],
+      $form_state['input'],
+      $new_path
+    );
+    $title = str_replace('Other', $new_name, $title);
+  }
   form_set_error(implode('][', $field['#array_parents']),
     t('@title: @message', ['@title' => $title, '@message' => $message])
   );
@@ -241,6 +264,8 @@ function tpps_get_field_path(array $field, array $path) {
  * The navigation bar will be shown inside form, allows to detect
  * current step and switch to already completed steps (move back).
  *
+ * See function tpps_form_build_main() where stage of form is changed.
+ *
  * @param array $form
  *   The form being populated.
  * @param array $form_state
@@ -249,15 +274,20 @@ function tpps_get_field_path(array $field, array $path) {
 function tpps_form_navigation_bar(array &$form, array $form_state) {
   $submission = new Submission($form_state['accession']);
   $current_stage = $submission->getCurrentStage();
+  $current_stage = ($current_stage == 'summarypage' ? 5 : $current_stage);
+
   $last_completed_stage = $submission->getLastCompletedStage();
+  $last_completed_stage = ($last_completed_stage == 'summarypage' ? 5 : $last_completed_stage);
 
   // @TODO Each stage has '#cleared' option which indicates that form step
   // passed validation when it's set and value is TRUE. Remove for TPPSc.
   $stage_list = [
-    '1' => t('Publication Information'),
-    '2' => t('Experimental Design'),
-    '3' => t('Plant Accession'),
-    '4' => t('Data'),
+    1 => t('Publication Information'),
+    2 => t('Experimental Design'),
+    3 => t('Plant Accession'),
+    4 => t('Data'),
+    // 'summarypage'
+    5 => t('Review and Submit'),
   ];
   foreach ($stage_list as $number => $label) {
     // WARNING: Recreate $options to clean previos item settings.
@@ -591,6 +621,12 @@ function tpps_form_build_file_field(array $form_bus) {
     '#states' => $states,
     //'#parents' => $parents,
   ];
+
+  // Required when visible.
+  if ($form_bus['required_when_visible'] ?? NULL) {
+    $parent_element[$field_name]['#states']['required'] = $states['visible'];
+  }
+
   // dpm(print_r($parents, 1), 'parents of ' . $field_name);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Customization.
@@ -790,13 +826,13 @@ function tpps_form_get_id(array $form_state) {
 }
 
 /**
- * Checks if current form is TPPSc form.
+ * Get TPPS Form Id.
  *
  * @param array $form_state
  *   Drupal Form State array.
  *
- * @return bool
- *   Returns TRUE if form Id is 'tppsc_main' and FALSE otherwise.
+ * @return string
+ *   Returns 'tpps_main' (default) or 'tppsc_main'.
  */
 function tpps_form_is_tppsc(array $form_state) {
   $form_id = $form_state['saved_values']['front_page']['form_id']
@@ -976,25 +1012,24 @@ function tpps_form_get_accession(array $form_state, $only_number = FALSE) {
 function tpps_form_build_main(array $form, array &$form_state, $accession = NULL) {
   global $user;
 
-
   // Get stage from URL if possible.
+  // See function tpps_form_navigation_bar() which adds navigation links.
   if (!empty($_GET['stage'])) {
+    $current_stage_name = $_GET['stage'] == 5 ? 'summarypage' : (int) ($_GET['stage']);
     $submission = tpps_submission($accession)->load();
+    $last_completed_stage = $submission->getLastCompletedStage();
+    $last_completed_stage = ($last_completed_stage == 'summarypage' ? 5 : $last_completed_stage);
     if (
-      in_array($_GET['stage'], range(1, 4))
+      in_array($_GET['stage'], range(1, 5))
       // Allow to go directly to next stage after last completed.
-      && $_GET['stage'] <= $submission->getLastCompletedStage() + 1
+      && $_GET['stage'] <= $last_completed_stage + 1
     ) {
-      $submission->state['stage'] = (int) check_plain($_GET['stage']);
+      $submission->state['stage'] = check_plain($current_stage_name);
       $submission->save();
     }
     // Get rid of 'stage' param in URL.
     drupal_goto($_GET['q']);
   }
-
-
-
-
 
   // Check if this is TPPS or TPPSC Form using Url.
   // $form_state could have no necessary data yet when loaded first step of
@@ -1271,4 +1306,131 @@ function tpps_form_get_submission_status_list() {
     $output[$item] = t($item);
   }
   return $output;
+}
+
+/**
+ * Checks field required via Drupal Form States API is not empty.
+ *
+ * Custom validation is necessary because this fields was set a required by
+ * Drupal Form State API.
+ */
+function tpps_form_validate_required_field($element, $form_state) {
+  if (
+    empty($element['#states']['required'])
+    // Skip this validation when form just saved.
+    // @TODO Add '#name' to button Save and use it's name instead of label.
+    || $form_state['clicked_button']['#value'] == 'Save'
+  ) {
+    return;
+  }
+
+  $logic = NULL;
+  foreach ($element['#states']['required'] as $trigger => $condition) {
+    if (is_numeric($trigger)) {
+      if (is_string($condition)) {
+        $logic = $condition;
+        continue;
+      }
+      // There could be 'and', 'or' and 'xor' grouping.
+      // https://www.drupal.org/docs/drupal-apis/form-api/conditional-form-fields#s-combine-multiple-fields-or-values
+      foreach ($condition as $key => $value) {
+        $current_result = tpps_form_check_state_trigger(
+          $key, $value, $form_state
+        );
+        // Note: There could be more than 2 conditions and they could
+        // have different grouping.
+        $is_required = (empty($is_required)) ? $current_result
+          : tpps_logical_opeation($is_required, $current_result, $logic);
+      }
+    }
+    else {
+      $current_result = tpps_form_check_state_trigger(
+        $trigger, $condition, $form_state
+      );
+      $is_required = (empty($is_required)) ? $current_result
+        : tpps_logical_opeation($is_required, $current_result, 'and');
+    }
+  }
+  if ($is_required) {
+    // Field was set to required and must be validated.
+    tpps_is_required_field_empty($form_state, $element['#array_parents']);
+  }
+}
+
+/**
+ * Checks condition of the triggering.
+ *
+ * WARNING: There is unsupported states: 'expanded' and  'collapsed'. Those
+ * states of fieldset has no value in $form_state and couldn't be checked on
+ * server side.
+ *
+ * @param string $trigger
+ *   Triggering field name.
+ * @param array $condition
+ *   Associative array of states (keys) and values.
+ * @param array $form_state
+ *   Drupal Form State Array.
+ *
+ * @return bool
+ *   Returns TRUE if condition is TRUE and FALSE otherwise.
+ */
+function tpps_form_check_state_trigger($trigger, array $condition, array $form_state) {
+  $parts = explode('"', $trigger);
+  $parents = explode('[', str_replace(']', '', $parts[1]));
+  $actual_value = drupal_array_get_nested_value($form_state['values'], $parents);
+  foreach ($condition as $key => $value) {
+    // List of states from:
+    // https://www.drupal.org/docs/drupal-apis/form-api/conditional-form-fields
+    switch ($key) {
+      case 'filled':
+      case 'checked':
+      case 'value':
+        return ($actual_value == $value);
+
+      case 'empty':
+        return (
+          $value && empty($actual_value)
+          || !$value && !empty($actual_value)
+        );
+
+      case 'unchecked':
+      case '!value':
+        return ($actual_value != $value);
+
+      case 'expanded':
+      case 'collapsed':
+      default:
+        drupal_set_message('Field "' . $trigger
+          . '" has unsupported condition: ' . print_r($condition, 1)
+        );
+    }
+  }
+}
+
+/**
+ * Apply logic operation to given values.
+ *
+ * @param mixed $value1
+ *   First value.
+ * @param mixed $value2
+ *   Second value.
+ * @param mixed $logic_operator
+ *   Logical operator. Possible values: 'and', 'or' and 'xor'.
+ *   Using unsupported operators will give empty result.
+ *
+ * @return bool
+ *   Returns result which depends on given values and logical opertor.
+ */
+function tpps_logical_opeation($value1, $value2, $logic_operator) {
+  switch ($logic_operator) {
+    case 'and':
+      return ($value1 and $value2);
+
+    case 'or':
+      return ($value1 or $value2);
+
+    case 'xor':
+      return ($value1 xor $value2);
+  }
+  return NULL;
 }
