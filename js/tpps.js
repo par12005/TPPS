@@ -143,16 +143,16 @@
 
   var preview_buttons = $('input.preview_button');
   $.each(preview_buttons, function() {
-    $(this).attr('type', 'button');
-    $(this).click(function() {
+    $(this).click(function(e) {
       previewFile(this, 3);
+      e.preventDefault();
     });
   });
 
   var preview_full_buttons = $('input.preview_full_button');
   $.each(preview_full_buttons, function() {
-    $(this).attr('type', 'button');
-    $(this).click(function() {
+    $(this).click(function(e) {
+      e.preventDefault();
       previewFile(this, 0);
     });
   });
@@ -436,23 +436,24 @@ jQuery.fn.mapButtonsClick = function (selector) {
 
 function previewFile(element, num_rows = 3) {
   var fid;
-  if (element.id.match(/fid_(.*)/) !== null) {
-    fid = element.id.match(/fid_(.*)/)[1];
-
-    var request = jQuery.post('/tpps-preview-file', {
-      fid: fid,
-      rows: num_rows
-    });
-
-    request.done(function (data) {
-      if (jQuery('.preview_' + fid).length === 0) {
-        jQuery('#fid_' + fid).before(data);
-      }
-    });
-  }
-  else {
+  if (element.id.match(/fid_(.*)/) === null) {
     return;
   }
+  fid = element.id.match(/fid_(.*)/)[1];
+  let $previewElement = jQuery('.preview_' + fid);
+  if ($previewElement.length !== 0) {
+    //$previewElement.remove();
+    $previewElement.fadeOut(500, function() {
+      $previewElement.remove();
+    });
+  }
+  var request = jQuery.post('/tpps-preview-file', {
+    fid: fid,
+    rows: num_rows
+  });
+  request.done(function (data) {
+    jQuery('#fid_' + fid).before(data);
+  });
 }
 
 var detail_pages = {
