@@ -442,14 +442,18 @@ function tpps_form_add_yesno_field(array $form_bus) {
     $options = [0 => t('- Select -')] + $options;
   }
   // Build field using defaults.
+  //tpps_form_bus_debug($form_bus);
+  if (!empty($form_state['saved_values'])) {
+    $default_value = drupal_array_get_nested_value($form_state['saved_values'],
+        array_merge([$stage], $parents)
+    );
+  }
   $defaults = [
     '#type' => 'select',
     '#options' => $options,
     // This default value will be overwritten by value from $form_bus.
     // Note: $form_state used $stage but $form not.
-    '#default_value' => drupal_array_get_nested_value(
-      $form_state['saved_values'], array_merge([$stage], $parents)
-    ),
+    '#default_value' => $default_value ?? NULL,
     '#tree' => TRUE,
   ];
   $field = array_filter($form_bus, function ($e) {
@@ -758,6 +762,26 @@ function &tpps_form_bus_get(array $form_bus, $name) {
   else {
     return $null;
   }
+}
+
+/**
+ * Dumps Form Bus but excludes huge 'form' and 'form_state' elements.
+ *
+ * @param array $form_bus
+ *   Form Bus.
+ */
+function tpps_form_bus_debug(array $form_bus) {
+  $temp = $form_bus;
+  $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT
+    | DEBUG_BACKTRACE_IGNORE_ARGS, 4);
+  dpm(print_r($stack, 1), 'Form Bus Debugger');
+  if ($temp['form']) {
+    $temp['form'] = '-- removed --';
+  }
+  if ($temp['form_state']) {
+    $temp['form_state'] = '-- removed --';
+  }
+  dpm(print_r($temp, 1));
 }
 
 /**

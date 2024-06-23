@@ -734,12 +734,11 @@ function tpps_submission_full_clear_db($project_id) {
       ':project_id_2' => $project_id
   ]);
 
-
   echo "Delete genotype_calls...\n";
   chado_query("delete from chado.genotype_call where variant_id in
     (select feature_id from chado.feature_ids_" . $project_id . ")
-    or marker_id in (select feature_id from chado.feature_ids_" . $project_id . ");", [
-  ]);
+    or marker_id in (select feature_id from chado.feature_ids_" . $project_id . ");",
+    []);
 
   echo "DELETE featurelocs...\n";
   chado_query("delete from chado.featureloc where feature_id in
@@ -748,7 +747,7 @@ function tpps_submission_full_clear_db($project_id) {
   echo "DELETE feature_relationship records...\n";
   chado_query("delete from chado.feature_relationship where subject_id in
   (select feature_id from chado.feature_ids_" . $project_id . ") or object_id in
-  (select feature_id from chado.feature_ids_" . $project_id .  ");", []);
+  (select feature_id from chado.feature_ids_" . $project_id . ");", []);
 
   echo "DELETE feature records...\n";
   chado_query("delete from chado.feature where feature_id in
@@ -758,7 +757,6 @@ function tpps_submission_full_clear_db($project_id) {
   chado_query("DROP TABLE IF EXISTS chado.feature_ids_" . $project_id, []);
 
 }
-
 
 /**
  * Clears submission data from the database.
@@ -1088,9 +1086,11 @@ function tpps_submission_get_accession_list(array $conditions = [], $remove_empt
   $is_cache_allowed = variable_get('tpps_front_cache_accession_list', FALSE);
   if (!$is_cache_allowed || $reset || empty($cache) || empty($cache->data[$key])) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    $fields = array_diff(
-      array_keys(drupal_get_schema('tpps_submission')['fields']), ['shared_state']
-    );
+    if (empty($schema = drupal_get_schema('tpps_submission'))) {
+      // Reseting cache takes 83 msec while cached version takes 0.7 msec.
+      $schema = drupal_get_schema('tpps_submission', RESET_CACHE);
+    }
+    $fields = array_diff(array_keys($schema['fields']), ['shared_state']);
     $query = db_select('tpps_submission', 's')
       ->fields('s', $fields)
       ->orderBy('tpps_submission_id', 'desc');

@@ -165,27 +165,22 @@ function tppsc_natural_population(array &$form) {
  *   Data to build form.
  */
 function tppsc_growth_chamber(array $form_bus) {
-
-  $form = &$form_bus['form'];
-  $is_tppsC = $form_bus['is_tppsC'];
-  $parents = $form_bus['parents'];
-
-// @TODO Update!
-  $subform = &$form['study_info'];
-
-  $subform['#title'] = t('<div class="fieldset-title">Growth Chamber Information:</div>');
-
-  if ($is_tppsC) {
-    tppsc_page2_add_control_fields(
-      array_merge($form_bus, [
-        'type' => 'co2',
-        'label' => 'CO2',
-      ]);
+  //tpps_form_bus_debug($form_bus);
+  $form_bus['subform'] = &$form['study_info'];
+  $form_bas['subform']['#title'] = t('<div class="fieldset-title">'
+    . 'Growth Chamber Information:</div>');
+  if ($form_bus['is_tppsC']) {
+    tppsc_page2_add_control_fields(array_merge($form_bus,
+      ['type' => 'co2', 'label' => 'CO2']));
   }
   else {
-    tppsc_page2_add_control_fields($subform, 'co2', 'CO2', $is_tppsC);
-    tppsc_page2_add_control_fields($subform, 'humidity', 'Air humidity', $is_tppsC);
-    tppsc_page2_add_control_fields($subform, 'light', 'Light Intensity', $is_tppsC);
+    tppsc_page2_add_control_fields(array_merge($form_bus,
+      ['type' => 'co2', 'label' => 'CO2']));
+    tppsc_page2_add_control_fields(array_merge($form_bus,
+      ['type' => 'humidity', 'label' => 'Air humidity']));
+    tppsc_page2_add_control_fields(array_merge($form_bus,
+      ['type' => 'light', 'label' => 'Light Intensity']));
+
     tppsc_page2_add_temp($subform);
     tppsc_rooting($subform);
   }
@@ -542,20 +537,22 @@ function tppsc_rooting(array &$form) {
  * Fields which could be added:
  * co2, humidity, light intensity, salinity, and pH.
  *
- * @param array $form
- *   The form to be updated.
- * @param string $type
- *   The machine-readable type of control options.
- * @param string $label
- *   The human-readable label for the control options.
+ * @param array $form_bus
+ *   Form Bus.
  */
 function tppsc_page2_add_control_fields(array $form_bus) {
 
+  // The form to be updated.
   $form = &$form_bus['form'];
+
   $is_tppsC = $form_bus['is_tppsC'];
   $parents = $form_bus['parents'];
+  // The machine-readable type of control options.
+  $type = $form_bus['type'];
+  // The human-readable label for the control options.
+  $label = $form_bus['label'];
 
-// @TODO Update!
+  //tpps_form_bus_debug($form_bus);
   $subform = &$form['study_info'];
 
   $subform[$type] = [
