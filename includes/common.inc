@@ -128,3 +128,24 @@ function tpps_is_admin_or_curation() {
     || in_array('Curation', $user->roles)
   );
 }
+
+/**
+ * Resolves the absolute filepath of a local URI or filepath.
+ *
+ * Function drupal_realpath() (and PHP's realpath()) can't resolve path if
+ * there is a symlink in path but this function works fine with symlinks.
+ *
+ * @param string $uri
+ *   A stream wrapper URI or a filepath, possibly including one or
+ *   more symbolic links.
+ *
+ * @return string|false
+ *   The absolute local filepath (with no symbolic links), or FALSE on failure.
+ */
+function tpps_realpath($uri) {
+  $path = drupal_realpath($uri);
+  if ($path === FALSE) {
+    return str_replace('public://', drupal_realpath('public://') . '/', $uri);
+  }
+  return $path;
+}
