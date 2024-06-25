@@ -46,7 +46,7 @@ class FileUtilsTest extends TripalTestCase {
    * according to tpps_xlsx_get_dimension().
    */
   public function testGetDimensions() {
-    $dir = drupal_realpath(TPPS_TEMP_XLSX);
+    $dir = tpps_realpath(TPPS_TEMP_XLSX);
 
     // Test first file dimension.
     $zip = new \ZipArchive();
