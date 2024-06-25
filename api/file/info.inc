@@ -20,11 +20,11 @@ function tpps_api_file_get_info($file) {
   global $base_url;
   // Get absolute path.
   if (
-    strpos($path, 'public://') !== FALSE
-    || strpos($path, 'temporary://') !== FALSE
+    strpos($file->uri, 'public://') !== FALSE
+    || strpos($file->uri, 'temporary://') !== FALSE
   ) {
     // Managed file.
-    $file->path = drupal_realpath($file->uri);
+    $file->path = tpps_realpath($file->uri);
   }
   else {
     // Manually uploaded file.
