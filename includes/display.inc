@@ -475,10 +475,9 @@ function tpps_tab_create($uid) {
 }
 
 /**
- * Creates and prints an HTML table of the first 3 lines of a file.
+ * AJAX Callback. Generates file preview.
  *
- * This function techinically does not return a value, but will print() the
- * rendered table of preview values to the page.
+ * Shows HTML table of the first 3 lines of a file.
  */
 function tpps_preview_file() {
   $params = drupal_get_query_parameters($_POST);
@@ -504,33 +503,24 @@ function tpps_preview_file() {
       }
     }
     print(render($display));
-    return;
   }
-
-  if ((file_load($fid))) {
+  elseif ($file) {
     $content = tpps_parse_file($fid, $rows, !empty($no_header));
-    $rows = array();
+    $rows = [];
     for ($i = 0; $i < count($content) - 1; $i++) {
       $rows[] = $content[$i];
     }
-    $vars = array(
+    $vars = [
       'header' => $content['headers'],
       'rows' => $rows,
-      'attributes' => array(
-        'class' => array(
-          'view',
-          "preview_$fid",
-        ),
+      'attributes' => [
+        'class' => ['view', "preview_$fid"],
         'id' => 'tpps_table_display',
-      ),
-      'caption' => '',
-      'colgroups' => NULL,
+      ],
       'sticky' => FALSE,
-      'empty' => '',
-    );
+    ];
     $display = render(theme('table', $vars));
     print($display);
-    return;
   }
 }
 

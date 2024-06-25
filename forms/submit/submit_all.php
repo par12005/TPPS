@@ -37,7 +37,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
 
   $tpps_job = $job;
   // Get public path.
-  $log_path = drupal_realpath('public://') . '/tpps_job_logs/';
+  $log_path = tpps_realpath('public://') . '/tpps_job_logs/';
 
   if (!is_dir($log_path)) {
     mkdir($log_path);
@@ -1798,7 +1798,7 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
  */
 function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $regenerate_all = TRUE) {
   $accession = $form_state['accession'];
-  $dest_folder = drupal_realpath('public://tpps_vcf_flat_files');
+  $dest_folder = tpps_realpath('public://tpps_vcf_flat_files');
   // print_r($form_state);
   // Generate species codes which is needed later on
   $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
@@ -2351,7 +2351,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
       $tree_ids = [];
       $variant_ids = [];
       // We need to create a file to write SNPS data to
-      $dest_folder = drupal_realpath('public://tpps_vcf_flat_files');
+      $dest_folder = tpps_realpath('public://tpps_vcf_flat_files');
       @mkdir($dest_folder);
       $snps_flat_file_location = $dest_folder . '/' . $accession . '-' . $i . '-snps.csv';
       echo '[FILE_LOCATION][SNPs FLAT FILE CSV] ' . $dest_folder . '/' . $accession . '-' . $i . '-snps.csv' . "\n";
@@ -3120,7 +3120,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
 
     echo "Processing SNPS assay into flat files...\n";
     // We need to create a file to write SNPS data to
-    $dest_folder = drupal_realpath('public://tpps_vcf_flat_files');
+    $dest_folder = tpps_realpath('public://tpps_vcf_flat_files');
     @mkdir($dest_folder);
     $snps_flat_file_location = $dest_folder . '/' . $accession . '-' . $i . '-snps.csv';
     // echo '[FILE_LOCATION][SNPs FLAT FILE CSV] ' . $dest_folder . '/' . $accession . '-' . $i . '-snps.csv' . "\n";
@@ -4633,7 +4633,7 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
         $file = file_save_data($sample_list_data, $dest_folder . $file_name);
         echo "File managed as FID: " . $file->fid . "\n";
         echo "File managed location: " . $file->uri . "\n";
-        echo "Real managed real path: " . drupal_realpath($file->uri) . "\n";
+        echo "Real managed real path: " . tpps_realpath($file->uri) . "\n";
         // We could store this in the submit_state - TODO if we need this
         // $form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype']['vcf_sample_list'] = $file->fid;
         // print_r($sample_list_data);
@@ -4666,7 +4666,7 @@ function tpps_generate_popstruct($study_accession, $vcf_location) {
 
   // Get the correct path of the public directory
   $path = 'public://';
-  $public_path = drupal_realpath($path);
+  $public_path = tpps_realpath($path);
   tpps_job_logger_write('[PUBLIC PATH] ' . $public_path . "\n");
   echo('[PUBLIC PATH] ' . $public_path . "\n");
 

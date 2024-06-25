@@ -178,17 +178,17 @@ function tpps_api_compress_files($accession = NULL) {
   }
   ob_end_clean();
   $zip_name = "{$accession}_files.zip";
-  if (!file_exists(drupal_realpath(TPPS_TEMP_ZIP))) {
-    mkdir(drupal_realpath(TPPS_TEMP_ZIP));
+  if (!file_exists(tpps_realpath(TPPS_TEMP_ZIP))) {
+    mkdir(tpps_realpath(TPPS_TEMP_ZIP));
   }
-  $zip_loc = drupal_realpath(TPPS_TEMP_ZIP) . '/' . $zip_name;
+  $zip_loc = tpps_realpath(TPPS_TEMP_ZIP) . '/' . $zip_name;
 
   $files = $submission->state['files'];
   foreach ($files as $fid) {
-    $file_str[] = str_replace(' ', '\\ ', drupal_realpath(file_load($fid)->uri));
+    $file_str[] = str_replace(' ', '\\ ', tpps_realpath(file_load($fid)->uri));
   }
 
-  if (file_exists(drupal_realpath($zip_loc))) {
+  if (file_exists(tpps_realpath($zip_loc))) {
     unlink($zip_loc);
   }
 
