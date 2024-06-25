@@ -147,7 +147,16 @@ function tpps_is_admin_or_curation() {
 function tpps_realpath($uri) {
   $path = drupal_realpath($uri);
   if ($path === FALSE) {
-    return str_replace('public://', drupal_realpath('public://') . '/', $uri);
+    $path = $uri;
+    if ($public = variable_get('file_public_path')) {
+      $path = str_replace('public://', "$public/", $path);
+    }
+    elseif ($temporary = variable_get('file_temporary_path')) {
+      $path = str_replace('temporary://', "$temporary/", $path);
+    }
+    elseif ($private = variable_get('file_private_path')) {
+      $path = str_replace('private://', "$private/", $path);
+    }
   }
   return $path;
 }
