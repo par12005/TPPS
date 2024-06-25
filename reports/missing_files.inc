@@ -33,7 +33,7 @@ function tpps_admin_missing_files_report($reset = FALSE) {
         || strpos($uri, 'temporary://') !== FALSE
       ) {
         // Managed file.
-        if (empty($path = drupal_realpath($uri))) {
+        if (empty($path = tpps_realpath($uri))) {
           $path = $uri;
         }
       }

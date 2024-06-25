@@ -132,8 +132,10 @@ function tpps_is_admin_or_curation() {
 /**
  * Resolves the absolute filepath of a local URI or filepath.
  *
- * Function drupal_realpath() (and PHP's realpath()) can't resolve path if
- * there is a symlink in path but this function works fine with symlinks.
+ * Function drupal_realpath() (which uses PHP's realpath()) can't resolve path
+ * if there is a symlink in path.
+ * This function works fine with symlinks.
+ * For more details: https://app.clickup.com/t/86b0ztv8g.
  *
  * @param string $uri
  *   A stream wrapper URI or a filepath, possibly including one or
@@ -145,7 +147,16 @@ function tpps_is_admin_or_curation() {
 function tpps_realpath($uri) {
   $path = drupal_realpath($uri);
   if ($path === FALSE) {
-    return str_replace('public://', drupal_realpath('public://') . '/', $uri);
+    $path = $uri;
+    if ($public = variable_get('file_public_path')) {
+      $path = str_replace('public://', "$public/", $path);
+    }
+    elseif ($temporary = variable_get('file_temporary_path')) {
+      $path = str_replace('temporary://', "$temporary/", $path);
+    }
+    elseif ($private = variable_get('file_private_path')) {
+      $path = str_replace('private://', "$private/", $path);
+    }
   }
   return $path;
 }

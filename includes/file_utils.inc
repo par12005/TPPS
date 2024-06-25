@@ -143,7 +143,7 @@ function tpps_file_width($fid) {
  *   The length of the longest line.
  */
 function tpps_xlsx_width($location) {
-  $dir = drupal_realpath(TPPS_TEMP_XLSX);
+  $dir = tpps_realpath(TPPS_TEMP_XLSX);
 
   $zip = new ZipArchive();
   $zip->open($location);
@@ -682,7 +682,7 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
  *   The true path of the file.
  */
 function tpps_get_location($location) {
-  $location = drupal_realpath($location);
+  $location = tpps_realpath($location);
   $extension = tpps_get_path_extension($location);
   if ($extension == 'zip' or $extension == 'tar') {
     $files = tpps_get_archive_files($location);
@@ -957,10 +957,10 @@ function tpps_get_archive_files($archive) {
   if (is_object($archive) and !empty($archive->uri)) {
     $archive = $archive->uri;
   }
-  $loc = drupal_realpath($archive);
+  $loc = tpps_realpath($archive);
 
   $ext = tpps_get_path_extension($loc);
-  $unzip_dir = drupal_realpath('temporary://tpps_tmp');
+  $unzip_dir = tpps_realpath('temporary://tpps_tmp');
   if (is_dir($unzip_dir)) {
     tpps_rmdir($unzip_dir);
   }
@@ -1173,7 +1173,7 @@ function tpps_file_generator($fid, array $options = array()) {
  *   Yields each row of the file (or columns of a row, if applicable).
  */
 function tpps_xlsx_generator($location, array $options = array()) {
-  $dir = drupal_realpath(TPPS_TEMP_XLSX);
+  $dir = tpps_realpath(TPPS_TEMP_XLSX);
   $no_header = $options['no_header'] ?? FALSE;
   $columns = $options['columns'] ?? NULL;
   $max_rows = $options['max_rows'] ?? NULL;
