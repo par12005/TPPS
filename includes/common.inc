@@ -135,6 +135,7 @@ function tpps_is_admin_or_curation() {
  * Function drupal_realpath() (which uses PHP's realpath()) can't resolve path
  * if there is a symlink in path.
  * This function works fine with symlinks.
+ * For more details: https://app.clickup.com/t/86b0ztv8g.
  *
  * @param string $uri
  *   A stream wrapper URI or a filepath, possibly including one or

@@ -19,7 +19,7 @@ function tpps_api_file_get($file) {
     header('Content-Disposition: attachment; filename="' . $file->filename . '"');
     header("Content-Length: " . $file->filesize);
     header("Content-Type: application/octet-stream");
-    readfile(realpath($file->uri));
+    readfile(tpps_realpath($file->uri));
   }
   else {
     // Managed file.
