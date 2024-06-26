@@ -145,17 +145,30 @@ function tpps_is_admin_or_curation() {
  *   The absolute local filepath (with no symbolic links), or FALSE on failure.
  */
 function tpps_realpath($uri) {
+  global $conf;
   $path = drupal_realpath($uri);
+  // If path to special folder (like 'private://')  wasn't set then $path
+  // will be non-empty and custom processing will be skipped.
+  // If $uri contains symlink then drupal_realpath() will return FALSE and
+  // special processing will be required.
   if ($path === FALSE) {
     $path = $uri;
-    if ($public = variable_get('file_public_path')) {
-      $path = str_replace('public://', "$public/", $path);
-    }
-    elseif ($temporary = variable_get('file_temporary_path')) {
-      $path = str_replace('temporary://', "$temporary/", $path);
-    }
-    elseif ($private = variable_get('file_private_path')) {
-      $path = str_replace('private://', "$private/", $path);
+    // Order is important. First must be more often used to speed-up processing.
+    // Note: ofter folders overwritten in settings.php which uses $conf and
+    // there is no variable in DB or it's empty.
+    $folder_list = [
+      'public://' => variable_get('file_public_path')
+      ?? $conf['file_public_path'] ?? 'sites/default/files',
+      'temporary://' => variable_get('file_temporary_path')
+      ?? $conf['file_temporary_path'] ?? '/tmp',
+      'private://' => variable_get('file_private_path')
+      ?? $conf['file_private_path'] ?? '',
+    ];
+    $count = NULL;
+    foreach ($folder_list as $name => $folder_path) {
+      if (!$count && $folder_path) {
+        $path = str_replace($name, "$folder_path/", $path, $count);
+      }
     }
   }
   return $path;
