@@ -2178,6 +2178,22 @@ function tpps_menu_add_settings_pages(array &$items = []) {
 }
 
 /**
+ * Gets reports meta-data.
+ */
+function tpps_report_get_list() {
+  return [
+    'variable_list' => [
+      'name' => 'variable_list',
+      'url' => 'variable-list',
+      'title' => variable_get('tpps_report_variable_list_title',
+        'TPPS module variables'
+      ),
+      'description' => "List of TPPS module variables.",
+    ],
+  ];
+}
+
+/**
  * Adds report menu items for hook_menu().
  *
  * See function tpps_reports_overview_page() for a list of items.
@@ -2191,13 +2207,27 @@ function tpps_menu_add_settings_pages(array &$items = []) {
  */
 function tpps_menu_add_report_pages(array &$items = []) {
   $items = $items ?? [];
+  // Add parent menu item.
   $items['admin/reports/tpps'] = [
     'title' => 'TPPS Reports',
     'description' => 'TPPS module reports',
     'page callback' => 'tpps_reports_overview_page',
     'access arguments' => ['administer tpps module'],
   ];
-  // [VS] Synonym and Unit reports.
+
+  foreach (tpps_report_get_list() as $name => $report) {
+    $items['admin/reports/tpps/' . $report['url']] =
+    $items['tpps-admin-panel/reports/' . $report['url']] = [
+      'title' => $report['title'],
+      'description' => $report['description'],
+      'page callback' => 'tpps_admin_' . $name . '_report',
+      'access callback' => 'tpps_access',
+      'access arguments' => ['administer tpps module'],
+      'file' => 'reports/' . $name . '.inc',
+    ];
+  }
+
+  // Synonym and Unit reports.
   $items['admin/reports/tpps/unit-warning'] =
   $items['tpps-admin-panel/reports/unit-warning'] = [
     'title' => variable_get('tpps_report_unit_warning_title',
@@ -2506,19 +2536,25 @@ function tpps_api_access() {
  * See function tpps_menu_add_report_pages();
  */
 function tpps_reports_overview_page() {
+  $items = [
+    l(t('Unit Warning Report'), 'admin/reports/tpps/unit-warning'),
+    l(t('No Synonym Report'), 'admin/reports/tpps/no-synonym'),
+    l(t('Order/Family Exist Report'), 'admin/reports/tpps/order-family-not-exist'),
+    l(t('Missing DOI Report'), 'admin/reports/tpps/missing-doi'),
+    l(t('Imported Studies'), 'admin/reports/tpps/imported-studies'),
+    l(t('Missing Files'), 'admin/reports/tpps/missing-files'),
+    l(t('Submissions Missing Files'), 'admin/reports/tpps/submissions-missing-files'),
+    l(t('Submissions without Files'), 'admin/reports/tpps/submissions-without-files'),
+    l(t("Submission's All Files"), 'admin/reports/tpps/submissions-all-files'),
+  ];
+  foreach (tpps_report_get_list() as $name => $report) {
+    $items[] = '<strong>' . l(t($report['title']), 'admin/reports/tpps/'
+      . $report['url']) . '</strong><br /><em>' . t($report['description'])
+      . '</em>';
+  }
   return theme('item_list', [
     'title' => t('TPPS Reports'),
-    'items' => [
-      l(t('Unit Warning Report'), 'admin/reports/tpps/unit-warning'),
-      l(t('No Synonym Report'), 'admin/reports/tpps/no-synonym'),
-      l(t('Order/Family Exist Report'), 'admin/reports/tpps/order-family-not-exist'),
-      l(t('Missing DOI Report'), 'admin/reports/tpps/missing-doi'),
-      l(t('Imported Studies'), 'admin/reports/tpps/imported-studies'),
-      l(t('Missing Files'), 'admin/reports/tpps/missing-files'),
-      l(t('Submissions Missing Files'), 'admin/reports/tpps/submissions-missing-files'),
-      l(t('Submissions without Files'), 'admin/reports/tpps/submissions-without-files'),
-      l(t("Submission's All Files"), 'admin/reports/tpps/submissions-all-files'),
-    ],
+    'items' => $items,
   ]);
 }
 
