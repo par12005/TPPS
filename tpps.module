@@ -2179,16 +2179,88 @@ function tpps_menu_add_settings_pages(array &$items = []) {
 
 /**
  * Gets reports meta-data.
+ *
+ * See tpps_reports_overview_page() which builds list of report links.
  */
 function tpps_report_get_list() {
   return [
+    'missing_doi' => [
+      'url' => 'missing-doi',
+      'title' => variable_get('tpps_report_missing_doi_title', 'Missing DOI'),
+      'description' => t('List of Studies without DOI attached.'),
+      'page callback' => 'tpps_missing_doi_report',
+      'admin_panel' => TRUE,
+    ],
+    'order_family_not_exist' => [
+      'url' => 'order-family-not-exist',
+      'title' => variable_get('tpps_report_order_family_not_exist_title',
+        'Order/Family not exist'),
+      'description' => t('Lists non-existing order/family.'),
+      'admin_panel' => TRUE,
+    ],
+    'no_synonym' => [
+      'url' => 'no-synonyms',
+      'title' => variable_get('tpps_report_no_synonym_title',
+        'List of phenotypes without Synonyms'),
+      'description' => t('List of phenotypes without synonym.'),
+      'admin_panel' => TRUE,
+    ],
+    'unit_warning' => [
+      'url' => 'unit-warning',
+      'title' => variable_get('tpps_report_unit_warning_title',
+      'Unit Warning (list of phenotypes which unit differs from Synonym)'
+      ),
+      'description' => t("List of Phenotypes which differs from Synonym's Unit."),
+      'admin_panel' => TRUE,
+    ],
+    // Files.
+    'submissions_all_files' => [
+      'url' => 'submissions-all-files',
+      'title' => variable_get('tpps_report_submissions_all_files_title',
+        "Submission's All Files"
+      ),
+      'description' => t('List of all File Ids for all submissions'),
+      'admin_panel' => TRUE,
+    ],
+    'submissions_without_files' => [
+      'url' => 'submissions-without-files',
+      'title' => variable_get('tpps_report_submissions_without_files_title',
+        'Submissions without Files'),
+      'description' => t('List of submissions which has no files.'),
+      'admin_panel' => TRUE,
+    ],
+    'submissions_missing_files' => [
+      'url' => 'submissions-missing-files',
+      'title' => variable_get('tpps_report_submissions_missing_files_title',
+        "Submission's Missing Files"
+      ),
+      'description' => t('List submissions which has files but those files '
+      . 'are missing in filesystem.'),
+      'admin_panel' => TRUE,
+    ],
+    'missing_files' => [
+      'url' => 'missing-files',
+      'title' => variable_get('tpps_report_missing_files_title',
+        'Files missing in filesystem'
+      ),
+      'description' => t("List of all (including submission's) files missing "
+      . "in filesystem but present in DB table 'file_managed'."),
+      'admin_panel' => TRUE,
+    ],
+    'imported_studies' => [
+      'url' => 'imported-studies',
+      'title' => variable_get('tpps_report_imported_studies_title', 'Imported Studies'),
+      'description' => t('List of Imported Studies Accessions.'),
+      'admin_panel' => TRUE,
+    ],
+    // Misc.
     'variable_list' => [
-      'name' => 'variable_list',
       'url' => 'variable-list',
       'title' => variable_get('tpps_report_variable_list_title',
         'TPPS module variables'
       ),
-      'description' => "List of TPPS module variables.",
+      'description' => t("List of TPPS module's variables with prefix 'tpps'."),
+      'admin_panel' => FALSE,
     ],
   ];
 }
@@ -2226,106 +2298,6 @@ function tpps_menu_add_report_pages(array &$items = []) {
       'file' => 'reports/' . $name . '.inc',
     ];
   }
-
-  // Synonym and Unit reports.
-  $items['admin/reports/tpps/unit-warning'] =
-  $items['tpps-admin-panel/reports/unit-warning'] = [
-    'title' => variable_get('tpps_report_unit_warning_title',
-      'Unit Warning (list of phenotypes which unit differs from Synonym)'),
-    'description' => "List of Phenotypes which differs from Synonym's Unit.",
-    'page callback' => 'tpps_admin_unit_warning_report',
-    'access callback' => 'tpps_access',
-    'access arguments' => ['administer tpps module'],
-    'file' => 'reports/unit_warning.inc',
-  ];
-  // No synonym.
-  $items['admin/reports/tpps/no-synonym'] =
-  $items['tpps-admin-panel/reports/no-synonyms'] = [
-    'title' => variable_get('tpps_report_no_synonym_title',
-      'List of phenotypes without Synonyms'),
-    'description' => "List of phenotypes without synonym.",
-    'page callback' => 'tpps_admin_no_synonym_report',
-    'access callback' => 'tpps_access',
-    'access arguments' => ['administer tpps module'],
-    'file' => 'reports/no_synonym.inc',
-  ];
-  // Order/Family Exist Report.
-  $items['admin/reports/tpps/order-family-not-exist'] =
-  $items['tpps-admin-panel/reports/order-family-not-exist'] = [
-    'title' => variable_get('tpps_report_order_family_not_exist_title',
-      'Order/Family not exist'),
-    'description' => "Lists non-existing order/family.",
-    'page callback' => 'tpps_admin_order_family_not_exist_report',
-    'access callback' => 'tpps_access',
-    'access arguments' => ['administer tpps module'],
-    'file' => 'reports/order_family_not_exist.inc',
-  ];
-  // Missing DOI reports.
-  $items['admin/reports/tpps/missing-doi'] =
-  $items['tpps-admin-panel/reports/missing-doi'] = [
-    'title' => variable_get('tpps_report_missing_doi_title', 'Missing DOI'),
-    'description' => 'List of Studies without DOI attached.',
-    'page callback' => 'tpps_missing_doi_report',
-    'access callback' => 'tpps_access',
-    'access arguments' => ['administer tpps module'],
-    'file' => 'reports/missing_doi.inc',
-  ];
-  // Imported Studies.
-  $items['admin/reports/tpps/imported-studies'] =
-  $items['tpps-admin-panel/reports/imported-studies'] = [
-    'title' => variable_get('tpps_report_imported_studies_title', 'Imported Studies'),
-    'description' => 'List of Imported Studies Accessions.',
-    'page callback' => 'tpps_admin_imported_studies_report',
-    'access callback' => 'tpps_access',
-    'access arguments' => ['administer tpps module'],
-    'file' => 'reports/imported_studies.inc',
-  ];
-  // Missing Files.
-  $items['admin/reports/tpps/missing-files'] =
-  $items['tpps-admin-panel/reports/missing-files'] = [
-    'title' => variable_get('tpps_report_missing_files_title',
-      'Files missing in filesystem'
-    ),
-    'description' => 'List of files missing in filesystem.',
-    'page callback' => 'tpps_admin_missing_files_report',
-    'access callback' => 'tpps_access',
-    'access arguments' => ['administer tpps module'],
-    'file' => 'reports/missing_files.inc',
-  ];
-  // Submissions Missing Files.
-  $items['admin/reports/tpps/submissions-missing-files'] =
-  $items['tpps-admin-panel/reports/submissions-missing-files'] = [
-    'title' => variable_get('tpps_report_submissions_missing_files_title',
-      "Submission's Missing Files"
-    ),
-    'description' => 'List of files missing in submissions.',
-    'page callback' => 'tpps_admin_submissions_missing_files_report',
-    'access callback' => 'tpps_access',
-    'access arguments' => ['administer tpps module'],
-    'file' => 'reports/submissions_missing_files.inc',
-  ];
-  // Submissions without files.
-  $items['admin/reports/tpps/submissions-without-files'] =
-  $items['tpps-admin-panel/reports/submissions-without-files'] = [
-    'title' => variable_get('tpps_report_submissions_without_files_title',
-      'Submissions without Files'),
-    'description' => 'List of submissions which has no files.',
-    'page callback' => 'tpps_admin_submissions_without_files_report',
-    'access callback' => 'tpps_access',
-    'access arguments' => ['administer tpps module'],
-    'file' => 'reports/submissions_without_files.inc',
-  ];
-  // Submission's all files.
-  $items['admin/reports/tpps/submissions-all-files'] =
-  $items['tpps-admin-panel/reports/submissions-all-files'] = [
-    'title' => variable_get('tpps_report_submissions_all_files_title',
-      "Submission's All Files"),
-    'description' => "List of submission's all files.",
-    'page callback' => 'tpps_admin_submissions_all_files_report',
-    'access callback' => 'tpps_access',
-    'access arguments' => ['administer tpps module'],
-    'file' => 'reports/submissions_all_files.inc',
-  ];
 }
 
 /**
@@ -2533,24 +2505,23 @@ function tpps_api_access() {
 /**
  * Menu callback. Shows list of TPPS Reports.
  *
- * See function tpps_menu_add_report_pages();
+ * See
+ * tpps_menu_add_report_pages();
+ * tpps_admin_panel_reports();
+ *
+ * @param bool $admin_panel
+ *   Determines if only items for 'Admin Panel' must be returned.
+ *
+ * @return string
+ *   Returns rendered list of links to report pages with descriptions.
  */
-function tpps_reports_overview_page() {
-  $items = [
-    l(t('Unit Warning Report'), 'admin/reports/tpps/unit-warning'),
-    l(t('No Synonym Report'), 'admin/reports/tpps/no-synonym'),
-    l(t('Order/Family Exist Report'), 'admin/reports/tpps/order-family-not-exist'),
-    l(t('Missing DOI Report'), 'admin/reports/tpps/missing-doi'),
-    l(t('Imported Studies'), 'admin/reports/tpps/imported-studies'),
-    l(t('Missing Files'), 'admin/reports/tpps/missing-files'),
-    l(t('Submissions Missing Files'), 'admin/reports/tpps/submissions-missing-files'),
-    l(t('Submissions without Files'), 'admin/reports/tpps/submissions-without-files'),
-    l(t("Submission's All Files"), 'admin/reports/tpps/submissions-all-files'),
-  ];
+function tpps_reports_overview_page($admin_panel = FALSE) {
   foreach (tpps_report_get_list() as $name => $report) {
-    $items[] = '<strong>' . l(t($report['title']), 'admin/reports/tpps/'
-      . $report['url']) . '</strong><br /><em>' . t($report['description'])
-      . '</em>';
+    if (!$admin_panel || ($admin_panel && $report['admin_panel'])) {
+      $items[] = '<strong>' . l(t($report['title']), 'admin/reports/tpps/'
+        . $report['url']) . '</strong><br /><em>' . $report['description']
+        . '</em>';
+    }
   }
   return theme('item_list', [
     'title' => t('TPPS Reports'),

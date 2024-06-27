@@ -444,40 +444,18 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
 
 /**
  * Adds fieldset with links to custom report pages.
- */
-function tpps_admin_panel_get_reports() {
-  $panel_url = 'tpps-admin-panel/reports';
-  // Format: <Report Key> => <Path related to $panel_url>.
-  return [
-    'missing_doi' => $panel_url . '/missing-doi',
-    'no_synonym' => $panel_url . '/no-synonyms',
-    'unit_warning' => $panel_url . '/unit-warning',
-    'order_family_not_exist' => $panel_url . '/order-family-not-exist',
-    'missing_files' => $panel_url . '/missing-files',
-    'submissions_missing_files' => $panel_url . '/submissions-missing-files',
-    'submissions_without_files' => $panel_url . '/submissions-without-files',
-    'submissions_all_files' => $panel_url . '/submissions-all-files',
-  ];
-}
-
-/**
- * Adds fieldset with links to custom report pages.
  *
  * @param array $form
  *   The form element of the TPPS admin panel page.
  */
 function tpps_admin_panel_reports(array &$form) {
-  foreach (tpps_admin_panel_get_reports() as $report_key => $panel_url) {
-    if ($title = variable_get('tpps_report_' . $report_key . '_title')) {
-      $items[] = l(t($title), $panel_url);
-    }
-  }
-  $items[] = l(t('Imported Studies'), 'admin/reports/tpps/imported-studies');
   $form['report_menu'] = [
     '#type' => 'fieldset',
     '#title' => t('TPPS Reports'),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
-    'table' => ['#markup' => theme('item_list', ['items' => $items])],
+  ];
+  $form['report_menu']['table'] = [
+    '#markup' => tpps_reports_overview_page($admin_panel = TRUE),
   ];
 }
