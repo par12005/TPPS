@@ -173,3 +173,36 @@ function tpps_realpath($uri) {
   }
   return $path;
 }
+
+/**
+ * Shows report as a table with pager.
+ *
+ * WARNING:
+ * Specific to reports settings are used! DON'T USE for regular table with pager.
+ *
+ * @param array $report
+ *   Required keys:
+ *   - 'report_name' - string. Machine report name (with underscores).
+ *   - 'header' - array. List of the table's header labels.
+ *   - 'rows' - array. Table data to be shown.
+ *   Optional keys:
+ *   - 'empty' - string. Localized string which will be shown when 'rows' is empty.
+ *
+ * @return string
+ *   Returns rendered HTML table with pager.
+ */
+function tpps_report_show_table(array $report) {
+  $report_name = $report['report_name'];
+  $rows = $report['rows'] ?? [];
+
+  $per_page = variable_get('tpps_report_items_per_page', 20);
+  $current_page = pager_default_initialize(count($rows), $per_page);
+  $chunks = array_chunk($rows, $per_page, TRUE);
+  $pager = theme('pager', ['quantity', count($rows)]);
+  return $pager . theme('table', [
+    'caption' => tpps_report_get_list()[$report_name]['description'],
+    'header' => $report['header'] ?? [],
+    'rows' => $chunks[$current_page],
+    'empty' => $report['empty'] ?? NULL,
+  ]) . $pager;
+}

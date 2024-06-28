@@ -2219,7 +2219,7 @@ function tpps_report_get_list() {
       'title' => variable_get('tpps_report_submissions_all_files_title',
         "Submission's All Files"
       ),
-      'description' => t('List of all File Ids for all submissions'),
+      'description' => t('List of all (existing and missing) File Ids for ALL submissions'),
       'admin_panel' => TRUE,
     ],
     'submissions_without_files' => [
