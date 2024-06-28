@@ -38,7 +38,8 @@ function tpps_admin_submissions_all_files_report() {
           $rows[] = [
             ++$i,
             l($submission->accession,
-              'tpps/submission/' . $submission->accession . '/json/state'),
+              'api/submission/' . $submission->accession . '/view/shared_state'),
+            $submission->getStatus(),
             implode(', ', $missing),
           ];
 
@@ -54,11 +55,11 @@ function tpps_admin_submissions_all_files_report() {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output.
-  $per_page = variable_get('tpps_report_items_per_page', 20);
-  $header = ['#', t('Accession'), t('List of File Ids')];
-  $current_page = pager_default_initialize(count($rows), $per_page);
-  $chunks = array_chunk($rows, $per_page, TRUE);
-  return theme('pager', ['quantity', count($rows)])
-    . theme('table', ['header' => $header, 'rows' => $chunks[$current_page]])
-    . theme('pager', ['quantity', count($rows)]);
+
+  // Show report table.
+  return tpps_report_show_table([
+    'report_name' => 'submissions_all_files',
+    'header' => ['#', t('Accession'), t('Status'), t('List of File Ids')],
+    'rows' => $rows,
+  ]);
 }

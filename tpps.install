@@ -25,7 +25,9 @@ function tpps_install() {
   variable_set('tpps_refresh_plusgeno_view_frequency', '0 0 * * SAT');
   variable_set('tpps_delayed_submissions_job_frequency', '0 */6 * * *');
   variable_set('tpps_cron_rule_ref_genomes_recreate', '0 0 */3 * *');
-  // Reports.
+  // Report Titles.
+  // See tpps_reports_settings_form();
+  variable_set('tpps_report_variable_list_title', 'TPPS module variables');
   variable_set('tpps_report_items_per_page', 20);
   variable_set(
     'tpps_report_submissions_all_files_title',
@@ -383,7 +385,9 @@ function tpps_uninstall() {
   variable_del('tpps_refresh_plusgeno_view_frequency');
   variable_del('tpps_delayed_submissions_job_frequency');
   variable_del('tpps_cron_rule_ref_genomes_recreate');
-  // Reports.
+  // Reports Titles.
+  // See tpps_reports_settings_form();
+  variable_del('tpps_report_variable_list_title');
   variable_del('tpps_report_items_per_page');
   variable_del('tpps_report_submissions_all_files_title');
   variable_del('tpps_report_submissions_without_files_title');

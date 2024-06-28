@@ -8,7 +8,7 @@
 /**
  * Menu callback. Shows studies without DOI attached.
  */
-function tpps_missing_doi_report() {
+function tpps_admin_missing_doi_report() {
   $page_title = variable_get('tpps_report_missing_doi_title', 'Missing DOI');
 
   // Original query from Emily.
@@ -64,7 +64,7 @@ function tpps_missing_doi_report() {
 
   return '<h2>' . $page_title . '</h2>' . easy_report([
     'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
-    'formatter' => 'tpps_missing_doi_report_formatter',
+    'formatter' => 'tpps_admin_missing_doi_report_formatter',
     'page_title' => $page_title,
     'table_attributes' => ['class' => ['view' , 'tpps_table']],
     'items_per_page' => variable_get('tpps_report_items_per_page', 15),
@@ -96,7 +96,7 @@ function tpps_missing_doi_report() {
  *   Returns formatted value.
  *   Empty value will not be formatted and returned as is.
  */
-function tpps_missing_doi_report_formatter(string $name, $value, array &$row) {
+function tpps_admin_missing_doi_report_formatter(string $name, $value, array &$row) {
   $formatted = check_plain($value);
   if (empty($name) || empty($value)) {
     return $formatted;
