@@ -94,11 +94,27 @@ function tpps_form_add_buttons(array $form_bus) {
 
         // Pre-validate VCF.
         if ($form['form_type']['#value'] == 'tppsc') {
+          // Build conditions for Drupal Form States API.
           $pre_valid_states = [];
-          for ($i = 1; $i <= $form_bus['organism_number']; $i++) {
-            $pre_valid_states["[name=\"organism-{$i}[genotype][SNPs][file-type]\"]"]
+          if ($form_bus['organism_number'] == 1) {
+            $pre_valid_states['[name="organism-1[genotype][SNPs][file-type]"]']
               = ['value' => TPPS_GENOTYPING_FILE_TYPE_VCF];
           }
+          elseif ($form_bus['organism_number'] > 1) {
+            // Multiple conditions have other format.
+            $pre_valid_states[] = [
+              '[name="organism-1[genotype][SNPs][file-type]"]'
+              => ['value' => TPPS_GENOTYPING_FILE_TYPE_VCF],
+            ];
+            for ($i = 2; $i <= $form_bus['organism_number']; $i++) {
+              $pre_valid_states[] = 'or';
+              $pre_valid_states[] = [
+                '[name="organism-' . $i . '[genotype][SNPs][file-type]"]'
+                => ['value' => TPPS_GENOTYPING_FILE_TYPE_VCF],
+              ];
+            }
+          }
+
           $form[$scope]['pre_validate'] = [
             '#type' => 'button',
             '#value' => t('Pre-validate my VCF files'),
@@ -110,7 +126,8 @@ function tpps_form_add_buttons(array $form_bus) {
               . '"Review Information and Submit".</div>',
             '#attributes' => ['class' => ['vcf-pre-validate-button']],
           ];
-          $form[$scope]['pre_validate']['#prefix'] = '<div class="pre-validate-message"></div>';
+          $form[$scope]['pre_validate']['#prefix'] =
+            '<div class="pre-validate-message"></div>';
         }
         break;
 
