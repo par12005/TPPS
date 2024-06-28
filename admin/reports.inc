@@ -104,6 +104,13 @@ function tpps_reports_settings_form(array $form, array &$form_state) {
       "Submission's All Files"
     ),
   ];
+  $form['titles']['tpps_report_variable_list_title'] = [
+    '#type' => 'textfield',
+    '#title' => t("'TPPS module variables' Report Title"),
+    '#default_value' => variable_get('tpps_report_variable_list_title',
+      'TPPS module variables'
+    ),
+  ];
 
   return system_settings_form($form);
 }

@@ -22,27 +22,28 @@ function tpps_admin_missing_files_report($reset = FALSE) {
   if ($reset || empty($cache) || empty($cache->data[$key])) {
     // Get new data.
     $i = 0;
-    $file_list = db_select('file_managed', 't')
-      ->fields('t', ['fid', 'uri'])->orderBy('fid', 'DESC')
-      ->execute()->fetchAllKeyed();
+
+    $query = db_select('file_managed', 'fm')->fields('fm', ['fid', 'uri']);
+    $query->join('file_usage', 'fu', 'fm.fid = fu.fid');
+    $query->addField('fu', 'id');
+    $query->orderBy('fid', 'DESC');
+    $file_list = $query->execute()->fetchAll();
+    // Note $file_list will have ALL files!
+    // dpm(reset($file_list));
     $rows = [];
-    foreach ($file_list as $fid => $uri) {
-      // Get absolute path.
-      if (
-        strpos($uri, 'public://') !== FALSE
-        || strpos($uri, 'temporary://') !== FALSE
-      ) {
-        // Managed file.
-        if (empty($path = tpps_realpath($uri))) {
-          $path = $uri;
-        }
-      }
-      else {
-        // Manually uploaded file.
-        $path = $uri;
-      }
+    $options = ['query' => ['token' => variable_get('tpps_api_token')]];
+    foreach ($file_list as $item) {
+      $path = tpps_realpath($item->uri);
+      $accession = 'TGDR' . $item->id;
+      $submission = new Submission($accession);
       if (!file_exists($path)) {
-        $rows[] = [++$i, $fid, $path];
+        $rows[] = [
+          ++$i,
+          l($item->fid, 'api/file/' . $item->fid . '/info', $options),
+          $path,
+          $submission->doesNotExist() ? $accession : l($accession,
+          'api/submission/' . $accession . '/view/shared_state/saved_values/'),
+        ];
       }
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -54,11 +55,9 @@ function tpps_admin_missing_files_report($reset = FALSE) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output.
-  $per_page = variable_get('tpps_report_items_per_page', 20);
-  $header = ['#', t('File Id'), t('Absolute Path')];
-  $current_page = pager_default_initialize(count($rows), $per_page);
-  $chunks = array_chunk($rows, $per_page, TRUE);
-  return theme('pager', ['quantity', count($rows)])
-    . theme('table', ['header' => $header, 'rows' => $chunks[$current_page]])
-    . theme('pager', ['quantity', count($rows)]);
+  return tpps_report_show_table([
+    'report_name' => 'missing_files',
+    'header' => ['#', t('File Id'), t('Absolute Path'), t('Accession')],
+    'rows' => $rows,
+  ]);
 }
