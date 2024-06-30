@@ -90,7 +90,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
       . "study (resubmit this study to generate a log file if necessary)</div>";
   }
   else {
-    $log_path = drupal_realpath('public://') . '/tpps_job_logs/';
+    $log_path = tpps_realpath('public://') . '/tpps_job_logs/';
     // dpm($log_path . $accession . "_" . $job_id . ".txt");
     if (file_exists($log_path . $accession . "_" . $job_id . ".txt")) {
       $display .= "<div style='padding: 10px;background: #e9f9ef;border: "

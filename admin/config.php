@@ -158,56 +158,81 @@ function tpps_admin_settings(array $form, array &$form_state) {
     '#description' => t('The directory of local genome files on your web server. If left blank, tpps will skip the searching for local genomes step in the tpps genotype section. Local genome files should be organized according to the following structure: <br>[file directory]/[species code]/[version number]/[genome data] where: <br>&emsp;&emsp;[file directory] is the full path to the genome files provided above <br>&emsp;&emsp;[species code] is the 4-letter standard species code - this must match the species code entry in the "chado.organismprop" table<br>&emsp;&emsp;[version number] is the reference genome version, of the format "v#.#"<br>&emsp;&emsp;[genome data] is the actual reference genome files - these can be any format or structure<br>More information is available <a href="https://tpps.rtfd.io/en/latest/config.html" target="blank">here</a>.'),
   );
 
-  $form['tpps_author_files_dir'] = array(
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // File Upload Locations.
+  $public_path = tpps_realpath('public://') . '/';
+  $form['file_location'] = [
+    '#type' => 'fieldset',
+    '#title' => t('File Upload Locations'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#description' => t('All file locations are relative to the "public://" '
+      . 'file stream. <br />"public://" file stream points to "@path" and '
+      . 'could be changed at <a href="!file_settings">File System Settings page</a>.'
+      . '<br /><br /><strong>WARNING:</strong>'
+      . '<br />Change of those path could cause site crash.'
+      . '<br />Be sure to update path in database and update filesystem.',
+      [
+        '@path' => $public_path,
+        '!file_settings' => url('admin/config/media/file-system'),
+      ]
+    ),
+  ];
+  $form['file_location']['tpps_author_files_dir'] = [
     '#type' => 'textfield',
-    '#title' => t('Author files:'),
+    '#title' => t('Author files'),
     '#default_value' => $authors,
-    '#description' => t("Currently points to @path.", array('@path' => drupal_realpath("public://$authors"))),
-    '#prefix' => t('<h1>File Upload locations</h1>All file locations are relative to the "public://" file stream. Your current "public://" file stream points to "@path".<br><br>', array('@path' => drupal_realpath('public://'))),
-  );
-
-  $form['tpps_study_photo_files_dir'] = array(
+    '#field_prefix' => $public_path,
+  ];
+  $form['file_location']['tpps_study_photo_files_dir'] = [
     '#type' => 'textfield',
-    '#title' => t('Study photo files:'),
+    '#title' => t('Study photo files'),
     '#default_value' => $photos,
-    '#description' => t("Currently points to @path.", array('@path' => drupal_realpath("public://$photos"))),
-  );
-
-  $form['tpps_tree_pics_files_dir'] = array(
+    '#field_prefix' => $public_path,
+  ];
+  $form['file_location']['tpps_tree_pics_files_dir'] = [
     '#type' => 'textfield',
-    '#title' => t('Plant Pictures directory:'),
+    '#title' => t('Plant Pictures directory'),
+    '#field_prefix' => $public_path,
     '#default_value' => variable_get('tpps_tree_pics_files_dir', NULL),
-    '#description' => t("The directory of plant pictures on your web server. If you do not have any plant pictures on your web server, you can leave this field blank. Currently points to @path.", array('@path' => drupal_realpath("public://" . variable_get('tpps_tree_pics_files_dir', NULL)))),
-  );
+    '#description' => t('The directory of plant pictures on your web server. '
+      . 'If you do not have any plant pictures on your web server, you can '
+      . 'leave this field blank.'
+    ),
+  ];
 
-  $form['tpps_accession_files_dir'] = array(
+  $form['file_location']['tpps_accession_files_dir'] = [
     '#type' => 'textfield',
-    '#title' => t('Plant Accession files:'),
+    '#title' => t('Plant Accession files'),
+    '#field_prefix' => $public_path,
     '#default_value' => $accession,
-    '#description' => t("Currently points to @path.", array('@path' => drupal_realpath("public://$accession"))),
-  );
-
-  $form['tpps_genotype_files_dir'] = array(
+  ];
+  $form['file_location']['tpps_genotype_files_dir'] = [
     '#type' => 'textfield',
     '#title' => t('Genotype files:'),
+    '#field_prefix' => $public_path,
     '#default_value' => $genotype,
-    '#description' => t("Currently points to @path.", array('@path' => drupal_realpath("public://$genotype"))),
-  );
-
-  $form['tpps_phenotype_files_dir'] = array(
+  ];
+  $form['file_location']['tpps_phenotype_files_dir'] = [
     '#type' => 'textfield',
-    '#title' => t('Phenotype files:'),
+    '#title' => t('Phenotype files'),
+    '#field_prefix' => $public_path,
     '#default_value' => $phenotype,
-    '#description' => t("Currently points to @path.", array('@path' => drupal_realpath("public://$phenotype"))),
-  );
-
-  $form['tpps_update_old_submissions'] = array(
+  ];
+  // @TODO Check if this works and remove if possible because it seems outdated.
+  $form['file_location']['tpps_update_old_submissions'] = [
     '#type' => 'checkbox',
     '#title' => t('Update Old TPPS Submissions'),
-    '#description' => t('If you save configuration with this option enabled, TPPS will search for all older TPPS Submissions that are no longer compatible with newer versions of TPPS, and will make them compatible again. This works best after using the "tpps/update" tool from the "update_old_submissions" branch on the TPPS gitlab.'),
     '#default_value' => variable_get('tpps_update_old_submissions', NULL),
-  );
-  // [VS] #3v6kz7k
+    '#description' => t('If you save configuration with this option enabled, '
+      . 'TPPS will search for all older TPPS Submissions that are no longer '
+      . 'compatible with newer versions of TPPS, and will make them compatible '
+      . 'again. This works best after using the "tpps/update" tool from the '
+      . '"update_old_submissions" branch on the TPPS gitlab.'
+    ),
+  ];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Custom Reports.
   $form['custom_reports'] = [
     '#type' => 'fieldset',

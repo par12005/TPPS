@@ -145,3 +145,81 @@ function tpps_is_catrogratree_exists() {
     && db_table_exists('cartogratree_layers')
   );
 }
+
+/**
+ * Resolves the absolute filepath of a local URI or filepath.
+ *
+ * Function drupal_realpath() (which uses PHP's realpath()) can't resolve path
+ * if there is a symlink in path.
+ * This function works fine with symlinks.
+ * For more details: https://app.clickup.com/t/86b0ztv8g.
+ *
+ * @param string $uri
+ *   A stream wrapper URI or a filepath, possibly including one or
+ *   more symbolic links.
+ *
+ * @return string|false
+ *   The absolute local filepath (with no symbolic links), or FALSE on failure.
+ */
+function tpps_realpath($uri) {
+  global $conf;
+  $path = drupal_realpath($uri);
+  // If path to special folder (like 'private://')  wasn't set then $path
+  // will be non-empty and custom processing will be skipped.
+  // If $uri contains symlink then drupal_realpath() will return FALSE and
+  // special processing will be required.
+  if ($path === FALSE) {
+    $path = $uri;
+    // Order is important. First must be more often used to speed-up processing.
+    // Note: ofter folders overwritten in settings.php which uses $conf and
+    // there is no variable in DB or it's empty.
+    $folder_list = [
+      'public://' => variable_get('file_public_path')
+      ?? $conf['file_public_path'] ?? 'sites/default/files',
+      'temporary://' => variable_get('file_temporary_path')
+      ?? $conf['file_temporary_path'] ?? '/tmp',
+      'private://' => variable_get('file_private_path')
+      ?? $conf['file_private_path'] ?? '',
+    ];
+    $count = NULL;
+    foreach ($folder_list as $name => $folder_path) {
+      if (!$count && $folder_path) {
+        $path = str_replace($name, "$folder_path/", $path, $count);
+      }
+    }
+  }
+  return $path;
+}
+
+/**
+ * Shows report as a table with pager.
+ *
+ * WARNING:
+ * Specific to reports settings are used! DON'T USE for regular table with pager.
+ *
+ * @param array $report
+ *   Required keys:
+ *   - 'report_name' - string. Machine report name (with underscores).
+ *   - 'header' - array. List of the table's header labels.
+ *   - 'rows' - array. Table data to be shown.
+ *   Optional keys:
+ *   - 'empty' - string. Localized string which will be shown when 'rows' is empty.
+ *
+ * @return string
+ *   Returns rendered HTML table with pager.
+ */
+function tpps_report_show_table(array $report) {
+  $report_name = $report['report_name'];
+  $rows = $report['rows'] ?? [];
+
+  $per_page = variable_get('tpps_report_items_per_page', 20);
+  $current_page = pager_default_initialize(count($rows), $per_page);
+  $chunks = array_chunk($rows, $per_page, TRUE);
+  $pager = theme('pager', ['quantity', count($rows)]);
+  return $pager . theme('table', [
+    'caption' => tpps_report_get_list()[$report_name]['description'],
+    'header' => $report['header'] ?? [],
+    'rows' => $chunks[$current_page],
+    'empty' => $report['empty'] ?? NULL,
+  ]) . $pager;
+}

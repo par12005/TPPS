@@ -934,6 +934,23 @@ class Submission {
   }
 
   /**
+   * Get Submission's status.
+   *
+   * Note: Will be used status stored in separate column of the
+   * 'tpps_submission' table. There are also status value stored in 'state'
+   * and 'sharedState'.
+   *
+   * @return string
+   *   Returns Submission's status
+   */
+  public function getStatus(bool $reset = FALSE) {
+    if (empty($this->status) && !empty($this->accession)) {
+      $this->load();
+    }
+    return $this->status;
+  }
+
+  /**
    * Removes Submission's Shared State.
    */
   public function removeSharedState() {

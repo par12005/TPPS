@@ -838,7 +838,8 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
       }
     }
   }
-  $genome_query_results = chado_query("select * FROM chado.tpps_ref_genomes;", []);
+  $sql = "select * FROM chado.tpps_ref_genomes order by name;";
+  $genome_query_results = chado_query($sql, []);
   foreach ($genome_query_results as $genome_query_row) {
     $genome_query_row->name = str_ireplace(' genome', '', $genome_query_row->name);
     $genome_query_row->name = str_ireplace(' assembly', '', $genome_query_row->name);
