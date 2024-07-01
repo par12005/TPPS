@@ -19,7 +19,6 @@ function tpps_api_submission_vcf_files_list($submission) {
   ];
   $shared_state = $submission->getSharedState();
   $page4_values = $shared_state['saved_values'][TPPS_PAGE_4];
-
   $organism_number = $submission->getOrganismNumber();
   // Non-empty organism number means that submission exists.
   if ($organism_number) {
@@ -29,6 +28,7 @@ function tpps_api_submission_vcf_files_list($submission) {
     ];
     for ($i = 1; $i <= $submission->getOrganismNumber(); $i++) {
       $output['vcf'][$i] = $page4_values['organism-' . $i]['genotype']['files']['vcf'] ?? NULL;
+      $output['ref-genome'][$i] = $page4_values['organism-' . $i]['genotype']['ref-genome'] ?? NULL;
     }
   }
   return $output;
