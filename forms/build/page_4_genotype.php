@@ -499,9 +499,6 @@ function tpps_genotype_subform(array $form_bus) {
       ],
     ],
   ];
-  // Required when visible.
-  $fields[$snps_fieldset][$field_name]['#states']['required'] =
-    $fields[$snps_fieldset][$field_name]['#states']['visible'];
 
   // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
   // Field is optional.
@@ -529,9 +526,6 @@ function tpps_genotype_subform(array $form_bus) {
       ],
     ],
   ];
-  // Required when visible.
-  $fields[$snps_fieldset][$field_name]['#states']['required'] =
-    $fields[$snps_fieldset][$field_name]['#states']['visible'];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Would you like to upload a SNPs Population Structure file?
