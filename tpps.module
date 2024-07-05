@@ -953,10 +953,14 @@ function tpps_form_field_process(array $element, array &$form_state, array $form
     $element['#description'] = ($element['#description'] ?? '')
       . '<br />[ ' . implode(' ][ ', $element['#array_parents']) . ' ]';
   }
-
   // Adds custom validation of fields required using Drupal Form States AJAX.
-  $element['#element_validate'][] = 'tpps_form_validate_required_field';
-
+  // AKA 'required_when_visible' feature.
+  if ($element['#required_when_visible'] ?? NULL) {
+    if ($element['#states']['visible'] ?? NULL) {
+      $element['#states']['required'] = $element['#states']['visible'];
+      $element['#element_validate'][] = 'tpps_form_validate_required_field';
+    }
+  }
   return $element;
 }
 

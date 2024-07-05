@@ -644,6 +644,15 @@ function tpps_form_build_file_field(array $form_bus) {
   ];
 
   // Required when visible.
+  //
+  //
+  //
+  //
+  // @TODO Test if it's enough to use tpps_form_field_process() to process
+  // this feature. Which called first.
+  //
+  //
+  //
   if ($form_bus['required_when_visible'] ?? NULL) {
     $parent_element[$field_name]['#states']['required'] = $states['visible'];
   }
@@ -1352,6 +1361,7 @@ function tpps_form_get_submission_status_list() {
 /**
  * Checks field required via Drupal Form States API is not empty.
  *
+ * 'required_when_visible' feature.
  * Custom validation is necessary because this fields was set a required by
  * Drupal Form State API.
  */
@@ -1359,7 +1369,8 @@ function tpps_form_validate_required_field($element, $form_state) {
   if (
     empty($element['#states']['required'])
     // Skip this validation when form just saved.
-    // @TODO Add '#name' to button Save and use it's name instead of label.
+    // @TODO Add '#name' to button Save and use it's name instead of label
+    // which could be localized.
     || $form_state['clicked_button']['#value'] == 'Save'
   ) {
     return;

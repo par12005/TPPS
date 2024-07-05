@@ -25,9 +25,74 @@ require_once 'page_2_tppsc_helper.php';
  */
 function tpps_page_2_create_form(array &$form, array $form_state) {
   $is_tppsC = tpps_form_is_tppsc($form_state);
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // TPPSc Form.
+  if ($is_tppsC) {
+    $form['study_design'] = [
+      '#type' => 'fieldset',
+      '#tree' => TRUE,
+      '#collapsible' => TRUE,
+      '#title' => t('Study Design'),
+    ];
+    // Relocated v.2:
+    // $form['data_type'] -> $form['study_design']['data_type'].
+    $form['study_design']['data_type'] = [
+      '#type' => 'select',
+      '#title' => t('Data Type'),
+      '#options' => tpps_form_get_data_type_options(),
+      '#required' => TRUE,
+    ];
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Relocated v.2.
+    // $form['study_type'] -> $form['study_design']['experimental_design'].
+    $form['study_design']['experimental_design'] = [
+      '#type' => 'select',
+      '#title' => t('Experimental Design: *'),
+      '#options' => tpps_form_get_experimental_design_options(),
+      '#required_when_visible' => TRUE,
+      '#states' => [
+        'visible' => [
+          [
+            ':input[name="study_design[data_type]"]'
+            => ['value' => TPPS_DATA_TYPE_GENOTYPE],
+          ],
+          'or',
+          [
+            ':input[name="study_design[data_type]"]'
+            => ['value' => TPPS_DATA_TYPE_PHENOTYPE],
+          ],
+          'or',
+          [
+            ':input[name="study_design[data_type]"]'
+            => ['value' => TPPS_DATA_TYPE_G_P],
+          ],
+        ],
+      ],
+    ];
+    $form['study_info'] = [
+      '#type' => 'fieldset',
+      '#title' => t('Study Info'),
+      '#tree' => TRUE,
+      '#collapsible' => TRUE,
+      '#states' => [
+        'visible' => [
+          ':input[name="study_design[experimental_design]"]' => ['visible' => TRUE],
+        ],
+      ],
+    ];
+// @TODO Add more fields.
+    tppsc_growth_chamber([
+      'form' => &$form,
+      'is_tppsC' => $is_tppsC,
+      'parents' => ['study_info'],
+    ]);
+    tpps_form_autofocus($form, ['study_design', 'data_type']);
+
+  }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // TPPS Form.
-  if (!$is_tppsC) {
+  else {
     tpps_study_date('Starting', $form, $form_state);
     tpps_study_date('Ending', $form, $form_state);
     $form['data_type'] = [
@@ -86,73 +151,6 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
     }
     tpps_form_autofocus($form, ['data_type']);
   }
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // TPPSc Form.
-  else {
-    $form['study_design'] = [
-      '#type' => 'fieldset',
-      '#tree' => TRUE,
-      '#collapsible' => TRUE,
-      '#title' => t('Study Design'),
-    ];
-    // Relocated v.2:
-    // $form['data_type'] -> $form['study_design']['data_type'].
-    $form['study_design']['data_type'] = [
-      '#type' => 'select',
-      '#title' => t('Data Type: *'),
-      '#options' => tpps_form_get_data_type_options(),
-    ];
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Relocated v.2.
-    // $form['study_type'] -> $form['study_design']['experimental_design'].
-    $form['study_design']['experimental_design'] = [
-      '#type' => 'select',
-      '#title' => t('Experimental Design: *'),
-      '#options' => tpps_form_get_experimental_design_options(),
-
-// @TODO Use 'required_when_visible' feature.
-
-      '#states' => [
-        'visible' => [
-          [
-            ':input[name="study_design[data_type]"]'
-            => ['value' => TPPS_DATA_TYPE_GENOTYPE],
-          ],
-          'or',
-          [
-            ':input[name="study_design[data_type]"]'
-            => ['value' => TPPS_DATA_TYPE_PHENOTYPE],
-          ],
-          'or',
-          [
-            ':input[name="study_design[data_type]"]'
-            => ['value' => TPPS_DATA_TYPE_G_P],
-          ],
-        ],
-      ],
-    ];
-    $form['study_info'] = [
-      '#type' => 'fieldset',
-      '#title' => t('Study Info'),
-      '#tree' => TRUE,
-      '#collapsible' => TRUE,
-      '#states' => [
-        'visible' => [
-          ':input[name="study_design[experimental_design]"]' => ['visible' => TRUE],
-        ],
-      ],
-    ];
-// @TODO Add more fields.
-    tppsc_growth_chamber([
-      'form' => &$form,
-      'is_tppsC' => $is_tppsC,
-      'parents' => ['study_info'],
-    ]);
-
-    tpps_form_autofocus($form, ['study_design', 'data_type']);
-  }
-
   tpps_form_add_buttons(['form' => &$form, 'page' => 'page_2']);
   return $form;
 }

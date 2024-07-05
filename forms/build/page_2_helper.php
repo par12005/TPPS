@@ -357,6 +357,9 @@ function tpps_plantation(array &$form) {
     '#options' => $num_arr,
   );
 
+  // @TODO Array keys will be localized strings which could later be used
+  // for validation and stored in DB as different values. Check where they used
+  // and discuss if this must be changed.
   $treatment_options = drupal_map_assoc(array(
     t('Seasonal environment'),
     t('Antibiotic regime'),
