@@ -520,8 +520,6 @@ function tpps_form_add_report(array &$form, array $meta) {
 /**
  * Adds File Upload field to form.
  *
- * WARNING: Currently could be used only at Page 4.
- *
  * @param array $form_bus
  *   Data. Keys are:
  *   'form_state' array
@@ -537,6 +535,12 @@ function tpps_form_add_report(array &$form, array $meta) {
  *     Machine field name.
  *   'parents' array
  *     List of parents of the field.
+ *
+ *   'extra_elements' array
+ *     Optional Drupal Form API elements which will be added as is.
+ *     Custom element '#required_when_visible' which will enable feature
+ *     'Required When Visible' when TRUE and Drupal Form State API used to
+ *     make field visible. WARNING: Only 'visible' state is supported.
  *
  *   Example:
  *   tpps_form_build_file_field([
@@ -640,24 +644,8 @@ function tpps_form_build_file_field(array $form_bus) {
         ['@list' => implode(', ', $extensions)]) : ''),
     '#tree' => TRUE,
     '#states' => $states,
-    //'#parents' => $parents,
   ];
 
-  // Required when visible.
-  //
-  //
-  //
-  //
-  // @TODO Test if it's enough to use tpps_form_field_process() to process
-  // this feature. Which called first.
-  //
-  //
-  //
-  if ($form_bus['required_when_visible'] ?? NULL) {
-    $parent_element[$field_name]['#states']['required'] = $states['visible'];
-  }
-
-  // dpm(print_r($parents, 1), 'parents of ' . $field_name);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Customization.
   // @TODO Minor. Think about using elements with leading '#' to use them as
