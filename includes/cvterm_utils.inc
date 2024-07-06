@@ -198,6 +198,15 @@ function tpps_load_cv($info) {
  * If the key does not appear in tpps_get_cvterms_v<version>(), then we just
  * load the cvterm using the provided key as the name.
  *
+ * Caching:
+ * When cvterms cached using Drupal's variables execution time was
+ * 0.026 msec but using Drupal's cache it's 3 msec (100 times slower).
+ * Mostly cvterms are used by submit_all.php script which is called rarely
+ * but all variables loads on every request and each variable must be
+ * unserialized which takes a lot of time during page loading and less time
+ * when variable is reading from memory. So in general it's better to use
+ * Drupal cache instead of storing data in variables to speed-up page loading.
+ *
  * @param string $term
  *   The key of the cvterm we are trying to load.
  * @param array $options
@@ -208,17 +217,18 @@ function tpps_load_cv($info) {
  * @return object|false
  *   The resulting cvterm object, or FALSE on failure.
  */
-function tpps_load_cvterm($term, array $options = array(), $version = NULL, $refresh_cache = FALSE) {
-  // [VS]
-  $check_cache = variable_get('tpps_load_cvterm_' . md5($term), NULL);
-  if ($refresh_cache == TRUE) {
-    $check_cache = NULL;
+function tpps_load_cvterm($term, array $options = array(), $version = NULL, $reset = FALSE) {
+  if (strtolower($_GET['refresh_cache'] ?? '') == 'true') {
+    $reset = TRUE;
   }
-  if (isset($_GET['refresh_cache']) && $_GET['refresh_cache'] == 'true') {
-    $check_cache = NULL;
-  }
-  // [/VS]
-  if ($check_cache == NULL) {
+
+  $cid = __FUNCTION__;
+  $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+  $cache = cache_get($cid, $cache_bin);
+  $key = md5($term);
+  if ($reset || empty($cache) || empty($cache->data[$key])) {
+    // Get new data.
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $cvt_v = variable_get('tpps_cvterms_version', '1_1');
     $get_cvt = 'tpps_get_cvterms_v' . ($version ?? $cvt_v);
     $terms = $get_cvt();
@@ -320,40 +330,37 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL, $ref
         throw new Exception('FATAL - after extensive searching, cvterm ' . $term . ' could not be found. This will cause insertion errors later on so it needs to be fixed');
       }
     }
-
-
-    variable_set('tpps_load_cvterm_' . md5($term), serialize($result));
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    $cache->data[$key] = $result;
+    cache_set($cid, $cache->data, $cache_bin);
   }
-  else {
-    $result = unserialize($check_cache);
-  }
-  return $result;
+  return $cache->data[$key] ?? NULL;
 }
 
 /**
- * Returns nothing, this is an administration function
+ * Clears cvterm cache.
  *
  * To speed up the process cvterms and even the cv (ontologies)
  * are cached using various methods. This will refresh the cache
  * and update the necessary links in the cache.
  *
- * @return array
- *   Array of cvterms that TPPS will be using.
+ * @param object $job
+ *   Tripal Job object.
  */
 function tpps_cvterms_clear_cache(TripalJob $job = NULL) {
-  if($job) {
+  if ($job) {
     $job->logMessage('[INFO] Initializing cvterms cache refresh...');
   }
-  // Reset the cv ids
+  // Reset the cv ids.
   cache_set('tpps_cv', NULL);
 
   $cvt_v = variable_get('tpps_cvterms_version', '1_1');
   $get_cvt = 'tpps_get_cvterms_v' . ($version ?? $cvt_v);
   $terms = $get_cvt();
   foreach ($terms as $term => $ontology_and_term) {
-    tpps_load_cvterm($term, array(), $cvt_v, TRUE);
+    tpps_load_cvterm($term, [], $cvt_v, TRUE);
   }
-  if($job) {
+  if ($job) {
     $job->logMessage('[INFO] Complete!');
   }
 }
@@ -376,14 +383,17 @@ function tpps_get_cvterms_v1_2() {
     'temperature_high' => 'local:Average high temperature of the environment.',
     'temperature_low' => 'local:Average low temperature of the environment.',
     'rooting_type' => 'local:Type of rooting. Aeroponics, Hydroponics, or Soil.',
-    'organism 4 letter code' => 'local:4 letter abbreviation of species. Usually first two letters of genus + first two letters of species, may be different if that code already exists (use next letters from species if possible).',
+    'organism 4 letter code' => 'local:4 letter abbreviation of species. '
+    . 'Usually first two letters of genus + first two letters of species, '
+    . 'may be different if that code already exists (use next letters from '
+    . 'species if possible).',
     'source_description' => 'local:A textual description of study type and comments for a source.',
     'email' => 'local:Email address',
     'number_samples' => 'local:Number of samples',
     'gps_type' => 'local:Type of GPS coordinates. Exact, Approximate, or Site-based.',
     'gps_precision' => 'local:Precision of GPS coordinates.',
 
-    // PAG 2022 request by Emily
+    // PAG 2022 request by Emily.
     'precipitation' => 'local:precipitation',
     'absorbance' => 'local:absorbance',
     'water use efficiency' => 'local:water use efficiency',
@@ -421,8 +431,7 @@ function tpps_get_cvterms_v1_2() {
     'state' => 'tripal_contact:State',
     'analysis_type' => 'analysis_property:Analysis Type',
 
-
-    // TREEGENES TO specific
+    // TREEGENES TO specific.
     'gravity' => 'tree_genes_to:specific gravity',
 
     // PPEO terms.

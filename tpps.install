@@ -2237,3 +2237,12 @@ function tpps_update_7123() {
     db_query('ALTER TABLE tpps_submission ADD COLUMN shared_state text;');
   }
 }
+
+/**
+ * Removes cached in variables cvterms (#86aygnzfz).
+ */
+function tpps_update_7124() {
+  db_delete('public.variable')
+    ->condition('name', db_like('tpps_load_cvterm') . '%', 'LIKE')
+    ->execute();
+}

@@ -17,6 +17,7 @@ function tpps_admin_variable_list_report() {
   $query = db_select($table, $table_alias)
     ->fields($table_alias, ['name', 'value'])
     ->condition('name', 'tpps%', 'LIKE');
+  $query->addField($table_alias, 'value', 'serialized_value');
 
   return '<h2>' . $report['title'] . '</h2>' . easy_report([
     'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
@@ -28,7 +29,10 @@ function tpps_admin_variable_list_report() {
     'header' => [
       ['data' => t('Name'), 'field' => $table_alias . '.name'],
       ['data' => t('Value'), 'field' => $table_alias . '.value'],
-      ['data' => t('Actions'), 'field' => 'actions'],
+      [
+        'data' => t('Serializes Value'),
+        'field' => $table_alias . '.serialized_value'
+      ],
     ],
     'query' => $query,
   ]);
@@ -64,6 +68,12 @@ function tpps_admin_variable_list_report_formatter(string $name, $value, array &
         $formatted = l($formatted, 'admin/reports/db/public.variable',
           ['query' => ['public.variable.name' => $formatted]]
         );
+      }
+      break;
+
+    case 'value':
+      if (!empty($value)) {
+        $formatted = var_export(@unserialize($value), 1);
       }
       break;
   }
