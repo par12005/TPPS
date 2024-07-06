@@ -62,6 +62,22 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
             'saved_values', TPPS_PAGE_1, 'publication', 'primaryAuthor',
           ],
         ],
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // Page 2.
+        // 'Study Type' -> 'Experimental Design'.
+        'study_type' => [
+          'source' => ['saved_values', TPPS_PAGE_2, 'study_type'],
+          'target' => [
+            'saved_values', TPPS_PAGE_2, 'study_design', 'experimental_design',
+          ],
+        ],
+        // 'Data Type'.
+        'data_type' => [
+          'source' => ['saved_values', TPPS_PAGE_2, 'data_type'],
+          'target' => [
+            'saved_values', TPPS_PAGE_2, 'study_design', 'data_type',
+          ],
+        ],
       ],
     ],
   ];

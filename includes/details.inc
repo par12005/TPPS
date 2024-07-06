@@ -205,6 +205,8 @@ function tpps_details($accession = NULL) {
 /**
  * Returns a template for details tabs.
  *
+ * WARNING: Uses State.
+ *
  * To add new tab - just add new element to $tab_list array.
  * Note that all links in content will be replaced with current path and
  * fragment so update /js/tpps.js if you don't want that. Search 'submission'.
@@ -273,12 +275,36 @@ function tpps_details_tabs(array &$state) {
 /**
  * A callback to print a single detail tab.
  *
+ * This is menu callback for AJAX requests.
+ * Called from JS function detailsTab() which has tabs:
+ * - trees,
+ * - phenotype,
+ * - genotype,
+ * - environment (no callback),
+ * - submission (no callback).
+ *
  * @param string $accession
  *   The accession number of the submission.
  * @param string $type
  *   The type of details we want to print.
  */
 function tpps_details_tab($accession, $type) {
+  // @TODO Rename function which could be called here to have
+  // the same prefix/suffix.
+  //
+  // Any of listed below functions could be called. Left for search purpose:
+  // tpps_details_trees(array& $state)
+  // tpps_details_genotype(array& $state)
+  // tpps_details_phenotype(array& $state)
+  // tpps_details_get_study_file_ids(array $state)
+  // tpps_details_list()
+  // tpps_details_mass_spectrometry(array& $state)
+  // tpps_details_species(array& $state)
+  // tpps_details_study(array& $state)
+  // tpps_details_tabs(array& $state)
+  // tpps_details_tags_sort()
+  // tpps_details_top()
+  // tpps_details_top_callback()
   $function = "tpps_details_$type";
   $submission = new Submission($accession);
   print($function($submission->sharedState));
@@ -746,26 +772,27 @@ function tpps_details_species(array &$state) {
 /**
  * Creates the table for study information details for a submission.
  *
- * @param array $state
- *   The form state of the submission.
+ * Called from tpps_details_tab().
+ *
+ * @param array $shared_state
+ *   Submission Shared State.
  *
  * @return string
  *   The HTML table of study information of the submission.
  *
  * @TODO Seems function not in use, probably outdated and could be removed.
  */
-function tpps_details_study(array &$state) {
+function tpps_details_study(array &$shared_state) {
   $rows = array();
 
   $species = array();
-  for ($i = 1; $i <= $state['stats']['species_count']; $i++) {
-    $id = $state['ids']['organism_ids'][$i];
-    $species_name = $state['saved_values'][TPPS_PAGE_1]['organism'][$i]['name'];
+  for ($i = 1; $i <= $shared_state['stats']['species_count']; $i++) {
+    $id = $shared_state['ids']['organism_ids'][$i];
+    $species_name = $shared_state['saved_values'][TPPS_PAGE_1]['organism'][$i]['name'];
     $species[] = tpps_entity_link($id, $species_name, 'Organism');
   }
   $files = [];
-  $study_file_ids = tpps_details_get_study_file_ids($state);
-  // foreach ($state['files'] as $fid) {
+  $study_file_ids = tpps_details_get_study_file_ids($shared_state);
   foreach ($study_file_ids as $fid) {
     if ($file = tpps_file_load($fid)) {
       $file_url = check_plain(file_create_url($file->uri));
@@ -774,47 +801,51 @@ function tpps_details_study(array &$state) {
       }
     }
   }
-  $page2_values = $state['saved_values'][TPPS_PAGE_2]['study_type'] ?? NULL;
+  $page2_values = $shared_state['saved_values'][TPPS_PAGE_2]['study_type'] ?? NULL;
 
-  $pub_link = $state['title'];
+  $pub_link = $shared_state['title'];
   $pub_id = db_select('chado.project_pub', 'p')
     ->fields('p', array('pub_id'))
-    ->condition('project_id', $state['ids']['project_id'])
+    ->condition('project_id', $shared_state['ids']['project_id'])
     ->execute()->fetchObject()->pub_id;
   if (!empty($pub_id)) {
     $bundle = tripal_load_bundle_entity(array('label' => 'Publication'));
     $pub_id = chado_get_record_entity_by_bundle($bundle, $pub_id);
     $pub_link = "<a href='$base_url/Publication/$pub_id'>$pub_link</a>";
   }
-  $rows[] = array('Accession', $state['accession']);
-  $rows[] = array('Title', $pub_link);
-  $rows[] = array('Authors', implode(', ', $state['authors']));
-  $rows[] = array('Species', implode('<br>', $species));
-  $rows[] = array('Data Type', $page2_values['data_type']);
+  $rows[] = ['Accession', $shared_state['accession']];
+  $rows[] = ['Title', $pub_link];
+  $rows[] = ['Authors', implode(', ', $shared_state['authors'])];
+  $rows[] = ['Species', implode('<br>', $species)];
+  // Page 2.
+  $rows[] = ['Data Type', $page2_values['data_type']];
   module_load_include('inc', 'tpps', 'includes/form');
-  $rows[] = ['Study Type', tpps_form_get_study_type($page2_values['study_type'])];
-  $rows[] = array('File Downloads', implode('<br>', $files));
-  $rows[] = array('Population Size', $state['stats']['tree_count']);
-  if (!empty($state['stats']['phenotype_count'])) {
-    $rows[] = array('Phenotype Count', $state['stats']['phenotype_count']);
+  $rows[] = [
+    'Experimental Design',
+    tpps_form_get_experimental_design_options($page2_values['study_type'])
+  ];
+  $rows[] = ['File Downloads', implode('<br>', $files)];
+  $rows[] = ['Population Size', $shared_state['stats']['tree_count']];
+  if (!empty($shared_state['stats']['phenotype_count'])) {
+    $rows[] = ['Phenotype Count', $shared_state['stats']['phenotype_count']];
   }
-  if (!empty($state['stats']['unique_phenotypes'])) {
-    $rows[] = array('Unique Phenotypes', $state['stats']['unique_phenotypes']);
+  if (!empty($shared_state['stats']['unique_phenotypes'])) {
+    $rows[] = ['Unique Phenotypes', $shared_state['stats']['unique_phenotypes']];
   }
   // @todo genotype counts.
-  // $rows[] = array('Genotype Count', $state['stats']['genotype_count']);
-  $vars = array(
-    'header' => array(),
+  // $rows[] = ['Genotype Count', $shared_state['stats']['genotype_count']];
+  $vars = [
+    'header' => [],
     'rows' => $rows,
-    'attributes' => array(
-      'class' => array('view'),
+    'attributes' => [
+      'class' => ['view'],
       'id' => 'tpps_table_display',
-    ),
+    ],
     'caption' => '',
     'colgroups' => NULL,
     'sticky' => FALSE,
     'empty' => '',
-  );
+  ];
   return theme('table', $vars);
 }
 
@@ -828,14 +859,11 @@ function tpps_details_study(array &$state) {
  *   Returns list of File Ids.
  *
  * @todo Minor. Use tpps_submission_file_get_parents().
- * @todo Probably not in use and outdated. Remove if possible.
- * (Called by orphan function tpps_details_study()).
  */
 function tpps_details_get_study_file_ids(array $state) {
 
   $submission = new Submission();
-  $submission->setState($state);
-  $submission->generateSharedState();
+  $submission->generateSharedState($state);
   $submission->save();
   $saved_values = &$submission->sharedState['saved_values'];
   // print_r($saved_values);

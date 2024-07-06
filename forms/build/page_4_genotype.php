@@ -74,15 +74,16 @@ function tpps_genotype_subform(array $form_bus) {
   ];
   $fields = &$form_bus['form'][$organism_name][$type];
 
-  $marker_parents = [$organism_name, 'genotype', 'marker-type'];
-  $genotype_marker_type = array_keys(
-    tpps_get_ajax_value($form_state, $marker_parents, [])
-  );
+  // Get submitted values of the hidden 'marker-type' multiselect field.
+  $genotype_marker_type = array_keys(tpps_get_ajax_value($form_state,
+    [$organism_name, 'genotype', 'marker-type'], []
+  ));
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Only for 1st organism.
   if ($i == 1 && $organism_number > 1) {
     tpps_form_add_yesno_field(array_merge($form_bus,
       [
+        'stage' => TPPS_PAGE_4,
         'parents' => [$organism_name, $type],
         'field_name' => 'are_genotype_markers_identical',
         '#title' => t('Are your genotype markers identical across species?'),
@@ -115,11 +116,13 @@ function tpps_genotype_subform(array $form_bus) {
   // Weight of the yes/no selectors. From 0 (default) to heavier.
   foreach ($marker_type_field_list as $field_name => $marker_name) {
     $weight = ($weight ?? 0) + 100;
-    $default_value = tpps_get_ajax_value($form_state,
-      [$organism_name, 'genotype', $field_name]
+    $default_value = (
+      count($genotype_marker_type) == 0 ? 'no' :
+      (in_array($marker_name, $genotype_marker_type) ? 'yes' : 'no')
     );
     tpps_form_add_yesno_field(array_merge($form_bus,
       [
+        'stage' => TPPS_PAGE_4,
         'parents' => [$organism_name, $type],
         'field_name' => $field_name,
         // For search purpose only list of dynamically built items:
@@ -206,7 +209,7 @@ function tpps_genotype_subform(array $form_bus) {
         . '[does_study_include_other_genotypic_data]"]' => ['value' => 'yes'],
       ],
     ],
-    // After related yes/no selector.
+    // After tied 'yes/no' selector.
     '#weight' => 350,
   ];
   tpps_page_4_ref($fields, $form_state, $organism_name);

@@ -30,10 +30,8 @@
 function tpps_form_add_buttons(array $form_bus) {
   $form = &$form_bus['form'];
   $page = $form_bus['page'];
-  $scope_list = [
-    'header' => -1000,
-    'footer' => 1000,
-  ];
+  $scope_list = ['header' => -1000, 'footer' => 1000];
+  $back_button = ['#type' => 'submit', '#value' => t('Back')];
 
   foreach ($scope_list as $scope => $weight) {
     $form[$scope] = [
@@ -52,15 +50,7 @@ function tpps_form_add_buttons(array $form_bus) {
       case 'page_2':
       case 'page_3':
         // Back, Save, Next.
-        $form[$scope]['Back'] = [
-          '#type' => 'submit',
-          '#value' => t('Back'),
-          // Disable validation.
-          // Currently useless because all fields are optional but this
-          // could be changed in future. But it removed saved data of stage
-          // when 'Back' button clicked which is not good.
-          //'#limit_validation_errors' => [],
-        ];
+        $form[$scope]['Back'] = $back_button;
 
       default:
       case 'page_1':
@@ -75,15 +65,7 @@ function tpps_form_add_buttons(array $form_bus) {
 
       case 'page_4':
         // Back, Save, Review, Submit, Pre-validate my VCF files.
-        $form[$scope]['Back'] = [
-          '#type' => 'submit',
-          '#value' => t('Back'),
-          // Disable validation.
-          // Currently useless because all fields are optional but this
-          // could be changed in future. But it removed saved data of stage
-          // when 'Back' button clicked which is not good.
-          //'#limit_validation_errors' => [],
-        ];
+        $form[$scope]['Back'] = $back_button;
         $form[$scope]['Save'] = ['#type' => 'submit', '#value' => t('Save')];
         $form[$scope]['submit'] = [
           '#type' => 'submit',
@@ -133,15 +115,7 @@ function tpps_form_add_buttons(array $form_bus) {
 
       case 'summary':
         // Back, Submit.
-        $form[$scope]['Back'] = [
-          '#type' => 'submit',
-          '#value' => t('Back'),
-          // Disable validation.
-          // Currently useless because all fields are optional but this
-          // could be changed in future. But it removed saved data of stage
-          // when 'Back' button clicked which is not good.
-          //'#limit_validation_errors' => [],
-        ];
+        $form[$scope]['Back'] = $back_button;
         $form[$scope]['Next'] = ['#type' => 'submit', '#value' => t('Submit')];
         break;
     }
@@ -152,7 +126,15 @@ function tpps_form_add_buttons(array $form_bus) {
 // Validation.
 
 /**
- * Checks if required field is empty and shows error message.
+ * Checks if required field is empty, shows error message and returns status.
+ *
+ * Usage examples.
+ * Single field:
+ *   tpps_is_required_field_empty($form_state, ['study_design', 'data_type']);
+ * Dependent field:
+ *   if (!tpps_is_required_field_empty($form_state, ['StartingDate', 'year'])) {
+ *     tpps_is_required_field_empty($form_state, ['StartingDate', 'month']);
+ *   }
  *
  * @param array $form_state
  *   Drupal Form API array with submitted values.
@@ -176,7 +158,7 @@ function tpps_is_required_field_empty(array $form_state, array $path) {
     $form_state['values'], tpps_get_field_path($field, $path)
   );
   if (empty($value)) {
-    tpps_form_error_required($form_state, $path);
+    tpps_form_show_error_required($form_state, $path);
     return TRUE;
   }
   return FALSE;
@@ -184,6 +166,9 @@ function tpps_is_required_field_empty(array $form_state, array $path) {
 
 /**
  * Shows form_validation error message that field is required.
+ *
+ * WARNING: ONLY SHOWS ERROR MESSAGE (DOES NOT VALIDATE)!
+ *          USE tpps_is_required_field_empty() INSTEAD.
  *
  * Field title will be detected automatically.
  * If field uses '#parents' then full path (not '#parents' must be specified).
@@ -194,7 +179,7 @@ function tpps_is_required_field_empty(array $form_state, array $path) {
  *   Path to field. For example:
  *   ['organism-1', 'genotype', 'SNPs', 'file-type'].
  */
-function tpps_form_error_required(array $form_state, array $parents) {
+function tpps_form_show_error_required(array $form_state, array $parents) {
   tpps_form_error($form_state, $parents, 'field is required.');
 }
 
@@ -208,15 +193,13 @@ function tpps_form_error_required(array $form_state, array $parents) {
  * @param array $form_state
  *   Drupal Form API array with submitted values.
  * @param array $path
- *   Path to field from $form_state['complete form'].
- *   (The same will be from $form). Using fields configuration data we could
- *   get all necessary data.
- *   WARNING: Not path from $form_state['values'] or $form_state['input']
- *   which could be different because of using '#parents' and '#tree' options.
- *   For example:
- *   - ['organism-1', 'genotype', 'SNPs', 'file-type'];
- *   - ['publication', 'publication_doi'];
- *   See https://www.drupal.org/docs/7/api/form-api/tree-and-parents
+ *   Path to form element related to
+ *   1. $form;
+ *   2. $form_state['complete form'];
+ *   3. $form_state['values'];
+ *   4. $form_state['input'].
+ *   This path could be found in the element's attribute '#array_parents'.
+ *   WARNING: $path must not have 'values' or 'saved_values'!
  * @param string $message
  *   Error message text.
  */
@@ -227,7 +210,9 @@ function tpps_form_error(array $form_state, array $path, $message) {
       ['@path' => implode(' / ', $path)]
     );
     watchdog('tpps', $message, NULL, WATCHDOG_ERROR);
-    // drupal_set_message($message, 'error');
+    if (!is_live_site()) {
+      drupal_set_message($message, 'error');
+    }
     return;
   }
   // Remove colon ':' and required field label.
@@ -288,7 +273,6 @@ function tpps_get_field_path(array $field, array $path) {
  */
 function tpps_form_navigation_bar(array &$form, array $form_state) {
   $submission = new Submission($form_state['accession']);
-
   $current_stage = $submission->getCurrentStage();
   $current_stage = ($current_stage == 'summarypage' ? 5 : $current_stage);
 
@@ -409,6 +393,7 @@ function tpps_form_search_field(array $array, $field_type = 'managed_file') {
  *      Required. Drupal Form Array. E.g., &$form.
  *   'form_state' array
  *      Optional. Drupal Form Array. E.g., &$form_state.
+ *
  *   Element with prefix '#' which are Drupal Form API fields.
  *   See https://api.drupal.org/api/drupal/developer%21topics%21forms_api_reference.html/7.x
  *     'field_name' string
@@ -432,23 +417,23 @@ function tpps_form_add_yesno_field(array $form_bus) {
   else {
     $form = &$form_bus['form'];
   }
+  if (empty($form_bus['stage'])) {
+    watchdog('tpps', 'Empty stage received', [], WATCHDOG_ERROR);
+    return;
+  }
+  else {
+    $stage = $form_bus['stage'];
+  }
   if (empty($form_bus['field_name']) || empty($form_bus['#title'])) {
     watchdog('tpps', 'Empty "name" or "#title" received', [], WATCHDOG_ERROR);
     return;
   }
-  if (!isset($form_bus['organism_id'])) {
-    return;
-  }
+
   $field_name = $form_bus['field_name'];
-  $i = $form_bus['organism_id'];
-
-  $organism_name = 'organism-' . $i;
-
-  // $form_state is optional and used for default value only.
   $form_state = &$form_bus['form_state'] ?? [];
-  unset($form_bus['form_state']);
-  // Default value.
-  $page4_values = $form_state['saved_values'][TPPS_PAGE_4] ?? NULL;
+  $parents = array_merge(
+    [$stage], ($form_bus['parents'] ?? []), [$field_name]
+  );
   // Options.
   // Machine names are in lower case to indicate that it's not human readable
   // name which could be localized.
@@ -457,17 +442,24 @@ function tpps_form_add_yesno_field(array $form_bus) {
     $options = [0 => t('- Select -')] + $options;
   }
   // Build field using defaults.
+  //tpps_form_bus_debug($form_bus);
+  if (!empty($form_state['saved_values'])) {
+    $default_value = drupal_array_get_nested_value($form_state['saved_values'],
+        array_merge([$stage], $parents)
+    );
+  }
   $defaults = [
     '#type' => 'select',
     '#options' => $options,
-    '#default_value' => ($form_bus['page4_values'][$field_name] ?? NULL),
+    // This default value will be overwritten by value from $form_bus.
+    // Note: $form_state uses $stage but $form doesn't use it.
+    '#default_value' => $default_value ?? NULL,
     '#tree' => TRUE,
   ];
   $field = array_filter($form_bus, function ($e) {
     return strpos($e, '#') !== FALSE;
   }, ARRAY_FILTER_USE_KEY);
   $field = array_merge($defaults, $field);
-  $parents = array_merge(($form_bus['parents'] ?? []), [$field_name]);
   drupal_array_set_nested_value($form, $parents, $field);
 }
 
@@ -511,8 +503,6 @@ function tpps_form_add_report(array &$form, array $meta) {
 /**
  * Adds File Upload field to form.
  *
- * WARNING: Currently could be used only at Page 4.
- *
  * @param array $form_bus
  *   Data. Keys are:
  *   'form_state' array
@@ -528,6 +518,12 @@ function tpps_form_add_report(array &$form, array $meta) {
  *     Machine field name.
  *   'parents' array
  *     List of parents of the field.
+ *
+ *   'extra_elements' array
+ *     Optional Drupal Form API elements which will be added as is.
+ *     Custom element '#required_when_visible' which will enable feature
+ *     'Required When Visible' when TRUE and Drupal Form State API used to
+ *     make field visible. WARNING: Only 'visible' state is supported.
  *
  *   Example:
  *   tpps_form_build_file_field([
@@ -631,15 +627,8 @@ function tpps_form_build_file_field(array $form_bus) {
         ['@list' => implode(', ', $extensions)]) : ''),
     '#tree' => TRUE,
     '#states' => $states,
-    //'#parents' => $parents,
   ];
 
-  // Required when visible.
-  if ($form_bus['required_when_visible'] ?? NULL) {
-    $parent_element[$field_name]['#states']['required'] = $states['visible'];
-  }
-
-  // dpm(print_r($parents, 1), 'parents of ' . $field_name);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Customization.
   // @TODO Minor. Think about using elements with leading '#' to use them as
@@ -773,6 +762,26 @@ function &tpps_form_bus_get(array $form_bus, $name) {
 }
 
 /**
+ * Dumps Form Bus but excludes huge 'form' and 'form_state' elements.
+ *
+ * @param array $form_bus
+ *   Form Bus.
+ */
+function tpps_form_bus_debug(array $form_bus) {
+  $temp = $form_bus;
+  $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT
+    | DEBUG_BACKTRACE_IGNORE_ARGS, 4);
+  dpm(print_r($stack, 1), 'Form Bus Debugger');
+  if ($temp['form']) {
+    $temp['form'] = '-- removed --';
+  }
+  if ($temp['form_state']) {
+    $temp['form_state'] = '-- removed --';
+  }
+  dpm(print_r($temp, 1));
+}
+
+/**
  * Sets focus on given field by name.
  *
  * WARNING: Be sure element has no 'autofocus' attribute because it won't work.
@@ -838,11 +847,22 @@ function tpps_form_get_id(array $form_state) {
 }
 
 /**
- * Get study type list or one item.
+ * Get TPPS Form Id.
  *
- * Usage example:
- * module_load_include('inc', 'tpps', 'includes/form');
- * $study_type_options = tpps_form_get_study_type($key);
+ * @param array $form_state
+ *   Drupal Form State array.
+ *
+ * @return string
+ *   Returns 'tpps_main' (default) or 'tppsc_main'.
+ */
+function tpps_form_is_tppsc(array $form_state) {
+  $form_id = $form_state['saved_values']['front_page']['form_id']
+    ?? $form_state['build_info']['form_id'] ?? 'tpps_main';
+  return (bool) ($form_id == 'tppsc_main');
+}
+
+/**
+ * Manages list of options for 'Experimental Design' field at Page 2.
  *
  * @param int $key
  *   Key in the list of options. This value used in form submitters.
@@ -851,17 +871,58 @@ function tpps_form_get_id(array $form_state) {
  *   Returns:
  *   1. $key was specified and index $key exists: translated option label
  *   2. $key was specified but index $key not exists: NULL
- *   3. $key wasn't specified (NULL): whole list of study types/
+ *   3. $key wasn't specified (NULL): whole list of study types.
  */
-function tpps_form_get_study_type($key = NULL) {
+function tpps_form_get_experimental_design_options($key = NULL) {
   $options = [
     0 => t('- Select -'),
-    1 => t('Natural Population (Landscape)'),
-    2 => t('Growth Chamber'),
-    3 => t('Greenhouse'),
-    4 => t('Experimental/Common Garden'),
-    5 => t('Plantation'),
+    // 1
+    TPPS_EXP_DESIGN_NATURAL_POPULATION => t('Natural Population (Landscape)'),
+    // 2
+    TPPS_EXP_DESIGN_GROWTH_CHAMBER => t('Growth Chamber'),
+    // 3
+    TPPS_EXP_DESIGN_GREENHOUSE => t('Greenhouse'),
+    // 4
+    TPPS_EXP_DESIGN_EXPERIMENTAL => t('Experimental/Common Garden'),
+    // 5
+    TPPS_EXP_DESIGN_PLANTATION => t('Plantation'),
   ];
+  return is_null($key) ? $options : ($options[$key] ?? NULL);
+}
+
+/**
+ * Manages list of options for 'Data Type' dropdown menu at Page 2.
+ *
+ * @param int $key
+ *   Key in the list of options. This value used in form submitters.
+ *
+ * @return mixed
+ *   Returns:
+ *   1. $key was specified and index $key exists: translated option label
+ *   2. $key was specified but index $key not exists: NULL
+ *   3. $key wasn't specified (NULL): whole list data type options.
+ */
+function tpps_form_get_data_type_options($key = NULL) {
+  if (tpps_is_catrogratree_exists()) {
+    $options = [
+      0 => t('- Select -'),
+      TPPS_DATA_TYPE_GENOTYPE => t('Genotype'),
+      TPPS_DATA_TYPE_PHENOTYPE => t('Phenotype'),
+      TPPS_DATA_TYPE_ENVIRONMENT => t('Environmental'),
+      TPPS_DATA_TYPE_G_P => t('Genotype x Phenotype'),
+      TPPS_DATA_TYPE_G_E => t('Genotype x Environmental'),
+      TPPS_DATA_TYPE_P_E => t('Phenotype x Environmental'),
+      TPPS_DATA_TYPE_G_P_E => t('Genotype x Phenotype x Environmental'),
+    ];
+  }
+  else {
+    $options = [
+      0 => t('- Select -'),
+      TPPS_DATA_TYPE_GENOTYPE => t('Genotype'),
+      TPPS_DATA_TYPE_PHENOTYPE => t('Phenotype'),
+      TPPS_DATA_TYPE_GxP => t('Genotype x Phenotype'),
+    ];
+  }
   return is_null($key) ? $options : ($options[$key] ?? NULL);
 }
 
@@ -1271,6 +1332,7 @@ function tpps_form_get_submission_status_list() {
 /**
  * Checks field required via Drupal Form States API is not empty.
  *
+ * Helper-function for 'required_when_visible' feature.
  * Custom validation is necessary because this fields was set a required by
  * Drupal Form State API.
  */
@@ -1278,7 +1340,8 @@ function tpps_form_validate_required_field($element, $form_state) {
   if (
     empty($element['#states']['required'])
     // Skip this validation when form just saved.
-    // @TODO Add '#name' to button Save and use it's name instead of label.
+    // @TODO Add '#name' to button Save and use it's name instead of label
+    // which could be localized.
     || $form_state['clicked_button']['#value'] == 'Save'
   ) {
     return;

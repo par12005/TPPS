@@ -1223,7 +1223,8 @@ class Submission {
 
     if (!empty($page_2['study_type'])) {
       module_load_include('inc', 'tpps', 'includes/form');
-      $data['Study Type'] = tpps_form_get_study_type($page_2['study_type']);
+      //$data['Study Type'] = tpps_form_get_study_type($page_2['study_type']);
+      $data['Experimental Design'] = tpps_form_get_experimental_design_options($page_2['study_type']);
 
       if (!empty($page_2['study_info']['season'])) {
         $data['Seasons Assessed'] = implode($page_2['study_info']['season']);

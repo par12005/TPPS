@@ -78,6 +78,31 @@ define(
 );
 define('TPPS_GENOTYPING_FILE_TYPE_VCF', 'VCF');
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// Page 2. Field "Data Types" options.
+// See tpps_form_get_data_type_options().
+define('TPPS_DATA_TYPE_GENOTYPE', 'Genotype');
+define('TPPS_DATA_TYPE_PHENOTYPE', 'Phenotype');
+define('TPPS_DATA_TYPE_ENVIRONMENT', 'Environment');
+define('TPPS_DATA_TYPE_G_P', 'Genotype x Phenotype');
+define('TPPS_DATA_TYPE_G_E', 'Genotype x Environment');
+define('TPPS_DATA_TYPE_P_E', 'Phenotype x Environment');
+define('TPPS_DATA_TYPE_G_P_E', 'Genotype x Phenotype x Environment');
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// Page 2. Field "Experimental Design" options.
+// See tpps_form_get_experimental_design_options().
+//
+// Natural Population (Landscape).
+define('TPPS_EXP_DESIGN_NATURAL_POPULATION', 1);
+// Growth Chamber.
+define('TPPS_EXP_DESIGN_GROWTH_CHAMBER', 2);
+// Greenhouse.
+define('TPPS_EXP_DESIGN_GREENHOUSE', 3);
+// Experimental/Common Garden.
+define('TPPS_EXP_DESIGN_EXPERIMENTAL', 4);
+// Plantation.
+define('TPPS_EXP_DESIGN_PLANTATION', 5);
 
 module_load_include('inc', 'tpps', 'includes/common');
 
@@ -928,10 +953,14 @@ function tpps_form_field_process(array $element, array &$form_state, array $form
     $element['#description'] = ($element['#description'] ?? '')
       . '<br />[ ' . implode(' ][ ', $element['#array_parents']) . ' ]';
   }
-
   // Adds custom validation of fields required using Drupal Form States AJAX.
-  $element['#element_validate'][] = 'tpps_form_validate_required_field';
-
+  // AKA 'required_when_visible' feature.
+  if ($element['#required_when_visible'] ?? NULL) {
+    if ($element['#states']['visible'] ?? NULL) {
+      $element['#states']['required'] = $element['#states']['visible'];
+      $element['#element_validate'][] = 'tpps_form_validate_required_field';
+    }
+  }
   return $element;
 }
 
@@ -971,7 +1000,6 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
   require_once 'ajax/tpps_ajax.php';
 
   $fid = $element['#value']['fid'] ?? '';
-
   // Note: edit-organism-1-genotype-tripal-fasta-file-file-upload-upload
   // has no title.
   if ($fid && ($file = tpps_file_load($fid))) {
@@ -1926,7 +1954,6 @@ function tpps_flush_caches() {
  *
  *   Constants like TPPS_PAGE_1 and etc could be used to improve code readablility.
  *   Custom Page Id like 'study_export' for 'TPPS Study Export Page'.
- *
  * @param array $form
  *   Drupal Form API form array.
  *   When NULL then CSS/JS will be added as it's a regular page.
@@ -2430,7 +2457,6 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'pages/submission/purge_multiple.inc',
   ];
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 }
 
 /**
@@ -2586,7 +2612,9 @@ function tpps_menu_add_detials_pages(array &$items = []) {
     'access arguments' => ['access tpps details'],
     'type' => MENU_NORMAL_ITEM,
   ];
-  // AJAX-callback for Tabs. See /js/tpps.js function detailsTab().
+  // AJAX-callback for Tabs.
+  // See /js/tpps.js function detailsTab().
+  //
   $items['tpps/details/%/%'] = [
     'title' => 'TPPS Details Tab Callback',
     'page callback' => 'tpps_details_tab',
@@ -2652,6 +2680,6 @@ function tpps_submission($accession = '') {
  */
 function tpps_submission_load($accession) {
   // @TODO Minor. Use static caching.
-  $submission= new Submission($accession);
+  $submission = new Submission($accession);
   return $submission;
 }
