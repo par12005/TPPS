@@ -1060,21 +1060,21 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
     return FALSE;
   }
 
+  // 'Debug Mode' adds more debug information to the log.
+  $debug_mode = FALSE;
+
   if (!empty($options['job'])) {
     $options['job']->setTotalItems(tpps_file_len($fid));
     $options['job']->setItemsHandled(0);
   }
 
-  $file = tpps_file_load($fid);
-  $file_location = tpps_get_location($file->uri);
-
-  // Item / line counter
+  // Item / line counter.
   $item_count = 0;
 
   foreach (tpps_file_generator($fid, $options) as $item) {
     $item_count = $item_count + 1;
     // echo "ITEM COUNT: " . $item_count . "\n";
-    if(isset($options['test'])) {
+    if (isset($options['test'])) {
       // This will reduce the amount of processing in the file iterator
       // This is an attempt to speed up coding and testing by just not
       // processing all files per file (and may not always work)
@@ -1085,36 +1085,38 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
       }
     }
 
-    // Assume the item IS NOT EMPTY
-    $item_is_not_empty = true;
-    if(is_array($item)) {
-      // Check each key value
+    // Assume the item IS NOT EMPTY.
+    $item_is_not_empty = TRUE;
+    if (is_array($item)) {
+      // Check each key value.
       $values_count = count($item);
       $values_empty_count = 0;
-      foreach($item as $key => $value) {
-        if($value == '') {
+      foreach ($item as $key => $value) {
+        if ($value == '') {
           $values_empty_count = $values_empty_count + 1;
         }
       }
-      // Check if $values_count == $values_empty_count (this means item is empty)
+      // Check if $values_count == $values_empty_count (this means item is empty).
       if ($values_count == $values_empty_count) {
-        $item_is_not_empty = false;
+        $item_is_not_empty = FALSE;
       }
     }
 
-    // if the item is not empty, proceed to process the line
+    // Of the item is not empty, proceed to process the line.
     if ($item_is_not_empty) {
       $function($item, $options);
       if (!empty($options['job'])) {
         $options['job']->addItemsHandled(1);
       }
     }
-    else {
-      // print_r($item);
-      // echo json_encode($item) . "\n";
-      // echo "[TPPS FILE ITERATOR] Found a line/item that was empty, ignoring this item\n";
-      // echo "[TPPS FILE ITERATOR] File location: " . $file_location . "\n";
-      // throw new Exception('DEBUG STOP - FOUND AN EMPTY LINE');
+    elseif ($debug_mode) {
+      $file = tpps_file_load($fid);
+      $file_location = tpps_get_location($file->uri);
+      print_r($item);
+      echo json_encode($item) . "\n";
+      echo "[TPPS FILE ITERATOR] Found a line/item that was empty, ignoring this item\n";
+      echo "[TPPS FILE ITERATOR] File location: " . $file_location . "\n";
+      throw new Exception('DEBUG STOP - FOUND AN EMPTY LINE');
     }
   }
   return TRUE;
