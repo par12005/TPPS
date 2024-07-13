@@ -560,9 +560,7 @@ function tpps_access() {
         // Study has no record in tpps_submission table.
         return FALSE;
       }
-      // To check if submission was created using TPPS or TPPSc use:
-      // if ($submission->isTppsc()) {}
-      if (strpos($_GET['q'], 'tppsc') !== FALSE) {
+      if ($submission->isTppsc()) {
         return TRUE;
       }
       else {
