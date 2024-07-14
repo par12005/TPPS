@@ -227,37 +227,43 @@ function tppsc_page2_plantation(array $form_bus) {
     ['type' => 'treatment', 'label' => 'Treatment']));
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 /**
- * This function creates fields for the common garden study type.
+ * tppsc_page2_common_garden
  *
- * @param array $form
- *   The form to be populated.
+ * @param array $form_bus
+ * @access public
+ *
+ * @return void
  */
-function tppsc_common_garden(array &$form) {
+function tppsc_page2_common_garden(array $form_bus) {
+  $form_bus['form']['study_info']['#title'] = t('Common Garden Information:');
+  $form_bus['group'] = 'plantation';
 
-  $form['#title'] = t('<div class="fieldset-title">Common Garden Information:</div>');
+  $subform = &$form_bus['form']['study_info'];
 
-  $form['irrigation'] = array(
-    '#type' => 'fieldset',
-    '#tree' => TRUE,
+  // range()?
+  $num_arr = array();
+  $num_arr[0] = '- Select -';
+  for ($i = 1; $i <= 30; $i++) {
+    $num_arr[$i] = $i;
+  }
+
+  $subform['assessions'] = array(
+    '#type' => 'select',
+    '#title' => t('Number of times the populations were assessed (on average):'),
+    '#options' => $num_arr,
+    '#required_when_visible' => TRUE,
   );
 
-  $form['irrigation']['option'] = array(
+  $subform['irrigation'] = [
+    '#type' => 'fieldset',
+    '#tree' => TRUE,
+  ];
+
+  $submform['irrigation']['option'] = [
     '#type' => 'select',
-    '#title' => t('Irrigation Type: *'),
+    '#title' => t('Irrigation Type:'),
+    '#required_when_visible' => TRUE,
     '#options' => array(
       0 => t('- Select -'),
       'Irrigation from top' => t('Irrigation from top'),
@@ -266,10 +272,11 @@ function tppsc_common_garden(array &$form) {
       'Other' => t('Other'),
       'No Irrigation' => t('No Irrigation'),
     ),
-  );
+  ];
 
-  $form['irrigation']['other'] = array(
+  $subform['irrigation']['other'] = array(
     '#type' => 'textfield',
+    '#required_when_visible' => TRUE,
     '#states' => array(
       'visible' => array(
         ':input[name="study_info[irrigation][option]"]' => array('value' => 'Other'),
@@ -277,29 +284,31 @@ function tppsc_common_garden(array &$form) {
     ),
   );
 
-  tpps_page2_add_control_fields($form, 'salinity', 'Salinity');
 
   $form['biotic_env'] = array(
     '#type' => 'fieldset',
     '#tree' => TRUE,
   );
 
-  $form['biotic_env']['option'] = array(
+  $form['biotic_env']['option'] = [
     '#type' => 'checkboxes',
-    '#title' => t('Biotic Environment: *'),
-    '#options' => drupal_map_assoc(array(
+    '#title' => t('Biotic environmental interactions:'),
+    '#required_when_visible' => TRUE,
+    // @TODO Update to use english keys.
+    '#options' => drupal_map_assoc([
       t('Herbivores'),
       t('Mutulists'),
       t('Pathogens'),
       t('Endophytes'),
       t('Other'),
       t('None'),
-    )),
-  );
+    ]),
+  ];
 
   $form['biotic_env']['other'] = array(
     '#type' => 'textfield',
-    '#title' => t('Please specify Biotic Environment Type: *'),
+    '#title' => t('Please specify Biotic Environment Type:'),
+    '#required_when_visible' => TRUE,
     '#states' => array(
       'visible' => array(
         ':input[name="study_info[biotic_env][option][Other]"]' => array('checked' => TRUE),
@@ -307,161 +316,10 @@ function tppsc_common_garden(array &$form) {
     ),
   );
 
-  $form['season'] = array(
-    '#type' => 'checkboxes',
-    '#title' => t('Seasons: *'),
-    '#options' => drupal_map_assoc(array(
-      t('Spring'),
-      t('Summer'),
-      t('Fall'),
-      t('Winter'),
-    )),
-    '#description' => t('If you do not know which season your samples were collected, please select all.'),
-  );
-
-  $treatment_options = drupal_map_assoc(array(
-    t('Seasonal environment'),
-    t('Antibiotic regime'),
-    t('Chemical administration'),
-    t('Disease status'),
-    t('Fertilizer regime'),
-    t('Fungicide regime'),
-    t('Gaseous regime'),
-    t('Gravity Growth hormone regime'),
-    t('Herbicide regime'),
-    t('Mechanical treatment'),
-    t('Mineral nutrient regime'),
-    t('Non-mineral nutrient regime'),
-    t('Salt regime'),
-    t('Watering regime'),
-    t('Pesticide regime'),
-    t('pH regime'),
-    t('Other perturbation'),
-  ));
-
-  $form['treatment'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('<div class="fieldset-title">TREATMENTS:</div>'),
-  );
-
-  $form['treatment']['check'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('My Common Garden experiment used treatments/regimes/perturbations.'),
-  );
-
-  foreach ($treatment_options as $option) {
-    $form['treatment']["$option"] = array(
-      '#type' => 'checkbox',
-      '#title' => t("@opt", array('@opt' => $option)),
-      '#states' => array(
-        'visible' => array(
-          ':input[name="study_info[treatment][check]"]' => array('checked' => TRUE),
-        ),
-      ),
-    );
-    $form['treatment']["$option-description"] = array(
-      '#type' => 'textfield',
-      '#description' => t("@opt Description *", array('@opt' => $option)),
-      '#states' => array(
-        'visible' => array(
-          ':input[name="study_info[treatment][' . $option . ']"]' => array('checked' => TRUE),
-          ':input[name="study_info[treatment][check]"]' => array('checked' => TRUE),
-        ),
-      ),
-    );
-  }
+  tppsc_page2_add_control_fields(array_merge($form_bus,
+    ['type' => 'treatment', 'label' => 'Treatment']));
 }
 
-/**
- * This function creates fields for the plantation study type.
- *
- * @param array $form
- *   The form to be populated.
- */
-function tppsc_plantation(array &$form) {
-
-  $form['#title'] = t('<div class="fieldset-title">Plantation Information:</div>');
-
-  $form['season'] = array(
-    '#type' => 'checkboxes',
-    '#title' => t('Seasons (select all that apply): *'),
-    '#options' => drupal_map_assoc(array(
-      t('Spring'),
-      t('Summer'),
-      t('Fall'),
-      t('Winter'),
-    )),
-    '#description' => t('If you do not know which season your samples were collected, please select all.'),
-  );
-
-  $num_arr = array();
-  $num_arr[0] = '- Select -';
-  for ($i = 1; $i <= 30; $i++) {
-    $num_arr[$i] = $i;
-  }
-
-  $form['assessions'] = array(
-    '#type' => 'select',
-    '#title' => t('Number of times the populations were assessed (on average): *'),
-    '#options' => $num_arr,
-  );
-
-  $treatment_options = drupal_map_assoc(array(
-    t('Seasonal environment'),
-    t('Antibiotic regime'),
-    t('Chemical administration'),
-    t('Disease status'),
-    t('Fertilizer regime'),
-    t('Fungicide regime'),
-    t('Gaseous regime'),
-    t('Gravity Growth hormone regime'),
-    t('Herbicide regime'),
-    t('Mechanical treatment'),
-    t('Mineral nutrient regime'),
-    t('Non-mineral nutrient regime'),
-    t('Salt regime'),
-    t('Watering regime'),
-    t('Pesticide regime'),
-    t('pH regime'),
-    t('Other perturbation'),
-  ));
-
-  $form['treatment'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('<div class="fieldset-title">Treatments:</div>'),
-  );
-
-  $form['treatment']['check'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('My Plantation experiment used treatments/regimes/perturbations.'),
-  );
-
-  foreach ($treatment_options as $option) {
-    $form['treatment']["$option"] = array(
-      '#type' => 'checkbox',
-      '#title' => t("@opt", array('@opt' => $option)),
-      '#states' => array(
-        'visible' => array(
-          ':input[name="study_info[treatment][check]"]' => array('checked' => TRUE),
-        ),
-      ),
-    );
-    $form['treatment']["$option-description"] = array(
-      '#type' => 'textfield',
-      '#description' => t("@opt Description *", array('@opt' => $option)),
-      '#states' => array(
-        'visible' => array(
-          ':input[name="study_info[treatment][' . $option . ']"]' => array('checked' => TRUE),
-          ':input[name="study_info[treatment][check]"]' => array('checked' => TRUE),
-        ),
-      ),
-    );
-  }
-}
-
-// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-// Code below tested!
-//
 /**
  * Creates fields for the items that have control options.
  *
