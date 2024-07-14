@@ -187,21 +187,32 @@ function tppsc_growth_chamber(array $form_bus) {
 }
 
 /**
- * This function creates fields for the greenhouse study type.
+ * This function creates fields for the growth chamber study type.
  *
- * @param array $form
- *   The form to be populated.
+ * @param array $form_bus
+ *   Data to build form.
  */
-function tppsc_greenhouse(array &$form) {
+function tppsc_greenhouse(array $form_bus) {
+  $form_bus['form']['study_info']['#title'] = t('Growth Chamber Information:');
+  $form_bus['group'] = 'growth_chamber';
 
-  $form['#title'] = t('<div class="fieldset-title">Greenhouse Information:</div>');
-
-  tppsc_page2_add_control_fields($form, 'humidity', 'Air humidity');
-  tppsc_page2_add_control_fields($form, 'light', 'Light Intensity');
+  // Note: no 'CO2'. 'growth_chamber' has 'CO2'.
+  tppsc_page2_add_control_fields(array_merge($form_bus,
+    ['type' => 'humidity', 'label' => 'Air Humidity level']));
+  tppsc_page2_add_control_fields(array_merge($form_bus,
+    ['type' => 'light', 'label' => 'Light Intensity level']));
   tppsc_page2_add_control_fields(array_merge($form_bus,
     ['type' => 'temp', 'label' => 'Temperature']));
-  //tppsc_rooting($form_bus['subform']);
+
+  // @TODO New fields. Check names.
+  tppsc_page2_add_control_fields(array_merge($form_bus,
+    ['type' => 'growth_medium', 'label' => 'Growth Medium']));
+  tppsc_page2_add_control_fields(array_merge($form_bus,
+    ['type' => 'ph_growth_medium', 'label' => 'pH of the growth medium']));
+  tppsc_page2_add_control_fields(array_merge($form_bus,
+    ['type' => 'treatment', 'label' => 'Treatment']));
 }
+
 
 /**
  * This function creates fields for the common garden study type.
