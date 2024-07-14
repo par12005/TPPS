@@ -931,6 +931,8 @@ function tpps_element_info_alter(&$type) {
     $type['textfield']['#maxlength'] = 512;
   }
   $type['managed_file']['#process'][] = 'tpps_managed_file_process';
+
+  // Form API elements which support '#required_when_visible' feature.
   // Add required field validation and (optionally) field's parents and name.
   $type['managed_file']['#process'][] = 'tpps_form_field_process';
   $type['textfield']['#process'][] = 'tpps_form_field_process';
