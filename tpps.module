@@ -104,6 +104,10 @@ define('TPPS_EXP_DESIGN_EXPERIMENTAL', 4);
 // Plantation.
 define('TPPS_EXP_DESIGN_PLANTATION', 5);
 
+// Controlled selectbox.
+define('TPPS_CONTROLLED', 1);
+define('TPPS_UNCONTROLLED', 2);
+
 module_load_include('inc', 'tpps', 'includes/common');
 
 // WARNING:

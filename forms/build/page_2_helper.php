@@ -19,7 +19,6 @@
  *   The populated form.
  */
 function tpps_study_date($type, array &$form, array &$form_state) {
-
   $form[$type . 'Date'] = array(
     '#type' => 'fieldset',
     '#tree' => TRUE,
@@ -546,8 +545,8 @@ function tpps_page2_add_control_fields(array &$form, $type, $label) {
     '#title' => t('@label controlled or uncontrolled: *', ['@label' => $label]),
     '#options' => [
       0 => t('- Select -'),
-      1 => t('Controlled'),
-      2 => t('Uncontrolled'),
+      TPPS_CONTROLLED => t('Controlled'),
+      TPPS_UNCONTROLLED => t('Uncontrolled'),
     ],
   ];
   $form[$type]['controlled'] = [
@@ -555,7 +554,9 @@ function tpps_page2_add_control_fields(array &$form, $type, $label) {
     '#title' => t('Controlled @label Value: *', ['@label' => $label]),
     '#states' => [
       'visible' => [
-        ":input[name=\"study_info[$type][option]\"]" => ['value' => 1],
+        ":input[name=\"study_info[$type][option]\"]" => [
+          'value' => TPPS_CONTROLLED,
+        ],
       ],
     ],
   ];
@@ -564,7 +565,9 @@ function tpps_page2_add_control_fields(array &$form, $type, $label) {
     '#title' => t('Average @label Value: *', ['@label' => $label]),
     '#states' => [
       'visible' => [
-        ":input[name=\"study_info[$type][option]\"]" => ['value' => 2],
+        ":input[name=\"study_info[$type][option]\"]" => [
+          'value' => TPPS_UNCONTROLLED,
+        ],
       ],
     ],
   ];
@@ -572,10 +575,14 @@ function tpps_page2_add_control_fields(array &$form, $type, $label) {
   if ($type == 'ph') {
     // Replace (not add).
     $form[$type]['controlled']['#states']['visible'] = [
-      ':input[name="study_info[rooting][ph][option]"]' => ['value' => 1],
+      ':input[name="study_info[rooting][ph][option]"]' => [
+        'value' => TPPS_CONTROLLED,
+      ],
     ];
     $form[$type]['uncontrolled']['#states']['visible'] = [
-      ':input[name="study_info[rooting][ph][option]"]' => ['value' => 2],
+      ':input[name="study_info[rooting][ph][option]"]' => [
+        'value' => TPPS_UNCONTROLLED,
+      ],
     ];
   }
 }

@@ -580,8 +580,8 @@ function tppsc_page2_add_control_fields(array $form_bus) {
     '#title' => t('@label controlled or uncontrolled: *', ['@label' => $label]),
     '#options' => [
       0 => t('- Select -'),
-      1 => t('Controlled'),
-      2 => t('Uncontrolled'),
+      TPPS_CONTROLLED => t('Controlled'),
+      TPPS_UNCONTROLLED => t('Uncontrolled'),
     ],
   ];
   $subform[$type]['controlled'] = [
@@ -589,7 +589,9 @@ function tppsc_page2_add_control_fields(array $form_bus) {
     '#title' => t('Controlled @label Value: *', ['@label' => $label]),
     '#states' => [
       'visible' => [
-        ":input[name=\"study_info[$type][option]\"]" => ['value' => 1],
+        ":input[name=\"study_info[$type][option]\"]" => [
+          'value' => TPPS_CONTROLLED,
+        ],
       ],
     ],
   ];
@@ -598,18 +600,24 @@ function tppsc_page2_add_control_fields(array $form_bus) {
     '#title' => t('Average @label Value: *', ['@label' => $label]),
     '#states' => [
       'visible' => [
-        ":input[name=\"study_info[$type][option]\"]" => ['value' => 2],
+        ":input[name=\"study_info[$type][option]\"]" => [
+          'value' => TPPS_UNCONTROLLED,
+        ],
       ],
     ],
   ];
 
   if ($type == 'ph') {
     // Replace (not add).
-    $subform[$type]['controlled']['#states']['visible'] = [
-      ':input[name="study_info[rooting][ph][option]"]' => ['value' => 1],
+    $form[$type]['controlled']['#states']['visible'] = [
+      ':input[name="study_info[rooting][ph][option]"]' => [
+        'value' => TPPS_CONTROLLED,
+      ],
     ];
-    $subform[$type]['uncontrolled']['#states']['visible'] = [
-      ':input[name="study_info[rooting][ph][option]"]' => ['value' => 2],
+    $form[$type]['uncontrolled']['#states']['visible'] = [
+      ':input[name="study_info[rooting][ph][option]"]' => [
+        'value' => TPPS_UNCONTROLLED,
+      ],
     ];
   }
 }
