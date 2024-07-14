@@ -182,7 +182,7 @@
           .html('<div class="alert alert-block alert-danger messages error">'
             + Drupal.t('There was a problem checking the status of job with '
             + 'id @job_id', {'@job_id': jid})+ '</div>'
-          );
+          ).show();
       }
       // If this job is completed, check all the other jobs.
       else if (job.status === "Completed") {
@@ -198,7 +198,7 @@
         // If no jobs are pending, enable the submit button.
         if (jobs_complete) {
           $(vcfPreValidateButton).prop('disabled', false);
-          console.log(Drupal.t('All the jobs was completed.'));
+          console.log(Drupal.t('All the jobs were completed.'));
           var message = '<div class="alert alert-block alert-success messages '
             + 'status">' + Drupal.t('VCF File pre-validation completed!')
             + '</div>';
@@ -212,7 +212,7 @@
           else {
             $('.review-and-submit-button').prop('disabled', false);
           }
-          $('.pre-validate-message').html(message);
+          $('.pre-validate-message').html(message).show();
         }
         // Otherwise, log the pending jobs.
         else {
@@ -288,7 +288,7 @@
         .html('<div class="alert alert-block alert-danger messages error">'
           + Drupal.t('Please upload your VCF file before clicking the '
           + 'pre-validate button') + '</div>'
-        );
+        ).show();
     }
     else {
       $('.review-and-submit-button').prop('disabled', true);
@@ -306,7 +306,7 @@
         if (typeof jobs === 'string') {
           $('.pre-validate-message')
             .html('<div class="alert alert-block alert-danger messages error">'
-              + jobs + '</div>');
+              + jobs + '</div>').show();
           $('.review-and-submit-button').prop('disabled', false);
           $(vcfPreValidateButton).prop('disabled', false);
         }
@@ -314,7 +314,8 @@
           $('.pre-validate-message')
             .html('<div class="alert alert-block alert-danger messages error">'
               + Drupal.t('There was a problem with pre-validating your VCF '
-              + 'files. Please reload the page and try again') + '</div>');
+              + 'files. Please reload the page and try again')
+              + '</div>').show();
           $('.review-and-submit-button').prop('disabled', false);
           $(vcfPreValidateButton).prop('disabled', false);
         }
@@ -330,13 +331,13 @@
           $('.pre-validate-message')
             .html('<img src="/misc/throbber-active.gif"> '
               + Drupal.t('Pre-validating VCF files. This may take some time...')
-            );
+            ).show();
         }
       })
       .fail(function(jobs) {
         $('.review-and-submit-button').prop('disabled', false);
         $(vcfPreValidateButton).prop('disabled', false);
-        console.log('Status Check Failed.');
+        console.log('Check of the status of VCF-file pre-validation failed.');
         console.log(jobs);
       });
     }
