@@ -165,25 +165,25 @@ function tppsc_natural_population(array &$form) {
  *   Data to build form.
  */
 function tppsc_growth_chamber(array $form_bus) {
-  //tpps_form_bus_debug($form_bus);
-  $form_bus['subform'] = &$form['study_info'];
-  $form_bas['subform']['#title'] = t('<div class="fieldset-title">'
-    . 'Growth Chamber Information:</div>');
-  if ($form_bus['is_tppsC']) {
-    tppsc_page2_add_control_fields(array_merge($form_bus,
-      ['type' => 'co2', 'label' => 'CO2']));
-  }
-  else {
-    tppsc_page2_add_control_fields(array_merge($form_bus,
-      ['type' => 'co2', 'label' => 'CO2']));
-    tppsc_page2_add_control_fields(array_merge($form_bus,
-      ['type' => 'humidity', 'label' => 'Air humidity']));
-    tppsc_page2_add_control_fields(array_merge($form_bus,
-      ['type' => 'light', 'label' => 'Light Intensity']));
+  $form_bus['form']['study_info']['#title'] = t('Growth Chamber Information:');
+  $form_bus['group'] = 'growth_chamber';
 
-    tppsc_page2_add_temp($subform);
-    tppsc_rooting($subform);
-  }
+  tppsc_page2_add_control_fields(array_merge($form_bus,
+    ['type' => 'co2', 'label' => 'CO2 level']));
+  tppsc_page2_add_control_fields(array_merge($form_bus,
+    ['type' => 'humidity', 'label' => 'Air Humidity level']));
+  tppsc_page2_add_control_fields(array_merge($form_bus,
+    ['type' => 'light', 'label' => 'Light Intensity level']));
+  tppsc_page2_add_control_fields(array_merge($form_bus,
+    ['type' => 'temp', 'label' => 'Temperature']));
+
+  // @TODO New fields. Check names.
+  tppsc_page2_add_control_fields(array_merge($form_bus,
+    ['type' => 'growth_medium', 'label' => 'Growth Medium']));
+  tppsc_page2_add_control_fields(array_merge($form_bus,
+    ['type' => 'ph_growth_medium', 'label' => 'pH of the growth medium']));
+  tppsc_page2_add_control_fields(array_merge($form_bus,
+    ['type' => 'treatment', 'label' => 'Treatment']));
 }
 
 /**
@@ -198,8 +198,9 @@ function tppsc_greenhouse(array &$form) {
 
   tppsc_page2_add_control_fields($form, 'humidity', 'Air humidity');
   tppsc_page2_add_control_fields($form, 'light', 'Light Intensity');
-  tppsc_page2_add_temp($form);
-  tppsc_rooting($form);
+  tppsc_page2_add_control_fields(array_merge($form_bus,
+    ['type' => 'temp', 'label' => 'Temperature']));
+  //tppsc_rooting($form_bus['subform']);
 }
 
 /**
@@ -421,116 +422,9 @@ function tppsc_plantation(array &$form) {
   }
 }
 
-/**
- * This function creates fields for rooting information.
- *
- * @param array $form
- *   The form to be populated.
- */
-function tppsc_rooting(array &$form) {
-
-  $form['rooting'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('<div class="fieldset-title">ROOTING INFORMATION:</div>'),
-    '#tree' => TRUE,
-  );
-
-  $form['rooting']['option'] = array(
-    '#type' => 'select',
-    '#title' => t('Rooting Type: *'),
-    '#options' => array(
-      0 => t('- Select -'),
-      'Aeroponics' => t('Aeroponics'),
-      'Hydroponics' => t('Hydroponics'),
-      'Soil' => t('Soil'),
-    ),
-  );
-
-  $form['rooting']['soil'] = array(
-    '#type' => 'fieldset',
-    '#states' => array(
-      'visible' => array(
-        ':input[name="study_info[rooting][option]"]' => array('value' => 'Soil'),
-      ),
-    ),
-  );
-
-  $form['rooting']['soil']['type'] = array(
-    '#type' => 'select',
-    '#title' => t('Soil Type: *'),
-    '#options' => array(
-      0 => t('- Select -'),
-      'Sand' => t('Sand'),
-      'Peat' => t('Peat'),
-      'Clay' => t('Clay'),
-      'Mixed' => t('Mixed'),
-      'Other' => t('Other'),
-    ),
-  );
-
-  $form['rooting']['soil']['other'] = array(
-    '#type' => 'textfield',
-    '#states' => array(
-      'visible' => array(
-        ':input[name="study_info[rooting][soil][type]"]' => array('value' => 'Other'),
-      ),
-    ),
-  );
-
-  $form['rooting']['soil']['container'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Soil Container Type: *'),
-  );
-
-  tppsc_page2_add_control_fields($form['rooting'], 'ph', 'pH');
-
-  $treatment_options = drupal_map_assoc(array(
-    t('Seasonal Environment'),
-    t('Air temperature regime'),
-    t('Soil Temperature regime'),
-    t('Antibiotic regime'),
-    t('Chemical administration'),
-    t('Disease status'),
-    t('Fertilizer regime'),
-    t('Fungicide regime'),
-    t('Gaseous regime'),
-    t('Gravity Growth hormone regime'),
-    t('Mechanical treatment'),
-    t('Mineral nutrient regime'),
-    t('Humidity regime'),
-    t('Non-mineral nutrient regime'),
-    t('Radiation (light, UV-B, X-ray) regime'),
-    t('Rainfall regime'),
-    t('Salt regime'),
-    t('Watering regime'),
-    t('Water temperature regime'),
-    t('Pesticide regime'),
-    t('pH regime'),
-    t('other perturbation'),
-  ));
-
-  $form['rooting']['treatment'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('<div class="fieldset-title">TREATMENTS: *</div>'),
-  );
-
-  foreach ($treatment_options as $option) {
-    $form['rooting']['treatment']["$option"] = array(
-      '#type' => 'checkbox',
-      '#title' => t("@opt", array('@opt' => $option)),
-    );
-    $form['rooting']['treatment']["$option-description"] = array(
-      '#type' => 'textfield',
-      '#description' => t("@opt Description *", array('@opt' => $option)),
-      '#states' => array(
-        'visible' => array(
-          ':input[name="study_info[rooting][treatment][' . $option . ']"]' => array('checked' => TRUE),
-        ),
-      ),
-    );
-  }
-}
-
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// Code below tested!
+//
 /**
  * Creates fields for the items that have control options.
  *
@@ -541,106 +435,188 @@ function tppsc_rooting(array &$form) {
  *   Form Bus.
  */
 function tppsc_page2_add_control_fields(array $form_bus) {
-
   // The form to be updated.
-  $form = &$form_bus['form'];
-
-  $is_tppsC = $form_bus['is_tppsC'];
-  $parents = $form_bus['parents'];
+  $subform = &$form_bus['form']['study_info'];
   // The machine-readable type of control options.
   $type = $form_bus['type'];
+  $suffix = ($type == 'growth_medium' ? t('used in') : t('within'));
   // The human-readable label for the control options.
   $label = $form_bus['label'];
 
-  //tpps_form_bus_debug($form_bus);
-  $subform = &$form['study_info'];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Yes/No field.
+  $field_name = $type . '_' . $form_bus['group'];
+  if ($type == 'treatment') {
+    $title = t('Do you have information about the treatments to these plants?');
+  }
+  else {
+    $title = t('Do you have information about the <strong>@type</strong> '
+      . '@suffix the @group?',
+      [
+        '@type' => $label,
+        '@suffix' => $suffix,
+        '@group' => str_replace('_', ' ', $form_bus['group']),
+      ]
+    );
+  }
+  tpps_form_add_yesno_field(array_merge($form_bus, [
+    'stage' => TPPS_PAGE_2,
+    'parents' => ['study_info'],
+    'field_name' => $field_name,
+    '#title' => $title,
+    '#default_value' => 0,
+    '#required' => FALSE,
+  ]));
 
   $subform[$type] = [
     '#type' => 'fieldset',
     '#tree' => TRUE,
-  ];
-  if ($is_tppsC) {
-    tpps_form_add_yesno_field(array_merge(
-      ['form' => $form],
-      [
-        'stage' => TPPS_PAGE_3,
-        'parents' => ['study_info'],
-        'field_name' => $type . '_growth_chamber',
-        '#title' => t(
-          'Do you have information about the @type within the growth chamber?',
-          ['@type' => $label]
-        ),
-        '#default_value' => 0,
-        '#required' => TRUE,
-      ]
-    ));
-  }
-  $subform[$type]['option'] = [
-    '#type' => 'select',
-    '#title' => t('@label controlled or uncontrolled: *', ['@label' => $label]),
-    '#options' => [
-      0 => t('- Select -'),
-      TPPS_CONTROLLED => t('Controlled'),
-      TPPS_UNCONTROLLED => t('Uncontrolled'),
-    ],
-  ];
-  $subform[$type]['controlled'] = [
-    '#type' => 'textfield',
-    '#title' => t('Controlled @label Value: *', ['@label' => $label]),
     '#states' => [
       'visible' => [
-        ":input[name=\"study_info[$type][option]\"]" => [
-          'value' => TPPS_CONTROLLED,
-        ],
-      ],
-    ],
-  ];
-  $subform[$type]['uncontrolled'] = [
-    '#type' => 'textfield',
-    '#title' => t('Average @label Value: *', ['@label' => $label]),
-    '#states' => [
-      'visible' => [
-        ":input[name=\"study_info[$type][option]\"]" => [
-          'value' => TPPS_UNCONTROLLED,
-        ],
+        ':input[name="study_info[' . $field_name . ']"]' => ['value' => 'yes'],
       ],
     ],
   ];
 
-  if ($type == 'ph') {
-    // Replace (not add).
-    $form[$type]['controlled']['#states']['visible'] = [
-      ':input[name="study_info[rooting][ph][option]"]' => [
-        'value' => TPPS_CONTROLLED,
+  if ($type == 'treatment') {
+    $subform[$type]['header'] = [
+      '#markup' => t('Which of the following treatments were applied to the plants?'),
+    ];
+    $treatment_options = tppsc_page2_get_treatment_options();
+    foreach ($treatment_options as $option) {
+      $subform[$type][$option] = [
+        '#type' => 'checkbox',
+        '#title' => t($option),
+        '#required_when_visible' => TRUE,
+        '#states' => [
+          'visible' => [
+            ':input[name="study_info[' . $field_name . ']"]' => ['value' => 'yes'],
+          ],
+        ],
+      ];
+      $subform[$type]["$option-description"] = [
+        '#type' => 'textfield',
+        '#title' => t("<strong>$option</strong> Description"),
+        '#required_when_visible' => TRUE,
+        '#states' => [
+          'visible' => [
+            ':input[name="study_info[' . $type . '][' . $option . ']"]' =>
+              ['checked' => TRUE],
+          ],
+        ],
+      ];
+    }
+  }
+  elseif ($type == 'growth_medium') {
+    $subform[$type]['rooting_type'] = [
+      '#type' => 'select',
+      '#title' => t('Rooting Type:'),
+      '#options' => [
+        0 => t('- Select -'),
+        'Aeroponics' => t('Aeroponics'),
+        'Hydroponics' => t('Hydroponics'),
+        'Soil' => t('Soil'),
+      ],
+      '#required_when_visible' => TRUE,
+      '#states' => [
+        'visible' => [
+          ':input[name="study_info[' . $field_name . ']"]' => ['value' => 'yes'],
+        ],
       ],
     ];
-    $form[$type]['uncontrolled']['#states']['visible'] = [
-      ':input[name="study_info[rooting][ph][option]"]' => [
-        'value' => TPPS_UNCONTROLLED,
+  }
+  elseif ($type == 'temp') {
+    $subform[$type]['high'] = [
+      '#type' => 'textfield',
+      '#title' => t('Average <strong>High</strong> Temperature (in degrees Celsius):'),
+      '#required_when_visible' => TRUE,
+      '#states' => [
+        'visible' => [
+          ':input[name="study_info[' . $field_name . ']"]' => ['value' => 'yes'],
+        ],
+      ],
+    ];
+    $subform[$type]['low'] = [
+      '#type' => 'textfield',
+      '#required_when_visible' => TRUE,
+      '#title' => t('Average <strong>Low</strong> Temperature (in degrees Celsius):'),
+      '#states' => [
+        'visible' => [
+          ':input[name="study_info[' . $field_name . ']"]' => ['value' => 'yes'],
+        ],
+      ],
+    ];
+
+  }
+  else {
+    $title = t('Was the <strong>@label</strong> controlled or uncontrolled?',
+      ['@label' => $label]
+    );
+    $subform[$type]['option'] = [
+      '#type' => 'select',
+      '#title' => $title,
+      '#options' => [
+        0 => t('- Select -'),
+        TPPS_CONTROLLED => t('Controlled'),
+        TPPS_UNCONTROLLED => t('Uncontrolled'),
+      ],
+    ];
+    $subform[$type]['controlled'] = [
+      '#type' => 'textfield',
+      '#title' => t('Controlled <strong>@label</strong> Value:', ['@label' => $label]),
+      '#required_when_visible' => TRUE,
+      '#states' => [
+        'visible' => [
+          ":input[name=\"study_info[$type][option]\"]" => [
+            'value' => TPPS_CONTROLLED,
+          ],
+        ],
+      ],
+    ];
+    $subform[$type]['uncontrolled'] = [
+      '#type' => 'textfield',
+      '#title' => t('Uncontrolled <strong>@label</strong> Value:', ['@label' => $label]),
+      '#required_when_visible' => TRUE,
+      '#states' => [
+        'visible' => [
+          ":input[name=\"study_info[$type][option]\"]" => [
+            'value' => TPPS_UNCONTROLLED,
+          ],
+        ],
       ],
     ];
   }
 }
 
 /**
- * Adds 'Temperature Information' fieldset to form.
+ * Gets list of treatment options.
  *
- * @param array $form
- *   Drupal Form Array.
+ * @return array
+ *   Returns list of treatment options.
  */
-function tppsc_page2_add_temp(array &$form) {
-  $form['temp'] = [
-    '#type' => 'fieldset',
-    '#title' => t('<div class="fieldset-title">TEMPERATURE INFORMATION:</div>'),
-    '#description' => t('Please provide temperatures in Degrees Celsius'),
-    '#tree' => TRUE,
-  ];
-  $form['temp']['high'] = [
-    '#type' => 'textfield',
-    '#title' => t('Average High Temperature: *'),
-  ];
-  $form['temp']['low'] = [
-    '#type' => 'textfield',
-    '#title' => t('Average Low Temperature: *'),
+function tppsc_page2_get_treatment_options() {
+  return [
+    'Seasonal Environment',
+    'Air temperature regime',
+    'Soil Temperature regime',
+    'Antibiotic regime',
+    'Chemical administration',
+    'Disease status',
+    'Fertilizer regime',
+    'Fungicide regime',
+    'Gaseous regime',
+    'Gravity Growth hormone regime',
+    'Mechanical treatment',
+    'Mineral nutrient regime',
+    'Humidity regime',
+    'Non-mineral nutrient regime',
+    'Radiation (light, UV-B, X-ray) regime',
+    'Rainfall regime',
+    'Salt regime',
+    'Watering regime',
+    'Water temperature regime',
+    'Pesticide regime',
+    'pH regime',
+    'other perturbation',
   ];
 }

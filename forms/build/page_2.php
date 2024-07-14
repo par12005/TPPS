@@ -44,7 +44,6 @@ function tpps_page_2_create_form_tpps(array &$form, array $form_state) {
   tpps_study_date('Ending', $form, $form_state);
   $form['data_type'] = [
     '#type' => 'select',
-    // TPPSC Note: Relocated.
     '#title' => t('Data Type: *'),
     '#options' => tpps_form_get_data_type_options(),
     '#prefix' => '<legend><span class="fieldset-legend">'
@@ -52,7 +51,6 @@ function tpps_page_2_create_form_tpps(array &$form, array $form_state) {
   ];
   $form['study_type'] = [
     '#type' => 'select',
-    // TPPSC Note: Relocated and renamed.
     '#title' => t('Study Type: *'),
     '#options' => tpps_form_get_experimental_design_options(),
     '#ajax' => [
@@ -113,12 +111,12 @@ function tpps_page_2_create_form_tpps(array &$form, array $form_state) {
 function tpps_page_2_create_form_tppsc(array &$form, array $form_state) {
   $form['study_design'] = [
     '#type' => 'fieldset',
-    '#tree' => TRUE,
+    '#tree' => FALSE,
     '#collapsible' => TRUE,
     '#title' => t('Study Design'),
   ];
-  // Relocated v.2:
-  // $form['data_type'] -> $form['study_design']['data_type'].
+  //// Relocated v.2:
+  //// $form['data_type'] -> $form['study_design']['data_type'].
   $form['study_design']['data_type'] = [
     '#type' => 'select',
     '#title' => t('Data Type'),
@@ -152,29 +150,21 @@ function tpps_page_2_create_form_tppsc(array &$form, array $form_state) {
       ],
     ],
   ];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $form['study_info'] = [
     '#type' => 'fieldset',
     '#title' => t('Study Info'),
     '#tree' => TRUE,
     '#collapsible' => TRUE,
     '#states' => [
-      'invisible' => [
-        [
-          ':input[name="study_design[experimental_design]"]' => [
-            'value' => TPPS_EXP_DESIGN_NATURAL_POPULATION,
-          ],
-        ], 'or', [
-          ':input[name="study_design[experimental_design]"]' => ['value' => 0],
-        ],
+      'visible' => [
+        ':input[name="study_design[experimental_design]"]' => ['visible' => TRUE],
       ],
     ],
   ];
-
 // @TODO Add more fields.
   tppsc_growth_chamber([
     'form' => &$form,
-    'is_tppsC' => TRUE,
-    'parents' => ['study_info'],
   ]);
   tpps_form_autofocus($form, ['study_design', 'data_type']);
 }

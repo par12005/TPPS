@@ -431,9 +431,8 @@ function tpps_form_add_yesno_field(array $form_bus) {
 
   $field_name = $form_bus['field_name'];
   $form_state = &$form_bus['form_state'] ?? [];
-  $parents = array_merge(
-    [$stage], ($form_bus['parents'] ?? []), [$field_name]
-  );
+  $parents = $form_bus['parents'] ?? [];
+  $parents[] = $field_name;
   // Options.
   // Machine names are in lower case to indicate that it's not human readable
   // name which could be localized.
@@ -442,7 +441,6 @@ function tpps_form_add_yesno_field(array $form_bus) {
     $options = [0 => t('- Select -')] + $options;
   }
   // Build field using defaults.
-  //tpps_form_bus_debug($form_bus);
   if (!empty($form_state['saved_values'])) {
     $default_value = drupal_array_get_nested_value($form_state['saved_values'],
         array_merge([$stage], $parents)
@@ -772,10 +770,10 @@ function tpps_form_bus_debug(array $form_bus) {
   $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT
     | DEBUG_BACKTRACE_IGNORE_ARGS, 4);
   dpm(print_r($stack, 1), 'Form Bus Debugger');
-  if ($temp['form']) {
+  if (!empty($temp['form'])) {
     $temp['form'] = '-- removed --';
   }
-  if ($temp['form_state']) {
+  if (!empty($temp['form_state'])) {
     $temp['form_state'] = '-- removed --';
   }
   dpm(print_r($temp, 1));
