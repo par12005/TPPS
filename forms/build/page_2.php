@@ -157,13 +157,19 @@ function tpps_page_2_create_form_tppsc(array &$form, array $form_state) {
     '#title' => t('Study Info'),
     '#tree' => TRUE,
     '#collapsible' => TRUE,
-    '#required_when_visible' => TRUE,
     '#states' => [
-      'visible' => [
-        ':input[name="study_design[experimental_design]"]' => ['visible' => TRUE],
+      'invisible' => [
+        [
+          ':input[name="study_design[experimental_design]"]' => [
+            'value' => TPPS_EXP_DESIGN_NATURAL_POPULATION,
+          ],
+        ], 'or', [
+          ':input[name="study_design[experimental_design]"]' => ['value' => 0],
+        ],
       ],
     ],
   ];
+
 // @TODO Add more fields.
   tppsc_growth_chamber([
     'form' => &$form,
