@@ -164,7 +164,7 @@ function tppsc_natural_population(array &$form) {
  * @param array $form_bus
  *   Data to build form.
  */
-function tppsc_growth_chamber(array $form_bus) {
+function tppsc_page2_growth_chamber(array $form_bus) {
   $form_bus['form']['study_info']['#title'] = t('Growth Chamber Information:');
   $form_bus['group'] = 'growth_chamber';
 
@@ -192,9 +192,9 @@ function tppsc_growth_chamber(array $form_bus) {
  * @param array $form_bus
  *   Data to build form.
  */
-function tppsc_greenhouse(array $form_bus) {
-  $form_bus['form']['study_info']['#title'] = t('Growth Chamber Information:');
-  $form_bus['group'] = 'growth_chamber';
+function tppsc_page2_greenhouse(array $form_bus) {
+  $form_bus['form']['study_info']['#title'] = t('GreenHouse Information:');
+  $form_bus['group'] = 'greenhouse';
 
   // Note: no 'CO2'. 'growth_chamber' has 'CO2'.
   tppsc_page2_add_control_fields(array_merge($form_bus,
@@ -212,6 +212,32 @@ function tppsc_greenhouse(array $form_bus) {
   tppsc_page2_add_control_fields(array_merge($form_bus,
     ['type' => 'treatment', 'label' => 'Treatment']));
 }
+
+/**
+ * This function creates fields for the growth chamber study type.
+ *
+ * @param array $form_bus
+ *   Data to build form.
+ */
+function tppsc_page2_plantation(array $form_bus) {
+  $form_bus['form']['study_info']['#title'] = t('Plantation Information:');
+  $form_bus['group'] = 'plantation';
+
+  tppsc_page2_add_control_fields(array_merge($form_bus,
+    ['type' => 'treatment', 'label' => 'Treatment']));
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /**

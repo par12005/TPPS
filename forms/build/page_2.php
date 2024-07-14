@@ -162,9 +162,15 @@ function tpps_page_2_create_form_tppsc(array &$form, array $form_state) {
       ],
     ],
   ];
+
+
 // @TODO Add more fields.
-  tppsc_growth_chamber([
-    'form' => &$form,
-  ]);
+
+
+  tppsc_page2_growth_chamber(
+    ['form' => &$form]);
+  tppsc_page2_greenhouse(['form' => &$form]);
+  tppsc_page2_plantation(['form' => &$form]);
+
   tpps_form_autofocus($form, ['study_design', 'data_type']);
 }
