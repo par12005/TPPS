@@ -1003,7 +1003,6 @@ function tpps_add_dropdown_file_selector(array $form_bus) {
       'local' => t('My @file_name is stored locally', $params),
       'remote' => t('My @file_name is stored at @hostname', $params),
     ],
-    '#default_value' => '',
     '#states' => [
       'visible' => [
         $snps_fieldset_name . '[genotyping-type]"]' =>
@@ -1013,6 +1012,7 @@ function tpps_add_dropdown_file_selector(array $form_bus) {
       ],
     ],
   ];
+
   // Field was relocated (v.2).
   // ['saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype', 'files'] =>
   // ['saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype', $snps_fieldset].
