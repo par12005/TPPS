@@ -84,7 +84,7 @@ function tppsc_page2_plantation(array $form_bus) {
  */
 function tppsc_page2_common_garden(array $form_bus) {
   $form_bus['form']['study_info']['#title'] = t('Common Garden Information:');
-  $form_bus['group'] = 'plantation';
+  $form_bus['group'] = 'common_garden';
 
   $subform = &$form_bus['form']['study_info'];
 
@@ -187,20 +187,66 @@ function tppsc_page2_add_control_fields(array $form_bus) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Yes/No field.
-  $field_name = $type . '_' . $form_bus['group'];
+  $field_name = $type;
   if ($type == 'treatment') {
     $title = t('Do you have information about the treatments to these plants?');
   }
   else {
     $title = t('Do you have information about the <strong>@type</strong> '
-      . '@suffix the @group?',
+      . '@suffix the <span class="group">group</span>?',
       [
         '@type' => $label,
         '@suffix' => $suffix,
-        '@group' => str_replace('_', ' ', $form_bus['group']),
       ]
     );
   }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // States.
+  if ($type == 'co2') {
+    $states = [
+      'visible' => [
+        ':input[name="experimental_design"]'
+        => ['value' => TPPS_EXP_DESIGN_GROWTH_CHAMBER],
+      ],
+    ];
+  }
+  elseif (
+    in_array($type, ['humidity', 'light', 'temp', 'growth_medium', 'ph_growth_medium'])
+  ) {
+    $states = [
+      'visible' => [
+        [
+          ':input[name="experimental_design"]'
+          => ['value' => TPPS_EXP_DESIGN_GROWTH_CHAMBER],
+        ], 'or', [
+          ':input[name="experimental_design"]'
+          => ['value' => TPPS_EXP_DESIGN_GREENHOUSE],
+        ],
+      ],
+    ];
+  }
+  elseif ($type == 'treatment') {
+    $states = [
+      'visible' => [
+        [
+          ':input[name="experimental_design"]'
+          => ['value' => TPPS_EXP_DESIGN_GROWTH_CHAMBER],
+        ], 'or', [
+          ':input[name="experimental_design"]'
+          => ['value' => TPPS_EXP_DESIGN_GREENHOUSE],
+        ], 'or', [
+          ':input[name="experimental_design"]'
+          => ['value' => TPPS_EXP_DESIGN_EXPERIMENTAL],
+        ], 'or', [
+          ':input[name="experimental_design"]'
+          => ['value' => TPPS_EXP_DESIGN_PLANTATION],
+        ],
+      ],
+    ];
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
   tpps_form_add_yesno_field(array_merge($form_bus, [
     'stage' => TPPS_PAGE_2,
     'parents' => ['study_info'],
@@ -208,11 +254,13 @@ function tppsc_page2_add_control_fields(array $form_bus) {
     '#title' => $title,
     '#default_value' => 0,
     '#required' => FALSE,
+    '#states' => $states ?? [],
   ]));
 
   $subform[$type] = [
     '#type' => 'fieldset',
     '#tree' => TRUE,
+    //'#states' => $states ?? [],
     '#states' => [
       'visible' => [
         ':input[name="study_info[' . $field_name . ']"]' => ['value' => 'yes'],
