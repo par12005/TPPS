@@ -810,7 +810,7 @@ class Submission {
    */
   public function getFormId() {
     // $is_tppsc = (($form_state['tpps_type'] ?? NULL) == 'tppsc');
-    return $this->state['saved_values']['front_page']['form_id']
+    return $this->state['saved_values']['frontpage']['form_id']
       ?? $this->state['build_info']['form_id'] ?? 'tpps_main';
   }
 
@@ -943,7 +943,7 @@ class Submission {
    * @return string
    *   Returns Submission's status
    */
-  public function getStatus(bool $reset = FALSE) {
+  public function &getStatus(bool $reset = FALSE) {
     if (empty($this->status) && !empty($this->accession)) {
       $this->load();
     }
