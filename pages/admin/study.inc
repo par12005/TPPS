@@ -750,7 +750,7 @@ function tpps_admin_panel_validate($form, &$form_state) {
     }
 
     if ($form_state['triggering_element']['#name'] == 'change_submission_owner') {
-      $new_user = user_load_by_mail($form_state['values']['change_owner']);
+      $new_user = user_load_by_mail($form_state['values']['new_owner']);
       if (empty($new_user)) {
         form_set_error('change_owner', t('Invalid user account'));
       }
@@ -1212,7 +1212,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
           '@new_user' => $new_user->uid,
         ]
       ));
-      $submission->uid = $new_user->uid;
+      $submission->setUid($new_user->uid);
       $submission->save();
       break;
 

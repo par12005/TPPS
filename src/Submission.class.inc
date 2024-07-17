@@ -267,6 +267,7 @@ class Submission {
     // Update sharedState only if this value was there before.
     $key_exists = FALSE;
     drupal_array_get_nested_value($this->sharedState, $parents, $key_exists);
+    // @TODO Shared State could have different $parents.
     if ($key_exists || $force) {
       drupal_array_set_nested_value($this->sharedState, $parents, $value);
     }
@@ -568,6 +569,7 @@ class Submission {
         'status' => $this->status ?? TPPS_SUBMISSION_STATUS_INCOMPLETE,
         'submission_state' => serialize($this->state ?? []),
         'shared_state' => serialize($this->sharedState ?? []),
+        'uid' => $this->uid,
       ])
       ->condition('accession', $this->accession)
       ->execute();
