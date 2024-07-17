@@ -656,6 +656,7 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
   // Validate 'Other' fieldset fields.
   tpps_validate_genotype_other($genotype, $org_num, $form, $form_state);
 
+  $snps_fieldset = 'SNPs';
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Note: This check was outside of the SNPs fieldset check. Maybe it's by
   // mistake but lets leave it as is.
@@ -672,10 +673,9 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
           );
         }
         else {
-          $form_state['values'][$id]['genotype'][$snps_fieldset]['vcf'] = $fid;
+          $form_state['values'][$org_num]['genotype'][$snps_fieldset]['vcf'] = $fid;
           $vcf = $fid;
-          $form_state['values'][$id]['genotype'][$snps_fieldset]['local_vcf_check'] = NULL;
-          $form_state['values'][$id]['genotype'][$snps_fieldset]['local_vcf'] = NULL;
+          $form_state['values'][$org_num]['genotype'][$snps_fieldset]['local_vcf'] = NULL;
         }
       }
       else {
