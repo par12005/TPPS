@@ -220,11 +220,11 @@ a.fieldset-title {
   float: both;
 }
 .tppsc-form .navigation-bar .stage {
-  margin: 0 20px;
+  margin: 0 2%;
   /*white-space: nowrap;*/
   float: left;
   display: inline-block;
-  font-size: 18px;
+  font-size: 16px;
   min-width: 15%;
   max-width: 15%;
   min-height: 60px;
@@ -240,6 +240,7 @@ a.fieldset-title {
 .tppsc-form .navigation-bar .stage.incomplete {
   font-style: italic;
 }
+/* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 /* Round error/status/warning messages */
 form div.error,
 form div.status,
