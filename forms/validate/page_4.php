@@ -710,15 +710,15 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
   $snps = $genotype[$snps_fieldset] ?? NULL;
   $ref_genome = $snps['ref-genome'] ?? NULL;
 
-  $genotyping_type = $genotype[$snps_fieldset]['genotyping-type'] ?? NULL;
+  $genotyping_type = $snps['genotyping-type'] ?? NULL;
   // WARNING: 'maker-type' is array because multiple values could be selected.
   $marker_type = $genotype['marker-type'] ?? NULL;
-  $file_type = $genotype[$snps_fieldset]['file-type'] ?? NULL;
+  $file_type = $snps['file-type'] ?? NULL;
   // File fields:
-  $vcf = $genotype[$snps_fieldset]['vcf'] ?? 0;
-  $snps_assay = $genotype[$snps_fieldset]['snps-assay'] ?? 0;
-  $assay_design = $genotype[$snps_fieldset]['assay-design'] ?? 0;
-  $assoc_file = $genotype[$snps_fieldset]['snps-association'] ?? 0;
+  $vcf = $snps['vcf'] ?? 0;
+  $snps_assay = $snps['snps-assay'] ?? 0;
+  $assay_design = $snps['assay-design'] ?? 0;
+  $assoc_file = $snps['snps-association'] ?? 0;
 
   $page3 = $form_state['saved_values'][TPPS_PAGE_3];
 
@@ -860,15 +860,15 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
   if ($file_type == TPPS_GENOTYPING_FILE_TYPE_VCF) {
     // Validate 'Remote/cluster VCF' field.
     if (
-      $genotype[$snps_fieldset]['vcf_file-location'] == 'remote'
-      && trim($genotype[$snps_fieldset]['local_vcf']) == ''
+      $snps['vcf_file-location'] == 'remote'
+      && trim($snps['local_vcf']) == ''
       && !$vcf
     ) {
       tpps_form_error_required($form_state,
         [$id, 'genotype', $snps_fieldset, 'local_vcf']
       );
     }
-    if (!$vcf && $genotype[$snps_fieldset]['vcf_file-location'] == 'local') {
+    if (!$vcf && $snps['vcf_file-location'] == 'local') {
       // && trim($form_state['values'][$id]['genotype'][$snps_fieldset]['local_vcf']) == ''
       tpps_form_error_required($form_state,
         [$id, 'genotype', $snps_fieldset, 'vcf']
@@ -879,8 +879,8 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
         !empty($assembly) && !form_get_errors()
         && in_array($ref_genome, ['manual', 'manual2', 'url'])
       ) {
-        if (trim($genotype[$snps_fieldset]['local_vcf']) != '') {
-          $local_vcf_path = trim($genotype[$snps_fieldset]['local_vcf']);
+        if (trim($snps['local_vcf']) != '') {
+          $local_vcf_path = trim($snps['local_vcf']);
           $vcf_content = gzopen($local_vcf_path, 'r');
         }
         else {
@@ -945,11 +945,16 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
       $accession = $form_state['accession'];
       $submission = new Submission($accession);
 
+    //dpm( $submission->state['vcf_replace'], 1);
+    //dpm( ($snps['local_vcf']), 2);
+    //dpm( $submission->state['vcf_validated'], 3);
+
+
       // VCF pre-validation is missing.
       if (
         empty($submission->state['vcf_replace'])
-        && trim($genotype[$snps_fieldset]['local_vcf']) != ''
-        && !($submission->state['vcf_validated'] ?? FALSE)
+        && trim($snps['local_vcf']) != ''
+        && ($submission->state['vcf_validated'] ?? NULL) !== TRUE
       ) {
         form_set_error(
           "$id][genotype][$snps_fieldset][local_vcf",
@@ -959,7 +964,8 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
       }
       // Pre-validation failed and there are an errors.
       if (
-        ($submission->state['vcf_validated'] ?? NULL)
+        !empty($submission->state['vcf_validated'])
+        && $submission->state['vcf_validated'] === TRUE
         && empty($submission->state['vcf_val_errors'])
       ) {
         drupal_set_message(t('VCF files pre-validated. Skipping VCF file validation'));
@@ -970,8 +976,8 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
         if ($vcf) {
           $vcf_file = file_load($vcf);
         }
-        if (trim($genotype[$snps_fieldset]['local_vcf']) != '') {
-          $location = trim($genotype[$snps_fieldset]['local_vcf']);
+        if (trim($snps['local_vcf']) != '') {
+          $location = trim($snps['local_vcf']);
         }
         else {
           $location = tpps_get_location($vcf_file->uri);
@@ -1115,7 +1121,7 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
           if (!form_get_errors()) {
             // Check that SNP IDs match Genotype Assay.
             $snps_id_col = $groups['SNP ID'][1];
-            $assoc_no_header = $genotype[$snps_fieldset]['snps-association-no-header'] ?? FALSE;
+            $assoc_no_header = $snps['snps-association-no-header'] ?? FALSE;
 
             $assay_snps = tpps_file_headers($snps_assay);
             unset($assay_snps[key($assay_snps)]);
@@ -1186,7 +1192,7 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
           // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
           // SNPs Population Structure file.
           if (
-            $genotype[$snps_fieldset]['upload_snp_population'] == 'Yes'
+            $snps['upload_snp_population'] == 'Yes'
             && !tpps_is_required_field_empty($form_state,
               [$id, 'genotype', $snps_fieldset, 'snps-pop-struct']
             )
@@ -1194,21 +1200,21 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
             // Preserve file if it is valid.
             tpps_preserve_valid_file(
               $form_state,
-              $genotype[$snps_fieldset]['snps-pop-struct'],
+              $snps['snps-pop-struct'],
               $org_num,
               'SNPs_Population_Structure'
             );
           }
           // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
           // SNPs Kinship File.
-          if ($genotype[$snps_fieldset]['upload_snp_kinship'] == 'Yes'
+          if ($snps['upload_snp_kinship'] == 'Yes'
             && !tpps_is_required_field_empty(
               $form_state, [$id, 'genotype', $snps_fieldset, 'snps-kinship'])
           ) {
             // Preserve file if it is valid.
             tpps_preserve_valid_file(
               $form_state,
-              $genotype[$snps_fieldset]['snps-kinship'],
+              $snps['snps-kinship'],
               $org_num,
               'SNPs_Kinship'
             );
@@ -1231,7 +1237,7 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
       // Preserve file if it is valid.
       tpps_preserve_valid_file(
         $form_state,
-        $genotype[$snps_fieldset][$file_field_name],
+        $snps[$file_field_name],
         $org_num,
         'Genotype_Assay_Design'
       );
