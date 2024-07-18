@@ -384,10 +384,6 @@ class Submission {
    *   The Drupal User Id of the Submission Creator.
    */
   public function setUid($uid) {
-    if ($this->uid == $uid) {
-      return;
-    }
-
     // @TODO validate $uid.
     $this->uid = $uid;
     $this->set(['submitting_uid'], $uid);
@@ -564,13 +560,16 @@ class Submission {
     // processing could take long time from script call.
     $this->set(['updated'], time());
 
+    $fields = [
+      'status' => $this->status ?? TPPS_SUBMISSION_STATUS_INCOMPLETE,
+      'submission_state' => serialize($this->state ?? []),
+      'shared_state' => serialize($this->sharedState ?? []),
+    ];
+    if (!empty($this->uid)) {
+      $fields['uid'] = $this->uid;
+    }
     db_update('tpps_submission')
-      ->fields([
-        'status' => $this->status ?? TPPS_SUBMISSION_STATUS_INCOMPLETE,
-        'submission_state' => serialize($this->state ?? []),
-        'shared_state' => serialize($this->sharedState ?? []),
-        'uid' => $this->uid,
-      ])
+      ->fields($fields)
       ->condition('accession', $this->accession)
       ->execute();
     return $this;
@@ -785,7 +784,6 @@ class Submission {
 
   /**
    * Checks if form type is 'tppsc'.
-   *
    *
    * @return bool
    *   Returns TRUE if form Id is 'tppsc_main' and FALSE otherwise.
