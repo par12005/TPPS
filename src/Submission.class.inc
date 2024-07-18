@@ -346,7 +346,7 @@ class Submission {
   //
   // To set/get/update an item:
   // $submission = new Submission($accession);
-  // $submission-state[$item_name] = $item_value;
+  // $submission->state[$item_name] = $item_value;
 
   /**
    * Setter for $state.
@@ -365,7 +365,7 @@ class Submission {
     if (!empty($this->state['accession'])) {
       $this->accession = $this->state['accession'];
     }
-    // Status must be reset because when study opened for edit status became empty.
+    // Status must be reset because when study is edited status became empty.
     // Status could be empty if Submission Object was created without $accession
     // and submission wasn't fully loaded.
     if (empty($this->status)) {

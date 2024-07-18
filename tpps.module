@@ -166,6 +166,9 @@ function tpps_menu() {
     'access arguments' => ['access tpps form', 1],
     'type' => MENU_CALLBACK,
   ];
+  // 1 - Study accession. E.g., 'TGDRxxx'.
+  // 3 - Tripal Job Id. Some huge integer number.
+  // Example: 'tpps/TGDR957/pre-validate/273226/status'.
   $items['tpps/%/pre-validate/%/status'] = [
     'title' => 'TPPS File Pre-Validation',
     'page callback' => 'tpps_pre_validate_status',
