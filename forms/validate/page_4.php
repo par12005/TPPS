@@ -662,9 +662,8 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
   // mistake but lets leave it as is.
   $accession = $form_state['accession'] ?? NULL;
   $submission = new Submission($accession);
-  $loaded_state = $submission->state;
-  if (!empty($loaded_state['vcf_replace'])) {
-    foreach ($loaded_state['vcf_replace'] as $org_num => $fid) {
+  if (!empty($submission->state['vcf_replace'])) {
+    foreach ($submission->state['vcf_replace'] as $org_num => $fid) {
       $file = file_load($fid ?? '');
       if ($file) {
         if ($file->filesize == 0) {
@@ -680,7 +679,7 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
       }
       else {
         // @TODO Should be $id instead of $org_num here?
-        form_set_error("$org_num][genotype][$snps_fieldset][local_vcf",
+        form_set_error("$orn_num][genotype][$snps_fieldset][local_vcf",
           t("Local VCF File: File could not be loaded properly.")
         );
       }
@@ -941,10 +940,16 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
         }
 
       }
+      // @TODO Minor. Find better way to get study accession. Maybe it should
+      // be pass as function's argument?
+      $accession = $form_state['accession'];
+      $submission = new Submission($accession);
+
+      // VCF pre-validation is missing.
       if (
-        empty($loaded_state['vcf_replace'])
-        && trim($form_state['values']["organism-$org_num"]['genotype'][$snps_fieldset]['local_vcf']) != ''
-        && ($loaded_state['vcf_validated'] ?? NULL) !== TRUE
+        empty($submission->state['vcf_replace'])
+        && trim($genotype[$snps_fieldset]['local_vcf']) != ''
+        && !($submission->state['vcf_validated'] ?? FALSE)
       ) {
         form_set_error(
           "$id][genotype][$snps_fieldset][local_vcf",
@@ -952,14 +957,14 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
           . "Please click on Pre-validate my VCF files button at the bottom.")
         );
       }
-
+      // Pre-validation failed and there are an errors.
       if (
-        !empty($loaded_state['vcf_validated'])
-        and $loaded_state['vcf_validated'] === TRUE
-        and empty($loaded_state['vcf_val_errors'])
+        ($submission->state['vcf_validated'] ?? NULL)
+        && empty($submission->state['vcf_val_errors'])
       ) {
         drupal_set_message(t('VCF files pre-validated. Skipping VCF file validation'));
       }
+      // No pre-validation errors and no other form validation errors.
       elseif (!form_get_errors()) {
         $accession_ids = tpps_parse_file_column($tree_accession_file, $id_col_accession_name);
         if ($vcf) {
@@ -1023,7 +1028,6 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
       tpps_preserve_valid_file($form_state, $vcf, $org_num, "Genotype_VCF");
     }
   }
-
 
   if (
     $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
