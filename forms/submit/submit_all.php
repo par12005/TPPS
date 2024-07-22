@@ -358,7 +358,7 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
   $organism_number = $page1_values['organism']['number'];
 
   for ($i = 1; $i <= $organism_number; $i++) {
-    $raw_name = trim($firstpage['organism'][$i]['name']);
+    $raw_name = trim($page1_values['organism'][$i]['name']);
     $parts = explode(" ", $raw_name);
     $genus = $parts[0];
     $species = implode(" ", array_slice($parts, 1));

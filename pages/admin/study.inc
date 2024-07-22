@@ -1328,6 +1328,7 @@ function tpps_admin_panel_get_reports() {
     'submissions_missing_files' => $panel_url . '/submissions-missing-files',
     'submissions_without_files' => $panel_url . '/submissions-without-files',
     'submissions_all_files' => $panel_url . '/submissions-all-files',
+    'organism_list' => $panel_url . '/organism-list',
   ];
 }
 
@@ -1348,7 +1349,7 @@ function tpps_admin_panel_reports(array &$form) {
     '#type' => 'fieldset',
     '#title' => t('TPPS Reports'),
     '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
+    '#collapsed' => TRUE,
     'table' => ['#markup' => theme('item_list', ['items' => $items])],
   ];
 }
