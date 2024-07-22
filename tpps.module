@@ -107,14 +107,12 @@ module_load_include('inc', 'tpps', 'includes/form');
 module_load_include('inc', 'tpps', 'includes/form_utils');
 module_load_include('inc', 'tpps', 'includes/details');
 module_load_include('inc', 'tpps', 'includes/cvterm_utils');
-// [VS]
+
 module_load_include('inc', 'tpps', 'includes/submission_file');
 require_once 'includes/phenotype_synonym.inc';
 require_once 'includes/phenotype_unit.inc';
 require_once 'includes/easy_report.inc';
-// [/VS]
 require_once 'api/tpps.api.inc';
-require_once 'includes/easy_report.inc';
 
 /**
  * Implements hook_menu().
@@ -2263,17 +2261,41 @@ function tpps_report_get_list() {
       'description' => t("List of TPPS module's variables with prefix 'tpps'."),
       'admin_panel' => FALSE,
     ],
+    // Useful db queries.
+    'organism_list' => [
+      'url' => 'organism-list',
+      'title' => variable_get('tpps_report_organism_list_title',
+        'Organism List'
+      ),
+      'description' => t('List of organisms per study.'),
+      'admin_panel' => FALSE,
+    ],
   ];
 }
 
 /**
  * Adds report menu items for hook_menu().
  *
- * See function tpps_reports_overview_page() for a list of items.
- * Add title at 'admin/config/tpps/reports'.
- * Update hook_install/uninstall.
- * Update tpps_admin_panel_get_reports().
- * Clear cache.
+ * To add new item:
+ * 1. Clone /reports/orgnaism_list.inc for simple db-query.
+ * 2. Update code of new file.
+ * 3. Add variables which stores report title to hook_install/uninstall.
+ * 4. Add metadata to tpps_report_get_list().
+ * 5. Add ability to change report title at 'admin/config/tpps/reports'.
+ *    See function tpps_reports_settings_form().
+ * 6. Update tpps_admin_panel_get_reports().
+ * 7. Clear cache.
+ *
+ * Naming rules:
+ * 1. Machine name uses underscores. E.g., 'organism_list'.
+ * 2. URL uses hyphens. E.g., 'organism-list'.
+ * 3. Title stored in non-localized English in variable with name:
+ *    'tpps_report_' . $machine_name . '_title'.
+ *
+ * Report types:
+ * 1. tpps_admin_organism_list_report() - simpliest db query without formatter.
+ * 2. tpps_admin_missing_doi_report() - db-query with subqueries and formatter.
+ * 3. tpps_admin_submissions_all_files_report() - no-query table with caching.
  *
  * @param array $items
  *   Menu items.
