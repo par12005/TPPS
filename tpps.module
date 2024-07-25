@@ -2675,6 +2675,6 @@ function tpps_submission($accession = '') {
  */
 function tpps_submission_load($accession) {
   // @TODO Minor. Use static caching.
-  $submission= new Submission($accession);
+  $submission = new Submission($accession);
   return $submission;
 }

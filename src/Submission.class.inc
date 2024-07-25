@@ -805,6 +805,7 @@ class Submission {
   /**
    * Get TPPS Form Id.
    *
+   * See tpps_form_get_id();
    * @return string
    *   Returns 'tpps_main' or 'tppsc_main'.
    */
