@@ -360,8 +360,14 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
   for ($i = 1; $i <= $organism_number; $i++) {
     $raw_name = trim($page1_values['organism'][$i]['name']);
     $parts = explode(" ", $raw_name);
-    $genus = $parts[0];
-    $species = implode(" ", array_slice($parts, 1));
+    $genus = trim($parts[0]);
+    $species = trim(implode(" ", array_slice($parts, 1)));
+    if ($genus == '' || $genus == NULL) {
+      throw new Exception("Genus is empty - this isn't good so we're terminating the job.");
+    }
+    if ($species == '' || $species == NULL) {
+      throw new Exception("Species is empty - this isn't good so we're terminating the job.");
+    }
     $infra = NULL;
     $parts_count = count($parts);
     if (isset($parts[2]) and ($parts[2] == 'var.' or $parts[2] == 'subsp.' or $parts[2] == 'spp.' or $parts[2] == 'sp.')) {
