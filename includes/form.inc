@@ -830,7 +830,9 @@ function tpps_form_autofocus(array &$form = NULL, array $path) {
 }
 
 /**
- * Get TPPS Form Id.
+ * Gets TPPS Form Id.
+ *
+ * See $submission->getFormId();
  *
  * @param array $form_state
  *   Drupal Form State array.
@@ -839,9 +841,8 @@ function tpps_form_autofocus(array &$form = NULL, array $path) {
  *   Returns 'tpps_main' (default) or 'tppsc_main'.
  */
 function tpps_form_get_id(array $form_state) {
-  $submission = new Submission();
-  $submission->state = $form_state;
-  return $submission->getFormId();
+  return $form_state['saved_values']['frontpage']['form_id']
+    ?? $form_state['build_info']['form_id'] ?? 'tpps_main';
 }
 
 /**

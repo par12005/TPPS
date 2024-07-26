@@ -14,14 +14,11 @@
  *   The state of the form that is being validated.
  */
 function tpps_page_1_validate_form(array &$form, array &$form_state) {
-  $submission = new Submission();
-  $submission->state = $form_state;
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $form_id = tpps_form_get_id($form_state);
   // Curation form.
-  if ($submission->isTppsc()) {
+  if ($form_id == 'tppsc_main') {
     if ($form_state['submitted'] == '1') {
-      $form_values = $form_state['values'];
+      $form_values = &$form_state['values'];
       //$old_tgdr = $form_state['saved_values']['frontpage']['old_tgdr'] ?? NULL;
       // DOI.
       $publication_doi = $form_values['publication']['publication_doi'] ?? NULL;
@@ -33,7 +30,7 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
       $second = $form_values['publication']['secondaryAuthors'] ?? NULL;
       $second_num = $second['number'] ?? NULL;
       // Organism's data.
-      $organism = $form_values['organism'] ?? NULL;
+      $organism = &$form_values['organism'] ?? NULL;
       $organism_number = $form_values['organism']['number'] ?? NULL;
       // Publication.
       tpps_is_required_field_empty($form_state, ['publication', 'status']);
@@ -104,8 +101,8 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Organisms.
       for ($i = 1; $i <= $organism_number; $i++) {
-        $name = $organism[$i]['name'];
-        if ($name == '') {
+        $name = $organism[$i]['name'] = trim($organism[$i]['name']);
+        if (empty($name)) {
           // @TODO Check why 'Name' field not highlighted when validation failed.
           // form_set_error("organism[$i][name", "Plant Species $i: field is required.");
           // This is workaround. Just highlight all fields in 'Organism' fieldset.
@@ -147,7 +144,7 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
     if ($form_state['submitted'] == '1') {
       unset($form_state['file_info'][TPPS_PAGE_1]);
 
-      $form_values = $form_state['values'];
+      $form_values = &$form_state['values'];
       $primary_author = $form_values['primaryAuthor'];
       $publication_status = $form_values['publication']['status'];
       $second = $form_values['publication']['secondaryAuthors'];
@@ -156,7 +153,7 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
       $publication_title = $form_values['publication']['title'];
       $publication_abstract = $form_values['publication']['abstract'];
       $publication_journal = $form_values['publication']['journal'];
-      $organism = $form_values['organism'];
+      $organism = &$form_values['organism'];
       $organism_number = $form_values['organism']['number'];
 
       if ($primary_author == '') {
@@ -170,7 +167,8 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
       if ($second_num > 0) {
         for ($i = 1; $i <= $second_num; $i++) {
           if (empty($second[$i])) {
-            form_set_error("publication][secondaryAuthors][$i", t("Secondary Author @i: field is required.", array('@i' => $i)));
+            form_set_error("publication][secondaryAuthors][$i",
+              t("Secondary Author @i: field is required.", ['@i' => $i]));
           }
         }
       }
@@ -192,9 +190,8 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
       }
 
       for ($i = 1; $i <= $organism_number; $i++) {
-        $name = $organism[$i]['name'];
-
-        if ($name == '') {
+        $name = $organism[$i]['name'] = trim($organism[$i]['name']);
+        if (empty($name)) {
           form_set_error("organism[$i][name", "Plant Species $i: field is required.");
         }
         else {

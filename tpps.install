@@ -55,6 +55,7 @@ function tpps_install() {
   variable_set('tpps_report_order_family_not_exist_title',
     'Order/Family not exist'
   );
+  variable_set('tpps_report_organism_list_title', 'Organism List');
   // Submission Tools.
   variable_set('tpps_submission_secret_key', '');
   // Main settings.
@@ -398,6 +399,7 @@ function tpps_uninstall() {
   variable_del('tpps_report_no_synonym_title');
   variable_del('tpps_report_unit_warning_title');
   variable_del('tpps_report_order_family_not_exist_title');
+  variable_del('tpps_report_organism_list_title', 'Organism List');
   // Submission Tools.
   variable_del('tpps_submission_secret_key');
   // Main settings.
