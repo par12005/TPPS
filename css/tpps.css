@@ -137,6 +137,9 @@ th > div.form-type-select > .ajax-progress {
 .tpps_table td {
   padding: 10px;
 }
+table.sticky-title caption {
+  display: none;
+}
 #tpps-details-form {
   margin: 10px 0px;
 }

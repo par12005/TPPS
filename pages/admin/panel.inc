@@ -338,11 +338,13 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
       $table = theme('table', [
         'header' => $header[$status_name],
         'rows' => $status_list,
-        'attributes' => ['class' => ['view', 'tpps_table']],
+        'caption' => $title[$status_name],
+        'attributes' => ['class' => ['view', 'tpps_table', 'sticky-caption']],
       ]);
       $form[$status_name]['table'] = ['#markup' => $table];
     }
   }
+  tpps_add_css_js('sticky_caption', $form);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Old TGDR Submissions to be resubmitted.
@@ -366,14 +368,19 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
     cache_set($cid, $cache->data, $cache_bin);
   }
   if (!empty($cache->data[$key])) {
+    $title = t('Old TGDR Submissions to be resubmitted');
     $form['resubmit'] = [
       '#type' => 'fieldset',
-      '#title' => "<img src='$base_url/misc/message-16-warning.png'> "
-        . t('Old TGDR Submissions to be resubmitted'),
+      '#title' => "<img src='$base_url/misc/message-16-warning.png'> " . $title,
       '#collapsible' => TRUE,
       'table' => [
         '#markup' => theme('table',
-          ['header' => ['Accession'], 'rows' => $cache->data[$key]]
+        [
+          'header' => ['Accession'],
+          'caption' => $title,
+          'attributes' => ['class' => ['view', 'tpps_table', 'sticky-caption']],
+          'rows' => $cache->data[$key]
+        ]
         ),
       ],
     ];
@@ -418,9 +425,10 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
       cache_set($cid, $cache->data, $cache_bin);
     }
     if (!empty($cache->data[$key])) {
+      $title = t('New Species');
       $form['new_species'] = [
         '#type' => 'fieldset',
-        '#title' => t('New Species'),
+        '#title' => $title,
         '#description' => t('The species listed below likely need to be '
           . 'updated, because they do not have NCBI Taxonomy identifiers '
           . 'in the database.'),
@@ -428,11 +436,17 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
         'table' => [
           '#markup' => theme('table',
             [
-              'header' => [],
+              'header' => [t('Name')],
               'rows' => $cache->data[$key],
+              'sticky' => TRUE,
               'attributes' => [
                 'class' => ['view', 'tpps_table'],
                 'id' => 'new_species',
+              ],
+
+              'caption' => $title,
+              'attributes' => [
+                'class' => ['view', 'tpps_table', 'sticky-caption']
               ],
             ]
           ),
