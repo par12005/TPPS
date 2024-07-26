@@ -60,12 +60,9 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
   $cache = cache_get($cid, $cache_bin);
 
   $key = 'tpps_admin_panel_cache_study_lists';
-  if (
-    $reset || empty($cache) || empty($cache->data[$key])
+  if ($reset || empty($cache) || empty($cache->data[$key])
     || !variable_get($key, FALSE)
   ) {
-
-
     // Get new data.
     $submission_list = tpps_load_submission_multiple([]);
     // Note: order in this list defines order of the tables at page.
@@ -99,13 +96,16 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
       $view_link = l($accession, 'tpps-admin-panel/' . $accession);
       $action_list = [
         l(t('Edit'), 'tppsc/' . $accession),
-        l(t('Dump'), 'tpps/submission/' . $accession . '/view'),
+        l(t('View'), 'tpps/submission/' . $accession . '/view'),
+        l(t('JSON'), 'api/submission/' . $accession . '/view/state'),
         l(t('Export'), 'tpps/submission/' . $accession . '/export'),
         l(t('Files'), 'tpps-admin-panel/file-diagnostics/' . $accession),
       ];
-      $action_list = '';
       // To add items use $action_list and recreate element.
-      $actions = theme('item_list', ['items' => $action_list]);
+      $actions = theme('item_list', [
+        'items' => $action_list,
+        'attributes' => ['class' => ['admin-panel-action-list']],
+      ]);
       if ($submission->doesExist()) {
         switch ($submission->status) {
           case TPPS_SUBMISSION_STATUS_PENDING_APPROVAL:
@@ -170,18 +170,21 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
                   // [/VS]
                 }
                 if (tpps_access('view own tpps submission', $accession)) {
-                  $action_list[] = l(t('Edit publication information'),
+                  $new_action_list = $action_list;
+                  $new_action_list[] = l(t('Edit publication information'),
                     'tpps/' . $accession . '/edit-publication'
                   );
                 }
-                $actions = theme('item_list', ['items' => $action_list]);
                 $row = [
                   $view_link,
                   date("F j, Y", $submission->state['loaded'])
                     . " (" . round($days_since_load) . " days ago)",
                   $pub_status,
                   $owner,
-                  $actions,
+                  theme('item_list', [
+                    'items' => $new_action_list,
+                    'attributes' => ['class' => ['admin-panel-action-list']],
+                  ]),
                 ];
                 $output['unpublished_old'][(int) substr($accession, 4)] = $row;
               }
@@ -374,14 +377,12 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
       '#title' => "<img src='$base_url/misc/message-16-warning.png'> " . $title,
       '#collapsible' => TRUE,
       'table' => [
-        '#markup' => theme('table',
-        [
+        '#markup' => theme('table', [
           'header' => ['Accession'],
           'caption' => $title,
           'attributes' => ['class' => ['view', 'tpps_table', 'sticky-caption']],
           'rows' => $cache->data[$key]
-        ]
-        ),
+        ]),
       ],
     ];
   }
@@ -443,7 +444,6 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
                 'class' => ['view', 'tpps_table'],
                 'id' => 'new_species',
               ],
-
               'caption' => $title,
               'attributes' => [
                 'class' => ['view', 'tpps_table', 'sticky-caption']
