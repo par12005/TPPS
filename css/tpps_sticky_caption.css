@@ -1,0 +1,11 @@
+/* Hide caption when feature 'sticky-caption' is enabled */
+table.sticky-caption caption {
+  display: none;
+}
+/* Style caption in sticky header */
+table.sticky-header th.sticky-caption {
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  padding: 4px;
+}
