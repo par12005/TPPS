@@ -386,7 +386,7 @@ function tpps_menu() {
     'file' => 'ajax/tpps_ajax.php',
   ];
   /*
-   * Ajax Callback for accession coordinates.
+   * Ajax Callback. Gets coordinates for Google Map from accession file.
    */
   $items['tpps-accession'] = array(
     'title' => 'TPPS Accession coordinates',

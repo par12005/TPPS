@@ -30,7 +30,9 @@ function tpps_misc_settings_form(array $form, array &$form_state) {
       . 'Documentation: !docs_page<br />'
       . 'Project page: !project_page<br />'
       // @TODO Remove after switch to new URL.
-      . 'Depricated URL: https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js',
+      . '<br />Suggestions:'
+      . '<br />Depricated URL: https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js'
+      . '<br />Current URL: https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js',
       [
         '!project_page' => l($url, $url),
         '!docs_page' => l($docs_url, $docs_url),

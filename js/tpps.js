@@ -667,6 +667,7 @@ function initMap() {
 }
 
 function clearMarkers(prefix) {
+
   for (var i = 0; i < maps[prefix + '_markers'].length; i++) {
     maps[prefix + '_markers'][i].setMap(null);
   }
@@ -674,12 +675,12 @@ function clearMarkers(prefix) {
 }
 
 function getCoordinates(){
-  var fid = this.id.match(/(.*)_map_button/)[1];
-
-  var fid, no_header, id_col, lat_col, long_col;
-  try{
+  let fid = this.id.match(/(.*)_map_button/)[1];
+  let file;
+  try {
     file = Drupal.settings.tpps.accession_files[fid];
     if (typeof file === 'undefined') {
+      // Why?!
       jQuery.each(Drupal.settings.tpps.accession_files, function() {
         if (this.fid == fid) {
           file = this;
@@ -689,55 +690,46 @@ function getCoordinates(){
         return;
       }
     }
-
-    no_header = file.no_header;
-    id_col = file.id_col;
-    lat_col = file.lat_col;
-    long_col = file.long_col;
   }
   catch(err){
     console.log(err);
     return;
   }
 
-  if (typeof id_col === 'undefined' || typeof lat_col === 'undefined' || typeof long_col === 'undefined'){
-    jQuery("#" + Drupal.settings.tpps.map_buttons[fid].wrapper).hide();
+  if ( typeof file.id_col === 'undefined'
+    || typeof file.lat_col === 'undefined'
+    || typeof file.long_col === 'undefined'
+  ) {
+    jQuery('#' + Drupal.settings.tpps.map_buttons[fid].wrapper).hide();
     return;
   }
 
-  var request = jQuery.post('/tpps-accession', {
-    fid: fid,
-    no_header: no_header,
-    id_col: id_col,
-    lat_col: lat_col,
-    long_col: long_col
-  });
-
+  var request = jQuery.post('/tpps-accession', file);
   request.done(function (data) {
     jQuery.fn.updateMap(data, fid);
   });
 }
 
 jQuery.fn.updateMap = function(locations, fid = "") {
-  console.log(fid);
-  jQuery("#" + fid + "_map_wrapper").show();
-  var detail_regex = /tpps\/details\/TGDR.*/g;
+  let $wrapper = jQuery("#" + fid + "_map_wrapper");
+  $wrapper.show();
+  let detail_regex = /tpps\/details\/TGDR.*/g;
   if (
     typeof Drupal.settings.tpps !== 'undefined'
     && typeof Drupal.settings.tpps.stage !== 'undefined'
     && Drupal.settings.tpps.stage == 3
   ) {
-    jQuery("#" + fid + "_map_wrapper").css({"height": "450px"});
-    jQuery("#" + fid + "_map_wrapper").css({"max-width": "800px"});
+    $wrapper.css({"height": "450px"});
+    $wrapper.css({"max-width": "800px"});
   }
   else if(jQuery("#tpps_table_display").length > 0) {
-    jQuery("#" + fid + "_map_wrapper").css({"height": "450px"});
+    $wrapper.css({"height": "450px"});
   }
   else if (window.location.pathname.match(detail_regex)) {
-    jQuery("#" + fid + "_map_wrapper").css({"height": "450px"});
+    $wrapper.css({"height": "450px"});
   }
   else {
-    jQuery("#" + fid + "_map_wrapper").css({"height": "100px"});
+    $wrapper.css({"height": "100px"});
   }
 
   clearMarkers(fid);
