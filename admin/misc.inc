@@ -31,14 +31,18 @@ function tpps_misc_settings_form(array $form, array &$form_state) {
       . 'Project page: !project_page<br />'
       // @TODO Remove after switch to new URL.
       . '<br />Suggestions:'
-      . '<br />Depricated URL: https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js'
-      . '<br />Current URL: https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js',
+      . '<br />Depricated URL: <a href"#" class="tpps-suggestion">'
+        . 'https://developers.google.com/maps/documentation/javascript/examples/'
+        . 'markerclusterer/markerclusterer.js</a>'
+      . '<br />Current URL: <a href"#" class="tpps-suggestion">'
+        . 'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js</a>',
       [
         '!project_page' => l($url, $url),
         '!docs_page' => l($docs_url, $docs_url),
       ]
     ),
   ];
+  tpps_add_css_js('suggestion', $form);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Theme Settings.
   $form['theme_settings'] = [
