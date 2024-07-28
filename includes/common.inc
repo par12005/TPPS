@@ -232,4 +232,5 @@ function tpps_get_markercluster_code($use_wrapper = TRUE) {
   if ($use_wrapper) {
     $output .= '<div id="_map_wrapper"></div>';
   }
+  return $output;
 }
