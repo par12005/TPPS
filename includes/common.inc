@@ -206,3 +206,30 @@ function tpps_report_show_table(array $report) {
     'empty' => $report['empty'] ?? NULL,
   ]) . $pager;
 }
+
+/**
+ * Builds JS code for Google Maps JavaScript MarkerClusterer.
+ *
+ * The library creates and manages per-zoom-level clusters for large amounts
+ * of markers. Project page: https://github.com/googlemaps/js-markerclusterer .
+ *
+ * Helps to show plants on Google Maps.
+ *
+ * @return string
+ *   Returns inline JavaScript code with wrapper HTML-tag.
+ */
+function tpps_get_markercluster_code($use_wrapper = TRUE) {
+  if (empty($map_api_key = variable_get('tpps_maps_api_key', NULL))) {
+    return '';
+  }
+  $markercluster_url = variable_get('tpps_markercluster_url',
+    'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js'
+  );
+  // WARNING: Be sure to set 'async' and 'defer' HTML attributes.
+  $output = '<script src="' . $markercluster_url . '"></script>'
+    . '<script src="https://maps.googleapis.com/maps/api/js?key='
+    . $map_api_key . '&callback=initMap" async defer></script>';
+  if ($use_wrapper) {
+    $output .= '<div id="_map_wrapper"></div>';
+  }
+}

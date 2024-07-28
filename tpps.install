@@ -86,10 +86,13 @@ function tpps_install() {
   variable_set('tpps_submitall_skip_gps_request', FALSE);
   variable_set('tpps_submitall_phenotype_debug_mode', FALSE);
 
-// #TODO Update to 'submitall.
+  // #TODO Update to 'submitall.
   variable_set('tpps_submit_all_log_cli_show_time', TRUE);
-  // Theme Settings.
+  // Misc Settings.
   variable_set('tpps_theme_fix_pager', FALSE);
+  variable_set('tpps_markercluster_url',
+    'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js'
+  );
   // Submission Export.
   // @TODO Add ability to change those variables at settings page.
   variable_set('tpps_submission_export_show_file_search_report', FALSE);
@@ -430,8 +433,10 @@ function tpps_uninstall() {
   variable_del('tpps_submitall_phenotype_debug_mode');
   variable_del('tpps_submitall_log_cli_show_time');
   variable_del('tpps_submit_all_log_cli_show_time');
-  // Theme Settings.
+
+  // Misc Settings.
   variable_del('tpps_theme_fix_pager');
+  variable_del('tpps_markercluster_url');
   variable_del('tpps_imported_studies_list');
   // Submission Import/Export.
   variable_del('tpps_submission_export_show_file_search_report');
@@ -2238,4 +2243,13 @@ function tpps_update_7123() {
   if (!db_field_exists($table_name, $column_name)) {
     db_query('ALTER TABLE tpps_submission ADD COLUMN shared_state text;');
   }
+}
+
+/**
+ * Adds new column 'shared_state' to 'tpps_submission' table.
+ */
+function tpps_update_7124() {
+  variable_set('tpps_markercluster_url',
+    'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js'
+  );
 }

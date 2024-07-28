@@ -232,52 +232,6 @@ function tpps_admin_settings(array $form, array &$form_state) {
     ),
   ];
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Custom Reports.
-  $form['custom_reports'] = [
-    '#type' => 'fieldset',
-    '#title' => t('Custom Reports'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-  ];
-  $form['custom_reports']['tpps_report_no_synonym_title'] = [
-    '#type' => 'textfield',
-    '#title' => t('Title of "No synonym" report'),
-    '#default_value' => variable_get('tpps_report_no_synonym_title'),
-    '#description' => t('Used on admin panel page and as page title on report page.'),
-  ];
-  $form['custom_reports']['tpps_report_unit_warning_title'] = [
-    '#type' => 'textfield',
-    '#title' => t('Title of "Unit Warning" report'),
-    '#default_value' => variable_get('tpps_report_unit_warning_title'),
-    '#description' => t('Used on admin panel page and as page title on report page.'),
-  ];
-  $form['custom_reports']['tpps_report_order_family_not_exist_title'] = [
-    '#type' => 'textfield',
-    '#title' => t('Title of "Order/Family Not Exist" report'),
-    '#default_value' => variable_get('tpps_report_order_family_not_exist_title'),
-    '#description' => t('Used on admin panel page and as page title on report page.'),
-  ];
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Theme Settings.
-  $form['theme_settings'] = [
-    '#type' => 'fieldset',
-    '#title' => t('Theme Settings'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-  ];
-  // Pager fix.
-  $form['theme_settings']['tpps_theme_fix_pager'] = [
-    '#type' => 'checkbox',
-    '#title' => t('Restore original position of "Next" button of pager'),
-    '#default_value' => variable_get('tpps_theme_fix_pager'),
-    '#description' => t("Theme 'Dawn' moves 'Next' button of pager to the "
-      . "very right position (after 'Last' button. <br />When checked "
-      . "original position (before 'Last' button) will be restored."),
-  ];
-  // [/VS]
-
   return system_settings_form($form);
 }
 

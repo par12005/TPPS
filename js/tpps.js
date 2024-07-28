@@ -719,9 +719,14 @@ function getCoordinates(){
 }
 
 jQuery.fn.updateMap = function(locations, fid = "") {
+  console.log(fid);
   jQuery("#" + fid + "_map_wrapper").show();
   var detail_regex = /tpps\/details\/TGDR.*/g;
-  if (typeof Drupal.settings.tpps !== 'undefined' && typeof Drupal.settings.tpps.stage !== 'undefined' && Drupal.settings.tpps.stage == 3) {
+  if (
+    typeof Drupal.settings.tpps !== 'undefined'
+    && typeof Drupal.settings.tpps.stage !== 'undefined'
+    && Drupal.settings.tpps.stage == 3
+  ) {
     jQuery("#" + fid + "_map_wrapper").css({"height": "450px"});
     jQuery("#" + fid + "_map_wrapper").css({"max-width": "800px"});
   }
@@ -761,9 +766,16 @@ jQuery.fn.updateMap = function(locations, fid = "") {
     maps[fid + '_cluster'].clearMarkers();
   }
 
-  maps[fid + '_cluster'] = new MarkerClusterer(maps[fid], maps[fid + '_markers'], {imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m'});
+  maps[fid + '_cluster'] = new markerClusterer.MarkerClusterer(
+    maps[fid],
+    maps[fid + '_markers'],
+    {imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m'}
+  );
 
-  var center = new google.maps.LatLng(maps[fid + '_total_lat']/locations.length, maps[fid + '_total_long']/locations.length);
+  var center = new google.maps.LatLng(
+    maps[fid + '_total_lat']/locations.length,
+    maps[fid + '_total_long']/locations.length
+  );
   maps[fid].panTo(center);
 };
 

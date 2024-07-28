@@ -364,17 +364,14 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     }
   }
 
-  $map_api_key = variable_get('tpps_maps_api_key', NULL);
-  if (!empty($map_api_key)) {
-    $form['tree-accession']['#suffix'] .= '
-    <script src="https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=' . $map_api_key . '&callback=initMap"
-    async defer></script>
-    <style>
-      #map_wrapper {
-      height: 450px;
-      }
-    </style>';
+  if (!empty(variable_get('tpps_maps_api_key', NULL))) {
+    // @todo Add JS using drupal_add_js().
+
+// @todo Check if wrapper is required here.
+
+    $form['tree-accession']['#suffix'] .= tpps_get_markercluster_code()
+      // @todo Move CSS to /css/tpps.css.
+      . '<style>#map_wrapper { height: 450px; } </style>';
   }
   tpps_form_autofocus($form, ['tree-accession', 'species-1', 'file']);
   tpps_form_add_buttons(['form' => &$form, 'page' => 'page_3']);

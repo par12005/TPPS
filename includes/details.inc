@@ -101,10 +101,6 @@ function tpps_details($accession = NULL) {
       }
     }
 
-    $map_api_key = variable_get('tpps_maps_api_key', NULL);
-    $map_api_tools = "<script src=\"https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js\"></script><script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
-      async defer></script>"
-      . "<div id=\"_map_wrapper\"></div>";
     $tree_info = [];
     if (!empty($submission->state['tree_info'])) {
       foreach ($submission->state['tree_info'] as $name => $info) {
@@ -121,10 +117,9 @@ function tpps_details($accession = NULL) {
       }
       drupal_add_js(['tpps' => ['tree_info' => $tree_info]], 'setting');
     }
-    $output .= $map_api_tools;
-    // [VS].
+    // @TODO Add JS using drupal_add_js().
+    $output .= tpps_get_markercluster_code();
     tpps_add_css_js('main');
-    // [/VS].
 
     if (!empty($pub_link = ($submission->state['title'] ?? NULL))) {
       $pub_id = db_select('chado.project_pub', 'p')

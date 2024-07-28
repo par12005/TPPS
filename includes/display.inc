@@ -222,12 +222,8 @@ function tpps_table_display(array &$state, array $options = []) {
       $content .= "<div id=\"$item_id\" style=\"display:none;\">$val_str</div>";
     }
   }
-  $map_api_key = variable_get('tpps_maps_api_key', NULL);
-  if (!empty($map_api_key)) {
-    $content .= "<script src=\"https://developers.google.com/maps/"
-      . "documentation/javascript/examples/markerclusterer/markerclusterer.js\">"
-      . "</script><script src=\"https://maps.googleapis.com/maps/api/js"
-      . "?key=$map_api_key&callback=initMap\" async defer></script>";
+  if (variable_get('tpps_maps_api_key', NULL)) {
+    $content .= tpps_get_markercluster_code(FALSE);
   }
 
   $headers = ['Field', 'Value'];

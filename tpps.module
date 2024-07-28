@@ -1739,9 +1739,8 @@ function tpps_block_view_alter(&$data, $block) {
           $content .= "<div id=\"$item_id\" style=\"display:none;\">$val_str</div>";
         }
       }
-      if (!empty($flat['#page_3_cleared']) and !empty($map_api_key)) {
-        $content .= "<script src=\"https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js\"></script><script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
-        async defer></script>";
+      if (!empty($flat['#page_3_cleared'])) {
+        $content .= tpps_get_markercluster_code(FALSE);
       }
       $content .= "</div>";
       $data['content'] = $content;
@@ -2039,6 +2038,15 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/config.php',
   ];
+  $items['admin/config/tpps/misc'] = [
+    'title' => 'Misc',
+    'description' => 'Misc settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_misc_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/misc.inc',
+  ];
   $items['admin/config/tpps/admin-panel'] = [
     'title' => 'Admin Panel',
     'description' => 'Admin Panel Settings',
@@ -2180,6 +2188,10 @@ function tpps_menu_add_settings_pages(array &$items = []) {
  * Gets reports meta-data.
  *
  * See tpps_reports_overview_page() which builds list of report links.
+ *
+ * To add new item:
+ * 1. Insert item below.
+ * 2. Add variable name into tpps_reports_settings_form().
  */
 function tpps_report_get_list() {
   return [
