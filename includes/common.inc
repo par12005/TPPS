@@ -225,8 +225,6 @@ function tpps_get_markercluster_code($use_wrapper = TRUE) {
   $markercluster_url = variable_get('tpps_markercluster_url',
     'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js'
   );
-  // @TODO Update to newer version.
-  // https://developers.google.com/maps/documentation/javascript/load-maps-js-api
   // WARNING: Be sure to set 'async' and 'defer' HTML attributes.
   $output = '<script src="' . $markercluster_url . '"></script>'
     . '<script src="https://maps.googleapis.com/maps/api/js?key=' . $map_api_key

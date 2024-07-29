@@ -42,6 +42,14 @@ function tpps_misc_settings_form(array $form, array &$form_state) {
       ]
     ),
   ];
+  $form['google_map']['tpps_google_map_id'] = [
+    '#type' => 'textfield',
+    '#title' => t('Google Map Id'),
+    '#default_value' => variable_get('tpps_google_map_id'),
+    '#description' => l(t('Get Google Map Id'),
+      'https://developers.google.com/maps/documentation/get-map-id'
+    ),
+  ];
   tpps_add_css_js('suggestion', $form);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Theme Settings.

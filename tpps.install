@@ -93,6 +93,7 @@ function tpps_install() {
   variable_set('tpps_markercluster_url',
     'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js'
   );
+  variable_set('tpps_google_map_id', '');
   // Submission Export.
   // @TODO Add ability to change those variables at settings page.
   variable_set('tpps_submission_export_show_file_search_report', FALSE);
@@ -437,6 +438,8 @@ function tpps_uninstall() {
   // Misc Settings.
   variable_del('tpps_theme_fix_pager');
   variable_del('tpps_markercluster_url');
+  variable_del('tpps_google_map_id');
+
   variable_del('tpps_imported_studies_list');
   // Submission Import/Export.
   variable_del('tpps_submission_export_show_file_search_report');
