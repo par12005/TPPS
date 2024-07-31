@@ -370,9 +370,24 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
     }
     $infra = NULL;
     $parts_count = count($parts);
-    if (isset($parts[2]) and ($parts[2] == 'var.' or $parts[2] == 'subsp.' or $parts[2] == 'spp.' or $parts[2] == 'sp.')) {
+    if (isset($parts[2]) and (
+        $parts[2] == 'subsp.' or 
+        $parts[2] == 'spp.' or 
+        $parts[2] == 'sp.' or 
+        $parts[2] == 'subspecies' or 
+        $parts[2] == 'var.' or 
+        $parts[2] == 'varieta' or 
+        $parts[2] == 'variety' or 
+        $parts[2] == 'subvar.' or 
+        $parts[2] == 'subvarieta' or 
+        $parts[2] == 'subvariety' or 
+        $parts[2] == 'f.' or 
+        $parts[2] == 'forma' or 
+        $parts[2] == 'form'
+      )
+    ) {
       $infra = implode(" ", array_slice($parts, 2));
-      // $species = $parts[1]; // Based on Emily's suggestion 7/25/2024
+      $species = $parts[1]; // Based on Emily's suggestion 7/25/2024
     }
     else if (isset($parts[2]) and $parts_count <= 3) {
       // cater for examples like Taxus baccata L or Taxus baccata L.
