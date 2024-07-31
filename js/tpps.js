@@ -638,15 +638,29 @@ function initMap() {
     var mapButtons = Drupal.settings.tpps.map_buttons;
     jQuery.each(mapButtons, function() {
       var fid = this.fid;
-      maps[fid] = new google.maps.Map(document.getElementById(this.wrapper), {
-        center: {lat:0, lng:0},
-        zoom: 5,
-      });
+
+      if (Drupal.settings.tpps.markerClusterUrlType == 'new') {
+        maps[fid] = new google.maps.Map(
+          document.getElementById(this.wrapper), {
+          center: {lat:0, lng:0},
+          zoom: 5,
+          mapId: Drupal.settings.tpps.googleMapId,
+        });
+      }
+      else {
+        maps[fid] = new google.maps.Map(
+          document.getElementById(this.wrapper), {
+          center: {lat:0, lng:0},
+          zoom: 5,
+        });
+      }
+
       maps[fid + '_markers'] = [];
       maps[fid + '_total_lat'];
       maps[fid + '_total_long'];
     });
   }
+  // Study details page.
   if (
     typeof Drupal.settings.tpps != 'undefined'
     && typeof Drupal.settings.tpps.tree_info != 'undefined'
@@ -655,14 +669,26 @@ function initMap() {
       || typeof Drupal.settings.tpps.study_locations !== 'undefined'
     )
   ) {
-    maps[''] = new google.maps.Map(document.getElementById('_map_wrapper'), {
-      center: {lat:0, lng:0},
-      zoom: 5,
-    });
+    var mapWrapper = document.getElementById('_map_wrapper');
+    if (Drupal.settings.tpps.markerClusterUrlType == 'new') {
+      maps[''] = new google.maps.Map(mapWrapper, {
+        center: { lat: 0, lng: 0 },
+        zoom: 5,
+        mapId: Drupal.settings.tpps.googleMapId,
+      });
+    }
+    else {
+      maps[''] = new google.maps.Map(mapWrapper, {
+        center: { lat: 0, lng: 0 },
+        zoom: 5,
+      });
+    }
     maps['_markers'] = [];
     maps['_total_lat'];
     maps['_total_long'];
-    jQuery.fn.updateMap(Drupal.settings.tpps.tree_info);
+    jQuery.fn.updateMap(
+      Drupal.settings.tpps.tree_info
+    );
   }
 }
 
@@ -721,7 +747,12 @@ function getCoordinates(){
 jQuery.fn.updateMap = function(locations, fid = "") {
   jQuery("#" + fid + "_map_wrapper").show();
   var detail_regex = /tpps\/details\/TGDR.*/g;
-  if (typeof Drupal.settings.tpps !== 'undefined' && typeof Drupal.settings.tpps.stage !== 'undefined' && Drupal.settings.tpps.stage == 3) {
+  if (
+    typeof Drupal.settings.tpps !== 'undefined'
+    && typeof Drupal.settings.tpps.stage !== 'undefined'
+    && Drupal.settings.tpps.stage == 3
+  ) {
+    // Page 3.
     jQuery("#" + fid + "_map_wrapper").css({"height": "450px"});
     jQuery("#" + fid + "_map_wrapper").css({"max-width": "800px"});
   }
@@ -743,9 +774,20 @@ jQuery.fn.updateMap = function(locations, fid = "") {
   maps[fid + '_markers'] = locations.map(function (location, i) {
     maps[fid + '_total_lat'] += parseInt(location[1]);
     maps[fid + '_total_long'] += parseInt(location[2]);
-    var marker = new google.maps.Marker({
-      position: new google.maps.LatLng(location[1], location[2])
-    });
+
+    // Marker.
+    if (Drupal.settings.tpps.markerClusterUrlType == 'new') {
+      var position = { lat: location[1], lng: location[2]};
+      var marker = new google.maps.marker.AdvancedMarkerElement({
+        map: maps[fid],
+        position: position,
+      });
+    }
+    else {
+      var marker = new google.maps.Marker({
+        position: new google.maps.LatLng(location[1], location[2])
+      });
+    }
 
     var infowindow = new google.maps.InfoWindow({
       content: location[0] + '<br>Location: ' + location[1] + ', ' + location[2]
@@ -754,17 +796,41 @@ jQuery.fn.updateMap = function(locations, fid = "") {
     marker.addListener('click', function() {
       infowindow.open(maps[fid], maps[fid + '_markers'][i]);
     });
+
     return marker;
   });
+
+console.log('Markers');
+console.log(maps[fid + '_markers'], 'Markers');
 
   if (typeof maps[fid + '_cluster'] !== 'undefined') {
     maps[fid + '_cluster'].clearMarkers();
   }
 
-  maps[fid + '_cluster'] = new MarkerClusterer(maps[fid], maps[fid + '_markers'], {imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m'});
+  if (Drupal.settings.tpps.markerClusterUrlType == 'new') {
+    maps[fid + '_cluster'] = new markerClusterer.MarkerClusterer(
+      maps[fid],
+      maps[fid + '_markers'],
+    );
+  }
+  else {
+    maps[fid + '_cluster'] = new MarkerClusterer(
+      maps[fid],
+      maps[fid + '_markers'],
+      {imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m'}
+    );
+  }
 
-  var center = new google.maps.LatLng(maps[fid + '_total_lat']/locations.length, maps[fid + '_total_long']/locations.length);
+  var center = new google.maps.LatLng(
+    maps[fid + '_total_lat']/locations.length,
+    maps[fid + '_total_long']/locations.length
+  );
   maps[fid].panTo(center);
+
+
+// https://developers.google.com/maps/documentation/javascript/markers?hl=ru
+//marker.setMap(maps[fid]);
+
 };
 
 /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */

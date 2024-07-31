@@ -97,7 +97,8 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
       $action_list = [
         l(t('Edit'), 'tppsc/' . $accession),
         l(t('View'), 'tpps/submission/' . $accession . '/view'),
-        l(t('JSON'), 'api/submission/' . $accession . '/view/state'),
+        l(t('State JSON '), 'api/submission/' . $accession . '/view/state'),
+        l(t('Shared State JSON'), 'api/submission/' . $accession . '/view/shared_state'),
         l(t('Export'), 'tpps/submission/' . $accession . '/export'),
         l(t('Files'), 'tpps-admin-panel/file-diagnostics/' . $accession),
       ];
