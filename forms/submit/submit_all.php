@@ -1856,7 +1856,8 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
  * This function will process all vcf files per organism (from genotype section) genotypic information
  * and store it within files.
  */
-function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $regenerate_all = TRUE) {
+function tpps_genotypes_to_flat_files_and_find_studies_overlaps($submission, $regenerate_all = TRUE) {
+  $form_state = $submission->state;
   $accession = $form_state['accession'];
   $dest_folder = tpps_realpath('public://tpps_vcf_flat_files');
   // print_r($form_state);
@@ -1871,7 +1872,8 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
       'limit' => 1,
     )))->value;
   }
-  // print_r($species_codes);
+  print_r("Species code\n");
+  print_r($species_codes);
 
   // Run genotype_vcf_to_flat_file per organism_index for the original study
   // @TODO Re-enable this
@@ -1880,7 +1882,8 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
     echo "Checking if file exists: $snps_flat_file_location\n";
     // If file does not exist, we need to generate this
     if (!file_exists($snps_flat_file_location) || $regenerate_all == true) {
-      tpps_genotypes_to_flat_file($form_state, $species_codes, $i);
+      echo "Generating: $snps_flat_file_location\n";
+      tpps_genotypes_to_flat_file($submission, $species_codes, $i);
     }
   }
 
@@ -1973,6 +1976,7 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
   foreach ($accession_results as $row) {
     $all_studies_array[] = $row->accession;
   }
+  print_r("All Studies Array:\n");
   print_r($all_studies_array);
 
   // // Code modified from https://r.je/php-find-every-combination
@@ -2142,12 +2146,15 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
  *
  * @return void
  */
-function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $i, $is_primary_study = true, TripalJob &$job = NULL, $insert_mode = 'hybrid') {
+function tpps_genotypes_to_flat_file($submission, array $species_codes, $i, $is_primary_study = true, TripalJob &$job = NULL, $insert_mode = 'hybrid') {
+  $form_state = $submission->state;
   $organism_index = $i;
   // Some initial variables previously inherited from the parent function code. So we're reusing it to avoid
   // missing any important variables if we rewrote it.
   $page1_values = $form_state['saved_values'][TPPS_PAGE_1];
   $page4_values = $form_state['saved_values'][TPPS_PAGE_4];
+  // print_r("Page 4 values\n");
+  // print_r($page4_values);
   $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
 
   if ($insert_mode == '') {
@@ -2157,7 +2164,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
 
   // Project ID is more for the database (it is different from the TPPS Accession)
   // but is unique as well.
-  $project_id = $form_state['ids']['project_id'];
+  $project_id = $submission->sharedState['ids']['project_id'];
 
   // Record group is used to determine batch side per inserts
   $record_group = variable_get('tpps_record_group', 10000);
@@ -2218,6 +2225,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
   if (isset($page1_values['disable_vcf_import'])) {
     $disable_vcf_import = $page1_values['disable_vcf_import'];
   }
+  echo "VCF Importer Disabled: " . $disable_vcf_import . "\n";
   tpps_job_logger_write('[INFO] Disable VCF Import is set to ' . $disable_vcf_import . ' (0 means allow vcf import, 1 ignore vcf import)');
   // RISH: 12/6/2023
   $accession = $form_state['accession'];
@@ -2225,6 +2233,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
     // @TODO Comment out after testing
     // echo "Skipping VCF processing during debug\n";
     // return;
+    echo "Detecting VCF file type: VCF\n";
 
     $transaction = db_transaction();
     try {
@@ -2233,7 +2242,25 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
 
       // @todo we probably want to use tpps_file_iterator to parse vcf files.
       $vcf_fid = $genotype['files']['vcf'];
-      tpps_add_project_file($form_state, $vcf_fid);
+      
+      // check project already exists
+      $results_project_file = chado_query("SELECT count(*) AS c1 FROM public.tpps_project_file_managed 
+        WHERE project_id = :project_id
+        AND fid = :fid", 
+      [
+        ':project_id' => $project_id,
+        ':fid' => $vcf_fid
+      ]);
+      $project_file_count = 0;
+      foreach ($results_project_file as $results_project_file_row) {
+        $project_file_count = $results_project_file_row->c1;
+      }
+
+      if ($project_file_count == 0) {
+        // Add this file to the project
+        tpps_add_project_file($form_state, $vcf_fid);
+      }
+
 
       $records['genotypeprop'] = array();
 
@@ -2246,6 +2273,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
       $n_sample_cvterm = tpps_load_cvterm('number_samples')->cvterm_id;
 
       // This means it was uploaded
+      print_r("VCF_FID: $vcf_id\n");
       if ($vcf_fid > 0) {
         $vcf_file = file_load($vcf_fid);
         $location = tpps_get_location($vcf_file->uri);
@@ -2267,6 +2295,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
       $duplicate_warnings_location = $pathinfo['dirname'] . '/' .  $pathinfo['filename'] . '-duplicate-warnings.txt';
       $cmd = 'bcftools query -l ' . $location . ' &> ' . $duplicate_warnings_location;
       exec($cmd);
+      echo "Duplicate sample names checked\n";
       // print_r($cmd);
       $cmd_output = file($duplicate_warnings_location);
       // print_r($cmd_output);
@@ -2335,6 +2364,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
         $valid_vcf_gz = $pathinfo_valid_vcf['dirname'] . '/' . $pathinfo_valid_vcf['basename'] . '.gz';
         // perform compression
         $cmd_output = []; // reset
+        echo "Gzipping VCF file\n";
         exec('gzip -c ' . $valid_vcf . ' > ' . $valid_vcf_gz, $cmd_output);
       }
       else {
@@ -2349,7 +2379,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
       $cmd = "bcftools query -f '[%ID\\t%SAMPLE\\t%GT ]\\n' " . $valid_vcf_gz . " | tr ' ' '\\n' | awk -F '\\t' '{if ($3 != \"./.\") print " . '$1,$2' . "}' > $trees_markers_location";
       // echo $cmd . "\n";
       $cmd_output = [];
-      // exec($cmd, $cmd_output);
+      exec($cmd, $cmd_output);
       echo "Trees Markers Location: $trees_markers_location\n";
 
       // STEP 1 E - GET ALL UNIQUE TREES
@@ -3122,6 +3152,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
 
       // GOAL: Push unique variants to chado.studies_with_markers
       $unique_variant_ids_string = implode(',',array_keys($variant_ids));
+      echo "Unique_variant_ids_string: $unique_variant_ids_string \n";
       unset($variant_ids);
 
       // UNIQUE VARIANTS Step 1 - check to see if there's already a record
@@ -3129,6 +3160,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
         ':accession' => $accession
       ]);
       $accession_count = $accession_count_results->fetchObject()->c1;
+      
 
       // UNIQUE VARIANTS Step 2 - INSERT if no record exists or UPDATE if record exists
       if ($accession_count > 0) {
@@ -3170,7 +3202,9 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
 
     // }
     } catch (Exception $ex) {
+      print_r($ex);
       $transaction->rollback();
+      exit;
     }
   }
   else if (isset($genotype['files']['snps-assay'])) {
