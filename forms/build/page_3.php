@@ -372,7 +372,6 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       // @todo Move CSS to /css/tpps.css.
       . '<style>#map_wrapper { height: 450px; } </style>';
   }
-  tpps_add_css_js('google_map', $form);
   tpps_form_autofocus($form, ['tree-accession', 'species-1', 'file']);
   tpps_form_add_buttons(['form' => &$form, 'page' => 'page_3']);
   return $form;

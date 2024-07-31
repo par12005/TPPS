@@ -119,7 +119,6 @@ function tpps_details($accession = NULL) {
     }
     // @TODO Add JS using drupal_add_js().
     $output .= tpps_get_markercluster_code();
-    tpps_add_css_js('google_map', $form);
     tpps_add_css_js('main');
 
     if (!empty($pub_link = ($submission->state['title'] ?? NULL))) {
