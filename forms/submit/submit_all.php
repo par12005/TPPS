@@ -370,6 +370,7 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
     }
     $infra = NULL;
     $parts_count = count($parts);
+    $organism_type_id = NULL;
     if (isset($parts[2]) and (
         $parts[2] == 'subsp.' or 
         $parts[2] == 'spp.' or 
@@ -398,12 +399,49 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
       // Set the species to the second part which is in $parts[1];
       $species = $parts[1];
     }
+    else if (isset($parts[2]) and $parts_count > 3) {
+      // lookup type_id
+      if ($parts[2] == 'x') {
+        $results_organism_type_id_results = chado_query('SELECT * FROM chado.cvterm WHERE name = :name', [
+          ':name' => 'speciesaggregate'
+        ]);
+        foreach ($results_organism_type_id_results as $organism_type_id_row) {
+          $organism_type_id = $organism_type_id_row->type_id;
+        }
+      }
+      else if ($parts[2] == 'subsp.' or $parts[2] == 'spp.' or $parts[2] == 'sp.' or $parts[2] == 'subspecies') {
+        $results_organism_type_id_results = chado_query('SELECT * FROM chado.cvterm WHERE name = :name', [
+          ':name' => 'subspecies'
+        ]);
+        foreach ($results_organism_type_id_results as $organism_type_id_row) {
+          $organism_type_id = $organism_type_id_row->type_id;
+        }
+      }
+      else if ($parts[2] == 'var.' or $parts[2] == 'varieta' or $parts[2] == 'variety') {
+        $results_organism_type_id_results = chado_query('SELECT * FROM chado.cvterm WHERE name = :name', [
+          ':name' => 'varietas'
+        ]);
+        foreach ($results_organism_type_id_results as $organism_type_id_row) {
+          $organism_type_id = $organism_type_id_row->type_id;
+        }
+      } 
+      else if ($parts[2] == 'f.' or $parts[2] == 'forma' or $parts[2] == 'form') {
+        $results_organism_type_id_results = chado_query('SELECT * FROM chado.cvterm WHERE name = :name', [
+          ':name' => 'forma'
+        ]);
+        foreach ($results_organism_type_id_results as $organism_type_id_row) {
+          $organism_type_id = $organism_type_id_row->type_id;
+        }
+      }    
+    }
 
     $record = [
       'genus' => $genus,
       'species' => $species,
       'infraspecific_name' => $infra,
+      'type_id' => $organism_type_id
     ];
+
     echo "This is the record data to check for OR ELSE insert this data into the db\n";
     print_r($record);
 
