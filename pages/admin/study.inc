@@ -863,14 +863,14 @@ function tpps_admin_panel_submit($form, &$form_state) {
     case 'run_vcf_snps_to_flat_file':
       // TODO Flat files functions and Tripal job.
       global $user;
-      $project_id = $submission->state['ids']['project_id'] ?? NULL;
+      $project_id = $submission->sharedState['ids']['project_id'] ?? NULL;
       $includes = [];
       $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
       $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
       $jid = tripal_add_job("Generate VCF to SNPs Flat file - $accession "
         . "(project_id=$project_id)", 'tpps',
         'tpps_genotypes_to_flat_files_and_find_studies_overlaps',
-        [$submission->state], $user->uid, 10, $includes, TRUE
+        [$submission], $user->uid, 10, $includes, TRUE
       );
       break;
 
