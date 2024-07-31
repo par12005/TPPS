@@ -15,30 +15,23 @@ function tpps_misc_settings_form(array $form, array &$form_state) {
     '#title' => t('Google Map'),
     '#collapsible' => TRUE,
   ];
-  // Pager fix.
+
+  // Useful links.
   $url = 'https://github.com/googlemaps/js-markerclusterer';
   $docs_url = 'https://developers.google.com/maps/documentation/javascript/marker-clustering?hl=en';
-  $form['google_map']['tpps_markercluster_url'] = [
-    '#type' => 'textfield',
+  $form['google_map']['tpps_markercluster_url_type'] = [
+    '#type' => 'select',
+    '#options' => tpps_markercluster_get_url(),
     '#title' => t('Google Maps JavaScript MarkerClusterer URL'),
-    '#default_value' => variable_get('tpps_markercluster_url',
-      'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js'
-    ),
+    '#default_value' => variable_get('tpps_markercluster_url_type', 'new'),
     '#description' => t('Google Maps JavaScript MarkerClusterer<br />'
       . 'The library creates and manages per-zoom-level clusters for large '
-      . 'amounts of markers.<br />'
-      . 'Documentation: !docs_page<br />'
-      . 'Project page: !project_page<br />'
-      // @TODO Remove after switch to new URL.
-      . '<br />Suggestions:'
-      . '<br />Depricated URL: <a href"#" class="tpps-suggestion">'
-        . 'https://developers.google.com/maps/documentation/javascript/examples/'
-        . 'markerclusterer/markerclusterer.js</a>'
-      . '<br />Current URL: <a href"#" class="tpps-suggestion">'
-        . 'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js</a>',
+      . 'amounts of markers.<br />New URL: @new_url'
+      . '<br />Documentation: !docs_page<br />Project page: !project_page',
       [
         '!project_page' => l($url, $url),
         '!docs_page' => l($docs_url, $docs_url),
+        '@new_url' => tpps_markercluster_get_url('new'),
       ]
     ),
   ];

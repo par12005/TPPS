@@ -90,9 +90,7 @@ function tpps_install() {
   variable_set('tpps_submit_all_log_cli_show_time', TRUE);
   // Misc Settings.
   variable_set('tpps_theme_fix_pager', FALSE);
-  variable_set('tpps_markercluster_url',
-    'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js'
-  );
+  variable_set('tpps_markercluster_url_type', 'new');
   variable_set('tpps_google_map_id', '');
   // Submission Export.
   // @TODO Add ability to change those variables at settings page.
@@ -437,7 +435,7 @@ function tpps_uninstall() {
 
   // Misc Settings.
   variable_del('tpps_theme_fix_pager');
-  variable_del('tpps_markercluster_url');
+  variable_del('tpps_markercluster_url_type');
   variable_del('tpps_google_map_id');
 
   variable_del('tpps_imported_studies_list');
@@ -2252,7 +2250,5 @@ function tpps_update_7123() {
  * Adds new column 'shared_state' to 'tpps_submission' table.
  */
 function tpps_update_7124() {
-  variable_set('tpps_markercluster_url',
-    'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js'
-  );
+  variable_set('tpps_markercluster_url_type', 'new');
 }
