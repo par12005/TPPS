@@ -104,23 +104,37 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     $publication_abstract = $page1_values['publication']['abstract'] ?? 'No abstract';
     $submission->sharedState['title'] = $publication_title;
     $submission->sharedState['abstract'] = $publication_abstract;
-    $project_record = [
-      'name' => $publication_title,
-      'description' => $publication_abstract,
-    ];
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Process project_id.
+    // Process 'project_id'.
     if (!empty($project_id)) {
       // Reuse existing.
-      $project_record['project_id'] = $project_id;
+      // @TODO Should we check if record really exists in db table?
+      $submission->sharedState['ids']['project_id']
+        = $submission->state['ids']['project_id']
+          = $project_id;
     }
-    // Check if project with the same 'name' exists.
-    if (count(chado_select_record('project', ['name'], $project_record)) > 0) {
-      // Record exists and we need to make 'name' unique.
-      $project_record['name'] .= ' (' . $accession . ')';
+    else {
+      $project_record = [
+        'name' => $publication_title,
+        'description' => $publication_abstract,
+      ];
+      // Check if project with the same 'name' exists.
+      if (count(chado_select_record('project', ['name'], $project_record)) > 0) {
+        // Record exists and we need to make 'name' unique.
+        $project_record['name'] .= ' (' . $accession . ')';
+        $record = chado_select_record('project', ['project_id'], $project_record);
+        if (!empty($record[0]->project_id)) {
+          $submission->sharedState['ids']['project_id']
+            = $submission->state['ids']['project_id']
+              = $record[0]->project_id;
+        }
+        else {
+          $submission->sharedState['ids']['project_id']
+            = $submission->state['ids']['project_id']
+              = chado_insert_record('project', $project_record)['project_id'];
+        }
+      }
     }
-    $submission->sharedState['ids']['project_id']
-      = chado_insert_record('project', $project_record)['project_id'];
     tpps_log(
       '[INFO] Project record created. project_id: @pid.' . PHP_EOL,
       ['@pid' => $submission->sharedState['ids']['project_id']]
