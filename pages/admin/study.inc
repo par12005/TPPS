@@ -1329,6 +1329,7 @@ function tpps_admin_panel_get_reports() {
     'submissions_without_files' => $panel_url . '/submissions-without-files',
     'submissions_all_files' => $panel_url . '/submissions-all-files',
     'organism_list' => $panel_url . '/organism-list',
+    'doi_duplicates' => $panel_url . '/doi-duplicates',
   ];
 }
 
