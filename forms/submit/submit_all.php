@@ -108,11 +108,19 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
       'name' => $publication_title,
       'description' => $publication_abstract,
     ];
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Process project_id.
     if (!empty($project_id)) {
+      // Reuse existing.
       $project_record['project_id'] = $project_id;
     }
+    // Check if project with the same 'name' exists.
+    if (count(chado_select_record('project', ['name'], $project_record)) > 0) {
+      // Record exists and we need to make 'name' unique.
+      $project_record['name'] .= ' (' . $accession . ')';
+    }
     $submission->sharedState['ids']['project_id']
-      = tpps_chado_insert_record('project', $project_record);
+      = chado_insert_record('project', $project_record)['project_id'];
     tpps_log(
       '[INFO] Project record created. project_id: @pid.' . PHP_EOL,
       ['@pid' => $submission->sharedState['ids']['project_id']]
