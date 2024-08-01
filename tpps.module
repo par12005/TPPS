@@ -2270,6 +2270,13 @@ function tpps_report_get_list() {
       'description' => t('List of organisms per study.'),
       'admin_panel' => FALSE,
     ],
+    'doi_duplicates' => [
+      'url' => 'doi-duplicates',
+      'title' => variable_get('tpps_report_doi_duplicates_title', 'DOI Duplicates'),
+      'description' => t('List of submissions with the same Publication DOI.'),
+      'page callback' => 'tpps_admin_doi_duplicates_report',
+      'admin_panel' => TRUE,
+    ],
   ];
 }
 
@@ -2278,6 +2285,7 @@ function tpps_report_get_list() {
  *
  * To add new item:
  * 1. Clone /reports/orgnaism_list.inc for simple db-query.
+ *    Clone 'doi_duplicates' for table (no sorting).
  * 2. Update code of new file.
  * 3. Add variables which stores report title to hook_install/uninstall.
  * 4. Add metadata to tpps_report_get_list().
