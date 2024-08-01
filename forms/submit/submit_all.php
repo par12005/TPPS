@@ -134,6 +134,12 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
               = chado_insert_record('project', $project_record)['project_id'];
         }
       }
+      else {
+        // Note: tpps_chado_insert_record() returns 'project_id' not whole record.
+        $submission->sharedState['ids']['project_id']
+          = $submission->state['ids']['project_id']
+          = tpps_chado_insert_record('project', $project_record);
+      }
     }
     tpps_log(
       '[INFO] Project record created. project_id: @pid.' . PHP_EOL,
