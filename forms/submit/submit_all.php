@@ -104,15 +104,43 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     $publication_abstract = $page1_values['publication']['abstract'] ?? 'No abstract';
     $submission->sharedState['title'] = $publication_title;
     $submission->sharedState['abstract'] = $publication_abstract;
-    $project_record = [
-      'name' => $publication_title,
-      'description' => $publication_abstract,
-    ];
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Process 'project_id'.
     if (!empty($project_id)) {
-      $project_record['project_id'] = $project_id;
+      // Reuse existing.
+      // @TODO Should we check if record really exists in db table?
+      $submission->sharedState['ids']['project_id']
+        = $submission->state['ids']['project_id']
+          = $project_id;
     }
-    $submission->sharedState['ids']['project_id']
-      = tpps_chado_insert_record('project', $project_record);
+    else {
+      $project_record = [
+        'name' => $publication_title,
+        'description' => $publication_abstract,
+      ];
+      // Check if project with the same 'name' exists.
+      if (count(chado_select_record('project', ['name'], $project_record)) > 0) {
+        // Record exists and we need to make 'name' unique.
+        $project_record['name'] .= ' (' . $accession . ')';
+        $record = chado_select_record('project', ['project_id'], $project_record);
+        if (!empty($record[0]->project_id)) {
+          $submission->sharedState['ids']['project_id']
+            = $submission->state['ids']['project_id']
+              = $record[0]->project_id;
+        }
+        else {
+          $submission->sharedState['ids']['project_id']
+            = $submission->state['ids']['project_id']
+              = chado_insert_record('project', $project_record)['project_id'];
+        }
+      }
+      else {
+        // Note: tpps_chado_insert_record() returns 'project_id' not whole record.
+        $submission->sharedState['ids']['project_id']
+          = $submission->state['ids']['project_id']
+          = tpps_chado_insert_record('project', $project_record);
+      }
+    }
     tpps_log(
       '[INFO] Project record created. project_id: @pid.' . PHP_EOL,
       ['@pid' => $submission->sharedState['ids']['project_id']]
@@ -1856,24 +1884,28 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
  * This function will process all vcf files per organism (from genotype section) genotypic information
  * and store it within files.
  */
-function tpps_genotypes_to_flat_files_and_find_studies_overlaps($submission, $regenerate_all = TRUE) {
-  $form_state = $submission->state;
+function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $shared_state, $regenerate_all = TRUE) {
+  
+  
+  $project_id = $shared_state['ids']['project_id'];
   $accession = $form_state['accession'];
   $dest_folder = tpps_realpath('public://tpps_vcf_flat_files');
+  
   // print_r($form_state);
   // Generate species codes which is needed later on
-  $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
+  $organism_number = $shared_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
   $species_codes = array();
   for ($i = 1; $i <= $organism_number; $i++) {
-    $species_codes[$form_state['ids']['organism_ids'][$i]] = current(chado_select_record('organismprop', array('value'), array(
+    $species_codes[$shared_state['ids']['organism_ids'][$i]] = current(chado_select_record('organismprop', array('value'), array(
       'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id,
-      'organism_id' => $form_state['ids']['organism_ids'][$i],
+      'organism_id' => $shared_state['ids']['organism_ids'][$i],
     ), array(
       'limit' => 1,
     )))->value;
   }
   print_r("Species code\n");
   print_r($species_codes);
+  // throw new Exception('debug');
 
   // Run genotype_vcf_to_flat_file per organism_index for the original study
   // @TODO Re-enable this
@@ -1883,7 +1915,7 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($submission, $re
     // If file does not exist, we need to generate this
     if (!file_exists($snps_flat_file_location) || $regenerate_all == true) {
       echo "Generating: $snps_flat_file_location\n";
-      tpps_genotypes_to_flat_file($submission, $species_codes, $i);
+      tpps_genotypes_to_flat_file($form_state, $shared_state, $species_codes, $i);
     }
   }
 
@@ -1929,7 +1961,7 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($submission, $re
 
         // Generate the flat files and necessary DB inserts for features, genotypes etc
         echo "Running tpps_genotypes_to_flat_file $study_accession $i\n";
-        tpps_genotypes_to_flat_file($study_state, $study_species_codes, $i);
+        tpps_genotypes_to_flat_file($study_state, $shared_state, $study_species_codes, $i);
       }
       else {
         // Flat file exists so we can perform comparison operations to check between original study
@@ -2146,8 +2178,8 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($submission, $re
  *
  * @return void
  */
-function tpps_genotypes_to_flat_file($submission, array $species_codes, $i, $is_primary_study = true, TripalJob &$job = NULL, $insert_mode = 'hybrid') {
-  $form_state = $submission->state;
+function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_codes, $i, $is_primary_study = true, TripalJob &$job = NULL, $insert_mode = 'hybrid') {
+  $project_id = $shared_state['ids']['project_id'];
   $organism_index = $i;
   // Some initial variables previously inherited from the parent function code. So we're reusing it to avoid
   // missing any important variables if we rewrote it.
@@ -2162,9 +2194,6 @@ function tpps_genotypes_to_flat_file($submission, array $species_codes, $i, $is_
   }
 
 
-  // Project ID is more for the database (it is different from the TPPS Accession)
-  // but is unique as well.
-  $project_id = $submission->sharedState['ids']['project_id'];
 
   // Record group is used to determine batch side per inserts
   $record_group = variable_get('tpps_record_group', 10000);
