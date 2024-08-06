@@ -22,6 +22,7 @@ $tpps_job = NULL;
  *   The TripalJob object for the submission job.
  */
 function tpps_submit_all($accession, TripalJob $job = NULL) {
+  error_reporting(E_ALL);
   global $tpps_job;
   global $tpps_job_logger;
 
@@ -1523,12 +1524,13 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
     'seq_var_cvterm' => $seq_var_cvterm,
     'multi_insert' => &$multi_insert_options,
     'job' => &$job,
-    'study_accession' => $form_state['saved_values'][1]['accession']
+    'study_accession' => $shared_state['saved_values'][1]['accession']
   );
+  $options['vcf_processing_completed'] = $vcf_processing_completed;
 
   // 2/29/2024 Add reference genome more consitently for all scenarios
-  if ($form_state['file_rank'] == NULL) {
-    $form_state['file_rank'] = 0;
+  if ($shared_state['file_rank'] == NULL) {
+    $shared_state['file_rank'] = 0;
   }
 
   if (in_array($genotype['ref-genome'], ['manual', 'manual2', 'url'])) {
@@ -1599,7 +1601,6 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
     // genotype and genotype calls from assay or not
     // If the VCF was loaded, we don't need to import the SNPs Assay
     // genotypes and genotype_calls
-    $options['vcf_processing_completed'] = $vcf_processing_completed;
     $ref_genome = $genotype['ref-genome'];
     echo "Ref-genome: $ref_genome\n";
 
@@ -5682,7 +5683,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
   $multi_insert_options = $options['multi_insert'];
   $associations = $options['associations'] ?? array();
   $vcf_processing_completed = $options['vcf_processing_completed'];
-  $analysis_id = $options['analysis_id'];
+  // $analysis_id = $options['analysis_id'];
   // echo "Analysis ID: $analysis_id\n";
 
   $record_group = variable_get('tpps_record_group', 10000);
@@ -5778,7 +5779,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
 
     // [RISH] This is a minor adjustment for polyploid done on 8/7/2023
     // Look forward to see if the next headers_key
-    $header_next = $headers[$keys[$key_index + 1]];
+    $header_next = @$headers[$keys[$key_index + 1]];
     // Get next header without the trailing _X (_1,_2,_3 etc)
     $header_next_parts = explode("_", $header_next);
     $header_next_parts_length = count($header_next_parts);
