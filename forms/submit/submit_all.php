@@ -2184,8 +2184,8 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
   $organism_index = $i;
   // Some initial variables previously inherited from the parent function code. So we're reusing it to avoid
   // missing any important variables if we rewrote it.
-  $page1_values = $form_state['saved_values'][TPPS_PAGE_1];
-  $page4_values = $form_state['saved_values'][TPPS_PAGE_4];
+  $page1_values = $shared_state['saved_values'][TPPS_PAGE_1];
+  $page4_values = $shared_state['saved_values'][TPPS_PAGE_4];
   // print_r("Page 4 values\n");
   // print_r($page4_values);
   $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
@@ -2238,8 +2238,8 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
 
   $options = array(
     'records' => $records,
-    'accession' => $form_state['accession'],
-    'tree_info' => $form_state['tree_info'],
+    'accession' => $shared_state['accession'],
+    'tree_info' => $shared_state['tree_info'],
     'species_codes' => $species_codes,
     'genotype_count' => &$genotype_count,
     'genotype_total' => &$genotype_total,
@@ -2247,7 +2247,7 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
     'seq_var_cvterm' => $seq_var_cvterm,
     'multi_insert' => &$multi_insert_options,
     'job' => &$job,
-    'study_accession' => $form_state['saved_values'][1]['accession']
+    'study_accession' => $shared_state['saved_values'][1]['accession']
   );
 
   // check to make sure admin has not set disable_vcf_importing.
@@ -2258,7 +2258,7 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
   echo "VCF Importer Disabled: " . $disable_vcf_import . "\n";
   tpps_job_logger_write('[INFO] Disable VCF Import is set to ' . $disable_vcf_import . ' (0 means allow vcf import, 1 ignore vcf import)');
   // RISH: 12/6/2023
-  $accession = $form_state['accession'];
+  $accession = $shared_state['accession'];
   if ($genotype['files']['file-type'] == TPPS_GENOTYPING_FILE_TYPE_VCF) {
     // @TODO Comment out after testing
     // echo "Skipping VCF processing during debug\n";
@@ -2288,7 +2288,7 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
 
       if ($project_file_count == 0) {
         // Add this file to the project
-        tpps_add_project_file($form_state, $vcf_fid);
+        tpps_add_project_file($shared_state, $vcf_fid);
       }
 
 
@@ -2465,7 +2465,7 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
       $stocks = array();
       $format = "";
       // This was done by Peter
-      $current_id = $form_state['ids']['organism_ids'][$i];
+      $current_id = $shared_state['ids']['organism_ids'][$i];
       $species_code = $species_codes[$current_id];
 
       $tree_ids = [];
@@ -2881,6 +2881,7 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
             }
 
             $vcf_cols_count = count($vcf_line);
+            
             // echo "gen_name_index:$genotype_name_progress_count colcount:$vcf_cols_count ";
             for ($j = 9; $j < $vcf_cols_count; $j++) {
               // Rish: This was added on 09/12/2022
@@ -3107,7 +3108,9 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
           }
           $line_process_cumulative_time += $line_process_elapsed_time;
           echo "Cumulative PHP proctime: " . $line_process_cumulative_time . " seconds\n";
-          echo "\nGenotype call records to insert (LINE:$file_progress_line_count): " . count($records['genotype_call']);
+          print_r("VCF_LINE\n");
+          print_r($vcf_line);
+          echo "\nGenotype call records to insert (LINE:$file_progress_line_count): " . count($records['genotype_call']) . "\n";
           // echo "\nrecord group threshold: $record_group ";
           // throw new Exception('DEBUG');
           // Tripal Job has issues when all submissions are made at the same
@@ -3156,7 +3159,7 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
         elseif (preg_match('/#CHROM/', $vcf_line)) {
           $vcf_line = explode("\t", $vcf_line);
           for ($j = 9; $j < count($vcf_line); $j++) {
-            $stocks[] = $form_state['tree_info'][trim($vcf_line[$j])]['stock_id'];
+            $stocks[] = $shared_state['tree_info'][trim($vcf_line[$j])]['stock_id'];
             $tree_ids[$j] = trim($vcf_line[$j]);
           }
         }
@@ -3272,8 +3275,8 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
     $options['associations_tool'] = $genotype['files']['snps-association-tool'];
     $options['associations_groups'] = $genotype['files']['snps-association-groups'];
     $options['scaffold_cvterm'] = tpps_load_cvterm('scaffold')->cvterm_id;
-    $options['phenotype_meta'] = $form_state['data']['phenotype_meta'];
-    $options['pub_id'] = $form_state['ids']['pub_id'];
+    $options['phenotype_meta'] = $shared_state['data']['phenotype_meta'];
+    $options['pub_id'] = $shared_state['ids']['pub_id'];
     $options['all_variants'] = [];
 
     $multi_insert_options['fk_overrides']['featureloc'] = array(
