@@ -572,60 +572,60 @@ function tpps_get_tag_id($name) {
  */
 function tpps_submission_rename_files($accession) {
   $submission = new Submission($accession);
-  if (!empty($submission->sharedState['file_info'])) {
-    $submission->sharedState['files'] = array();
-    foreach ($submission->sharedState['file_info'] as $page_files) {
-      foreach ($page_files as $fid => $name) {
-        $submission->sharedState['files'][] = $fid;
-        if ($name === '#NO_RENAME') {
-          continue;
+  if (empty($submission->sharedState['file_info'])) {
+    return;
+  }
+  $submission->sharedState['files'] = [];
+  foreach ($submission->sharedState['file_info'] as $page_files) {
+    foreach ($page_files as $fid => $name) {
+      $submission->sharedState['files'][] = $fid;
+      if ($name === '#NO_RENAME') {
+        continue;
+      }
+      $old_file = tpps_file_load($fid);
+      if ($old_file->uri[0] != '/') {
+        $old_path = file_create_url($old_file->uri);
+        // Prepare new file_name.
+        $file = $old_file;
+        $new_filename = tpps_file_build_new_name(
+          $accession . '_' . $name,
+          $file->uri
+        );
+        // Check if file already exists then return that file.
+        if ($new_filename != '') {
+          $new_fid = db_select('file_managed', 'fm')
+            ->fields('fm', ['fid'])
+            ->condition('uri', $new_filename)
+            ->range(0, 1)->execute()->fetchField();
         }
-        $old_file = tpps_file_load($fid);
-        if ($old_file->uri[0] != '/') {
-          $old_path = file_create_url($old_file->uri);
-          // Prepare new file_name.
-          $file_load = tpps_file_load($fid);
-          $new_filename = $accession . '_' . $name . "."
-            . tpps_get_path_extension($file_load->uri);
-          if (!preg_match('/^(.*\/)(.*)$/', $new_name, $matches)) {
-            preg_match('/^(.*\/).*$/', $file->uri, $matches);
-            $new_filename = $matches[1] . $new_filename;
-          }
-          // Check if file already exists then return that file.
-          if ($new_filename != '') {
-            $result = db_query('SELECT f.fid
-            FROM {file_managed} f WHERE f.uri = :uri', array(':uri' => $new_filename));
-            $record = $result->fetchObject();
-          }
-
-          if (isset($record)) {
-            $file = tpps_file_load($record->fid);
-          }
-          else {
-            $file = tpps_rename_file($fid, "{$accession}_{$name}");
-            $file->status = FILE_STATUS_PERMANENT;
-            $file = file_save($file);
-          }
-
-          $new_path = file_create_url($file->uri);
-          chado_update_record('projectprop', array(
-            'project_id' => $submission->sharedState['ids']['project_id'],
-            'value' => $old_path,
-          ), array(
-            'value' => $new_path,
-          ));
+        if (!empty($new_fid)) {
+          $file = tpps_file_load($new_fid);
         }
-        if (!empty($submission->sharedState['revised_files'][$fid])) {
-          $rev_fid = $submission->sharedState['revised_files'][$fid];
-          $submission->sharedState['files'][] = $rev_fid;
-          $file = tpps_rename_file($rev_fid, "{$accession}_{$name}_revised");
+        else {
+          $file = tpps_rename_file($fid, "{$accession}_{$name}");
           $file->status = FILE_STATUS_PERMANENT;
-          file_save($file);
+          $file = file_save($file);
         }
+        $new_path = file_create_url($file->uri);
+        chado_update_record('projectprop', [
+          'project_id' => $submission->sharedState['ids']['project_id'],
+          'value' => $old_path,
+        ], [
+          'value' => $new_path,
+        ]);
+      }
+      // @TODO $fid could differ from $file->fid because code above searches
+      // path in db to reuse it. Should $file->fid be used instead of $fid?
+      if (!empty($submission->sharedState['revised_files'][$fid])) {
+        $rev_fid = $submission->sharedState['revised_files'][$fid];
+        $submission->sharedState['files'][] = $rev_fid;
+        $file = tpps_rename_file($rev_fid, "{$accession}_{$name}_revised");
+        $file->status = FILE_STATUS_PERMANENT;
+        file_save($file);
       }
     }
-    $submission->save();
   }
+  $submission->save();
 }
 
 /**

@@ -282,12 +282,7 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
   }
 
   if ($file = tpps_file_load($fid)) {
-    $new_filename = $new_name . "." . tpps_get_path_extension($file->uri);
-    if (!preg_match('/^(.*\/)(.*)$/', $new_name, $matches)) {
-      preg_match('/^(.*\/).*$/', $file->uri, $matches);
-      $new_filename = $matches[1] . $new_filename;
-    }
-
+    $new_filename = tpps_file_build_new_name($new_name, $file->uri);
     if ($options['preserve']) {
       $file->status = FILE_STATUS_PERMANENT;
       file_save($file);
@@ -301,13 +296,13 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
       return file_copy($file, $new_filename, FILE_EXISTS_RENAME);
     }
     // Check if file already exists then return that file.
-    $result = db_query('SELECT f.fid
-    FROM {file_managed} f WHERE f.uri = :uri', array(':uri' => $new_filename));
-    $record = $result->fetchObject();
-
-    if (isset($record->fid)) {
+    $new_fid = db_select('file_managed', 'fm')
+      ->fields('fm', ['fid'])
+      ->condition('uri', $new_filename)
+      ->range(0, 1)->execute()->fetchField();
+    if (!empty($new_fid)) {
       // print_r("FID:" . $record->fid . "\n");
-      return tpps_file_load($record->fid);
+      return tpps_file_load($new_fid);
     }
     $file_object = file_move($file, $new_filename, FILE_EXISTS_RENAME);
     // print_r("FILE OBJECT:\n");
@@ -316,6 +311,34 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
     return $file_object;
   }
   throw new Exception("Error: could not open file");
+}
+
+/**
+ * Builds new name for file.
+ *
+ * @param string $new_name
+ *   Human readable name of the file.
+ *   E.g., 'Plant_Accession_Arabidopsis_thaliana'.
+ * @param string $file_uri
+ *   File's URI.
+ *   E.g., 'public://tpps_accession/TGDR965_Plant_Accession_Arabidopsis_thaliana.csv'
+ *   See file_load($fid)->uri.
+ *
+ * @return string
+ *   Returns new name for file.
+ */
+function tpps_file_build_new_name($new_name, $file_uri) {
+  $new_filename = $new_name . "." . tpps_get_path_extension($file_uri);
+  // Seems it restores path to the folder.
+  // When pattern (slash) NOT found in $new_filename it gets part of
+  // $file->uri before slash and prepends to the $new_filename.
+  if (!preg_match('/^(.*\/)(.*)$/', $new_name, $matches)) {
+    preg_match('/^(.*\/).*$/', $file_uri, $matches);
+    // Note: $matches[1] will have path to folder.
+    // E.g., 'public://tpps_accession/'.
+    $new_filename = $matches[1] . $new_filename;
+  }
+  return $new_filename;
 }
 
 /**
