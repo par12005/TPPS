@@ -401,18 +401,18 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
     $parts_count = count($parts);
     $organism_type_id = NULL;
     if (isset($parts[2]) and (
-        $parts[2] == 'subsp.' or 
-        $parts[2] == 'spp.' or 
-        $parts[2] == 'sp.' or 
-        $parts[2] == 'subspecies' or 
-        $parts[2] == 'var.' or 
-        $parts[2] == 'varieta' or 
-        $parts[2] == 'variety' or 
-        $parts[2] == 'subvar.' or 
-        $parts[2] == 'subvarieta' or 
-        $parts[2] == 'subvariety' or 
-        $parts[2] == 'f.' or 
-        $parts[2] == 'forma' or 
+        $parts[2] == 'subsp.' or
+        $parts[2] == 'spp.' or
+        $parts[2] == 'sp.' or
+        $parts[2] == 'subspecies' or
+        $parts[2] == 'var.' or
+        $parts[2] == 'varieta' or
+        $parts[2] == 'variety' or
+        $parts[2] == 'subvar.' or
+        $parts[2] == 'subvarieta' or
+        $parts[2] == 'subvariety' or
+        $parts[2] == 'f.' or
+        $parts[2] == 'forma' or
         $parts[2] == 'form'
       )
     ) {
@@ -453,7 +453,7 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
         foreach ($results_organism_type_id_results as $organism_type_id_row) {
           $organism_type_id = $organism_type_id_row->type_id;
         }
-      } 
+      }
       else if ($parts[2] == 'f.' or $parts[2] == 'forma' or $parts[2] == 'form') {
         $results_organism_type_id_results = chado_query('SELECT * FROM chado.cvterm WHERE name = :name', [
           ':name' => 'forma'
@@ -461,7 +461,7 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
         foreach ($results_organism_type_id_results as $organism_type_id_row) {
           $organism_type_id = $organism_type_id_row->type_id;
         }
-      }    
+      }
     }
 
     $record = [
@@ -1882,27 +1882,35 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
 /**
  * Tpps genotype_vcf_to_flat_files (CSV).
  *
- * This function will process all vcf files per organism (from genotype section) genotypic information
- * and store it within files.
+ * This function will process all vcf files per organism (from genotype section)
+ * genotypic information and store it within files.
+ *
+ * @param object $submission
+ *   Fully loaded Submission object.
+ * @param bool $regenerate_all
+ *   Flag to regenarate all files.
  */
-function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $shared_state, $regenerate_all = TRUE) {
-  
-  
-  $project_id = $shared_state['ids']['project_id'];
-  $accession = $form_state['accession'];
+function tpps_genotypes_to_flat_files_and_find_studies_overlaps($submission, $regenerate_all = TRUE) {
+
+  $project_id = $submission->getProjectId();
+  $accession = $submission->accession;
   $dest_folder = tpps_realpath('public://tpps_vcf_flat_files');
-  
-  // print_r($form_state);
-  // Generate species codes which is needed later on
-  $organism_number = $shared_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
-  $species_codes = array();
+
+  // Generate species codes which is needed later on.
+  $organism_number = $submission->getOrganismNumber();
+  $species_codes = [];
+  $type_id = tpps_load_cvterm('organism 4 letter code')->cvterm_id;
   for ($i = 1; $i <= $organism_number; $i++) {
-    $species_codes[$shared_state['ids']['organism_ids'][$i]] = current(chado_select_record('organismprop', array('value'), array(
-      'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id,
-      'organism_id' => $shared_state['ids']['organism_ids'][$i],
-    ), array(
-      'limit' => 1,
-    )))->value;
+    $organism_id = $submission->sharedState['ids']['organism_ids'][$i];
+    $species_codes[$organism_id] = current(chado_select_record(
+      'organismprop',
+      ['value'], [
+        'type_id' => $type_id,
+        'organism_id' => $organism_id,
+      ], [
+        'limit' => 1,
+      ]
+    ))->value;
   }
   print_r("Species code\n");
   print_r($species_codes);
@@ -1914,9 +1922,10 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $sh
     $snps_flat_file_location = $dest_folder . '/' . $accession . '-' . $i . '-snps.csv';
     echo "Checking if file exists: $snps_flat_file_location\n";
     // If file does not exist, we need to generate this
-    if (!file_exists($snps_flat_file_location) || $regenerate_all == true) {
+    if (!file_exists($snps_flat_file_location) || $regenerate_all == TRUE) {
       echo "Generating: $snps_flat_file_location\n";
-      tpps_genotypes_to_flat_file($form_state, $shared_state, $species_codes, $i);
+      //tpps_genotypes_to_flat_file($form_state, $shared_state, $species_codes, $i);
+      tpps_genotypes_to_flat_file($submission, $species_codes, $i);
     }
   }
 
@@ -1934,39 +1943,42 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $sh
   }
   // print_r($study_accessions_with_potential_overlaps);
 
-
-
   // Go through each additional study and run genotypes to flat file.
   foreach ($study_accessions_with_potential_overlaps as $study_accession) {
-    $submission = new Submission($study_accession);
-    $study_state = $submission->sharedState;
+    $additional_study = new Submission($study_accession);
+    $study_state = $additional_study->sharedState;
 
-    $study_organism_number = $study_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
+    $study_organism_number = $additional_study->sharedState['saved_values'][TPPS_PAGE_1]['organism']['number'];
     echo "Study organism number for $study_accession is $study_organism_number\n";
-    // Check if each study has overlap files
-    for($i = 1; $i <= $study_organism_number; $i++) {
+    // Check if each study has overlap files.
+    for ($i = 1; $i <= $study_organism_number; $i++) {
       $snps_flat_file_location = $dest_folder . '/' . $study_accession . '-' . $i . '-snps.csv';
       echo "Checking if file exists: $snps_flat_file_location\n";
-      if (!file_exists($snps_flat_file_location) || $regenerate_all == true) {
-        // GOAL: We need to generate flat files for this study
-        // Step 1: Get species_codes for this study
+      if (!file_exists($snps_flat_file_location) || $regenerate_all == TRUE) {
+        // GOAL: We need to generate flat files for this study.
+        // Step 1: Get species_codes for this study.
         $study_species_codes = array();
         for ($j = 1; $j <= $organism_number; $j++) {
-          $study_species_codes[$study_state['ids']['organism_ids'][$j]] = current(chado_select_record('organismprop', array('value'), array(
-            'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id,
-            'organism_id' => $study_state['ids']['organism_ids'][$j],
-          ), array(
-            'limit' => 1,
-          )))->value;
+          $organism_id = $additional_study->sharedState['ids']['organism_ids'][$j];
+          $study_species_codes[$organism_id] = current(chado_select_record(
+            'organismprop',
+            ['value'], [
+              'type_id' => $type_id,
+              'organism_id' => $organism_id,
+            ], [
+              'limit' => 1,
+            ]
+          ))->value;
         }
 
         // Generate the flat files and necessary DB inserts for features, genotypes etc
         echo "Running tpps_genotypes_to_flat_file $study_accession $i\n";
-        tpps_genotypes_to_flat_file($study_state, $shared_state, $study_species_codes, $i);
+        //tpps_genotypes_to_flat_file($study_state, $shared_state, $study_species_codes, $i);
+        tpps_genotypes_to_flat_file($submission, $study_species_codes, $i);
       }
       else {
-        // Flat file exists so we can perform comparison operations to check between original study
-        // and this particular study
+        // Flat file exists so we can perform comparison operations to check
+        // between original study and this particular study
       }
     }
   }
@@ -1974,20 +1986,18 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $sh
   // @TODO after running tests
   // exit;
 
-  // Go through all studies and generate sorted list of the csv files
+  // Go through all studies and generate sorted list of the csv files.
   $accession_results = chado_query("select distinct accession from
     (select accession, unnest(markers) as marker from chado.studies_with_markers)x
     where marker in
-    (select unnest(markers) as marker from chado.studies_with_markers where accession = '" . $accession . "');");
+    (select unnest(markers) as marker from chado.studies_with_markers
+      where accession = '" . $accession . "');");
   foreach ($accession_results as $row) {
-    $study_accession = $row->accession;
-    $submission = new Submission($study_accession);
-    $study_state = $submission->sharedState;
-    $study_organism_number = $study_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
-    for ($i = 1; $i <= $study_organism_number; $i++) {
-      $snps_flat_file_location = $dest_folder . '/' . $study_accession . '-' . $i . '-snps.csv';
-      if (!is_file($snps_flat_file_location) || $regenerate_all == true) {
-        $snps_sorted = $dest_folder . '/' . $study_accession . '-' . $i . '-snps-sorted.csv';
+    $additional_study = new Submission($row->accession);
+    for ($i = 1; $i <= $additional_study->getOrganismNumber(); $i++) {
+      $snps_flat_file_location = $dest_folder . '/' . $row->accession . '-' . $i . '-snps.csv';
+      if (!is_file($snps_flat_file_location) || $regenerate_all == TRUE) {
+        $snps_sorted = $dest_folder . '/' . $row->accession . '-' . $i . '-snps-sorted.csv';
         $time_start = time();
         exec("cat $snps_flat_file_location | sort > $snps_sorted");
         $time_end = time();
@@ -1997,7 +2007,7 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $sh
       else {
 
       }
-      echo "[SORTED LIST]: ". $snps_flat_file_location . "\n";
+      echo "[SORTED LIST]: " . $snps_flat_file_location . "\n";
     }
   }
 
@@ -2013,7 +2023,6 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $sh
   print_r($all_studies_array);
 
   // // Code modified from https://r.je/php-find-every-combination
-
 
   // $words = array('red', 'blue', 'green');
   $all_combinations = [];
@@ -2055,7 +2064,7 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $sh
     // unlink($repeats_location);
     $cmd = "comm $snps_flat_file_location_1 $snps_flat_file_location_2 | awk -F'\\t' '{print $3}' | sed '/^$/d' > $repeats_location";
     // echo "CMD: $cmd\n";
-    if (!is_file($repeats_location) || $regenerate_all == true) {
+    if (!is_file($repeats_location) || $regenerate_all == TRUE) {
       exec($cmd);
       // echo "Repeats Location: $repeats_location\n";
     }
@@ -2171,7 +2180,8 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $sh
  * This function will process a vcf file's genotypic information
  * and store it within the a file.
  *
- * @param array $form_state
+ * @param object $submission
+ *   Fully loaded Submission object.
  * @param array $species_codes
  * @param mixed $i
  * @param TripalJob $job
@@ -2179,7 +2189,9 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $sh
  *
  * @return void
  */
-function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_codes, $i, $is_primary_study = true, TripalJob &$job = NULL, $insert_mode = 'hybrid') {
+function tpps_genotypes_to_flat_file($submission, array $species_codes, $i, $is_primary_study = true, TripalJob &$job = NULL, $insert_mode = 'hybrid') {
+
+  $shared_state = $submission->sharedState;
   $project_id = $shared_state['ids']['project_id'];
   $organism_index = $i;
   // Some initial variables previously inherited from the parent function code. So we're reusing it to avoid
@@ -2272,11 +2284,11 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
 
       // @todo we probably want to use tpps_file_iterator to parse vcf files.
       $vcf_fid = $genotype['files']['vcf'];
-      
+
       // check project already exists
-      $results_project_file = chado_query("SELECT count(*) AS c1 FROM public.tpps_project_file_managed 
+      $results_project_file = chado_query("SELECT count(*) AS c1 FROM public.tpps_project_file_managed
         WHERE project_id = :project_id
-        AND fid = :fid", 
+        AND fid = :fid",
       [
         ':project_id' => $project_id,
         ':fid' => $vcf_fid
@@ -2311,7 +2323,7 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
       else {
         $location = $genotype['files']['local_vcf'];
       }
-      if ($location == null || $location == "") {
+      if ($location == NULL || $location == "") {
         throw new Exception('Could not find location of VCF even though the VCF option was specified.
         File ID was 0 so its not an uploaded file. local_vcf variable returned empty so cannot use that');
       }
@@ -2320,9 +2332,10 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
       // [RISH] [12/14/2023] [STEP 1] Perform one liner related code for flat files and db insertions
       // [STEP 1 A - Run a check for duplicate sample names]
       $cmd_output = [];
-      $found_duplicate_sample_ids = false;
+      $found_duplicate_sample_ids = FALSE;
       $pathinfo = pathinfo($location);
-      $duplicate_warnings_location = $pathinfo['dirname'] . '/' .  $pathinfo['filename'] . '-duplicate-warnings.txt';
+      $duplicate_warnings_location = $pathinfo['dirname'] . '/'
+        . $pathinfo['filename'] . '-duplicate-warnings.txt';
       $cmd = 'bcftools query -l ' . $location . ' &> ' . $duplicate_warnings_location;
       exec($cmd);
       echo "Duplicate sample names checked\n";
@@ -2343,7 +2356,8 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
       if ($found_duplicate_sample_ids == true) {
         // We should generate a location to push the rename list to
         $pathinfo = pathinfo($location);
-        $sample_rename_location = $pathinfo['dirname'] . '/' . $pathinfo['filename'] . '-sample-rename-list.txt';
+        $sample_rename_location = $pathinfo['dirname'] . '/'
+          . $pathinfo['filename'] . '-sample-rename-list.txt';
         @unlink($sample_rename_location);
         echo "Sample Rename Location: $sample_rename_location\n";
         // Get renamed sample list
@@ -2365,15 +2379,14 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
         $cmd_output = []; // reset
         exec($cmd, $cmd_output);
 
-
         // Regenerate the VCF with the corrected samples
-        $vcf_fixed_location = $pathinfo['dirname'] . '/' . $pathinfo['filename'] . '-fixed-header.vcf';
+        $vcf_fixed_location = $pathinfo['dirname'] . '/'
+          . $pathinfo['filename'] . '-fixed-header.vcf';
         echo "VCF Fixed location: $vcf_fixed_location\n";
           $cmd = 'bcftools reheader -s '. $sample_rename_location . ' ' . $location . ' > ' . $vcf_fixed_location;
         $cmd_output = []; // reset
         exec($cmd, $cmd_output);
       }
-
 
       // STEP 1 C - GZIP THE VCF IF IT IS NOT ALREADY GZIPPED
       $valid_vcf = NULL;
@@ -2385,7 +2398,6 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
         $valid_vcf = $location;
       }
       echo "Valid VCF location: $valid_vcf\n";
-
 
       $pathinfo_valid_vcf = pathinfo($valid_vcf);
 
@@ -2881,7 +2893,7 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
             }
 
             $vcf_cols_count = count($vcf_line);
-            
+
             // echo "gen_name_index:$genotype_name_progress_count colcount:$vcf_cols_count ";
             for ($j = 9; $j < $vcf_cols_count; $j++) {
               // Rish: This was added on 09/12/2022
@@ -3193,7 +3205,7 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
         ':accession' => $accession
       ]);
       $accession_count = $accession_count_results->fetchObject()->c1;
-      
+
 
       // UNIQUE VARIANTS Step 2 - INSERT if no record exists or UPDATE if record exists
       if ($accession_count > 0) {
@@ -4673,103 +4685,96 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
  */
 function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
   // If study accession value exists, use this to look up the form_state.
-  $form_state = NULL;
-  if (isset($options['study_accession'])) {
-    $submission = new Submission($options['study_accession']);
-    $form_state = $submission->state;
-  }
-  elseif (isset($options['form_state'])) {
-    $form_state = $options['form_state'];
+  $submission = new Submission($options['study_accession'] ?? NULL);
+  if ($submission->doesNotExist() && !empty($options['form_state'])) {
+    $submission->generateSharedState($options['form_state']);
   }
 
-  // If $form_state is not NULL.
-  if (isset($form_state)) {
-    // Get page 1 form_state data.
-    $page1_values = $form_state['saved_values'][TPPS_PAGE_1];
-    // Get page 4 form_state data.
-    $page4_values = $form_state['saved_values'][TPPS_PAGE_4];
-    // Organism count.
-    $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
-    // Project ID.
-    $project_id = $form_state['ids']['project_id'];
+  if ($submission->doesNotExist()) {
+    echo "Could not find a form_state\n";
+    return;
+  }
+  $page1_values = $submission->getSharedPage(TPPS_PAGE_1);
+  $page4_values = $submission->getSharedPage(TPPS_PAGE_4);
+  $organism_number = $submission->getOrganismNumber();
+  $project_id = $submission->getProjectId();
 
-    // Go through each organism.
-    for ($i = 1; $i <= $organism_number; $i++) {
-      $organism_name = $page1_values['organism'][$i]['name'];
-      echo "Organism name: $organism_name\n";
-      $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
-      // Note: Value of this field is string (not array). Correct check:
-      //if ($genotype['files']['file-type'] == TPPS_GENOTYPING_FILE_TYPE_VCF) {
-      if (empty($genotype['files']['file-type']['VCF'])) {
-        echo "Could not find a VCF file for organism-$i\n";
+  // Go through each organism.
+  for ($i = 1; $i <= $organism_number; $i++) {
+    $organism_name = $page1_values['organism'][$i]['name'];
+    echo "Organism name: $organism_name\n";
+    $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+    // Note: Value of this field is string (not array). Correct check:
+    //if ($genotype['files']['file-type'] == TPPS_GENOTYPING_FILE_TYPE_VCF) {
+    if (empty($genotype['files']['file-type']['VCF'])) {
+      echo "Could not find a VCF file for organism-$i\n";
+    }
+    else {
+
+      // Initialize sample.list text.
+      $sample_list_data = "VCF_header_sample\tSample_name\tSample_Accession"
+        . "\tGermplasm_name\tGermplasm_Accession\tGermplasm_type\tOrganism\n"; // header
+
+      // Get the VCF fid.
+      $vcf_fid = $genotype['files']['vcf'];
+      if (isset($vcf_fid) && $vcf_fid > 0) {
+        echo "Found uploaded VCF with FID: " . $vcf_fid . "\n";
+        $vcf_file = file_load($vcf_fid);
+        $location = tpps_get_location($vcf_file->uri);
       }
       else {
+        echo "Could not detect an uploaded VCF, checking for a local VCF file\n";
+        $location = $genotype['files']['local_vcf'];
+      }
 
-        // Initialize sample.list text.
-        $sample_list_data = "VCF_header_sample\tSample_name\tSample_Accession\tGermplasm_name\tGermplasm_Accession\tGermplasm_type\tOrganism\n"; // header
+      if (!isset($location)) {
+        echo "[FAILED] Could not find a VCF location. Either upload a VCF file or set a local vcf location via the TPPS form on page 4.\n";
+        return;
+      }
 
-        // Get the VCF fid.
-        $vcf_fid = $genotype['files']['vcf'];
-        if (isset($vcf_fid) && $vcf_fid > 0) {
-          echo "Found uploaded VCF with FID: " . $vcf_fid . "\n";
-          $vcf_file = file_load($vcf_fid);
-          $location = tpps_get_location($vcf_file->uri);
+      echo "VCF location: $location\n";
+      $vcf_content = gzopen($location, 'r');
+
+      echo "[INFO] Scanning Genotype VCF file to generate sample list\n";
+      $file_progress_line_count = 0;
+      while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
+        $file_progress_line_count++;
+        if($file_progress_line_count % 10000 == 0 && $file_progress_line_count != 0) {
+          echo '[INFO] [VCF PROCESSING STATUS] ' . $file_progress_line_count . " lines done\n";
         }
-        else {
-          echo "Could not detect an uploaded VCF, checking for a local VCF file\n";
-          $location = $genotype['files']['local_vcf'];
-        }
-
-        if (!isset($location)) {
-          echo "[FAILED] Could not find a VCF location. Either upload a VCF file or set a local vcf location via the TPPS form on page 4.\n";
-          return;
-        }
-
-        echo "VCF location: $location\n";
-        $vcf_content = gzopen($location, 'r');
-
-        echo "[INFO] Scanning Genotype VCF file to generate sample list\n";
-        $file_progress_line_count = 0;
-        while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
-          $file_progress_line_count++;
-          if($file_progress_line_count % 10000 == 0 && $file_progress_line_count != 0) {
-            echo '[INFO] [VCF PROCESSING STATUS] ' . $file_progress_line_count . " lines done\n";
+        // We want to get a non header line
+        if (stripos($vcf_line,'#CHROM') !== FALSE) {
+          // This will take the line and get each tab value
+          $vcf_line = explode("\t", $vcf_line);
+          // print_r($vcf_line);
+          $cols_count = count($vcf_line);
+          echo "Found " . ($cols_count - 9) . " sample IDs. Generating sample list file.\n";
+          for ($j=9; $j < $cols_count; $j++) {
+            // print_r($vcf_line[$j]);
+            echo ".";
+            $vcf_line[$j] = trim($vcf_line[$j]); // in case it's the last column which can contain a new line character which messes up TSV sample file generated
+            $sample_list_data .= $vcf_line[$j] . "\t" . $vcf_line[$j] . "\t"
+              . $vcf_line[$j] . "\t" . $organism_name . "-germplasm-name\t"
+              . $vcf_line[$j] . "\taccession\t" . $organism_name . "\n";
           }
-          // We want to get a non header line
-          if (stripos($vcf_line,'#CHROM') !== FALSE) {
-            // This will take the line and get each tab value
-            $vcf_line = explode("\t", $vcf_line);
-            // print_r($vcf_line);
-            $cols_count = count($vcf_line);
-            echo "Found " . ($cols_count - 9) . " sample IDs. Generating sample list file.\n";
-            for($j=9; $j<$cols_count; $j++) {
-              // print_r($vcf_line[$j]);
-              echo ".";
-              $vcf_line[$j] = trim($vcf_line[$j]); // in case it's the last column which can contain a new line character which messes up TSV sample file generated
-              $sample_list_data .= $vcf_line[$j] . "\t" . $vcf_line[$j] . "\t" . $vcf_line[$j] . "\t" . $organism_name . "-germplasm-name\t" . $vcf_line[$j] . "\taccession\t" . $organism_name . "\n";
-            }
-            echo "\n";
-            // Break out of the while loop since we only want one line
-            // to get the sample names
-            break;
-          }
-        } // end while
-        $dest_folder = 'public://tpps_vcf_sample_list_files/';
-        file_prepare_directory($dest_folder, FILE_CREATE_DIRECTORY);
-        $file_name = $form_state['accession'] . '-sample-list-' . $i . '.txt';
-        $file = file_save_data($sample_list_data, $dest_folder . $file_name);
-        echo "File managed as FID: " . $file->fid . "\n";
-        echo "File managed location: " . $file->uri . "\n";
-        echo "Real managed real path: " . tpps_realpath($file->uri) . "\n";
-        // We could store this in the submit_state - TODO if we need this
-        // $form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype']['vcf_sample_list'] = $file->fid;
-        // print_r($sample_list_data);
-      } // end else
-    } // end for
-  }
-  else {
-    echo "Could not find a form_state\n";
-  }
+          echo "\n";
+          // Break out of the while loop since we only want one line
+          // to get the sample names
+          break;
+        }
+      } // end while
+      $dest_folder = 'public://tpps_vcf_sample_list_files/';
+      file_prepare_directory($dest_folder, FILE_CREATE_DIRECTORY);
+      $file_name = $form_state['accession'] . '-sample-list-' . $i . '.txt';
+      $file = file_save_data($sample_list_data, $dest_folder . $file_name);
+      echo "File managed as FID: " . $file->fid . "\n";
+      echo "File managed location: " . $file->uri . "\n";
+      echo "Real managed real path: " . tpps_realpath($file->uri) . "\n";
+      // We could store this in the submit_state - TODO if we need this
+      // $page4_values["organism-$i"]['genotype']['vcf_sample_list'] = $file->fid;
+      // print_r($sample_list_data);
+    } // end else
+  } // end for
 }
 
 /**

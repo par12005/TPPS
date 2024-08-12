@@ -783,6 +783,68 @@ class Submission {
   }
 
   /**
+   * Gets Project Id.
+   *
+   * Note: Could be used when TPPS Pipeline processing complete.
+   *
+   * @return int
+   *   Returns Project Id of submission.
+   *   Rerurns NULL if submission doesn't exist.
+   */
+  public function getProjectId() {
+    if ($this->doesNotExist()) {
+      return NULL;
+    }
+    return (
+      $this->state['ids']['project_id']
+      ?? $this->sharedState['ids']['project_id']
+      ?? NULL
+    );
+  }
+
+  /**
+   * Gets Page values from Submission's State array.
+   *
+   * @return array
+   *   Returns reference to the TPPS Form subset (array with submitted values)
+   *   in Submission's State array.
+   *   Rerurns NULL if submission doesn't exist.
+   */
+  public function &getPage($page_number) {
+    if ($this->doesNotExist()) {
+      return NULL;
+    }
+    if (isset($this->state['saved_values'][$page_number])) {
+      return $this->state['saved_values'][$page_number];
+    }
+    else {
+      $null = NULL;
+      return $null;
+    }
+  }
+
+  /**
+   * Gets Page values from Submission's Shared State array.
+   *
+   * @return array
+   *   Returns reference to the TPPS Form subset (array with submitted values)
+   *   in Submission's Shared State array.
+   *   Rerurns NULL if submission doesn't exist.
+   */
+  public function &getSharedPage($page_number) {
+    if ($this->doesNotExist()) {
+      return NULL;
+    }
+    if (isset($this->sharedState['saved_values'][$page_number])) {
+      return $this->sharedState['saved_values'][$page_number];
+    }
+    else {
+      $null = NULL;
+      return $null;
+    }
+  }
+
+  /**
    * Checks if form type is 'tppsc'.
    *
    * @return bool
