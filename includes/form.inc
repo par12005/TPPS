@@ -632,6 +632,7 @@ function tpps_form_build_file_field(array $form_bus) {
     '#tree' => TRUE,
     '#states' => $states,
     //'#parents' => $parents,
+    '#simple_file' => FALSE,
   ];
 
   // Required when visible.
