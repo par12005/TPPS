@@ -4673,25 +4673,27 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
  */
 function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
   // If study accession value exists, use this to look up the form_state.
-  $form_state = NULL;
+  // $form_state = NULL;
+  $shared_state = NULL;
   if (isset($options['study_accession'])) {
     $submission = new Submission($options['study_accession']);
     $form_state = $submission->state;
+    $shared_state = $submission->getSharedState();
   }
-  elseif (isset($options['form_state'])) {
-    $form_state = $options['form_state'];
-  }
+  // elseif (isset($options['form_state'])) {
+  //   $form_state = $options['form_state'];
+  // }
 
   // If $form_state is not NULL.
-  if (isset($form_state)) {
+  if (isset($shared_state)) {
     // Get page 1 form_state data.
-    $page1_values = $form_state['saved_values'][TPPS_PAGE_1];
+    $page1_values = $shared_state['saved_values'][TPPS_PAGE_1];
     // Get page 4 form_state data.
-    $page4_values = $form_state['saved_values'][TPPS_PAGE_4];
+    $page4_values = $shared_state['saved_values'][TPPS_PAGE_4];
     // Organism count.
-    $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
+    $organism_number = $shared_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
     // Project ID.
-    $project_id = $form_state['ids']['project_id'];
+    $project_id = $shared_state['ids']['project_id'];
 
     // Go through each organism.
     for ($i = 1; $i <= $organism_number; $i++) {
@@ -4756,7 +4758,7 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
         } // end while
         $dest_folder = 'public://tpps_vcf_sample_list_files/';
         file_prepare_directory($dest_folder, FILE_CREATE_DIRECTORY);
-        $file_name = $form_state['accession'] . '-sample-list-' . $i . '.txt';
+        $file_name = $shared_state['accession'] . '-sample-list-' . $i . '.txt';
         $file = file_save_data($sample_list_data, $dest_folder . $file_name);
         echo "File managed as FID: " . $file->fid . "\n";
         echo "File managed location: " . $file->uri . "\n";
@@ -4768,7 +4770,7 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
     } // end for
   }
   else {
-    echo "Could not find a form_state\n";
+    echo "Could not find a shared_state\n";
   }
 }
 
