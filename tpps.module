@@ -940,6 +940,9 @@ function tpps_form_field_process(array $element, array &$form_state, array $form
  * Provides options for users to define the columns in their file, as well as a
  * preview of the first 3 rows of the file.
  *
+ * For simple file-fields like images use:
+ * $form[$field_name]['#simple_file'] = TRUE;
+ *
  * @param array $element
  *   The existing managed_file form element.
  * @param array $form_state
@@ -973,7 +976,9 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
 
   // Note: edit-organism-1-genotype-tripal-fasta-file-file-upload-upload
   // has no title.
-  if ($fid && ($file = tpps_file_load($fid))) {
+  if (!($element['#simple_file'] ?? FALSE)
+    && $fid && ($file = tpps_file_load($fid))
+  ) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // "Null values denoted by" AKA "empty" field.
     if (!empty($form_state['saved_values'][$page])) {

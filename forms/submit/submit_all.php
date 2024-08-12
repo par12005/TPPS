@@ -4684,16 +4684,17 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
  *   Array of options. Keys are: study_accession, form_state, job.
  */
 function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
-  // If study accession value exists, use this to look up the form_state.
   $submission = new Submission($options['study_accession'] ?? NULL);
   if ($submission->doesNotExist() && !empty($options['form_state'])) {
     $submission->generateSharedState($options['form_state']);
   }
-
   if ($submission->doesNotExist()) {
     echo "Could not find a form_state\n";
     return;
   }
+  $form_state = $submission->state;
+  $shared_state = $submission->getSharedState();
+
   $page1_values = $submission->getSharedPage(TPPS_PAGE_1);
   $page4_values = $submission->getSharedPage(TPPS_PAGE_4);
   $organism_number = $submission->getOrganismNumber();
@@ -4705,76 +4706,79 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
     echo "Organism name: $organism_name\n";
     $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
     // Note: Value of this field is string (not array). Correct check:
-    //if ($genotype['files']['file-type'] == TPPS_GENOTYPING_FILE_TYPE_VCF) {
+    // if ($genotype['files']['file-type'] == TPPS_GENOTYPING_FILE_TYPE_VCF).
     if (empty($genotype['files']['file-type']['VCF'])) {
       echo "Could not find a VCF file for organism-$i\n";
+      continue;
+    }
+
+    // Initialize sample.list text.
+    // Header.
+    $sample_list_data = "VCF_header_sample\tSample_name\tSample_Accession"
+      . "\tGermplasm_name\tGermplasm_Accession\tGermplasm_type\tOrganism\n";
+
+    // Get the VCF fid.
+    $vcf_fid = $genotype['files']['vcf'];
+    if (isset($vcf_fid) && $vcf_fid > 0) {
+      echo "Found uploaded VCF with FID: " . $vcf_fid . "\n";
+      $vcf_file = file_load($vcf_fid);
+      $location = tpps_get_location($vcf_file->uri);
     }
     else {
+      echo "Could not detect an uploaded VCF, checking for a local VCF file\n";
+      $location = $genotype['files']['local_vcf'];
+    }
 
-      // Initialize sample.list text.
-      $sample_list_data = "VCF_header_sample\tSample_name\tSample_Accession"
-        . "\tGermplasm_name\tGermplasm_Accession\tGermplasm_type\tOrganism\n"; // header
+    if (!isset($location)) {
+      echo "[FAILED] Could not find a VCF location. Either upload a VCF file "
+        . "or set a local vcf location via the TPPS form on page 4.\n";
+      return;
+    }
 
-      // Get the VCF fid.
-      $vcf_fid = $genotype['files']['vcf'];
-      if (isset($vcf_fid) && $vcf_fid > 0) {
-        echo "Found uploaded VCF with FID: " . $vcf_fid . "\n";
-        $vcf_file = file_load($vcf_fid);
-        $location = tpps_get_location($vcf_file->uri);
+    echo "VCF location: $location\n";
+    $vcf_content = gzopen($location, 'r');
+
+    echo "[INFO] Scanning Genotype VCF file to generate sample list\n";
+    $file_progress_line_count = 0;
+    while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
+      $file_progress_line_count++;
+      if ($file_progress_line_count % 10000 == 0 && $file_progress_line_count != 0) {
+        echo '[INFO] [VCF PROCESSING STATUS] ' . $file_progress_line_count . " lines done\n";
       }
-      else {
-        echo "Could not detect an uploaded VCF, checking for a local VCF file\n";
-        $location = $genotype['files']['local_vcf'];
-      }
-
-      if (!isset($location)) {
-        echo "[FAILED] Could not find a VCF location. Either upload a VCF file or set a local vcf location via the TPPS form on page 4.\n";
-        return;
-      }
-
-      echo "VCF location: $location\n";
-      $vcf_content = gzopen($location, 'r');
-
-      echo "[INFO] Scanning Genotype VCF file to generate sample list\n";
-      $file_progress_line_count = 0;
-      while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
-        $file_progress_line_count++;
-        if($file_progress_line_count % 10000 == 0 && $file_progress_line_count != 0) {
-          echo '[INFO] [VCF PROCESSING STATUS] ' . $file_progress_line_count . " lines done\n";
+      // We want to get a non header line.
+      if (stripos($vcf_line, '#CHROM') !== FALSE) {
+        // This will take the line and get each tab value.
+        $vcf_line = explode("\t", $vcf_line);
+        // print_r($vcf_line);
+        $cols_count = count($vcf_line);
+        echo "Found " . ($cols_count - 9) . " sample IDs. Generating sample list file.\n";
+        for ($j = 9; $j < $cols_count; $j++) {
+          // print_r($vcf_line[$j]);
+          echo ".";
+          // In case it's the last column which can contain a new line
+          // character which messes up TSV sample file generated.
+          $vcf_line[$j] = trim($vcf_line[$j]);
+          $sample_list_data .= $vcf_line[$j] . "\t" . $vcf_line[$j] . "\t"
+            . $vcf_line[$j] . "\t" . $organism_name . "-germplasm-name\t"
+            . $vcf_line[$j] . "\taccession\t" . $organism_name . "\n";
         }
-        // We want to get a non header line
-        if (stripos($vcf_line,'#CHROM') !== FALSE) {
-          // This will take the line and get each tab value
-          $vcf_line = explode("\t", $vcf_line);
-          // print_r($vcf_line);
-          $cols_count = count($vcf_line);
-          echo "Found " . ($cols_count - 9) . " sample IDs. Generating sample list file.\n";
-          for ($j=9; $j < $cols_count; $j++) {
-            // print_r($vcf_line[$j]);
-            echo ".";
-            $vcf_line[$j] = trim($vcf_line[$j]); // in case it's the last column which can contain a new line character which messes up TSV sample file generated
-            $sample_list_data .= $vcf_line[$j] . "\t" . $vcf_line[$j] . "\t"
-              . $vcf_line[$j] . "\t" . $organism_name . "-germplasm-name\t"
-              . $vcf_line[$j] . "\taccession\t" . $organism_name . "\n";
-          }
-          echo "\n";
-          // Break out of the while loop since we only want one line
-          // to get the sample names
-          break;
-        }
-      } // end while
-      $dest_folder = 'public://tpps_vcf_sample_list_files/';
-      file_prepare_directory($dest_folder, FILE_CREATE_DIRECTORY);
-      $file_name = $form_state['accession'] . '-sample-list-' . $i . '.txt';
-      $file = file_save_data($sample_list_data, $dest_folder . $file_name);
-      echo "File managed as FID: " . $file->fid . "\n";
-      echo "File managed location: " . $file->uri . "\n";
-      echo "Real managed real path: " . tpps_realpath($file->uri) . "\n";
-      // We could store this in the submit_state - TODO if we need this
-      // $page4_values["organism-$i"]['genotype']['vcf_sample_list'] = $file->fid;
-      // print_r($sample_list_data);
-    } // end else
-  } // end for
+        echo "\n";
+        // Break out of the while loop since we only want one line
+        // to get the sample names.
+        break;
+      }
+    } // end while
+    $dest_folder = 'public://tpps_vcf_sample_list_files/';
+    file_prepare_directory($dest_folder, FILE_CREATE_DIRECTORY);
+    $file_name = $shared_state['accession'] . '-sample-list-' . $i . '.txt';
+    $file = file_save_data($sample_list_data, $dest_folder . $file_name);
+    echo "File managed as FID: " . $file->fid . "\n";
+    echo "File managed location: " . $file->uri . "\n";
+    echo "Real managed real path: " . tpps_realpath($file->uri) . "\n";
+    // We could store this in the submit_state - TODO if we need this
+    // $page4_values["organism-$i"]['genotype']['vcf_sample_list'] = $file->fid;
+    // print_r($sample_list_data);
+  }
 }
 
 /**

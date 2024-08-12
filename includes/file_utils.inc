@@ -1090,7 +1090,11 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
 
   $file = tpps_file_load($fid);
   $file_location = tpps_get_location($file->uri);
-
+  // Do not process tree images.
+  $extension = tpps_get_path_extension($file_location);
+  if (in_array($extension, ['jpg', 'jpeg', 'png'])) {
+    return TRUE;
+  }
   // Item / line counter
   $item_count = 0;
 

@@ -79,6 +79,7 @@ function tpps_summary_create_form(array &$form, array $form_state) {
         ],
       ],
       '#upload_location' => "$supplemental_upload_location",
+      '#simple_file' => TRUE,
     ];
   }
   $form['release'] = [
@@ -171,6 +172,7 @@ function tpps_summary_create_form(array &$form, array $form_state) {
         ],
         '#description' => t('Please upload a photo of the species in either '
           . '.jpeg or .jpg format'),
+        '#simple_file' => TRUE,
       ];
       if (db_table_exists('treepictures_metadata')) {
         $form['tree_pictures']["{$org}_url"] = [
