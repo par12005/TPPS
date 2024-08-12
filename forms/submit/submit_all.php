@@ -3860,12 +3860,12 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
  *
  * @return void
  */
-function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, $i, TripalJob &$job = NULL, $insert_mode = 'hybrid', array &$options) {
+function tpps_genotype_vcf_processing(array &$shared_state, array $species_codes, $i, TripalJob &$job = NULL, $insert_mode = 'hybrid', array &$options) {
   $organism_index = $i;
   // Some initial variables previously inherited from the parent function code. So we're reusing it to avoid
   // missing any important variables if we rewrote it.
-  $page1_values = $form_state['saved_values'][TPPS_PAGE_1];
-  $page4_values = $form_state['saved_values'][TPPS_PAGE_4];
+  $page1_values = $shared_state['saved_values'][TPPS_PAGE_1];
+  $page4_values = $shared_state['saved_values'][TPPS_PAGE_4];
   $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
 
   if ($insert_mode == '') {
@@ -3875,7 +3875,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
   // Project ID is more for the database (it is different from the TPPS Accession)
   // but is unique as well.
-  $project_id = $form_state['ids']['project_id'];
+  $project_id = $shared_state['ids']['project_id'];
 
   // Record group is used to determine batch side per inserts
   $record_group = variable_get('tpps_record_group', 10000);
@@ -3919,7 +3919,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
   $options = array(
     'records' => $records,
-    'tree_info' => $form_state['tree_info'],
+    'tree_info' => $shared_state['tree_info'],
     'species_codes' => $species_codes,
     'genotype_count' => &$genotype_count,
     'genotype_total' => &$genotype_total,
@@ -3927,7 +3927,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
     'seq_var_cvterm' => $seq_var_cvterm,
     'multi_insert' => &$multi_insert_options,
     'job' => &$job,
-    'study_accession' => $form_state['saved_values'][1]['accession']
+    'study_accession' => $shared_state['saved_values'][1]['accession']
   );
 
   // check to make sure admin has not set disable_vcf_importing.
@@ -3943,7 +3943,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
       // @todo we probably want to use tpps_file_iterator to parse vcf files.
       $vcf_fid = $genotype['files']['vcf'];
-      tpps_add_project_file($form_state, $vcf_fid);
+      tpps_add_project_file($shared_state, $vcf_fid);
 
       $records['genotypeprop'] = array();
 
@@ -3974,7 +3974,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
       $tree_ids = array();
       $format = "";
       // This was done by Peter
-      $current_id = $form_state['ids']['organism_ids'][$i];
+      $current_id = $shared_state['ids']['organism_ids'][$i];
       $species_code = $species_codes[$current_id];
 
 
@@ -4653,7 +4653,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
         elseif (preg_match('/#CHROM/', $vcf_line)) {
           $vcf_line = explode("\t", $vcf_line);
           for ($j = 9; $j < count($vcf_line); $j++) {
-            $stocks[] = $form_state['tree_info'][trim($vcf_line[$j])]['stock_id'];
+            $stocks[] = $shared_state['tree_info'][trim($vcf_line[$j])]['stock_id'];
             $tree_ids[] = trim($vcf_line[$j]);
           }
         }
