@@ -2523,8 +2523,8 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
       $stocks = array();
       $format = "";
       // This was done by Peter
-      $current_id = $shared_state['ids']['organism_ids'][$i];
-      $species_code = $species_codes[$current_id];
+      // $current_id = $shared_state['ids']['organism_ids'][$i];
+      // $species_code = $species_codes[$current_id];
 
       $tree_ids = [];
       $variant_ids = [];
@@ -2542,6 +2542,7 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
       // OR NOT [7/1/2023]
       // THIS WAS AN ISSUE BROUGHT UP BY EMILY REGARDING SNPS NOT BEING ASSOCIATED WITH POP TRICH (665 STUDY)
       $species_code = null;
+      $current_id = null;
       $organism_id = null;
       $count_tmp = 0;
       foreach ($species_codes as $organism_id_tmp => $species_code_tmp) {
@@ -2660,7 +2661,7 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
           print_r('Record count:' . $record_count . "\n");
           $genotype_count += count($stocks);
           $vcf_line = explode("\t", $vcf_line);
-          $scaffold_id = &$vcf_line[0];
+          $scaffold_id = explode(" ",$vcf_line[0])[0]; // take the first part if it is space delimited (8/13/2024 RISH discussion with Emily)
           $position = &$vcf_line[1];
           $variant_name = &$vcf_line[2];
           $ref = &$vcf_line[3];
@@ -2726,19 +2727,26 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
           //   'type_id' => $seq_var_cvterm,
           // );
 
-          // Rish code to test a single insert and get the id
-          try {
-            $results = chado_insert_record('feature', [
-              'name' => $marker_name,
-              'organism_id' => $current_id,
-              'uniquename' => $marker_name,
-              'type_id' => $seq_var_cvterm,
-            ]);
-          }
-          catch (Exception $ex) {
+          // Check to see if marker exists in the feature's table
+          $feature_check_results = chado_query('SELECT count(*) as c1 FROM chado.feature WHERE uniquename = :marker_name',[
+            ':marker_name' => $marker_name
+          ]);
+          $feature_check_count = $feature_check_results->fetchObject()->c1;
+          // If marker does not exist, insert it into the feature table
+          if ($feature_check_count <= 0) {
+            try {
+              $results = chado_insert_record('feature', [
+                'name' => $marker_name,
+                'organism_id' => $current_id,
+                'uniquename' => $marker_name,
+                'type_id' => $seq_var_cvterm,
+              ]);
+            }
+            catch (Exception $ex) {
 
+            }
           }
-          // get the feature_id
+          // get the marker_id <- feature_id column value
           $results = chado_query('SELECT feature_id FROM chado.feature WHERE uniquename = :uniquename', [
             ':uniquename' => $marker_name
           ]);
@@ -2752,19 +2760,30 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
           //   'type_id' => $seq_var_cvterm,
           // );
 
-          // Rish code to test a single insert and get the id
-          // echo "feature_name: $variant_name\n";
-          try {
-            $results = chado_insert_record('feature', [
-              'name' => $variant_name,
-              'organism_id' => $current_id,
-              'uniquename' => $variant_name,
-              'type_id' => $seq_var_cvterm,
-            ]);
-          }
-          catch (Exception $ex) {
+          // Check if variant_id already exists in the feature's table
+          $feature_check_results = chado_query('SELECT count(*) as c1 FROM chado.feature WHERE uniquename = :variant_name',[
+            ':variant_name' => $variant_name
+          ]);
+          $feature_check_count = $feature_check_results->fetchObject()->c1;
+          // If marker does not exist, insert it into the feature table
+          $feature_exists = NULL;
+          if ($feature_check_count <= 0) {
+            try {
+              $results = chado_insert_record('feature', [
+                'name' => $variant_name,
+                'organism_id' => $current_id,
+                'uniquename' => $variant_name,
+                'type_id' => $seq_var_cvterm,
+              ]);
+            }
+            catch (Exception $ex) {
 
+            }
           }
+          else {
+            $feature_exists = true; // remember it already exists (this is used further down to block featureloc)
+          }
+
           // get the feature_id
           $results = chado_query('SELECT feature_id FROM chado.feature WHERE uniquename = :uniquename', [
             ':uniquename' => $variant_name
@@ -2772,15 +2791,20 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
           $row_object = $results->fetchObject();
           $variant_id = $row_object->feature_id;
 
-          // Lookup whether marker is already inserted into the features table
-          $result = chado_query("SELECT * FROM chado.feature WHERE uniquename = :marker_name", [
-            ':marker_name' => $variant_name, // column 3 of VCF
-            // ':organism_id' => $current_id
-          ]);
+          // // Lookup whether marker is already inserted into the features table.
+          // $result = chado_query(
+          //   "SELECT * FROM chado.feature WHERE uniquename = :marker_name",
+          //   // Column 3 of VCF.
+          //   [':marker_name' => $variant_name]
+          // );
 
-          $feature_exists = false;
-          foreach ($result as $row) {
-            $feature_exists = true;
+          if ($feature_exists) {
+            tpps_log("Feature (variant): $variant_name exists already, featureloc will not be added\n");
+            echo("Feature (variant): $variant_name exists, featureloc will not be added\n");
+          }
+          else {
+            tpps_log("Feature (variant): $variant_name not found so it was created\n");
+            echo("Feature (variant): $variant_name not found so it was created\n");
           }
 
           if ($feature_exists != true) {
@@ -2860,6 +2884,7 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
               }
             }
           }
+          throw New Exception('DEBUG');
 
           // Rish 12/08/2022: So we have multiple genotypes created
           // So I adjusted some of this code into a for statement
@@ -4023,9 +4048,11 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
       $stocks = array();
       $tree_ids = array();
       $format = "";
+
       // This was done by Peter
-      $current_id = $form_state['ids']['organism_ids'][$i];
-      $species_code = $species_codes[$current_id];
+      // DEPRECATED 8/13/2024
+      // $current_id = $form_state['ids']['organism_ids'][$i];
+      // $species_code = $species_codes[$current_id];
 
 
       // Override the above code done by Rish to use organism_id from page 4
@@ -4035,6 +4062,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
       // OR NOT [7/1/2023]
       // THIS WAS AN ISSUE BROUGHT UP BY EMILY REGARDING SNPS NOT BEING ASSOCIATED WITH POP TRICH (665 STUDY)
       $species_code = null;
+      $current_id = null;
       $organism_id = null;
       $count_tmp = 0;
       foreach ($species_codes as $organism_id_tmp => $species_code_tmp) {
@@ -4152,7 +4180,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           print_r('Record count:' . $record_count . "\n");
           $genotype_count += count($stocks);
           $vcf_line = explode("\t", $vcf_line);
-          $scaffold_id = &$vcf_line[0];
+          $scaffold_id = explode(" ",$vcf_line[0])[0]; // take the first part if it is space delimited (8/13/2024 RISH discussion with Emily)
           $position = &$vcf_line[1];
           $variant_name = &$vcf_line[2];
           $ref = &$vcf_line[3];
@@ -4223,13 +4251,13 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           //   'type_id' => $seq_var_cvterm,
           // );
 
-
+          // Check to see if marker exists in the feature's table
           $feature_check_results = chado_query('SELECT count(*) as c1 FROM chado.feature WHERE uniquename = :marker_name',[
             ':marker_name' => $marker_name
           ]);
           $feature_check_count = $feature_check_results->fetchObject()->c1;
+          // If marker does not exist, insert it into the feature table
           if ($feature_check_count <= 0) {
-            // Rish code to test a single insert and get the id
             try {
               $results = chado_insert_record('feature', [
                 'name' => $marker_name,
@@ -4242,7 +4270,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
             }
           }
-          // get the feature_id
+          // get the marker_id <- feature_id column value
           $results = chado_query('SELECT feature_id FROM chado.feature WHERE uniquename = :uniquename', [
             ':uniquename' => $marker_name
           ]);
@@ -4256,11 +4284,15 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           //   'type_id' => $seq_var_cvterm,
           // );
 
+          // Check if variant_id already exists in the feature's table
           $feature_check_results = chado_query('SELECT count(*) as c1 FROM chado.feature WHERE uniquename = :variant_name',[
             ':variant_name' => $variant_name
           ]);
           $feature_check_count = $feature_check_results->fetchObject()->c1;
+          // If variant does not exist, add it to the feature table
+          $feature_exists = NULL;
           if ($feature_check_count <= 0) {
+            $feature_exists = false; // remember that it didn't exist at first (this is used further down to add featureloc)
             // Rish code to test a single insert and get the id
             try {
               $results = chado_insert_record('feature', [
@@ -4274,6 +4306,10 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
             }
           }
+          else {
+            $feature_exists = true; // remember it already exists (this is used further down to block featureloc)
+          }
+
           // get the feature_id
           $results = chado_query('SELECT feature_id FROM chado.feature WHERE uniquename = :uniquename', [
             ':uniquename' => $variant_name
@@ -4281,16 +4317,20 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           $row_object = $results->fetchObject();
           $variant_id = $row_object->feature_id;
 
-          // Lookup whether marker is already inserted into the features table.
-          $result = chado_query(
-            "SELECT * FROM chado.feature WHERE uniquename = :marker_name",
-            // Column 3 of VCF.
-            [':marker_name' => $variant_name]
-          );
+          // // Lookup whether marker is already inserted into the features table.
+          // $result = chado_query(
+          //   "SELECT * FROM chado.feature WHERE uniquename = :marker_name",
+          //   // Column 3 of VCF.
+          //   [':marker_name' => $variant_name]
+          // );
 
-          $feature_exists = false;
-          foreach ($result as $row) {
-            $feature_exists = true;
+          if ($feature_exists) {
+            tpps_log("Feature (variant): $variant_name exists already, featureloc will not be added\n");
+            echo("Feature (variant): $variant_name exists, featureloc will not be added\n");
+          }
+          else {
+            tpps_log("Feature (variant): $variant_name not found so it was created\n");
+            echo("Feature (variant): $variant_name not found so it was created\n");
           }
 
           if ($feature_exists != true) {
@@ -4301,7 +4341,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             // store where marker starts on chromosome etc.
             $srcfeature_id = NULL;
             if (isset($analysis_id)) {
-              // Get the srcfeature_id
+              // Get the srcfeature_id 
               echo 'Scaffold ID (srcfeature_id search): ' . $scaffold_id . "\n";
 
               // the scaffold_id is not an integer value, proceed as normal lookup
@@ -4317,6 +4357,15 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
               foreach ($srcfeature_results as $row) {
                 $srcfeature_id = $row->feature_id;
               }
+            }
+
+            if ($srcfeature_id) {
+              tpps_log("SRC Feature: $srcfeature_id found\n");
+              echo("SRC Feature: $srcfeature_id exists\n");
+            }
+            else {
+              tpps_log("SRC Feature not found\n");
+              echo("SRC Feature not found\n");
             }
 
             // If reference genome found (analysis_id) but no srcfeature found
@@ -4345,7 +4394,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
 
               $featureloc_values = [
-                'feature_id' => $marker_id,
+                'feature_id' => $variant_id,
                 'srcfeature_id' => $srcfeature_id,
                 'fmin' => $position,
                 'fmax' => $fmax // ALPHA code above now caters for INDELS
@@ -4367,9 +4416,11 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
               if ($featureloc_count == 0) {
                 // This will add it to the multiinsert record system for insertion
                 $records['featureloc'][$marker_name] = $featureloc_values;
+                echo "Feature loc for $marker_name will be created\n";
               }
             }
           }
+          // throw New Exception('DEBUG');
 
           // Rish 12/08/2022: So we have multiple genotypes created
           // So I adjusted some of this code into a for statement
