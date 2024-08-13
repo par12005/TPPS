@@ -1045,24 +1045,26 @@ function tpps_submit_page_4(array &$shared_state, TripalJob &$job = NULL) {
   $page1_values = $shared_state['saved_values'][TPPS_PAGE_1];
   $page4_values = $shared_state['saved_values'][TPPS_PAGE_4];
   $organism_number = $page1_values['organism']['number'];
-  $species_codes = [];
+  // RISH 8/12/2024 - New function to generate species_codes array from shared_state
+  $species_codes = tpps_generate_species_codes_array_from_shared_state($shared_state);
 
 
   for ($i = 1; $i <= $organism_number; $i++) {
     // Get species codes.
-    $species_codes[$shared_state['ids']['organism_ids'][$i]] = current(
-      chado_select_record(
-        'organismprop',
-        ['value'],
-        [
-          'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id,
-          'organism_id' => $shared_state['ids']['organism_ids'][$i],
-        ],
-        [
-          'limit' => 1,
-        ]
-      )
-    )->value;
+    // DEPRECATED 8/12/2024 due to breaking changes made by Vlad
+    // $species_codes[$shared_state['ids']['organism_ids'][$i]] = current(
+    //   chado_select_record(
+    //     'organismprop',
+    //     ['value'],
+    //     [
+    //       'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id,
+    //       'organism_id' => $shared_state['ids']['organism_ids'][$i],
+    //     ],
+    //     [
+    //       'limit' => 1,
+    //     ]
+    //   )
+    // )->value;
 
     // Submit importer jobs.
     if (isset($page4_values["organism-$i"]['genotype'])) {
@@ -1880,6 +1882,58 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
 }
 
 /**
+ * [RISH] [8/12/2024] Function to generate species_codes array from shared_state
+ */
+function tpps_generate_species_codes_array_from_shared_state($shared_state) {
+  $species_codes = array();
+  $organism_number = $shared_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
+  for ($i = 1; $i <= $organism_number; $i++) {
+    // Get the organism id from the organism name due to breaking changed made by Vlad
+    $organism_name = $shared_state['saved_values'][1]['organism'][$i]['name'];
+    $organism_name_parts = explode(" ", $organism_name, 2);
+    print_r($organism_name_parts);
+    $organism_name_genus = $organism_name_parts[0];
+    $organism_name_species = $organism_name_parts[1];
+    $organism_lookup_results = chado_query('SELECT organism_id FROM chado.organism WHERE genus ILIKE :genus AND species ILIKE :species',[
+      ':genus' => $organism_name_genus,
+      ':species' => $organism_name_species,
+    ]);
+    $organism_id = NULL;
+    foreach ($organism_lookup_results as $organism_lookup_results_row) {
+      $organism_id = $organism_lookup_results_row->organism_id;
+      print_r("ORGANISM ID ($organism_name): " . $organism_id . "\n");
+    }
+
+    // Use the organism_id to lookup the 4 letter code
+    $four_letter_code_results = chado_query('SELECT value FROM chado.organismprop WHERE type_id = :type_id AND organism_id = :organism_id', [
+      ':organism_id' => $organism_id,
+      'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id
+    ]);
+    $four_letter_code = NULL;
+    foreach ($four_letter_code_results as $four_letter_code_results_row) {
+      $four_letter_code = $four_letter_code_results_row->value;
+      print_r("FOUR LETTER CODE ($organism_name): " . $four_letter_code . "\n");
+    }
+
+    if ($organism_id != NULL && $four_letter_code != NULL) {
+      $species_codes[$organism_id] = $four_letter_code;
+    }
+    else {
+      throw new Exception("Could not find the organism by name ($organism_name) or the species code for this organism");
+    }
+    
+    // OLD CODE BEFORE 8/12/2024
+    // $species_codes[$shared_state['ids']['organism_ids'][$i]] = current(chado_select_record('organismprop', array('value'), array(
+    //   'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id,
+    //   'organism_id' => $shared_state['ids']['organism_ids'][$i],
+    // ), array(
+    //   'limit' => 1,
+    // )))->value;
+  }
+  return $species_codes;
+}
+
+/**
  * Tpps genotype_vcf_to_flat_files (CSV).
  *
  * This function will process all vcf files per organism (from genotype section) genotypic information
@@ -1895,15 +1949,14 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $sh
   // print_r($form_state);
   // Generate species codes which is needed later on
   $organism_number = $shared_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
-  $species_codes = array();
-  for ($i = 1; $i <= $organism_number; $i++) {
-    $species_codes[$shared_state['ids']['organism_ids'][$i]] = current(chado_select_record('organismprop', array('value'), array(
-      'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id,
-      'organism_id' => $shared_state['ids']['organism_ids'][$i],
-    ), array(
-      'limit' => 1,
-    )))->value;
-  }
+  echo "Organism Number: $organism_number\n";
+  tpps_log("Organism Number: $organism_number\n");
+  echo "Shared state Organism IDS:\n";
+  print_r($shared_state['ids']['organism_ids']);
+  echo "Form State Organism IDS:\n";
+  print_r($form_state['ids']['organism_ids']);
+
+  $species_codes = tpps_generate_species_codes_array_from_shared_state($shared_state);
   print_r("Species code\n");
   print_r($species_codes);
   // throw new Exception('debug');
@@ -1950,15 +2003,20 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $sh
       if (!file_exists($snps_flat_file_location) || $regenerate_all == true) {
         // GOAL: We need to generate flat files for this study
         // Step 1: Get species_codes for this study
-        $study_species_codes = array();
-        for ($j = 1; $j <= $organism_number; $j++) {
-          $study_species_codes[$study_state['ids']['organism_ids'][$j]] = current(chado_select_record('organismprop', array('value'), array(
-            'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id,
-            'organism_id' => $study_state['ids']['organism_ids'][$j],
-          ), array(
-            'limit' => 1,
-          )))->value;
-        }
+        
+        // New code by Rish to get the species code array
+        $study_species_codes = tpps_generate_species_codes_array_from_shared_state($shared_state);
+
+        // DEPRECATED 8/12/2024 due to Vlad's breaking changes code
+        //$study_species_codes = array();
+        // for ($j = 1; $j <= $organism_number; $j++) {
+        //   $study_species_codes[$study_state['ids']['organism_ids'][$j]] = current(chado_select_record('organismprop', array('value'), array(
+        //     'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id,
+        //     'organism_id' => $study_state['ids']['organism_ids'][$j],
+        //   ), array(
+        //     'limit' => 1,
+        //   )))->value;
+        // }
 
         // Generate the flat files and necessary DB inserts for features, genotypes etc
         echo "Running tpps_genotypes_to_flat_file $study_accession $i\n";
@@ -2506,59 +2564,62 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
       $ref_genome = $genotype['ref-genome'];
       $analysis_id = NULL;
       if (isset($ref_genome)) {
-        // Get the species and version from the reference genome selected
-        // if match occurs thats in index [0].
-        // The group match index [1] is species, group match index [2] is version
-        preg_match('/(.+) +v(\d*\.*\d*)/', $ref_genome, $matches);
-        $ref_genome_species = NULL;
-        $ref_genome_version = NULL;
-        if (count($matches) > 0) {
-          $ref_genome_species = $matches[1];
-          $ref_genome_version = $matches[2];
-        }
+        // DEPRECATED 8/12/2024 in favour of chado.tpps_ref_assembly_view created by Emily
+        // // Get the species and version from the reference genome selected
+        // // if match occurs thats in index [0].
+        // // The group match index [1] is species, group match index [2] is version
+        // preg_match('/(.+) +v(\d*\.*\d*)/', $ref_genome, $matches);
+        // $ref_genome_species = NULL;
+        // $ref_genome_version = NULL;
+        // if (count($matches) > 0) {
+        //   $ref_genome_species = $matches[1];
+        //   $ref_genome_version = $matches[2];
+        // }
 
-        if (isset($ref_genome_species) && isset($ref_genome_version)) {
-          // Look up the analysis
-          $analysis_results = chado_query('SELECT analysis_id FROM chado.analysis
-            WHERE name ILIKE :name AND programversion = :programversion LIMIT 1',
-            [
-              ':name' => $ref_genome_species . '%',
-              ':programversion' => $ref_genome_version
-            ]
-          );
-          foreach ($analysis_results as $row) {
-            $analysis_id = $row->analysis_id;
-          }
-        }
+        // if (isset($ref_genome_species) && isset($ref_genome_version)) {
+        //   // Look up the analysis
+        //   $analysis_results = chado_query('SELECT analysis_id FROM chado.analysis
+        //     WHERE name ILIKE :name AND programversion = :programversion LIMIT 1',
+        //     [
+        //       ':name' => $ref_genome_species . '%',
+        //       ':programversion' => $ref_genome_version
+        //     ]
+        //   );
+        //   foreach ($analysis_results as $row) {
+        //     $analysis_id = $row->analysis_id;
+        //   }
+        // }
 
-        if($analysis_id == NULL) {
-          // Look up the analysis
-          $analysis_results = chado_query('SELECT analysis_id FROM chado.analysis
-            WHERE name ILIKE :name AND programversion = :programversion LIMIT 1',
-            [
-              ':name' => $ref_genome_species . '%',
-              ':programversion' => 'v' . $ref_genome_version
-            ]
-          );
-          foreach ($analysis_results as $row) {
-            print_r("analysis_row\n");
-            print_r($row);
-            print_r("\n");
-            $analysis_id = $row->analysis_id;
-          }
-        }
+        // if($analysis_id == NULL) {
+        //   // Look up the analysis
+        //   $analysis_results = chado_query('SELECT analysis_id FROM chado.analysis
+        //     WHERE name ILIKE :name AND programversion = :programversion LIMIT 1',
+        //     [
+        //       ':name' => $ref_genome_species . '%',
+        //       ':programversion' => 'v' . $ref_genome_version
+        //     ]
+        //   );
+        //   foreach ($analysis_results as $row) {
+        //     print_r("analysis_row\n");
+        //     print_r($row);
+        //     print_r("\n");
+        //     $analysis_id = $row->analysis_id;
+        //   }
+        // }
 
-        // If an analysis_id still was not found, it's possibly from the db data source
-        // instead of the genome directory. The genome directory code is in page_4*.php
-        // New code to cater for new analysis checks via db - query given by Emily Grau (6/6/2023)
-        if ($analysis_id == NULL) {
-          $genome_query_results = chado_query("select * from chado.tpps_ref_genomes WHERE name LIKE :ref_genome;", [
-            ':ref_genome' => $ref_genome
-          ]);
-          foreach ($genome_query_results as $genome_query_row) {
-            $analysis_id = $genome_query_row->analysis_id;
-          }
-        }
+        // // If an analysis_id still was not found, it's possibly from the db data source
+        // // instead of the genome directory. The genome directory code is in page_4*.php
+        // // New code to cater for new analysis checks via db - query given by Emily Grau (6/6/2023)
+        // if ($analysis_id == NULL) {
+        //   $genome_query_results = chado_query("select * from chado.tpps_ref_assembly_view WHERE name LIKE :ref_genome;", [
+        //     ':ref_genome' => $ref_genome
+        //   ]);
+        //   foreach ($genome_query_results as $genome_query_row) {
+        //     $analysis_id = $genome_query_row->analysis_id;
+        //   }
+        // }
+
+        $analysis_id = tpps_get_analysis_id_from_ref_genome($ref_genome);
 
         // Once an analysis_id was found, try to get srcfeature_id
 
@@ -2572,10 +2633,11 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
         tpps_log('[REF GENOME NOT FOUND] - ' . implode("\n", $error_line) . "\n");
       }
 
-      print_r("Analysis ID Found: $analysis_id");
-      // throw new Exception("DEBUG");
+      tpps_log("Analysis ID Found: $analysis_id\n");
+      print_r("Analysis ID Found: $analysis_id\n");
 
       echo "[INFO] Processing Genotype VCF file\n";
+      // throw new Exception("DEBUG");
       $file_progress_line_count = 0;
       $record_count = 0;
       while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
@@ -3995,59 +4057,62 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
       $ref_genome = $genotype['ref-genome'];
       $analysis_id = NULL;
       if (isset($ref_genome)) {
-        // Get the species and version from the reference genome selected
-        // if match occurs thats in index [0].
-        // The group match index [1] is species, group match index [2] is version
-        preg_match('/(.+) +v(\d*\.*\d*)/', $ref_genome, $matches);
-        $ref_genome_species = NULL;
-        $ref_genome_version = NULL;
-        if (count($matches) > 0) {
-          $ref_genome_species = $matches[1];
-          $ref_genome_version = $matches[2];
-        }
+        // DEPRECATED 8/12/2024 in favour of chado.tpps_ref_assembly_view created by Emily
+        // // Get the species and version from the reference genome selected
+        // // if match occurs thats in index [0].
+        // // The group match index [1] is species, group match index [2] is version
+        // preg_match('/(.+) +v(\d*\.*\d*)/', $ref_genome, $matches);
+        // $ref_genome_species = NULL;
+        // $ref_genome_version = NULL;
+        // if (count($matches) > 0) {
+        //   $ref_genome_species = $matches[1];
+        //   $ref_genome_version = $matches[2];
+        // }
 
-        if (isset($ref_genome_species) && isset($ref_genome_version)) {
-          // Look up the analysis
-          $analysis_results = chado_query('SELECT analysis_id FROM chado.analysis
-            WHERE name ILIKE :name AND programversion = :programversion LIMIT 1',
-            [
-              ':name' => $ref_genome_species . '%',
-              ':programversion' => $ref_genome_version
-            ]
-          );
-          foreach ($analysis_results as $row) {
-            $analysis_id = $row->analysis_id;
-          }
-        }
+        // if (isset($ref_genome_species) && isset($ref_genome_version)) {
+        //   // Look up the analysis
+        //   $analysis_results = chado_query('SELECT analysis_id FROM chado.analysis
+        //     WHERE name ILIKE :name AND programversion = :programversion LIMIT 1',
+        //     [
+        //       ':name' => $ref_genome_species . '%',
+        //       ':programversion' => $ref_genome_version
+        //     ]
+        //   );
+        //   foreach ($analysis_results as $row) {
+        //     $analysis_id = $row->analysis_id;
+        //   }
+        // }
 
-        if($analysis_id == NULL) {
-          // Look up the analysis
-          $analysis_results = chado_query('SELECT analysis_id FROM chado.analysis
-            WHERE name ILIKE :name AND programversion = :programversion LIMIT 1',
-            [
-              ':name' => $ref_genome_species . '%',
-              ':programversion' => 'v' . $ref_genome_version
-            ]
-          );
-          foreach ($analysis_results as $row) {
-            print_r("analysis_row\n");
-            print_r($row);
-            print_r("\n");
-            $analysis_id = $row->analysis_id;
-          }
-        }
+        // if($analysis_id == NULL) {
+        //   // Look up the analysis
+        //   $analysis_results = chado_query('SELECT analysis_id FROM chado.analysis
+        //     WHERE name ILIKE :name AND programversion = :programversion LIMIT 1',
+        //     [
+        //       ':name' => $ref_genome_species . '%',
+        //       ':programversion' => 'v' . $ref_genome_version
+        //     ]
+        //   );
+        //   foreach ($analysis_results as $row) {
+        //     print_r("analysis_row\n");
+        //     print_r($row);
+        //     print_r("\n");
+        //     $analysis_id = $row->analysis_id;
+        //   }
+        // }
 
-        // If an analysis_id still was not found, it's possibly from the db data source
-        // instead of the genome directory. The genome directory code is in page_4*.php
-        // New code to cater for new analysis checks via db - query given by Emily Grau (6/6/2023)
-        if ($analysis_id == NULL) {
-          $genome_query_results = chado_query("select * from chado.tpps_ref_genomes WHERE name LIKE :ref_genome;", [
-            ':ref_genome' => $ref_genome
-          ]);
-          foreach ($genome_query_results as $genome_query_row) {
-            $analysis_id = $genome_query_row->analysis_id;
-          }
-        }
+        // // If an analysis_id still was not found, it's possibly from the db data source
+        // // instead of the genome directory. The genome directory code is in page_4*.php
+        // // New code to cater for new analysis checks via db - query given by Emily Grau (6/6/2023)
+        // if ($analysis_id == NULL) {
+        //   $genome_query_results = chado_query("select * from chado.tpps_ref_assembly_view WHERE name LIKE :ref_genome;", [
+        //     ':ref_genome' => $ref_genome
+        //   ]);
+        //   foreach ($genome_query_results as $genome_query_row) {
+        //     $analysis_id = $genome_query_row->analysis_id;
+        //   }
+        // }
+
+        $analysis_id = tpps_get_analysis_id_from_ref_genome($ref_genome);
 
         // Once an analysis_id was found, try to get srcfeature_id
 
@@ -4061,7 +4126,8 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
         tpps_log('[REF GENOME NOT FOUND] - ' . implode("\n", $error_line) . "\n");
       }
 
-      print_r("Analysis ID Found: $analysis_id");
+      tpps_log("Analysis ID Found: $analysis_id\n");
+      print_r("Analysis ID Found: $analysis_id\n");
       // throw new Exception("DEBUG");
 
       echo "[INFO] Processing Genotype VCF file\n";
@@ -7216,65 +7282,66 @@ function tpps_get_analysis_id_from_ref_genome($ref_genome) {
     // We need to find the analysis id from the ref genome
     $analysis_id = NULL;
     if (isset($ref_genome)) {
-      // Get the species and version from the reference genome selected
-      // if match occurs thats in index [0].
-      // The group match index [1] is species, group match index [2] is version
-      preg_match('/(.+) +v(\d*\.*\d*)/', $ref_genome, $matches);
-      print_r($matches);
-      print_r("\n");
-      $ref_genome_species = NULL;
-      $ref_genome_version = NULL;
-      if (count($matches) > 0) {
-        $ref_genome_species = $matches[1];
-        $ref_genome_version = $matches[2];
-      }
-      echo "ref_genome_species: $ref_genome_species\n";
-      echo "ref_genome_version: $ref_genome_version\n";
+      // DEPRECATED 8/12/2024 in favour of chado.tpps_ref_assembly_view created by Emily
+      // // Get the species and version from the reference genome selected
+      // // if match occurs thats in index [0].
+      // // The group match index [1] is species, group match index [2] is version
+      // preg_match('/(.+) +v(\d*\.*\d*)/', $ref_genome, $matches);
+      // print_r($matches);
+      // print_r("\n");
+      // $ref_genome_species = NULL;
+      // $ref_genome_version = NULL;
+      // if (count($matches) > 0) {
+      //   $ref_genome_species = $matches[1];
+      //   $ref_genome_version = $matches[2];
+      // }
+      // echo "ref_genome_species: $ref_genome_species\n";
+      // echo "ref_genome_version: $ref_genome_version\n";
 
-      if (isset($ref_genome_species) && isset($ref_genome_version)) {
-        // Look up the analysis
-        $analysis_results = chado_query('SELECT analysis_id FROM chado.analysis
-          WHERE name ILIKE :name AND programversion = :programversion LIMIT 1',
-          [
-            ':name' => $ref_genome_species . '%',
-            ':programversion' => $ref_genome_version
-          ]
-        );
-        foreach ($analysis_results as $row) {
-          print_r("analysis_row\n");
-          print_r($row);
-          print_r("\n");
-          $analysis_id = $row->analysis_id;
-        }
-      }
-      echo "analysis_id: $analysis_id\n";
+      // if (isset($ref_genome_species) && isset($ref_genome_version)) {
+      //   // Look up the analysis
+      //   $analysis_results = chado_query('SELECT analysis_id FROM chado.analysis
+      //     WHERE name ILIKE :name AND programversion = :programversion LIMIT 1',
+      //     [
+      //       ':name' => $ref_genome_species . '%',
+      //       ':programversion' => $ref_genome_version
+      //     ]
+      //   );
+      //   foreach ($analysis_results as $row) {
+      //     print_r("analysis_row\n");
+      //     print_r($row);
+      //     print_r("\n");
+      //     $analysis_id = $row->analysis_id;
+      //   }
+      // }
+      // echo "analysis_id: $analysis_id\n";
 
-      if($analysis_id == NULL) {
-        // Look up the analysis
-        $analysis_results = chado_query('SELECT analysis_id FROM chado.analysis
-          WHERE name ILIKE :name AND programversion = :programversion LIMIT 1',
-          [
-            ':name' => $ref_genome_species . '%',
-            ':programversion' => 'v' . $ref_genome_version
-          ]
-        );
-        foreach ($analysis_results as $row) {
-          print_r("analysis_row\n");
-          print_r($row);
-          print_r("\n");
-          $analysis_id = $row->analysis_id;
-        }
-      }
-      else {
-        return $analysis_id;
-      }
+      // if($analysis_id == NULL) {
+      //   // Look up the analysis
+      //   $analysis_results = chado_query('SELECT analysis_id FROM chado.analysis
+      //     WHERE name ILIKE :name AND programversion = :programversion LIMIT 1',
+      //     [
+      //       ':name' => $ref_genome_species . '%',
+      //       ':programversion' => 'v' . $ref_genome_version
+      //     ]
+      //   );
+      //   foreach ($analysis_results as $row) {
+      //     print_r("analysis_row\n");
+      //     print_r($row);
+      //     print_r("\n");
+      //     $analysis_id = $row->analysis_id;
+      //   }
+      // }
+      // else {
+      //   return $analysis_id;
+      // }
 
 
       // If an analysis_id still was not found, it's possibly from the db data source
       // instead of the genome directory. The genome directory code is in page_4*.php
       // New code to cater for new analysis checks via db - query given by Emily Grau (6/6/2023)
       if ($analysis_id == NULL) {
-        $genome_query_results = chado_query("select * from chado.tpps_ref_genomes WHERE name LIKE :ref_genome;", [
+        $genome_query_results = chado_query("select * from chado.tpps_ref_assembly_view WHERE name LIKE :ref_genome;", [
           ':ref_genome' => $ref_genome
         ]);
         foreach ($genome_query_results as $genome_query_row) {
@@ -7284,11 +7351,9 @@ function tpps_get_analysis_id_from_ref_genome($ref_genome) {
           $analysis_id = $genome_query_row->analysis_id;
         }
       }
-      else {
-        return $analysis_id;
-      }
       // $options['analysis_id'] = $analysis_id;
       echo "analysis_id: $analysis_id\n";
+      return $analysis_id;
       // Once an analysis_id was found, try to get srcfeature_id
 
     }

@@ -46,13 +46,14 @@ function tpps_cron_settings_form(array $form, array &$form_state) {
       '0 */6 * * *'
     ),
   ];
-  $form['tpps_cron_rule_ref_genomes_recreate'] = [
-    '#type' => 'textfield',
-    '#title' => t('Recreate table "chado.tpps_ref_genomes"'),
-    '#default_value' => variable_get('tpps_cron_rule_ref_genomes_recreate',
-      '0 0 */3 * *'
-    ),
-  ];
+  // DEPRECATED 8/12/2024 in favour of chado.tpps_ref_assembly_view
+  // $form['tpps_cron_rule_ref_genomes_recreate'] = [
+  //   '#type' => 'textfield',
+  //   '#title' => t('Recreate table "chado.tpps_ref_genomes"'),
+  //   '#default_value' => variable_get('tpps_cron_rule_ref_genomes_recreate',
+  //     '0 0 */3 * *'
+  //   ),
+  // ];
 
   return system_settings_form($form);
 }

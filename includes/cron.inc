@@ -8,17 +8,18 @@
 /**
  * Recreates table "chado.tpps_ref_genomes".
  */
-function tpps_cron_table_tpps_ref_genomes_recreate() {
-  chado_query("DROP TABLE IF EXISTS chado.tpps_ref_genomes;", []);
-  chado_query("CREATE TABLE chado.tpps_ref_genomes AS (
-    select distinct a.name, a.analysis_id, a.programversion,
-       o.genus||' '||o.species as species from chado.analysis a
-    join chado.analysisfeature af on a.analysis_id = af.analysis_id
-    join chado.feature f on af.feature_id = f.feature_id
-    join chado.organism o on f.organism_id = o.organism_id
-    where f.type_id in (379,595,597,825,1245,422) AND a.name LIKE '% v%'
-  );", []);
-}
+// DEPRECATED 8/12/2024 in favour of new chado.tpps_ref_assembly_view table
+// function tpps_cron_table_tpps_ref_genomes_recreate() {
+//   chado_query("DROP TABLE IF EXISTS chado.tpps_ref_genomes;", []);
+//   chado_query("CREATE TABLE chado.tpps_ref_genomes AS (
+//     select distinct a.name, a.analysis_id, a.programversion,
+//        o.genus||' '||o.species as species from chado.analysis a
+//     join chado.analysisfeature af on a.analysis_id = af.analysis_id
+//     join chado.feature f on af.feature_id = f.feature_id
+//     join chado.organism o on f.organism_id = o.organism_id
+//     where f.type_id in (379,595,597,825,1245,422) AND a.name LIKE '% v%'
+//   );", []);
+// }
 
 /**
  * Refreshes TPPS and CartograPlant views.
