@@ -2859,7 +2859,7 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
 
 
               $featureloc_values = [
-                'feature_id' => $marker_id,
+                'feature_id' => $variant_id,
                 'srcfeature_id' => $srcfeature_id,
                 'fmin' => $position,
                 'fmax' => $fmax // ALPHA code above now caters for INDELS
@@ -2869,7 +2869,7 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
               // there may already exist, we have to make sure the record doesn't already exist
               $featureloc_results = chado_query('SELECT count(*) as c1 FROM chado.featureloc
                 WHERE feature_id = :feature_id AND srcfeature_id = :srcfeature_id;', [
-                  ':feature_id' => $marker_id,
+                  ':feature_id' => $variant_id,
                   ':srcfeature_id' => $srcfeature_id
                 ]
               );
@@ -2880,11 +2880,12 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
               // This means no featureloc exists, so insert it
               if ($featureloc_count == 0) {
                 // This will add it to the multiinsert record system for insertion
-                $records['featureloc'][$marker_name] = $featureloc_values;
+                $records['featureloc'][$variant_name] = $featureloc_values;
+                echo "Featureloc for $variant_name will be created\n";
               }
             }
           }
-          throw New Exception('DEBUG');
+          // throw New Exception('DEBUG');
 
           // Rish 12/08/2022: So we have multiple genotypes created
           // So I adjusted some of this code into a for statement
@@ -4404,7 +4405,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
               // there may already exist, we have to make sure the record doesn't already exist
               $featureloc_results = chado_query('SELECT count(*) as c1 FROM chado.featureloc
                 WHERE feature_id = :feature_id AND srcfeature_id = :srcfeature_id;', [
-                  ':feature_id' => $marker_id,
+                  ':feature_id' => $variant_id,
                   ':srcfeature_id' => $srcfeature_id
                 ]
               );
@@ -4415,8 +4416,9 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
               // This means no featureloc exists, so insert it
               if ($featureloc_count == 0) {
                 // This will add it to the multiinsert record system for insertion
-                $records['featureloc'][$marker_name] = $featureloc_values;
-                echo "Feature loc for $marker_name will be created\n";
+                // The marker_name doesn't mean much here because it is only used a key
+                $records['featureloc'][$variant_name] = $featureloc_values;
+                echo "Featureloc for $variant_name will be created\n";
               }
             }
           }
