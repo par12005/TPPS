@@ -671,22 +671,23 @@ function tpps_cronapi() {
   ];
 
   // Recreate table "chado.tpps_ref_genomes".
-  $rule = variable_get('tpps_cron_rule_ref_genomes_recreate',
-    // Every 3 days at midnight.
-    '0 0 */3 * *'
-  );
-  $items['tpps_cron_table_tpps_ref_genomes_recreate'] = [
-    'title' => t('Recreate table "chado.tpps_ref_genomes".'),
-    'callback' => 'tpps_cron_table_tpps_ref_genomes_recreate',
-    'scheduler' => [
-      'name' => 'crontab',
-      'crontab' => [
-        'rules' => [$rule],
-      ],
-    ],
-    'file' => 'cron.inc',
-    'file path' => $filepath,
-  ];
+  // DEPRECATED 8/12/2024 in favour of new chado.tpps_ref_assembly_view
+  // $rule = variable_get('tpps_cron_rule_ref_genomes_recreate',
+  //   // Every 3 days at midnight.
+  //   '0 0 */3 * *'
+  // );
+  // $items['tpps_cron_table_tpps_ref_genomes_recreate'] = [
+  //   'title' => t('Recreate table "chado.tpps_ref_genomes".'),
+  //   'callback' => 'tpps_cron_table_tpps_ref_genomes_recreate',
+  //   'scheduler' => [
+  //     'name' => 'crontab',
+  //     'crontab' => [
+  //       'rules' => [$rule],
+  //     ],
+  //   ],
+  //   'file' => 'cron.inc',
+  //   'file path' => $filepath,
+  // ];
 
   return $items;
 }
