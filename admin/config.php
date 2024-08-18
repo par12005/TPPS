@@ -44,12 +44,6 @@ function tpps_admin_settings(array $form, array &$form_state) {
     '#default_value' => $tpps_db_directory_user
   );
 
-  $form['tpps_maps_api_key'] = array(
-    '#type' => 'textfield',
-    '#title' => t('TPPS Google Maps API Key'),
-    '#default_value' => variable_get('tpps_maps_api_key', NULL),
-  );
-
   $form['tpps_ncbi_api_key'] = array(
     '#type' => 'textfield',
     '#title' => t('TPPS NCBI EUtils API Key'),
