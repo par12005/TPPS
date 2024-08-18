@@ -2044,6 +2044,15 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/config.php',
   ];
+  $items['admin/config/tpps/google_maps'] = [
+    'title' => 'Google Maps',
+    'description' => 'Google Maps settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_google_maps_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/google_maps.inc',
+  ];
   $items['admin/config/tpps/misc'] = [
     'title' => 'Misc',
     'description' => 'Misc settings',

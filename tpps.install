@@ -91,8 +91,10 @@ function tpps_install() {
   variable_set('tpps_submit_all_log_cli_show_time', TRUE);
   // Misc Settings.
   variable_set('tpps_theme_fix_pager', FALSE);
+  // Google Maps.
   variable_set('tpps_markercluster_url_type', 'new');
   variable_set('tpps_google_map_id', '');
+  variable_set('tpps_maps_api_key', '');
   // Submission Export.
   // @TODO Add ability to change those variables at settings page.
   variable_set('tpps_submission_export_show_file_search_report', FALSE);
@@ -437,8 +439,10 @@ function tpps_uninstall() {
 
   // Misc Settings.
   variable_del('tpps_theme_fix_pager');
+  // Google Maps.
   variable_del('tpps_markercluster_url_type');
   variable_del('tpps_google_map_id');
+  variable_del('tpps_maps_api_key');
 
   variable_del('tpps_imported_studies_list');
   // Submission Import/Export.
