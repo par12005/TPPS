@@ -225,12 +225,18 @@ function tpps_get_markercluster_code($use_wrapper = TRUE) {
   if (empty($map_api_key = variable_get('tpps_maps_api_key', NULL))) {
     return '';
   }
+  $query = [
+    'key' => $map_api_key,
+    'callback' => 'initMap2',
+    'v' => 'weekly',
+    'libraries' => 'marker',
+    'loading' => 'async',
+  ];
+  $url = url('https://maps.googleapis.com/maps/api/js', ['query' => $query]);
   $url_type = variable_get('tpps_markercluster_url_type', 'new');
   // WARNING: Be sure to set 'async' and 'defer' HTML attributes.
   $output = '<script src="' . tpps_markercluster_get_url($url_type)
-    . '"></script><script src="https://maps.googleapis.com/maps/api/js?key='
-    . $map_api_key . '&callback=initMap&v=weekly&libraries=marker'
-    . '&loading=async" async defer></script>';
+    . '"></script><script src="' . $url . '" async defer></script>';
   if ($use_wrapper) {
     $output .= '<div id="_map_wrapper"></div>';
   }
