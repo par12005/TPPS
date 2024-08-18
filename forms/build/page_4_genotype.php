@@ -793,40 +793,45 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   $uid = $user->uid;
 
   $snps_fieldset = 'SNPs';
-  $options = ['key' => 'filename', 'recurse' => FALSE];
-  $genome_dir = variable_get('tpps_local_genome_dir', NULL);
 
-  if ($genome_dir) {
-    $existing_genomes = array();
-    $results = file_scan_directory($genome_dir, '/^([A-Z][a-z]{3})$/', $options);
-    $code_cvterm = tpps_load_cvterm('organism 4 letter code')->cvterm_id;
-    foreach ($results as $key => $value) {
-      $org_id_query = chado_select_record('organismprop', array('organism_id'), array(
-        'value' => $key,
-        'type_id' => $code_cvterm,
-      ));
+  $existing_genomes = array();
 
-      if (!empty($org_id_query)) {
-        $org_query = chado_select_record('organism', array('genus', 'species'), array(
-          'organism_id' => current($org_id_query)->organism_id,
-        ));
-        $result = current($org_query);
+  // DEPRECATED 8/12/2024 in favour of tpps.tpps_ref_assembly_view created by Emily
+  // $options = ['key' => 'filename', 'recurse' => FALSE];
+  // $genome_dir = variable_get('tpps_local_genome_dir', NULL);
+  // if ($genome_dir) {
+    
+  //   $results = file_scan_directory($genome_dir, '/^([A-Z][a-z]{3})$/', $options);
+  //   $code_cvterm = tpps_load_cvterm('organism 4 letter code')->cvterm_id;
+  //   foreach ($results as $key => $value) {
+  //     $org_id_query = chado_select_record('organismprop', array('organism_id'), array(
+  //       'value' => $key,
+  //       'type_id' => $code_cvterm,
+  //     ));
 
-        $versions = file_scan_directory("$genome_dir/$key", '/^v([0-9]|.)+$/', $options);
-        foreach ($versions as $item) {
-          $opt_string = $result->genus . " " . $result->species . " " . $item->filename;
-          $existing_genomes[$opt_string] = $opt_string;
-        }
-      }
-    }
-  }
-  $sql = "select * FROM chado.tpps_ref_genomes order by name;";
+  //     if (!empty($org_id_query)) {
+  //       $org_query = chado_select_record('organism', array('genus', 'species'), array(
+  //         'organism_id' => current($org_id_query)->organism_id,
+  //       ));
+  //       $result = current($org_query);
+
+  //       $versions = file_scan_directory("$genome_dir/$key", '/^v([0-9]|.)+$/', $options);
+  //       foreach ($versions as $item) {
+  //         $opt_string = $result->genus . " " . $result->species . " " . $item->filename;
+  //         $existing_genomes[$opt_string] = $opt_string;
+  //       }
+  //     }
+  //   }
+  // }
+
+  $sql = "select * FROM chado.tpps_ref_assembly_view order by name;";
   $genome_query_results = chado_query($sql, []);
   foreach ($genome_query_results as $genome_query_row) {
-    $genome_query_row->name = str_ireplace(' genome', '', $genome_query_row->name);
-    $genome_query_row->name = str_ireplace(' assembly', '', $genome_query_row->name);
+    // $genome_query_row->name = str_ireplace(' genome', '', $genome_query_row->name);
+    // $genome_query_row->name = str_ireplace(' assembly', '', $genome_query_row->name);
     $existing_genomes[$genome_query_row->name] = $genome_query_row->name;
   }
+  
   ksort($existing_genomes);
   $ref_genome_arr = array_merge(['0' => '- Select -'], $existing_genomes, [
     // @todo Use t() for option's names but first check if name not used in
