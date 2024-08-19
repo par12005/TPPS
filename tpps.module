@@ -1699,7 +1699,17 @@ function tpps_block_view_alter(&$data, $block) {
             }
             $val_str = "<a id=\"sidebar_map\" style=\"cursor:pointer\">$val_str</a>";
             if (isset($query) and !empty($map_api_key)) {
-              $map = "<iframe frameborder=\\\"0\\\" style=\\\"border:0;width:100%;height:100%\\\" src=\\\"https://www.google.com/maps?q=$query&output=embed&key=$map_api_key&z=5\\\" allowfullscreen> </iframe></div>";
+              $url = url('https://www.google.com/maps', [
+                'query' => [
+                  'q' => $query,
+                  'output' => 'embed',
+                  'key' => $map_api_key,
+                  'z' => '5',
+                ],
+              ]);
+              $map = '<iframe frameborder="0"'
+                . ' style="border: 0; width: 100%; height: 100%;"'
+                . ' src="' . $url . '" allowfullscreen> </iframe></div>';
               // @TODO Move to JS file.
               $js = "jQuery(document).ready(function ($) {
                 jQuery(\"#sidebar_map\").click(function() {

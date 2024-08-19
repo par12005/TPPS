@@ -227,7 +227,7 @@ function tpps_get_markercluster_code($use_wrapper = TRUE) {
   }
   $query = [
     'key' => $map_api_key,
-    'callback' => 'initMap2',
+    'callback' => 'initMap',
     'v' => 'weekly',
     'libraries' => 'marker',
     'loading' => 'async',
