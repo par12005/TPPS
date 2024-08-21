@@ -627,66 +627,120 @@ function detailTagSearch() {
 
 var maps = {};
 
-function initMap() {
-  var detail_regex = /tpps\/details\/TGDR.*/g;
+/* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
+(function ($) {
 
-  if (typeof Drupal.settings.tpps !== 'undefined' && typeof Drupal.settings.tpps.map_buttons !== 'undefined') {
-    var mapButtons = Drupal.settings.tpps.map_buttons;
-    jQuery.each(mapButtons, function() {
-      var fid = this.fid;
+  async function initMap() {
+    var detail_regex = /tpps\/details\/TGDR.*/g;
+    const { Map, InfoWindow } = await google.maps.importLibrary("maps");
+    const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary(
+      "marker",
+    )
+    if (
+      typeof Drupal.settings.tpps !== 'undefined'
+      && typeof Drupal.settings.tpps.map_buttons !== 'undefined'
+    ) {
+      // Buttons.
+      var mapButtons = Drupal.settings.tpps.map_buttons;
+      jQuery.each(mapButtons, function() {
+        var fid = this.fid;
+        var mapWrapper = jQuery('#' + fid + '_map_wrapper').show().css({'height': '450px'})[0];
+        if (Drupal.settings.tpps.markerClusterUrlType == 'new') {
+          maps[fid] = new Map(mapWrapper, {
+            center: {lat:0, lng:0},
+            zoom: 5,
+            mapId: Drupal.settings.tpps.googleMapId,
+          });
+        }
+        else {
+          maps[fid] = new google.maps.Map(mapWrapper, {
+            center: {lat:0, lng:0},
+            zoom: 5,
+          });
+        }
+
+        maps[fid + '_markers'] = [];
+        maps[fid + '_total_lat'];
+        maps[fid + '_total_long'];
+      });
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Study details page.
+    if (
+      typeof Drupal.settings.tpps != 'undefined'
+      && typeof Drupal.settings.tpps.tree_info != 'undefined'
+      && (
+        window.location.pathname.match(detail_regex)
+        || typeof Drupal.settings.tpps.study_locations !== 'undefined'
+      )
+    ) {
+      //var mapWrapper = document.getElementById('_map_wrapper');
+      var mapWrapper = jQuery('#_map_wrapper').show().css({'height': '450px'})[0];
 
       if (Drupal.settings.tpps.markerClusterUrlType == 'new') {
-        maps[fid] = new google.maps.Map(
-          document.getElementById(this.wrapper), {
-          center: {lat:0, lng:0},
+        maps['map'] = new Map(mapWrapper, {
+          center: {
+            lat: Number(Drupal.settings.tpps.tree_info[0][1]),
+            lng: Number(Drupal.settings.tpps.tree_info[0][2]),
+          },
           zoom: 5,
           mapId: Drupal.settings.tpps.googleMapId,
         });
-      }
-      else {
-        maps[fid] = new google.maps.Map(
-          document.getElementById(this.wrapper), {
-          center: {lat:0, lng:0},
-          zoom: 5,
+
+        const infoWindow = new InfoWindow({
+          content: "",
+          disableAutoPan: true,
+        });
+        // Create an array of alphabetical characters used to label the markers.
+        const labels = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        // Add some markers to the map.
+        const markers = Drupal.settings.tpps.tree_info.map((position, i) => {
+          const label = labels[position[0]];
+          const pinGlyph = new PinElement({
+            glyph: label,
+            glyphColor: "white",
+          });
+          const markerPosition = { lat: Number(position[1]), lng: Number(position[2]) };
+          const marker = new AdvancedMarkerElement({
+            map: maps['map'],
+            //position: { lat: -25.344, lng: 131.031 },
+            position: markerPosition,
+            content: pinGlyph.element,
+          });
+
+          // markers can only be keyboard focusable when they have click listeners
+          // open info window when marker is clicked
+          marker.addListener("click", () => {
+            infoWindow.setContent(position[1] + ", " + position[2]);
+            infoWindow.open(maps['map'], marker);
+          });
+          return marker;
+        });
+
+        // Add a marker clusterer to manage the markers.
+        new markerClusterer.MarkerClusterer({
+          markers: markers,
+          map: maps['map'],
         });
       }
+      else {
+        maps[''] = new Map(mapWrapper, {
+          center: { lat: 0, lng: 0 },
+          zoom: 5,
+        });
+        maps['_markers'] = [];
+        maps['_total_lat'];
+        maps['_total_long'];
+        jQuery.fn.updateMap(
+          Drupal.settings.tpps.tree_info
+        );
+      }
+    }
+  }
 
-      maps[fid + '_markers'] = [];
-      maps[fid + '_total_lat'];
-      maps[fid + '_total_long'];
-    });
-  }
-  // Study details page.
-  if (
-    typeof Drupal.settings.tpps != 'undefined'
-    && typeof Drupal.settings.tpps.tree_info != 'undefined'
-    && (
-      window.location.pathname.match(detail_regex)
-      || typeof Drupal.settings.tpps.study_locations !== 'undefined'
-    )
-  ) {
-    var mapWrapper = document.getElementById('_map_wrapper');
-    if (Drupal.settings.tpps.markerClusterUrlType == 'new') {
-      maps[''] = new google.maps.Map(mapWrapper, {
-        center: { lat: 0, lng: 0 },
-        zoom: 5,
-        mapId: Drupal.settings.tpps.googleMapId,
-      });
-    }
-    else {
-      maps[''] = new google.maps.Map(mapWrapper, {
-        center: { lat: 0, lng: 0 },
-        zoom: 5,
-      });
-    }
-    maps['_markers'] = [];
-    maps['_total_lat'];
-    maps['_total_long'];
-    jQuery.fn.updateMap(
-      Drupal.settings.tpps.tree_info
-    );
-  }
-}
+  window.initMap = initMap;
+}(jQuery));
+
 
 function clearMarkers(prefix) {
   for (var i = 0; i < maps[prefix + '_markers'].length; i++) {
@@ -736,6 +790,9 @@ function getCoordinates(){
   });
 
   request.done(function (data) {
+
+// @TODO Update to !
+
     jQuery.fn.updateMap(data, fid);
   });
 }
@@ -772,32 +829,17 @@ jQuery.fn.updateMap = function(locations, fid = "") {
     maps[fid + '_total_long'] += parseInt(location[2]);
 
     // Marker.
-    if (Drupal.settings.tpps.markerClusterUrlType == 'new') {
-      var position = { lat: location[1], lng: location[2]};
-      var marker = new google.maps.marker.AdvancedMarkerElement({
-        map: maps[fid],
-        position: position,
-      });
-    }
-    else {
-      var marker = new google.maps.Marker({
-        position: new google.maps.LatLng(location[1], location[2])
-      });
-    }
-
+    var marker = new google.maps.Marker({
+      position: new google.maps.LatLng(location[1], location[2])
+    });
     var infowindow = new google.maps.InfoWindow({
       content: location[0] + '<br>Location: ' + location[1] + ', ' + location[2]
     });
-
     marker.addListener('click', function() {
       infowindow.open(maps[fid], maps[fid + '_markers'][i]);
     });
-
     return marker;
   });
-
-console.log('Markers');
-console.log(maps[fid + '_markers'], 'Markers');
 
   if (typeof maps[fid + '_cluster'] !== 'undefined') {
     maps[fid + '_cluster'].clearMarkers();
@@ -815,13 +857,13 @@ console.log(maps[fid + '_markers'], 'Markers');
       maps[fid + '_markers'],
       {imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m'}
     );
+    var center = new google.maps.LatLng(
+      maps[fid + '_total_lat']/locations.length,
+      maps[fid + '_total_long']/locations.length
+    );
+    maps[fid].panTo(center);
   }
 
-  var center = new google.maps.LatLng(
-    maps[fid + '_total_lat']/locations.length,
-    maps[fid + '_total_long']/locations.length
-  );
-  maps[fid].panTo(center);
 
 
 // https://developers.google.com/maps/documentation/javascript/markers?hl=ru
