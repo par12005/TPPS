@@ -78,8 +78,10 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
 
   // Check for log file
   // Step 1 - Look for the last tripal job that has the accession.
-  $results = db_query("SELECT * FROM public.tripal_jobs WHERE job_name LIKE "
-    . "'TPPS Record Submission - $accession' ORDER BY submit_date DESC LIMIT 1;");
+  $results = db_query("SELECT * FROM public.tripal_jobs WHERE job_name LIKE 
+    :search ORDER BY submit_date DESC LIMIT 1;", [
+      ':search' => "%Record Submission - $accession%"
+    ]);
   $job_id = -1;
   while ($row_array = $results->fetchObject()) {
     // $display .= print_r($row_array, true);
@@ -96,7 +98,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
       $display .= "<div style='padding: 10px;background: #e9f9ef;border: "
         . "1px solid #90bea9;font-size: 18px;'><a target='_blank' "
         . "href='../tpps-admin-panel-logs/" . $accession . "_" . $job_id
-        . "'>Latest job log file ($accession - $job_id)</a></div>";
+        . "'>Latest job log file ($accession - $job_id) - submit pipeline</a></div>";
     }
     else {
       $display .= "<div style='padding: 10px;'>Could not find job log file "
@@ -104,6 +106,37 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
         . "if necessary to regenerate log file)</div>";
     }
   }
+
+   // Check for log file
+  // Step 1b - Look for the last tripal job for marker removal if exists.
+  $results = db_query("SELECT * FROM public.tripal_jobs WHERE job_name LIKE 
+    :search ORDER BY submit_date DESC LIMIT 1;", [
+      ':search' => "%TPPS REMOVE all%$accession%"
+    ]);
+  $job_id = -1;
+  while ($row_array = $results->fetchObject()) {
+    // $display .= print_r($row_array, true);
+    $job_id = $row_array->job_id;
+  }
+  if ($job_id == -1) {
+    $display .= "<div style='padding: 10px;'>No log file exists for this "
+      . "study (removing markers and genotypes)</div>";
+  }
+  else {
+    $log_path = tpps_realpath('public://') . '/tpps_job_logs/';
+    // dpm($log_path . $accession . "_" . $job_id . ".txt");
+    if (file_exists($log_path . $accession . "_" . $job_id . ".txt")) {
+      $display .= "<div style='padding: 10px;background: #e9f9ef;border: "
+        . "1px solid #90bea9;font-size: 18px;'><a target='_blank' "
+        . "href='../tpps-admin-panel-logs/" . $accession . "_" . $job_id
+        . "'>Latest job log file ($accession - $job_id) - marker and genotype removals</a></div>";
+    }
+    else {
+      $display .= "<div style='padding: 10px;'>Could not find job log file "
+        . "(this can happen if the log file was deleted - marker and genotype removals "
+        . "if necessary to regenerate log file)</div>";
+    }
+  } 
 
   if ($submission->status == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
     $options['files'] = [
@@ -916,7 +949,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
     case 'remove_study_markers_and_genotypes':
       global $user;
       $includes = [];
-      // $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
+      $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
       $includes[] = module_load_include('inc', 'tpps', 'includes/markers_genotypes_utils');
       $jid = tripal_add_job("TPPS REMOVE all study markers and genotypes - $accession",
         'tpps', 'tpps_remove_all_markers_genotypes', [$accession],
@@ -952,7 +985,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       }
       global $user;
       $includes = [];
-      // $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
+      $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
       $includes[] = module_load_include('inc', 'tpps', 'includes/markers_genotypes_utils');
       $includes[] = module_load_include('inc', 'tpps', 'includes/submissions');
       // Job to remove genotype information and features.
