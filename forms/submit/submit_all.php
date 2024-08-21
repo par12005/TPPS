@@ -13,6 +13,37 @@
 $tpps_job_logger = NULL;
 $tpps_job = NULL;
 
+
+/**
+ * Initialized the job logger which handles writing to job logs
+ * and also outputting Tripal Job log messages at the same time.
+ * RISH 8/20/2024 - Code moved to this new function for re-use.
+ *
+ * @param string $accession
+ *   The accession number of the form being submitted.
+ * @param TripalJob $job
+ *   The TripalJob object for the submission job.
+ */
+function tpps_initialize_job_logger($accession, TripalJob $job = NULL) {
+  global $tpps_job;
+  global $tpps_job_logger;
+  // Get public path.
+  $log_path = tpps_realpath('public://') . '/tpps_job_logs/';
+
+  tpps_log('[INFO] Initializing log path: ' . $log_path);
+
+  if (!is_dir($log_path)) {
+    mkdir($log_path);
+  }
+
+  // Update the global $tpps_job_logger variable.
+  $tpps_job_logger = [];
+  $tpps_job_logger['job_object'] = $job;
+  $tpps_job_logger['log_file_path'] = $log_path . $accession . '_'
+    . $tpps_job_logger['job_object']->getJobID() . '.txt';
+  $tpps_job_logger['log_file_handle'] = fopen($tpps_job_logger['log_file_path'], "w+");
+}
+
 /**
  * Creates a record for the project and calls the submission helper functions.
  *
@@ -37,19 +68,9 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   }
 
   $tpps_job = $job;
-  // Get public path.
-  $log_path = tpps_realpath('public://') . '/tpps_job_logs/';
+  tpps_initialize_job_logger($accession, $job);
 
-  if (!is_dir($log_path)) {
-    mkdir($log_path);
-  }
 
-  // Update the global $tpps_job_logger variable.
-  $tpps_job_logger = [];
-  $tpps_job_logger['job_object'] = $job;
-  $tpps_job_logger['log_file_path'] = $log_path . $accession . '_'
-    . $tpps_job_logger['job_object']->getJobID() . '.txt';
-  $tpps_job_logger['log_file_handle'] = fopen($tpps_job_logger['log_file_path'], "w+");
 
   tpps_log('[INFO] Setting up...');
   $job->setInterval(1);
@@ -87,9 +108,10 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
       tpps_genotype_initial_checks($submission->sharedState, $i, $job);
     }
 
-    tpps_log('[INFO] Clearing Database...');
+    tpps_log('[INFO] Clearing any previous data for this study from the database...');
     tpps_submission_clear_db($accession);
-    tpps_log('[INFO] Database Cleared');
+    tpps_log('[INFO] Database cleared');
+
 
     tpps_submission_clear_default_tags($accession);
     $submission->sharedState['file_rank'] = 0;
@@ -165,9 +187,9 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     tpps_submit_page_3($submission->sharedState, $job);
     tpps_log("[INFO] Accession information submitted!\n");
 
-    tpps_log("[INFO] Submitting Raw data...");
+    tpps_log("[INFO] Submitting Genotype (Raw) data...");
     tpps_submit_page_4($submission->sharedState, $job);
-    tpps_log("[INFO] Raw data submitted!\n");
+    tpps_log("[INFO] Genotype (Raw) data submitted!\n");
 
     tpps_log("[INFO] Submitting Summary information...");
     tpps_submit_summary($submission->sharedState);
