@@ -138,6 +138,7 @@ function tpps_table_display(array &$state, array $options = []) {
               ],
             ];
             drupal_add_js(['tpps' => $js_settings], 'setting');
+            tpps_add_css_js('google_map');
           }
           else {
             $val_str .= "<br>This submission was submitted without "
@@ -200,6 +201,7 @@ function tpps_table_display(array &$state, array $options = []) {
             });
           });";
           drupal_add_js($js, 'inline');
+          tpps_add_css_js('google_map', $form);
         }
       }
       elseif ($key == 'Publication Abstract' and strlen($val_str) > 50) {

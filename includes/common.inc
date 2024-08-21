@@ -245,6 +245,7 @@ function tpps_get_markercluster_code($use_wrapper = TRUE) {
     'googleMapId' => variable_get('tpps_google_map_id'),
   ];
   drupal_add_js(['tpps' => $js_settings], 'setting');
+  tpps_add_css_js('google_map');
   return $output;
 }
 

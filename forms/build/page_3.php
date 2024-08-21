@@ -198,6 +198,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
         . '<input id="' . $button_id . '" type="button" '
         . 'value="' . t('Click here to view plants on map') . '" '
         . 'class="btn btn-primary form-button map-button"></input>';
+      tpps_add_css_js('google_map', $form);
       $no_header = tpps_get_ajax_value(
         $form_state,
         ['tree-accession', "species-$i", 'file', 'no_header'],
@@ -373,6 +374,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       . '<style>#map_wrapper { height: 450px; } </style>';
   }
   tpps_form_autofocus($form, ['tree-accession', 'species-1', 'file']);
+  tpps_add_css_js('google_map', $form);
   tpps_form_add_buttons(['form' => &$form, 'page' => 'page_3']);
   return $form;
 }

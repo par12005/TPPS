@@ -682,6 +682,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
   $form['#submit'][] = 'tpps_admin_panel_submit';
 
   tpps_add_css_js('main', $form);
+  tpps_add_css_js('google_map', $form);
   return $form;
 }
 
