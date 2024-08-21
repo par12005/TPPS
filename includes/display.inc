@@ -122,12 +122,12 @@ function tpps_table_display(array &$state, array $options = []) {
         if (preg_match('/^(.*)Accession File/', $key, $matches)) {
           if (!$flat['#skip_loc']) {
             $fid = $file->fid;
-            $wrapper_id = "{$fid}_map_wrapper";
-            $button_id = "{$fid}_map_button";
-            $val_str .= "<div id=\"$wrapper_id\"></div>"
-              . "<input id=\"$button_id\" type=\"button\" "
-              . " class=\"form-button form-submit\" value=\""
-              . t('Click here to view plants on map!') . "\"></input>";
+            $wrapper_id = $fid . '_map_wrapper';
+            $button_id = $fid . '_map_button';
+            $val_str .= '<div id="' . $wrapper_id . '"></div>'
+              . '<input id="' . $button_id . '" type="button" '
+              . ' class="form-button form-submit" value="'
+              . t('Click here to view plants on map!') . '"></input>';
             $js_settings = [
               'map_buttons' => [
                 $fid => [
