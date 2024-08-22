@@ -235,19 +235,19 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
  */
 function tpps_job_logger_write($string, $replacements = []) {
   global $tpps_job_logger;
+
+  foreach ($replacements as $key_string => $replace_string) {
+    $string = str_replace($key_string, $replace_string, $string);
+  }
+
+  // Add timestamp.
+  $time_now = time();
+  $timestamp_now = date('m/d/y g:i:s A', $time_now);
+
+  $string = "\n" . $timestamp_now . " " . $string;
+
+  echo $string; // RISH - 8/21/2024
   try {
-    foreach ($replacements as $key_string => $replace_string) {
-      $string = str_replace($key_string, $replace_string, $string);
-    }
-
-    // Add timestamp.
-    $time_now = time();
-    $timestamp_now = date('m/d/y g:i:s A', $time_now);
-
-    $string = "\n" . $timestamp_now . " " . $string;
-
-    echo $string; // RISH - 8/21/2024
-
     @fwrite($tpps_job_logger['log_file_handle'], $string);
     @fflush($tpps_job_logger['log_file_handle']);
   }

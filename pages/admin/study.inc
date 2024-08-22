@@ -937,7 +937,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       $jid = tripal_add_job("Generate VCF to SNPs Flat file - $accession "
         . "(project_id=$project_id) " . date("F j, Y, g:i a"), 'tpps',
         'tpps_genotypes_to_flat_files_and_find_studies_overlaps',
-        [$submission->state, $submission->sharedState], $user->uid, 10, $includes, TRUE
+        [$submission->state, $submission->sharedState, true], $user->uid, 10, $includes, TRUE
       );
       break;
 
