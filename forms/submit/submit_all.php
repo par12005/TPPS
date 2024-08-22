@@ -1914,18 +1914,31 @@ function tpps_generate_species_codes_array_from_shared_state($shared_state) {
   for ($i = 1; $i <= $organism_number; $i++) {
     // Get the organism id from the organism name due to breaking changed made by Vlad
     $organism_name = $shared_state['saved_values'][1]['organism'][$i]['name'];
-    $organism_name_parts = explode(" ", $organism_name, 2);
-    print_r($organism_name_parts);
+    $organism_name_parts = explode(" ", $organism_name, 3);
+    tpps_log($organism_name_parts);
     $organism_name_genus = $organism_name_parts[0];
     $organism_name_species = $organism_name_parts[1];
-    $organism_lookup_results = chado_query('SELECT organism_id FROM chado.organism WHERE genus ILIKE :genus AND species ILIKE :species',[
-      ':genus' => $organism_name_genus,
-      ':species' => $organism_name_species,
-    ]);
+    $organism_name_extra = trim($organism_name_parts[2]);
+    if ($organism_name_extra == NULL) {
+      $organism_lookup_results = chado_query('SELECT organism_id FROM chado.organism WHERE genus ILIKE :genus AND species ILIKE :species',[
+        ':genus' => $organism_name_genus,
+        ':species' => $organism_name_species,
+      ]);
+    }
+    else {
+      $organism_lookup_results = chado_query('SELECT organism_id FROM chado.organism 
+        WHERE genus ILIKE :genus 
+        AND species ILIKE :species 
+        AND infraspecific_name ILIKE :infra',[
+        ':genus' => $organism_name_genus,
+        ':species' => $organism_name_species,
+        ':infra' => $organism_name_extra
+      ]);
+    }
     $organism_id = NULL;
     foreach ($organism_lookup_results as $organism_lookup_results_row) {
       $organism_id = $organism_lookup_results_row->organism_id;
-      print_r("ORGANISM ID ($organism_name): " . $organism_id . "\n");
+      tpps_log("ORGANISM ID ($organism_name): " . $organism_id . "\n");
     }
 
     // Use the organism_id to lookup the 4 letter code
@@ -1936,7 +1949,7 @@ function tpps_generate_species_codes_array_from_shared_state($shared_state) {
     $four_letter_code = NULL;
     foreach ($four_letter_code_results as $four_letter_code_results_row) {
       $four_letter_code = $four_letter_code_results_row->value;
-      print_r("FOUR LETTER CODE ($organism_name): " . $four_letter_code . "\n");
+      tpps_log("FOUR LETTER CODE ($organism_name): " . $four_letter_code . "\n");
     }
 
     if ($organism_id != NULL && $four_letter_code != NULL) {
