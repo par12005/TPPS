@@ -101,18 +101,13 @@ function tpps_details($accession = NULL) {
       }
     }
 
+    // Note: There is no file id because used processed data from all the files
+    // for all the species.
     $tree_info = [];
     if (!empty($submission->sharedState['tree_info'])) {
       foreach ($submission->sharedState['tree_info'] as $name => $info) {
-        if (
-          !empty($info['lat'])
-          and !empty($info['lng'])
-        ) {
-          $tree_info[] = [
-            $name,
-            $info['lat'],
-            $info['lng'],
-          ];
+        if (!empty($info['lat']) && !empty($info['lng'])) {
+          $tree_info[] = [$name, $info['lat'], $info['lng']];
         }
       }
       drupal_add_js(['tpps' => ['tree_info' => $tree_info]], 'setting');

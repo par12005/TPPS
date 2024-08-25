@@ -236,7 +236,7 @@ function tpps_get_markercluster_code($use_wrapper = TRUE) {
       'v' => 'weekly',
       'libraries' => 'marker',
       'loading' => 'async',
-    ]
+    ],
   ]);
   drupal_add_js($url, 'external');
   // Settings.
