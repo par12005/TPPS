@@ -190,7 +190,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       NULL
     );
     // [/VS]
-    if ($file = tpps_file_load($fid) && empty($skip)) {
+    if ($file = tpps_file_load($fid)) {
       $wrapper_id = "{$fid}_map_wrapper";
       $button_id = "{$fid}_map_button";
       $form['tree-accession']["species-$i"]['coord-format']['#suffix']
@@ -199,6 +199,14 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
         . 'value="' . t('Click here to view plants on map') . '" '
         . 'class="btn btn-primary form-button map-button"></input>';
       tpps_add_css_js('google_map', $form);
+      $form['#attached']['js'][] = [
+        'type' => 'setting',
+        'scope' => 'footer',
+        'data' => ['tpps' => ['fid' => $fid]],
+      ];
+    }
+
+    if ($file = tpps_file_load($fid)) {
       $no_header = tpps_get_ajax_value(
         $form_state,
         ['tree-accession', "species-$i", 'file', 'no_header'],
@@ -369,9 +377,9 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     // @todo Add JS using drupal_add_js().
 
     // Wrapper is NOT required here.
-    $form['tree-accession']['#suffix'] .= tpps_get_markercluster_code()
+    $form['tree-accession']['#suffix'] .= tpps_get_markercluster_code(FALSE);
       // @todo Move CSS to /css/tpps.css.
-      . '<style>#map_wrapper { height: 450px; } </style>';
+      //. '<style>#map_wrapper { height: 450px; } </style>';
   }
   tpps_form_autofocus($form, ['tree-accession', 'species-1', 'file']);
   tpps_add_css_js('google_map', $form);

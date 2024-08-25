@@ -1,19 +1,23 @@
 (function ($) {
   Drupal.behaviors.tppsGoogleMap = {
     attach:function (context) {
-      if ('tpps' in Drupal.settings && 'map_buttons' in Drupal.settings.tpps) {
-        var map_buttons = Drupal.settings.tpps.map_buttons;
-        $.each(map_buttons, function() {
-          $('#' + this.button).click(getCoordinates);
-        })
-      }
+
+// @TODO Remove one of those methods because of double processing of 'click' event.
+
+
+      //if ('tpps' in Drupal.settings && 'map_buttons' in Drupal.settings.tpps) {
+      //  var map_buttons = Drupal.settings.tpps.map_buttons;
+      //  $.each(map_buttons, function() {
+      //    $('#' + this.button).on('click', getCoordinates);
+      //  })
+      //}
 
       // Process only 'input#map_button' and 'input#map-button'.
       var buttons = $('input').filter(function() {
         return (this.id.match(/map_button/) || this.id.match(/map-button/));
       });
       $.each(buttons, function(){
-        $(this).attr('type', 'button')
+        $(this).attr('type', 'button').on('click', getCoordinates);
       });
     }
   }
@@ -28,6 +32,8 @@ var maps = {};
 (function ($) {
 
   async function initMap() {
+    let debugMode = true;
+    let featureName = 'GoogleMap MarkerCluster';
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get libraries.
     const { Map, InfoWindow } = await google.maps.importLibrary("maps");
@@ -38,7 +44,7 @@ var maps = {};
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get data for markers.
     let fid = '';
-    let locations = {};
+    let locations = '';
     if ('tpps' in Drupal.settings) {
       if ('fid' in Drupal.settings.tpps) {
         fid = Drupal.settings.tpps.fid;
@@ -54,9 +60,14 @@ var maps = {};
         locations = Drupal.settings.tpps.study_locations;
       }
     }
-    if ( !locations.length) {
-      // If there is no locations then nothing to show.
+    if ( !locations.length ) {
+      if (debugMode) {
+        console.log(featureName + ': no locations to show on map');
+      }
       return;
+    }
+    if (debugMode) {
+      console.log(locations);
     }
 
     // Map Id at page.
@@ -90,6 +101,13 @@ var maps = {};
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Init map and add markers.
+    if (typeof $mapWrapper[0] == 'undefined') {
+      if (debugMode) {
+        console.log(featureName + ': no map wrapper found.');
+      }
+      return;
+
+    }
     maps[id] = new Map($mapWrapper[0], {
       center: {
         lat: Number(locations[0][1]),
@@ -110,7 +128,7 @@ var maps = {};
       const label = labels[position[0]];
       const pinGlyph = new PinElement({
         glyph: label,
-        glyphColor: "red",
+        glyphColor: "white",
       });
       const markerPosition = { lat: Number(position[1]), lng: Number(position[2]) };
       const marker = new AdvancedMarkerElement({
