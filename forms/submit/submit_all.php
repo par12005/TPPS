@@ -235,17 +235,19 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
  */
 function tpps_job_logger_write($string, $replacements = []) {
   global $tpps_job_logger;
+
+  foreach ($replacements as $key_string => $replace_string) {
+    $string = str_replace($key_string, $replace_string, $string);
+  }
+
+  // Add timestamp.
+  $time_now = time();
+  $timestamp_now = date('m/d/y g:i:s A', $time_now);
+
+  $string = "\n" . $timestamp_now . " " . $string;
+
+  echo $string; // RISH - 8/21/2024
   try {
-    foreach ($replacements as $key_string => $replace_string) {
-      $string = str_replace($key_string, $replace_string, $string);
-    }
-
-    // Add timestamp.
-    $time_now = time();
-    $timestamp_now = date('m/d/y g:i:s A', $time_now);
-
-    $string = "\n" . $timestamp_now . " " . $string;
-
     @fwrite($tpps_job_logger['log_file_handle'], $string);
     @fflush($tpps_job_logger['log_file_handle']);
   }
@@ -1912,18 +1914,31 @@ function tpps_generate_species_codes_array_from_shared_state($shared_state) {
   for ($i = 1; $i <= $organism_number; $i++) {
     // Get the organism id from the organism name due to breaking changed made by Vlad
     $organism_name = $shared_state['saved_values'][1]['organism'][$i]['name'];
-    $organism_name_parts = explode(" ", $organism_name, 2);
-    print_r($organism_name_parts);
+    $organism_name_parts = explode(" ", $organism_name, 3);
+    tpps_log($organism_name_parts);
     $organism_name_genus = $organism_name_parts[0];
     $organism_name_species = $organism_name_parts[1];
-    $organism_lookup_results = chado_query('SELECT organism_id FROM chado.organism WHERE genus ILIKE :genus AND species ILIKE :species',[
-      ':genus' => $organism_name_genus,
-      ':species' => $organism_name_species,
-    ]);
+    $organism_name_extra = trim($organism_name_parts[2]);
+    if ($organism_name_extra == NULL) {
+      $organism_lookup_results = chado_query('SELECT organism_id FROM chado.organism WHERE genus ILIKE :genus AND species ILIKE :species',[
+        ':genus' => $organism_name_genus,
+        ':species' => $organism_name_species,
+      ]);
+    }
+    else {
+      $organism_lookup_results = chado_query('SELECT organism_id FROM chado.organism 
+        WHERE genus ILIKE :genus 
+        AND species ILIKE :species 
+        AND infraspecific_name ILIKE :infra',[
+        ':genus' => $organism_name_genus,
+        ':species' => $organism_name_species,
+        ':infra' => $organism_name_extra
+      ]);
+    }
     $organism_id = NULL;
     foreach ($organism_lookup_results as $organism_lookup_results_row) {
       $organism_id = $organism_lookup_results_row->organism_id;
-      print_r("ORGANISM ID ($organism_name): " . $organism_id . "\n");
+      tpps_log("ORGANISM ID ($organism_name): " . $organism_id . "\n");
     }
 
     // Use the organism_id to lookup the 4 letter code
@@ -1934,7 +1949,7 @@ function tpps_generate_species_codes_array_from_shared_state($shared_state) {
     $four_letter_code = NULL;
     foreach ($four_letter_code_results as $four_letter_code_results_row) {
       $four_letter_code = $four_letter_code_results_row->value;
-      print_r("FOUR LETTER CODE ($organism_name): " . $four_letter_code . "\n");
+      tpps_log("FOUR LETTER CODE ($organism_name): " . $four_letter_code . "\n");
     }
 
     if ($organism_id != NULL && $four_letter_code != NULL) {
@@ -1961,37 +1976,36 @@ function tpps_generate_species_codes_array_from_shared_state($shared_state) {
  * This function will process all vcf files per organism (from genotype section) genotypic information
  * and store it within files.
  */
-function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $shared_state, $regenerate_all = TRUE) {
-  
+function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $shared_state, $regenerate_all = TRUE, TripalJob $job = NULL) {
   
   $project_id = $shared_state['ids']['project_id'];
   $accession = $form_state['accession'];
+
+  tpps_initialize_job_logger($accession, $job);
+
   $dest_folder = tpps_realpath('public://tpps_vcf_flat_files');
   
   // print_r($form_state);
   // Generate species codes which is needed later on
   $organism_number = $shared_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
-  echo "Organism Number: $organism_number\n";
   tpps_log("Organism Number: $organism_number\n");
-  echo "Shared state Organism IDS:\n";
-  print_r($shared_state['ids']['organism_ids']);
-  echo "Form State Organism IDS:\n";
-  print_r($form_state['ids']['organism_ids']);
+  tpps_log("Shared state Organism IDS:\n" . print_r($shared_state['ids']['organism_ids'], true));
+  tpps_log("Form State Organism IDS:\n" . print_r($form_state['ids']['organism_ids'], true));
 
   $species_codes = tpps_generate_species_codes_array_from_shared_state($shared_state);
-  print_r("Species code\n");
-  print_r($species_codes);
+  tpps_log("Species code\n " . print_r($species_codes, true));
   // throw new Exception('debug');
 
   // Run genotype_vcf_to_flat_file per organism_index for the original study
   // @TODO Re-enable this
   for ($i = 1; $i <= $organism_number; $i++) {
     $snps_flat_file_location = $dest_folder . '/' . $accession . '-' . $i . '-snps.csv';
-    echo "Checking if file exists: $snps_flat_file_location\n";
+    tpps_log("Checking if file exists: $snps_flat_file_location\n");
     // If file does not exist, we need to generate this
     if (!file_exists($snps_flat_file_location) || $regenerate_all == true) {
-      echo "Generating: $snps_flat_file_location\n";
+      tpps_log("Generating: $snps_flat_file_location\n");
       tpps_genotypes_to_flat_file($form_state, $shared_state, $species_codes, $i);
+      tpps_log("Done.");
     }
   }
 
@@ -2017,11 +2031,11 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $sh
     $study_state = $submission->sharedState;
 
     $study_organism_number = $study_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
-    echo "Study organism number for $study_accession is $study_organism_number\n";
+    tpps_log("Study organism number for $study_accession is $study_organism_number\n");
     // Check if each study has overlap files
     for($i = 1; $i <= $study_organism_number; $i++) {
       $snps_flat_file_location = $dest_folder . '/' . $study_accession . '-' . $i . '-snps.csv';
-      echo "Checking if file exists: $snps_flat_file_location\n";
+      tpps_log("Checking if file exists: $snps_flat_file_location\n");
       if (!file_exists($snps_flat_file_location) || $regenerate_all == true) {
         // GOAL: We need to generate flat files for this study
         // Step 1: Get species_codes for this study
@@ -2041,8 +2055,9 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $sh
         // }
 
         // Generate the flat files and necessary DB inserts for features, genotypes etc
-        echo "Running tpps_genotypes_to_flat_file $study_accession $i\n";
+        tpps_log("Running tpps_genotypes_to_flat_file $study_accession $i\n");
         tpps_genotypes_to_flat_file($study_state, $shared_state, $study_species_codes, $i);
+        tpps_log("Done.");
       }
       else {
         // Flat file exists so we can perform comparison operations to check between original study
@@ -2072,12 +2087,12 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $sh
         exec("cat $snps_flat_file_location | sort > $snps_sorted");
         $time_end = time();
         $time_elapsed = $time_end - $time_start;
-        echo "[$time_elapsed s] File generated: $snps_sorted\n";
+        tpps_log("[$time_elapsed s] File generated: $snps_sorted\n");
       }
       else {
 
       }
-      echo "[SORTED LIST]: ". $snps_flat_file_location . "\n";
+      tpps_log("[SORTED LIST]: ". $snps_flat_file_location . "\n");
     }
   }
 
@@ -2089,8 +2104,7 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $sh
   foreach ($accession_results as $row) {
     $all_studies_array[] = $row->accession;
   }
-  print_r("All Studies Array:\n");
-  print_r($all_studies_array);
+  tpps_log("All Studies Array:\n" . print_r($all_studies_array, true));
 
   // // Code modified from https://r.je/php-find-every-combination
 
@@ -2143,7 +2157,7 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $sh
 
     }
 
-    echo "[Repeats Location]: $repeats_location\n";
+    tpps_log("[Repeats Location]: $repeats_location\n");
   }
 
   // Remove repeats from corresponding studies.
@@ -2159,13 +2173,13 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $sh
       // exec("grep -v -x -f $repeats_location $snps_flat_file_location_1 > $repeats_removed_location_1");
       exec("awk 'NR==FNR{a[$0]=1;next}!a[$0]' $repeats_location $snps_flat_file_location_1 > $repeats_removed_location_1");
     }
-    echo "[Repeats removed]: $repeats_removed_location_1\n";
+    tpps_log("[Repeats removed]: $repeats_removed_location_1\n");
 
     if (!is_file($repeats_removed_location_2) || $regenerate_all == TRUE) {
       // exec("grep -v -x -f $repeats_location $snps_flat_file_location_2 > $repeats_removed_location_2");
       exec("awk 'NR==FNR{a[$0]=1;next}!a[$0]' $repeats_location $snps_flat_file_location_2 > $repeats_removed_location_2");
     }
-    echo "[Repeats removed]: $repeats_removed_location_2\n";
+    tpps_log("[Repeats removed]: $repeats_removed_location_2\n");
   }
 
   // Distinct repeats_removed.
@@ -2182,12 +2196,12 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $sh
     if (!is_file($distinct_repeats_removed_location_1) || $regenerate_all == true) {
       exec("awk -F',' '{print $2}' $repeats_removed_location_1 | sort | uniq > $distinct_repeats_removed_location_1");
     }
-    echo "[Distinct repeats removed snps]: $distinct_repeats_removed_location_1\n";
+    tpps_log("[Distinct repeats removed snps]: $distinct_repeats_removed_location_1\n");
 
     if (!is_file($distinct_repeats_removed_location_2) || $regenerate_all == true) {
       exec("awk -F',' '{print $2}' $repeats_removed_location_2 | sort | uniq > $distinct_repeats_removed_location_2");
     }
-    echo "[Distinct repeats removed snps]: $distinct_repeats_removed_location_2\n";
+    tpps_log("[Distinct repeats removed snps]: $distinct_repeats_removed_location_2\n");
   }
 
   // Check for repeats between distinct_snps
@@ -2199,7 +2213,7 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $sh
     if (!is_file($overlapping_snps_location) || $regenerate_all == true) {
       exec("comm $distinct_repeats_removed_location_1 $distinct_repeats_removed_location_2 | awk -F'\\t' '{print $3}' | sed '/^$/d' > $overlapping_snps_location");
     }
-    echo "[OVERLAPPING SNPS LOCATION]: $overlapping_snps_location\n";
+    tpps_log("[OVERLAPPING SNPS LOCATION]: $overlapping_snps_location\n");
   }
 
   // Now we need to add this data to the database.
@@ -2218,7 +2232,7 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $sh
     }
     fclose($handle);
     $snps_count = count($snps);
-    echo "SNPs count $snps_count between " . $pair[0] . " and " . $pair[1] . "\n";
+    tpps_log("SNPs count $snps_count between " . $pair[0] . " and " . $pair[1] . "\n");
     // print_r($snps);
     // print_r(implode(',', $snps));
 
@@ -2239,7 +2253,7 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $sh
       ')');
     }
     else {
-      echo "No SNPs overlaps found between " . $pair[0] . " and " . $pair[1] . "\n";
+      tpps_log("No SNPs overlaps found between " . $pair[0] . " and " . $pair[1] . "\n");
     }
   }
   echo "ALL COMPLETED!\n";

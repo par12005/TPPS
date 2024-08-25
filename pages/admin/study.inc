@@ -107,8 +107,39 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
     }
   }
 
-   // Check for log file
-  // Step 1b - Look for the last tripal job for marker removal if exists.
+  // Check for log file
+  // Step 1b - Look for the last tripal job for Flat File processing if exists.
+  $results = db_query("SELECT * FROM public.tripal_jobs WHERE job_name LIKE 
+    :search ORDER BY submit_date DESC LIMIT 1;", [
+      ':search' => "%Generate VCF to SNPs Flat file - %$accession%"
+    ]);
+  $job_id = -1;
+  while ($row_array = $results->fetchObject()) {
+    // $display .= print_r($row_array, true);
+    $job_id = $row_array->job_id;
+  }
+  if ($job_id == -1) {
+    $display .= "<div style='padding: 10px;'>No log file exists for this "
+      . "study (flat file processing)</div>";
+  }
+  else {
+    $log_path = tpps_realpath('public://') . '/tpps_job_logs/';
+    // dpm($log_path . $accession . "_" . $job_id . ".txt");
+    if (file_exists($log_path . $accession . "_" . $job_id . ".txt")) {
+      $display .= "<div style='padding: 10px;background: #e9f9ef;border: "
+        . "1px solid #90bea9;font-size: 18px;'><a target='_blank' "
+        . "href='../tpps-admin-panel-logs/" . $accession . "_" . $job_id
+        . "'>Latest job log file ($accession - $job_id) - flat file processing</a></div>";
+    }
+    else {
+      $display .= "<div style='padding: 10px;'>Could not find job log file "
+        . "(this can happen if the log file was deleted - flat file processing "
+        . "if necessary to regenerate log file)</div>";
+    }
+  } 
+
+  // Check for log file
+  // Step 1c - Look for the last tripal job for marker removal if exists.
   $results = db_query("SELECT * FROM public.tripal_jobs WHERE job_name LIKE 
     :search ORDER BY submit_date DESC LIMIT 1;", [
       ':search' => "%TPPS REMOVE all%$accession%"
@@ -137,6 +168,9 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
         . "if necessary to regenerate log file)</div>";
     }
   } 
+
+
+
 
   if ($submission->status == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
     $options['files'] = [
@@ -904,7 +938,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       $jid = tripal_add_job("Generate VCF to SNPs Flat file - $accession "
         . "(project_id=$project_id) " . date("F j, Y, g:i a"), 'tpps',
         'tpps_genotypes_to_flat_files_and_find_studies_overlaps',
-        [$submission->state, $submission->sharedState], $user->uid, 10, $includes, TRUE
+        [$submission->state, $submission->sharedState, true], $user->uid, 10, $includes, TRUE
       );
       break;
 
