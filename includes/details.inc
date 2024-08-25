@@ -102,8 +102,8 @@ function tpps_details($accession = NULL) {
     }
 
     $tree_info = [];
-    if (!empty($submission->state['tree_info'])) {
-      foreach ($submission->state['tree_info'] as $name => $info) {
+    if (!empty($submission->sharedState['tree_info'])) {
+      foreach ($submission->sharedState['tree_info'] as $name => $info) {
         if (
           !empty($info['lat'])
           and !empty($info['lng'])
@@ -872,13 +872,17 @@ function tpps_details_get_study_file_ids(array $state) {
 /**
  * Creates the table of individual plant details for a submission.
  *
- * @param array $state
- *   The form state of the submission.
+ * Note: this function's name seems created dynamically or not used now.
+ *
+ * @param array $shared_state
+ *   The Submission's Shared State.
+ *   Used shared state instead of state because only shared state has
+ *   'tree_info' element which added by pipeline processing.
  *
  * @return string
  *   The HTML table of plants associated with the submission.
  */
-function tpps_details_trees(array &$state) {
+function tpps_details_trees(array &$shared_state) {
   $path = current_path();
   $args = explode('/', $path);
   $params = drupal_get_query_parameters($_POST);
@@ -889,19 +893,20 @@ function tpps_details_trees(array &$state) {
   $rows = array();
   $per_page = 20;
 
-  if (empty($state['tree_info'])) {
+  // @TODO Be sure to use shared_state instead of form_state.
+  if (empty($shared_state['tree_info'])) {
     $output = t('The plant information for this study has not been properly updated. Please contact your site administrator.');
     return $output;
   }
 
   $_GET['page'] = $page;
-  pager_default_initialize(count($state['tree_info']), $per_page);
-  $chunks = array_chunk($state['tree_info'], $per_page, TRUE);
+  pager_default_initialize(count($shared_state['tree_info']), $per_page);
+  $chunks = array_chunk($shared_state['tree_info'], $per_page, TRUE);
 
   foreach ($chunks[$page] as $name => $info) {
     $id = $info['organism_id'];
-    $form_number = array_search($id, $state['ids']['organism_ids']);
-    $species_name = $state['saved_values'][TPPS_PAGE_1]['organism'][$form_number]['name'];
+    $form_number = array_search($id, $share_state['ids']['organism_ids']);
+    $species_name = $shared_state['saved_values'][TPPS_PAGE_1]['organism'][$form_number]['name'];
 
     $tree_id = tpps_entity_link($info['stock_id'], $name, 'Stock');
 
@@ -935,7 +940,7 @@ function tpps_details_trees(array &$state) {
     'empty' => '',
   ];
   $table = theme('table', $vars);
-  $pager = theme('pager', array('quantity', count($state['tree_info'])));
+  $pager = theme('pager', array('quantity', count($shared_state['tree_info'])));
   return $pager . $table;
 }
 
