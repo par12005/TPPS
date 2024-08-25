@@ -92,7 +92,6 @@ function tpps_install() {
   // Misc Settings.
   variable_set('tpps_theme_fix_pager', FALSE);
   // Google Maps.
-  variable_set('tpps_markercluster_url_type', 'new');
   variable_set('tpps_google_map_id', '');
   variable_set('tpps_maps_api_key', '');
   // Submission Export.
@@ -440,7 +439,6 @@ function tpps_uninstall() {
   // Misc Settings.
   variable_del('tpps_theme_fix_pager');
   // Google Maps.
-  variable_del('tpps_markercluster_url_type');
   variable_del('tpps_google_map_id');
   variable_del('tpps_maps_api_key');
 
@@ -2250,11 +2248,4 @@ function tpps_update_7123() {
   if (!db_field_exists($table_name, $column_name)) {
     db_query('ALTER TABLE tpps_submission ADD COLUMN shared_state text;');
   }
-}
-
-/**
- * Adds new column 'shared_state' to 'tpps_submission' table.
- */
-function tpps_update_7124() {
-  variable_set('tpps_markercluster_url_type', 'new');
 }

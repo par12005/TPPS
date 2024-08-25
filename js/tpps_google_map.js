@@ -54,19 +54,11 @@ var maps = {};
       jQuery.each(mapButtons, function() {
         var fid = this.fid;
         var mapWrapper = jQuery('#' + fid + '_map_wrapper').show().css({'height': '450px'})[0];
-        if (Drupal.settings.tpps.markerClusterUrlType == 'new') {
-          maps[fid] = new Map(mapWrapper, {
-            center: {lat:0, lng:0},
-            zoom: 5,
-            mapId: Drupal.settings.tpps.googleMapId,
-          });
-        }
-        else {
-          maps[fid] = new google.maps.Map(mapWrapper, {
-            center: {lat:0, lng:0},
-            zoom: 5,
-          });
-        }
+        maps[fid] = new Map(mapWrapper, {
+          center: {lat:0, lng:0},
+          zoom: 5,
+          mapId: Drupal.settings.tpps.googleMapId,
+        });
 
         maps[fid + '_markers'] = [];
         maps[fid + '_total_lat'];
@@ -86,7 +78,6 @@ var maps = {};
       //var mapWrapper = document.getElementById('_map_wrapper');
       var mapWrapper = jQuery('#_map_wrapper').show().css({'height': '450px'})[0];
 
-      if (Drupal.settings.tpps.markerClusterUrlType == 'new') {
         maps['map'] = new Map(mapWrapper, {
           center: {
             lat: Number(Drupal.settings.tpps.tree_info[0][1]),
@@ -131,19 +122,6 @@ var maps = {};
           markers: markers,
           map: maps['map'],
         });
-      }
-      else {
-        maps[''] = new Map(mapWrapper, {
-          center: { lat: 0, lng: 0 },
-          zoom: 5,
-        });
-        maps['_markers'] = [];
-        maps['_total_lat'];
-        maps['_total_long'];
-        jQuery.fn.updateMap(
-          Drupal.settings.tpps.tree_info
-        );
-      }
     }
   }
 
@@ -254,24 +232,11 @@ jQuery.fn.updateMap = function(locations, fid = "") {
     maps[fid + '_cluster'].clearMarkers();
   }
 
-  if (Drupal.settings.tpps.markerClusterUrlType == 'new') {
-    maps[fid + '_cluster'] = new markerClusterer.MarkerClusterer(
-      maps[fid],
-      maps[fid + '_markers'],
-    );
-  }
-  else {
-    maps[fid + '_cluster'] = new MarkerClusterer(
-      maps[fid],
-      maps[fid + '_markers'],
-      {imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m'}
-    );
-    var center = new google.maps.LatLng(
-      maps[fid + '_total_lat']/locations.length,
-      maps[fid + '_total_long']/locations.length
-    );
-    maps[fid].panTo(center);
-  }
+  // @TODO Do we need this?
+  maps[fid + '_cluster'] = new markerClusterer.MarkerClusterer(
+    maps[fid],
+    maps[fid + '_markers'],
+  );
 
 
 

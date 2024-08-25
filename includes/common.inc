@@ -233,15 +233,12 @@ function tpps_get_markercluster_code($use_wrapper = TRUE) {
     'loading' => 'async',
   ];
   $url = url('https://maps.googleapis.com/maps/api/js', ['query' => $query]);
-  $url_type = variable_get('tpps_markercluster_url_type', 'new');
-  // WARNING: Be sure to set 'async' and 'defer' HTML attributes.
-  $output = '<script src="' . tpps_markercluster_get_url($url_type)
-    . '"></script><script src="' . $url . '" async defer></script>';
+  $output = '<script src="' . tpps_markercluster_get_url()
+    . '"></script><script src="' . $url . '"></script>';
   if ($use_wrapper) {
     $output .= '<div id="_map_wrapper"></div>';
   }
   $js_settings = [
-    'markerClusterUrlType' => $url_type,
     'googleMapId' => variable_get('tpps_google_map_id'),
   ];
   drupal_add_js(['tpps' => $js_settings], 'setting');
@@ -252,18 +249,17 @@ function tpps_get_markercluster_code($use_wrapper = TRUE) {
 /**
  * Gets Google Map MarkerCluster library URL.
  *
- * @param string $key
- *   Possible values are: 'new', 'old'.
+ * The library creates and manages per-zoom-level clusters for large
+ * amounts of markers.
  *
- * @return mixed
- *   Returns URL (string) if $key was specified.
- *   Returns array with all URLs when $key wasn't specified.
+ * Useful links:
+ * https://github.com/googlemaps/js-markerclusterer
+ * Documentation:
+ * https://developers.google.com/maps/documentation/javascript/marker-clustering?hl=en
+ *
+ * @return string
+ *   Returns URL.
  */
-function tpps_markercluster_get_url($key = '') {
-  $options = [
-    'old' => 'https://developers.google.com/maps/documentation/javascript'
-      . '/examples/markerclusterer/markerclusterer.js',
-    'new' => 'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js',
-  ];
-  return $options[($key)] ?? $options;
+function tpps_markercluster_get_url() {
+  return 'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js';
 }
