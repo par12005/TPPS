@@ -1,10 +1,7 @@
 (function ($) {
   Drupal.behaviors.tppsGoogleMap = {
     attach:function (context) {
-      if (
-        typeof Drupal.settings.tpps !== 'undefined'
-        && typeof Drupal.settings.tpps.map_buttons !== 'undefined'
-      ) {
+      if ('tpps' in Drupal.settings && 'map_buttons' in Drupal.settings.tpps) {
         var map_buttons = Drupal.settings.tpps.map_buttons;
         $.each(map_buttons, function() {
           $('#' + this.button).click(getCoordinates);
@@ -18,28 +15,27 @@
       $.each(buttons, function(){
         $(this).attr('type', 'button')
       });
-
     }
   }
 })(jQuery);
 
-
-
-
-// @TODO Check and process.
-  //window.location.pathname.match(detail_regex)
-  //      || 'study_locations' in Drupal.settings.tpps
+// We are using array (list) of maps because there could be multiple species
+// and multiple accession files on the same page.
+// Also there could be a small map (height 100 px) in sidebar.
 var maps = {};
 
 /* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 (function ($) {
 
   async function initMap() {
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Get libraries.
     const { Map, InfoWindow } = await google.maps.importLibrary("maps");
     const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary(
       "marker",
     )
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get data for markers.
     let fid = '';
     let locations = {};
@@ -47,18 +43,27 @@ var maps = {};
       if ('fid' in Drupal.settings.tpps) {
         fid = Drupal.settings.tpps.fid;
       }
-      if ('locations' in Drupal.settings.tpps) {
-        locations = Drupal.settings.tpps.locations;
-      }
+      // Get locations.
       if ('tree_info' in Drupal.settings.tpps) {
         locations = Drupal.settings.tpps.tree_info;
       }
+      else if ('locations' in Drupal.settings.tpps) {
+        locations = Drupal.settings.tpps.locations;
+      }
+      else if ('study_locations' in Drupal.settings.tpps) {
+        locations = Drupal.settings.tpps.study_locations;
+      }
+    }
+    if ( !locations.length) {
+      // If there is no locations then nothing to show.
+      return;
     }
 
     // Map Id at page.
     let id='map';
     if (fid != '') { id = fid; }
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Map wrapper.
     // Note: On study page there is no File Id because all species and all
     // files was processed.
@@ -71,18 +76,19 @@ var maps = {};
       && Drupal.settings.tpps.stage == 3
     ) {
       // Page 3.
-      $mapWrapper.show().css({'height': '450px', "max-width": "800px"});
+      $mapWrapper.css({'height': '450px', "max-width": "800px"}).show();
     }
-    else if(jQuery("#tpps_table_display").length > 0) {
-      $mapWrapper.show().css({'height': '450px'});
+    else if(jQuery("#tpps_table_display").length) {
+      $mapWrapper.css({'height': '450px'}).show();
     }
     else if (window.location.pathname.match(detail_regex)) {
-      $mapWrapper.show().css({'height': '450px'});
+      $mapWrapper.css({'height': '450px'}).show();
     }
     else {
-      $mapWrapper.show().css({'height': '100px'});
+      $mapWrapper.css({'height': '100px'}).show();
     }
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Init map and add markers.
     maps[id] = new Map($mapWrapper[0], {
       center: {
@@ -135,16 +141,11 @@ var maps = {};
 }(jQuery));
 
 
-//function clearMarkers(prefix) {
-//  for (var i = 0; i < maps[prefix + '_markers'].length; i++) {
-//    maps[prefix + '_markers'][i].setMap(null);
-//  }
-//  maps[prefix + '_markers'] = [];
-//}
 
+/**
+ * Gets locations for specific accession-file.
+ */
 function getCoordinates(){
-
-console.log('called getCoordinates()');
 
   var fid = this.id.match(/(.*)_map_button/)[1];
 
@@ -188,84 +189,6 @@ console.log('called getCoordinates()');
   request.done(function (data) {
     Drupal.settings.tpps.locations = data;
     Drupal.settings.tpps.fid = fid;
-
     initMap();
-
-// @TODO Update to !
-
-    //jQuery.fn.updateMap(data, fid);
   });
 }
-
-
-
-
-
-
-
-jQuery.fn.updateMap = function(locations, fid = "") {
-
-
-  console.log('updateMap');
-  return;
-
-
-  jQuery("#" + fid + "_map_wrapper").show();
-  var detail_regex = /tpps\/details\/TGDR.*/g;
-  if (
-    typeof Drupal.settings.tpps !== 'undefined'
-    && typeof Drupal.settings.tpps.stage !== 'undefined'
-    && Drupal.settings.tpps.stage == 3
-  ) {
-    // Page 3.
-    jQuery("#" + fid + "_map_wrapper").css({"height": "450px"});
-    jQuery("#" + fid + "_map_wrapper").css({"max-width": "800px"});
-  }
-  else if(jQuery("#tpps_table_display").length > 0) {
-    jQuery("#" + fid + "_map_wrapper").css({"height": "450px"});
-  }
-  else if (window.location.pathname.match(detail_regex)) {
-    jQuery("#" + fid + "_map_wrapper").css({"height": "450px"});
-  }
-  else {
-    jQuery("#" + fid + "_map_wrapper").css({"height": "100px"});
-  }
-
-  clearMarkers(fid);
-  maps[fid + '_total_lat'] = 0;
-  maps[fid + '_total_long'] = 0;
-  timeout = 2000/locations.length;
-
-  maps[fid + '_markers'] = locations.map(function (location, i) {
-    maps[fid + '_total_lat'] += parseInt(location[1]);
-    maps[fid + '_total_long'] += parseInt(location[2]);
-
-    // Marker.
-    var marker = new google.maps.Marker({
-      position: new google.maps.LatLng(location[1], location[2])
-    });
-    var infowindow = new google.maps.InfoWindow({
-      content: location[0] + '<br>Location: ' + location[1] + ', ' + location[2]
-    });
-    marker.addListener('click', function() {
-      infowindow.open(maps[fid], maps[fid + '_markers'][i]);
-    });
-    return marker;
-  });
-
-  if (typeof maps[fid + '_cluster'] !== 'undefined') {
-    maps[fid + '_cluster'].clearMarkers();
-  }
-
-  // @TODO Do we need this?
-  maps[fid + '_cluster'] = new markerClusterer.MarkerClusterer(
-    maps[fid],
-    maps[fid + '_markers'],
-  );
-
-
-
-// https://developers.google.com/maps/documentation/javascript/markers?hl=ru
-//marker.setMap(maps[fid]);
-
-};
