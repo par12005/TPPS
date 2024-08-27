@@ -206,3 +206,64 @@ function tpps_report_show_table(array $report) {
     'empty' => $report['empty'] ?? NULL,
   ]) . $pager;
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// Google Maps.
+
+/**
+ * Builds JS code for Google Maps JavaScript MarkerClusterer.
+ *
+ * The library creates and manages per-zoom-level clusters for large amounts
+ * of markers. Project page: https://github.com/googlemaps/js-markerclusterer .
+ *
+ * Helps to show plants on Google Maps.
+ *
+ * @return string
+ *   Returns inline JavaScript code with wrapper HTML-tag.
+ */
+function tpps_get_markercluster_code($use_wrapper = TRUE) {
+  if (empty($map_api_key = variable_get('tpps_maps_api_key', NULL))) {
+    return '';
+  }
+  $output = '';
+  // MarkerCluster Library.
+  drupal_add_js(tpps_markercluster_get_url(), 'external');
+  // Google Maps API Library.
+  $url = url('https://maps.googleapis.com/maps/api/js', [
+    'query' => [
+      'key' => $map_api_key,
+      'callback' => 'initMap',
+      'v' => 'weekly',
+      'libraries' => 'marker',
+      'loading' => 'async',
+    ],
+  ]);
+  drupal_add_js($url, 'external');
+  // Settings.
+  if ($use_wrapper) {
+    $output .= '<div id="_map_wrapper"></div>';
+  }
+  $js_settings = ['googleMapId' => variable_get('tpps_google_map_id')];
+  drupal_add_js(['tpps' => $js_settings], 'setting');
+  // Our custom code which adds markers to the map.
+  tpps_add_css_js('google_map');
+  return $output;
+}
+
+/**
+ * Gets Google Map MarkerCluster library URL.
+ *
+ * The library creates and manages per-zoom-level clusters for large
+ * amounts of markers.
+ *
+ * Useful links:
+ * https://github.com/googlemaps/js-markerclusterer
+ * Documentation:
+ * https://developers.google.com/maps/documentation/javascript/marker-clustering?hl=en
+ *
+ * @return string
+ *   Returns URL.
+ */
+function tpps_markercluster_get_url() {
+  return 'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js';
+}

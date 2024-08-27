@@ -122,12 +122,12 @@ function tpps_table_display(array &$state, array $options = []) {
         if (preg_match('/^(.*)Accession File/', $key, $matches)) {
           if (!$flat['#skip_loc']) {
             $fid = $file->fid;
-            $wrapper_id = "{$fid}_map_wrapper";
-            $button_id = "{$fid}_map_button";
-            $val_str .= "<div id=\"$wrapper_id\"></div>"
-              . "<input id=\"$button_id\" type=\"button\" "
-              . " class=\"form-button form-submit\" value=\""
-              . t('Click here to view plants on map!') . "\"></input>";
+            $wrapper_id = $fid . '_map_wrapper';
+            $button_id = $fid . '_map_button';
+            $val_str .= '<div id="' . $wrapper_id . '"></div>'
+              . '<input id="' . $button_id . '" type="button" '
+              . ' class="form-button form-submit" value="'
+              . t('Click here to view plants on map!') . '"></input>';
             $js_settings = [
               'map_buttons' => [
                 $fid => [
@@ -138,6 +138,7 @@ function tpps_table_display(array &$state, array $options = []) {
               ],
             ];
             drupal_add_js(['tpps' => $js_settings], 'setting');
+            tpps_add_css_js('google_map');
           }
           else {
             $val_str .= "<br>This submission was submitted without "
@@ -200,6 +201,7 @@ function tpps_table_display(array &$state, array $options = []) {
             });
           });";
           drupal_add_js($js, 'inline');
+          tpps_add_css_js('google_map', $form);
         }
       }
       elseif ($key == 'Publication Abstract' and strlen($val_str) > 50) {
@@ -222,12 +224,8 @@ function tpps_table_display(array &$state, array $options = []) {
       $content .= "<div id=\"$item_id\" style=\"display:none;\">$val_str</div>";
     }
   }
-  $map_api_key = variable_get('tpps_maps_api_key', NULL);
-  if (!empty($map_api_key)) {
-    $content .= "<script src=\"https://developers.google.com/maps/"
-      . "documentation/javascript/examples/markerclusterer/markerclusterer.js\">"
-      . "</script><script src=\"https://maps.googleapis.com/maps/api/js"
-      . "?key=$map_api_key&callback=initMap\" async defer></script>";
+  if (variable_get('tpps_maps_api_key', NULL)) {
+    $content .= tpps_get_markercluster_code(FALSE);
   }
 
   $headers = ['Field', 'Value'];
