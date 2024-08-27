@@ -32,6 +32,18 @@ function tpps_reports_settings_form(array $form, array &$form_state) {
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
   ];
+  // List of variable's names for search purpuse.
+  // 'tpps_report_missing_doi_title',
+  // 'tpps_report_order_family_not_exist_title',
+  // 'tpps_report_no_synonym_title',
+  // 'tpps_report_unit_warning_title',
+  // 'tpps_report_submissions_all_files_title',
+  // 'tpps_report_submissions_without_files_title',
+  // 'tpps_report_submissions_missing_files_title',
+  // 'tpps_report_missing_files_title',
+  // 'tpps_report_imported_studies_title',
+  // 'tpps_report_variable_list_title',
+  // 'tpps_report_organism_list_title'.
   foreach (tpps_report_get_list() as $name => $report) {
     $title = variable_get('tpps_report_' . $name . '_title',
       str_replace('_', ' ', $name)

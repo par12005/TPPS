@@ -42,7 +42,22 @@ function tpps_admin_imported_studies_report() {
         }
       }
     }
+
+    // Original accession link.
+    if ($import_meta['site'] ?? NULL) {
+      $accession_title = $import_meta['original_accession'];
+      $accession_url = $import_meta['site']
+        . '/tpps/submission/' . $import_meta['original_accession'] . '/export';
+      $original_accession_link = l($accession_title, $accession_url)
+        . (($import_meta['site'] == 'https://treegenesdb.org')
+          ? '@<strong>LIVE</strong>' : '@dev');
+    }
+    else {
+      // Plain text if there is no information about original site.
+      $original_accession_link = $import_meta['original_accession'];
+    }
     $rows[] = [
+      $original_accession_link ?? NULL,
       l($local, 'tpps/submission/' . $local . '/view'),
       $submission->state['status'] ?? NULL,
       $job_status ?? '-',
@@ -50,8 +65,6 @@ function tpps_admin_imported_studies_report() {
       $import_meta['current_version'] ?? NULL,
       $submission->uid ?? NULL,
       $import_meta['full_date'] ?? NULL,
-      $import_meta['accession_link'] ?? NULL,
-      l($import_meta['site'] ?? NULL, $import_meta['site'] ?? NULL),
       // Actions:
       implode(' | ', [
         // @TODO Use CSS class instead of HTML tags.
@@ -83,6 +96,7 @@ function tpps_admin_imported_studies_report() {
   $version_tags = '<br /><strong>' . t('Version') . '</strong>';
   $output .= theme('table', [
     'header' => [
+      t('Original <br /><strong>Accession</strong>'),
       t('Imported<br /><strong>Accession</strong>'),
       t('Submission<br /><strong>Status</strong>'),
       t('Tripal Job<br /><strong>Status</strong>'),
@@ -90,8 +104,6 @@ function tpps_admin_imported_studies_report() {
       t('Submitted') . $version_tags,
       t('UID'),
       t('Import Date'),
-      t('Original <br /><strong>Accession</strong>'),
-      t('Original Site'),
       t('Actions'),
       t('Pages'),
     ],

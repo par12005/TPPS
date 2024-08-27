@@ -190,7 +190,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       NULL
     );
     // [/VS]
-    if ($file = tpps_file_load($fid) && empty($skip)) {
+    if ($file = tpps_file_load($fid)) {
       $wrapper_id = "{$fid}_map_wrapper";
       $button_id = "{$fid}_map_button";
       $form['tree-accession']["species-$i"]['coord-format']['#suffix']
@@ -198,6 +198,15 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
         . '<input id="' . $button_id . '" type="button" '
         . 'value="' . t('Click here to view plants on map') . '" '
         . 'class="btn btn-primary form-button map-button"></input>';
+      tpps_add_css_js('google_map', $form);
+      $form['#attached']['js'][] = [
+        'type' => 'setting',
+        'scope' => 'footer',
+        'data' => ['tpps' => ['fid' => $fid]],
+      ];
+    }
+
+    if ($file = tpps_file_load($fid)) {
       $no_header = tpps_get_ajax_value(
         $form_state,
         ['tree-accession', "species-$i", 'file', 'no_header'],
@@ -364,19 +373,16 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     }
   }
 
-  $map_api_key = variable_get('tpps_maps_api_key', NULL);
-  if (!empty($map_api_key)) {
-    $form['tree-accession']['#suffix'] .= '
-    <script src="https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=' . $map_api_key . '&callback=initMap"
-    async defer></script>
-    <style>
-      #map_wrapper {
-      height: 450px;
-      }
-    </style>';
+  if (variable_get('tpps_maps_api_key', NULL)) {
+    // @todo Add JS using drupal_add_js().
+
+    // Wrapper is NOT required here.
+    $form['tree-accession']['#suffix'] .= tpps_get_markercluster_code(FALSE);
+      // @todo Move CSS to /css/tpps.css.
+      //. '<style>#map_wrapper { height: 450px; } </style>';
   }
   tpps_form_autofocus($form, ['tree-accession', 'species-1', 'file']);
+  tpps_add_css_js('google_map', $form);
   tpps_form_add_buttons(['form' => &$form, 'page' => 'page_3']);
   return $form;
 }
