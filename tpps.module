@@ -1964,7 +1964,10 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
   if ($form === NULL || !is_array($form)) {
     drupal_add_css($theme_path);
     if (variable_get('tpps_dark_theme')) {
-      drupal_add_css($dark_theme_path);
+      // Don't use themes for admin pages.
+      if (arg()[0] != 'admin') {
+        drupal_add_css($dark_theme_path);
+      }
     }
     if ($page_id == 'theme') {
       // We only add theme.
@@ -1989,7 +1992,10 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
     // Form.
     $form['#attached']['css'][] = $theme_path;
     if (variable_get('tpps_dark_theme')) {
-      $form['#attached']['css'][] = $dark_theme_path;
+      // Don't use themes for admin pages.
+      if (arg()[0] != 'admin') {
+        $form['#attached']['css'][] = $dark_theme_path;
+      }
     }
     if ($page_id == 'theme') {
       // We only add theme.
@@ -2719,7 +2725,69 @@ function tpps_submission($accession = '') {
  *   Returns Submission object.
  */
 function tpps_submission_load($accession) {
-  // @TODO Minor. Use static caching.
+  // @todo Minor. Use static caching.
   $submission = new Submission($accession);
   return $submission;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function tpps_theme() {
+  return [
+    'fcbold' => [
+      'variables' => [
+        'string' => NULL,
+      ],
+    ],
+    'study_accession' => [
+      'variables' => [
+        'accession' => NULL,
+      ],
+    ],
+  ];
+}
+
+/**
+ * Makes first char of the string bold.
+ *
+ * Note: Used in function tpps_admin_imported_studies_report().
+ * Usage:
+ * theme('fcbold', ['string' => $string]);
+ *
+ * @param array $variables
+ *   Data for theming.
+ *   'string' - String to be processed.
+ *
+ * @return string
+ *   Returns string where 1st char is wrapped with '<strong>' HTML-tag.
+ */
+function theme_fcbold(array $variables) {
+  $string = $variables['string'] ?? NULL;
+  if (!empty($string)) {
+    return str_replace($string[0], '<strong>' . $string[0] . '</strong>', $string);
+  }
+}
+
+/**
+ * Highlights number in study accession.
+ *
+ * Note: Used in function tpps_admin_imported_studies_report().
+ * Usage:
+ * theme('study_accession', ['accession' => $accession]);
+ *
+ * @param array $variables
+ *   Data for theming.
+ *   'accession' - String to be processed.
+ *
+ * @return string
+ *   Returns string where 1st char is wrapped with '<strong>' HTML-tag.
+ */
+function theme_study_accession(array $variables) {
+  $accession = $variables['accession'] ?? NULL;
+  if (!empty($accession)) {
+    $number = str_replace('TGDR', '', ($accession));
+    return '<span class="tpps-study-accession">TGDR</span>'
+      . '<span class="tpps-study-accession-number">' . $number . '</span>';
+  }
 }

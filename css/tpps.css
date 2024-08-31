@@ -289,4 +289,15 @@ form .fieldset-title {
   padding-left: 5px;
   white-space: nowrap;
 }
+
+/* 'TGDR' part of the study accession. */
+.tpps-study-accession {
+  color: silver;
+  /*color: #05b9eb; [> Hyperlink's light blue <]*/
+}
+/* Number of the study accession. */
+.tpps-study-accession-number {
+  font-weight: bold;
+}
+
 /* [/VS] */
