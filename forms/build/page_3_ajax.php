@@ -11,6 +11,8 @@
  * This function indicates the element to be updated when a population group
  * option is selected for a column in an accession file.
  *
+ * @TODO Rename. Function with the same name exists in page_3_helper.php
+ *
  * @param array $form
  *   The form to be updated.
  * @param array $form_state

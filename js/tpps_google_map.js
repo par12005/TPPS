@@ -23,6 +23,7 @@
   }
 })(jQuery);
 
+
 // We are using array (list) of maps because there could be multiple species
 // and multiple accession files on the same page.
 // Also there could be a small map (height 100 px) in sidebar.
@@ -32,7 +33,7 @@ var maps = {};
 (function ($) {
 
   async function initMap() {
-    let debugMode = true;
+    let debugMode = false;
     let featureName = 'GoogleMap MarkerCluster';
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get libraries.
@@ -165,48 +166,134 @@ var maps = {};
  */
 function getCoordinates(){
 
-  var fid = this.id.match(/(.*)_map_button/)[1];
+  // @TODO This function called twice on each click of button on Page3.
+  // @TODO Replace 'jQuery' with '$'.
+  let debugMode = false;
 
-  var fid, no_header, id_col, lat_col, long_col;
-  try {
-    file = Drupal.settings.tpps.accession_files[fid];
-    if (typeof file === 'undefined') {
-      jQuery.each(Drupal.settings.tpps.accession_files, function() {
-        if (this.fid == fid) {
-          file = this;
-        }
-      })
-      if (typeof file === 'undefined') {
-        return;
-      }
+  if (debugMode) {
+    console.log('getCoordinates');
+  }
+
+
+  var no_header, id_col, lat_col, long_col;
+  let fileMeta;
+  let organismFid;
+  let $fileIdField;
+  let commonName;
+  let organismId;
+  let organismNumber;
+  let $fileWrapper;
+  let columnName;
+  let selectBoxName;
+  let value;
+
+  var fid = this.id.match(/(.*)_map_button/)[1];
+  if (
+    ! ('tpps' in Drupal.settings)
+    || (
+      'tpps' in Drupal.settings
+      && ! ('accession_files' in Drupal.settings.tpps)
+    )
+    || (
+      'tpps' in Drupal.settings
+      && 'accession_files' in Drupal.settings.tpps
+      && typeof Drupal.settings.tpps.accession_files[fid] == 'undefined'
+    )
+  ) {
+    // File Id not found. Get data from form.
+    if (debugMode) {
+      console.log('File Id not found. Get data from form.');
     }
 
-    no_header = file.no_header;
-    id_col = file.id_col;
-    lat_col = file.lat_col;
-    long_col = file.long_col;
-  }
-  catch (err) {
-    console.log(err);
-    return;
-  }
+    // Column name are letters.
+    // Note: Change 65 to 97 for lowercase.
+    // WARNING: Won't work if accession file has more then A-Z columns.
+    const alphabets = [...Array(26).keys()].map((n) => String.fromCharCode(65 + n));
+    organismNumber = Drupal.settings.tpps.organismNumber;
 
-  if (!id_col.length || !lat_col.length || !long_col.length) {
-    jQuery("#" + Drupal.settings.tpps.map_buttons[fid].wrapper).hide();
-    return;
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Loop organisms to find accession files.
+    for (organismId = 1; organismId <= organismNumber; organismId++) {
+      // @TODO Stop Loop when 'fid' was found.
+      commonName = 'tree-accession[species-' + organismId + '][file]';
+      $fileIdField = jQuery('input[name="' + commonName + '[fid]"]');
+      organismFid = $fileIdField.val();
+      $fileWrapper = $fileIdField.parent('.form-managed-file');
+      // @TODO Get real value of the no-header field.
+      Drupal.settings.tpps['accession_files'] = [];
+      Drupal.settings.tpps.accession_files[organismFid] = [];
+      Drupal.settings.tpps.accession_files[organismFid]['fid'] = organismFid;
+      Drupal.settings.tpps.accession_files[organismFid]['no_header'] = null;
+      for (columnName of alphabets) {
+        selectBoxName = commonName + '[columns][' + columnName + ']';
+        value = $fileWrapper.find('select[name="' + selectBoxName + '"]')
+          .find(":selected").val();
+
+        // @TODO Create name constants for those numbers.
+        switch (value) {
+          case '1':
+            // Plant Identifier.
+            Drupal.settings.tpps.accession_files[organismFid]['id_col'] = columnName;
+            break;
+          case '4':
+            // Latitude
+            Drupal.settings.tpps.accession_files[organismFid]['lat_col'] = columnName;
+            break;
+          case '5':
+            // Longitude
+            Drupal.settings.tpps.accession_files[organismFid]['long_col'] = columnName;
+            break;
+        }
+        // Check if all required fields was set.
+        if (
+          'id_col'   in Drupal.settings.tpps.accession_files[organismFid]
+          && 'lat_col'  in Drupal.settings.tpps.accession_files[organismFid]
+          && 'long_col' in Drupal.settings.tpps.accession_files[organismFid]
+        ) {
+          break;
+        }
+      }
+    }
   }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Get data from Drupal.settings.
+  // Works fine.
+  if (
+    'tpps' in Drupal.settings && 'accession_files' in Drupal.settings.tpps
+    && typeof Drupal.settings.tpps.accession_files[fid] != 'undefined'
+  ) {
+    // File Id was found. Let's check properties.
+    if ( !(
+         'id_col'   in Drupal.settings.tpps.accession_files[fid]
+      && 'lat_col'  in Drupal.settings.tpps.accession_files[fid]
+      && 'long_col' in Drupal.settings.tpps.accession_files[fid]
+    )) {
+      console.log(
+        'No file metadata in Drupal.settings.tpps.accession_files for FileId: ' + fid
+      );
+      return;
+    }
+  }
+  // At tpps-admin-panel/TGDR978 we doesn't have 'fid' element.
+  // @TODO Add at server side.
+  Drupal.settings.tpps.accession_files[fid]['fid'] = fid;
 
-  var request = jQuery.post('/tpps-accession', {
-    fid: fid,
-    no_header: no_header,
-    id_col: id_col,
-    lat_col: lat_col,
-    long_col: long_col
-  });
-
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Get data from server.
+  var request = jQuery.post('/tpps-accession', {...Drupal.settings.tpps.accession_files[fid]});
   request.done(function (data) {
     Drupal.settings.tpps.locations = data;
     Drupal.settings.tpps.fid = fid;
     initMap();
   });
 }
+
+
+// Called from page_3_ajax.php function tpps_accession_pop_group():
+jQuery.fn.mapButtonsClick = function (selector) {
+  jQuery(selector).off('click');
+  // @TODO Called twice on Page3 button click.
+  jQuery(selector).click(getCoordinates);
+  initMap();
+}
+

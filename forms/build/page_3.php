@@ -191,19 +191,29 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     );
     // [/VS]
     if ($file = tpps_file_load($fid)) {
-      $wrapper_id = "{$fid}_map_wrapper";
-      $button_id = "{$fid}_map_button";
-      $form['tree-accession']["species-$i"]['coord-format']['#suffix']
-        = '<div id="' . $wrapper_id . '"></div>'
+      // The same code in tpps_table_display().
+      $wrapper_id = $fid . '_map_wrapper';
+      $button_id = $fid . '_map_button';
+      $form['tree-accession']["species-$i"]['coord-format']['#suffix'] =
+        '<div id="' . $wrapper_id . '"></div>'
         . '<input id="' . $button_id . '" type="button" '
-        . 'value="' . t('Click here to view plants on map') . '" '
-        . 'class="btn btn-primary form-button map-button"></input>';
-      tpps_add_css_js('google_map', $form);
+        . ' class="form-button form-submit" value="'
+        . t('Click here to view plants on map') . '"></input>';
+      $js_settings = [
+        'map_buttons' => [
+          $fid => [
+            'wrapper' => $wrapper_id,
+            'button' => $button_id,
+            'fid' => $fid,
+          ],
+        ],
+      ];
       $form['#attached']['js'][] = [
         'type' => 'setting',
         'scope' => 'footer',
-        'data' => ['tpps' => ['fid' => $fid]],
+        'data' => ['tpps' => $js_settings],
       ];
+      tpps_add_css_js('google_map', $form);
     }
 
     if ($file = tpps_file_load($fid)) {

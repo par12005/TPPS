@@ -122,12 +122,13 @@ function tpps_table_display(array &$state, array $options = []) {
         if (preg_match('/^(.*)Accession File/', $key, $matches)) {
           if (!$flat['#skip_loc']) {
             $fid = $file->fid;
+            // Duplicate: tpps_page_3_create_form();
             $wrapper_id = $fid . '_map_wrapper';
             $button_id = $fid . '_map_button';
             $val_str .= '<div id="' . $wrapper_id . '"></div>'
               . '<input id="' . $button_id . '" type="button" '
               . ' class="form-button form-submit" value="'
-              . t('Click here to view plants on map!') . '"></input>';
+              . t('Click here to view plants on map') . '"></input>';
             $js_settings = [
               'map_buttons' => [
                 $fid => [
@@ -137,6 +138,7 @@ function tpps_table_display(array &$state, array $options = []) {
                 ],
               ],
             ];
+            // End of common code.
             drupal_add_js(['tpps' => $js_settings], 'setting');
             tpps_add_css_js('google_map');
           }
@@ -187,6 +189,7 @@ function tpps_table_display(array &$state, array $options = []) {
         elseif ($flat['#location_type'] != '2' and ($standard = tpps_standard_coord($val_str))) {
           $query = $standard;
         }
+        // Why?
         $val_str = "<a id=\"sidebar_map\" style=\"cursor:pointer\">$val_str</a>";
         if (isset($query)) {
           $map = "<iframe frameborder=\\\"0\\\" style=\\\"border:0;width:100%;"

@@ -147,6 +147,8 @@ function tpps_study_location(array &$form, array &$form_state) {
  * the names of all the selected population groups from an accession file. This
  * function is meant to be used with tpps_file_iterator().
  *
+ * @TODO Rename. Function with the same name exists in page_3_ajax.php
+ *
  * @param mixed $row
  *   The item yielded by the TPPS file generator.
  * @param array $options
