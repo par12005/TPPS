@@ -122,6 +122,9 @@ var maps = {};
       content: "",
       disableAutoPan: true,
     });
+
+    var bounds = new google.maps.LatLngBounds();
+
     // Create an array of alphabetical characters used to label the markers.
     const labels = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     // Add some markers to the map.
@@ -138,7 +141,7 @@ var maps = {};
         position: markerPosition,
         content: pinGlyph.element,
       });
-
+      bounds.extend(markerPosition);
       // markers can only be keyboard focusable when they have click listeners
       // open info window when marker is clicked
       marker.addListener("click", () => {
@@ -147,6 +150,8 @@ var maps = {};
       });
       return marker;
     });
+
+    maps[id].fitBounds(bounds);
 
     // Add a marker clusterer to manage the markers.
     new markerClusterer.MarkerClusterer({
