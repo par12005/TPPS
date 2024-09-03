@@ -114,7 +114,7 @@ var maps = {};
         lat: Number(locations[0][1]),
         lng: Number(locations[0][2]),
       },
-      zoom: (Drupal.settings.tpps.googleMap.zoom.defaultLevel ?? 3),
+      zoom: Number(Drupal.settings.tpps.googleMap.zoom.defaultLevel ?? 3),
       mapId: Drupal.settings.tpps.googleMap.id,
     });
 
@@ -160,8 +160,9 @@ var maps = {};
       if (bounds.getNorthEast().equals(bounds.getSouthWest())) {
         smoothZoom(
           this,
-          (Drupal.settings.tpps.googleMap.zoom.customLevel ?? 14),
-          this.getZoom()
+          Number((Drupal.settings.tpps.googleMap.zoom.customLevel ?? 17) - 3),
+          Number(Drupal.settings.tpps.googleMap.zoom.customLevel ?? 17)
+          //this.getZoom()
         );
       }
       else {
@@ -184,23 +185,23 @@ var maps = {};
    *
    * @param map
    *   Google Map object.
-   * @param  max
-   *   Final zoomLevel.
    * @param cnt
    *  Starting zoom level
+   * @param max
+   *   Final zoom level.
    */
-  function smoothZoom (map, max, cnt) {
+  function smoothZoom (map, cnt, max) {
     if (cnt >= max) {
       return;
     }
     else {
       z = google.maps.event.addListener(map, 'zoom_changed', function(event){
         google.maps.event.removeListener(z);
-        smoothZoom(map, max, cnt + 1);
+        smoothZoom(map, cnt + 1, max);
       });
-      setTimeout(function(){
-        map.setZoom(cnt)},
-        Drupal.settings.tpps.googleMap.zoom.smoothTimeout ?? 100
+      setTimeout(
+        function() {map.setZoom(Number(cnt))},
+        Number(Drupal.settings.tpps.googleMap.zoom.smoothTimeout ?? 100)
       );
     }
   }
