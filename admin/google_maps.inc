@@ -26,5 +26,40 @@ function tpps_google_maps_settings_form(array $form, array &$form_state) {
     '#title' => t('TPPS Google Maps API Key'),
     '#default_value' => variable_get('tpps_maps_api_key', NULL),
   ];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Zoom settings.
+  $form['zoom'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Zoom Settings'),
+  ];
+  $form['zoom']['tpps_google_map_zoom_smooth_timeout'] = [
+    '#type' => 'textfield',
+    '#title' => t('Zoom Smooth Timeout'),
+    '#default_value' => variable_get('tpps_google_map_zoom_smooth_timeout'),
+  ];
+  $form['zoom']['tpps_google_map_zoom_default_level'] = [
+    '#type' => 'select',
+    '#options' => range(0, 22),
+    '#title' => t('Zoom Default level'),
+    '#description' => t('Default Zoom Level will be used to initialize map.'
+     . '<br />Levels are from 0 (world) to 22 (street).'
+     . '<br />Suggested default level is 3.'),
+    '#default_value' => variable_get('tpps_google_map_zoom_default_level'),
+  ];
+  $form['zoom']['tpps_google_map_zoom_custom_level'] = [
+    '#type' => 'select',
+    '#options' => range(0, 22),
+    '#title' => t('Zoom Custom Level'),
+    '#description' => t('Custom Zoom Level will be used when all markers has '
+     . 'the same coordinates and we need to show cluster with number of items '
+     . 'instead of single marker with big zoom.'
+     . '<br />Levels are from 0 (world) to 22 (street).'
+     . '<br />Suggested custom level is 14 but number of items in cluster is shown up to 17 level.'),
+
+
+    '#default_value' => variable_get('tpps_google_map_zoom_custom_level'),
+  ];
+
   return system_settings_form($form);
 }

@@ -93,6 +93,10 @@ function tpps_install() {
   variable_set('tpps_theme_fix_pager', FALSE);
   // Google Maps.
   variable_set('tpps_google_map_id', '');
+  variable_set('tpps_google_map_zoom_smooth_timeout', 100);
+  variable_set('tpps_google_map_zoom_default_level', 3);
+  variable_set('tpps_google_map_zoom_custom_level', 14);
+
   variable_set('tpps_maps_api_key', '');
   // Submission Export.
   // @TODO Add ability to change those variables at settings page.
@@ -440,6 +444,9 @@ function tpps_uninstall() {
   variable_del('tpps_theme_fix_pager');
   // Google Maps.
   variable_del('tpps_google_map_id');
+  variable_del('tpps_google_map_zoom_smooth_timeout');
+  variable_del('tpps_google_map_zoom_default_level');
+  variable_del('tpps_google_map_zoom_custom_level');
   variable_del('tpps_maps_api_key');
 
   variable_del('tpps_imported_studies_list');

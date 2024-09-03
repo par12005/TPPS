@@ -114,8 +114,8 @@ var maps = {};
         lat: Number(locations[0][1]),
         lng: Number(locations[0][2]),
       },
-      zoom: 3,
-      mapId: Drupal.settings.tpps.googleMapId,
+      zoom: (Drupal.settings.tpps.googleMap.zoom.defaultLevel ?? 3),
+      mapId: Drupal.settings.tpps.googleMap.id,
     });
 
     const infoWindow = new InfoWindow({
@@ -158,8 +158,11 @@ var maps = {};
       // When all coordinates are the same set zoom to show number if markers
       // instead of zoom too much and show single marker.
       if (bounds.getNorthEast().equals(bounds.getSouthWest())) {
-        // @TODO Use Drupal.settings.tpps.mapZoomLevel
-        smoothZoom(this, 14, this.getZoom());
+        smoothZoom(
+          this,
+          (Drupal.settings.tpps.googleMap.zoom.customLevel ?? 14),
+          this.getZoom()
+        );
       }
       else {
         // Zoom to show all existing markers.
@@ -195,10 +198,10 @@ var maps = {};
         google.maps.event.removeListener(z);
         smoothZoom(map, max, cnt + 1);
       });
-      // 80ms is what I found to work well on my system -- it might not work well on all systems
-      // @TODO Move timeout value to the settings
-      // Drupal.settings.tpps.mapSmoothTimeout.
-      setTimeout(function(){map.setZoom(cnt)}, 200);
+      setTimeout(function(){
+        map.setZoom(cnt)},
+        Drupal.settings.tpps.googleMap.zoom.smoothTimeout ?? 100
+      );
     }
   }
 
@@ -241,6 +244,8 @@ function getCoordinates(){
     || (
       'tpps' in Drupal.settings
       && 'accession_files' in Drupal.settings.tpps
+      // @TODO Must be not under 'settings':
+      // Drupal.tpps.accession_files[fid]
       && typeof Drupal.settings.tpps.accession_files[fid] == 'undefined'
     )
   ) {
@@ -324,7 +329,10 @@ function getCoordinates(){
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Get data from server.
-  var request = jQuery.post('/tpps-accession', {...Drupal.settings.tpps.accession_files[fid]});
+  var request = jQuery.post(
+    '/tpps-accession',
+    {...Drupal.settings.tpps.accession_files[fid]}
+  );
   request.done(function (data) {
     Drupal.settings.tpps.locations = data;
     Drupal.settings.tpps.fid = fid;

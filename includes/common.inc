@@ -243,7 +243,17 @@ function tpps_get_markercluster_code($use_wrapper = TRUE) {
   if ($use_wrapper) {
     $output .= '<div id="_map_wrapper"></div>';
   }
-  $js_settings = ['googleMapId' => variable_get('tpps_google_map_id')];
+  $js_settings = [
+    'googleMap' => [
+      'id' => variable_get('tpps_google_map_id'),
+      // 80ms is what I found to work well on my system -- it might not work well on all systems
+      'zoom' => [
+        'smoothTimeout' => variable_get('tpps_google_map_zoom_smooth_timeout', 100),
+        'defaultLevel' => variable_get('tpps_google_map_zoom_default_level', 3),
+        'customLevel' => variable_get('tpps_google_map_zoom_custom_level', 14),
+      ],
+    ]
+  ];
   drupal_add_js(['tpps' => $js_settings], 'setting');
   // Our custom code which adds markers to the map.
   tpps_add_css_js('google_map');
