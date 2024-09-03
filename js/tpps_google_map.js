@@ -114,7 +114,7 @@ var maps = {};
         lat: Number(locations[0][1]),
         lng: Number(locations[0][2]),
       },
-      zoom: 5,
+      zoom: 3,
       mapId: Drupal.settings.tpps.googleMapId,
     });
 
@@ -151,7 +151,21 @@ var maps = {};
       return marker;
     });
 
-    maps[id].fitBounds(bounds);
+    // Zoom to show all markers.
+    var customZoom = google.maps.event.addListener(maps[id], 'bounds_changed', function() {
+      // This must be done only once.
+      customZoom.remove();
+      // When all coordinates are the same set zoom to show number if markers
+      // instead of zoom too much and show single marker.
+      if (bounds.getNorthEast().equals(bounds.getSouthWest())) {
+        // @TODO Use Drupal.settings.tpps.mapZoomLevel
+        smoothZoom(this, 14, this.getZoom());
+      }
+      else {
+        // Zoom to show all existing markers.
+        this.fitBounds(bounds);
+      }
+    });
 
     // Add a marker clusterer to manage the markers.
     new markerClusterer.MarkerClusterer({
@@ -162,8 +176,33 @@ var maps = {};
 
   window.initMap = initMap;
 
-}(jQuery));
+  /**
+   * Zoom google map smooth.
+   *
+   * @param map
+   *   Google Map object.
+   * @param  max
+   *   Final zoomLevel.
+   * @param cnt
+   *  Starting zoom level
+   */
+  function smoothZoom (map, max, cnt) {
+    if (cnt >= max) {
+      return;
+    }
+    else {
+      z = google.maps.event.addListener(map, 'zoom_changed', function(event){
+        google.maps.event.removeListener(z);
+        smoothZoom(map, max, cnt + 1);
+      });
+      // 80ms is what I found to work well on my system -- it might not work well on all systems
+      // @TODO Move timeout value to the settings
+      // Drupal.settings.tpps.mapSmoothTimeout.
+      setTimeout(function(){map.setZoom(cnt)}, 200);
+    }
+  }
 
+}(jQuery));
 
 
 /**
