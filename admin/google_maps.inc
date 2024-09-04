@@ -35,8 +35,12 @@ function tpps_google_maps_settings_form(array $form, array &$form_state) {
   ];
   $form['zoom']['tpps_google_map_zoom_smooth_timeout'] = [
     '#type' => 'textfield',
-    '#title' => t('Zoom Smooth Timeout'),
+    '#title' => t('Zoom Smooth Timeout, msec'),
     '#default_value' => variable_get('tpps_google_map_zoom_smooth_timeout'),
+    '#description' => t('Timeout is used to have smooth zoom when map '
+      . 'appears for the first time. Minimum suitable value is 80 msec.'
+      . '<br />Default value is 100 msec. 200 msec is too slow.'
+    ),
   ];
   $form['zoom']['tpps_google_map_zoom_default_level'] = [
     '#type' => 'select',
