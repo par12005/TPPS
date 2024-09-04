@@ -197,7 +197,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       $form['tree-accession']["species-$i"]['coord-format']['#suffix'] =
         '<div id="' . $wrapper_id . '"></div>'
         . '<input id="' . $button_id . '" type="button" '
-        . ' class="form-button form-submit" value="'
+        . ' class="btn form-button form-submit map-button" value="'
         . t('Click here to view plants on map') . '"></input>';
       $js_settings = [
         'map_buttons' => [

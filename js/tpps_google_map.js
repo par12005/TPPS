@@ -2,6 +2,11 @@
   Drupal.behaviors.tppsGoogleMap = {
     attach:function (context) {
 
+// @TODO Add on click event handler to hide map and remove removed file column
+      // metadata.
+      // Name of the 'Remove' button:
+      // 'tree-accession_species-1_file_remove_button'
+
 // @TODO Remove one of those methods because of double processing of 'click' event.
 
 
@@ -34,6 +39,9 @@ var maps = {};
 
   async function initMap() {
     let debugMode = false;
+    if (debugMode) {
+      console.log('initMap() called.');
+    }
     let featureName = 'GoogleMap MarkerCluster';
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get libraries.
@@ -61,19 +69,23 @@ var maps = {};
         locations = Drupal.settings.tpps.study_locations;
       }
     }
+
+    // Check if we have locations for markers.
     if ( !locations.length ) {
       if (debugMode) {
         console.log(featureName + ': no locations to show on map');
       }
       return;
     }
-    if (debugMode) {
-      console.log(locations);
+    else {
+      if (debugMode) {
+        console.log('List of locations for markers');
+        console.table(locations);
+      }
     }
 
     // Map Id at page.
-    let id='map';
-    if (fid != '') { id = fid; }
+    let id = fid ?? 'map';
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Map wrapper.
@@ -214,7 +226,6 @@ var maps = {};
  */
 function getCoordinates(){
 
-  // @TODO This function called twice on each click of button on Page3.
   // @TODO Replace 'jQuery' with '$'.
   let debugMode = false;
 
@@ -268,6 +279,9 @@ function getCoordinates(){
       commonName = 'tree-accession[species-' + organismId + '][file]';
       $fileIdField = jQuery('input[name="' + commonName + '[fid]"]');
       organismFid = $fileIdField.val();
+      if (debugMode) {
+        console.log('Organism ' + organismId + '; File Id: ' + organismFid );
+      }
       $fileWrapper = $fileIdField.parent('.form-managed-file');
       // @TODO Get real value of the no-header field.
       Drupal.settings.tpps['accession_files'] = [];
@@ -296,7 +310,7 @@ function getCoordinates(){
         }
         // Check if all required fields was set.
         if (
-          'id_col'   in Drupal.settings.tpps.accession_files[organismFid]
+             'id_col'   in Drupal.settings.tpps.accession_files[organismFid]
           && 'lat_col'  in Drupal.settings.tpps.accession_files[organismFid]
           && 'long_col' in Drupal.settings.tpps.accession_files[organismFid]
         ) {
@@ -318,9 +332,25 @@ function getCoordinates(){
       && 'lat_col'  in Drupal.settings.tpps.accession_files[fid]
       && 'long_col' in Drupal.settings.tpps.accession_files[fid]
     )) {
-      console.log(
-        'No file metadata in Drupal.settings.tpps.accession_files for FileId: ' + fid
-      );
+      delete Drupal.settings.tpps.accession_files[fid];
+      if (debugMode) {
+        console.log(
+          'No file metadata in Drupal.settings.tpps.accession_files for FileId: ' + fid
+        );
+        //console.table(Drupal.settings.tpps.accession_files[fid]);
+      }
+      console.log('Going to hide the map for File: ' + fid);
+      // Since columns set incorrectly we hide the map.
+      var $mapWrapper = jQuery('#' + fid + '_map_wrapper');
+      $mapWrapper.hide();
+      $mapWrapper.css({'border': '1px solid red'});
+      if (debugMode) {
+        if ($mapWrapper.is(":visible")){
+          console.log('Visible');
+        } else{
+          console.log('Not Visible');
+        }
+      }
       return;
     }
   }
@@ -341,12 +371,47 @@ function getCoordinates(){
   });
 }
 
-
-// Called from page_3_ajax.php function tpps_accession_pop_group():
-jQuery.fn.mapButtonsClick = function (selector) {
+/**
+ * AJAX-callback called when managed file columns changed.
+ *
+ * Called from page_3_ajax.php function tpps_accession_pop_group():
+ * Called everytime user changes column datatype using dropdown menu.
+ *
+ * @param selector
+ *   Selector of the button which shows the map.
+ *
+ * @param int fid
+ *   File Id of changed/updated file.
+ *
+ */
+jQuery.fn.mapButtonsClick = function (selector, fid) {
+  let debugMode = false;
+  if (debugMode) {
+    console.log('mapButtonClick');
+    console.log(selector);
+  }
+  // Disable all handlers for 'click' event.
   jQuery(selector).off('click');
+
+  // Since user changed columns don't use previously stored data but get
+  // updated data from form in getCoordinates().
+  if (typeof fid == 'undefined') {
+    // @TODO check if this works when file was removed and new one uploaded.
+    delete Drupal.settings.tpps.accession_files;
+    console.log('Removed accession files columns information: all');
+  }
+  else {
+    delete Drupal.settings.tpps.accession_files[fid];
+    if (debugMode) {
+      console.log('Removed accession files columns information: ' + fid);
+    }
+  }
+  delete Drupal.settings.tpps.locations;
+
   // @TODO Called twice on Page3 button click.
-  jQuery(selector).click(getCoordinates);
+  jQuery(selector).on('click', getCoordinates);
+  jQuery(selector).trigger('click');
+
   initMap();
 }
 
