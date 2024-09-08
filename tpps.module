@@ -1000,7 +1000,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
         . 'cells with the value "NA" as empty. If you used a different empty '
         . 'value indicator, please provide it here.'),
       '#default_value' => $empty_field_default_value ?? 'NA',
-      '#weight' => 200,
+      '#weight' => 30,
     ];
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1042,7 +1042,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
       ],
       '#states' => $element['#states'] ?? NULL,
       '#default_value' => $no_header ?? 0,
-      '#weight' => 300,
+      '#weight' => 50,
     ];
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Columns table.

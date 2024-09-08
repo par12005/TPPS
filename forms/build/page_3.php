@@ -194,7 +194,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       // The same code in tpps_table_display().
       $wrapper_id = $fid . '_map_wrapper';
       $button_id = $fid . '_map_button';
-      $form['tree-accession']["species-$i"]['coord-format']['#suffix'] =
+      $form['tree-accession']["species-$i"]['coord-format']['#prefix'] =
         '<div id="' . $wrapper_id . '"></div>'
         . '<input id="' . $button_id . '" type="button" '
         . ' class="btn form-button form-submit map-button" value="'
