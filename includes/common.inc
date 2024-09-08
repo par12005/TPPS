@@ -246,6 +246,7 @@ function tpps_get_markercluster_code($use_wrapper = TRUE) {
   $js_settings = [
     'googleMap' => [
       'id' => variable_get('tpps_google_map_id'),
+      'debugMode' => variable_get('tpps_google_map_debug_mode', FALSE),
       // 80ms is what I found to work well on my system -- it might not work well on all systems
       'zoom' => [
         'smoothTimeout' => variable_get('tpps_google_map_zoom_smooth_timeout', 100),

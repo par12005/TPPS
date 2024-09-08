@@ -38,7 +38,7 @@ var maps = {};
 (function ($) {
 
   async function initMap() {
-    let debugMode = false;
+    let debugMode = Drupal.settings.tpps.googleMap.debugMode ?? false;
     if (debugMode) {
       console.log('initMap() called.');
     }
@@ -228,7 +228,7 @@ var maps = {};
 function getCoordinates(){
 
   // @TODO Replace 'jQuery' with '$'.
-  let debugMode = false;
+  let debugMode = Drupal.settings.tpps.googleMap.debugMode ?? false;
 
   if (debugMode) {
     console.log('getCoordinates');
@@ -386,7 +386,7 @@ function getCoordinates(){
  *
  */
 jQuery.fn.mapButtonsClick = function (selector, fid) {
-  let debugMode = false;
+  let debugMode = Drupal.settings.tpps.googleMap.debugMode ?? false;
   if (debugMode) {
     console.log('mapButtonClick');
     console.log(selector);
