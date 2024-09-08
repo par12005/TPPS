@@ -188,6 +188,7 @@ var maps = {};
       markers: markers,
       map: maps[id],
     });
+    $mapWrapper[0].scrollIntoView({block: "center", behavior: "smooth"});
   }
 
   window.initMap = initMap;
@@ -342,8 +343,8 @@ function getCoordinates(){
       console.log('Going to hide the map for File: ' + fid);
       // Since columns set incorrectly we hide the map.
       var $mapWrapper = jQuery('#' + fid + '_map_wrapper');
+      // Works!
       $mapWrapper.hide();
-      $mapWrapper.css({'border': '1px solid red'});
       if (debugMode) {
         if ($mapWrapper.is(":visible")){
           console.log('Visible');
