@@ -22,7 +22,7 @@
  * @TODO Rename. Function with the same name exists in page_3_helper.php
  */
 function tpps_accession_pop_group(array &$form, array $form_state) {
-  $commands = array();
+  $commands = [];
   $species_id = $form_state['triggering_element']['#parents'][1];
   $output = drupal_render($form['tree-accession'][$species_id]['coord-format']);
   $output .= drupal_render($form['tree-accession'][$species_id]['pop-group']);

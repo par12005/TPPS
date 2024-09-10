@@ -389,7 +389,7 @@ jQuery.fn.mapButtonsClick = function (selector, fid) {
   let debugMode = Drupal.settings.tpps.googleMap.debugMode ?? false;
   if (debugMode) {
     console.log('mapButtonClick');
-    console.log(selector);
+    //console.log(selector);
   }
   // Disable all handlers for 'click' event.
   jQuery(selector).off('click');
@@ -402,12 +402,25 @@ jQuery.fn.mapButtonsClick = function (selector, fid) {
     console.log('Removed accession files columns information: all');
   }
   else {
-    delete Drupal.settings.tpps.accession_files[fid];
-    if (debugMode) {
-      console.log('Removed accession files columns information: ' + fid);
+    if (
+      'tpps' in Drupal.settings
+      && 'accession_files' in Drupal.settings.tpps
+      && typeof Drupal.settings.tpps.accession_files[fid] != 'undefined'
+    ) {
+      delete Drupal.settings.tpps.accession_files[fid];
+      if (debugMode) {
+        console.log('Removed accession files columns information: ' + fid);
+      }
+    }
+    else {
+      if (debugMode) {
+        console.log('There was no accession files columns information for Fiie Id: ' + fid);
+      }
     }
   }
-  delete Drupal.settings.tpps.locations;
+  if ('tpps' in Drupal.settings && 'locations' in Drupal.settings.tpps) {
+    delete Drupal.settings.tpps.locations;
+  }
 
   // @TODO Called twice on Page3 button click.
   jQuery(selector).on('click', getCoordinates);
