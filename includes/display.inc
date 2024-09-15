@@ -125,10 +125,17 @@ function tpps_table_display(array &$state, array $options = []) {
             // Duplicate: tpps_page_3_create_form();
             $wrapper_id = $fid . '_map_wrapper';
             $button_id = $fid . '_map_button';
-            $val_str .= '<div id="' . $wrapper_id . '"></div>'
-              . '<input id="' . $button_id . '" type="button" '
-              . ' class="form-button form-submit" value="'
-              . t('Click here to view plants on map') . '"></input>';
+            // Map wrapper.
+            $val_str .= '<div id="' . $wrapper_id . ' data-fid="' . $fid
+              . '" class="tpps-map-wrapper"></div>';
+            // Map button.
+            if (variable_get('tpps_google_map_show_button', FALSE)) {
+              $val_str .= '<input id="' . $button_id . '" type="button" '
+                . 'data-fid="' . $fid . '" '
+                . 'class="form-button form-submit tpps-map-button" value="'
+                . t('Click here to view plants on map') . '"></input>';
+            }
+            // @TODO Remove button's metadata.
             $js_settings = [
               'map_buttons' => [
                 $fid => [

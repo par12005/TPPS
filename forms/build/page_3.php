@@ -194,11 +194,18 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       // The same code in tpps_table_display().
       $wrapper_id = $fid . '_map_wrapper';
       $button_id = $fid . '_map_button';
+      // Map wrapper.
       $form['tree-accession']["species-$i"]['coord-format']['#prefix'] =
-        '<div id="' . $wrapper_id . '"></div>'
-        . '<input id="' . $button_id . '" type="button" '
-        . ' class="btn form-button form-submit map-button" value="'
-        . t('Click here to view plants on map') . '"></input>';
+        '<div id="' . $wrapper_id . '" data-fid="' . $fid . '" '
+          . 'class="tpps-map-wrapper"></div>';
+      // Map button.
+      if (variable_get('tpps_google_map_show_button', FALSE)) {
+        $form['tree-accession']["species-$i"]['coord-format']['#prefix'] =
+          '<input id="' . $button_id . '" type="button" data-fid="' . $fid
+          . '" class="btn form-button form-submit map-button tpps-map-button" '
+          . 'value="' . t('Click here to view plants on map') . '"></input>';
+      }
+      // @TODO Remove button's metadata.
       $js_settings = [
         'map_buttons' => [
           $fid => [
@@ -268,8 +275,8 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
                 'fid' => $fid,
               ],
             ],
-          ]
-        ]
+          ],
+        ],
       ];
     }
     $form['tree-accession']["species-$i"]['pop-group'] = [
