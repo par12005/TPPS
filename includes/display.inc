@@ -111,43 +111,21 @@ function tpps_table_display(array &$state, array $options = []) {
         }
 
         // @TODO [VS] Use Drupal Form API instead of HTML in PHP.
-        $val_str .= "<br><input id=\"fid_$val\" class=\"preview_button "
-          . "form-button form-submit\" type=\"button\" value=\""
-          . t('Preview file') . "\"></input>";
+        // @TODO Use data-fid to store only file id.
+        $val_str .= '<br><input id="fid_' . $val . '" type="button" '
+          . 'class="preview_button form-button form-submit" '
+          . 'value="' . t('Preview file') . '"></input>';
+
         if (tpps_access('administer tpps module')) {
-          $val_str .= "<br><input id=\"fid_$val\" class=\"preview_full_button "
-            . "form-button form-submit\" type=\"button\" value=\""
-            . t('Show full file') . "\"></input>";
+          // @TODO Use data-fid to store only file id.
+          $val_str .= '<br><input id="fid_' . $val . '" type="button" '
+            . 'class="preview_full_button form-button form-submit" '
+            . 'value="' . t('Show full file') . '"></input>';
         }
         if (preg_match('/^(.*)Accession File/', $key, $matches)) {
           if (!$flat['#skip_loc']) {
             $fid = $file->fid;
-            // Duplicate: tpps_page_3_create_form();
-            $wrapper_id = $fid . '_map_wrapper';
-            $button_id = $fid . '_map_button';
-            // Map wrapper.
-            $val_str .= '<div id="' . $wrapper_id . ' data-fid="' . $fid
-              . '" class="tpps-map-wrapper"></div>';
-            // Map button.
-            if (variable_get('tpps_google_map_show_button', FALSE)) {
-              $val_str .= '<input id="' . $button_id . '" type="button" '
-                . 'data-fid="' . $fid . '" '
-                . 'class="form-button form-submit tpps-map-button" value="'
-                . t('Click here to view plants on map') . '"></input>';
-            }
-            // @TODO Remove button's metadata.
-            $js_settings = [
-              'map_buttons' => [
-                $fid => [
-                  'wrapper' => $wrapper_id,
-                  'button' => $button_id,
-                  'fid' => $fid,
-                ],
-              ],
-            ];
-            // End of common code.
-            drupal_add_js(['tpps' => $js_settings], 'setting');
-            tpps_add_css_js('google_map');
+            $val_str .= tpps_build_google_map_wrapper($fid);
           }
           else {
             $val_str .= "<br>This submission was submitted without "
