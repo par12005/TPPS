@@ -137,13 +137,11 @@ var maps = {};
 
     var bounds = new google.maps.LatLngBounds();
 
-    // Create an array of alphabetical characters used to label the markers.
-    const labels = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     // Add some markers to the map.
     const markers = locations.map((position, i) => {
-      const label = labels[position[0]];
+      const label = position[0];
       const pinGlyph = new PinElement({
-        glyph: label,
+        glyph: label.toString(),
         glyphColor: "white",
       });
       const markerPosition = { lat: Number(position[1]), lng: Number(position[2]) };

@@ -415,7 +415,3 @@ function tpps_no_header_callback(array $form, array &$form_state) {
   $element = drupal_array_get_nested_value($form, $parents);
   return $element;
 }
-
-function tpps_ajax_get_accession_files() {
-
-}
