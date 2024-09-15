@@ -1639,36 +1639,11 @@ function tpps_block_view_alter(&$data, $block) {
           elseif (preg_match('/File/', $item) && $file = tpps_file_load($val)) {
             // Create links to files.
             $file_url = check_plain(file_create_url($file->uri));
+            // @TODO Use Drupal API: l().
             $val_str = "<a href='$file_url' target='blank'>$file->filename</a>";
             if (!$flat['#skip_loc'] and preg_match('/^(.*)Accession File/', $item, $matches)) {
               $fid = $val;
-              $wrapper_id = "{$fid}_map_wrapper";
-              $button_id = "{$fid}_map_button";
-              // Map wrapper.
-              $val_str .= '<div id="' . $wrapper_id . ' data-fid="' . $fid
-                . '" class="tpps-map-wrapper"></div>';
-              // Map button.
-              if (variable_get('tpps_google_map_show_button', FALSE)) {
-                $val_str .= '<input id="' . $button_id . '" type="button" '
-                  . 'class="form-button form-submit tpps-map-button" '
-                  . 'data-fid="' . $fid . '" value="'
-                  . t('Click here to view plants on map!') . '"></input>';
-              }
-              // @TODO Remove button's metadata.
-              $form['#attached']['js'][] = [
-                'type' => 'setting',
-                'data' => [
-                  'tpps' => [
-                    'map_buttons' => [
-                      $fid => [
-                        'wrapper' => $wrapper_id,
-                        'button' => $button_id,
-                        'fid' => $fid,
-                      ],
-                    ],
-                  ],
-                ],
-              ];
+              $val_str .= tpps_build_google_map_wrapper($fid);
             }
           }
           elseif (

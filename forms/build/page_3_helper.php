@@ -82,6 +82,7 @@ function tpps_study_location(array &$form, array &$form_state) {
   );
 
   if ($type != 2 and $type != 0) {
+    // @TODO Use tpps_build_google_map_wrapper().
     $form['study_location']['map-button'] = array(
       '#type' => 'button',
       '#title' => 'Click here to update map',

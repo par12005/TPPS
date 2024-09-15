@@ -278,3 +278,64 @@ function tpps_get_markercluster_code($use_wrapper = TRUE) {
 function tpps_markercluster_get_url() {
   return 'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js';
 }
+
+/**
+ * Builds Google Map wrapper and optionally button, adds JS to page.
+ *
+ * @param int $fid
+ *   Drupal managed file id.
+ * @param array $form
+ *   Drupal Form API array.
+ *   When not empty JS will be attached to form instead of use drupal_add_js().
+ *
+ * @return string
+ *   Returns HTML-string with map wrapper and optional button.
+ */
+function tpps_build_google_map_wrapper($fid, array &$form = []) {
+  $wrapper_id = $fid . '_map_wrapper';
+  $button_id = $fid . '_map_button';
+  // Map wrapper.
+  $output = '<div id="' . $wrapper_id . '" data-fid="' . $fid
+    . '" class="tpps-map-wrapper"></div>';
+  // Map button.
+  if (variable_get('tpps_google_map_show_button', FALSE)) {
+    $output .= '<input id="' . $button_id . '" type="button" '
+      . 'data-fid="' . $fid . '" '
+      // tpps_table_display() used this:
+      //. 'class="form-button form-submit tpps-map-button" '
+      // tpps_page_3_create_form() uses this:
+      . 'class="btn form-button form-submit map-button tpps-map-button" '
+      // tpps_block_view_alter() uses:
+      // . 'class="form-button form-submit tpps-map-button" '
+      . 'value="' . t('Click here to view plants on map') . '"></input>';
+  }
+
+  // JS Settings.
+  // @TODO Remove button's metadata to use 'data-fid' in JS on client side.
+  $js_settings = [
+    'map_buttons' => [
+      $fid => [
+        'wrapper' => $wrapper_id,
+        'button' => $button_id,
+        'fid' => $fid,
+      ],
+    ],
+  ];
+  // Add JS to page.
+  if (empty($form)) {
+    // Plain table.
+    drupal_add_js(['tpps' => $js_settings], 'setting');
+    tpps_add_css_js('google_map');
+  }
+  else {
+    // Form.
+    $form['#attached']['js'][] = [
+      'type' => 'setting',
+      'scope' => 'footer',
+      'data' => ['tpps' => $js_settings],
+    ];
+    tpps_add_css_js('google_map', $form);
+  }
+
+  return $output;
+}
