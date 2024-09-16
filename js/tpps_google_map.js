@@ -1,75 +1,3 @@
-(function ($) {
-  Drupal.behaviors.tppsGoogleMap = {
-    attach:function (context) {
-
-
-      let debugMode = Drupal.settings.tpps.googleMap.debugMode ?? false;
-      // Note: Each time map reloaded by AJAX it will be updated.
-      $('.tpps-map-wrapper', context).each(function() {
-        let fid = $(this).data('fid');
-        if (debugMode) {
-          console.log('behavior: ' +  fid);
-        }
-        if (typeof fid != 'undefined' && fid) {
-          console.log('Update markers on the map for ' + fid);
-          getCoordinates(fid);
-        }
-        else {
-          console.log('Hide map');
-          //jQuery(this).hide();
-        }
-      });
-
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      let organismId = 1;
-      let removeButtonId = '#edit-tree-accession-species-' + organismId
-        + '-file-remove-button';
-      $(removeButtonId).click(function(e) {
-        console.log('Clicked "Remove" button');
-      });
-    }
-  }
-
-
-
-  if (0) {
-  $(document).ready(function() {
-    // Add on click event handler to hide map and remove removed file column
-    // metadata.
-    let organismNumber = Drupal.settings.tpps.organismNumber ?? 1;
-    for (organismId = 1; organismId <= organismNumber; organismId++) {
-      let removeButtonId = '#edit-tree-accession-species-' + organismId
-        + '-file-remove-button';
-console.log($(removeButtonId));
-
-
-
-      $(removeButtonId).click({'organismId': organismId}, function(e) {
-console.log('Clicked "Remove" button');
-
-        //let organismId = $(this).parent('.form-managed-file')
-        //  .attr('id').replace('edit-tree-accession-species-', '')
-        //  .replace('-file-uploadh', '');
-
-let organismId = e.data.organismId;
-console.log('Organism Id: ' + organismId);
-
-
-        let fileIdFieldName = 'tree-accession[species-' + organismId + '][file][fid]';
-console.log($('input[name="' + fileIdFieldName + '"]'));
-        let fid = $('input[name="' + fileIdFieldName + '"]').attr('value');
-console.log('FID: ' + fid);
-        if (fid) {
-          let $mapWrapper = jQuery('#' + fid + '_map_wrapper').hide();
-          delete Drupal.settings.tpps.accession_files[fid];
-          delete Drupal.settings.tpps.locations[fid];
-        }
-      });
-    }
-
-  });
-  }
-})(jQuery);
 
 // We are using array (list) of maps because there could be multiple species
 // and multiple accession files on the same page.
@@ -259,8 +187,63 @@ var maps = {};
     }
   }
 
-}(jQuery));
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  Drupal.behaviors.tppsGoogleMap = {
+    attach:function (context) {
+      let debugMode = Drupal.settings.tpps.googleMap.debugMode ?? false;
 
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Show map on page load if file was uploaded before on Page 3.
+      //
+      // @TODO Check if page has managed file fields.
+      let organismNumber = Drupal.settings.tpps.organismNumber ?? 1;
+      for (organismId = 1; organismId <= organismNumber; organismId++) {
+        let columnTableSelector = '#edit-tree-accession-species-' + organismId
+          + '-file-columns';
+        $(columnTableSelector, context).ready(function() {
+
+          if (!$(this).hasClass('tpps-google-map-processed')) {
+            $(this).addClass('tpps-google-map-processed');
+
+// @TODO Get real id.
+
+            let organismId = 1;
+
+            let fid = $('input[name="tree-accession[species-' + organismId
+                + '][file][fid]"]').val();
+//console.log('Found fid: ' + fid);
+            if (fid) {
+              getCoordinates(fid);
+              initMap();
+            }
+          }
+          console.log('Column Table appears on page for ' + organismId);
+        });
+      }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+
+
+      // Note: Each time map reloaded by AJAX it will be updated.
+      $('.tpps-map-wrapper', context).each(function() {
+        let fid = $(this).data('fid');
+        if (debugMode) {
+          console.log('behavior: ' +  fid);
+        }
+        if (typeof fid != 'undefined' && fid) {
+          console.log('Update markers on the map for ' + fid);
+          getCoordinates(fid);
+        }
+        else {
+          console.log('Review all maps and hide missing.');
+
+          //jQuery(this).hide();
+        }
+      });
+    }
+  }
+
+})(jQuery);
 
 /**
  * Gets locations for specific accession-file.
@@ -271,7 +254,7 @@ function getCoordinates(fid = ''){
   let debugMode = Drupal.settings.tpps.googleMap.debugMode ?? false;
 
   if (debugMode) {
-    console.log('getCoordinates');
+    console.log('getCoordinates: ' + fid);
   }
 
 
@@ -292,6 +275,35 @@ function getCoordinates(fid = ''){
   if (!fid) {
     var fid = this.id.match(/(.*)_map_button/)[1];
   }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Check if file exists on page. If not - hide the map.
+
+  // Add on click event handler to hide map and remove removed file column
+  // metadata.
+  //let organismNumber = Drupal.settings.tpps.organismNumber ?? 1;
+  for (organismId = 1; organismId <= organismNumber; organismId++) {
+      //let organismId = $(this).parent('.form-managed-file')
+      //  .attr('id').replace('edit-tree-accession-species-', '')
+      //  .replace('-file-uploadh', '');
+
+//console.log('Organism Id: ' + organismId);
+
+
+      let fileIdFieldName = 'tree-accession[species-' + organismId + '][file][fid]';
+//console.log($('input[name="' + fileIdFieldName + '"]'));
+      let fid = $('input[name="' + fileIdFieldName + '"]').attr('value');
+//console.log('FID: ' + fid);
+      if (fid) {
+        console.log('Show this map');
+      }
+      else {
+        console.log('Hide this map');
+        //let $mapWrapper = jQuery('#' + fid + '_map_wrapper').hide();
+      }
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
 
   if (
     ! ('tpps' in Drupal.settings)
@@ -418,7 +430,7 @@ function getCoordinates(fid = ''){
   // @TODO Not work at https://tgwebdev.cam.uchc.edu/tpps-admin-panel/TGDR978
   //
   //
-  console.log(Drupal.settings.tpps.accession_files);
+  //console.log(Drupal.settings.tpps.accession_files);
   if (typeof Drupal.settings.tpps.accession_files[fid] != 'undefined') {
     var request = jQuery.post(
       '/tpps-accession',

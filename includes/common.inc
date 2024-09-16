@@ -228,20 +228,9 @@ function tpps_get_markercluster_code($use_wrapper = TRUE) {
   $output = '';
   // MarkerCluster Library.
   drupal_add_js(tpps_markercluster_get_url(), 'external');
-  // Google Maps API Library.
-  $url = url('https://maps.googleapis.com/maps/api/js', [
-    'query' => [
-      'key' => $map_api_key,
-      'callback' => 'initMap',
-      'v' => 'weekly',
-      'libraries' => 'marker',
-      'loading' => 'async',
-    ],
-  ]);
-  drupal_add_js($url, 'external');
   // Settings.
   if ($use_wrapper) {
-    $output .= '<div id="_map_wrapper"></div>';
+    $output .= '<div id="_map_wrapper" class="tpps-map-wrapper"></div>';
   }
   $js_settings = [
     'googleMap' => [
@@ -258,6 +247,18 @@ function tpps_get_markercluster_code($use_wrapper = TRUE) {
   drupal_add_js(['tpps' => $js_settings], 'setting');
   // Our custom code which adds markers to the map.
   tpps_add_css_js('google_map');
+  // Google Maps API Library.
+  $url = url('https://maps.googleapis.com/maps/api/js', [
+    'query' => [
+      'key' => $map_api_key,
+      'callback' => 'initMap',
+      'v' => 'weekly',
+      'libraries' => 'marker',
+      'loading' => 'async',
+    ],
+    'external' => TRUE,
+  ]);
+  drupal_add_js($url, 'external');
   return $output;
 }
 
@@ -321,6 +322,7 @@ function tpps_build_google_map_wrapper($fid, array &$form = []) {
       ],
     ],
   ];
+
   // Add JS to page.
   if (empty($form)) {
     // Plain table.

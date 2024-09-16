@@ -1988,7 +1988,7 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
       // Add main files.
       $form['#attached']['js'][] = [
         'type' => 'file',
-        'scope' => 'footer',
+        'scope' => ($page_id == 'google_map' ? 'header' : 'footer'),
         'group' => JS_THEME,
         'data' => TPPS_MODULE_PATH . TPPS_JS_PATH,
       ];
@@ -2007,7 +2007,7 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
       // @TODO Minor. Check if JS/CSS file exists.
       $form['#attached']['js'][] = [
         'type' => 'file',
-        'scope' => 'footer',
+        'scope' => ($page_id == 'google_map' ? 'header' : 'footer'),
         'group' => JS_THEME,
         'data' => TPPS_MODULE_PATH . '/js/' . $filename . '.js',
       ];
