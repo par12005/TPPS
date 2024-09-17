@@ -431,7 +431,11 @@ function getCoordinates(fid = ''){
   //
   //
   //console.log(Drupal.settings.tpps.accession_files);
-  if (typeof Drupal.settings.tpps.accession_files[fid] != 'undefined') {
+  if (
+    'tpps' in Drupal.settings
+    && 'accession_files' in Drupal.settings.tpps
+    && typeof Drupal.settings.tpps.accession_files[fid] != 'undefined'
+  ) {
     var request = jQuery.post(
       '/tpps-accession',
       {...Drupal.settings.tpps.accession_files[fid]}
@@ -462,16 +466,21 @@ function getCoordinates(fid = ''){
  *   File Id of changed/updated file.
  *
  */
-jQuery.fn.mapButtonsClick = function (selector, fid) {
+jQuery.fn.mapButtonsClick = function (fid, organismId) {
+
+
+  console.log(organismId);
+
+  if (!fid) {
+    console.log('\n\n Called mapButtonClick with fid: ' + fid);
+
+    return;
+  }
   let debugMode = Drupal.settings.tpps.googleMap.debugMode ?? false;
   if (debugMode) {
-    console.log('mapButtonClick');
-    console.log(selector);
-    //console.log(selector);
+    console.log('==============================================================')
+    console.log('\n\n Called mapButtonClick with fid: ' + fid);
   }
-  // Disable all handlers for 'click' event.
-
-  jQuery(selector).off('click');
 
   // Since user changed columns don't use previously stored data but get
   // updated data from form in getCoordinates().
@@ -501,15 +510,9 @@ jQuery.fn.mapButtonsClick = function (selector, fid) {
     delete Drupal.settings.tpps.locations;
   }
 
-console.log('sdfsdfsdfsdfsdf:' + fid);
+console.log('call getCoordinates() from mapButtonClick');
 
-
-
-  // @TODO Called twice on Page3 button click.
-  jQuery(selector).on('click', getCoordinates);
-  jQuery(selector).trigger('click');
-  // getCoordinates(fid);
-
+  getCoordinates(fid);
   initMap();
 }
 
