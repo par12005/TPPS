@@ -292,7 +292,7 @@ function tpps_markercluster_get_url() {
  * @return string
  *   Returns HTML-string with map wrapper and optional button.
  */
-function tpps_build_google_map_wrapper($fid, array &$form = []) {
+function tpps_build_google_map_wrapper($fid, array &$form = NULL) {
   $wrapper_id = $fid . '_map_wrapper';
   $button_id = $fid . '_map_button';
   // Map wrapper.
@@ -310,34 +310,6 @@ function tpps_build_google_map_wrapper($fid, array &$form = []) {
       // . 'class="form-button form-submit tpps-map-button" '
       . 'value="' . t('Click here to view plants on map') . '"></input>';
   }
-
-  // JS Settings.
-  // @TODO Remove button's metadata to use 'data-fid' in JS on client side.
-  $js_settings = [
-    'map_buttons' => [
-      $fid => [
-        'wrapper' => $wrapper_id,
-        'button' => $button_id,
-        'fid' => $fid,
-      ],
-    ],
-  ];
-
-  // Add JS to page.
-  if (empty($form)) {
-    // Plain table.
-    drupal_add_js(['tpps' => $js_settings], 'setting');
-    tpps_add_css_js('google_map');
-  }
-  else {
-    // Form.
-    $form['#attached']['js'][] = [
-      'type' => 'setting',
-      'scope' => 'footer',
-      'data' => ['tpps' => $js_settings],
-    ];
-    tpps_add_css_js('google_map', $form);
-  }
-
+  tpps_add_css_js('google_map', $form);
   return $output;
 }
