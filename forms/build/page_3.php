@@ -186,18 +186,13 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     // Previously $fid was an array which caused warnings on Page 3 submit.
     $fid = tpps_get_ajax_value(
       $form_state,
-      ['tree-accession', "species-$i", 'file', 'fid'],
+      ['tree-accession', "species-$i", 'file'],
       NULL
     );
     // [/VS]
     if ($file = tpps_file_load($fid)) {
       $form['tree-accession']["species-$i"]['coord-format']['#prefix'] =
         tpps_build_google_map_wrapper($fid);
-      //$wrapper_id = $fid . '_map_wrapper';
-      //$button_id = $fid . '_map_button';
-    }
-
-    if ($file = tpps_file_load($fid)) {
       $no_header = tpps_get_ajax_value(
         $form_state,
         ['tree-accession', "species-$i", 'file', 'no_header'],
@@ -228,30 +223,6 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
           }
         }
       }
-      $form['#attached']['js'][] = [
-        'type' => 'setting',
-        'scope' => 'footer',
-        'data' => [
-          'tpps' => [
-            'accession_files' => [
-              $fid => [
-                'no_header' => $no_header,
-                'id_col' => $id_col,
-                'lat_col' => $lat_col,
-                'long_col' => $long_col,
-                'fid' => $fid,
-              ],
-            ],
-            //'map_buttons' => [
-            //  $fid => [
-            //    'wrapper' => $wrapper_id,
-            //    'button' => $button_id,
-            //    'fid' => $fid,
-            //  ],
-            //],
-          ],
-        ],
-      ];
     }
     $form['tree-accession']["species-$i"]['pop-group'] = [
       '#type' => 'hidden',
