@@ -9,10 +9,8 @@ var maps = {};
 
   async function initMap() {
     let debugMode = Drupal.settings.tpps.googleMap.debugMode ?? false;
-    if (debugMode) {
-      console.log('initMap() called.');
-    }
-    let featureName = 'GoogleMap MarkerCluster';
+    let featureName = 'initMap';
+    if (debugMode) { console.log(featureName + ': called.'); }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get libraries.
     const { Map, InfoWindow } = await google.maps.importLibrary("maps");
@@ -42,14 +40,16 @@ var maps = {};
 
     // Check if we have locations for markers.
     if ( !locations.length ) {
-      if (debugMode) {
-        console.log(featureName + ': no locations to show on map');
-      }
+      if (debugMode) { console.log(featureName + ': ' +
+        'no locations to show on map'
+      ); }
       return;
     }
     else {
+      if (debugMode) { console.log(featureName + ': ' +
+        'List of locations for markers'
+      ); }
       if (debugMode) {
-        console.log('List of locations for markers');
         console.table(locations);
       }
     }
@@ -85,9 +85,9 @@ var maps = {};
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Init map and add markers.
     if (typeof $mapWrapper[0] == 'undefined') {
-      if (debugMode) {
-        console.log(featureName + ': no map wrapper found.');
-      }
+      if (debugMode) { console.log(featureName + ': ' +
+        'Map wrapper wasn\'t found.'
+      ); }
       return;
 
     }
@@ -117,7 +117,8 @@ var maps = {};
       const markerPosition = { lat: Number(position[1]), lng: Number(position[2]) };
       const marker = new AdvancedMarkerElement({
         map: maps[id],
-        //position: { lat: -25.344, lng: 131.031 },
+        // Example:
+        // position: { lat: -25.344, lng: 131.031 },
         position: markerPosition,
         content: pinGlyph.element,
       });
@@ -159,10 +160,11 @@ var maps = {};
     $mapWrapper[0].scrollIntoView({block: "center", behavior: "smooth"});
   }
 
+  // Make it global.
   window.initMap = initMap;
 
   /**
-   * Zoom google map smooth.
+   * Zoom google map smoothly.
    *
    * @param map
    *   Google Map object.
@@ -192,6 +194,10 @@ var maps = {};
     attach:function (context) {
       let debugMode = Drupal.settings.tpps.googleMap.debugMode ?? false;
 
+      let featureName = 'Drupal.behaviors.tppsGoogleMap';
+      if (debugMode) { console.log(featureName + ': ' +
+        'called.'
+      ); }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Show map on page load if file was uploaded before on Page 3.
       //
@@ -200,25 +206,25 @@ var maps = {};
       for (organismId = 1; organismId <= organismNumber; organismId++) {
         let columnTableSelector = '#edit-tree-accession-species-' + organismId
           + '-file-columns';
-        $(columnTableSelector, context).ready(function() {
-
-          if (!$(this).hasClass('tpps-google-map-processed')) {
-            $(this).addClass('tpps-google-map-processed');
-
-// @TODO Get real id.
-
-            let organismId = 1;
-
-            let fid = $('input[name="tree-accession[species-' + organismId
-                + '][file][fid]"]').val();
-//console.log('Found fid: ' + fid);
-            if (fid) {
-              getCoordinates(fid);
-              initMap();
-            }
+        $columnTable = $(columnTableSelector, context);
+        if ($columnTable.length) {
+          $columnTable.addClass('tpps-google-map-processed');
+          let fid = $('input[name="tree-accession[species-'
+            + organismId + '][file][fid]"]').val();
+          if (debugMode) { console.log(featureName + ': ' +
+            'File was uploaded. Organism: ' + organismId + ', fid: ' + fid
+          ); }
+          if (typeof fid != 'undefined' && Number(fid) > 0) {
+            if (debugMode) { console.log(featureName + ': ' +
+              'Going to call getCoordinates(' + fid + ')'
+            ); }
+            getCoordinates(fid);
+            if (debugMode) { console.log(featureName + ': ' +
+              'Going to call initMap()'
+            ); }
+            initMap();
           }
-          console.log('Column Table appears on page for ' + organismId);
-        });
+        }
       }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -227,22 +233,38 @@ var maps = {};
       // Note: Each time map reloaded by AJAX it will be updated.
       $('.tpps-map-wrapper', context).each(function() {
         let fid = $(this).data('fid');
-        if (debugMode) {
-          console.log('behavior: ' +  fid);
-        }
+        if (debugMode) { console.log(featureName + ': ' +
+          'Map Wrapper. fid: ' +  fid
+        ); }
         if (typeof fid != 'undefined' && fid) {
-          console.log('Update markers on the map for ' + fid);
+          if (debugMode) { console.log(featureName + ': ' +
+            'Map Wrapper. Update markers on the map for ' + fid
+          ); }
           getCoordinates(fid);
         }
         else {
-          console.log('Review all maps and hide missing.');
-
-          //jQuery(this).hide();
+          // Check if we have locations for the map.
+          if (
+            'tpps' in Drupal.settings
+            && 'tree_info' in Drupal.settings.tpps
+          ) {
+            // Pages like /tpps/details/TGDR978
+            // where no single file used (no fid) but all files together.
+          }
+          else {
+            //if (debugMode) { console.log(featureName + ': ' +
+            //  'Map Wrapper. Review all maps and hide missing.'
+            //); }
+            //jQuery(this).hide();
+          }
         }
       });
+
+      if (debugMode) { console.log(featureName + ': ' +
+        '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< End.'
+      ); }
     }
   }
-
 })(jQuery);
 
 /**
@@ -252,10 +274,11 @@ function getCoordinates(fid = ''){
 
   // @TODO Replace 'jQuery' with '$'.
   let debugMode = Drupal.settings.tpps.googleMap.debugMode ?? false;
+  let featureName = 'getCoordinates';
 
-  if (debugMode) {
-    console.log('getCoordinates: ' + fid);
-  }
+  if (debugMode) { console.log(featureName + ': ' +
+    fid
+  ); }
 
 
   var no_header, id_col, lat_col, long_col;
@@ -295,10 +318,14 @@ function getCoordinates(fid = ''){
       let fid = $('input[name="' + fileIdFieldName + '"]').attr('value');
 //console.log('FID: ' + fid);
       if (fid) {
-        console.log('Show this map');
+        if (debugMode) { console.log(featureName + ': ' +
+          'Show this map'
+        ); }
       }
       else {
-        console.log('Hide this map');
+        if (debugMode) { console.log(featureName + ': ' +
+          'Hide this map'
+        ); }
         //let $mapWrapper = jQuery('#' + fid + '_map_wrapper').hide();
       }
   }
@@ -320,9 +347,9 @@ function getCoordinates(fid = ''){
     )
   ) {
     // File Id not found. Get data from form.
-    if (debugMode) {
-      console.log('File Id not found. Get data from form.');
-    }
+    if (debugMode) { console.log(featureName + ': ' +
+      'File Id not found. Get data from form.'
+    ); }
 
     // Column name are letters.
     // Note: Change 65 to 97 for lowercase.
@@ -340,9 +367,9 @@ function getCoordinates(fid = ''){
         continue;
       }
       organismFid = $fileIdField.val();
-      if (debugMode) {
-        console.log('Organism ' + organismId + '; File Id: ' + organismFid );
-      }
+      if (debugMode) { console.log(featureName + ': ' +
+        'Organism ' + organismId + '; File Id: ' + organismFid
+      ); }
       if (organismFid == 0) {
         continue;
       }
@@ -398,23 +425,25 @@ function getCoordinates(fid = ''){
       && 'long_col' in Drupal.settings.tpps.accession_files[fid]
     )) {
       delete Drupal.settings.tpps.accession_files[fid];
-      if (debugMode) {
-        console.log(
+      if (debugMode) { console.log(featureName + ': ' +
           'No file metadata in Drupal.settings.tpps.accession_files for FileId: ' + fid
-        );
-        //console.table(Drupal.settings.tpps.accession_files[fid]);
-      }
-      console.log('Going to hide the map for File: ' + fid);
+      ); }
+      //console.table(Drupal.settings.tpps.accession_files[fid]);
+      if (debugMode) { console.log(featureName + ': ' +
+        'Going to hide the map for File: ' + fid
+      ); }
       // Since columns set incorrectly we hide the map.
       var $mapWrapper = jQuery('#' + fid + '_map_wrapper');
       // Works!
       $mapWrapper.hide();
-      if (debugMode) {
-        if ($mapWrapper.is(":visible")){
-          console.log('Visible');
-        } else{
-          console.log('Not Visible');
-        }
+      if ($mapWrapper.is(":visible")){
+        if (debugMode) { console.log(featureName + ': ' +
+          'Visible'
+        ); }
+      } else{
+        if (debugMode) { console.log(featureName + ': ' +
+          'Not Visible'
+        ); }
       }
       return;
     }
@@ -468,18 +497,25 @@ function getCoordinates(fid = ''){
  */
 jQuery.fn.mapButtonsClick = function (fid, organismId) {
 
+  let debugMode = Drupal.settings.tpps.googleMap.debugMode ?? false;
+  let featureName = 'jQuery.fn.mapButtonsClick';
 
-  console.log(organismId);
+  if (debugMode) { console.log(featureName + ': ' +
+    'Organism Id: ' + organismId
+  ); }
 
   if (!fid) {
-    console.log('\n\n Called mapButtonClick with fid: ' + fid);
+    if (debugMode) { console.log(featureName + ': ' +
+      '\n\n Called mapButtonClick with fid: ' + fid
+    ); }
 
     return;
   }
-  let debugMode = Drupal.settings.tpps.googleMap.debugMode ?? false;
   if (debugMode) {
     console.log('==============================================================')
-    console.log('\n\n Called mapButtonClick with fid: ' + fid);
+    if (debugMode) { console.log(featureName + ': ' +
+      '\n\n Called mapButtonClick with fid: ' + fid
+    ); }
   }
 
   // Since user changed columns don't use previously stored data but get
@@ -487,7 +523,9 @@ jQuery.fn.mapButtonsClick = function (fid, organismId) {
   if (typeof fid == 'undefined') {
     // @TODO check if this works when file was removed and new one uploaded.
     delete Drupal.settings.tpps.accession_files;
-    console.log('Removed accession files columns information: all');
+    if (debugMode) { console.log(featureName + ': ' +
+      'Removed accession files columns information: all'
+    ); }
   }
   else {
     if (
@@ -496,21 +534,23 @@ jQuery.fn.mapButtonsClick = function (fid, organismId) {
       && typeof Drupal.settings.tpps.accession_files[fid] != 'undefined'
     ) {
       delete Drupal.settings.tpps.accession_files[fid];
-      if (debugMode) {
-        console.log('Removed accession files columns information: ' + fid);
-      }
+      if (debugMode) { console.log(featureName + ': ' +
+        'Removed accession files columns information: ' + fid
+      ); }
     }
     else {
-      if (debugMode) {
-        console.log('There was no accession files columns information for Fiie Id: ' + fid);
-      }
+      if (debugMode) { console.log(featureName + ': ' +
+        'There was no accession files columns information for Fiie Id: ' + fid
+      ); }
     }
   }
   if ('tpps' in Drupal.settings && 'locations' in Drupal.settings.tpps) {
     delete Drupal.settings.tpps.locations;
   }
 
-console.log('call getCoordinates() from mapButtonClick');
+  if (debugMode) { console.log(featureName + ': ' +
+    'call getCoordinates() from mapButtonClick.'
+  ); }
 
   getCoordinates(fid);
   initMap();
