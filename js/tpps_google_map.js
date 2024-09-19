@@ -59,7 +59,13 @@ var maps = {};
     // files was processed.
     var $mapWrapper = jQuery('#' + fid + '_map_wrapper');
 
-    // Make map wrapper visible and set correct height.
+    // Init map and add markers.
+    if (typeof $mapWrapper[0] == 'undefined') {
+      dog('Map wrapper wasn\'t found.');
+      return;
+    }
+
+    // Map-wrapper found at page. Let's make it visible and set height.
     var detail_regex = /tpps\/details\/TGDR.*/g;
     if (
       'tpps' in Drupal.settings && 'stage' in Drupal.settings.tpps
@@ -79,12 +85,6 @@ var maps = {};
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Init map and add markers.
-    if (typeof $mapWrapper[0] == 'undefined') {
-      dog('Map wrapper wasn\'t found.');
-      return;
-
-    }
     maps[id] = new Map($mapWrapper[0], {
       center: {
         lat: Number(locations[0][1]),
@@ -198,7 +198,7 @@ var maps = {};
       for (organismId = 1; organismId <= organismNumber; organismId++) {
         let columnTableSelector = '#edit-tree-accession-species-' + organismId
           + '-file-columns';
-        $columnTable = $(columnTableSelector, context);
+        var $columnTable = $(columnTableSelector, context);
         if ($columnTable.length) {
           $columnTable.addClass('tpps-google-map-processed');
           let fid = $('input[name="tree-accession[species-'
@@ -207,8 +207,8 @@ var maps = {};
           if (typeof fid != 'undefined' && Number(fid) > 0) {
             dog('Going to call getCoordinates(' + fid + ')', featureName);
             getCoordinates(fid);
-            dog('Going to call initMap()', featureName);
-            initMap();
+            //dog('Going to call initMap()', featureName);
+            //initMap();
           }
         }
       }
@@ -218,9 +218,11 @@ var maps = {};
 
       // Note: Each time map reloaded by AJAX it will be updated.
       $('.tpps-map-wrapper', context).each(function() {
+        dog('Map Wrapper found at page', featureName);
         let fid = $(this).data('fid');
-        dog('Map Wrapper. fid: ' +  fid, featureName);
         if (typeof fid != 'undefined' && fid) {
+          dog('Map Wrapper has fid: ' +  fid, featureName);
+          // Since we doesn't have
           dog('Map Wrapper. Update markers on the map for ' + fid, featureName);
           getCoordinates(fid);
         }
@@ -250,14 +252,18 @@ var maps = {};
    */
   function dog(message, callerFunctionName = null) {
     if (Drupal.settings.tpps.googleMap.debugMode ?? false) {
+      // Get caller function name to use as a prefix.
+      // https://stackoverflow.com/a/39337724/1041470
+      var e = new Error('dummy');
       if (callerFunctionName === null) {
-        // Get caller function name to use as a prefix.
-        // https://stackoverflow.com/a/39337724/1041470
-        let e = new Error('dummy');
         callerFunctionName = e.stack
           .split('\n')[2]
-          // " at functionName ( ..." => "functionName"
-          .replace(/^\s+at\s+(.+?)\s.+/g, '$1' );
+          .replace(/^\s+at\s(.+?)(?:\s.*:|:)(.*?):(.*?)\)?$/g, '$1 [$2:$3]');
+      }
+      else {
+        callerFunctionName = callerFunctionName + e.stack
+          .split('\n')[2]
+          .replace(/^\s+at\s(.+?)(?:\s.*:|:)(.*?):(.*?)\)?$/g, ' [$2:$3]');
       }
       console.log(
         '%c' + callerFunctionName + ':\n  %c' + message,
@@ -269,201 +275,198 @@ var maps = {};
   window.dog = dog;
 
 
-})(jQuery);
-
-/**
- * Gets locations for specific accession-file.
- */
-function getCoordinates(fid = ''){
-
-  // @TODO Replace 'jQuery' with '$'.
-  let featureName = 'getCoordinates';
-  dog(fid);
-
-  var no_header, id_col, lat_col, long_col;
-  let fileMeta;
-  let organismFid;
-  let $fileIdField;
-  let commonName;
-  let organismId;
-  let organismNumber;
-  let $fileWrapper;
-  let columnName;
-  let selectBoxName;
-  let value;
-
-
-  // @TODO Remove when fn.ButtonClick won't use it.
-  if (!fid) {
-    var fid = this.id.match(/(.*)_map_button/)[1];
-  }
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Check if file exists on page. If not - hide the map.
-
-  // Add on click event handler to hide map and remove removed file column
-  // metadata.
-  //let organismNumber = Drupal.settings.tpps.organismNumber ?? 1;
-  for (organismId = 1; organismId <= organismNumber; organismId++) {
-      //let organismId = $(this).parent('.form-managed-file')
-      //  .attr('id').replace('edit-tree-accession-species-', '')
-      //  .replace('-file-uploadh', '');
-
-//console.log('Organism Id: ' + organismId);
-
-
-      let fileIdFieldName = 'tree-accession[species-' + organismId + '][file][fid]';
-//console.log($('input[name="' + fileIdFieldName + '"]'));
-      let fid = $('input[name="' + fileIdFieldName + '"]').attr('value');
-//console.log('FID: ' + fid);
-      if (fid) {
-        dog('Show this map');
-      }
-      else {
-        dog('Hide this map');
-        //let $mapWrapper = jQuery('#' + fid + '_map_wrapper').hide();
-      }
-  }
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-
-  if (
-    ! ('tpps' in Drupal.settings)
-    || (
-      'tpps' in Drupal.settings
-      && ! ('accession_files' in Drupal.settings.tpps)
-    )
-    || (
-      'tpps' in Drupal.settings
-      && 'accession_files' in Drupal.settings.tpps
-      // @TODO Must be not under 'settings':
-      // Drupal.tpps.accession_files[fid]
-      && typeof Drupal.settings.tpps.accession_files[fid] == 'undefined'
-    )
-  ) {
-    // File Id not found. Get data from form.
-    dog('File Id not found. Get data from form.');
-
-    // Column name are letters.
-    // Note: Change 65 to 97 for lowercase.
-    // WARNING: Won't work if accession file has more then A-Z columns.
-    const alphabets = [...Array(26).keys()].map((n) => String.fromCharCode(65 + n));
-    let organismNumber = Drupal.settings.tpps.organismNumber;
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Loop organisms to find accession files.
-    for (organismId = 1; organismId <= organismNumber; organismId++) {
-      // @TODO Stop Loop when 'fid' was found.
-      commonName = 'tree-accession[species-' + organismId + '][file]';
-      $fileIdField = jQuery('input[name="' + commonName + '[fid]"]');
-      if ($fileIdField.length == 0) {
-        continue;
-      }
-      organismFid = $fileIdField.val();
-      dog('Organism ' + organismId + '; File Id: ' + organismFid);
-      if (organismFid == 0) {
-        continue;
-      }
-      $fileWrapper = $fileIdField.parent('.form-managed-file');
-      // @TODO Get real value of the no-header field.
-      Drupal.settings.tpps['accession_files'] = [];
-      Drupal.settings.tpps.accession_files[organismFid] = [];
-      Drupal.settings.tpps.accession_files[organismFid]['fid'] = organismFid;
-      Drupal.settings.tpps.accession_files[organismFid]['no_header'] = null;
-      for (columnName of alphabets) {
-        selectBoxName = commonName + '[columns][' + columnName + ']';
-        value = $fileWrapper.find('select[name="' + selectBoxName + '"]')
-          .find(":selected").val();
-
-        // @TODO Create name constants for those numbers.
-        switch (value) {
-          case '1':
-            // Plant Identifier.
-            Drupal.settings.tpps.accession_files[organismFid]['id_col'] = columnName;
-            break;
-          case '4':
-            // Latitude
-            Drupal.settings.tpps.accession_files[organismFid]['lat_col'] = columnName;
-            break;
-          case '5':
-            // Longitude
-            Drupal.settings.tpps.accession_files[organismFid]['long_col'] = columnName;
-            break;
-        }
-        // Check if all required fields was set.
-        if (
-             'id_col'   in Drupal.settings.tpps.accession_files[organismFid]
-          && 'lat_col'  in Drupal.settings.tpps.accession_files[organismFid]
-          && 'long_col' in Drupal.settings.tpps.accession_files[organismFid]
-        ) {
-          break;
-        }
-      }
-    }
-  }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Get data from Drupal.settings.
-  // Works fine.
-  if (
-    'tpps' in Drupal.settings
-    && 'accession_files' in Drupal.settings.tpps
-    && typeof Drupal.settings.tpps.accession_files[fid] != 'undefined'
-  ) {
-    // File Id was found. Let's check properties.
-    if ( !(
-         'id_col'   in Drupal.settings.tpps.accession_files[fid]
-      && 'lat_col'  in Drupal.settings.tpps.accession_files[fid]
-      && 'long_col' in Drupal.settings.tpps.accession_files[fid]
-    )) {
-      delete Drupal.settings.tpps.accession_files[fid];
-      dog('No file metadata in Drupal.settings.tpps.accession_files for FileId: ' + fid);
-      //console.table(Drupal.settings.tpps.accession_files[fid]);
-      dog('Going to hide the map for File: ' + fid);
-      // Since columns set incorrectly we hide the map.
-      var $mapWrapper = jQuery('#' + fid + '_map_wrapper');
-      // Works!
-      $mapWrapper.hide();
-      if ($mapWrapper.is(":visible")) {
-        dog('Visible');
-      } else{
-        dog('NOT Visible');
-      }
+  /**
+   * Gets locations for specific accession-file.
+   */
+  function getCoordinates(fid = null){
+
+    // @TODO Replace 'jQuery' with '$'.
+    dog(fid);
+    if (fid == null) {
       return;
     }
-    // At tpps-admin-panel/TGDR978 we doesn't have 'fid' element.
-    // @TODO Add at server side.
-    Drupal.settings.tpps.accession_files[fid]['fid'] = fid;
-  }
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Get data from server.
-  //
-  //
-  // @TODO Not work at https://tgwebdev.cam.uchc.edu/tpps-admin-panel/TGDR978
-  //
-  //
-  //console.log(Drupal.settings.tpps.accession_files);
-  if (
-    'tpps' in Drupal.settings
-    && 'accession_files' in Drupal.settings.tpps
-    && typeof Drupal.settings.tpps.accession_files[fid] != 'undefined'
-  ) {
-    var request = jQuery.post(
-      '/tpps-accession',
-      {...Drupal.settings.tpps.accession_files[fid]}
-    );
-    request.done(function (data) {
-      Drupal.settings.tpps.locations = data;
-      Drupal.settings.tpps.fid = fid;
-      initMap();
-    });
+    var no_header, id_col, lat_col, long_col;
+    let fileMeta;
+    let organismFid;
+    let commonName;
+    let organismId;
+    let $fileWrapper;
+    let columnName;
+    let selectBoxName;
+    let value;
+
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Check if file exists on page. If not - hide the map.
+
+    // Add on click event handler to hide map and remove removed file column
+    // metadata.
+    var organismNumber = Drupal.settings.tpps.organismNumber ?? 1;
+    for (organismId = 1; organismId <= organismNumber; organismId++) {
+        //let organismId = $(this).parent('.form-managed-file')
+        //  .attr('id').replace('edit-tree-accession-species-', '')
+        //  .replace('-file-uploadh', '');
+
+  //console.log('Organism Id: ' + organismId);
+
+
+        let fileIdFieldName = 'tree-accession[species-' + organismId + '][file][fid]';
+  dog($('input[name="' + fileIdFieldName + '"]'));
+
+        let fid = $('input[name="' + fileIdFieldName + '"]').attr('value');
+  dog('FID: ' + fid);
+
+        if (fid) {
+          dog('Show this map');
+        }
+        else {
+          dog('Hide this map');
+          //let $mapWrapper = jQuery('#' + fid + '_map_wrapper').hide();
+        }
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+
+    if (
+      ! ('tpps' in Drupal.settings)
+      || (
+        'tpps' in Drupal.settings
+        && ! ('accession_files' in Drupal.settings.tpps)
+      )
+      || (
+        'tpps' in Drupal.settings
+        && 'accession_files' in Drupal.settings.tpps
+        // @TODO Must be not under 'settings':
+        // Drupal.tpps.accession_files[fid]
+        && typeof Drupal.settings.tpps.accession_files[fid] == 'undefined'
+      )
+    ) {
+      // File Id not found. Get data from form.
+      dog('File Id not found. Get data from form.');
+
+      // Column name are letters.
+      // Note: Change 65 to 97 for lowercase.
+      // WARNING: Won't work if accession file has more then A-Z columns.
+      const alphabets = [...Array(26).keys()].map((n) => String.fromCharCode(65 + n));
+      let organismNumber = Drupal.settings.tpps.organismNumber;
+
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Loop organisms to find accession files.
+      for (organismId = 1; organismId <= organismNumber; organismId++) {
+        // @TODO Stop Loop when 'fid' was found.
+        commonName = 'tree-accession[species-' + organismId + '][file]';
+        var $fileIdField = jQuery('input[name="' + commonName + '[fid]"]');
+        if ($fileIdField.length == 0) {
+          continue;
+        }
+        organismFid = $fileIdField.val();
+        dog('Organism ' + organismId + '; File Id: ' + organismFid);
+        if (organismFid == 0) {
+          continue;
+        }
+        $fileWrapper = $fileIdField.parent('.form-managed-file');
+        // @TODO Get real value of the no-header field.
+        Drupal.settings.tpps['accession_files'] = [];
+        Drupal.settings.tpps.accession_files[organismFid] = [];
+        Drupal.settings.tpps.accession_files[organismFid]['fid'] = organismFid;
+        Drupal.settings.tpps.accession_files[organismFid]['no_header'] = null;
+        for (columnName of alphabets) {
+          selectBoxName = commonName + '[columns][' + columnName + ']';
+          value = $fileWrapper.find('select[name="' + selectBoxName + '"]')
+            .find(":selected").val();
+
+          // @TODO Create name constants for those numbers.
+          switch (value) {
+            case '1':
+              // Plant Identifier.
+              Drupal.settings.tpps.accession_files[organismFid]['id_col'] = columnName;
+              break;
+            case '4':
+              // Latitude
+              Drupal.settings.tpps.accession_files[organismFid]['lat_col'] = columnName;
+              break;
+            case '5':
+              // Longitude
+              Drupal.settings.tpps.accession_files[organismFid]['long_col'] = columnName;
+              break;
+          }
+          // Check if all required fields was set.
+          if (
+               'id_col'   in Drupal.settings.tpps.accession_files[organismFid]
+            && 'lat_col'  in Drupal.settings.tpps.accession_files[organismFid]
+            && 'long_col' in Drupal.settings.tpps.accession_files[organismFid]
+          ) {
+            break;
+          }
+        }
+      }
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Get data from Drupal.settings.
+    // Works fine.
+    if (
+      'tpps' in Drupal.settings
+      && 'accession_files' in Drupal.settings.tpps
+      && typeof Drupal.settings.tpps.accession_files[fid] != 'undefined'
+    ) {
+      // File Id was found. Let's check properties.
+      if ( !(
+           'id_col'   in Drupal.settings.tpps.accession_files[fid]
+        && 'lat_col'  in Drupal.settings.tpps.accession_files[fid]
+        && 'long_col' in Drupal.settings.tpps.accession_files[fid]
+      )) {
+        delete Drupal.settings.tpps.accession_files[fid];
+        dog('No file metadata in Drupal.settings.tpps.accession_files for FileId: ' + fid);
+        //console.table(Drupal.settings.tpps.accession_files[fid]);
+        dog('Going to hide the map for File: ' + fid);
+        // Since columns set incorrectly we hide the map.
+        var $mapWrapper = jQuery('#' + fid + '_map_wrapper');
+        // Works!
+        $mapWrapper.hide();
+        if ($mapWrapper.is(":visible")) {
+          dog('Visible');
+        } else{
+          dog('NOT Visible');
+        }
+        return;
+      }
+      // At tpps-admin-panel/TGDR978 we doesn't have 'fid' element.
+      // @TODO Add at server side.
+      Drupal.settings.tpps.accession_files[fid]['fid'] = fid;
+    }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Get data from server.
+    //
+    //
+    // @TODO Not work at https://tgwebdev.cam.uchc.edu/tpps-admin-panel/TGDR978
+    //
+    //
+    //console.log(Drupal.settings.tpps.accession_files);
+    if (
+      'tpps' in Drupal.settings
+      && 'accession_files' in Drupal.settings.tpps
+      && typeof Drupal.settings.tpps.accession_files[fid] != 'undefined'
+    ) {
+      var request = jQuery.post(
+        '/tpps-accession',
+        {...Drupal.settings.tpps.accession_files[fid]}
+      );
+      request.done(function (data) {
+        Drupal.settings.tpps.locations = data;
+        Drupal.settings.tpps.fid = fid;
+        initMap();
+      });
+    }
+    else {
+      // Hide map.
+      console.log('Hide map 2');
+      //jQuery('#' + fid + '_map_wrapper')[0].hide();
+    }
   }
-  else {
-    // Hide map.
-    console.log('Hide map 2');
-    //jQuery('#' + fid + '_map_wrapper')[0].hide();
-  }
-}
+})(jQuery);
 
 /**
  * AJAX-callback called when managed file columns changed.
