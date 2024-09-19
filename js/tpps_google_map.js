@@ -265,11 +265,31 @@ var maps = {};
           .split('\n')[2]
           .replace(/^\s+at\s(.+?)(?:\s.*:|:)(.*?):(.*?)\)?$/g, ' [$2:$3]');
       }
-      console.log(
-        '%c' + callerFunctionName + ':\n  %c' + message,
-        'color: #73B1FF', // Sky-blue
-        'color: #ff9900'  // dark orange
-      );
+
+      // https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Operators/typeof
+      switch (typeof message) {
+        case "object":
+          console.log(
+            '%c' + callerFunctionName + ':\n  %O',
+            'color: #73B1FF', // Sky-blue
+            message,
+          );
+          break;
+
+        case "boolean":
+        case "undefined":
+        case "symbol":
+        case "string":
+        case "number":
+        default:
+          console.log(
+            '%c' + callerFunctionName + ':\n  %c' + message,
+            'color: #73B1FF', // Sky-blue
+            'color: #ff9900'  // dark orange
+          );
+          break;
+      }
+
     }
   }
   window.dog = dog;
