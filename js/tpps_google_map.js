@@ -239,8 +239,6 @@ var maps = {};
           }
         }
       });
-
-      dog('<<< End.', featureName);
     }
   }
 
@@ -261,7 +259,11 @@ var maps = {};
           // " at functionName ( ..." => "functionName"
           .replace(/^\s+at\s+(.+?)\s.+/g, '$1' );
       }
-      console.log(callerFunctionName + ': ' + message);
+      console.log(
+        '%c' + callerFunctionName + ':\n  %c' + message,
+        'color: #73B1FF', // Sky-blue
+        'color: #ff9900'  // dark orange
+      );
     }
   }
   window.dog = dog;
