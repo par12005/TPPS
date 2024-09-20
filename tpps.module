@@ -8,6 +8,7 @@
 define("TPPS_MAJOR_VERSION", 1);
 define("TPPS_MINOR_VERSION", 2);
 define('TPPS_JS_PATH', '/js/tpps.js');
+define('TPPS_JS_HEADER_PATH', '/js/tpps_header.js');
 define('TPPS_CSS_PATH', '/css/tpps.css');
 define('TPPS_PAGE_1', 1);
 define('TPPS_PAGE_2', 2);
@@ -1383,6 +1384,7 @@ function tpps_main_validate(&$form, &$form_state) {
   }
 
   $module_path = drupal_get_path('module', 'tpps');
+  $form['#attached']['js'][] = $module_path . TPPS_JS_HEADER_PATH;
   $form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
 
   // If there were no errors in validating the input, then let the form status
@@ -1959,6 +1961,7 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
     if ($page_id == 'main') {
       // Add main files.
       drupal_add_css(TPPS_MODULE_PATH . TPPS_CSS_PATH);
+      drupal_add_js(TPPS_MODULE_PATH . TPPS_JS_HEADER_PATH);
       drupal_add_js(TPPS_MODULE_PATH . TPPS_JS_PATH);
       if (variable_get('tpps_theme_fix_pager')) {
         drupal_add_css(TPPS_MODULE_PATH . '/css/pager_fix.css');
@@ -1967,7 +1970,11 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
     else {
       // Add custom page files. Like 'TPPS Study Export Page' and 'study_export'.
       drupal_add_css(TPPS_MODULE_PATH . '/css/tpps_' . $page_id . '.css');
-      drupal_add_js(TPPS_MODULE_PATH . '/js/tpps_' . $page_id . '.js');
+      drupal_add_js(TPPS_MODULE_PATH . '/js/tpps_' . $page_id . '.js', [
+        'type' => 'file',
+        'weight' => 5,
+        'scope' => ($page_id == 'google_map' ? 'header' : 'footer'),
+      ]);
     }
   }
   else {
@@ -1985,13 +1992,21 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
       return;
     }
     if ($page_id == 'main') {
+      // JS.
+      $form['#attached']['js'][] = [
+        'type' => 'file',
+        'scope' => 'header',
+        'group' => JS_THEME,
+        'data' => TPPS_MODULE_PATH . TPPS_JS_HEADER_PATH,
+      ];
       // Add main files.
       $form['#attached']['js'][] = [
         'type' => 'file',
-        'scope' => ($page_id == 'google_map' ? 'header' : 'footer'),
+        'scope' => 'footer',
         'group' => JS_THEME,
         'data' => TPPS_MODULE_PATH . TPPS_JS_PATH,
       ];
+      // CSS.
       $form['#attached']['css'][] = TPPS_MODULE_PATH . TPPS_CSS_PATH;
       if (variable_get('tpps_theme_fix_pager')) {
         $form['#attached']['css'][] = TPPS_MODULE_PATH . '/css/pager_fix.css';
