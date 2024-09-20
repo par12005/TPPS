@@ -374,7 +374,7 @@ var maps = {};
     var columnName;
     var organismId;
     var commonName;
-    var organismFid;
+    var organismFileId;
 
     // Column name are letters.
     // Note: Change 65 to 97 for lowercase.
@@ -394,26 +394,29 @@ var maps = {};
       dog('Found managed file filed for organism ' + organismId);
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Get fid from managed file field.
-      var organismFid = $fileIdField.val();
-      if (organismFid == 0) {
+      var organismFileId = $fileIdField.val();
+      var $fileWrapper = $fileIdField.parent('.form-managed-file');
+      if (organismFileId == 0) {
         dog('Managed file field has no fid. File wasn\'t yet uploaded.');
+        dog('Hide related map.');
+        $('#edit-tree-accession-species-' + organismId)
+          .find('.tpps-map-wrapper').hide();
         continue;
       }
-      if (fid != null && organismFid != fid) {
+      if (fid != null && organismFileId != fid) {
         dog('Skipped processing because requested different fid');
-        dog('Found Organism fid: ' + organismFid + ', fid: ' + fid);
+        dog('Found Organism fid: ' + organismFileId + ', fid: ' + fid);
         continue;
       }
-      dog('Managed file field has fid: ' + organismFid);
+      dog('Managed file field has fid: ' + organismFileId);
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
       // Get column's metadata from field.
-      var $fileWrapper = $fileIdField.parent('.form-managed-file');
       Drupal.settings.tpps['accession_files'] = [];
-      Drupal.settings.tpps.accession_files[organismFid] = [];
-      Drupal.settings.tpps.accession_files[organismFid]['fid'] = organismFid;
+      Drupal.settings.tpps.accession_files[organismFileId] = [];
+      Drupal.settings.tpps.accession_files[organismFileId]['fid'] = organismFileId;
       // @TODO Minor. Get real value of the no-header field.
-      Drupal.settings.tpps.accession_files[organismFid]['no_header'] = null;
+      Drupal.settings.tpps.accession_files[organismFileId]['no_header'] = null;
       for (columnName of alphabets) {
         var selectBoxName = commonName + '[columns][' + columnName + ']';
         var value = $fileWrapper.find('select[name="' + selectBoxName + '"]')
@@ -423,22 +426,22 @@ var maps = {};
         switch (value) {
           case '1':
             // Plant Identifier.
-            Drupal.settings.tpps.accession_files[organismFid]['id_col'] = columnName;
+            Drupal.settings.tpps.accession_files[organismFileId]['id_col'] = columnName;
             break;
           case '4':
             // Latitude
-            Drupal.settings.tpps.accession_files[organismFid]['lat_col'] = columnName;
+            Drupal.settings.tpps.accession_files[organismFileId]['lat_col'] = columnName;
             break;
           case '5':
             // Longitude
-            Drupal.settings.tpps.accession_files[organismFid]['long_col'] = columnName;
+            Drupal.settings.tpps.accession_files[organismFileId]['long_col'] = columnName;
             break;
         }
         // Check if all required fields was set.
         if (
-             'id_col'   in Drupal.settings.tpps.accession_files[organismFid]
-          && 'lat_col'  in Drupal.settings.tpps.accession_files[organismFid]
-          && 'long_col' in Drupal.settings.tpps.accession_files[organismFid]
+             'id_col'   in Drupal.settings.tpps.accession_files[organismFileId]
+          && 'lat_col'  in Drupal.settings.tpps.accession_files[organismFileId]
+          && 'long_col' in Drupal.settings.tpps.accession_files[organismFileId]
         ) {
           break;
         }
