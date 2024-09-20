@@ -244,63 +244,11 @@ var maps = {};
     }
   }
 
-  /**
-   * Debug Log.
-   *
-   * @param mix $message
-   *   Message to be show.
-   * @param mfeatureName $featureName
-   */
-  function dog(message, callerFunctionName = null) {
-    if (Drupal.settings.tpps.googleMap.debugMode ?? false) {
-      // Get caller function name to use as a prefix.
-      // https://stackoverflow.com/a/39337724/1041470
-      var e = new Error('dummy');
-      if (callerFunctionName === null) {
-        callerFunctionName = e.stack
-          .split('\n')[2]
-          .replace(/^\s+at\s(.+?)(?:\s.*:|:)(.*?):(.*?)\)?$/g, '$1 [$2:$3]');
-      }
-      else {
-        callerFunctionName = callerFunctionName + e.stack
-          .split('\n')[2]
-          .replace(/^\s+at\s(.+?)(?:\s.*:|:)(.*?):(.*?)\)?$/g, ' [$2:$3]');
-      }
-
-      // https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Operators/typeof
-      switch (typeof message) {
-        case "object":
-          console.log(
-            '%c' + callerFunctionName + ':\n  %O',
-            'color: #73B1FF', // Sky-blue
-            message,
-          );
-          break;
-
-        case "boolean":
-        case "undefined":
-        case "symbol":
-        case "string":
-        case "number":
-        default:
-          console.log(
-            '%c' + callerFunctionName + ':\n  %c' + message,
-            'color: #73B1FF', // Sky-blue
-            'color: #ff9900'  // dark orange
-          );
-          break;
-      }
-
-    }
-  }
-  window.dog = dog;
-
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   /**
    * Gets locations for specific accession-file.
    */
-  function getCoordinates(fid = null){
+  function getCoordinates(fid = null) {
 
     // @TODO Replace 'jQuery' with '$'.
     dog(fid);
