@@ -4,12 +4,17 @@
 // Also there could be a small map (height 100 px) in sidebar.
 var maps = {};
 
+
+// @TODO Be sure to remove class to allow processing managed field again
+// on file removement.
+//
+// $columnTable.addClass('tpps-google-map-processed');
+
+
 /* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 (function ($) {
 
   async function initMap() {
-    let featureName = 'initMap';
-    dog('called.');
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get libraries.
     const { Map, InfoWindow } = await google.maps.importLibrary("maps");
@@ -189,6 +194,7 @@ var maps = {};
 
       let featureName = 'Drupal.behaviors.tppsGoogleMap';
       dog('called.', featureName);
+      dog(context, featureName);
 
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Show map on page load if file was uploaded before on Page 3.
@@ -199,8 +205,13 @@ var maps = {};
         let columnTableSelector = '#edit-tree-accession-species-' + organismId
           + '-file-columns';
         var $columnTable = $(columnTableSelector, context);
+        if ($columnTable.hasClass('tpps-google-map-processed')) {
+          dog('Skipped processing of managed file field for organism '
+            + organismId + ' because it was processed before.', featureName);
+          continue;
+        }
+
         if ($columnTable.length) {
-          $columnTable.addClass('tpps-google-map-processed');
           let fid = $('input[name="tree-accession[species-'
             + organismId + '][file][fid]"]').val();
           dog('File was uploaded. Organism: ' + organismId + ', fid: ' + fid, featureName);
@@ -210,7 +221,13 @@ var maps = {};
             getCoordinates(fid);
             //dog('Going to call initMap()', featureName);
             //initMap();
+            $columnTable.addClass('tpps-google-map-processed');
           }
+          else {
+            dog('No file found. Removed class to allow processing.', featureName);
+            $columnTable.removeClass('tpps-google-map-processed');
+          }
+
         }
       }
 
@@ -256,8 +273,6 @@ var maps = {};
       return;
     }
 
-    let fileMeta;
-
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get data from Drupal.settings.
     // Works fine.
@@ -266,12 +281,23 @@ var maps = {};
       && 'accession_files' in Drupal.settings.tpps
       && typeof Drupal.settings.tpps.accession_files[fid] != 'undefined'
     ) {
-      // File Id was found. Let's check properties.
-      if ( !(
+      dog('File Id was found. Let\'s check properties.');
+      dog(Drupal.settings.tpps.accession_files[fid]);
+      if (
            'id_col'   in Drupal.settings.tpps.accession_files[fid]
         && 'lat_col'  in Drupal.settings.tpps.accession_files[fid]
         && 'long_col' in Drupal.settings.tpps.accession_files[fid]
-      )) {
+      ) {
+        if (typeof Drupal.settings.tpps.accession_files[fid].fid == 'undefined') {
+          dog('At tpps-admin-panel/TGDR978 we doesn\'t have "fid" sub-element.' + fid);
+          // @TODO Add at server side.
+          Drupal.settings.tpps.accession_files[fid]['fid'] = fid;
+        }
+        else {
+          dog('Sub-element "fid" was set before.');
+        }
+      }
+      else {
         delete Drupal.settings.tpps.accession_files[fid];
         dog('No file metadata in Drupal.settings.tpps.accession_files for FileId: ' + fid);
         //console.table(Drupal.settings.tpps.accession_files[fid]);
@@ -287,9 +313,6 @@ var maps = {};
         }
         return;
       }
-      // At tpps-admin-panel/TGDR978 we doesn't have 'fid' element.
-      // @TODO Add at server side.
-      Drupal.settings.tpps.accession_files[fid]['fid'] = fid;
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -376,8 +399,9 @@ var maps = {};
         dog('Managed file field has no fid. File wasn\'t yet uploaded.');
         continue;
       }
-      if (fid != null && organismId != fid) {
+      if (fid != null && organismFid != fid) {
         dog('Skipped processing because requested different fid');
+        dog('Found Organism fid: ' + organismFid + ', fid: ' + fid);
         continue;
       }
       dog('Managed file field has fid: ' + organismFid);
