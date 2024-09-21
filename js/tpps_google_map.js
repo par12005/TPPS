@@ -469,9 +469,9 @@ Drupal.tpps = Drupal.tpps || {};
  * @param int organismId
  *   Organism Id (species id) on page.
  */
-jQuery.fn.mapButtonsClick = function (fid, organismId) {
+jQuery.fn.fileColumnsChange = function (fid, organismId) {
 
-  var featureName = 'jQuery.fn.mapButtonsClick';
+  var featureName = 'jQuery.fn.fileColumnsChange';
   dog('Got fid: ' + fid + ', organismId: ' + organismId, featureName);
   if (!fid) {
     dog('Empty fid', featureName);

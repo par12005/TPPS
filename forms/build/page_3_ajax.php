@@ -29,11 +29,9 @@ function tpps_accession_pop_group(array &$form, array $form_state) {
   $output = drupal_render($organism['coord-format']);
   $output .= drupal_render($organism['pop-group']);
 
-  // [VS] #8669py308
   $output .= drupal_render($organism['location_accuracy']);
   $output .= drupal_render($organism['descriptive_place']);
   $output .= drupal_render($organism['coord_precision']);
-  // [/VS] #8669py308
 
   $commands[] = ajax_command_replace("#population-mapping-$species_id", $output);
   // Clicks on button to show map.
@@ -45,10 +43,12 @@ function tpps_accession_pop_group(array &$form, array $form_state) {
     $fid = $form_state['input']['tree-accession'][$species_id]['file']['fid'];
   }
 
-  // Call 'mapButtonsClick' function in browser.
+  // Call 'fileColumnsChange' function in browser.
   // Send back File Id and organismId to update only changed file.
   $organism_id = str_replace('species-', '', $species_id);
-  $commands[] = ajax_command_invoke('', 'mapButtonsClick', [$fid, $organism_id]);
+  $commands[] = ajax_command_invoke('', 'fileColumnsChange',
+    [$fid, $organism_id]
+  );
   return ['#type' => 'ajax', '#commands' => $commands];
 }
 
