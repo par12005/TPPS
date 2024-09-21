@@ -509,43 +509,7 @@ jQuery.fn.mapButtonsClick = function (fid, organismId) {
     delete Drupal.settings.tpps.locations;
   }
 
-  dog('call getCoordinates() from mapButtonClick.', featureName);
-
-  getColumnsFromManagedFileField(fid);
-  getCoordinates(fid);
+  dog('Call getCoordinates() from mapButtonClick.', featureName);
+  Drupal.tpps.getCoordinates(fid);
   initMap();
-}
-
-
-
-function toBeAddedToInitMap() {
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Checks if managed file field is present on page.
-  // Currently does nothing but shows messages.
-  var organismNumber = Drupal.settings.tpps.organismNumber ?? 1;
-  for (let organismId = 1; organismId <= organismNumber; organismId++) {
-      //let organismId = $(this).parent('.form-managed-file')
-      //  .attr('id').replace('edit-tree-accession-species-', '')
-      //  .replace('-file-uploadh', '');
-
-//console.log('Organism Id: ' + organismId);
-
-      // if there is no fileField at page: /tpps-admin-panel/TGDR978
-      // Only when form with managed file field used.
-      let fileIdFieldName = 'tree-accession[species-' + organismId + '][file][fid]';
-dog($('input[name="' + fileIdFieldName + '"]'));
-
-      let fid = $('input[name="' + fileIdFieldName + '"]').attr('value');
-dog('FID: ' + fid);
-
-      if (fid) {
-        dog('Show this map');
-      }
-      else {
-        dog('Hide this map');
-        //let $mapWrapper = jQuery('#' + fid + '_map_wrapper').hide();
-      }
-  }
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 }

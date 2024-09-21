@@ -293,23 +293,11 @@ function tpps_markercluster_get_url() {
  *   Returns HTML-string with map wrapper and optional button.
  */
 function tpps_build_google_map_wrapper($fid, array &$form = NULL) {
-  $wrapper_id = $fid . '_map_wrapper';
-  $button_id = $fid . '_map_button';
-  // Map wrapper.
-  $output = '<div id="' . $wrapper_id . '" data-fid="' . $fid
-    . '" class="tpps-map-wrapper"></div>';
-  // Map button.
-  if (variable_get('tpps_google_map_show_button', FALSE)) {
-    $output .= '<input id="' . $button_id . '" type="button" '
-      . 'data-fid="' . $fid . '" '
-      // tpps_table_display() used this:
-      //. 'class="form-button form-submit tpps-map-button" '
-      // tpps_page_3_create_form() uses this:
-      . 'class="btn form-button form-submit map-button tpps-map-button" '
-      // tpps_block_view_alter() uses:
-      // . 'class="form-button form-submit tpps-map-button" '
-      . 'value="' . t('Click here to view plants on map') . '"></input>';
-  }
   tpps_add_css_js('google_map', $form);
-  return $output;
+  // Map wrapper.
+  return '<div id="' . $fid . '_map_wrapper" data-fid="' . $fid
+    . '" class="tpps-map-wrapper"></div>'
+    // Add wrapper for map's error messages.
+    . '<div id="' . $fid . '_map_messages" data-fid="' . $fid
+    . '" class="tpps-map-messages"></div>';
 }

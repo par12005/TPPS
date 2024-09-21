@@ -17,14 +17,6 @@ function tpps_google_maps_settings_form(array $form, array &$form_state) {
       . " Tool Console will be shown."),
   ];
 
-// @TODO Add to variable 'tpps_google_map_show_button' to hook_install/uninstall.
-  $form['tpps_google_map_show_button'] = [
-    '#type' => 'checkbox',
-    '#title' => t('Show button which updates Google Map'),
-    '#default_value' => variable_get('tpps_google_map_show_button', FALSE),
-    '#description' => t("When enabled button "
-      . "'Click here to view plants on map' will be shown"),
-  ];
   $id_list = [
     '34cd3326f3006a1f (treegenesdb@gmail.com, live-site)',
     'b3bae3716891ee58 (vlad.savitsky@gmail.com, debug only)',

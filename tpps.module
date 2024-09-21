@@ -1692,6 +1692,7 @@ function tpps_block_view_alter(&$data, $block) {
                   'z' => '5',
                 ],
               ]);
+              // @TODO See /js/google_map.js.
               $map = '<iframe frameborder="0"'
                 . ' style="border: 0; width: 100%; height: 100%;"'
                 . ' src="' . $url . '" allowfullscreen> </iframe></div>';
