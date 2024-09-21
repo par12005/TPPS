@@ -4,6 +4,7 @@
 // Also there could be a small map (height 100 px) in sidebar.
 var maps = {};
 
+Drupal.tpps = Drupal.tpps || {};
 
 // @TODO Be sure to remove class to allow processing managed field again
 // on file removement.
@@ -44,11 +45,11 @@ var maps = {};
 
     // Check if we have locations for markers.
     if ( !locations.length ) {
-      dog('no locations to show on map');
+      dog('No locations found to show on map.');
       return;
     }
     else {
-      dog('List of locations for markers');
+      dog('List of locations for markers:');
       let debugMode = Drupal.settings.tpps.googleMap.debugMode ?? false;
       if (debugMode) {
         console.table(locations);
@@ -60,17 +61,27 @@ var maps = {};
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Map wrapper.
-    // Note: On study page there is no File Id because all species and all
-    // files was processed.
-    var $mapWrapper = jQuery('#' + fid + '_map_wrapper');
-
-    // Init map and add markers.
+    // Note: There is no fid (File Id) on study details page because map must
+    // show all the species at one map (not map per specie).
+    var mapWrapperId = fid + '_map_wrapper';
+    var $mapWrapper = $('#' + mapWrapperId);
     if (typeof $mapWrapper[0] == 'undefined') {
-      dog('Map wrapper wasn\'t found.');
-      return;
+      dog('Map wrapper wasn\'t found or outdated. Let\'s create new one.');
+      $('.tpps-map-wrapper')
+        // Add new DOM-element. Be sure to add map-wrapper at server side even
+        // if file not exists yet. Wrapper will be hidden on page load anyway.
+        .after( $('<div id="' + mapWrapperId + '" '
+          + 'data-fid="' + fid + '" class="tpps-map-wrapper"></div>'
+        ))
+        // Remove outdated map-wrapper DOM-element to avoid reuse by accident
+        // and extra processing of outdated elements.
+        .remove();
+      // Update pointer to current map-wrapper because previous was removed.
+      $mapWrapper = $('#' + mapWrapperId);
     }
 
-    // Map-wrapper found at page. Let's make it visible and set height.
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Make map-wrapper visible and set correct height.
     var detail_regex = /tpps\/details\/TGDR.*/g;
     if (
       'tpps' in Drupal.settings && 'stage' in Drupal.settings.tpps
@@ -79,7 +90,7 @@ var maps = {};
       // Page 3.
       $mapWrapper.css({'height': '450px', "max-width": "800px"}).show();
     }
-    else if(jQuery("#tpps_table_display").length) {
+    else if($("#tpps_table_display").length) {
       $mapWrapper.css({'height': '450px'}).show();
     }
     else if (window.location.pathname.match(detail_regex)) {
@@ -90,6 +101,7 @@ var maps = {};
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Init Google Map.
     maps[id] = new Map($mapWrapper[0], {
       center: {
         lat: Number(locations[0][1]),
@@ -192,10 +204,8 @@ var maps = {};
   Drupal.behaviors.tppsGoogleMap = {
     attach:function (context) {
 
+      // Feature name will be used for log messages via dog().
       let featureName = 'Drupal.behaviors.tppsGoogleMap';
-      dog('called.', featureName);
-      dog(context, featureName);
-
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Show map on page load if file was uploaded before on Page 3.
       //
@@ -218,7 +228,7 @@ var maps = {};
           if (typeof fid != 'undefined' && Number(fid) > 0) {
             getColumnsFromManagedFileField(fid);
             dog('Going to call getCoordinates(' + fid + ')', featureName);
-            getCoordinates(fid);
+            Drupal.tpps.getCoordinates(fid);
             //dog('Going to call initMap()', featureName);
             //initMap();
             $columnTable.addClass('tpps-google-map-processed');
@@ -237,24 +247,18 @@ var maps = {};
         dog('Map Wrapper found at page', featureName);
         let fid = $(this).data('fid');
         if (typeof fid != 'undefined' && fid) {
-          dog('Map Wrapper has fid: ' +  fid, featureName);
-          // Since we doesn't have
-          dog('Map Wrapper. Update markers on the map for ' + fid, featureName);
+          dog('Update markers on the map for File Id: ' + fid, featureName);
           getColumnsFromManagedFileField(fid);
-          getCoordinates(fid);
+          Drupal.tpps.getCoordinates(fid);
         }
         else {
           // Check if we have locations for the map.
-          if (
-            'tpps' in Drupal.settings
-            && 'tree_info' in Drupal.settings.tpps
-          ) {
-            // Pages like /tpps/details/TGDR978
-            // where no single file used (no fid) but all files together.
+          if ('tpps' in Drupal.settings && 'tree_info' in Drupal.settings.tpps) {
+            // Pages like /tpps/details/TGDR978.
+            dog('All the species on the same map.', featureName);
           }
           else {
-            //dog('Map Wrapper. Review all maps and hide missing.', featureName);
-            //jQuery(this).hide();
+            dog('Map Wrapper. Review all maps and hide missing.', featureName);
           }
         }
       });
@@ -265,10 +269,9 @@ var maps = {};
   /**
    * Gets locations for specific accession-file.
    */
-  function getCoordinates(fid = null) {
+  Drupal.tpps.getCoordinates = function (fid = null) {
 
-    // @TODO Replace 'jQuery' with '$'.
-    dog(fid);
+    dog('Got File Id: ' + fid);
     if (fid == null) {
       return;
     }
@@ -281,7 +284,7 @@ var maps = {};
       && 'accession_files' in Drupal.settings.tpps
       && typeof Drupal.settings.tpps.accession_files[fid] != 'undefined'
     ) {
-      dog('File Id was found. Let\'s check properties.');
+      dog('Columns Metata for File Id was found. Let\'s validate properties.');
       dog(Drupal.settings.tpps.accession_files[fid]);
       if (
            'id_col'   in Drupal.settings.tpps.accession_files[fid]
@@ -289,8 +292,10 @@ var maps = {};
         && 'long_col' in Drupal.settings.tpps.accession_files[fid]
       ) {
         if (typeof Drupal.settings.tpps.accession_files[fid].fid == 'undefined') {
-          dog('At tpps-admin-panel/TGDR978 we doesn\'t have "fid" sub-element.' + fid);
-          // @TODO Add at server side.
+          // There is no "fid" property which is usual for pages like
+          // "/tpps-admin-panel/TGDRxxxx.
+          dog('Manually added missing "fid" property');
+          // @TODO Minor. Add at server side. Wasn't able to find where to add.
           Drupal.settings.tpps.accession_files[fid]['fid'] = fid;
         }
         else {
@@ -303,7 +308,7 @@ var maps = {};
         //console.table(Drupal.settings.tpps.accession_files[fid]);
         dog('Going to hide the map for File: ' + fid);
         // Since columns set incorrectly we hide the map.
-        var $mapWrapper = jQuery('#' + fid + '_map_wrapper');
+        var $mapWrapper = $('#' + fid + '_map_wrapper');
         // Works!
         $mapWrapper.hide();
         if ($mapWrapper.is(":visible")) {
@@ -328,7 +333,7 @@ var maps = {};
       && 'accession_files' in Drupal.settings.tpps
       && typeof Drupal.settings.tpps.accession_files[fid] != 'undefined'
     ) {
-      var request = jQuery.post(
+      var request = $.post(
         '/tpps-accession',
         {...Drupal.settings.tpps.accession_files[fid]}
       );
@@ -339,9 +344,9 @@ var maps = {};
       });
     }
     else {
-      // Hide map.
-      console.log('Hide map 2');
-      //jQuery('#' + fid + '_map_wrapper')[0].hide();
+      dog('No columns metadata found. Can\'t get coordinates from server.');
+      // @TODO Show error message.
+      $mapWrapper = $('#' + fid + '_map_wrapper');
     }
   }
 
@@ -397,16 +402,18 @@ var maps = {};
       var organismFileId = $fileIdField.val();
       var $fileWrapper = $fileIdField.parent('.form-managed-file');
       if (organismFileId == 0) {
-        dog('Managed file field has no fid. File wasn\'t yet uploaded.');
-        dog('Hide related map.');
+        dog('Managed file field has no fid. File wasn\'t yet uploaded or was removed.');
+        dog('Let\'s hide map for this File id:' + fid);
         $('#edit-tree-accession-species-' + organismId)
           .find('.tpps-map-wrapper').hide();
         continue;
       }
       if (fid != null && organismFileId != fid) {
-        dog('Skipped processing because requested different fid');
         dog('Found Organism fid: ' + organismFileId + ', fid: ' + fid);
-        continue;
+        // File Id found in managed file field and fid will be different when
+        // new file uploaded so no need to skip processing this file.
+        // dog('Skipped processing because requested different fid');
+        //continue;
       }
       dog('Managed file field has fid: ' + organismFileId);
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -449,37 +456,26 @@ var maps = {};
     }
   }
 
-
-
 })(jQuery);
 
+
 /**
- * AJAX-callback called when managed file columns changed.
+ * Called when user changes column datatype using dropdown menu.
  *
  * Called from page_3_ajax.php function tpps_accession_pop_group():
- * Called everytime user changes column datatype using dropdown menu.
- *
- * @param selector
- *   Selector of the button which shows the map.
  *
  * @param int fid
  *   File Id of changed/updated file.
- *
+ * @param int organismId
+ *   Organism Id (species id) on page.
  */
 jQuery.fn.mapButtonsClick = function (fid, organismId) {
 
-  var debugMode = Drupal.settings.tpps.googleMap.debugMode ?? false;
   var featureName = 'jQuery.fn.mapButtonsClick';
-
-  dog('Organism Id: ' + organismId);
-
+  dog('Got fid: ' + fid + ', organismId: ' + organismId, featureName);
   if (!fid) {
-    dog('\n\n Called mapButtonClick with fid: ' + fid, featureName);
+    dog('Empty fid', featureName);
     return;
-  }
-  if (debugMode) {
-    console.log('==============================================================')
-    dog('\n\n Called mapButtonClick with fid: ' + fid, featureName);
   }
 
   // Since user changed columns don't use previously stored data but get

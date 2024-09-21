@@ -184,15 +184,24 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
 
     // [VS]
     // Previously $fid was an array which caused warnings on Page 3 submit.
+    //
+    //
+    // @TODO Not work. Remove.
+    //$fid = $form_state['values']['tree-accession']['species-' . $i]['file']
+    //  ?? tpps_get_ajax_value(
+    //    $form_state, ['tree-accession', "species-$i", 'file'], NULL);
     $fid = tpps_get_ajax_value(
-      $form_state,
-      ['tree-accession', "species-$i", 'file'],
-      NULL
+      $form_state, ['tree-accession', "species-$i", 'file'], NULL
     );
-    // [/VS]
+
+    // Add wrapper even if there is no file yet so JS code will be able to
+    // update it when new file will be uploaded or removed and uploaded again.
+    // Note: fid is File Id of saved file. Not just uploaded but not saved
+    // or submitted. Not removed and uploaded again.
+    $form['tree-accession']["species-$i"]['coord-format']['#prefix'] =
+      tpps_build_google_map_wrapper($fid);
+
     if ($file = tpps_file_load($fid)) {
-      $form['tree-accession']["species-$i"]['coord-format']['#prefix'] =
-        tpps_build_google_map_wrapper($fid);
       $no_header = tpps_get_ajax_value(
         $form_state,
         ['tree-accession', "species-$i", 'file', 'no_header'],
@@ -340,8 +349,6 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
 
     // Wrapper is NOT required here.
     $form['tree-accession']['#suffix'] .= tpps_get_markercluster_code(FALSE);
-      // @todo Move CSS to /css/tpps.css.
-      //. '<style>#map_wrapper { height: 450px; } </style>';
   }
   tpps_form_autofocus($form, ['tree-accession', 'species-1', 'file']);
   tpps_add_css_js('google_map', $form);

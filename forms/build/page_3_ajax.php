@@ -44,11 +44,11 @@ function tpps_accession_pop_group(array &$form, array $form_state) {
   if (empty($fid)) {
     $fid = $form_state['input']['tree-accession'][$species_id]['file']['fid'];
   }
-  $commands[] = ajax_command_invoke('', 'mapButtonsClick', [
-    // Send back File Id to update only changed file elements.
-    $fid,
-    str_replace('species-', '', $species_id),
-  ]);
+
+  // Call 'mapButtonsClick' function in browser.
+  // Send back File Id and organismId to update only changed file.
+  $organism_id = str_replace('species-', '', $species_id);
+  $commands[] = ajax_command_invoke('', 'mapButtonsClick', [$fid, $organism_id]);
   return ['#type' => 'ajax', '#commands' => $commands];
 }
 
