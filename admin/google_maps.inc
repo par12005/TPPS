@@ -9,14 +9,6 @@
  * TPPS Google Maps Settings Form.
  */
 function tpps_google_maps_settings_form(array $form, array &$form_state) {
-  $form['tpps_google_map_debug_mode'] = [
-    '#type' => 'checkbox',
-    '#title' => t('TPPS Google Maps Debug Mode'),
-    '#default_value' => variable_get('tpps_google_map_debug_mode', FALSE),
-    '#description' => t("When enabled then more messages in browser's Developer"
-      . " Tool Console will be shown."),
-  ];
-
   $id_list = [
     '34cd3326f3006a1f (treegenesdb@gmail.com, live-site)',
     'b3bae3716891ee58 (vlad.savitsky@gmail.com, debug only)',

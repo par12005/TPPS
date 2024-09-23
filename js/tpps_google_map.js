@@ -49,11 +49,7 @@ Drupal.tpps = Drupal.tpps || {};
       return;
     }
     else {
-      dog('List of locations for markers:');
-      let debugMode = Drupal.settings.tpps.googleMap.debugMode ?? false;
-      if (debugMode) {
-        console.table(locations);
-      }
+      dog('List of locations for markers', locations);
     }
 
     // Map Id at page.

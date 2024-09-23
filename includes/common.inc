@@ -235,7 +235,6 @@ function tpps_get_markercluster_code($use_wrapper = TRUE) {
   $js_settings = [
     'googleMap' => [
       'id' => variable_get('tpps_google_map_id'),
-      'debugMode' => variable_get('tpps_google_map_debug_mode', FALSE),
       // 80ms is what I found to work well on my system -- it might not work well on all systems
       'zoom' => [
         'smoothTimeout' => variable_get('tpps_google_map_zoom_smooth_timeout', 100),
@@ -300,4 +299,38 @@ function tpps_build_google_map_wrapper($fid, array &$form = NULL) {
     // Add wrapper for map's error messages.
     . '<div id="' . $fid . '_map_messages" data-fid="' . $fid
     . '" class="tpps-map-messages"></div>';
+}
+
+/**
+ * Gets list of functions/features which supports "JS Debug Mode".
+ *
+ * @return array
+ *   Returns list of features which will be sent into client's browser to manage
+ *   "JS Debug Mode" in browser.
+ */
+function tpps_js_debug_mode_get_features_list() {
+  return [
+    // Used to enable/disable debug Mode directly in JS code during debugging
+    // without adding to the admin settings page.
+    'quickDebugMode',
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Functions from /js/google_map.js.
+    'jQuery.fn.fileColumnsChange',
+    'Drupal.behaviors.tppsGoogleMap',
+    'initMap',
+    'smoothZoom',
+    'Drupal.tpps.getCoordinates',
+    'getColumnsFromManagedFileField',
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  ];
+}
+
+/**
+ * Gets list of selected features for "JS Debug Mode".
+ *
+ * @return array
+ *   Returns list of selected features.
+ */
+function tpps_js_debug_mode_get_features() {
+  return array_filter(array_values(variable_get('tpps_js_debug_mode')));
 }

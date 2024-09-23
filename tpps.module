@@ -1940,11 +1940,28 @@ function tpps_flush_caches() {
  * @TODO Minor. Get Form Id from the $form and use as a file name.
  */
 function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
+  $debug_mode = FALSE;
+  if ($debug_mode) {
+    dpm(__FUNCTION__ . '(' . $page_id . ', '
+      . ($form === NULL ? 'NULL' : 'form') . ')'
+    );
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Custom CSS Theme.
   $theme_path = TPPS_MODULE_PATH . '/css/themes/'
     . variable_get('tpps_theme', 'default') . '.css';
   module_load_include('inc', 'tpps', 'includes/common');
   $dark_theme_path = TPPS_MODULE_PATH . '/css/dark_theme.css';
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $js_debug_mode_features = tpps_js_debug_mode_get_features();
+  $js_settings = [
+    'debugMode' => array_combine(
+      // We used keys to avoid duplicates in the list because this function
+      // called multiple times and those data added multiple times just merged
+      // so using the same keys solves problem.
+      $js_debug_mode_features, $js_debug_mode_features
+    ),
+  ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // This is regualar page.
   if ($form === NULL || !is_array($form)) {
@@ -1960,9 +1977,16 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
       return;
     }
     if ($page_id == 'main') {
-      // Add main files.
+      // CSS.
       drupal_add_css(TPPS_MODULE_PATH . TPPS_CSS_PATH);
-      drupal_add_js(TPPS_MODULE_PATH . TPPS_JS_HEADER_PATH);
+      // JS.
+      drupal_add_js(
+        TPPS_MODULE_PATH . TPPS_JS_HEADER_PATH,
+        ['type' => 'file', 'scope' => 'header']);
+      drupal_add_js(
+        ['tpps' => $js_settings],
+        ['type' => 'setting', 'scope' => 'header']
+      );
       drupal_add_js(TPPS_MODULE_PATH . TPPS_JS_PATH);
       if (variable_get('tpps_theme_fix_pager')) {
         drupal_add_css(TPPS_MODULE_PATH . '/css/pager_fix.css');
@@ -1999,6 +2023,11 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
         'scope' => 'header',
         'group' => JS_THEME,
         'data' => TPPS_MODULE_PATH . TPPS_JS_HEADER_PATH,
+      ];
+      $form['#attached']['js'][] = [
+        'type' => 'setting',
+        'data' => ['tpps' => $js_settings],
+        'scope' => 'header',
       ];
       // Add main files.
       $form['#attached']['js'][] = [
