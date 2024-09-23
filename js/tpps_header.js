@@ -58,8 +58,8 @@ Drupal.tpps = Drupal.tpps || {};
    *    };
    *    Drupal.tpps.ShowMessages(doiMessageBox, data);
    *
-   * @param string doiSelector
-   *   jQuery doiSelector of element to show messages.
+   * @param string selector
+   *   Selector of element to show messages above it.
    * @param array data
    *   Messages. Keys are: 'errors', 'warnings' and 'statuses'.
    *   WARNING:
@@ -70,7 +70,7 @@ Drupal.tpps = Drupal.tpps || {};
     if (!$element.length) {
       dog('Element wasn\'t found. Selector: ' + selector);
     }
-    if (!data.length) {
+    if (!Object.keys(data).length) {
       dog('There is no messages to show. Data object is empty.');
     }
     if (data.errors !== undefined) {
@@ -119,8 +119,7 @@ Drupal.tpps = Drupal.tpps || {};
       return;
     }
     let typeOfMessage = typeof message;
-
-    if (typeof callerFunctionName == 'object') {
+    if (callerFunctionName != null && typeof callerFunctionName == 'object') {
       typeOfMessage = 'table';
       var table = callerFunctionName;
       callerFunctionName = options;
