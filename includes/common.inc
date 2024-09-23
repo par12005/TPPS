@@ -295,10 +295,7 @@ function tpps_build_google_map_wrapper($fid, array &$form = NULL) {
   tpps_add_css_js('google_map', $form);
   // Map wrapper.
   return '<div id="' . $fid . '_map_wrapper" data-fid="' . $fid
-    . '" class="tpps-map-wrapper"></div>'
-    // Add wrapper for map's error messages.
-    . '<div id="' . $fid . '_map_messages" data-fid="' . $fid
-    . '" class="tpps-map-messages"></div>';
+    . '" class="tpps-map-wrapper"></div>';
 }
 
 /**
@@ -322,6 +319,8 @@ function tpps_js_debug_mode_get_features_list() {
     'Drupal.tpps.getCoordinates',
     'getColumnsFromManagedFileField',
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // js/tpps_header.js
+    'Drupal.tpps.ShowMessages',
   ];
 }
 

@@ -67,25 +67,26 @@ Drupal.tpps = Drupal.tpps || {};
    */
   Drupal.tpps.ShowMessages = function(selector, data) {
     var $element = $(selector);
+    var featureName = 'Drupal.tpps.ShowMessages'
     if (!$element.length) {
-      dog('Element wasn\'t found. Selector: ' + selector);
+      dog('Element wasn\'t found. Selector: ' + selector, featureName);
     }
     if (!Object.keys(data).length) {
-      dog('There is no messages to show. Data object is empty.');
+      dog('There is no messages to show. Data object is empty.', featureName);
     }
-    if (data.errors !== undefined) {
-      $element.append('<div class="error">'
-        + data.errors.join('</div><div class="error">') + '</div>')
+    if ('errors' in data) {
+      $element.after('<div class="error tpps-message">'
+        + data.errors.join('</div><div class="error tpps-message">') + '</div>')
         .fadeIn(500);
     }
-    if (data.warnings !== undefined) {
-      $element.append('<div class="warning">'
-        + data.warnings.join('</div><div class="warning">') + '</div>')
+    if ('warnings' in data) {
+      $element.after('<div class="warning tpps-message">'
+        + data.warnings.join('</div><div class="warning tpps-message">') + '</div>')
         .fadeIn(500);
     }
-    if (data.statuses !== undefined) {
-      $element.append('<div class="status">'
-        + data.statuses.join('</div><div class="status">') + '</div>')
+    if ('statuses' in data) {
+      $element.after('<div class="status tpps-message">'
+        + data.statuses.join('</div><div class="status tpps-message">') + '</div>')
         .fadeIn(500);
     }
   }
@@ -94,7 +95,9 @@ Drupal.tpps = Drupal.tpps || {};
    * Clears given message box.
    */
   Drupal.tpps.ClearMessages = function(selector) {
-    $(selector).fadeOut(500).empty();
+    $(selector).nextAll('.tpps-message.error').fadeOut(500).empty();
+    $(selector).nextAll('.tpps-message.warning').fadeOut(500).empty();
+    $(selector).nextAll('.tpps-message.status').fadeOut(500).empty();
   }
 
   /**

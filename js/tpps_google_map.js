@@ -60,6 +60,7 @@ Drupal.tpps = Drupal.tpps || {};
     // Note: There is no fid (File Id) on study details page because map must
     // show all the species at one map (not map per specie).
     var mapWrapperId = fid + '_map_wrapper';
+    Drupal.tpps.ClearMessages('#' + mapWrapperId);
     var $mapWrapper = $('#' + mapWrapperId);
     if (typeof $mapWrapper[0] == 'undefined') {
       dog('Map wrapper wasn\'t found or outdated. Let\'s create new one.');
@@ -207,6 +208,7 @@ Drupal.tpps = Drupal.tpps || {};
       //
       // @TODO Check if page has managed file fields.
       let organismNumber = Drupal.settings.tpps.organismNumber ?? 1;
+      if (0) {
       for (let organismId = 1; organismId <= organismNumber; organismId++) {
         let columnTableSelector = '#edit-tree-accession-species-' + organismId
           + '-file-columns';
@@ -223,7 +225,7 @@ Drupal.tpps = Drupal.tpps || {};
           dog('File was uploaded. Organism: ' + organismId + ', fid: ' + fid, featureName);
           if (typeof fid != 'undefined' && Number(fid) > 0) {
             getColumnsFromManagedFileField(fid);
-            dog('Going to call getCoordinates(' + fid + ')', featureName);
+            dog(' > ' + 'getCoordinates(' + fid + ')', featureName);
             Drupal.tpps.getCoordinates(fid);
             //dog('Going to call initMap()', featureName);
             //initMap();
@@ -233,8 +235,8 @@ Drupal.tpps = Drupal.tpps || {};
             dog('No file found. Removed class to allow processing.', featureName);
             $columnTable.removeClass('tpps-google-map-processed');
           }
-
         }
+      }
       }
 
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -245,6 +247,7 @@ Drupal.tpps = Drupal.tpps || {};
         if (typeof fid != 'undefined' && fid) {
           dog('Update markers on the map for File Id: ' + fid, featureName);
           getColumnsFromManagedFileField(fid);
+          dog(' > ' + 'getCoordinates(' + fid + ')', featureName);
           Drupal.tpps.getCoordinates(fid);
         }
         else {
@@ -305,8 +308,17 @@ Drupal.tpps = Drupal.tpps || {};
         dog('Going to hide the map for File: ' + fid);
         // Since columns set incorrectly we hide the map.
         var $mapWrapper = $('#' + fid + '_map_wrapper');
-        // Works!
+        // Show message.
+        var data = {
+          "errors": [
+            Drupal.t('File is missing or column mapping is wrong.')
+          ],
+        };
+        dog('Add message to Drupal.tpps.ShowMessages');
+        Drupal.tpps.ShowMessages('#' + fid + '_map_wrapper', data);
         $mapWrapper.hide();
+
+        // Just check visibility of the map wrapper.
         if ($mapWrapper.is(":visible")) {
           dog('Visible');
         } else{
@@ -501,7 +513,8 @@ jQuery.fn.fileColumnsChange = function (fid, organismId) {
     delete Drupal.settings.tpps.locations;
   }
 
-  dog('Call getCoordinates() from mapButtonClick.', featureName);
+  dog(' > ' + 'getCoordinates(' + fid + ')', featureName);
   Drupal.tpps.getCoordinates(fid);
+  dog(' > ' + 'initMap()', featureName);
   initMap();
 }
