@@ -60,7 +60,7 @@ Drupal.tpps = Drupal.tpps || {};
     // Note: There is no fid (File Id) on study details page because map must
     // show all the species at one map (not map per specie).
     var mapWrapperId = fid + '_map_wrapper';
-    Drupal.tpps.ClearMessages('#' + mapWrapperId);
+    Drupal.tpps.clearMessages('#' + mapWrapperId);
     var $mapWrapper = $('#' + mapWrapperId);
     if (typeof $mapWrapper[0] == 'undefined') {
       dog('Map wrapper wasn\'t found or outdated. Let\'s create new one.');
@@ -314,8 +314,8 @@ Drupal.tpps = Drupal.tpps || {};
             Drupal.t('File is missing or column mapping is wrong.')
           ],
         };
-        dog('Add message to Drupal.tpps.ShowMessages');
-        Drupal.tpps.ShowMessages('#' + fid + '_map_wrapper', data);
+        dog('Add message to Drupal.tpps.showMessages');
+        Drupal.tpps.showMessages('#' + fid + '_map_wrapper', data);
         $mapWrapper.hide();
 
         // Just check visibility of the map wrapper.

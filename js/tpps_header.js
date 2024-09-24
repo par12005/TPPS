@@ -56,7 +56,7 @@ Drupal.tpps = Drupal.tpps || {};
    *        Drupal.t('Invalid DOI format. Example DOI: 10.1111/dryad.111')
    *      ]
    *    };
-   *    Drupal.tpps.ShowMessages(doiMessageBox, data);
+   *    Drupal.tpps.showMessages(doiMessageBox, data);
    *
    * @param string selector
    *   Selector of element to show messages above it.
@@ -65,9 +65,9 @@ Drupal.tpps = Drupal.tpps || {};
    *   WARNING:
    *   Values are arrays (not strings).
    */
-  Drupal.tpps.ShowMessages = function(selector, data) {
+  Drupal.tpps.showMessages = function(selector, data) {
     var $element = $(selector);
-    var featureName = 'Drupal.tpps.ShowMessages'
+    var featureName = 'Drupal.tpps.showMessages'
     if (!$element.length) {
       dog('Element wasn\'t found. Selector: ' + selector, featureName);
     }
@@ -94,7 +94,7 @@ Drupal.tpps = Drupal.tpps || {};
   /**
    * Clears given message box.
    */
-  Drupal.tpps.ClearMessages = function(selector) {
+  Drupal.tpps.clearMessages = function(selector) {
     $(selector).nextAll('.tpps-message.error').fadeOut(500).empty();
     $(selector).nextAll('.tpps-message.warning').fadeOut(500).empty();
     $(selector).nextAll('.tpps-message.status').fadeOut(500).empty();

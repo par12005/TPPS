@@ -320,7 +320,8 @@ function tpps_js_debug_mode_get_features_list() {
     'getColumnsFromManagedFileField',
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // js/tpps_header.js
-    'Drupal.tpps.ShowMessages',
+    'Drupal.tpps.showMessages',
+    'Drupal.tpps.clearMessages',
   ];
 }
 

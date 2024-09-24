@@ -282,7 +282,7 @@
             if (typeof (doi) == 'undefined' || doi == '') {
               $(doiMessageBox).empty();
               var data = {"errors": [Drupal.t('Empty DOI.')]};
-              Drupal.tpps.ShowMessages(doiMessageBox, data);
+              Drupal.tpps.showMessages(doiMessageBox, data);
               Drupal.tpps.fieldEnable(doiSelector);
               return;
             }
@@ -294,23 +294,23 @@
                   Drupal.t('Invalid DOI format. Example DOI: 10.1111/dryad.111')
                 ]
               };
-              Drupal.tpps.ShowMessages(doiMessageBox, data);
+              Drupal.tpps.showMessages(doiMessageBox, data);
               Drupal.tpps.fieldEnable(doiSelector);
               return;
             }
 
             // Check if we have cached result first.
             if (Drupal.settings.tpps.cache && typeof (Drupal.tpps.doi[doi]) != 'undefined') {
-              Drupal.tpps.ClearMessages(doiMessageBox);
+              Drupal.tpps.clearMessages(doiMessageBox);
               var data = Drupal.tpps.doi[doi];
-              Drupal.tpps.ShowMessages(doiMessageBox, data);
+              Drupal.tpps.showMessages(doiMessageBox, data);
               Drupal.tpps.fieldEnable(doiSelector);
               Drupal.tpps.doiFill(data);
             }
             else {
               var url = settings.basePath + settings.tpps.ajaxUrl + '/get_doi';
               // Remove existing messages.
-              Drupal.tpps.ClearMessages(doiMessageBox);
+              Drupal.tpps.clearMessages(doiMessageBox);
               $.ajax({
                 method: 'post',
                 data: {'doi': doi},
@@ -319,7 +319,7 @@
                   // User changed DOI during AJAX-request.
                   if (Drupal.tpps.wasDoiChanged(doi)) { return; }
                   // Server/Network errors.
-                  Drupal.tpps.ShowMessages(doiMessageBox, [{
+                  Drupal.tpps.showMessages(doiMessageBox, [{
                     "errors": [
                       Drupal.t("DOI value wasn't completed")
                     ]
@@ -339,7 +339,7 @@
                       "errors": [Drupal.t('Received empty response.')]
                     }];
                   }
-                  Drupal.tpps.ShowMessages(doiMessageBox, data);
+                  Drupal.tpps.showMessages(doiMessageBox, data);
                   Drupal.tpps.fieldEnable(doiSelector);
                   Drupal.tpps.doiFill(data);
                 }
