@@ -34,14 +34,8 @@ function tpps_accession_pop_group(array &$form, array $form_state) {
   $output .= drupal_render($organism['coord_precision']);
 
   $commands[] = ajax_command_replace("#population-mapping-$species_id", $output);
-  // Clicks on button to show map.
-  $fid = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_id]['file'];
-  if (empty($fid)) {
-    $fid = $form_state['values'][TPPS_PAGE_3]['tree-accession'][$species_id]['file'];
-  }
-  if (empty($fid)) {
-    $fid = $form_state['input']['tree-accession'][$species_id]['file']['fid'];
-  }
+  $fid = $form_state['input']['tree-accession'][$species_id]['file']['fid']
+  ?? $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_id]['file'];
 
   // Call 'fileColumnsChange' function in browser.
   // Send back File Id and organismId to update only changed file.
