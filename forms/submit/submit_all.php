@@ -522,8 +522,10 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
 
     // If no organism id was found in database, perform an insert
 
-    // TEST CODE @TODO, ADD THIS TO WHEN $organism_results_id == -1
-    if ($infra != "" and $infra != NULL and $organism_results_id == -1) {
+    // ADD THIS TO WHEN $organism_results_id == -1 which looks up NCBI
+    // if ($infra != "" and $infra != NULL and $organism_results_id == -1) {
+    // UPDATED ON 9/26/2024 - Conversation with Emily
+    if ($organism_results_id == -1) {
       // Lookup to see if this species exists on NCBI
       $taxons = tpps_ncbi_get_taxon_id($raw_name, TRUE);
       // print_r($taxons);
@@ -635,6 +637,7 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
       'project_id' => $shared_state['ids']['project_id'],
     ));
 
+    tpps_log("Adding " . $shared_state['ids']['organism_ids'][$i] . " to pub_organism");
     tpps_chado_insert_record('pub_organism', array(
       'organism_id' => $shared_state['ids']['organism_ids'][$i],
       'pub_id' => $publication_id,
