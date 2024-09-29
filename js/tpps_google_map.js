@@ -251,6 +251,7 @@ Drupal.tpps = Drupal.tpps || {};
           Drupal.tpps.getCoordinates(fid);
         }
         else {
+          dog('Fid wasn\'t found in map wrapper.', featureName);
           // Check if we have locations for the map.
           if ('tpps' in Drupal.settings && 'tree_info' in Drupal.settings.tpps) {
             // Pages like /tpps/details/TGDR978.
@@ -346,14 +347,17 @@ Drupal.tpps = Drupal.tpps || {};
   /**
    * Gets file's column data from 'managed_file' form field.
    *
+   * WARNING: TPPS Form Page 3 ONLY.
+   *
    * Loops managed file fields on page to get columns data and fill
    * Drupal.settings.tpps.accession_files[fid] array.
    *
    * @param int fid
    *   Managed File Id.
    */
-  function getColumnsFromManagedFileField(fid = null) {
-
+  function getColumnsFromManagedFileField(fid = null, organismId = null) {
+    // @TODO Move under Drupal.tpps.
+    let featureName = 'getColumnsFromManagedFileField';
     if (
       fid != null
       && 'tpps' in Drupal.settings
@@ -403,7 +407,7 @@ Drupal.tpps = Drupal.tpps || {};
         dog('Found Organism fid: ' + organismFileId + ', fid: ' + fid);
         // File Id found in managed file field and fid will be different when
         // new file uploaded so no need to skip processing this file.
-        // dog('Skipped processing because requested different fid');
+        dog('Disabled: Skipped processing because requested different fid');
         //continue;
       }
       dog('Managed file field has fid: ' + organismFileId);
