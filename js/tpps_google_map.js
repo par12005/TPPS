@@ -271,94 +271,77 @@ Drupal.tpps = Drupal.tpps || {};
   Drupal.tpps.getCoordinates = function (fid = null) {
 
     dog('Got File Id: ' + fid);
-    if (fid == null) {
-      return;
-    }
+    if (fid == null) { return; }
+    Drupal.settings.tpps = Drupal.settings.tpps || {};
+    Drupal.settings.tpps.accession_files = Drupal.settings.tpps.accession_files || {};
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Get data from Drupal.settings.
-    // Works fine.
+    // Get Columns metadata from managed file field if possible.
+    if (typeof Drupal.settings.tpps.accession_files[fid] == 'undefined') {
+      dog('Columns Metata not found found under '
+        + 'Drupal.settings.tpps.accession_files[' + fid + '].');
+      dog('Let\'s get column\'s metadata from managed file field.');
+      getColumnsFromManagedFileField(fid);
+    }
+    else {
+      dog('Columns Metata found. No need to parse managed file field.');
+    }
+    if (typeof Drupal.settings.tpps.accession_files[fid] == 'undefined') {
+      dog('No column\'s metadata under Drupal.settings.tpps.accession_files[' + fid + ']');
+      return;
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Validate Columns metadata.
+    dog('Columns Metata for File Id was found. Let\'s validate properties.');
+    dog(Drupal.settings.tpps.accession_files[fid]);
     if (
-      'tpps' in Drupal.settings
-      && 'accession_files' in Drupal.settings.tpps
-      && typeof Drupal.settings.tpps.accession_files[fid] != 'undefined'
+         'id_col'   in Drupal.settings.tpps.accession_files[fid]
+      && 'lat_col'  in Drupal.settings.tpps.accession_files[fid]
+      && 'long_col' in Drupal.settings.tpps.accession_files[fid]
     ) {
-      dog('Columns Metata for File Id was found. Let\'s validate properties.');
-      dog(Drupal.settings.tpps.accession_files[fid]);
-      if (
-           'id_col'   in Drupal.settings.tpps.accession_files[fid]
-        && 'lat_col'  in Drupal.settings.tpps.accession_files[fid]
-        && 'long_col' in Drupal.settings.tpps.accession_files[fid]
-      ) {
-        if (typeof Drupal.settings.tpps.accession_files[fid].fid == 'undefined') {
-          // There is no "fid" property which is usual for pages like
-          // "/tpps-admin-panel/TGDRxxxx.
-          dog('Manually added missing "fid" property');
-          // @TODO Minor. Add at server side. Wasn't able to find where to add.
-          Drupal.settings.tpps.accession_files[fid]['fid'] = fid;
-        }
-        else {
-          dog('Sub-element "fid" was set before.');
-        }
+      if (typeof Drupal.settings.tpps.accession_files[fid].fid == 'undefined') {
+        // There is no "fid" property which is usual for pages like
+        // "/tpps-admin-panel/TGDRxxxx.
+        dog('Manually added missing "fid" property');
+        // @TODO Minor. Add at server side. Wasn't able to find where to add.
+        Drupal.settings.tpps.accession_files[fid]['fid'] = fid;
       }
       else {
-        delete Drupal.settings.tpps.accession_files[fid];
-        dog('No file metadata in Drupal.settings.tpps.accession_files for FileId: ' + fid);
-        //console.table(Drupal.settings.tpps.accession_files[fid]);
-        dog('Going to hide the map for File: ' + fid);
-        // Since columns set incorrectly we hide the map.
-        var $mapWrapper = $('#' + fid + '_map_wrapper');
-        // Show message.
-        var data = {
-          "errors": [
-            Drupal.t('File is missing or column mapping is wrong.')
-          ],
-        };
-        dog('Add message to Drupal.tpps.showMessages');
-        Drupal.tpps.showMessages('#' + fid + '_map_wrapper', data);
-        $mapWrapper.hide();
-
-        // Just check visibility of the map wrapper.
-        if ($mapWrapper.is(":visible")) {
-          dog('Visible');
-        } else{
-          dog('NOT Visible');
-        }
-        return;
+        dog('Sub-element "fid" was set before.');
       }
     }
-
+    else {
+      delete Drupal.settings.tpps.accession_files[fid];
+      dog('No file metadata in Drupal.settings.tpps.accession_files for FileId: ' + fid);
+      //console.table(Drupal.settings.tpps.accession_files[fid]);
+      dog('Going to hide the map for File: ' + fid);
+      // Since columns set incorrectly we hide the map.
+      var $mapWrapper = $('#' + fid + '_map_wrapper');
+      // Show message.
+      var data = {
+        "errors": [
+          Drupal.t('File is missing or column mapping is wrong.')
+        ],
+      };
+      dog('Add message to Drupal.tpps.showMessages');
+      Drupal.tpps.showMessages('#' + fid + '_map_wrapper', data);
+      $mapWrapper.hide();
+      return;
+    }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get data from server.
     //
-    //
-    // @TODO Not work at https://tgwebdev.cam.uchc.edu/tpps-admin-panel/TGDR978
-    //
-    //
-    //console.log(Drupal.settings.tpps.accession_files);
-    if (
-      'tpps' in Drupal.settings
-      && 'accession_files' in Drupal.settings.tpps
-      && typeof Drupal.settings.tpps.accession_files[fid] != 'undefined'
-    ) {
-      var request = $.post(
-        '/tpps-accession',
-        {...Drupal.settings.tpps.accession_files[fid]}
-      );
-      request.done(function (data) {
-        Drupal.settings.tpps.locations = data;
-        Drupal.settings.tpps.fid = fid;
-        initMap();
-      });
-    }
-    else {
-      dog('No columns metadata found. Can\'t get coordinates from server.');
-      // @TODO Show error message.
-      $mapWrapper = $('#' + fid + '_map_wrapper');
-    }
+// @TODO Not work at https://tgwebdev.cam.uchc.edu/tpps-admin-panel/TGDR978
+    var request = $.post(
+      '/tpps-accession',
+      {...Drupal.settings.tpps.accession_files[fid]}
+    );
+    request.done(function (data) {
+      Drupal.settings.tpps.locations = data;
+      Drupal.settings.tpps.fid = fid;
+      initMap();
+    });
   }
-
-
 
   /**
    * Gets file's column data from 'managed_file' form field.
@@ -503,10 +486,13 @@ jQuery.fn.fileColumnsChange = function (fid, organismId) {
       dog('Removed accession files columns information: ' + fid, featureName);
     }
     else {
-      dog(
-        'There was no accession files columns information for Fiie Id: ' + fid,
-        featureName
-      );
+      if (typeof Drupal.settings.tpps.accession_files[fid] == 'undefined') {
+        dog('Columns metadata not found.', featureName);
+      }
+      else {
+        delete Drupal.settings.tpps.accession_files[fid];
+        dog('Existing columns metadata was removed.', featureName);
+      }
     }
   }
   if ('tpps' in Drupal.settings && 'locations' in Drupal.settings.tpps) {
