@@ -207,46 +207,22 @@ Drupal.tpps = Drupal.tpps || {};
       // Show map on page load if file was uploaded before on Page 3.
       //
       // @TODO Check if page has managed file fields.
-      let organismNumber = Drupal.settings.tpps.organismNumber ?? 1;
-      if (0) {
-      for (let organismId = 1; organismId <= organismNumber; organismId++) {
-        let columnTableSelector = '#edit-tree-accession-species-' + organismId
-          + '-file-columns';
-        var $columnTable = $(columnTableSelector, context);
-        if ($columnTable.hasClass('tpps-google-map-processed')) {
-          dog('Skipped processing of managed file field for organism '
-            + organismId + ' because it was processed before.', featureName);
-          continue;
-        }
-
-        if ($columnTable.length) {
-          let fid = $('input[name="tree-accession[species-'
-            + organismId + '][file][fid]"]').val();
-          dog('File was uploaded. Organism: ' + organismId + ', fid: ' + fid, featureName);
-          if (typeof fid != 'undefined' && Number(fid) > 0) {
-            getColumnsFromManagedFileField(fid);
-            dog(' > ' + 'getCoordinates(' + fid + ')', featureName);
-            Drupal.tpps.getCoordinates(fid);
-            //dog('Going to call initMap()', featureName);
-            //initMap();
-            $columnTable.addClass('tpps-google-map-processed');
-          }
-          else {
-            dog('No file found. Removed class to allow processing.', featureName);
-            $columnTable.removeClass('tpps-google-map-processed');
-          }
-        }
-      }
-      }
+      // Loop managed file fields.
+      //Drupal.tpps.parseManagedFileFields();
+      getColumnsFromManagedFileField();
 
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Loop map-wrappers.
       // Note: Each time map reloaded by AJAX it will be updated.
       $('.tpps-map-wrapper', context).each(function() {
-        dog('Map Wrapper found at page', featureName);
+        if ($(this).hasClass('tpps-google-map-processed')) {
+          dog('Skip processing because Map Wrapper already processed before.', featureName);
+          return;
+        }
+        dog('Unprocessed Map Wrapper found at page.', featureName);
         let fid = $(this).data('fid');
         if (typeof fid != 'undefined' && fid) {
           dog('Update markers on the map for File Id: ' + fid, featureName);
-          getColumnsFromManagedFileField(fid);
           dog(' > ' + 'getCoordinates(' + fid + ')', featureName);
           Drupal.tpps.getCoordinates(fid);
         }
@@ -451,6 +427,45 @@ Drupal.tpps = Drupal.tpps || {};
     }
   }
 
+  /**
+   * Loops all managed file fields on Page3 to get columns meta-data.
+   *
+   * Note: File Id will be obtained from the
+   *
+   */
+  Drupal.tpps.parseManagedFileFields = function() {
+    let featureName = 'Drupal.tpps.parseManagedFileFields';
+    let organismNumber = Drupal.settings.tpps.organismNumber ?? 1;
+    for (let organismId = 1; organismId <= organismNumber; organismId++) {
+      let columnTableSelector = '#edit-tree-accession-species-' + organismId
+        + '-file-columns';
+      var $columnTable = $(columnTableSelector, context);
+      if ($columnTable.hasClass('tpps-google-map-processed')) {
+        dog('Skipped processing of managed file field for organism '
+          + organismId + ' because it was processed before.', featureName);
+        continue;
+      }
+
+      if ($columnTable.length) {
+        let fid = $('input[name="tree-accession[species-'
+          + organismId + '][file][fid]"]').val();
+        dog('File was uploaded. Organism: ' + organismId + ', fid: ' + fid, featureName);
+        if (typeof fid != 'undefined' && Number(fid) > 0) {
+          //getColumnsFromManagedFileField(fid);
+          dog(' > ' + 'getCoordinates(' + fid + ')', featureName);
+          Drupal.tpps.getCoordinates(fid);
+          //dog('Disabled: Going to call initMap()', featureName);
+          //initMap();
+          $columnTable.addClass('tpps-google-map-processed');
+        }
+        else {
+          dog('No file found. Removed class to allow processing.', featureName);
+          $columnTable.removeClass('tpps-google-map-processed');
+        }
+      }
+    }
+  }
+
 })(jQuery);
 
 
@@ -464,8 +479,7 @@ Drupal.tpps = Drupal.tpps || {};
  * @param int organismId
  *   Organism Id (species id) on page.
  */
-jQuery.fn.fileColumnsChange = function (fid, organismId) {
-
+jQuery.fn.fileColumnsChange = function (fid, organismId = null) {
   var featureName = 'jQuery.fn.fileColumnsChange';
   dog('Got fid: ' + fid + ', organismId: ' + organismId, featureName);
   if (!fid) {
