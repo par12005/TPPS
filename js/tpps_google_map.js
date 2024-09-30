@@ -1,3 +1,9 @@
+// @file
+// Manage Google Map and advanced markers.
+
+// Marker used to label map wrapper already processed to avoid double messages,
+// AJAX-requests and extra processing.
+const TPPS_MAP_WRAPPER_MARKER = 'tpps-google-map-processed';
 
 // We are using array (list) of maps because there could be multiple species
 // and multiple accession files on the same page.
@@ -8,8 +14,6 @@ Drupal.tpps = Drupal.tpps || {};
 
 // @TODO Be sure to remove class to allow processing managed field again
 // on file removement.
-//
-// $columnTable.addClass('tpps-google-map-processed');
 
 
 /* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
@@ -215,7 +219,7 @@ Drupal.tpps = Drupal.tpps || {};
       // Loop map-wrappers.
       // Note: Each time map reloaded by AJAX it will be updated.
       $('.tpps-map-wrapper', context).each(function() {
-        if ($(this).hasClass('tpps-google-map-processed')) {
+        if ($(this).hasClass(TPPS_MAP_WRAPPER_MARKER)) {
           dog('Skip processing because Map Wrapper already processed before.', featureName);
           return;
         }
@@ -314,8 +318,11 @@ Drupal.tpps = Drupal.tpps || {};
       {...Drupal.settings.tpps.accession_files[fid]}
     );
     request.done(function (data) {
-      Drupal.settings.tpps.locations = data;
+      // Store File Id to know which data is stored under
+      // Drupal.settings.tpps.locations.
+      // @TODO Check if Drupal.settings.tpps.fid is in use.
       Drupal.settings.tpps.fid = fid;
+      Drupal.settings.tpps.locations = data;
       initMap();
     });
   }
@@ -440,7 +447,7 @@ Drupal.tpps = Drupal.tpps || {};
       let columnTableSelector = '#edit-tree-accession-species-' + organismId
         + '-file-columns';
       var $columnTable = $(columnTableSelector, context);
-      if ($columnTable.hasClass('tpps-google-map-processed')) {
+      if ($columnTable.hasClass(TPPS_MAP_WRAPPER_MARKER)) {
         dog('Skipped processing of managed file field for organism '
           + organismId + ' because it was processed before.', featureName);
         continue;
@@ -454,13 +461,11 @@ Drupal.tpps = Drupal.tpps || {};
           //getColumnsFromManagedFileField(fid);
           dog(' > ' + 'getCoordinates(' + fid + ')', featureName);
           Drupal.tpps.getCoordinates(fid);
-          //dog('Disabled: Going to call initMap()', featureName);
-          //initMap();
-          $columnTable.addClass('tpps-google-map-processed');
+          $columnTable.addClass(TPPS_MAP_WRAPPER_MARKER);
         }
         else {
           dog('No file found. Removed class to allow processing.', featureName);
-          $columnTable.removeClass('tpps-google-map-processed');
+          $columnTable.removeClass(TPPS_MAP_WRAPPER_MARKER);
         }
       }
     }
@@ -481,7 +486,7 @@ Drupal.tpps = Drupal.tpps || {};
  */
 jQuery.fn.fileColumnsChange = function (fid, organismId = null) {
   var featureName = 'jQuery.fn.fileColumnsChange';
-  dog('Got fid: ' + fid + ', organismId: ' + organismId, featureName);
+  dog('Got "fid": ' + fid + ', "organismId": ' + organismId, featureName);
   if (!fid) {
     dog('Empty fid', featureName);
     return;
@@ -516,7 +521,13 @@ jQuery.fn.fileColumnsChange = function (fid, organismId = null) {
   if ('tpps' in Drupal.settings && 'locations' in Drupal.settings.tpps) {
     delete Drupal.settings.tpps.locations;
   }
-
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  dog('Label map wrapper as already processed.', featureName);
+  var mapWrapperId = fid + '_map_wrapper';
+  Drupal.tpps.clearMessages('#' + mapWrapperId);
+  // WARNING: '$' couldn't be used here instead of 'jQuery'.
+  jQuery('#' + mapWrapperId).addClass(TPPS_MAP_WRAPPER_MARKER);
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   dog(' > ' + 'getCoordinates(' + fid + ')', featureName);
   Drupal.tpps.getCoordinates(fid);
   dog(' > ' + 'initMap()', featureName);
