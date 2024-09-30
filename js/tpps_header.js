@@ -74,6 +74,11 @@ Drupal.tpps = Drupal.tpps || {};
     if (!Object.keys(data).length) {
       dog('There is no messages to show. Data object is empty.', featureName);
     }
+    dog('Number of messages for ' + selector + ': ', {
+      'Errors': $(selector).nextAll('.tpps-message.error').length,
+      'Warnings': $(selector).nextAll('.tpps-message.warning').length,
+      'Statuses': $(selector).nextAll('.tpps-message.status').length
+    }, featureName);
     if ('errors' in data) {
       $element.after('<div class="error tpps-message">'
         + data.errors.join('</div><div class="error tpps-message">') + '</div>')
@@ -95,9 +100,15 @@ Drupal.tpps = Drupal.tpps || {};
    * Clears given message box.
    */
   Drupal.tpps.clearMessages = function(selector) {
-    $(selector).nextAll('.tpps-message.error').fadeOut(500).empty();
-    $(selector).nextAll('.tpps-message.warning').fadeOut(500).empty();
-    $(selector).nextAll('.tpps-message.status').fadeOut(500).empty();
+    var featureName = 'Drupal.tpps.clearMessages'
+    dog('Number of messages for ' + selector + ': ', {
+      'Errors': $(selector).nextAll('.tpps-message.error').length,
+      'Warnings': $(selector).nextAll('.tpps-message.warning').length,
+      'Statuses': $(selector).nextAll('.tpps-message.status').length
+    }, featureName);
+    $(selector).nextAll('.tpps-message.error').fadeOut(500).empty().remove();
+    $(selector).nextAll('.tpps-message.warning').fadeOut(500).empty().remove();
+    $(selector).nextAll('.tpps-message.status').fadeOut(500).empty().remove();
   }
 
   /**
