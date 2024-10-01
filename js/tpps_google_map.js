@@ -4,6 +4,15 @@
 // Marker used to label map wrapper already processed to avoid double messages,
 // AJAX-requests and extra processing.
 const TPPS_MAP_WRAPPER_MARKER = 'tpps-google-map-processed';
+// Keys of the columns.
+const TPPS_MAP_PLANT_IDENTIFIER = '1';
+const TPPS_MAP_LATITUDE = '4';
+const TPPS_MAP_LONGITUDE = '5';
+
+// Keys of the object sent to server to get coordinates from the file.
+const TPPS_MAP_COLUMN_PLANT_IDENTIFIER = 'id_col';
+const TPPS_MAP_COLUMN_LATITUDE = 'lat_col';
+const TPPS_MAP_COLUMN_LONGITUDE = 'long_col';
 
 // We are using array (list) of maps because there could be multiple species
 // and multiple accession files on the same page.
@@ -12,38 +21,35 @@ var maps = {};
 
 Drupal.tpps = Drupal.tpps || {};
 
-// @TODO Be sure to remove class to allow processing managed field again
-// on file removement.
-
-
 /* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 (function ($) {
+
 
   async function initMap() {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get libraries.
     const { Map, InfoWindow } = await google.maps.importLibrary("maps");
-    const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary(
-      "marker",
-    )
+    const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get data for markers.
     let fid = '';
     let locations = '';
     if ('tpps' in Drupal.settings) {
-      if ('fid' in Drupal.settings.tpps) {
-        fid = Drupal.settings.tpps.fid;
-      }
       // Get locations.
       if ('tree_info' in Drupal.settings.tpps) {
         locations = Drupal.settings.tpps.tree_info;
       }
-      else if ('locations' in Drupal.settings.tpps) {
-        locations = Drupal.settings.tpps.locations;
-      }
       else if ('study_locations' in Drupal.settings.tpps) {
         locations = Drupal.settings.tpps.study_locations;
+      }
+    }
+    if ('tpps' in Drupal) {
+      if ('fid' in Drupal.tpps) {
+        fid = Drupal.tpps.fid;
+      }
+      if (locations == '' && 'locations' in Drupal.tpps) {
+        locations = Drupal.tpps.locations;
       }
     }
 
@@ -209,12 +215,9 @@ Drupal.tpps = Drupal.tpps || {};
       let featureName = 'Drupal.behaviors.tppsGoogleMap';
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Show map on page load if file was uploaded before on Page 3.
-      //
-      // @TODO Check if page has managed file fields.
       // Loop managed file fields.
-      //Drupal.tpps.parseManagedFileFields();
-      dog('> getColumnsFromManagedFileField()', featureName);
-      getColumnsFromManagedFileField();
+      dog('> Drupal.tpps.getColumnsFromManagedFileField()', featureName);
+      Drupal.tpps.getColumnsFromManagedFileField();
 
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Loop map-wrappers.
@@ -281,48 +284,50 @@ Drupal.tpps = Drupal.tpps || {};
 
     dog('Got File Id: ' + fid);
     if (fid == null) { return; }
-    Drupal.settings.tpps = Drupal.settings.tpps || {};
-    Drupal.settings.tpps.accession_files = Drupal.settings.tpps.accession_files || {};
+
+    Drupal.tpps.accession_files = Drupal.tpps.accession_files
+      // WARNING: Drupal.settings.tpps.accession_files is set for study
+      // details page on server side. URL example: /tpps-admin-panel/TGDRxxx.
+      || Drupal.settings.tpps.accession_files || {};
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get Columns metadata from managed file field if possible.
-    if (typeof Drupal.settings.tpps.accession_files[fid] == 'undefined') {
+    if (typeof Drupal.tpps.accession_files[fid] == 'undefined') {
       dog('Columns Metata not found found under '
-        + 'Drupal.settings.tpps.accession_files[' + fid + '].');
+        + 'Drupal.tpps.accession_files[' + fid + '].');
       dog('Let\'s get column\'s metadata from managed file field.');
-      getColumnsFromManagedFileField(fid);
+      Drupal.tpps.getColumnsFromManagedFileField(fid);
     }
     else {
       dog('Columns Metata found. No need to parse managed file field.');
     }
-    if (typeof Drupal.settings.tpps.accession_files[fid] == 'undefined') {
-      dog('No column\'s metadata under Drupal.settings.tpps.accession_files[' + fid + ']');
+    if (typeof Drupal.tpps.accession_files[fid] == 'undefined') {
+      dog('No column\'s metadata under Drupal.tpps.accession_files[' + fid + ']');
       return;
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Validate Columns metadata.
     dog('Columns Metata for File Id was found. Let\'s validate properties.');
-    dog(Drupal.settings.tpps.accession_files[fid]);
+    dog(Drupal.tpps.accession_files[fid]);
     if (
-         'id_col'   in Drupal.settings.tpps.accession_files[fid]
-      && 'lat_col'  in Drupal.settings.tpps.accession_files[fid]
-      && 'long_col' in Drupal.settings.tpps.accession_files[fid]
+      TPPS_MAP_COLUMN_PLANT_IDENTIFIER in Drupal.tpps.accession_files[fid]
+      && TPPS_MAP_COLUMN_LATITUDE in Drupal.tpps.accession_files[fid]
+      && TPPS_MAP_COLUMN_LONGITUDE in Drupal.tpps.accession_files[fid]
     ) {
-      if (typeof Drupal.settings.tpps.accession_files[fid].fid == 'undefined') {
+      if (typeof Drupal.tpps.accession_files[fid].fid == 'undefined') {
         // There is no "fid" property which is usual for pages like
         // "/tpps-admin-panel/TGDRxxxx.
         dog('Manually added missing "fid" property');
-        // @TODO Minor. Add at server side. Wasn't able to find where to add.
-        Drupal.settings.tpps.accession_files[fid]['fid'] = fid;
+        Drupal.tpps.accession_files[fid]['fid'] = fid;
       }
       else {
         dog('Sub-element "fid" was set before.');
       }
     }
     else {
-      delete Drupal.settings.tpps.accession_files[fid];
-      dog('No file metadata in Drupal.settings.tpps.accession_files for FileId: ' + fid);
-      //console.table(Drupal.settings.tpps.accession_files[fid]);
+      delete Drupal.tpps.accession_files[fid];
+      dog('No file metadata in Drupal.tpps.accession_files for FileId: ' + fid);
+      //console.table(Drupal.tpps.accession_files[fid]);
       dog('Going to hide the map for File: ' + fid);
       // Since columns set incorrectly we hide the map.
       var $mapWrapper = $('#' + fid + '_map_wrapper');
@@ -339,18 +344,15 @@ Drupal.tpps = Drupal.tpps || {};
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get data from server.
-    //
-// @TODO Not work at https://tgwebdev.cam.uchc.edu/tpps-admin-panel/TGDR978
     var request = $.post(
       '/tpps-accession',
-      {...Drupal.settings.tpps.accession_files[fid]}
+      {...Drupal.tpps.accession_files[fid]}
     );
     request.done(function (data) {
       // Store File Id to know which data is stored under
       // Drupal.settings.tpps.locations.
-      // @TODO Check if Drupal.settings.tpps.fid is in use.
-      Drupal.settings.tpps.fid = fid;
-      Drupal.settings.tpps.locations = data;
+      Drupal.tpps.fid = fid;
+      Drupal.tpps.locations = data;
       initMap();
     });
   }
@@ -361,27 +363,26 @@ Drupal.tpps = Drupal.tpps || {};
    * WARNING: TPPS Form Page 3 ONLY.
    *
    * Loops managed file fields on page to get columns data and fill
-   * Drupal.settings.tpps.accession_files[fid] array.
+   * Drupal.tpps.accession_files[fid] array.
    *
    * @param int fid
    *   Managed File Id.
    */
-  function getColumnsFromManagedFileField(fid = null, organismId = null) {
-    // @TODO Move under Drupal.tpps.
-    let featureName = 'getColumnsFromManagedFileField';
+  Drupal.tpps.getColumnsFromManagedFileField = function(fid = null, organismId = null) {
+    let featureName = 'Drupal.tpps.getColumnsFromManagedFileField';
     if (
       fid != null
-      && 'tpps' in Drupal.settings
-      && 'accession_files' in Drupal.settings.tpps
-      && typeof Drupal.settings.tpps.accession_files[fid] != 'undefined'
-      && Drupal.settings.tpps.accession_files[fid].length != 0
+      && 'tpps' in Drupal
+      && 'accession_files' in Drupal.tpps
+      && typeof Drupal.tpps.accession_files[fid] != 'undefined'
+      && Drupal.tpps.accession_files[fid].length != 0
     ) {
       dog('Column\'s metadata found. Nothing to do.');
       return;
     }
     dog('Column\'s metadata wasn\'t found. Start processing.');
 
-    var no_header, id_col, lat_col, long_col;
+    var no_header;
     var columnName;
     var organismId;
     var commonName;
@@ -396,7 +397,6 @@ Drupal.tpps = Drupal.tpps || {};
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Loop managed file fields at page to find accession files.
     for (let organismId = 1; organismId <= organismNumber; organismId++) {
-      // @TODO Stop Loop when 'fid' was found.
       commonName = 'tree-accession[species-' + organismId + '][file]';
       var $fileIdField = $('input[name="' + commonName + '[fid]"]');
       if ($fileIdField.length == 0) {
@@ -421,15 +421,15 @@ Drupal.tpps = Drupal.tpps || {};
         if (removedFileId.length) {
           dog('Removed File Id: ' + removedFileId);
           dog('Clean-up column\'s metadata for removed file.');
-          if (typeof Drupal.settings.tpps.accession_files[removedFileId] != 'undefined') {
-            delete Drupal.settings.tpps.accession_files[removedFileId];
+          if (typeof Drupal.tpps.accession_files[removedFileId] != 'undefined') {
+            delete Drupal.tpps.accession_files[removedFileId];
           }
           if (
-            'fid' in Drupal.settings.tpps
-            && Drupal.settings.tpps.fid == removedFileId
+            'fid' in Drupal.tpps
+            && Drupal.tpps.fid == removedFileId
           ) {
-            delete Drupal.settings.tpps.fid;
-            delete Drupal.settings.tpps.locations;
+            delete Drupal.tpps.fid;
+            delete Drupal.tpps.locations;
           }
         }
         // Remove outdated messages.
@@ -447,75 +447,34 @@ Drupal.tpps = Drupal.tpps || {};
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
       // Get column's metadata from field.
-      Drupal.settings.tpps['accession_files'] = [];
-      Drupal.settings.tpps.accession_files[organismFileId] = [];
-      Drupal.settings.tpps.accession_files[organismFileId]['fid'] = organismFileId;
-      // @TODO Minor. Get real value of the no-header field.
-      Drupal.settings.tpps.accession_files[organismFileId]['no_header'] = null;
+      Drupal.tpps['accession_files'] = [];
+      Drupal.tpps.accession_files[organismFileId] = [];
+      Drupal.tpps.accession_files[organismFileId]['fid'] = organismFileId;
+      Drupal.tpps.accession_files[organismFileId]['no_header'] =
+        $('select[name="tree-accession[species-' + organismId
+          + '][file][no-header]').find(":selected").val();
       for (columnName of alphabets) {
         var selectBoxName = commonName + '[columns][' + columnName + ']';
         var value = $fileWrapper.find('select[name="' + selectBoxName + '"]')
           .find(":selected").val();
-
-        // @TODO Create name constants for those numbers.
         switch (value) {
-          case '1':
-            // Plant Identifier.
-            Drupal.settings.tpps.accession_files[organismFileId]['id_col'] = columnName;
+          case TPPS_MAP_PLANT_IDENTIFIER:
+            Drupal.tpps.accession_files[organismFileId][TPPS_MAP_COLUMN_PLANT_IDENTIFIER] = columnName;
             break;
-          case '4':
-            // Latitude
-            Drupal.settings.tpps.accession_files[organismFileId]['lat_col'] = columnName;
+          case TPPS_MAP_LATITUDE:
+            Drupal.tpps.accession_files[organismFileId][TPPS_MAP_COLUMN_LATITUDE] = columnName;
             break;
-          case '5':
-            // Longitude
-            Drupal.settings.tpps.accession_files[organismFileId]['long_col'] = columnName;
+          case TPPS_MAP_LONGITUDE:
+            Drupal.tpps.accession_files[organismFileId][TPPS_MAP_COLUMN_LONGITUDE] = columnName;
             break;
         }
         // Check if all required fields was set.
         if (
-             'id_col'   in Drupal.settings.tpps.accession_files[organismFileId]
-          && 'lat_col'  in Drupal.settings.tpps.accession_files[organismFileId]
-          && 'long_col' in Drupal.settings.tpps.accession_files[organismFileId]
+          TPPS_MAP_COLUMN_PLANT_IDENTIFIER in Drupal.tpps.accession_files[organismFileId]
+          && TPPS_MAP_COLUMN_LATITUDE in Drupal.tpps.accession_files[organismFileId]
+          && TPPS_MAP_COLUMN_LONGITUDE in Drupal.tpps.accession_files[organismFileId]
         ) {
           break;
-        }
-      }
-    }
-  }
-
-  /**
-   * Loops all managed file fields on Page3 to get columns meta-data.
-   *
-   * Note: File Id will be obtained from the
-   *
-   */
-  Drupal.tpps.parseManagedFileFields = function() {
-    let featureName = 'Drupal.tpps.parseManagedFileFields';
-    let organismNumber = Drupal.settings.tpps.organismNumber ?? 1;
-    for (let organismId = 1; organismId <= organismNumber; organismId++) {
-      let columnTableSelector = '#edit-tree-accession-species-' + organismId
-        + '-file-columns';
-      var $columnTable = $(columnTableSelector, context);
-      if ($columnTable.hasClass(TPPS_MAP_WRAPPER_MARKER)) {
-        dog('Skipped processing of managed file field for organism '
-          + organismId + ' because it was processed before.', featureName);
-        continue;
-      }
-
-      if ($columnTable.length) {
-        let fid = $('input[name="tree-accession[species-'
-          + organismId + '][file][fid]"]').val();
-        dog('File was uploaded. Organism: ' + organismId + ', fid: ' + fid, featureName);
-        if (typeof fid != 'undefined' && Number(fid) > 0) {
-          //getColumnsFromManagedFileField(fid);
-          dog(' > ' + 'getCoordinates(' + fid + ')', featureName);
-          Drupal.tpps.getCoordinates(fid);
-          $columnTable.addClass(TPPS_MAP_WRAPPER_MARKER);
-        }
-        else {
-          dog('No file found. Removed class to allow processing.', featureName);
-          $columnTable.removeClass(TPPS_MAP_WRAPPER_MARKER);
         }
       }
     }
@@ -545,31 +504,30 @@ jQuery.fn.fileColumnsChange = function (fid, organismId = null) {
   // Since user changed columns don't use previously stored data but get
   // updated data from form in getCoordinates().
   if (typeof fid == 'undefined') {
-    // @TODO check if this works when file was removed and new one uploaded.
-    delete Drupal.settings.tpps.accession_files;
+    delete Drupal.tpps.accession_files;
     dog('Removed accession files columns information: all', featureName);
   }
   else {
     if (
-      'tpps' in Drupal.settings
-      && 'accession_files' in Drupal.settings.tpps
-      && typeof Drupal.settings.tpps.accession_files[fid] != 'undefined'
+      'tpps' in Drupal
+      && 'accession_files' in Drupal.tpps
+      && typeof Drupal.tpps.accession_files[fid] != 'undefined'
     ) {
-      delete Drupal.settings.tpps.accession_files[fid];
+      delete Drupal.tpps.accession_files[fid];
       dog('Removed accession files columns information: ' + fid, featureName);
     }
     else {
-      if (typeof Drupal.settings.tpps.accession_files[fid] == 'undefined') {
+      if (typeof Drupal.tpps.accession_files[fid] == 'undefined') {
         dog('Columns metadata not found.', featureName);
       }
       else {
-        delete Drupal.settings.tpps.accession_files[fid];
+        delete Drupal.tpps.accession_files[fid];
         dog('Existing columns metadata was removed.', featureName);
       }
     }
   }
-  if ('tpps' in Drupal.settings && 'locations' in Drupal.settings.tpps) {
-    delete Drupal.settings.tpps.locations;
+  if ('tpps' in Drupal && 'locations' in Drupal.tpps) {
+    delete Drupal.tpps.locations;
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   dog('Label map wrapper as already processed.', featureName);

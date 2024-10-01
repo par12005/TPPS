@@ -1,0 +1,8 @@
+{
+    "require-dev": {
+        "statonlab/tripal-test-suite": "^1.6"
+    },
+    "require": {
+        "ext-zip": "^1.13"
+    }
+}

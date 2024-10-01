@@ -228,20 +228,20 @@ function tpps_get_markercluster_code($use_wrapper = TRUE) {
   $output = '';
   // MarkerCluster Library.
   drupal_add_js(tpps_markercluster_get_url(), 'external');
-  // Settings.
+  // Map Wrapper.
   if ($use_wrapper) {
     $output .= '<div id="_map_wrapper" class="tpps-map-wrapper"></div>';
   }
+  // Settings.
   $js_settings = [
     'googleMap' => [
       'id' => variable_get('tpps_google_map_id'),
-      // 80ms is what I found to work well on my system -- it might not work well on all systems
       'zoom' => [
         'smoothTimeout' => variable_get('tpps_google_map_zoom_smooth_timeout', 100),
         'defaultLevel' => variable_get('tpps_google_map_zoom_default_level', 3),
         'customLevel' => variable_get('tpps_google_map_zoom_custom_level', 14),
       ],
-    ]
+    ],
   ];
   drupal_add_js(['tpps' => $js_settings], 'setting');
   // Our custom code which adds markers to the map.
@@ -317,8 +317,7 @@ function tpps_js_debug_mode_get_features_list() {
     'initMap',
     'smoothZoom',
     'Drupal.tpps.getCoordinates',
-    'getColumnsFromManagedFileField',
-    'Drupal.tpps.parseManagedFileFields',
+    'Drupal.tpps.getColumnsFromManagedFileField',
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // js/tpps_header.js
     'Drupal.tpps.showMessages',

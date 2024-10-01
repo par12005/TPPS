@@ -60,8 +60,6 @@ function tpps_google_maps_settings_form(array $form, array &$form_state) {
      . 'instead of single marker with big zoom.'
      . '<br />Levels are from 0 (world) to 22 (street).'
      . '<br />Suggested custom level is 14 but number of items in cluster is shown up to 17 level.'),
-
-
     '#default_value' => variable_get('tpps_google_map_zoom_custom_level'),
   ];
 
