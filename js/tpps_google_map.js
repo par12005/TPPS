@@ -213,6 +213,7 @@ Drupal.tpps = Drupal.tpps || {};
       // @TODO Check if page has managed file fields.
       // Loop managed file fields.
       //Drupal.tpps.parseManagedFileFields();
+      dog('> getColumnsFromManagedFileField()', featureName);
       getColumnsFromManagedFileField();
 
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -221,11 +222,38 @@ Drupal.tpps = Drupal.tpps || {};
       $('.tpps-map-wrapper', context).each(function() {
         if ($(this).hasClass(TPPS_MAP_WRAPPER_MARKER)) {
           dog('Skip processing because Map Wrapper already processed before.', featureName);
+          initMap();
           return;
         }
         dog('Unprocessed Map Wrapper found at page.', featureName);
+        // When file was removed fid will be outdated. Actual value is stored
+        // in the managed file field.
         let fid = $(this).data('fid');
-        if (typeof fid != 'undefined' && fid) {
+
+        var fileFieldId = $(this).parent().find('.form-managed-file').attr('id');
+        if (typeof fileFieldId != 'undefined' && fileFieldId.length) {
+          // Get Organism Id from DOM element Id.
+          // Example: edit-tree-accession-species-1-file-upload
+          var organismId = fileFieldId
+            .replace('edit-tree-accession-species-', '')
+            .replace('-file-upload', '');
+          dog('Current Organism Id: ' + organismId, featureName);
+
+          // Get up-to-date FileId:
+          // WARNING: TPPSc Form Page 3 ONLY!!!
+          var newFid = $('input[name="tree-accession[species-' + organismId
+            + '][file][fid]"]').val();
+          dog('New fid: ' + newFid, featureName);
+          if (typeof newFid != 'undefined' && newFid > 0) {
+            dog(
+              'Let\'s use newFid (' + newFid + ') instead of fid (' + fid + ').',
+              featureName
+            );
+            fid = newFid;
+          }
+        }
+
+        if (typeof fid != 'undefined' && fid > 0) {
           dog('Update markers on the map for File Id: ' + fid, featureName);
           dog(' > ' + 'getCoordinates(' + fid + ')', featureName);
           Drupal.tpps.getCoordinates(fid);
@@ -374,16 +402,38 @@ Drupal.tpps = Drupal.tpps || {};
       if ($fileIdField.length == 0) {
         continue;
       }
-      dog('Found managed file filed for organism ' + organismId);
+      dog('Found managed file field. "organismId": ' + organismId);
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Get fid from managed file field.
       var organismFileId = $fileIdField.val();
       var $fileWrapper = $fileIdField.parent('.form-managed-file');
       if (organismFileId == 0) {
+        // Case: File was removed.
         dog('Managed file field has no fid. File wasn\'t yet uploaded or was removed.');
         dog('Let\'s hide map for this File id:' + fid);
         $('#edit-tree-accession-species-' + organismId)
           .find('.tpps-map-wrapper').hide();
+        // Clean-up to force reseting map.
+        // When file was removed map wrapper are left and we could get
+        // removed file id from there.
+        let removedFileId = $('#edit-tree-accession-species-' + organismId)
+          .find('.tpps-map-wrapper').data('fid')
+        if (removedFileId.length) {
+          dog('Removed File Id: ' + removedFileId);
+          dog('Clean-up column\'s metadata for removed file.');
+          if (typeof Drupal.settings.tpps.accession_files[removedFileId] != 'undefined') {
+            delete Drupal.settings.tpps.accession_files[removedFileId];
+          }
+          if (
+            'fid' in Drupal.settings.tpps
+            && Drupal.settings.tpps.fid == removedFileId
+          ) {
+            delete Drupal.settings.tpps.fid;
+            delete Drupal.settings.tpps.locations;
+          }
+        }
+        // Remove outdated messages.
+        Drupal.tpps.clearMessages('#' + removedFileId + '_map_wrapper');
         continue;
       }
       if (fid != null && organismFileId != fid) {
