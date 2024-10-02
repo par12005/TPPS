@@ -523,28 +523,96 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
     // If no organism id was found in database, perform an insert
 
     // ADD THIS TO WHEN $organism_results_id == -1 which looks up NCBI
+    $taxons = NULL;
+    // OLD CODE THAT ONLY LOOKED UP studies with infra that is not empty
     // if ($infra != "" and $infra != NULL and $organism_results_id == -1) {
     // UPDATED ON 9/26/2024 - Conversation with Emily
     if ($organism_results_id == -1) {
       // Lookup to see if this species exists on NCBI
       $taxons = tpps_ncbi_get_taxon_id($raw_name, TRUE);
-      // print_r($taxons);
+      tpps_log('NCBI taxon data found: ' . print_r($taxons, true));
       $taxons = json_decode(json_encode($taxons))->Id;
+      tpps_log('NCBI taxon data found: ' . print_r($taxons, true));
       // print_r($taxons);
 
       if (empty($taxons) || count($taxons) === 0) {
-        throw new Exception("This study contains a variation-type species in which we could not find a matching record on NCBI: " . $raw_name);
+        throw new Exception("This study contains a species in which we could not find a matching record on NCBI: " . $raw_name);
       }
     }
 
 
     if ($organism_results_id == -1) {
-      $shared_state['ids']['organism_ids'][$i] = tpps_chado_insert_record('organism', $record);
+      $organism_results_id = tpps_chado_insert_record('organism', $record);
+      $shared_state['ids']['organism_ids'][$i] = $organism_results_id;
     }
     // If organism id was found in database, use it
     else {
       $shared_state['ids']['organism_ids'][$i] = $organism_results_id;
     }
+
+    if (!empty($taxons)) {
+      // Get DB_ID of 'NCBI Taxonomy'
+      $results_db = chado_query('SELECT * FROM chado.db WHERE name = :name', [
+        ':name' => 'NCBI Taxonomy'
+      ]);
+      $ncbi_db_id = NULL;
+      foreach ($results_db as $db_row) {
+        $ncbi_db_id = $db_row->db_id;
+      }
+
+      $ncbi_id = $taxons;
+      // Check to see if taxon exists in dbxref by getting the dbxref_id for it
+      $results_dbxref = chado_query('SELECT * FROM chado.dbxref WHERE accession = :accession AND db_id = :db_id', [
+        ':accession' => $ncbi_id,
+        ':db_id' => $ncbi_db_id
+      ]);
+      $dbxref_id = NULL;
+      foreach ($results_dbxref as $dbxref_row) {
+        $dbxref_id = $dbxref_row->dbxref_id;
+      }
+
+      // If there is no NCBI ID in dbxref, add it
+      if ($dbxref_id == NULL) {
+        tpps_log("[INFO] Did not find NCBI ID $ncbi_id, adding it to dbxref table\n");
+        $dbxref_id = tpps_chado_insert_record('dbxref', [
+          'db_id' => $ncbi_db_id,
+          'accession' => $ncbi_id,
+          'version' => ''
+        ]);
+      }
+      else {
+        tpps_log("[INFO] NCBI ID $ncbi_id already exists in dbxref table\n");
+      }
+
+      // Now we still need to make sure there is no organism_dbxref record, search for one
+      $organism_dbxref_id = NULL;
+      $results_organism_dbxref = chado_query('SELECT * FROM chado.organism_dbxref 
+        WHERE organism_id = :organism_id 
+        AND dbxref_id = :dbxref_id', 
+      [
+        ':organism_id' => $organism_results_id,
+        ':dbxref_id' => $dbxref_id
+      ]);
+      foreach ($results_organism_dbxref as $organism_dbxref_row) {
+        $organism_dbxref_id = $organism_dbxref_row->organism_dbxref_id;
+      }
+      
+      // If there is no organism_dbxref_id, we need to add it to the organism_dbxref table
+      if ($organism_dbxref_id == NULL) {
+        $organism_dbxref_id = tpps_chado_insert_record('organism_dbxref', [
+          'organism_id' => $organism_results_id,
+          'dbxref_id' => $dbxref_id,
+        ]);
+        tpps_log("[INFO] Did not find organism_dbxref_id, adding it to the organism_dbxref table\n");
+      }
+      else {
+        tpps_log("[INFO] organism_dbxref_id $organism_dbxref_id already exists in organism_dbxref table\n");
+      }
+    }
+    else {
+      tpps_log("[WARNING] NO NCBI ID could be found from NCBI for $genus $species $infra");
+    }
+    // throw new Exception('debug');
 
     if (!empty(tpps_load_cvterm('Type'))) {
       tpps_chado_insert_record('organismprop', [
