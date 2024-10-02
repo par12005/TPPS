@@ -82,6 +82,7 @@ function tpps_study_location(array &$form, array &$form_state) {
   );
 
   if ($type != 2 and $type != 0) {
+    // @TODO Use tpps_build_google_map_wrapper().
     $form['study_location']['map-button'] = array(
       '#type' => 'button',
       '#title' => 'Click here to update map',
@@ -146,6 +147,8 @@ function tpps_study_location(array &$form, array &$form_state) {
  * This function populates the pop_groups attribute of the options array with
  * the names of all the selected population groups from an accession file. This
  * function is meant to be used with tpps_file_iterator().
+ *
+ * @TODO Rename. Function with the same name exists in page_3_ajax.php
  *
  * @param mixed $row
  *   The item yielded by the TPPS file generator.

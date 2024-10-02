@@ -228,6 +228,24 @@ function tpps_get_markercluster_code($use_wrapper = TRUE) {
   $output = '';
   // MarkerCluster Library.
   drupal_add_js(tpps_markercluster_get_url(), 'external');
+  // Map Wrapper.
+  if ($use_wrapper) {
+    $output .= '<div id="_map_wrapper" class="tpps-map-wrapper"></div>';
+  }
+  // Settings.
+  $js_settings = [
+    'googleMap' => [
+      'id' => variable_get('tpps_google_map_id'),
+      'zoom' => [
+        'smoothTimeout' => variable_get('tpps_google_map_zoom_smooth_timeout', 100),
+        'defaultLevel' => variable_get('tpps_google_map_zoom_default_level', 3),
+        'customLevel' => variable_get('tpps_google_map_zoom_custom_level', 14),
+      ],
+    ],
+  ];
+  drupal_add_js(['tpps' => $js_settings], 'setting');
+  // Our custom code which adds markers to the map.
+  tpps_add_css_js('google_map');
   // Google Maps API Library.
   $url = url('https://maps.googleapis.com/maps/api/js', [
     'query' => [
@@ -237,16 +255,9 @@ function tpps_get_markercluster_code($use_wrapper = TRUE) {
       'libraries' => 'marker',
       'loading' => 'async',
     ],
+    'external' => TRUE,
   ]);
   drupal_add_js($url, 'external');
-  // Settings.
-  if ($use_wrapper) {
-    $output .= '<div id="_map_wrapper"></div>';
-  }
-  $js_settings = ['googleMapId' => variable_get('tpps_google_map_id')];
-  drupal_add_js(['tpps' => $js_settings], 'setting');
-  // Our custom code which adds markers to the map.
-  tpps_add_css_js('google_map');
   return $output;
 }
 
@@ -266,4 +277,60 @@ function tpps_get_markercluster_code($use_wrapper = TRUE) {
  */
 function tpps_markercluster_get_url() {
   return 'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js';
+}
+
+/**
+ * Builds Google Map wrapper and optionally button, adds JS to page.
+ *
+ * @param int $fid
+ *   Drupal managed file id.
+ * @param array $form
+ *   Drupal Form API array.
+ *   When not empty JS will be attached to form instead of use drupal_add_js().
+ *
+ * @return string
+ *   Returns HTML-string with map wrapper and optional button.
+ */
+function tpps_build_google_map_wrapper($fid, array &$form = NULL) {
+  tpps_add_css_js('google_map', $form);
+  // Map wrapper.
+  return '<div id="' . $fid . '_map_wrapper" data-fid="' . $fid
+    . '" class="tpps-map-wrapper"></div>';
+}
+
+/**
+ * Gets list of functions/features which supports "JS Debug Mode".
+ *
+ * @return array
+ *   Returns list of features which will be sent into client's browser to manage
+ *   "JS Debug Mode" in browser.
+ */
+function tpps_js_debug_mode_get_features_list() {
+  return [
+    // Used to enable/disable debug Mode directly in JS code during debugging
+    // without adding to the admin settings page.
+    'quickDebugMode',
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Functions from /js/google_map.js.
+    'jQuery.fn.fileColumnsChange',
+    'Drupal.behaviors.tppsGoogleMap',
+    'initMap',
+    'smoothZoom',
+    'Drupal.tpps.getCoordinates',
+    'Drupal.tpps.getColumnsFromManagedFileField',
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // js/tpps_header.js
+    'Drupal.tpps.showMessages',
+    'Drupal.tpps.clearMessages',
+  ];
+}
+
+/**
+ * Gets list of selected features for "JS Debug Mode".
+ *
+ * @return array
+ *   Returns list of selected features.
+ */
+function tpps_js_debug_mode_get_features() {
+  return array_filter(array_values(variable_get('tpps_js_debug_mode')));
 }
