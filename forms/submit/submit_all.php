@@ -536,7 +536,8 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
       // print_r($taxons);
 
       if (empty($taxons) || count($taxons) === 0) {
-        throw new Exception("This study contains a species in which we could not find a matching record on NCBI: " . $raw_name);
+        // throw new Exception("This study contains a species in which we could not find a matching record on NCBI: " . $raw_name);
+        tpps_log("This study contains a species in which we could not find a matching record on NCBI: " . $raw_name);
       }
     }
 
