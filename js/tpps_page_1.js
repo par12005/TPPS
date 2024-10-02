@@ -11,32 +11,6 @@
   Drupal.tpps.doi = Drupal.tpps.doi || {};
 
   /**
-   * Waits until element will appear at page.
-   *
-   * Source: https://stackoverflow.com/questions/5525071
-   *
-   * @param string selector
-   *   JQuery selector.
-   */
-  Drupal.waitForElm = function(selector) {
-    return new Promise(resolve => {
-      if (document.querySelector(selector)) {
-        return resolve(document.querySelector(selector));
-      }
-      const observer = new MutationObserver(mutations => {
-        if (document.querySelector(selector)) {
-          observer.disconnect();
-          resolve(document.querySelector(selector));
-        }
-      });
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true
-      });
-    });
-  }
-
-  /**
    * Validate Strings with Regex.
    *
    * @param string string
@@ -48,50 +22,6 @@
     // @TODO [VS] Minor. Get this validation regex from Drupal.settings.tpps.
     var pattern = /^10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+$/;
     return $.trim(string).match(pattern) ? true : false;
-  }
-
-  /**
-   * Shows messages in given element.
-   *
-   * All existing messages will be shown.
-   *
-   * Colors:
-   * 'status' = green,
-   * 'error' = red
-   * 'warning' = yellow.
-   *
-   * @param string doiSelector
-   *   jQuery doiSelector of element to show messages.
-   * @param array data
-   *   Messages. Keys are: 'errors', 'warnings' and 'statuses'.
-   *   WARNING:
-   *   Values are arrays (not strings).
-   */
-  Drupal.tpps.ShowMessages = function(selector, data) {
-    var $doiMessageBox = $(selector);
-    if (data.errors !== undefined) {
-      $doiMessageBox.append('<div class="error">'
-        + data.errors.join('</div><div class="error">') + '</div>')
-        .fadeIn(500);
-    }
-    if (data.warnings !== undefined) {
-      $doiMessageBox.append('<div class="warning">'
-        + data.warnings.join('</div><div class="warning">') + '</div>')
-        .fadeIn(500);
-    }
-    if (data.statuses !== undefined) {
-      $doiMessageBox.append('<div class="status">'
-        + data.statuses.join('</div><div class="status">') + '</div>')
-        .fadeIn(500);
-    }
-  }
-
-  /**
-   * Clears given message box.
-   */
-  Drupal.tpps.ClearMessages = function(selector) {
-    var $doiMessageBox = $(selector);
-    $doiMessageBox.fadeOut(500).empty();
   }
 
   /**
@@ -352,7 +282,7 @@
             if (typeof (doi) == 'undefined' || doi == '') {
               $(doiMessageBox).empty();
               var data = {"errors": [Drupal.t('Empty DOI.')]};
-              Drupal.tpps.ShowMessages(doiMessageBox, data);
+              Drupal.tpps.showMessages(doiMessageBox, data);
               Drupal.tpps.fieldEnable(doiSelector);
               return;
             }
@@ -364,23 +294,23 @@
                   Drupal.t('Invalid DOI format. Example DOI: 10.1111/dryad.111')
                 ]
               };
-              Drupal.tpps.ShowMessages(doiMessageBox, data);
+              Drupal.tpps.showMessages(doiMessageBox, data);
               Drupal.tpps.fieldEnable(doiSelector);
               return;
             }
 
             // Check if we have cached result first.
             if (Drupal.settings.tpps.cache && typeof (Drupal.tpps.doi[doi]) != 'undefined') {
-              Drupal.tpps.ClearMessages(doiMessageBox);
+              Drupal.tpps.clearMessages(doiMessageBox);
               var data = Drupal.tpps.doi[doi];
-              Drupal.tpps.ShowMessages(doiMessageBox, data);
+              Drupal.tpps.showMessages(doiMessageBox, data);
               Drupal.tpps.fieldEnable(doiSelector);
               Drupal.tpps.doiFill(data);
             }
             else {
               var url = settings.basePath + settings.tpps.ajaxUrl + '/get_doi';
               // Remove existing messages.
-              Drupal.tpps.ClearMessages(doiMessageBox);
+              Drupal.tpps.clearMessages(doiMessageBox);
               $.ajax({
                 method: 'post',
                 data: {'doi': doi},
@@ -389,7 +319,7 @@
                   // User changed DOI during AJAX-request.
                   if (Drupal.tpps.wasDoiChanged(doi)) { return; }
                   // Server/Network errors.
-                  Drupal.tpps.ShowMessages(doiMessageBox, [{
+                  Drupal.tpps.showMessages(doiMessageBox, [{
                     "errors": [
                       Drupal.t("DOI value wasn't completed")
                     ]
@@ -409,7 +339,7 @@
                       "errors": [Drupal.t('Received empty response.')]
                     }];
                   }
-                  Drupal.tpps.ShowMessages(doiMessageBox, data);
+                  Drupal.tpps.showMessages(doiMessageBox, data);
                   Drupal.tpps.fieldEnable(doiSelector);
                   Drupal.tpps.doiFill(data);
                 }

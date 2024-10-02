@@ -91,9 +91,13 @@ function tpps_install() {
   variable_set('tpps_submit_all_log_cli_show_time', TRUE);
   // Misc Settings.
   variable_set('tpps_theme_fix_pager', FALSE);
+  variable_set('tpps_js_debug_mode', ['quickDebugMode' => 'quickDebugMode']);
   // Google Maps.
   variable_set('tpps_google_map_id', '');
   variable_set('tpps_maps_api_key', '');
+  variable_set('tpps_google_map_zoom_smooth_timeout', 100);
+  variable_set('tpps_google_map_zoom_default_level', 3);
+  variable_set('tpps_google_map_zoom_custom_level', 14);
   // Submission Export.
   // @TODO Add ability to change those variables at settings page.
   variable_set('tpps_submission_export_show_file_search_report', FALSE);
@@ -438,9 +442,13 @@ function tpps_uninstall() {
 
   // Misc Settings.
   variable_del('tpps_theme_fix_pager');
+  variable_del('tpps_js_debug_mode');
   // Google Maps.
   variable_del('tpps_google_map_id');
   variable_del('tpps_maps_api_key');
+  variable_del('tpps_google_map_zoom_smooth_timeout');
+  variable_del('tpps_google_map_zoom_default_level');
+  variable_del('tpps_google_map_zoom_custom_level');
 
   variable_del('tpps_imported_studies_list');
   // Submission Import/Export.

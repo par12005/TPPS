@@ -52,6 +52,16 @@ form.tppsc-form       select {
   font-size: 16px
 }
 
+/* Managed file dropdowns are too huge and require custom styles. */
+form.tppsc-form .form-managed-file table select {
+  border-radius: 7px;
+  padding: 0;
+  font-size: 12px
+}
+form.tppsc-form .form-managed-file table div.form-item {
+  margin: 0;
+}
+
 /* TPPS Submission Forms */
 form.tpps-submission input,
 form.tpps-submission textarea,

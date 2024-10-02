@@ -72,6 +72,11 @@ form.tppsc-form       div fieldset.form-wrapper legend div.fieldset-title,
 form.tpps-form        div fieldset.form-wrapper legend div.fieldset-title {
   color: white !important;
 }
+form.tppsc-form .tpps-map-wrapper,
+form.tpps-form .tpps-map-wrapper {
+  color: black;
+}
+
 table#tpps_table_display thead th,
 form.tpps-admin-panel table thead th,
 form.tpps-submission  table thead th,
