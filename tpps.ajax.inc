@@ -151,7 +151,7 @@ function tpps_ajax_get_ncbi_taxonomy_id(array $data) {
       'query' => ['id' => $response['id']],
       'external' => TRUE,
       'attributes' => [
-        'target' => 'blank',
+        'target' => '_blank',
         'title' => t('View using NCBI Taxonomy Browser'),
       ],
     ];
