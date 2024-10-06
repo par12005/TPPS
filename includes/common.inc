@@ -324,6 +324,7 @@ function tpps_js_debug_mode_get_features_list() {
     'Drupal.tpps.clearMessages',
     // Page 1.
     'Drupal.behaviors.tppsPage1',
+    'Drupal.tpps.validateOrganismName',
     // TPPS Pages.
     //'Drupal.behaviors.tppsPage2',
     //'Drupal.behaviors.tppsPage3',

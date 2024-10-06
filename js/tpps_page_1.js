@@ -27,42 +27,6 @@
     return $.trim(string).match(pattern) ? true : false;
   }
 
-  /**
-   * Checks if value of DOI field changed.
-   *
-   * @param string doi
-   *   New DOI value.
-   *
-   * @return bool
-   *   Returns TRUE if new and stored values are different and FALSE otherwise.
-   */
-  Drupal.tpps.wasDoiChanged = function(doi) {
-    return (
-      typeof (Drupal.tpps.doiLastValue) != 'undefined'
-      && Drupal.tpps.doiLastValue != doi
-    );
-  }
-
-  /**
-   * Enable HTML field.
-   *
-   * @param string $selector
-   *   JQuery selector for input element.
-   */
-  Drupal.tpps.fieldEnable = function(selector) {
-    $(selector).prop('disabled', false);
-  }
-
-  /**
-   * Disable HTML field.
-   *
-   * @param string $selector
-   *   JQuery selector for input element.
-   */
-  Drupal.tpps.fieldDisable = function(selector) {
-    $(selector).prop('disabled', true);
-  }
-
 
   Drupal.tpps.resetForm = function() {
     $('#edit-publication-primaryauthor').val('');
@@ -200,6 +164,117 @@
     }
   }
 
+
+  /**
+   * Validates organism name using NCBI database to get taxonomy id.
+   */
+  Drupal.tpps.validateOrganismName = function(event) {
+    let featureName = 'Drupal.tpps.validateOrganismName';
+    let fieldId = 'edit-organism-' + event.data.organismId + '-name';
+    let fieldSelector = '#' + fieldId;
+    let $field = $(fieldSelector);
+    let below = true;
+
+    dog('OrganismId: ' + event.data.organismId, featureName);
+    if ($field.length == 0) {
+      dog('Empty Organism Name field', featureName);
+      return;
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Get fid from managed file field.
+    let organismName = $field.val().trim();
+    dog('Name of the organism: ' + organismName + '.', featureName);
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Check if value really was changed.
+    if (
+      typeof (Drupal.tpps.lastValue[fieldId]) != 'undefined'
+      && Drupal.tpps.lastValue[fieldId] == organismName
+    ) {
+      dog('Value was\'t changed.', featureName);
+      Drupal.tpps.fieldEnable(fieldSelector);
+      return;
+    }
+    else {
+      // Store current value to be able to compare with new one later.
+      dog('Value was changed.', featureName);
+      dog('Store current value to be able to compare with new one later.', featureName);
+      Drupal.tpps.lastValue[fieldId] = organismName;
+    }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Basic validation: check if single space exists.
+    if (!checkSingleSpace.test(organismName)) {
+      dog('Basic validation failed.', featureName);
+      dog('Organism name must contain both genus and species separated '
+        + 'with space.', featureName);
+      Drupal.tpps.clearMessages(fieldSelector);
+      Drupal.tpps.showMessages(fieldSelector, {
+        'errors': [
+          Drupal.t('Wrong organism name. Valid format: "[genus] [species]".'),
+        ]
+      }, below);
+      return;
+    }
+    dog('Basic validation passed.', featureName);
+    Drupal.tpps.clearMessages(fieldSelector);
+    Drupal.tpps.showMessages(fieldSelector, {
+      'statuses': [Drupal.t('Organism name is valid.')]
+    }, below);
+    Drupal.tpps.fieldDisable(fieldSelector);
+
+
+    let url = Drupal.settings.basePath + Drupal.settings.tpps.ajaxUrl
+      + '/get_ncbi_taxonomy_id';
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Requiest NCBI id for organism.
+    $.ajax({
+      method: 'post',
+      data: {'organism': organismName},
+      url: url,
+      error: function (jqXHR, textStatus, errorThrown) {
+        // User changed value of the field during AJAX-request.
+        if (Drupal.tpps.wasValueChanged(fieldId, organismName)) { return; }
+        // Server/Network errors.
+        let data = {
+          'errors': [Drupal.t("Organism name validation failed.")]
+        };
+        Drupal.tpps.showMessages(fieldSelector, data, below);
+
+        let errorMessage = jqXHR.status + " " + jqXHR.statusText
+          + "\n\n" + jqXHR.responseText;
+        console.log(errorMessage);
+        dog("Organism name wasn't validated.", data, featureName)
+        Drupal.tpps.fieldEnable(fieldSelector);
+      },
+
+      success: function(data) {
+        // Store DOI check result to avoid multiple requests.
+        // @TODO Update.
+        // Note: DOI field stores AJAX-request response to avoid multiple requests.
+        // Drupal.tpps.doi[doi] = data;
+
+
+        // User changed value of the field during AJAX-request.
+        if (Drupal.tpps.wasValueChanged(fieldId, organismName)) { return; }
+        if (typeof (data) == 'undefined') {
+          var data = {
+            'errors': [Drupal.t('Received empty response.')],
+          };
+        }
+        if (below) {
+          // When messages are shown below selector then newer message appears
+          // at the top of previous (old one) messages which look not good.
+          // Let's just clear not important messages about basic pre-validation.
+          Drupal.tpps.clearMessages(fieldSelector);
+        }
+        Drupal.tpps.showMessages(fieldSelector, data);
+        Drupal.tpps.fieldEnable(fieldSelector);
+      }
+    });
+  }
+
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Behavior.
   Drupal.behaviors.tppsPage1 = {
@@ -217,36 +292,21 @@
         }
       );
 
+
+
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Validate species names using NCBI Taxomony.
       var organismNumber = Drupal.settings.tpps.organismNumber;
       dog('Number of organisms: ' + organismNumber, featureName);
       // Loop species fields.
       for (let organismId = 1; organismId <= organismNumber; organismId++) {
-        $('input#edit-organism-' + organismId + '-name', context).on('blur', function(e) {
-          dog('OrganismId: ' + organismId, featureName);
-          if ($(this).length == 0) {
-            dog('Empty Organism Name field', featureName);
-            return;
-          }
-          // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-          // Get fid from managed file field.
-          let organismName = $(this).val().trim();
-          dog('Name of the organism: ' + organismName + '.', featureName);
-          // Basic validation: check if single space exists.
-          if (!checkSingleSpace.test(organismName)) {
-            dog('Basic validation failed. Organism name must contain both '
-              + 'genus and species separated with space.', featureName);
-            return;
-          }
-          dog('Basic validation passed.', featureName);
-          // @TODO
-          // Requiest NCBI id for organism.
-          // Show message.
-          // Drupal.tpps.showMessage().
-        });
+        $('input#edit-organism-' + organismId + '-name', context).on(
+          'blur',
+          // @TODO Minor. Get organism Id from event object in callback.
+          {'organismId': organismId},
+          Drupal.tpps.validateOrganismName
+        );
       }
-
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Attach event handlers only once.
       $('form[id^=tppsc-main]').once('tpps-page-1-processed', function() {
@@ -305,15 +365,15 @@
 
             // Check if DOI value really was changed.
             if (
-              typeof (Drupal.tpps.doiLastValue) != 'undefined'
-              && Drupal.tpps.doiLastValue == doi
+              typeof (Drupal.tpps.lastValue['doi']) != 'undefined'
+              && Drupal.tpps.lastValue['doi'] == doi
             ) {
               Drupal.tpps.fieldEnable(doiSelector);
               return;
             }
             else {
               // Store current DOI value to be able to compare with new one later.
-              Drupal.tpps.doiLastValue = doi;
+              Drupal.tpps.lastValue['doi'] = doi;
             }
             // Check if DOI value is empty.
             if (typeof (doi) == 'undefined' || doi == '') {
@@ -345,7 +405,8 @@
               Drupal.tpps.doiFill(data);
             }
             else {
-              var url = settings.basePath + settings.tpps.ajaxUrl + '/get_doi';
+              var url = Drupal.settings.basePath + Drupal.settings.tpps.ajaxUrl
+                + '/get_doi';
               // Remove existing messages.
               Drupal.tpps.clearMessages(doiMessageBox);
               $.ajax({
@@ -353,14 +414,14 @@
                 data: {'doi': doi},
                 url: url,
                 error: function (jqXHR, textStatus, errorThrown) {
-                  // User changed DOI during AJAX-request.
-                  if (Drupal.tpps.wasDoiChanged(doi)) { return; }
+                  // User changed value of the field during AJAX-request.
+                  if (Drupal.tpps.wasValueChanged('doi', doi)) { return; }
                   // Server/Network errors.
-                  Drupal.tpps.showMessages(doiMessageBox, [{
-                    "errors": [
-                      Drupal.t("DOI value wasn't completed")
-                    ]
-                  }]);
+                  var data = [{
+                    "errors": [Drupal.t("DOI value wasn't completed")]
+                  }];
+                  Drupal.tpps.showMessages(doiMessageBox, data);
+
                   var errorMessage = jqXHR.status + " " + jqXHR.statusText
                     + "\n\n" + jqXHR.responseText;
                   console.log(errorMessage);
@@ -369,8 +430,8 @@
                 success: function(data) {
                   // Store DOI check result to avoid multiple requests.
                   Drupal.tpps.doi[doi] = data;
-                  // User changed DOI during AJAX-request.
-                  if (Drupal.tpps.wasDoiChanged(doi)) { return; }
+                  // User changed value of the field during AJAX-request.
+                  if (Drupal.tpps.wasValueChanged('doi', doi)) { return; }
                   if (typeof (data) == 'undefined') {
                     var data = [{
                       "errors": [Drupal.t('Received empty response.')]
