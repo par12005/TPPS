@@ -6,6 +6,9 @@
 (function($, Drupal) {
   var doiSelector = 'input[name="publication[publication_doi]"]';
   var doiMessageBox = '#doi-message';
+  // Regex to check if string contains only one space.
+  var checkSingleSpace = /^[^\s]*\s[^\s]*$/;
+
   // Create namespaces.
   Drupal.tpps = Drupal.tpps || {};
   Drupal.tpps.doi = Drupal.tpps.doi || {};
@@ -199,8 +202,9 @@
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Behavior.
-  Drupal.behaviors.tpps_page_1 = {
+  Drupal.behaviors.tppsPage1 = {
     attach: function (context, settings) {
+      var featureName = 'Drupal.behaviors.tppsPage1';
       // Clear value of last 'Secondary Author' field on 'Remove' button click.
       // Must be reattached to every new form part loaded via AJAX.
       // @TODO Probably tpps_dynamic_list() must be updated.
@@ -214,10 +218,41 @@
       );
 
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Validate species names using NCBI Taxomony.
+      var organismNumber = Drupal.settings.tpps.organismNumber;
+      dog('Number of organisms: ' + organismNumber, featureName);
+      // Loop species fields.
+      for (let organismId = 1; organismId <= organismNumber; organismId++) {
+        $('input#edit-organism-' + organismId + '-name', context).on('blur', function(e) {
+          dog('OrganismId: ' + organismId, featureName);
+          if ($(this).length == 0) {
+            dog('Empty Organism Name field', featureName);
+            return;
+          }
+          // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+          // Get fid from managed file field.
+          let organismName = $(this).val().trim();
+          dog('Name of the organism: ' + organismName + '.', featureName);
+          // Basic validation: check if single space exists.
+          if (!checkSingleSpace.test(organismName)) {
+            dog('Basic validation failed. Organism name must contain both '
+              + 'genus and species separated with space.', featureName);
+            return;
+          }
+          dog('Basic validation passed.', featureName);
+          // @TODO
+          // Requiest NCBI id for organism.
+          // Show message.
+          // Drupal.tpps.showMessage().
+        });
+      }
+
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Attach event handlers only once.
-      $('form[id^=tppsc-main]').once('tpps_page_1', function() {
+      $('form[id^=tppsc-main]').once('tpps-page-1-processed', function() {
         if ($('#edit-publication-status').val() == 'In Preparation or Submitted') {
-          var $label = $('input[name="publication[publication_doi]"]').parent().find('label');
+          var $label = $('input[name="publication[publication_doi]"]')
+            .parent().find('label');
           $label.html($label.html().replace(' *', ''));
           Drupal.tpps.makePublicationFieldsOptional();
         }
@@ -227,13 +262,15 @@
         $('#edit-publication-status').on('change', function(e) {
           if ($(this).val() == 'In Preparation or Submitted') {
             // Remove '*' from 'Publication DOI' field because it's optional.
-            var $label = $('input[name="publication[publication_doi]"]').parents('.form-item').find('label');
+            var $label = $('input[name="publication[publication_doi]"]')
+              .parents('.form-item').find('label');
             $label.html($label.html().replace(' *', ''));
             Drupal.tpps.makePublicationFieldsOptional();
           }
           else if ($(this).val() == 'Published') {
             // 'Publication DOI' field became required.
-            var $label = $('input[name="publication[publication_doi]"]').parents('.form-item').find('label');
+            var $label = $('input[name="publication[publication_doi]"]')
+              .parents('.form-item').find('label');
             // To avoid duplication of asterisk for field which was hidden
             // but Drupal Form API States we force removement of existing
             // asterisks (if any). It's better then duplicate Drupal Form

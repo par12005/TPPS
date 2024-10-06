@@ -322,6 +322,12 @@ function tpps_js_debug_mode_get_features_list() {
     // js/tpps_header.js
     'Drupal.tpps.showMessages',
     'Drupal.tpps.clearMessages',
+    // Page 1.
+    'Drupal.behaviors.tppsPage1',
+    // TPPS Pages.
+    //'Drupal.behaviors.tppsPage2',
+    //'Drupal.behaviors.tppsPage3',
+    //'Drupal.behaviors.tppsPage4',
   ];
 }
 
@@ -330,7 +336,10 @@ function tpps_js_debug_mode_get_features_list() {
  *
  * @return array
  *   Returns list of selected features.
+ *   Default: ['quickDebugMode' => 'quickDebugMode'];
  */
 function tpps_js_debug_mode_get_features() {
-  return array_filter(array_values(variable_get('tpps_js_debug_mode')));
+  return array_filter(array_values(
+    variable_get('tpps_js_debug_mode', ['quickDebugMode' => 'quickDebugMode'])
+  ));
 }

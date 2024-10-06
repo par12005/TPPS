@@ -1,9 +1,9 @@
 (function ($) {
-  Drupal.behaviors.tpps_page_4 = {
+  Drupal.behaviors.tppsPage4 = {
     attach: function (context, settings) {
       // TPPS Form Page 4 Common.
       // Attach event handlers only once.
-      $('form[id^=tppsc-main]', context).once('tpps_page_4', function() {
+      $('form[id^=tppsc-main]', context).once('tppsPage4', function() {
         let $form = $(this);
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

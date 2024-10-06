@@ -337,7 +337,7 @@ function tpps_page_1_get_doi_examples() {
     '10.5061/dryad.91mk9',
     // Not used, no species.
     '10.21267/IN.2016.6.2294',
-    // Raal, not used, with species.
+    // Real, not used, with species.
     '10.5061/dryad.vk43j',
   ];
   foreach ($doi_suggestion_list as $doi_suggestion) {
