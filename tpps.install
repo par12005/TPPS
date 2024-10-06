@@ -57,6 +57,7 @@ function tpps_install() {
   );
   variable_set('tpps_report_organism_list_title', 'Organism List');
   variable_set('tpps_report_doi_duplicates_title', 'DOI Duplicates');
+  variable_set('tpps_report_new_organisms_title', 'New Organisms');
   // Submission Tools.
   variable_set('tpps_submission_secret_key', '');
   // Main settings.
@@ -409,6 +410,7 @@ function tpps_uninstall() {
   variable_del('tpps_report_order_family_not_exist_title');
   variable_del('tpps_report_organism_list_title');
   variable_del('tpps_report_doi_duplicates_title');
+  variable_del('tpps_report_new_organisms_title');
   // Submission Tools.
   variable_del('tpps_submission_secret_key');
   // Main settings.
@@ -2255,5 +2257,16 @@ function tpps_update_7123() {
   $column_name = 'shared_state';
   if (!db_field_exists($table_name, $column_name)) {
     db_query('ALTER TABLE tpps_submission ADD COLUMN shared_state text;');
+  }
+}
+
+/**
+ * Set title of the new report 'New Organisms'.
+ */
+function tpps_update_7124() {
+  variable_set('tpps_report_new_organisms_title', 'New Organisms');
+  // Late fix of manually added changes on live site.
+  if (empty(variable_get('tpps_js_debug_mode'))) {
+    variable_set('tpps_js_debug_mode', ['quickDebugMode' => 'quickDebugMode']);
   }
 }

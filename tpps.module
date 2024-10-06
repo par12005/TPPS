@@ -2348,33 +2348,20 @@ function tpps_report_get_list() {
       'page callback' => 'tpps_admin_doi_duplicates_report',
       'admin_panel' => TRUE,
     ],
+    'new_organisms' => [
+      'url' => 'new-organisms',
+      'title' => variable_get('tpps_report_new_organisms_title', 'New Organisms'),
+      'description' => t('List of Studies with new organisms (missing in NCBI database).'),
+      'page callback' => 'tpps_new_organisms_report',
+      'admin_panel' => TRUE,
+    ],
   ];
 }
 
 /**
  * Adds report menu items for hook_menu().
  *
- * To add new item:
- * 1. Clone /reports/orgnaism_list.inc for simple db-query.
- *    Clone 'doi_duplicates' for table (no sorting).
- * 2. Update code of new file.
- * 3. Add variables which stores report title to hook_install/uninstall.
- * 4. Add metadata to tpps_report_get_list().
- * 5. Add ability to change report title at 'admin/config/tpps/reports'.
- *    See function tpps_reports_settings_form().
- * 6. Update tpps_admin_panel_get_reports().
- * 7. Clear cache.
- *
- * Naming rules:
- * 1. Machine name uses underscores. E.g., 'organism_list'.
- * 2. URL uses hyphens. E.g., 'organism-list'.
- * 3. Title stored in non-localized English in variable with name:
- *    'tpps_report_' . $machine_name . '_title'.
- *
- * Report types:
- * 1. tpps_admin_organism_list_report() - simpliest db query without formatter.
- * 2. tpps_admin_missing_doi_report() - db-query with subqueries and formatter.
- * 3. tpps_admin_submissions_all_files_report() - no-query table with caching.
+ * To add new item: see reports/README.md.
  *
  * @param array $items
  *   Menu items.
