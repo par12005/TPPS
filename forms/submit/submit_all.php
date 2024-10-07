@@ -498,9 +498,9 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
     echo "This is the record data to check for OR ELSE insert this data into the db\n";
     print_r($record);
 
-    if (preg_match('/ x /', $species)) {
-      $record['type_id'] = tpps_load_cvterm('speciesaggregate')->cvterm_id;
-    }
+    // if (preg_match('/ x /', $species)) {
+    //   $record['type_id'] = tpps_load_cvterm('speciesaggregate')->cvterm_id;
+    // }
 
     echo "Checking to see if records exist for genus $genus, species $species, infr $infra\n";
     // Let's check to see if genus and species match, if so, get the id
