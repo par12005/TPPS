@@ -6,8 +6,6 @@
 (function($, Drupal) {
   var doiSelector = 'input[name="publication[publication_doi]"]';
   var doiMessageBox = '#doi-message';
-  // Regex to check if string contains only one space.
-  var checkSingleSpace = /^[^\s]*\s[^\s]*$/;
 
   // Create namespaces.
   Drupal.tpps = Drupal.tpps || {};
@@ -19,11 +17,11 @@
    *
    * @return bool
    *   Returns TRUE if validation passed and FALSE otherwise.
+   *
+   * @TODO Replace with Drupal.tpps.validate('doi', string);
    */
   Drupal.tpps.DoiValidate  = function (string) {
-    // @TODO [VS] Minor. Get this validation regex from Drupal.settings.tpps.
-    var pattern = /^10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+$/;
-    return $.trim(string).match(pattern) ? true : false;
+    return Drupal.tpps.isValid('doi', string);
   }
 
 
@@ -229,15 +227,12 @@
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Basic validation: check if single space exists.
-    if (!checkSingleSpace.test(organismName)) {
+    if (!Drupal.tpps.isValid('organismName', organismName)) {
       dog('Basic validation failed.', featureName);
-      dog('Organism name must contain both genus and species separated '
-        + 'with space.', featureName);
+      dog('Organism name is invalid.', featureName);
       Drupal.tpps.clearMessages(fieldSelector);
       Drupal.tpps.showMessages(fieldSelector, {
-        'errors': [
-          Drupal.t('Wrong organism name. Valid format: "[genus] [species]".'),
-        ]
+        'errors': [Drupal.t('Organism name is invalid.')]
       }, below);
       return;
     }

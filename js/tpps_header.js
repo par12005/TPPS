@@ -263,4 +263,38 @@ Drupal.tpps.ajaxCache = Drupal.tpps.ajaxCache || {};
   }
   window.dog = dog;
 
+  /**
+   * Validates string using predefined regex rules.
+   *
+   * See PHP-version: tpps_is_valid().
+   * See /admin/config/tpps/misc for settings.
+   *
+   * @param rule string
+   *   Type of data to be validated.
+   *   Posible values are: 'doi', 'organism', 'singleSpace'.
+   * @param string string
+   *   String to be validated.
+   *
+   * @return bool
+   *   Returns TRUE if validation passed or validation regex is empty.
+   *   Returns FALSE if string was empty (after trim()) or validation failed.
+   */
+  Drupal.tpps.isValid = function (rule, string) {
+    // Check if rule was defined.
+    if ('tpps' in Drupal.settings && 'validationRegex' in Drupal.settings.tpps) {
+      if (typeof Drupal.settings.tpps.validationRegex[rule] == 'undefined') {
+        console.log(Drupal.t('Validation Regex not found for @rule_name rule.',
+          {'@rule_name': rule}));
+        return true;
+      }
+    }
+    else {
+      console.error(Drupal.t('No validation regexes found at all.'));
+    }
+    // Get regex.
+    let pattern = Drupal.settings.tpps.validationRegex[rule];
+    // Validate.
+    return $.trim(string).match(pattern) ? true : false;
+  }
+
 }(jQuery, Drupal));

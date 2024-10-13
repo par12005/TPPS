@@ -93,6 +93,13 @@ function tpps_install() {
   // Misc Settings.
   variable_set('tpps_theme_fix_pager', FALSE);
   variable_set('tpps_js_debug_mode', ['quickDebugMode' => 'quickDebugMode']);
+  // Misc: Validation Regexes.
+  variable_set('tpps_validation_regex_doi',
+    '/^10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+$/');
+  variable_set('tpps_validation_regex_organism_name',
+ '/^[^\s]+\s[^\s]+(\s[^\s]+)*$/');
+  variable_set('tpps_validation_regex_single_space', '/^[^\s]*\s[^\s]*$/');
+
   // Google Maps.
   variable_set('tpps_google_map_id', '');
   variable_set('tpps_maps_api_key', '');
@@ -445,6 +452,10 @@ function tpps_uninstall() {
   // Misc Settings.
   variable_del('tpps_theme_fix_pager');
   variable_del('tpps_js_debug_mode');
+  // Misc: Validation Regexes.
+  variable_del('tpps_validation_regex_doi');
+  variable_del('tpps_validation_regex_organism_name');
+  variable_del('tpps_validation_regex_single_space');
   // Google Maps.
   variable_del('tpps_google_map_id');
   variable_del('tpps_maps_api_key');

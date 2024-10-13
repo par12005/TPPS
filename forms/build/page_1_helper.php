@@ -234,10 +234,6 @@ function tpps_secondary_authors(array &$form, array $values, array $form_state) 
  * @param array $form_state
  *   The form_state of the form to be populated.
  *
- * @return array
- *   The populated form.
- *
- *
  * @TODO Doublecheck and remove. Currently function not used.
  */
 function tppsc_organism(array &$form, array &$form_state) {
@@ -330,17 +326,7 @@ function tppsc_organism(array &$form, array &$form_state) {
  *   Returns HTML string with list of DOI examples.
  */
 function tpps_page_1_get_doi_examples() {
-  $doi_suggestion_list = [
-    // Fake.
-    '10.1111/dryad.111',
-    // Real but used. No species.
-    '10.5061/dryad.91mk9',
-    // Not used, no species.
-    '10.21267/IN.2016.6.2294',
-    // Real, not used, with species.
-    '10.5061/dryad.vk43j',
-  ];
-  foreach ($doi_suggestion_list as $doi_suggestion) {
+  foreach (tpps_doi_get_examples_list() as $doi_suggestion) {
     // @todo Use l().
     $list[] = '<a href"#" class="tpps-suggestion">'
       . $doi_suggestion . '</a>';

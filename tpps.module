@@ -1954,6 +1954,12 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
   $dark_theme_path = TPPS_MODULE_PATH . '/css/dark_theme.css';
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $js_debug_mode_features = tpps_js_debug_mode_get_features();
+  // Get validation regexes.
+  foreach (['doi', 'organism_name', 'single_space'] as $name) {
+    if (!empty($value = variable_get('tpps_validation_regex_' . $name))) {
+      $validation_regex[tpps_snake_to_camel_case($name)] = $value;
+    }
+  }
   $js_settings = [
     'debugMode' => array_combine(
       // We used keys to avoid duplicates in the list because this function
@@ -1961,6 +1967,8 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
       // so using the same keys solves problem.
       $js_debug_mode_features, $js_debug_mode_features
     ),
+    // List of regexes to validate various strings.
+    'validationRegex' => $validation_regex ?? [],
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // This is regualar page.
@@ -1981,12 +1989,12 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
       drupal_add_css(TPPS_MODULE_PATH . TPPS_CSS_PATH);
       // JS.
       drupal_add_js(
-        TPPS_MODULE_PATH . TPPS_JS_HEADER_PATH,
-        ['type' => 'file', 'scope' => 'header']);
-      drupal_add_js(
         ['tpps' => $js_settings],
         ['type' => 'setting', 'scope' => 'header']
       );
+      drupal_add_js(
+        TPPS_MODULE_PATH . TPPS_JS_HEADER_PATH,
+        ['type' => 'file', 'scope' => 'header']);
       drupal_add_js(TPPS_MODULE_PATH . TPPS_JS_PATH);
       if (variable_get('tpps_theme_fix_pager')) {
         drupal_add_css(TPPS_MODULE_PATH . '/css/pager_fix.css');

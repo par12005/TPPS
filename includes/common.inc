@@ -344,3 +344,131 @@ function tpps_js_debug_mode_get_features() {
     variable_get('tpps_js_debug_mode', ['quickDebugMode' => 'quickDebugMode'])
   ));
 }
+
+/**
+ * Get a list of DOI examples.
+ *
+ * Items are valid DOI.
+ *
+ * @return array
+ *   Returns list of DOIs.
+ */
+function tpps_doi_get_examples_list() {
+  return [
+    // Fake.
+    '10.1111/dryad.111',
+    // Real but used. No species.
+    '10.5061/dryad.91mk9',
+    // Not used, no species.
+    '10.21267/IN.2016.6.2294',
+    // Real, not used, with species.
+    '10.5061/dryad.vk43j',
+  ];
+}
+
+/**
+ * Converts snake_case to camelCase.
+ *
+ * Idea: https://gist.github.com/carousel/1aacbea013d230768b3dec1a14ce5751
+ *
+ * @param string $input
+ *   String in snake_case to be converted.
+ *
+ * @return string
+ *   String in camelCase.
+ */
+function tpps_snake_to_camel_case($input) {
+  return lcfirst(str_replace('_', '', ucwords($input, '_')));
+}
+
+/**
+ * Validates string using predefined regex rules.
+ *
+ * See JS version: Drupal.tpps.isValid().
+ * See /admin/config/tpps/misc for settings.
+ *
+ * @param string $rule
+ *   Type of data to be validated.
+ *   Posible values are: 'doi', 'organism_name', 'single_space'.
+ * @param string $string
+ *   String to be validated.
+ *
+ * @return bool
+ *   Returns TRUE if validation passed or validation regex is empty.
+ *   Returns FALSE if string was empty (after trim()) or validation failed.
+ */
+function tpps_is_valid($rule, $string) {
+  $string = trim($string);
+  if (!$string) {
+    return FALSE;
+  }
+  if (!$pattern = variable_get('tpps_validation_regex_' . $rule)) {
+    return TRUE;
+  }
+  // Validate.
+  return (bool) preg_match($pattern, $string);
+}
+
+/**
+ * FTest for tpps_is_valid().
+ */
+//  /^[^\s]+\s[^\s]+(\s[subsp\.|spp\.|subspecies|var\.|varieta|variety])*/
+function ftest_tpps_is_valid() {
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Single Space.
+  dpm('== Case 1. Single Space ==');
+  $rule = 'single_space';
+  $string_list = [
+    'sdfsdf',
+    'sdfsdf sdfsdf',
+    'sdfsdf sdfsdf sdfsdf',
+  ];
+  foreach ($string_list as $string) {
+    $result = tpps_is_valid($rule, $string);
+    dpm(($result ? 'PASSED' : 'failed'), '"' . $string . '"');
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // DOI.
+  dpm('== Case 2. DOI ==');
+  $rule = 'doi';
+  $string_list = [
+    '10.21267/IN.2016.6.2294',
+  ];
+  foreach ($string_list as $string) {
+    $result = tpps_is_valid($rule, $string);
+    dpm(($result ? 'PASSED' : 'failed'), '"' . $string . '"');
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Rule 'organism_name'.
+  dpm('== Case 3. Organism Name ==');
+  $rule = 'organism_name';
+  dpm(variable_get('tpps_validation_regex_' . $rule));
+  // https://docs.google.com/document/d/1xd3BcZHQArdpVPa3z6mcu87iErS7d9jXn_pcoQ8wNXw/edit?tab=t.0
+  $string_list = [
+    'Genus species',
+    'Genus species ',
+    ' Genus species ',
+    // Sub:
+    'Genus species subsp. subspecies',
+    'Genus species spp. subspecies',
+    'Genus species subspecies subspecies',
+    // Varietas (variety):
+    'Genus species var. variety',
+    'Genus species varieta variety',
+    'Genus species variety variety',
+    // Subverietas (subvariety):
+    'Genus species subvar. subvariety',
+    'Genus species subvarieta subvariety',
+    'Genus species subvariety subvariety',
+    // Forma (form):
+    'Genus species f. form',
+    'Genus species forma form',
+    'Genus species form form',
+  ];
+  foreach ($string_list as $string) {
+    $result = tpps_is_valid($rule, $string);
+    dpm(($result ? 'PASSED' : 'failed'), '"' . $string . '"');
+  }
+}
