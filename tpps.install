@@ -837,7 +837,6 @@ function tpps_schema() {
     ),
   );
 
-  // [VS]
   // #3kged9b Phenotypes synonyms table integrated on TPPS.
   $schema['tpps_phenotype_unit_warning'] = [
     'description' => 'List of studies with Custom Units.',
@@ -854,7 +853,42 @@ function tpps_schema() {
   ];
   // #861n70hh6 Add custom cache table to have ability to clear only module's data.
   $schema[TPPS_CACHE_BIN] = drupal_get_schema_unprocessed('system', 'cache');
-  // [/VS]
+
+  // Table to store relations between organism name and NCBI Taxonomy Id.
+  $schema['tpps_ncbi_taxonomy'] = [
+    'description' => 'NCBI Taxonomy Id for organisms.',
+    'fields' => [
+      'organism_id' => [
+        'description' => 'Organism Id.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => FALSE,
+      ],
+      'organism_name' => [
+        'description' => 'Organism Name.',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => FALSE,
+      ],
+      'ncbi_taxonomy_id' => [
+        'description' => 'NCBI Taxomony Id.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => FALSE,
+      ],
+    ],
+    'foreign keys' => [
+      'organism_id' => [
+        'table' => 'chado.organism',
+        'columns' => [
+          'organism_id' => 'organism_id',
+        ],
+      ],
+    ],
+    'unique keys' => [
+      'organism_id' => ['organism_id'],
+    ],
+  ];
 
   return $schema;
 }
@@ -2272,7 +2306,7 @@ function tpps_update_7123() {
 }
 
 /**
- * Set title of the new report 'New Organisms'.
+ * Title of 'New Organisms' report, db table 'tpps_ncbi_taxonomy' and validation regex variables.
  */
 function tpps_update_7124() {
   variable_set('tpps_report_new_organisms_title', 'New Organisms');
@@ -2280,4 +2314,24 @@ function tpps_update_7124() {
   if (empty(variable_get('tpps_js_debug_mode'))) {
     variable_set('tpps_js_debug_mode', ['quickDebugMode' => 'quickDebugMode']);
   }
+  // Create new db table.
+  $table_name = 'tpps_ncbi_taxonomy';
+  if (!db_table_exists($table_name)) {
+    if ($table_schema = tpps_schema()[$table_name]) {
+      $transaction = db_transaction();
+      try {
+        db_create_table($table_name, $table_schema);
+      }
+      catch (\Exception $e) {
+        $transaction->rollback();
+        throw $e;
+      }
+    }
+  }
+  // Set regex for validation.
+  variable_set('tpps_validation_regex_doi', '/^10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+$/');
+  variable_set('tpps_validation_regex_organism_name', '/^10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+$/');
+  variable_set('tpps_validation_regex_single_space', '/^[^\s]*\s[^\s]*$/');
+
+  cache_clear_all();
 }

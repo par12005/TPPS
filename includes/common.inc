@@ -473,3 +473,17 @@ function ftest_tpps_is_valid() {
     dpm(($result ? 'PASSED' : 'failed'), '"' . $string . '"');
   }
 }
+
+/**
+ * Extracts parts of organism name into associative array.
+ *
+ * @param string $organism_name
+ *   Organism name to be parsed.
+ *
+ * @return array
+ *   Returns array with keys: 'genus', 'species' and 'extra'.
+ */
+function tpps_parse_organism_name($organism_name) {
+  $keys = ['genus', 'species', 'extra'];
+  return array_combine($keys, explode(" ", $organism_name, 3));
+}

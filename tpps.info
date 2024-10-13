@@ -9,3 +9,4 @@ dependencies[] = ultimate_cron
 dependencies[] = jquery_update
 dependencies[] = tripal_eutils
 files[] = src/Submission.class.inc
+files[] = src/Organism.class.inc

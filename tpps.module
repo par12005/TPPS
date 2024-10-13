@@ -2739,6 +2739,30 @@ function tpps_submission($accession = '') {
 }
 
 /**
+ * Creates new Organism object.
+ *
+ * How to use:
+ * tpps_organism($id)->name;
+ * tpps_organism($id)->genus;
+ * tpps_organism($id)->ncbiTaxonomyId;
+ *
+ * @param mixed $organism_key
+ *   Organism Id or Name.
+ *
+ * @return object
+ *   Returns Organism object or throw an exception if it's not found.
+ */
+function tpps_organism($organism_key = '') {
+  $organism = new Organism($organism_key);
+  if ($organism->doesNotExist()) {
+    throw new Exception(
+      t('Organism @key not found.', ['@key' => $organism_key])
+    );
+  }
+  return $organism;
+}
+
+/**
  * Loads TPPS Submission.
  *
  * @param string $accession
