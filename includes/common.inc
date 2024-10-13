@@ -322,6 +322,7 @@ function tpps_js_debug_mode_get_features_list() {
     // js/tpps_header.js
     'Drupal.tpps.showMessages',
     'Drupal.tpps.clearMessages',
+    'Drupal.tpps.isValid',
     // Page 1.
     'Drupal.behaviors.tppsPage1',
     'Drupal.tpps.validateOrganismName',

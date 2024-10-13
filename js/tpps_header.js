@@ -280,6 +280,16 @@ Drupal.tpps.ajaxCache = Drupal.tpps.ajaxCache || {};
    *   Returns FALSE if string was empty (after trim()) or validation failed.
    */
   Drupal.tpps.isValid = function (rule, string) {
+    let featureName = 'Drupal.tpps.isValid';
+    dog(rule, featureName);
+    string = $.trim(string);
+    if (string == '') {
+      console.error(Drupal.t(
+        'Empty string for validation using @rule_name rule.',
+        {'@rule_name': rule}
+      ));
+      return false;
+    }
     // Check if rule was defined.
     if ('tpps' in Drupal.settings && 'validationRegex' in Drupal.settings.tpps) {
       if (typeof Drupal.settings.tpps.validationRegex[rule] == 'undefined') {
@@ -290,11 +300,15 @@ Drupal.tpps.ajaxCache = Drupal.tpps.ajaxCache || {};
     }
     else {
       console.error(Drupal.t('No validation regexes found at all.'));
+      return false;
     }
     // Get regex.
     let pattern = Drupal.settings.tpps.validationRegex[rule];
+    dog(pattern, featureName);
     // Validate.
-    return $.trim(string).match(pattern) ? true : false;
+    //let re = new RegExp(pattern + 'g');
+    //dog(re.test(string), featureName);
+    return string.match(pattern) ? true : false;
   }
 
 }(jQuery, Drupal));
