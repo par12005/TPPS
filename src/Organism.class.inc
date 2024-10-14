@@ -3,6 +3,24 @@
 /**
  * @file
  * Contains 'Organism' class.
+ *
+ * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+ * Usage:
+ *
+ * To check if organism exists in DB:
+ *   tpps_organism($id)->doesExists();
+ * To add new organism:
+ *   tpps_organism($name)->save();
+ * To get NCBI Taxonomy Id:
+ *   tpps_organism($id)->requestNcbiTaxonomyId()->ncbiTaxonomyId;
+ * To load organism from DB:
+ *   tpps_organism($id);
+ *   tpps_organism($name);
+ *
+ * Not implemented:
+ *
+ * To validate organism name:
+ *   tpps_organism($name)->isValid();
  */
 
 /**
@@ -12,6 +30,15 @@
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
 class Organism {
+
+  /**
+   * Name of the table where organism data is stored.
+   */
+  const TABLE_ORGANISM = 'chado.organism';
+  /**
+   * Name of the table which stores NCBI Taxonomy Ids per organism.
+   */
+  const TABLE_NCBI_TAXONOMY = 'tpps_ncbi_taxonomy';
 
   /**
    * NCBI Taxonomy Id.
@@ -251,13 +278,12 @@ class Organism {
     $this->ncbiTaxonomyId = check_plain($response[0]) ?? FALSE;
 
 // @TODO Save to DB table 'tpps_ncbi_taxonomy'.
-    $table = 'tpps_ncbi_taxonomy';
     $fields = [
       'organism_id' => $this->id ?? NULL,
       'organism_name' => $this->name ?? NULL,
       'taxonomy_id' => $this->ncbiTaxonomyId ?? NULL,
     ];
-    db_insert($table)->fields($fields)->execute();
+    db_insert(self::TABLE_NCBI_TAXONOMY)->fields($fields)->execute();
 
     return $this;
   }
@@ -266,25 +292,50 @@ class Organism {
    * Saves organism to db.
    */
   function save() {
+    $fields = [
+      'organism_id' => $this->id ?? NULL,
+      'abbreviation' => '',
+      'genus' => $this->genus ?? '',
+      'species' => $this->species ?? '',
+      'common_name' => '',
+      'infraspecific_name' => $this->infraspecificName ?? '',
+      'type_id' => '',
+      'comment' => '',
+    ];
+    if ($this->isRecordExists()) {
+      // Update.
+      unset($fields['organism_id']);
+      db_update(self::TABLE_ORGANISM)
+        ->fields($fields)
+        ->condition('organism_id', $this->id)
+        ->execute();
 
-    // Check if record exists.
-    if (0) {
-      // Insert.
-      $fields = [
-        'organism_id' => $this->id,
-        'abbreviation' => '',
-        'genus' => $this->genus ?? '',
-        'species' => $this->species ?? '',
-        'common_name' => '',
-        'infraspecific_name' => $this->infraspecificName ?? '',
-        'type_id' => '',
-        'comment' => '',
-      ];
-      db_insert($table)->fields($fields)->execute();
     }
     else {
-      // Update.
+      // Insert.
+      db_insert(self::TABLE_ORGANISM)->fields($fields)->execute();
     }
+  }
+
+  /**
+   * Checks if organism exists in DB table 'chado.organism'.
+   *
+   * db_select() is way slower than db_query().
+   * https://stackoverflow.com/a/21481960/1041470
+   *
+   * @return bool
+   *   Returns TRUE if record was found in DB table and FALSE otherwise.
+   *
+   * @TODO Add to Submission class the same code.
+   */
+  public function isRecordExists($organism_id = NULL) {
+    $organism_id = $organism_id ?? $this->id ?? NULL;
+    if (empty($organism_id)) {
+      return FALSE;
+    }
+    $sql = 'select organism_id from {' . self::TABLE_ORGANISM
+      . '} where organism_id = :id limit 1';
+    return (bool) (db_query($sql, [':id' => $organism_id])->fetchField());
   }
 
   /**
@@ -294,14 +345,13 @@ class Organism {
     if (empty($this->ncbiTaxonomyId)) {
       // Get from DB.
       // @TODO Use constant to store table names.
-      $table = 'tpps_ncbi_taxonomy';
       $this->load();
       if (empty($this->id)) {
         $message = t('No organism Id');
         watchdog('tpps', $message, [], WATCHDOG_ERROR);
         return;
       }
-      $this->ncbiTaxonomyId = db_select($table, 't')
+      $this->ncbiTaxonomyId = db_select(self::TABLE_NCBI_TAXONOMY, 't')
         ->fields('t')
         ->condition('organism_id', $this->id)
         ->range(0, 1)
