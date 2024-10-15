@@ -281,8 +281,10 @@ Drupal.tpps.ajaxCache = Drupal.tpps.ajaxCache || {};
    */
   Drupal.tpps.isValid = function (rule, string) {
     let featureName = 'Drupal.tpps.isValid';
-    dog(rule, featureName);
+    dog('Rule: "' + rule + '".', featureName);
     string = $.trim(string);
+    dog('String: "' + string + '".', featureName);
+
     if (string == '') {
       console.error(Drupal.t(
         'Empty string for validation using @rule_name rule.',
@@ -304,10 +306,13 @@ Drupal.tpps.ajaxCache = Drupal.tpps.ajaxCache || {};
     }
     // Get regex.
     let pattern = Drupal.settings.tpps.validationRegex[rule];
-    dog(pattern, featureName);
+    dog('Initial regex: "' + pattern + '".', featureName);
+    // Remove leading and trailing slashes.
+    if (pattern.charAt(0) == "/") pattern = pattern.substr(1);
+    if (pattern.charAt(pattern.length - 1) == "/") pattern = pattern.substr(0, pattern.length - 1);
+    dog('Updated regex: "' + pattern + '".', featureName);
+
     // Validate.
-    //let re = new RegExp(pattern + 'g');
-    //dog(re.test(string), featureName);
     return string.match(pattern) ? true : false;
   }
 
