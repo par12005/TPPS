@@ -318,22 +318,63 @@ class Organism {
   }
 
   /**
+   * Saves NCBI Taxonomy Id to db.
+   *
+   * @return bool
+   *   Returns TRUE if record was inserted/updated and FALSE otherwise.
+   */
+  public function saveTaxonomy() {
+    $fields = [
+      'organism_id' => $this->id ?? NULL,
+      'organism_name' => $this->name ?? NULL,
+      'taxonomy_id' => $this->ncbiTaxonomyId ?? NULL,
+    ];
+    $fields = array_filter($fields);
+    if (!count($fields)) {
+      // Empty array.
+      return FALSE;
+    }
+    if (empty($fields['taxonomy_id'])) {
+      // No sence to insert this record.
+      return FALSE;
+    }
+
+    if ($this->isRecordExists(self::TABLE_NCBI_TAXONOMY)) {
+      // Update.
+      unset($fields['organism_id']);
+      db_update(self::TABLE_NCBI_TAXONOMY)
+        ->fields($fields)
+        ->condition('organism_id', $this->id)
+        ->execute();
+    }
+    else {
+      // Insert.
+      db_insert(self::TABLE_NCBI_TAXONOMY)->fields($fields)->execute();
+    }
+    return TRUE;
+  }
+
+  /**
    * Checks if organism exists in DB table 'chado.organism'.
    *
-   * db_select() is way slower than db_query().
+   * Function db_select() is slower than db_query().
    * https://stackoverflow.com/a/21481960/1041470
    *
    * @return bool
    *   Returns TRUE if record was found in DB table and FALSE otherwise.
    *
+   * @todo Minor. Allow to set key and it's value to use for many tables.
    * @TODO Add to Submission class the same code.
    */
-  public function isRecordExists($organism_id = NULL) {
-    $organism_id = $organism_id ?? $this->id ?? NULL;
+  public function isRecordExists($table = '') {
+    $organism_id = $this->id ?? NULL;
     if (empty($organism_id)) {
       return FALSE;
     }
-    $sql = 'select organism_id from {' . self::TABLE_ORGANISM
+    if (empty($table)) {
+      $table = self::TABLE_ORGANISM;
+    }
+    $sql = 'select organism_id from {' . $table
       . '} where organism_id = :id limit 1';
     return (bool) (db_query($sql, [':id' => $organism_id])->fetchField());
   }
@@ -386,6 +427,31 @@ class Organism {
    */
   public function doesNotExist() {
     return !($this->doesExist());
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Because of late static binding of PHP we need this to get table names
+  // outside this class.
+  // https://github.com/bmewburn/vscode-intelephense/issues/916.
+
+  /**
+   * Gets vale of the TABLE_ORGANISM constant outside of this class.
+   *
+   * @return string
+   *   Returns DB table name.
+   */
+  public static function getTableOrganismName() {
+    return static::TABLE_ORGANISM;
+  }
+
+  /**
+   * Gets vale of the TABLE_NCBI_TAXONOMY constant outside of this class.
+   *
+   * @return string
+   *   Returns DB table name.
+   */
+  public static function getTableNcbiTaxonomyName() {
+    return static::TABLE_NCBI_TAXONOMY;
   }
 
 }

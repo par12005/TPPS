@@ -870,7 +870,7 @@ function tpps_schema() {
         'size' => 'normal',
         'not null' => FALSE,
       ],
-      'ncbi_taxonomy_id' => [
+      'taxonomy_id' => [
         'description' => 'NCBI Taxomony Id.',
         'type' => 'int',
         'size' => 'big',
