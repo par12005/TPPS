@@ -88,7 +88,7 @@ function tpps_publication(array &$form, array $values, array $form_state) {
  * @param array $form_state
  *   The form_state of the form to be populated.
  */
-function tpps_organism(array &$form, array &$form_state) {
+function tpps_form_organism(array &$form, array &$form_state) {
   $field = [
     '#type' => 'fieldset',
     'name' => [
@@ -123,6 +123,7 @@ function tpps_organism(array &$form, array &$form_state) {
     ],
   ]);
 }
+
 // [/VS]
 
 /**
