@@ -2114,6 +2114,15 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/misc.inc',
   ];
+  $items['admin/config/tpps/cache'] = [
+    'title' => 'Cache',
+    'description' => 'Cache settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_cache_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/cache.inc',
+  ];
   $items['admin/config/tpps/admin-panel'] = [
     'title' => 'Admin Panel',
     'description' => 'Admin Panel Settings',
