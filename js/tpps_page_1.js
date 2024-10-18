@@ -214,20 +214,17 @@
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Basic validation: check if single space exists.
-    if (0) {
-      // Note: Validation doesn't work. Regex tested in PHP and worked fine but
-      // in JS doesn't work at all.
-      if (!Drupal.tpps.isValid('organismName', organismName)) {
-        dog('Basic validation failed.', featureName);
-        dog('Organism name "' + organismName + '" is invalid.', featureName);
-        Drupal.tpps.clearMessages(fieldSelector);
-        Drupal.tpps.showMessages(fieldSelector, {
-          'errors': [Drupal.t('Organism name is invalid.')]
-        }, below);
-        return;
-      }
+    if (!Drupal.tpps.isValid('organismName', organismName)) {
+      dog('Basic validation failed.', featureName);
+      dog('Organism name "' + organismName + '" is invalid.', featureName);
+      Drupal.tpps.clearMessages(fieldSelector);
+      Drupal.tpps.showMessages(fieldSelector, {
+        'errors': [Drupal.t('Organism name is invalid.')]
+      }, below);
+      return;
     }
     dog('Basic validation passed.', featureName);
+
     Drupal.tpps.clearMessages(fieldSelector);
     Drupal.tpps.showMessages(fieldSelector, {
       'statuses': [Drupal.t('Organism name is valid.')]

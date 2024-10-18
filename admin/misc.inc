@@ -41,6 +41,7 @@ function tpps_misc_settings_form(array $form, array &$form_state) {
     '#type' => 'fieldset',
     '#title' => t('Validation Regex'),
     '#collapsible' => TRUE,
+    '#description' => t('To disable validation leave regex field empty.'),
   ];
   // WARNING:
   //
