@@ -11,20 +11,8 @@
   Drupal.tpps = Drupal.tpps || {};
 
   /**
-   * Validate Strings with Regex.
-   *
-   * @param string string
-   *
-   * @return bool
-   *   Returns TRUE if validation passed and FALSE otherwise.
-   *
-   * @TODO Replace with Drupal.tpps.validate('doi', string);
+   * Fills Page 1 form with empty values.
    */
-  Drupal.tpps.DoiValidate  = function (string) {
-    return Drupal.tpps.isValid('doi', string);
-  }
-
-
   Drupal.tpps.resetForm = function() {
     $('#edit-publication-primaryauthor').val('');
     $('#edit-publication-abstract').val('');
@@ -161,7 +149,6 @@
     }
   }
 
-
   /**
    * Validates organism name using NCBI database to get taxonomy id.
    */
@@ -280,7 +267,6 @@
           let errorMessage = jqXHR.status + " " + jqXHR.statusText
             + "\n\n" + jqXHR.responseText;
           console.log(errorMessage);
-          let featureName = 'Drupal.tpps.validateOrganismName';
           dog("Organism name wasn't validated.", data, featureName)
           Drupal.tpps.fieldEnable(fieldSelector);
         },
@@ -394,13 +380,10 @@
         $(doiSelector).blur(function(e) {
           e.preventDefault();
           Drupal.tpps.fieldDisable(doiSelector);
-
           // Clean-up HTML from field's value.
           $(this).val(Drupal.tpps.stripHtml($(this).val()));
-
           if (typeof(settings.tpps.ajaxUrl) !== 'undefined') {
             var doi = $(this).val();
-
             // Check if DOI value really was changed.
             if (
               typeof (Drupal.tpps.lastValue['doi']) != 'undefined'
@@ -422,7 +405,7 @@
               return;
             }
             // Check DOI format.
-            if (!Drupal.tpps.DoiValidate(doi)) {
+            if (! Drupal.tpps.isValid('doi', doi)) {
               $(doiMessageBox).empty();
               var data = {
                 "errors": [
@@ -435,13 +418,10 @@
             }
 
             // Check if we have cached result first.
-            //
-            // @TODO Update!
-            //
             if (
               Drupal.settings.tpps.cacheAjaxResponses
               && 'ajaxCache' in Drupal.tpps
-              && typeof (Drupal.tpps.ajaxCache[fieldId]) != 'undefined'
+              && typeof (Drupal.tpps.ajaxCache[doi]) != 'undefined'
             ) {
               dog('AJAX-request response found in cache.', featureName);
               Drupal.tpps.clearMessages(doiMessageBox);
