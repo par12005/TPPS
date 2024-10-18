@@ -274,10 +274,22 @@ class Organism {
       return;
     }
     $xml = tpps_ncbi_get_taxon_id($this->name, FALSE);
+
+    // @todo REplace to catch exceptions.
+    //  try {
+    //    $xml = tpps_ncbi_get_taxon_id($this->name, FALSE);
+    //  }
+    //  catch (e) {
+    //    dpm('sdfsd');
+    //  }
     $response = json_decode(json_encode($xml), TRUE);
     $this->ncbiTaxonomyId = check_plain($response[0]) ?? FALSE;
 
-// @TODO Save to DB table 'tpps_ncbi_taxonomy'.
+    if (empty($this->ncbiTaxonomyId)) {
+      // We didn't get Taxonomy Id.
+      return FALSE;
+    }
+    // Save to DB table 'tpps_ncbi_taxonomy'.
     $fields = [
       'organism_id' => $this->id ?? NULL,
       'organism_name' => $this->name ?? NULL,
@@ -285,13 +297,14 @@ class Organism {
     ];
     db_insert(self::TABLE_NCBI_TAXONOMY)->fields($fields)->execute();
 
+    // Provide chaining only in case of success.
     return $this;
   }
 
   /**
    * Saves organism to db.
    */
-  function save() {
+  public function save() {
     $fields = [
       'organism_id' => $this->id ?? NULL,
       'abbreviation' => '',

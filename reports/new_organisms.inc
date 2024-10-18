@@ -16,17 +16,22 @@ function tpps_admin_new_organisms_report() {
   $table = 'chado.organism';
   $query = db_select($table, 't')->fields('t', ['organism_id']);
   $query->addExpression("CONCAT(t.genus, ' ', t.species)", 'organism_name');
-  $query->range(100, 140)->orderBy('organism_id');
+  $query->range(0, 10)->orderBy('organism_id');
   $result = $query->execute()->fetchAllKeyed();
 
   foreach ($result as $organism_id => $organism_name) {
     $xml = tpps_ncbi_get_taxon_id_v2($organism_name);
     // @TODO Fix 'Too many requests' error.
+    // Use Organism::requestNcbiTaxonomyId().
     sleep(1);
-    // Convert Simple XML Object into PHP's array.
-    $ncbi_response = json_decode(json_encode($xml), TRUE);
-
-    $id = check_plain($ncbi_response[0]) ?? FALSE;
+    if (is_string($xml)) {
+      $id = '-';
+    }
+    else {
+      // Convert Simple XML Object into PHP's array.
+      $ncbi_response = json_decode(json_encode($xml), TRUE);
+      $id = check_plain($ncbi_response[0]) ?? FALSE;
+    }
     //if (empty($id)) {
       $rows[] = [
         $organism_id,
