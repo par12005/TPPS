@@ -93,7 +93,9 @@ class Organism {
    */
   public function __construct($organism_key = NULL) {
     if (!empty($organism_key)) {
-      if (is_numeric($organism_key)) {
+      //if (is_numeric($organism_key)) {
+      if (is_numeric($organism_key) && !is_string($organism_key)) {
+
         $this->id = $organism_key;
       }
       else {
@@ -343,22 +345,29 @@ class Organism {
       'taxonomy_id' => $this->ncbiTaxonomyId ?? NULL,
     ];
     $fields = array_filter($fields);
-    if (!count($fields)) {
+    if (
       // Empty array.
-      return FALSE;
-    }
-    if (empty($fields['taxonomy_id'])) {
+      !count($fields)
       // No sence to insert this record.
+      || empty($fields['taxonomy_id'])
+      // We need at least one to create new record.
+      || (empty($fields['organism_id']) && empty($fields['organism_name']))
+    ) {
       return FALSE;
     }
 
     if ($this->isRecordExists(self::TABLE_NCBI_TAXONOMY)) {
       // Update.
-      unset($fields['organism_id']);
-      db_update(self::TABLE_NCBI_TAXONOMY)
-        ->fields($fields)
-        ->condition('organism_id', $this->id)
-        ->execute();
+      $query = db_update(self::TABLE_NCBI_TAXONOMY);
+      if (!empty($this->id)) {
+        unset($fields['organism_id']);
+        $query->condition('organism_id', $this->id);
+      }
+      else {
+        unset($fields['organism_name']);
+        $query->condition('organism_name', $this->name);
+      }
+      $query->fields($fields)->execute();
     }
     else {
       // Insert.

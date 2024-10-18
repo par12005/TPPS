@@ -2123,6 +2123,15 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/cache.inc',
   ];
+  $items['admin/config/tpps/ncbi_batch'] = [
+    'title' => 'NCBI Taxonomy Id Batch Update',
+    'description' => 'Gets taxonomy id for existing organisms from NCBI using Batch API.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_ncbi_batch_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/ncbi_batch.inc',
+  ];
   $items['admin/config/tpps/admin-panel'] = [
     'title' => 'Admin Panel',
     'description' => 'Admin Panel Settings',
@@ -2765,7 +2774,7 @@ function tpps_organism($organism_key = '') {
   $organism = new Organism($organism_key);
   if ($organism->doesNotExist()) {
     throw new Exception(
-      t('Organism @key not found.', ['@key' => $organism_key])
+      t('Organism "@key" not found.', ['@key' => $organism_key])
     );
   }
   return $organism;

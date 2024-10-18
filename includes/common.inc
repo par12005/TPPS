@@ -487,3 +487,23 @@ function tpps_parse_organism_name($organism_name) {
   $keys = ['genus', 'species', 'extra'];
   return array_combine($keys, explode(" ", $organism_name, 3));
 }
+
+/**
+ * Gets list of organisms without NCBI Taxonomy Id.
+ *
+ * @return array
+ *   Returns associative array where key is Organism's Id and value is
+ *   Organism's name.
+ */
+function tpps_get_organisms_without_taxonomy_id($debug_mode = FALSE) {
+  // Get all organisms.
+  $table = 'chado.organism';
+  $query = db_select($table, 'o')->fields('o', ['organism_id']);
+  $query->leftJoin('tpps_ncbi_taxonomy', 'nt', 'o.organism_id = nt.organism_id');
+  $query->isNull('nt.taxonomy_id');
+  $query->addExpression("CONCAT(o.genus, ' ', o.species)", 'organism_name');
+  if ($debug_mode) {
+    $query->range(0, 11);
+  }
+  return $query->orderBy('organism_id')->execute()->fetchAllKeyed();
+}
