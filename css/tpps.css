@@ -283,6 +283,13 @@ select option:selected {
 form .fieldset-title {
   text-transform: none !important;
 }
+/**
+ * Usage:
+ *  $actions = theme('item_list', [
+ *    'items' => $action_list,
+ *    'attributes' => ['class' => ['admin-panel-action-list']],
+ *  ]);
+ */
 .admin-panel-action-list {
   font-size: 11px;
   margin: 0;
@@ -292,7 +299,7 @@ form .fieldset-title {
 
 /* 'TGDR' part of the study accession. */
 .tpps-study-accession {
-  color: silver;
+  color: gray;
   /*color: #05b9eb; [> Hyperlink's light blue <]*/
 }
 /* Number of the study accession. */
