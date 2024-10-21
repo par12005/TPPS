@@ -18,21 +18,37 @@
  *  in case of success: ['success' => $data],
  *
  * @param string $callback
- *   Part of function name (without 'tpps_ajax_' prefix).
+ *   Part or full function name to be used as a callback.
+ *   Priorities:
+ *   1. Part of function name (without 'tpps_ajax_' prefix).
+ *   2. Name of the existing function. Non-empty response treated as success
+ *      in this case.
+ *   List of functions for search purpose:
+ *   - tpps_ncbi_get_taxon_id().
  *
  * @return string
  *   Returns callback-function result in JSON format.
  */
 function tpps_ajax_callback($callback = '') {
   $function = 'tpps_ajax_' . check_plain($callback);
-  if (!function_exists($function)) {
-    $response['errors'][] = t('Callback not exists: @function', ['@function' => $function]);
-  }
-  else {
+  if (function_exists($function)) {
     $response = call_user_func($function, $_POST);
     if (empty($response)) {
       $response['errors'][] = t('Empty response from AJAX callback.');
     }
+  }
+  elseif (function_exists($callback)) {
+    $response = call_user_func($callback, $_POST);
+    if (empty($response)) {
+      $response['errors'][] = t('Empty response from function @callback().', ['@callback' => $callback]);
+      $response['errors'][] = print_r(array_values($_POST));
+    }
+    else {
+      $response['success'] = TRUE;
+    }
+  }
+  else {
+    $response['errors'][] = t('Callback not found.');
   }
   // If we never succed we fail.
   $response['success'] = $response['success'] ?? FALSE;
@@ -104,6 +120,45 @@ function tpps_ajax_get_doi($data = NULL) {
       $response['warnings'][]
         = t('DOI Information is empty.');
     }
+  }
+  return $response;
+}
+
+/**
+ * Wrapper for function tpps_ncbi_get_taxon_id().
+ *
+ * @param array $data
+ *   POST data with required 'organism' item which must contain organism name.
+ *
+ * @return array
+ *   Returns array with data to be sent back to browser.
+ */
+function tpps_ajax_get_ncbi_taxonomy_id(array $data) {
+  $xml = tpps_ncbi_get_taxon_id($data['organism']);
+  // Convert Simple XML Object into PHP's array.
+  $ncbi_response = json_decode(json_encode($xml), TRUE);
+  $response['id'] = check_plain($ncbi_response[0]) ?? FALSE;
+  if (empty($response['id'])) {
+    $response['success'] = FALSE;
+    $response['warnings'][] = t('Organism is missing in NCBI database.');
+  }
+  else {
+    $response['success'] = TRUE;
+    // Build link to NCBI Taxonomy Browser page.
+    $url = 'https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi';
+    $params = [
+      'absolute' => TRUE,
+      'query' => ['id' => $response['id']],
+      'external' => TRUE,
+      'attributes' => [
+        'target' => '_blank',
+        'title' => t('View using NCBI Taxonomy Browser'),
+      ],
+    ];
+    $response['statuses'][] = t('Organism was found in NCBI database. '
+      . 'Taxonomy Id: !id',
+      ['!id' => l($response['id'], $url, $params)]
+    );
   }
   return $response;
 }

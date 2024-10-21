@@ -326,7 +326,7 @@ Drupal.tpps = Drupal.tpps || {};
     }
     else {
       delete Drupal.tpps.accession_files[fid];
-      dog('No file metadata in Drupal.tpps.accession_files for FileId: ' + fid);
+      dog('Removed column\'s metadata from Drupal.tpps.accession_files(' + fid + ')');
       //console.table(Drupal.tpps.accession_files[fid]);
       dog('Going to hide the map for File: ' + fid);
       // Since columns set incorrectly we hide the map.

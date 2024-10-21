@@ -57,6 +57,7 @@ function tpps_install() {
   );
   variable_set('tpps_report_organism_list_title', 'Organism List');
   variable_set('tpps_report_doi_duplicates_title', 'DOI Duplicates');
+  variable_set('tpps_report_new_organisms_title', 'New Organisms');
   // Submission Tools.
   variable_set('tpps_submission_secret_key', '');
   // Main settings.
@@ -92,6 +93,13 @@ function tpps_install() {
   // Misc Settings.
   variable_set('tpps_theme_fix_pager', FALSE);
   variable_set('tpps_js_debug_mode', ['quickDebugMode' => 'quickDebugMode']);
+  // Misc: Validation Regexes.
+  variable_set('tpps_validation_regex_doi',
+    '/^10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+$/');
+  variable_set('tpps_validation_regex_organism_name',
+ '/^[^\s]+\s[^\s]+(\s[^\s]+)*$/');
+  variable_set('tpps_validation_regex_single_space', '/^[^\s]*\s[^\s]*$/');
+
   // Google Maps.
   variable_set('tpps_google_map_id', '');
   variable_set('tpps_maps_api_key', '');
@@ -409,6 +417,7 @@ function tpps_uninstall() {
   variable_del('tpps_report_order_family_not_exist_title');
   variable_del('tpps_report_organism_list_title');
   variable_del('tpps_report_doi_duplicates_title');
+  variable_del('tpps_report_new_organisms_title');
   // Submission Tools.
   variable_del('tpps_submission_secret_key');
   // Main settings.
@@ -443,6 +452,10 @@ function tpps_uninstall() {
   // Misc Settings.
   variable_del('tpps_theme_fix_pager');
   variable_del('tpps_js_debug_mode');
+  // Misc: Validation Regexes.
+  variable_del('tpps_validation_regex_doi');
+  variable_del('tpps_validation_regex_organism_name');
+  variable_del('tpps_validation_regex_single_space');
   // Google Maps.
   variable_del('tpps_google_map_id');
   variable_del('tpps_maps_api_key');
@@ -824,7 +837,6 @@ function tpps_schema() {
     ),
   );
 
-  // [VS]
   // #3kged9b Phenotypes synonyms table integrated on TPPS.
   $schema['tpps_phenotype_unit_warning'] = [
     'description' => 'List of studies with Custom Units.',
@@ -841,7 +853,42 @@ function tpps_schema() {
   ];
   // #861n70hh6 Add custom cache table to have ability to clear only module's data.
   $schema[TPPS_CACHE_BIN] = drupal_get_schema_unprocessed('system', 'cache');
-  // [/VS]
+
+  // Table to store relations between organism name and NCBI Taxonomy Id.
+  $schema['tpps_ncbi_taxonomy'] = [
+    'description' => 'NCBI Taxonomy Id for organisms.',
+    'fields' => [
+      'organism_id' => [
+        'description' => 'Organism Id.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => FALSE,
+      ],
+      'organism_name' => [
+        'description' => 'Organism Name.',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => FALSE,
+      ],
+      'taxonomy_id' => [
+        'description' => 'NCBI Taxomony Id.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => FALSE,
+      ],
+    ],
+    'foreign keys' => [
+      'organism_id' => [
+        'table' => 'chado.organism',
+        'columns' => [
+          'organism_id' => 'organism_id',
+        ],
+      ],
+    ],
+    'unique keys' => [
+      'organism_id' => ['organism_id'],
+    ],
+  ];
 
   return $schema;
 }
@@ -2256,4 +2303,35 @@ function tpps_update_7123() {
   if (!db_field_exists($table_name, $column_name)) {
     db_query('ALTER TABLE tpps_submission ADD COLUMN shared_state text;');
   }
+}
+
+/**
+ * Title of 'New Organisms' report, db table 'tpps_ncbi_taxonomy' and validation regex variables.
+ */
+function tpps_update_7124() {
+  variable_set('tpps_report_new_organisms_title', 'New Organisms');
+  // Late fix of manually added changes on live site.
+  if (empty(variable_get('tpps_js_debug_mode'))) {
+    variable_set('tpps_js_debug_mode', ['quickDebugMode' => 'quickDebugMode']);
+  }
+  // Create new db table.
+  $table_name = 'tpps_ncbi_taxonomy';
+  if (!db_table_exists($table_name)) {
+    if ($table_schema = tpps_schema()[$table_name]) {
+      $transaction = db_transaction();
+      try {
+        db_create_table($table_name, $table_schema);
+      }
+      catch (\Exception $e) {
+        $transaction->rollback();
+        throw $e;
+      }
+    }
+  }
+  // Set regex for validation.
+  variable_set('tpps_validation_regex_doi', '/^10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+$/');
+  variable_set('tpps_validation_regex_organism_name', '/^10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+$/');
+  variable_set('tpps_validation_regex_single_space', '/^[^\s]*\s[^\s]*$/');
+
+  cache_clear_all();
 }

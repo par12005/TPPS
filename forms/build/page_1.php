@@ -84,7 +84,7 @@ function tpps_page_1_create_regular_form(array $form, array &$form_state) {
     '#simple_file' => TRUE,
   );
 
-  tpps_organism($form, $form_state);
+  tpps_form_organism($form, $form_state);
   tpps_form_add_buttons(['form' => &$form, 'page' => 'page_1']);
   return $form;
 }
@@ -112,7 +112,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $js_data = [
     'tpps' => [
       'ajaxUrl' => TPPS_AJAX_URL,
-      'cache' => variable_get('tpps_page_1_cache_ajax_responses', TRUE),
+      'cacheAjaxResponses' => variable_get('tpps_page_1_cache_ajax_responses', TRUE),
     ],
   ];
   $form['#attached']['js'][] = ['type' => 'setting', 'data' => $js_data];
@@ -278,7 +278,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Organisms.
-  tpps_organism($form, $form_state);
+  tpps_form_organism($form, $form_state);
 
   // Note: $form_state['ids']['project_id'] is widly used.
   $form_state['ids']['project_id'] = tpps_get_project_id($form_state['dbxref_id']);
