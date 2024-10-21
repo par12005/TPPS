@@ -6,6 +6,12 @@
  */
 
 Drupal.tpps = Drupal.tpps || {};
+Drupal.tpps.lastValue = Drupal.tpps.lastValue || {};
+// Used to cache AJAX-requests responces to avoid extra server load.
+// Controlled by:
+// JS-variable 'Drupal.settings.tpps.cacheAjaxResponses' and
+// Drupal-variable 'tpps_page_1_cache_ajax_responses';
+Drupal.tpps.ajaxCache = Drupal.tpps.ajaxCache || {};
 
 (function ($, Drupal) {
 
@@ -13,6 +19,51 @@ Drupal.tpps = Drupal.tpps || {};
     attach:function (context) {
     }
   };
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+  /**
+   * Checks if value was changed.
+   *
+   * @param string key
+   *   Unique key of the field. It could be HTML-name or HTML-id.
+   * @param string value
+   *   New value to be compared with stored before.
+   *
+   * @return bool
+   *   Returns TRUE if new and stored values are different and FALSE otherwise.
+   *
+   * @TODO Move to tpps_header.js
+   */
+  Drupal.tpps.wasValueChanged = function(key, value) {
+    return (
+      'lastValue' in Drupal.tpps
+      && typeof Drupal.tpps.lastValue[key] != 'undefined'
+      && Drupal.tpps.lastValue[key] != value
+    );
+  }
+
+  /**
+   * Enable HTML field.
+   *
+   * @param string $selector
+   *   JQuery selector for input element.
+   */
+  Drupal.tpps.fieldEnable = function(selector) {
+    $(selector).prop('disabled', false);
+  }
+
+  /**
+   * Disable HTML field.
+   *
+   * @param string $selector
+   *   JQuery selector for input element.
+   */
+  Drupal.tpps.fieldDisable = function(selector) {
+    $(selector).prop('disabled', true);
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   /**
    * Waits until element will appear at page.
@@ -43,12 +94,6 @@ Drupal.tpps = Drupal.tpps || {};
   /**
    * Shows messages in given element.
    *
-   * All existing messages will be shown.
-   *
-   * Colors:
-   * 'status' = green,
-   * 'error' = red
-   * 'warning' = yellow.
    *
    * Usage example:
    *    var data = {
@@ -57,15 +102,22 @@ Drupal.tpps = Drupal.tpps || {};
    *      ]
    *    };
    *    Drupal.tpps.showMessages(doiMessageBox, data);
+   * Colors:
+   * 'status' = green,
+   * 'error' = red
+   * 'warning' = yellow.
    *
    * @param string selector
-   *   Selector of element to show messages above it.
+   *   Selector of element to show messages below it.
    * @param array data
    *   Messages. Keys are: 'errors', 'warnings' and 'statuses'.
    *   WARNING:
    *   Values are arrays (not strings).
+   * @param bool after
+   *   Flag which defines where messages must be shown.
+   *   Default is true which means 'show messages below the selector'.
    */
-  Drupal.tpps.showMessages = function(selector, data) {
+  Drupal.tpps.showMessages = function(selector, data, below = true) {
     var $element = $(selector);
     var featureName = 'Drupal.tpps.showMessages'
     if (!$element.length) {
@@ -74,25 +126,46 @@ Drupal.tpps = Drupal.tpps || {};
     if (!Object.keys(data).length) {
       dog('There is no messages to show. Data object is empty.', featureName);
     }
-    dog('Number of messages for ' + selector + ': ', {
+    else {
+      dog('Messages to be shown:', featureName);
+      dog(data, featureName);
+    }
+    dog('Number of current messages for ' + selector + ': ', {
       'Errors': $(selector).nextAll('.tpps-message.error').length,
       'Warnings': $(selector).nextAll('.tpps-message.warning').length,
       'Statuses': $(selector).nextAll('.tpps-message.status').length
     }, featureName);
+
+    // @TODO Minor. Loop statuses.
     if ('errors' in data) {
-      $element.after('<div class="error tpps-message">'
-        + data.errors.join('</div><div class="error tpps-message">') + '</div>')
-        .fadeIn(500);
+      var content = '<div class="error tpps-message">'
+          + data.errors.join('</div><div class="error tpps-message">') + '</div>';
+      if (below) {
+        $element.after(content).fadeIn(500);
+      }
+      else {
+        $element.before(content).fadeIn(500);
+      }
     }
     if ('warnings' in data) {
-      $element.after('<div class="warning tpps-message">'
-        + data.warnings.join('</div><div class="warning tpps-message">') + '</div>')
-        .fadeIn(500);
+      var content = '<div class="warning tpps-message">'
+          + data.warnings.join('</div><div class="warning tpps-message">') + '</div>';
+      if (below) {
+        $element.after(content).fadeIn(500);
+      }
+      else {
+        $element.before(content).fadeIn(500);
+      }
     }
     if ('statuses' in data) {
-      $element.after('<div class="status tpps-message">'
-        + data.statuses.join('</div><div class="status tpps-message">') + '</div>')
-        .fadeIn(500);
+      var content = '<div class="status tpps-message">'
+          + data.statuses.join('</div><div class="status tpps-message">') + '</div>';
+      if (below) {
+        $element.after(content).fadeIn(500);
+      }
+      else {
+        $element.before(content).fadeIn(500);
+      }
     }
   }
 
@@ -101,7 +174,7 @@ Drupal.tpps = Drupal.tpps || {};
    */
   Drupal.tpps.clearMessages = function(selector) {
     var featureName = 'Drupal.tpps.clearMessages'
-    dog('Number of messages for ' + selector + ': ', {
+    dog('Number of current messages for ' + selector + ': ', {
       'Errors': $(selector).nextAll('.tpps-message.error').length,
       'Warnings': $(selector).nextAll('.tpps-message.warning').length,
       'Statuses': $(selector).nextAll('.tpps-message.status').length
@@ -189,5 +262,58 @@ Drupal.tpps = Drupal.tpps || {};
     }
   }
   window.dog = dog;
+
+  /**
+   * Validates string using predefined regex rules.
+   *
+   * See PHP-version: tpps_is_valid().
+   * See /admin/config/tpps/misc for settings.
+   *
+   * @param rule string
+   *   Type of data to be validated.
+   *   Posible values are: 'doi', 'organism', 'singleSpace'.
+   * @param string string
+   *   String to be validated.
+   *
+   * @return bool
+   *   Returns TRUE if validation passed or validation regex is empty.
+   *   Returns FALSE if string was empty (after trim()) or validation failed.
+   */
+  Drupal.tpps.isValid = function (rule, string) {
+    let featureName = 'Drupal.tpps.isValid';
+    dog('Rule: "' + rule + '".', featureName);
+    string = $.trim(string);
+    dog('String: "' + string + '".', featureName);
+
+    if (string == '') {
+      console.error(Drupal.t(
+        'Empty string for validation using @rule_name rule.',
+        {'@rule_name': rule}
+      ));
+      return false;
+    }
+    // Check if rule was defined.
+    if ('tpps' in Drupal.settings && 'validationRegex' in Drupal.settings.tpps) {
+      if (typeof Drupal.settings.tpps.validationRegex[rule] == 'undefined') {
+        console.log(Drupal.t('Validation Regex not found for @rule_name rule.',
+          {'@rule_name': rule}));
+        return true;
+      }
+    }
+    else {
+      console.error(Drupal.t('No validation regexes found at all.'));
+      return false;
+    }
+    // Get regex.
+    let pattern = Drupal.settings.tpps.validationRegex[rule];
+    dog('Initial regex: "' + pattern + '".', featureName);
+    // Remove leading and trailing slashes.
+    if (pattern.charAt(0) == "/") pattern = pattern.substr(1);
+    if (pattern.charAt(pattern.length - 1) == "/") pattern = pattern.substr(0, pattern.length - 1);
+    dog('Updated regex: "' + pattern + '".', featureName);
+
+    // Validate.
+    return string.match(pattern) ? true : false;
+  }
 
 }(jQuery, Drupal));

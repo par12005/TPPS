@@ -1954,6 +1954,12 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
   $dark_theme_path = TPPS_MODULE_PATH . '/css/dark_theme.css';
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $js_debug_mode_features = tpps_js_debug_mode_get_features();
+  // Get validation regexes.
+  foreach (['doi', 'organism_name', 'single_space'] as $name) {
+    if (!empty($value = variable_get('tpps_validation_regex_' . $name))) {
+      $validation_regex[tpps_snake_to_camel_case($name)] = $value;
+    }
+  }
   $js_settings = [
     'debugMode' => array_combine(
       // We used keys to avoid duplicates in the list because this function
@@ -1961,6 +1967,8 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
       // so using the same keys solves problem.
       $js_debug_mode_features, $js_debug_mode_features
     ),
+    // List of regexes to validate various strings.
+    'validationRegex' => $validation_regex ?? [],
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // This is regualar page.
@@ -1981,12 +1989,12 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
       drupal_add_css(TPPS_MODULE_PATH . TPPS_CSS_PATH);
       // JS.
       drupal_add_js(
-        TPPS_MODULE_PATH . TPPS_JS_HEADER_PATH,
-        ['type' => 'file', 'scope' => 'header']);
-      drupal_add_js(
         ['tpps' => $js_settings],
         ['type' => 'setting', 'scope' => 'header']
       );
+      drupal_add_js(
+        TPPS_MODULE_PATH . TPPS_JS_HEADER_PATH,
+        ['type' => 'file', 'scope' => 'header']);
       drupal_add_js(TPPS_MODULE_PATH . TPPS_JS_PATH);
       if (variable_get('tpps_theme_fix_pager')) {
         drupal_add_css(TPPS_MODULE_PATH . '/css/pager_fix.css');
@@ -2105,6 +2113,24 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/misc.inc',
+  ];
+  $items['admin/config/tpps/cache'] = [
+    'title' => 'Cache',
+    'description' => 'Cache settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_cache_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/cache.inc',
+  ];
+  $items['admin/config/tpps/ncbi_batch'] = [
+    'title' => 'NCBI Taxonomy Id Batch Update',
+    'description' => 'Gets taxonomy id for existing organisms from NCBI using Batch API.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_ncbi_batch_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/ncbi_batch.inc',
   ];
   $items['admin/config/tpps/admin-panel'] = [
     'title' => 'Admin Panel',
@@ -2348,33 +2374,20 @@ function tpps_report_get_list() {
       'page callback' => 'tpps_admin_doi_duplicates_report',
       'admin_panel' => TRUE,
     ],
+    'new_organisms' => [
+      'url' => 'new-organisms',
+      'title' => variable_get('tpps_report_new_organisms_title', 'New Organisms'),
+      'description' => t('List of Studies with new organisms (missing in NCBI database).'),
+      'page callback' => 'tpps_new_organisms_report',
+      'admin_panel' => TRUE,
+    ],
   ];
 }
 
 /**
  * Adds report menu items for hook_menu().
  *
- * To add new item:
- * 1. Clone /reports/orgnaism_list.inc for simple db-query.
- *    Clone 'doi_duplicates' for table (no sorting).
- * 2. Update code of new file.
- * 3. Add variables which stores report title to hook_install/uninstall.
- * 4. Add metadata to tpps_report_get_list().
- * 5. Add ability to change report title at 'admin/config/tpps/reports'.
- *    See function tpps_reports_settings_form().
- * 6. Update tpps_admin_panel_get_reports().
- * 7. Clear cache.
- *
- * Naming rules:
- * 1. Machine name uses underscores. E.g., 'organism_list'.
- * 2. URL uses hyphens. E.g., 'organism-list'.
- * 3. Title stored in non-localized English in variable with name:
- *    'tpps_report_' . $machine_name . '_title'.
- *
- * Report types:
- * 1. tpps_admin_organism_list_report() - simpliest db query without formatter.
- * 2. tpps_admin_missing_doi_report() - db-query with subqueries and formatter.
- * 3. tpps_admin_submissions_all_files_report() - no-query table with caching.
+ * To add new item: see reports/README.md.
  *
  * @param array $items
  *   Menu items.
@@ -2741,6 +2754,30 @@ function tpps_submission($accession = '') {
     }
   }
   return $submission;
+}
+
+/**
+ * Creates new Organism object.
+ *
+ * How to use:
+ * tpps_organism($id)->name;
+ * tpps_organism($id)->genus;
+ * tpps_organism($id)->ncbiTaxonomyId;
+ *
+ * @param mixed $organism_key
+ *   Organism Id or Name.
+ *
+ * @return object
+ *   Returns Organism object or throw an exception if it's not found.
+ */
+function tpps_organism($organism_key = '') {
+  $organism = new Organism($organism_key);
+  if ($organism->doesNotExist()) {
+    throw new Exception(
+      t('Organism "@key" not found.', ['@key' => $organism_key])
+    );
+  }
+  return $organism;
 }
 
 /**
