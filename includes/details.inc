@@ -101,30 +101,20 @@ function tpps_details($accession = NULL) {
       }
     }
 
-    $map_api_key = variable_get('tpps_maps_api_key', NULL);
-    $map_api_tools = "<script src=\"https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js\"></script><script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
-      async defer></script>"
-      . "<div id=\"_map_wrapper\"></div>";
+    // Note: There is no file id because used processed data from all the files
+    // for all the species.
     $tree_info = [];
-    if (!empty($submission->state['tree_info'])) {
-      foreach ($submission->state['tree_info'] as $name => $info) {
-        if (
-          !empty($info['lat'])
-          and !empty($info['lng'])
-        ) {
-          $tree_info[] = [
-            $name,
-            $info['lat'],
-            $info['lng'],
-          ];
+    if (!empty($submission->sharedState['tree_info'])) {
+      foreach ($submission->sharedState['tree_info'] as $name => $info) {
+        if (!empty($info['lat']) && !empty($info['lng'])) {
+          $tree_info[] = [$name, $info['lat'], $info['lng']];
         }
       }
       drupal_add_js(['tpps' => ['tree_info' => $tree_info]], 'setting');
     }
-    $output .= $map_api_tools;
-    // [VS].
+    // @TODO Add JS using drupal_add_js().
+    $output .= tpps_get_markercluster_code();
     tpps_add_css_js('main');
-    // [/VS].
 
     if (!empty($pub_link = ($submission->state['title'] ?? NULL))) {
       $pub_id = db_select('chado.project_pub', 'p')
@@ -706,6 +696,7 @@ function tpps_details_species(array &$state) {
   $query->join('chado.pub_organism', 'po', 'o.organism_id = po.organism_id');
   $query->join('chado.project_pub', 'pp', 'pp.pub_id = po.pub_id');
   $query->fields('o', array('organism_id', 'genus', 'species', 'common_name'));
+  $query->condition('o.genus', '', 'NOT LIKE');
   $query->condition('pp.project_id', $state['ids']['project_id']);
   $query = $query->execute();
   $rows = array();
@@ -905,13 +896,17 @@ function tpps_details_get_study_file_ids(array $state) {
 /**
  * Creates the table of individual plant details for a submission.
  *
- * @param array $state
- *   The form state of the submission.
+ * Note: this function's name seems created dynamically or not used now.
+ *
+ * @param array $shared_state
+ *   The Submission's Shared State.
+ *   Used shared state instead of state because only shared state has
+ *   'tree_info' element which added by pipeline processing.
  *
  * @return string
  *   The HTML table of plants associated with the submission.
  */
-function tpps_details_trees(array &$state) {
+function tpps_details_trees(array &$shared_state) {
   $path = current_path();
   $args = explode('/', $path);
   $params = drupal_get_query_parameters($_POST);
@@ -922,19 +917,20 @@ function tpps_details_trees(array &$state) {
   $rows = array();
   $per_page = 20;
 
-  if (empty($state['tree_info'])) {
+  // @TODO Be sure to use shared_state instead of form_state.
+  if (empty($shared_state['tree_info'])) {
     $output = t('The plant information for this study has not been properly updated. Please contact your site administrator.');
     return $output;
   }
 
   $_GET['page'] = $page;
-  pager_default_initialize(count($state['tree_info']), $per_page);
-  $chunks = array_chunk($state['tree_info'], $per_page, TRUE);
+  pager_default_initialize(count($shared_state['tree_info']), $per_page);
+  $chunks = array_chunk($shared_state['tree_info'], $per_page, TRUE);
 
   foreach ($chunks[$page] as $name => $info) {
     $id = $info['organism_id'];
-    $form_number = array_search($id, $state['ids']['organism_ids']);
-    $species_name = $state['saved_values'][TPPS_PAGE_1]['organism'][$form_number]['name'];
+    $form_number = array_search($id, $share_state['ids']['organism_ids']);
+    $species_name = $shared_state['saved_values'][TPPS_PAGE_1]['organism'][$form_number]['name'];
 
     $tree_id = tpps_entity_link($info['stock_id'], $name, 'Stock');
 
@@ -968,7 +964,7 @@ function tpps_details_trees(array &$state) {
     'empty' => '',
   ];
   $table = theme('table', $vars);
-  $pager = theme('pager', array('quantity', count($state['tree_info'])));
+  $pager = theme('pager', array('quantity', count($shared_state['tree_info'])));
   return $pager . $table;
 }
 

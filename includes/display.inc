@@ -111,33 +111,21 @@ function tpps_table_display(array &$state, array $options = []) {
         }
 
         // @TODO [VS] Use Drupal Form API instead of HTML in PHP.
-        $val_str .= "<br><input id=\"fid_$val\" class=\"preview_button "
-          . "form-button form-submit\" type=\"button\" value=\""
-          . t('Preview file') . "\"></input>";
+        // @TODO Use data-fid to store only file id.
+        $val_str .= '<br><input id="fid_' . $val . '" type="button" '
+          . 'class="preview_button form-button form-submit" '
+          . 'value="' . t('Preview file') . '"></input>';
+
         if (tpps_access('administer tpps module')) {
-          $val_str .= "<br><input id=\"fid_$val\" class=\"preview_full_button "
-            . "form-button form-submit\" type=\"button\" value=\""
-            . t('Show full file') . "\"></input>";
+          // @TODO Use data-fid to store only file id.
+          $val_str .= '<br><input id="fid_' . $val . '" type="button" '
+            . 'class="preview_full_button form-button form-submit" '
+            . 'value="' . t('Show full file') . '"></input>';
         }
         if (preg_match('/^(.*)Accession File/', $key, $matches)) {
           if (!$flat['#skip_loc']) {
             $fid = $file->fid;
-            $wrapper_id = "{$fid}_map_wrapper";
-            $button_id = "{$fid}_map_button";
-            $val_str .= "<div id=\"$wrapper_id\"></div>"
-              . "<input id=\"$button_id\" type=\"button\" "
-              . " class=\"form-button form-submit\" value=\""
-              . t('Click here to view plants on map!') . "\"></input>";
-            $js_settings = [
-              'map_buttons' => [
-                $fid => [
-                  'wrapper' => $wrapper_id,
-                  'button' => $button_id,
-                  'fid' => $fid,
-                ],
-              ],
-            ];
-            drupal_add_js(['tpps' => $js_settings], 'setting');
+            $val_str .= tpps_build_google_map_wrapper($fid);
           }
           else {
             $val_str .= "<br>This submission was submitted without "
@@ -186,6 +174,7 @@ function tpps_table_display(array &$state, array $options = []) {
         elseif ($flat['#location_type'] != '2' and ($standard = tpps_standard_coord($val_str))) {
           $query = $standard;
         }
+        // Why?
         $val_str = "<a id=\"sidebar_map\" style=\"cursor:pointer\">$val_str</a>";
         if (isset($query)) {
           $map = "<iframe frameborder=\\\"0\\\" style=\\\"border:0;width:100%;"
@@ -200,6 +189,7 @@ function tpps_table_display(array &$state, array $options = []) {
             });
           });";
           drupal_add_js($js, 'inline');
+          tpps_add_css_js('google_map', $form);
         }
       }
       elseif ($key == 'Publication Abstract' and strlen($val_str) > 50) {
@@ -222,12 +212,8 @@ function tpps_table_display(array &$state, array $options = []) {
       $content .= "<div id=\"$item_id\" style=\"display:none;\">$val_str</div>";
     }
   }
-  $map_api_key = variable_get('tpps_maps_api_key', NULL);
-  if (!empty($map_api_key)) {
-    $content .= "<script src=\"https://developers.google.com/maps/"
-      . "documentation/javascript/examples/markerclusterer/markerclusterer.js\">"
-      . "</script><script src=\"https://maps.googleapis.com/maps/api/js"
-      . "?key=$map_api_key&callback=initMap\" async defer></script>";
+  if (variable_get('tpps_maps_api_key', NULL)) {
+    $content .= tpps_get_markercluster_code(FALSE);
   }
 
   $headers = ['Field', 'Value'];

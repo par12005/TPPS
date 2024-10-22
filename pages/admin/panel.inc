@@ -97,7 +97,8 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
       $action_list = [
         l(t('Edit'), 'tppsc/' . $accession),
         l(t('View'), 'tpps/submission/' . $accession . '/view'),
-        l(t('JSON'), 'api/submission/' . $accession . '/view/state'),
+        l(t('State JSON'), 'api/submission/' . $accession . '/view/state'),
+        l(t('Shared State JSON'), 'api/submission/' . $accession . '/view/shared_state'),
         l(t('Export'), 'tpps/submission/' . $accession . '/export'),
         l(t('Files'), 'tpps-admin-panel/file-diagnostics/' . $accession),
       ];
@@ -277,12 +278,15 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
       l(t('Refresh all genotype materialized views'),
         'tpps-admin-panel/refresh-genotypes-materialized-views'),
       l(t('TPPS Submission Tools'), 'tpps/submission', $params),
+      l(t('NCBI Taxonomy Id Batch Updates'), 'admin/config/tpps/ncbi_batch', $params),
+      l(t('Clear "tpps" cache bin'), 'admin/config/tpps/cache', $params),
     ],
   ]);
   $form['general_tasks'] = [
     '#type' => 'fieldset',
     '#title' => t('General tasks'),
     '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
     'tasks' => ['#markup' => $task_list],
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -467,7 +471,7 @@ function tpps_admin_panel_reports(array &$form) {
     '#type' => 'fieldset',
     '#title' => t('TPPS Reports'),
     '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
+    '#collapsed' => TRUE,
   ];
   $form['report_menu']['table'] = [
     '#markup' => tpps_reports_overview_page($admin_panel = TRUE),

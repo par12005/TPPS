@@ -224,3 +224,304 @@ function tpps_report_show_table(array $report) {
     'empty' => $report['empty'] ?? NULL,
   ]) . $pager;
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// Google Maps.
+
+/**
+ * Builds JS code for Google Maps JavaScript MarkerClusterer.
+ *
+ * The library creates and manages per-zoom-level clusters for large amounts
+ * of markers. Project page: https://github.com/googlemaps/js-markerclusterer .
+ *
+ * Helps to show plants on Google Maps.
+ *
+ * @return string
+ *   Returns inline JavaScript code with wrapper HTML-tag.
+ */
+function tpps_get_markercluster_code($use_wrapper = TRUE) {
+  if (empty($map_api_key = variable_get('tpps_maps_api_key', NULL))) {
+    return '';
+  }
+  $output = '';
+  // MarkerCluster Library.
+  drupal_add_js(tpps_markercluster_get_url(), 'external');
+  // Map Wrapper.
+  if ($use_wrapper) {
+    $output .= '<div id="_map_wrapper" class="tpps-map-wrapper"></div>';
+  }
+  // Settings.
+  $js_settings = [
+    'googleMap' => [
+      'id' => variable_get('tpps_google_map_id'),
+      'zoom' => [
+        'smoothTimeout' => variable_get('tpps_google_map_zoom_smooth_timeout', 100),
+        'defaultLevel' => variable_get('tpps_google_map_zoom_default_level', 3),
+        'customLevel' => variable_get('tpps_google_map_zoom_custom_level', 14),
+      ],
+    ],
+  ];
+  drupal_add_js(['tpps' => $js_settings], 'setting');
+  // Our custom code which adds markers to the map.
+  tpps_add_css_js('google_map');
+  // Google Maps API Library.
+  $url = url('https://maps.googleapis.com/maps/api/js', [
+    'query' => [
+      'key' => $map_api_key,
+      'callback' => 'initMap',
+      'v' => 'weekly',
+      'libraries' => 'marker',
+      'loading' => 'async',
+    ],
+    'external' => TRUE,
+  ]);
+  drupal_add_js($url, 'external');
+  return $output;
+}
+
+/**
+ * Gets Google Map MarkerCluster library URL.
+ *
+ * The library creates and manages per-zoom-level clusters for large
+ * amounts of markers.
+ *
+ * Useful links:
+ * https://github.com/googlemaps/js-markerclusterer
+ * Documentation:
+ * https://developers.google.com/maps/documentation/javascript/marker-clustering?hl=en
+ *
+ * @return string
+ *   Returns URL.
+ */
+function tpps_markercluster_get_url() {
+  return 'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js';
+}
+
+/**
+ * Builds Google Map wrapper and optionally button, adds JS to page.
+ *
+ * @param int $fid
+ *   Drupal managed file id.
+ * @param array $form
+ *   Drupal Form API array.
+ *   When not empty JS will be attached to form instead of use drupal_add_js().
+ *
+ * @return string
+ *   Returns HTML-string with map wrapper and optional button.
+ */
+function tpps_build_google_map_wrapper($fid, array &$form = NULL) {
+  tpps_add_css_js('google_map', $form);
+  // Map wrapper.
+  return '<div id="' . $fid . '_map_wrapper" data-fid="' . $fid
+    . '" class="tpps-map-wrapper"></div>';
+}
+
+/**
+ * Gets list of functions/features which supports "JS Debug Mode".
+ *
+ * @return array
+ *   Returns list of features which will be sent into client's browser to manage
+ *   "JS Debug Mode" in browser.
+ */
+function tpps_js_debug_mode_get_features_list() {
+  return [
+    // Used to enable/disable debug Mode directly in JS code during debugging
+    // without adding to the admin settings page.
+    'quickDebugMode',
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Functions from /js/google_map.js.
+    'jQuery.fn.fileColumnsChange',
+    'Drupal.behaviors.tppsGoogleMap',
+    'initMap',
+    'smoothZoom',
+    'Drupal.tpps.getCoordinates',
+    'Drupal.tpps.getColumnsFromManagedFileField',
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // js/tpps_header.js
+    'Drupal.tpps.showMessages',
+    'Drupal.tpps.clearMessages',
+    'Drupal.tpps.isValid',
+    // Page 1.
+    'Drupal.behaviors.tppsPage1',
+    'Drupal.tpps.validateOrganismName',
+    // TPPS Pages.
+    //'Drupal.behaviors.tppsPage2',
+    //'Drupal.behaviors.tppsPage3',
+    //'Drupal.behaviors.tppsPage4',
+  ];
+}
+
+/**
+ * Gets list of selected features for "JS Debug Mode".
+ *
+ * @return array
+ *   Returns list of selected features.
+ *   Default: ['quickDebugMode' => 'quickDebugMode'];
+ */
+function tpps_js_debug_mode_get_features() {
+  return array_filter(array_values(
+    variable_get('tpps_js_debug_mode', ['quickDebugMode' => 'quickDebugMode'])
+  ));
+}
+
+/**
+ * Get a list of DOI examples.
+ *
+ * Items are valid DOI.
+ *
+ * @return array
+ *   Returns list of DOIs.
+ */
+function tpps_doi_get_examples_list() {
+  return [
+    // Fake.
+    '10.1111/dryad.111',
+    // Real but used. No species.
+    '10.5061/dryad.91mk9',
+    // Not used, no species.
+    '10.21267/IN.2016.6.2294',
+    // Real, not used, with species.
+    '10.5061/dryad.vk43j',
+  ];
+}
+
+/**
+ * Converts snake_case to camelCase.
+ *
+ * Idea: https://gist.github.com/carousel/1aacbea013d230768b3dec1a14ce5751
+ *
+ * @param string $input
+ *   String in snake_case to be converted.
+ *
+ * @return string
+ *   String in camelCase.
+ */
+function tpps_snake_to_camel_case($input) {
+  return lcfirst(str_replace('_', '', ucwords($input, '_')));
+}
+
+/**
+ * Validates string using predefined regex rules.
+ *
+ * See JS version: Drupal.tpps.isValid().
+ * See /admin/config/tpps/misc for settings.
+ *
+ * @param string $rule
+ *   Type of data to be validated.
+ *   Posible values are: 'doi', 'organism_name', 'single_space'.
+ * @param string $string
+ *   String to be validated.
+ *
+ * @return bool
+ *   Returns TRUE if validation passed or validation regex is empty.
+ *   Returns FALSE if string was empty (after trim()) or validation failed.
+ */
+function tpps_is_valid($rule, $string) {
+  $string = trim($string);
+  if (!$string) {
+    return FALSE;
+  }
+  if (!$pattern = variable_get('tpps_validation_regex_' . $rule)) {
+    return TRUE;
+  }
+  // Validate.
+  return (bool) preg_match($pattern, $string);
+}
+
+/**
+ * FTest for tpps_is_valid().
+ */
+//  /^[^\s]+\s[^\s]+(\s[subsp\.|spp\.|subspecies|var\.|varieta|variety])*/
+function ftest_tpps_is_valid() {
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Single Space.
+  dpm('== Case 1. Single Space ==');
+  $rule = 'single_space';
+  $string_list = [
+    'sdfsdf',
+    'sdfsdf sdfsdf',
+    'sdfsdf sdfsdf sdfsdf',
+  ];
+  foreach ($string_list as $string) {
+    $result = tpps_is_valid($rule, $string);
+    dpm(($result ? 'PASSED' : 'failed'), '"' . $string . '"');
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // DOI.
+  dpm('== Case 2. DOI ==');
+  $rule = 'doi';
+  $string_list = [
+    '10.21267/IN.2016.6.2294',
+  ];
+  foreach ($string_list as $string) {
+    $result = tpps_is_valid($rule, $string);
+    dpm(($result ? 'PASSED' : 'failed'), '"' . $string . '"');
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Rule 'organism_name'.
+  dpm('== Case 3. Organism Name ==');
+  $rule = 'organism_name';
+  dpm(variable_get('tpps_validation_regex_' . $rule));
+  // https://docs.google.com/document/d/1xd3BcZHQArdpVPa3z6mcu87iErS7d9jXn_pcoQ8wNXw/edit?tab=t.0
+  $string_list = [
+    'Genus species',
+    'Genus species ',
+    ' Genus species ',
+    // Sub:
+    'Genus species subsp. subspecies',
+    'Genus species spp. subspecies',
+    'Genus species subspecies subspecies',
+    // Varietas (variety):
+    'Genus species var. variety',
+    'Genus species varieta variety',
+    'Genus species variety variety',
+    // Subverietas (subvariety):
+    'Genus species subvar. subvariety',
+    'Genus species subvarieta subvariety',
+    'Genus species subvariety subvariety',
+    // Forma (form):
+    'Genus species f. form',
+    'Genus species forma form',
+    'Genus species form form',
+  ];
+  foreach ($string_list as $string) {
+    $result = tpps_is_valid($rule, $string);
+    dpm(($result ? 'PASSED' : 'failed'), '"' . $string . '"');
+  }
+}
+
+/**
+ * Extracts parts of organism name into associative array.
+ *
+ * @param string $organism_name
+ *   Organism name to be parsed.
+ *
+ * @return array
+ *   Returns array with keys: 'genus', 'species' and 'extra'.
+ */
+function tpps_parse_organism_name($organism_name) {
+  $keys = ['genus', 'species', 'extra'];
+  return array_combine($keys, explode(" ", $organism_name, 3));
+}
+
+/**
+ * Gets list of organisms without NCBI Taxonomy Id.
+ *
+ * @return array
+ *   Returns associative array where key is Organism's Id and value is
+ *   Organism's name.
+ */
+function tpps_get_organisms_without_taxonomy_id($debug_mode = FALSE) {
+  // Get all organisms.
+  $table = 'chado.organism';
+  $query = db_select($table, 'o')->fields('o', ['organism_id']);
+  $query->leftJoin('tpps_ncbi_taxonomy', 'nt', 'o.organism_id = nt.organism_id');
+  $query->isNull('nt.taxonomy_id');
+  $query->addExpression("CONCAT(o.genus, ' ', o.species)", 'organism_name');
+  if ($debug_mode) {
+    $query->range(0, 11);
+  }
+  return $query->orderBy('organism_id')->execute()->fetchAllKeyed();
+}

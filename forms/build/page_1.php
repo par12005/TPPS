@@ -36,6 +36,7 @@ function tpps_page_1_create_form(array &$form, array &$form_state) {
     $form = array_merge($form, tpps_page_1_create_regular_form($form, $form_state));
   }
   tpps_add_css_js(TPPS_PAGE_1, $form);
+  tpps_add_css_js('suggestion', $form);
   return $form;
 }
 
@@ -80,9 +81,10 @@ function tpps_page_1_create_regular_form(array $form, array &$form_state) {
       'file_validate_extensions' => array('img jpg jpeg png'),
     ),
     '#default_value' => $form_state['saved_values'][TPPS_PAGE_1]['photo'] ?? NULL,
+    '#simple_file' => TRUE,
   );
 
-  tpps_organism($form, $form_state);
+  tpps_form_organism($form, $form_state);
   tpps_form_add_buttons(['form' => &$form, 'page' => 'page_1']);
   return $form;
 }
@@ -110,7 +112,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $js_data = [
     'tpps' => [
       'ajaxUrl' => TPPS_AJAX_URL,
-      'cache' => variable_get('tpps_page_1_cache_ajax_responses', TRUE),
+      'cacheAjaxResponses' => variable_get('tpps_page_1_cache_ajax_responses', TRUE),
     ],
   ];
   $form['#attached']['js'][] = ['type' => 'setting', 'data' => $js_data];
@@ -276,7 +278,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Organisms.
-  tpps_organism($form, $form_state);
+  tpps_form_organism($form, $form_state);
 
   // Note: $form_state['ids']['project_id'] is widly used.
   $form_state['ids']['project_id'] = tpps_get_project_id($form_state['dbxref_id']);

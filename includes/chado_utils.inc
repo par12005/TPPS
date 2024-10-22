@@ -165,9 +165,9 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
   $tpps_db_directory_user = variable_get('tpps_db_directory_user', 'postgres');
 
   // Attempt to make directory if it does not exist
-  mkdir($tpps_db_csv_directory, 0755, true);
+  @mkdir($tpps_db_csv_directory, 0755, true);
   // Try to set the tpps_db_csv_directory to have the db_directory_user permission
-  chown($tpps_db_csv_directory, $tpps_db_directory_user);
+  @chown($tpps_db_csv_directory, $tpps_db_directory_user);
 
   $file_location = $tpps_db_csv_directory . time() . '-copy-table.csv';
   $csv_file = fopen($file_location, 'w+');
@@ -794,3 +794,5 @@ function tpps_add_project_file(array &$state, &$fid) {
     }
   }
 }
+
+

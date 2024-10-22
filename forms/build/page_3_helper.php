@@ -82,6 +82,7 @@ function tpps_study_location(array &$form, array &$form_state) {
   );
 
   if ($type != 2 and $type != 0) {
+    // @TODO Use tpps_build_google_map_wrapper().
     $form['study_location']['map-button'] = array(
       '#type' => 'button',
       '#title' => 'Click here to update map',
@@ -125,12 +126,6 @@ function tpps_study_location(array &$form, array &$form_state) {
     }
 
     if (!empty($coords) and $valid_coords) {
-      $map_api_key = variable_get('tpps_maps_api_key', NULL);
-      // @TODO Minor. Replace with '#attached' and 'type' => 'external'
-      // Be sure to set 'async' and 'defer' HTML attributes.
-      $map_api_tools = "<script src=\"https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js\"></script><script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
-      async defer></script>"
-      . "<div id=\"_map_wrapper\"></div>";
       // WARNING: Using $form['#attached']['js'][] causes missing Google Map
       // widget at page. Probably it's caused by using AJAX-requests to get
       // this form elements...
@@ -138,7 +133,8 @@ function tpps_study_location(array &$form, array &$form_state) {
         ['tpps' => ['tree_info' => $coords, 'study_locations' => TRUE]],
         'setting'
       );
-      $form['study_location']['map-button']['#suffix'] = $map_api_tools;
+      // @TODO Add JS using drupal_add_js().
+      $form['study_location']['map-button']['#suffix'] = tpps_get_markercluster_code();
     }
   }
 
@@ -151,6 +147,8 @@ function tpps_study_location(array &$form, array &$form_state) {
  * This function populates the pop_groups attribute of the options array with
  * the names of all the selected population groups from an accession file. This
  * function is meant to be used with tpps_file_iterator().
+ *
+ * @TODO Rename. Function with the same name exists in page_3_ajax.php
  *
  * @param mixed $row
  *   The item yielded by the TPPS file generator.

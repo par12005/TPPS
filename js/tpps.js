@@ -2,438 +2,406 @@
   Drupal.behaviors.tppsMain = {
     attach:function (context) {
 
+      var vcfPreValidateButton = '.vcf-pre-validate-button';
+      // Bootstrap tooltip functionality.
+      $('[data-toggle="tooltip"]', context).tooltip();
 
-  var vcfPreValidateButton = '.vcf-pre-validate-button';
-  // Bootstrap tooltip functionality.
-  $('[data-toggle="tooltip"]', context).tooltip();
+      function Supplemental_Files() {
+        var files_add = $('#edit-files-add');
+        var files_remove = $('#edit-files-remove');
+        var number_object = $('#edit-files div input:hidden');
+        var files_number = number_object[0].value;
+        var files = $('#edit-files div div.form-type-managed-file');
 
-  function Supplemental_Files() {
-    var files_add = $('#edit-files-add');
-    var files_remove = $('#edit-files-remove');
-    var number_object = $('#edit-files div input:hidden');
-    var files_number = number_object[0].value;
-    var files = $('#edit-files div div.form-type-managed-file');
+        files.hide();
 
-    files.hide();
+        if (files_number > 0){
+          for (var i = 0; i < files_number; i++){
+            $(files[i]).show();
+          }
 
-    if (files_number > 0){
-      for (var i = 0; i < files_number; i++){
-        $(files[i]).show();
-      }
-
-      for (var i = files_number; i < 10; i++){
-        $(files[i]).hide();
-      }
-    }
-
-    files_add.attr('type', 'button');
-    files_remove.attr('type', 'button');
-
-    files_add.on('click', function(){
-      if (files_number < 10){
-        files_number++;
-        number_object[0].value = files_number;
-
-        for (var i = 0; i < files_number; i++){
-          $(files[i]).show();
-        }
-
-        for (var i = files_number; i < 10; i++){
-          $(files[i]).hide();
-        }
-      }
-    });
-
-    files_remove.on('click', function(){
-      if (files_number > 0){
-        files_number--;
-        number_object[0].value = files_number;
-
-        for (var i = 0; i < files_number; i++){
-          $(files[i]).show();
-        }
-
-        for (var i = files_number; i < 10; i++){
-          $(files[i]).hide();
-        }
-      }
-    });
-
-  }
-
-  var stage;
-  if (
-    typeof Drupal.settings.tpps !== 'undefined'
-    && typeof Drupal.settings.tpps.stage !== 'undefined'
-  ) {
-    stage = Drupal.settings.tpps.stage;
-
-    var status_block = $(".tpps-status-block");
-    $(".region-sidebar-second").empty();
-    status_block.prependTo(".region-sidebar-second");
-
-    $("#progress").css('font-size', '1.5rem');
-    $("#progress").css('margin-bottom', '30px');
-
-    if (stage === 'summarypage'){
-      Supplemental_Files();
-      $("#tpps-status").insertAfter(".tgdr_form_status");
-      $('.next-button').on('click', function(){
-
-        $("#tpps-status")
-          .html('<label>' + Drupal.t('Loading...') + '</label><br>'
-            + Drupal.t('This step may take several minutes.')
-          );
-      });
-    }
-  }
-
-  if (typeof stage !== 'undefined' && stage == 4) {
-    var layer_search_buttons = $('input').filter(function() {
-      return this.id.match(/edit-organism-[0-9]+-environment-layer-search/);
-    });
-    layer_search_buttons.keyup(function() {
-      var button_value = new RegExp($(this).val(), 'i');
-      var org_num = this.id.match(/edit-organism-([0-9]+)-environment-layer-search/)[1];
-      var pattern = new RegExp('edit-organism-' + org_num + '-environment-env-layers-');
-      var group_pattern = new RegExp('edit-organism-' + org_num + '-environment-env-layers-groups-');
-      var layers = $('input').filter(function() {
-        return this.id.match(pattern) && !this.id.match(group_pattern);
-      });
-      $.each(layers, function() {
-        var label = $(this).parent().children('label')[0].innerText;
-        if (label.match(button_value)) {
-          $(this).parent().show();
-        }
-        else {
-          $(this).parent().hide();
-        }
-      });
-    });
-  }
-
-  if (
-    typeof Drupal.settings.tpps !== 'undefined'
-    && typeof Drupal.settings.tpps.map_buttons !== 'undefined'
-  ) {
-    var map_buttons = Drupal.settings.tpps.map_buttons;
-    $.each(map_buttons, function() {
-      $('#' + this.button).click(getCoordinates);
-    })
-  }
-
-  var buttons = $('input').filter(function() {
-    return (this.id.match(/map_button/) || this.id.match(/map-button/));
-  });
-  $.each(buttons, function(){
-    $(this).attr('type', 'button')
-  });
-
-  var detail_regex = /tpps\/details\/TGDR.*/g;
-  if (!window.location.pathname.match(detail_regex)) {
-    $("#map_wrapper").hide();
-  }
-
-  var preview_record_buttons = $('input').filter(
-    function() { return this.id.match(/-tripal-eutils-callback/); }
-  );
-  $.each(preview_record_buttons, function() {
-    $(this).attr('type', 'button');
-  });
-
-  var preview_buttons = $('input.preview_button');
-  $.each(preview_buttons, function() {
-    $(this).click(function(e) {
-      previewFile(this, 3);
-      e.preventDefault();
-    });
-  });
-
-  var preview_full_buttons = $('input.preview_full_button');
-  $.each(preview_full_buttons, function() {
-    $(this).click(function(e) {
-      e.preventDefault();
-      previewFile(this, 0);
-    });
-  });
-
-  var pending_jobs = {};
-
-  /**
-   * Checks status of the Tripal Job 'VCF File Pre-Validation'.
-   *
-   * @TODO Do not allow re-validation of the same file. Store status of
-   * the check in browser.
-   */
-  function checkVCFJob(jid) {
-    // @TODO Use Drupal.settings.tpps.accession.
-    var accession = $(':input[name="accession"]')[0].value;
-    $.ajax({
-      url: '/tpps/' + accession + '/pre-validate/' + jid + '/status',
-      type: 'GET',
-    })
-    .done(function(job){
-      if (
-        job === null
-        || typeof job !== 'object'
-        || !job.hasOwnProperty('status')
-      ) {
-        $('.pre-validate-message')
-          .html('<div class="alert alert-block alert-danger messages error">'
-            + Drupal.t('There was a problem checking the status of job with '
-            + 'id @job_id', {'@job_id': jid})+ '</div>'
-          ).show();
-      }
-      // If this job is completed, check all the other jobs.
-      else if (job.status === "Completed") {
-        // This job is no longer pending.
-        pending_jobs[jid] = false;
-        var jobs_complete = true;
-        // Iterate through pending jobs.
-        for (jid in pending_jobs) {
-          if (pending_jobs[jid]) {
-            jobs_complete = false;
+          for (var i = files_number; i < 10; i++){
+            $(files[i]).hide();
           }
         }
-        // If no jobs are pending, enable the submit button.
-        if (jobs_complete) {
+
+        files_add.attr('type', 'button');
+        files_remove.attr('type', 'button');
+
+        files_add.on('click', function(){
+          if (files_number < 10){
+            files_number++;
+            number_object[0].value = files_number;
+
+            for (var i = 0; i < files_number; i++){
+              $(files[i]).show();
+            }
+
+            for (var i = files_number; i < 10; i++){
+              $(files[i]).hide();
+            }
+          }
+        });
+
+        files_remove.on('click', function(){
+          if (files_number > 0){
+            files_number--;
+            number_object[0].value = files_number;
+
+            for (var i = 0; i < files_number; i++){
+              $(files[i]).show();
+            }
+
+            for (var i = files_number; i < 10; i++){
+              $(files[i]).hide();
+            }
+          }
+        });
+
+      }
+
+      var stage;
+      if (
+        typeof Drupal.settings.tpps !== 'undefined'
+        && typeof Drupal.settings.tpps.stage !== 'undefined'
+      ) {
+        stage = Drupal.settings.tpps.stage;
+
+        var status_block = $(".tpps-status-block");
+        $(".region-sidebar-second").empty();
+        status_block.prependTo(".region-sidebar-second");
+
+        $("#progress").css('font-size', '1.5rem');
+        $("#progress").css('margin-bottom', '30px');
+
+        if (stage === 'summarypage'){
+          Supplemental_Files();
+          $("#tpps-status").insertAfter(".tgdr_form_status");
+          $('.next-button').on('click', function(){
+
+            $("#tpps-status")
+              .html('<label>' + Drupal.t('Loading...') + '</label><br>'
+                + Drupal.t('This step may take several minutes.')
+              );
+          });
+        }
+      }
+
+      if (typeof stage !== 'undefined' && stage == 4) {
+        var layer_search_buttons = $('input').filter(function() {
+          return this.id.match(/edit-organism-[0-9]+-environment-layer-search/);
+        });
+        layer_search_buttons.keyup(function() {
+          var button_value = new RegExp($(this).val(), 'i');
+          var org_num = this.id.match(/edit-organism-([0-9]+)-environment-layer-search/)[1];
+          var pattern = new RegExp('edit-organism-' + org_num + '-environment-env-layers-');
+          var group_pattern = new RegExp('edit-organism-' + org_num + '-environment-env-layers-groups-');
+          var layers = $('input').filter(function() {
+            return this.id.match(pattern) && !this.id.match(group_pattern);
+          });
+          $.each(layers, function() {
+            var label = $(this).parent().children('label')[0].innerText;
+            if (label.match(button_value)) {
+              $(this).parent().show();
+            }
+            else {
+              $(this).parent().hide();
+            }
+          });
+        });
+      }
+
+      var preview_record_buttons = $('input').filter(
+        function() { return this.id.match(/-tripal-eutils-callback/); }
+      );
+      $.each(preview_record_buttons, function() {
+        $(this).attr('type', 'button');
+      });
+
+      var preview_buttons = $('input.preview_button');
+      $.each(preview_buttons, function() {
+        $(this).click(function(e) {
+          previewFile(this, 3);
+          e.preventDefault();
+        });
+      });
+
+      var preview_full_buttons = $('input.preview_full_button');
+      $.each(preview_full_buttons, function() {
+        $(this).click(function(e) {
+          e.preventDefault();
+          previewFile(this, 0);
+        });
+      });
+
+      var pending_jobs = {};
+
+      /**
+       * Checks status of the Tripal Job 'VCF File Pre-Validation'.
+       *
+       * @TODO Do not allow re-validation of the same file. Store status of
+       * the check in browser.
+       */
+      function checkVCFJob(jid) {
+        // @TODO Use Drupal.settings.tpps.accession.
+        var accession = $(':input[name="accession"]')[0].value;
+        $.ajax({
+          url: '/tpps/' + accession + '/pre-validate/' + jid + '/status',
+          type: 'GET',
+        })
+        .done(function(job){
+          if (
+            job === null
+            || typeof job !== 'object'
+            || !job.hasOwnProperty('status')
+          ) {
+            $('.pre-validate-message')
+              .html('<div class="alert alert-block alert-danger messages error">'
+                + Drupal.t('There was a problem checking the status of job with '
+                + 'id @job_id', {'@job_id': jid})+ '</div>'
+              ).show();
+          }
+          // If this job is completed, check all the other jobs.
+          else if (job.status === "Completed") {
+            // This job is no longer pending.
+            pending_jobs[jid] = false;
+            var jobs_complete = true;
+            // Iterate through pending jobs.
+            for (jid in pending_jobs) {
+              if (pending_jobs[jid]) {
+                jobs_complete = false;
+              }
+            }
+            // If no jobs are pending, enable the submit button.
+            if (jobs_complete) {
+              $(vcfPreValidateButton).prop('disabled', false);
+              console.log(Drupal.t('All the jobs were completed.'));
+              var message = '<div class="alert alert-block alert-success messages '
+                + 'status">' + Drupal.t('VCF File pre-validation completed!')
+                + '</div>';
+              var errors = job.val_errors;
+              if (errors.length > 0) {
+                for (error of errors) {
+                  message = message + '<div class="alert alert-block alert-danger '
+                    + 'messages error">' + error + '</div>';
+                }
+              }
+              else {
+                $('.review-and-submit-button').prop('disabled', false);
+              }
+              $('.pre-validate-message').html(message).show();
+            }
+            // Otherwise, log the pending jobs.
+            else {
+              console.log(pending_jobs);
+            }
+          }
+          // Otherwise, wait 5 seconds and check again.
+          else {
+            console.log(Drupal.t('job @job_id status: @status',
+              {'@job_id': jid, '@status': job.status}
+            ));
+            setTimeout(() => {
+              checkVCFJob(job.job_id);
+            }, 5000);
+          }
+        })
+        .fail(function(job) {
+          $('.review-and-submit-button').prop('disabled', false);
           $(vcfPreValidateButton).prop('disabled', false);
-          console.log(Drupal.t('All the jobs were completed.'));
-          var message = '<div class="alert alert-block alert-success messages '
-            + 'status">' + Drupal.t('VCF File pre-validation completed!')
-            + '</div>';
-          var errors = job.val_errors;
-          if (errors.length > 0) {
-            for (error of errors) {
-              message = message + '<div class="alert alert-block alert-danger '
-                + 'messages error">' + error + '</div>';
+          console.log(Drupal.t('Failed.'));
+          console.log(job);
+        });
+      }
+
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Click on 'Pre-validate my VCF Files' button.
+      $(vcfPreValidateButton).attr('type', 'button');
+      $(vcfPreValidateButton).click(function() {
+        var accession = $(':input[name="accession"]')[0].value;
+        console.log(Drupal.t('Initializing jobs...'));
+
+        // Get real number of organisms.
+        let organismNumber = Drupal.settings.tpps.organismNumber || 1;
+        let vcfs = {};
+        let missing_vcf = false;
+        // Loop each organism to get VCF fid or path (local/remote).
+        for (let organismId = 1; organismId <= organismNumber; organismId++) {
+          let organismName = 'organism-' + organismId;
+          let vcfFileLocation = $('select[name="' + organismName
+            + '[genotype][SNPs][vcf_file-location]'
+            + '"]').val();
+          // Note: 'remote' means already stored on remote server (path) and
+          // 'local' is stored on user's PC and must be uploaded via form.
+          if (vcfFileLocation == 'local') {
+            // Process File Id. Value 'local'.
+            let vcfFid = $('input[name="' + organismName
+              + '[genotype][SNPs][vcf][fid]'
+              + '"]').val();
+            // Validate.
+            if (vcfFid === '0') {
+              missing_vcf = true;
+            }
+            else {
+              vcfs[organismId] = vcfFid;
             }
           }
           else {
-            $('.review-and-submit-button').prop('disabled', false);
-          }
-          $('.pre-validate-message').html(message).show();
-        }
-        // Otherwise, log the pending jobs.
-        else {
-          console.log(pending_jobs);
-        }
-      }
-      // Otherwise, wait 5 seconds and check again.
-      else {
-        console.log(Drupal.t('job @job_id status: @status',
-          {'@job_id': jid, '@status': job.status}
-        ));
-        setTimeout(() => {
-          checkVCFJob(job.job_id);
-        }, 5000);
-      }
-    })
-    .fail(function(job) {
-      $('.review-and-submit-button').prop('disabled', false);
-      $(vcfPreValidateButton).prop('disabled', false);
-      console.log(Drupal.t('Failed.'));
-      console.log(job);
-    });
-  }
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Click on 'Pre-validate my VCF Files' button.
-  $(vcfPreValidateButton).attr('type', 'button');
-  $(vcfPreValidateButton).click(function() {
-    var accession = $(':input[name="accession"]')[0].value;
-    console.log(Drupal.t('Initializing jobs...'));
-
-    // Get real number of organisms.
-    let organismNumber = Drupal.settings.tpps.organismNumber || 1;
-    let vcfs = {};
-    let missing_vcf = false;
-    // Loop each organism to get VCF fid or path (local/remote).
-    for (let organismId = 1; organismId <= organismNumber; organismId++) {
-      let organismName = 'organism-' + organismId;
-      let vcfFileLocation = $('select[name="' + organismName
-        + '[genotype][SNPs][vcf_file-location]'
-        + '"]').val();
-      // Note: 'remote' means already stored on remote server (path) and
-      // 'local' is stored on user's PC and must be uploaded via form.
-      if (vcfFileLocation == 'local') {
-        // Process File Id. Value 'local'.
-        let vcfFid = $('input[name="' + organismName
-          + '[genotype][SNPs][vcf][fid]'
-          + '"]').val();
-        // Validate.
-        if (vcfFid === '0') {
-          missing_vcf = true;
-        }
-        else {
-          vcfs[organismId] = vcfFid;
-        }
-      }
-      else {
-        // Process path. Value 'remote'.
-        let vcfPath = $('input[name="' + organismName
-          + '[genotype][SNPs][local_vcf]' + '"]').val();
-        // Validate.
-        if (vcfPath.length == 0) {
-          missing_vcf = true;
-        }
-        else {
-          vcfs[organismId] = vcfPath;
-        }
-      }
-    }
-
-    if (missing_vcf) {
-      $('.pre-validate-message')
-        .html('<div class="alert alert-block alert-danger messages error">'
-          + Drupal.t('Please upload your VCF file before clicking the '
-          + 'pre-validate button') + '</div>'
-        ).show();
-    }
-    else {
-      $('.review-and-submit-button').prop('disabled', true);
-      $(vcfPreValidateButton).prop('disabled', true);
-      $.makeArray(vcfs).map((element) => { return element.value; });
-
-      // Initialize vcf jobs and begin checkVCFJob routines.
-      var request = $.ajax({
-        url: '/tpps/' + accession + '/pre-validate',
-        // Note: vcfs is an array.
-        data: {'vcfs': vcfs},
-        type: 'GET',
-      })
-      .done(function(jobs) {
-        if (typeof jobs === 'string') {
-          $('.pre-validate-message')
-            .html('<div class="alert alert-block alert-danger messages error">'
-              + jobs + '</div>').show();
-          $('.review-and-submit-button').prop('disabled', false);
-          $(vcfPreValidateButton).prop('disabled', false);
-        }
-        else if (!Array.isArray(jobs) || jobs.length == 0) {
-          $('.pre-validate-message')
-            .html('<div class="alert alert-block alert-danger messages error">'
-              + Drupal.t('There was a problem with pre-validating your VCF '
-              + 'files. Please reload the page and try again')
-              + '</div>').show();
-          $('.review-and-submit-button').prop('disabled', false);
-          $(vcfPreValidateButton).prop('disabled', false);
-        }
-        else {
-          console.log(Drupal.t('Jobs initialized!'));
-          console.log(Drupal.t('List of jobs: \n!jobs',
-            {'!jobs': JSON.stringify(jobs, null, 2)}
-          ));
-          for (job of jobs) {
-            checkVCFJob(job);
-            pending_jobs[job] = true;
-          }
-          $('.pre-validate-message')
-            .html('<img src="/misc/throbber-active.gif"> '
-              + Drupal.t('Pre-validating VCF files. This may take some time...')
-            ).show();
-        }
-      })
-      .fail(function(jobs) {
-        $('.review-and-submit-button').prop('disabled', false);
-        $(vcfPreValidateButton).prop('disabled', false);
-        console.log('Check of the status of VCF-file pre-validation failed.');
-        console.log(jobs);
-      });
-    }
-  });
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  $('#edit-save-comments').attr('type', 'button');
-
-  var details_tabs = $('.nav-tabs > .nav-item > .nav-link');
-  $.each(details_tabs, function() {
-    $(this).click(detailsTab);
-  });
-  $('[href="#species"]').trigger('click');
-  $('a:contains("Return to TPPS List")').hide();
-  $('#edit-details-search').attr('type', 'button');
-  $('#edit-details-search').click(detailSearch);
-  $('#tpps-details-search').submit(function() {
-    detailSearch();
-    return false;
-  });
-
-  var file_options = $('div').filter(function() {
-    return this.id.match(/^file_.*_options$/);
-  });
-  $.each(file_options, function() {
-    if ($('#' + this.id + '_dest').length > 0) {
-      $(this).prependTo('#' + this.id + '_dest');
-    }
-    else {
-      $(this).hide();
-    }
-  });
-
-  initDetailPages();
-
-  var tags = $('#tpps-tags-filter').children('.tag');
-  $.each(tags, function() {
-    $(this).click(detailTagSearch);
-  });
-
-  var admin_panel_regex = /tpps-admin-panel\/TGDR.*/g;
-  if (window.location.pathname.match(admin_panel_regex)) {
-    var tag_buttons = $('span').filter(function() {
-      return (this.id.match(/TGDR[0-9]+-tag-[0-9]*-add|remove/) && !this.disabled);
-    });
-    $.each(tag_buttons, function() {
-      $(this).click(function() {
-        var tag_button = this;
-        var info = this.id.match(/(TGDR[0-9]+)-tag-([0-9]*)-(add|remove)/);
-        if (info.length == 4) {
-          var request = $.get('/tpps-tag/' + info[3] + '/' + info[1] + '/' + info[2]);
-          request.done(function (data) {
-            if (info[3] == 'remove') {
-              $(tag_button).parent().hide();
-              var pattern = new RegExp('TGDR[0-9]+-tag-' + info[2] + '-add');
-              $('span').filter(function() { return this.id.match(pattern); }).show();
+            // Process path. Value 'remote'.
+            let vcfPath = $('input[name="' + organismName
+              + '[genotype][SNPs][local_vcf]' + '"]').val();
+            // Validate.
+            if (vcfPath.length == 0) {
+              missing_vcf = true;
             }
             else {
-              $(tag_button).hide();
-              var pattern = new RegExp('TGDR[0-9]+-tag-' + info[2] + '-remove');
-              $('span.tag-close').filter(function() {
-                return this.id.match(pattern);
-              }).parent().show();
+              vcfs[organismId] = vcfPath;
             }
-          });
+          }
+        }
+
+        if (missing_vcf) {
+          $('.pre-validate-message')
+            .html('<div class="alert alert-block alert-danger messages error">'
+              + Drupal.t('Please upload your VCF file before clicking the '
+              + 'pre-validate button') + '</div>'
+            ).show();
         }
         else {
-          console.log('Could not parse accession/tag id/edit type from button id');
-          console.log(info);
+          $('.review-and-submit-button').prop('disabled', true);
+          $(vcfPreValidateButton).prop('disabled', true);
+          $.makeArray(vcfs).map((element) => { return element.value; });
+
+          // Initialize vcf jobs and begin checkVCFJob routines.
+          var request = $.ajax({
+            url: '/tpps/' + accession + '/pre-validate',
+            // Note: vcfs is an array.
+            data: {'vcfs': vcfs},
+            type: 'GET',
+          })
+          .done(function(jobs) {
+            if (typeof jobs === 'string') {
+              $('.pre-validate-message')
+                .html('<div class="alert alert-block alert-danger messages error">'
+                  + jobs + '</div>').show();
+              $('.review-and-submit-button').prop('disabled', false);
+              $(vcfPreValidateButton).prop('disabled', false);
+            }
+            else if (!Array.isArray(jobs) || jobs.length == 0) {
+              $('.pre-validate-message')
+                .html('<div class="alert alert-block alert-danger messages error">'
+                  + Drupal.t('There was a problem with pre-validating your VCF '
+                  + 'files. Please reload the page and try again')
+                  + '</div>').show();
+              $('.review-and-submit-button').prop('disabled', false);
+              $(vcfPreValidateButton).prop('disabled', false);
+            }
+            else {
+              console.log(Drupal.t('Jobs initialized!'));
+              console.log(Drupal.t('List of jobs: \n!jobs',
+                {'!jobs': JSON.stringify(jobs, null, 2)}
+              ));
+              for (job of jobs) {
+                checkVCFJob(job);
+                pending_jobs[job] = true;
+              }
+              $('.pre-validate-message')
+                .html('<img src="/misc/throbber-active.gif"> '
+                  + Drupal.t('Pre-validating VCF files. This may take some time...')
+                ).show();
+            }
+          })
+          .fail(function(jobs) {
+            $('.review-and-submit-button').prop('disabled', false);
+            $(vcfPreValidateButton).prop('disabled', false);
+            console.log('Check of the status of VCF-file pre-validation failed.');
+            console.log(jobs);
+          });
         }
       });
-    });
 
-    var add_tags = $('span').filter(function() {
-      return this.id.match(/TGDR[0-9]+-add-tags/);
-    });
-    $.each(add_tags, function() {
-      $(this).click(function() {
-        console.log(this);
-      })
-    })
-  }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      $('#edit-save-comments').attr('type', 'button');
 
+      var details_tabs = $('.nav-tabs > .nav-item > .nav-link');
+      $.each(details_tabs, function() {
+        $(this).click(detailsTab);
+      });
+      $('[href="#species"]').trigger('click');
+      $('a:contains("Return to TPPS List")').hide();
+      $('#edit-details-search').attr('type', 'button');
+      $('#edit-details-search').click(detailSearch);
+      $('#tpps-details-search').submit(function() {
+        detailSearch();
+        return false;
+      });
 
+      var file_options = $('div').filter(function() {
+        return this.id.match(/^file_.*_options$/);
+      });
+      $.each(file_options, function() {
+        if ($('#' + this.id + '_dest').length > 0) {
+          $(this).prependTo('#' + this.id + '_dest');
+        }
+        else {
+          $(this).hide();
+        }
+      });
+
+      initDetailPages();
+
+      var tags = $('#tpps-tags-filter').children('.tag');
+      $.each(tags, function() {
+        $(this).click(detailTagSearch);
+      });
+
+      var admin_panel_regex = /tpps-admin-panel\/TGDR.*/g;
+      if (window.location.pathname.match(admin_panel_regex)) {
+        var tag_buttons = $('span').filter(function() {
+          return (this.id.match(/TGDR[0-9]+-tag-[0-9]*-add|remove/) && !this.disabled);
+        });
+        $.each(tag_buttons, function() {
+          $(this).click(function() {
+            var tag_button = this;
+            var info = this.id.match(/(TGDR[0-9]+)-tag-([0-9]*)-(add|remove)/);
+            if (info.length == 4) {
+              var request = $.get('/tpps-tag/' + info[3] + '/' + info[1] + '/' + info[2]);
+              request.done(function (data) {
+                if (info[3] == 'remove') {
+                  $(tag_button).parent().hide();
+                  var pattern = new RegExp('TGDR[0-9]+-tag-' + info[2] + '-add');
+                  $('span').filter(function() { return this.id.match(pattern); }).show();
+                }
+                else {
+                  $(tag_button).hide();
+                  var pattern = new RegExp('TGDR[0-9]+-tag-' + info[2] + '-remove');
+                  $('span.tag-close').filter(function() {
+                    return this.id.match(pattern);
+                  }).parent().show();
+                }
+              });
+            }
+            else {
+              console.log('Could not parse accession/tag id/edit type from button id');
+              console.log(info);
+            }
+          });
+        });
+
+        var add_tags = $('span').filter(function() {
+          return this.id.match(/TGDR[0-9]+-add-tags/);
+        });
+        $.each(add_tags, function() {
+          $(this).click(function() {
+            console.log(this);
+          })
+        })
+      }
     }
   };
+
 }(jQuery));
 
-
-
-
-jQuery.fn.mapButtonsClick = function (selector) {
-  jQuery(selector).off('click');
-  jQuery(selector).click(getCoordinates);
-  initMap();
-}
 
 function previewFile(element, num_rows = 3) {
   var fid;
@@ -628,144 +596,6 @@ function detailTagSearch() {
     initDetailPages();
   });
 }
-
-var maps = {};
-
-function initMap() {
-  var detail_regex = /tpps\/details\/TGDR.*/g;
-
-  if (typeof Drupal.settings.tpps !== 'undefined' && typeof Drupal.settings.tpps.map_buttons !== 'undefined') {
-    var mapButtons = Drupal.settings.tpps.map_buttons;
-    jQuery.each(mapButtons, function() {
-      var fid = this.fid;
-      maps[fid] = new google.maps.Map(document.getElementById(this.wrapper), {
-        center: {lat:0, lng:0},
-        zoom: 5,
-      });
-      maps[fid + '_markers'] = [];
-      maps[fid + '_total_lat'];
-      maps[fid + '_total_long'];
-    });
-  }
-  if (
-    typeof Drupal.settings.tpps != 'undefined'
-    && typeof Drupal.settings.tpps.tree_info != 'undefined'
-    && (
-      window.location.pathname.match(detail_regex)
-      || typeof Drupal.settings.tpps.study_locations !== 'undefined'
-    )
-  ) {
-    maps[''] = new google.maps.Map(document.getElementById('_map_wrapper'), {
-      center: {lat:0, lng:0},
-      zoom: 5,
-    });
-    maps['_markers'] = [];
-    maps['_total_lat'];
-    maps['_total_long'];
-    jQuery.fn.updateMap(Drupal.settings.tpps.tree_info);
-  }
-}
-
-function clearMarkers(prefix) {
-  for (var i = 0; i < maps[prefix + '_markers'].length; i++) {
-    maps[prefix + '_markers'][i].setMap(null);
-  }
-  maps[prefix + '_markers'] = [];
-}
-
-function getCoordinates(){
-  var fid = this.id.match(/(.*)_map_button/)[1];
-
-  var fid, no_header, id_col, lat_col, long_col;
-  try{
-    file = Drupal.settings.tpps.accession_files[fid];
-    if (typeof file === 'undefined') {
-      jQuery.each(Drupal.settings.tpps.accession_files, function() {
-        if (this.fid == fid) {
-          file = this;
-        }
-      })
-      if (typeof file === 'undefined') {
-        return;
-      }
-    }
-
-    no_header = file.no_header;
-    id_col = file.id_col;
-    lat_col = file.lat_col;
-    long_col = file.long_col;
-  }
-  catch(err){
-    console.log(err);
-    return;
-  }
-
-  if (typeof id_col === 'undefined' || typeof lat_col === 'undefined' || typeof long_col === 'undefined'){
-    jQuery("#" + Drupal.settings.tpps.map_buttons[fid].wrapper).hide();
-    return;
-  }
-
-  var request = jQuery.post('/tpps-accession', {
-    fid: fid,
-    no_header: no_header,
-    id_col: id_col,
-    lat_col: lat_col,
-    long_col: long_col
-  });
-
-  request.done(function (data) {
-    jQuery.fn.updateMap(data, fid);
-  });
-}
-
-jQuery.fn.updateMap = function(locations, fid = "") {
-  jQuery("#" + fid + "_map_wrapper").show();
-  var detail_regex = /tpps\/details\/TGDR.*/g;
-  if (typeof Drupal.settings.tpps !== 'undefined' && typeof Drupal.settings.tpps.stage !== 'undefined' && Drupal.settings.tpps.stage == 3) {
-    jQuery("#" + fid + "_map_wrapper").css({"height": "450px"});
-    jQuery("#" + fid + "_map_wrapper").css({"max-width": "800px"});
-  }
-  else if(jQuery("#tpps_table_display").length > 0) {
-    jQuery("#" + fid + "_map_wrapper").css({"height": "450px"});
-  }
-  else if (window.location.pathname.match(detail_regex)) {
-    jQuery("#" + fid + "_map_wrapper").css({"height": "450px"});
-  }
-  else {
-    jQuery("#" + fid + "_map_wrapper").css({"height": "100px"});
-  }
-
-  clearMarkers(fid);
-  maps[fid + '_total_lat'] = 0;
-  maps[fid + '_total_long'] = 0;
-  timeout = 2000/locations.length;
-
-  maps[fid + '_markers'] = locations.map(function (location, i) {
-    maps[fid + '_total_lat'] += parseInt(location[1]);
-    maps[fid + '_total_long'] += parseInt(location[2]);
-    var marker = new google.maps.Marker({
-      position: new google.maps.LatLng(location[1], location[2])
-    });
-
-    var infowindow = new google.maps.InfoWindow({
-      content: location[0] + '<br>Location: ' + location[1] + ', ' + location[2]
-    });
-
-    marker.addListener('click', function() {
-      infowindow.open(maps[fid], maps[fid + '_markers'][i]);
-    });
-    return marker;
-  });
-
-  if (typeof maps[fid + '_cluster'] !== 'undefined') {
-    maps[fid + '_cluster'].clearMarkers();
-  }
-
-  maps[fid + '_cluster'] = new MarkerClusterer(maps[fid], maps[fid + '_markers'], {imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m'});
-
-  var center = new google.maps.LatLng(maps[fid + '_total_lat']/locations.length, maps[fid + '_total_long']/locations.length);
-  maps[fid].panTo(center);
-};
 
 /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 /* [VS] */

@@ -278,6 +278,9 @@ function tpps_form_navigation_bar(array &$form, array $form_state) {
 
   $last_completed_stage = $submission->getLastCompletedStage();
   $last_completed_stage = ($last_completed_stage == 'summarypage' ? 5 : $last_completed_stage);
+  // Fully submitted study doesn't have completed stage ('#cleared' element)
+  // so we must use current stage instead.
+  $last_completed_stage = ($last_completed_stage ?? ($current_stage - 1));
 
   // @TODO Each stage has '#cleared' option which indicates that form step
   // passed validation when it's set and value is TRUE. Remove for TPPSc.
@@ -625,6 +628,8 @@ function tpps_form_build_file_field(array $form_bus) {
         ['@list' => implode(', ', $extensions)]) : ''),
     '#tree' => TRUE,
     '#states' => $states,
+    //'#parents' => $parents,
+    '#simple_file' => FALSE,
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1037,8 +1042,13 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   if (!empty($_GET['stage'])) {
     $current_stage_name = $_GET['stage'] == 5 ? 'summarypage' : (int) ($_GET['stage']);
     $submission = tpps_submission($accession)->load();
+    $current_stage = $submission->getCurrentStage();
+    $current_stage = ($current_stage == 'summarypage' ? 5 : $current_stage);
     $last_completed_stage = $submission->getLastCompletedStage();
     $last_completed_stage = ($last_completed_stage == 'summarypage' ? 5 : $last_completed_stage);
+    // Fully submitted study doesn't have completed stage ('#cleared' element)
+    // so we must use current stage instead.
+    $last_completed_stage = ($last_completed_stage ?? ($current_stage - 1));
     if (
       in_array($_GET['stage'], range(1, 5))
       // Allow to go directly to next stage after last completed.

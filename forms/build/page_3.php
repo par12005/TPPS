@@ -186,20 +186,24 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
 
     // [VS]
     // Previously $fid was an array which caused warnings on Page 3 submit.
+    //
+    //
+    // @TODO Not work. Remove.
+    //$fid = $form_state['values']['tree-accession']['species-' . $i]['file']
+    //  ?? tpps_get_ajax_value(
+    //    $form_state, ['tree-accession', "species-$i", 'file'], NULL);
     $fid = tpps_get_ajax_value(
-      $form_state,
-      ['tree-accession', "species-$i", 'file', 'fid'],
-      NULL
+      $form_state, ['tree-accession', "species-$i", 'file'], NULL
     );
-    // [/VS]
-    if ($file = tpps_file_load($fid) && empty($skip)) {
-      $wrapper_id = "{$fid}_map_wrapper";
-      $button_id = "{$fid}_map_button";
-      $form['tree-accession']["species-$i"]['coord-format']['#suffix']
-        = '<div id="' . $wrapper_id . '"></div>'
-        . '<input id="' . $button_id . '" type="button" '
-        . 'value="' . t('Click here to view plants on map') . '" '
-        . 'class="btn btn-primary form-button map-button"></input>';
+
+    // Add wrapper even if there is no file yet so JS code will be able to
+    // update it when new file will be uploaded or removed and uploaded again.
+    // Note: fid is File Id of saved file. Not just uploaded but not saved
+    // or submitted. Not removed and uploaded again.
+    $form['tree-accession']["species-$i"]['coord-format']['#prefix'] =
+      tpps_build_google_map_wrapper($fid);
+
+    if ($file = tpps_file_load($fid)) {
       $no_header = tpps_get_ajax_value(
         $form_state,
         ['tree-accession', "species-$i", 'file', 'no_header'],
@@ -230,30 +234,6 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
           }
         }
       }
-      $form['#attached']['js'][] = [
-        'type' => 'setting',
-        'scope' => 'footer',
-        'data' => [
-          'tpps' => [
-            'accession_files' => [
-              $fid => [
-                'no_header' => $no_header,
-                'id_col' => $id_col,
-                'lat_col' => $lat_col,
-                'long_col' => $long_col,
-                'fid' => $fid,
-              ],
-            ],
-            'map_buttons' => [
-              $fid => [
-                'wrapper' => $wrapper_id,
-                'button' => $button_id,
-                'fid' => $fid,
-              ],
-            ],
-          ]
-        ]
-      ];
     }
     $form['tree-accession']["species-$i"]['pop-group'] = [
       '#type' => 'hidden',
@@ -366,19 +346,14 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     }
   }
 
-  $map_api_key = variable_get('tpps_maps_api_key', NULL);
-  if (!empty($map_api_key)) {
-    $form['tree-accession']['#suffix'] .= '
-    <script src="https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=' . $map_api_key . '&callback=initMap"
-    async defer></script>
-    <style>
-      #map_wrapper {
-      height: 450px;
-      }
-    </style>';
+  if (variable_get('tpps_maps_api_key', NULL)) {
+    // @todo Add JS using drupal_add_js().
+
+    // Wrapper is NOT required here.
+    $form['tree-accession']['#suffix'] .= tpps_get_markercluster_code(FALSE);
   }
   tpps_form_autofocus($form, ['tree-accession', 'species-1', 'file']);
+  tpps_add_css_js('google_map', $form);
   tpps_form_add_buttons(['form' => &$form, 'page' => 'page_3']);
   return $form;
 }
