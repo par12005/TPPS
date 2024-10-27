@@ -11,6 +11,8 @@
  * @TODO Move tag-functions to separate file.
  */
 
+use Drupal\tpps\Submission;
+
 module_load_include('inc', 'tpps', 'includes/submission_file');
 module_load_include('inc', 'tpps', 'includes/submission_form_version');
 

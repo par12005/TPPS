@@ -1,5 +1,7 @@
 <?php
 
+namespace Drupal\tpps;
+
 /**
  * @file
  * Contains 'Organism' class.

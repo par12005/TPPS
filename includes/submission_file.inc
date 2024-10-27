@@ -8,6 +8,8 @@
  * module_load_include('inc', 'tpps', 'includes/submission_file');
  */
 
+use Drupal\tpps\Submission;
+
 /**
  * Gets form submission state, prepares files for import.
  *

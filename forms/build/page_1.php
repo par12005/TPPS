@@ -8,6 +8,8 @@
 require_once 'page_1_helper.php';
 require_once 'page_1_ajax.php';
 
+use Drupal\tpps\Submission;
+
 /**
  * Creates the Publication/Species Information form page.
  *

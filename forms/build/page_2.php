@@ -9,27 +9,7 @@ require_once 'page_2_ajax.php';
 require_once 'page_2_helper.php';
 require_once 'page_2_tppsc_helper.php';
 
-/**
- * Builds TPPS/TPPSc Page 2 Form.
- *
- * @param array $form
- *   The form being created.
- * @param array $form_state
- *   The state of the form being created.
- *
- * @return array
- *   The completed Study Design form.
- */
-function tpps_page_2_create_form(array &$form, array $form_state) {
-  if (tpps_form_is_tppsc($form_state)) {
-    tpps_page_2_create_form_tppsc($form, $form_state);
-  }
-  else {
-    tpps_page_2_create_form_tpps($form, $form_state);
-  }
-  tpps_form_add_buttons(['form' => &$form, 'page' => 'page_2']);
-  return $form;
-}
+use Drupal\tpps\Submission;
 
 /**
  * Builds TPPS Page 2 Form.
@@ -102,14 +82,13 @@ function tpps_page_2_create_form_tpps(array &$form, array $form_state) {
  *
  * This function mainly calls the helper functions for the start date, end date,
  * and various study types.
- *
- * @param array $form
- *   The form being created.
- * @param array $form_state
- *   The state of the form being created.
  */
-function tpps_page_2_create_form_tppsc(array &$form, array $form_state) {
-  $form['study_design'] = [
+function tpps_page_2_create_form_tppsc() {
+  global $tppsForm;
+
+  //$tppsForm->debugMode(1);
+
+  $tppsForm->form['study_design'] = [
     '#type' => 'fieldset',
     // WARNING: No tree!
     '#tree' => FALSE,
@@ -118,7 +97,7 @@ function tpps_page_2_create_form_tppsc(array &$form, array $form_state) {
   ];
   //// Relocated v.2:
   //// $form['data_type'] -> $form['study_design']['data_type'].
-  $form['study_design']['data_type'] = [
+  $tppsForm->form['study_design']['data_type'] = [
     '#type' => 'select',
     '#title' => t('Data Type'),
     '#options' => tpps_form_get_data_type_options(),
@@ -127,7 +106,7 @@ function tpps_page_2_create_form_tppsc(array &$form, array $form_state) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Relocated v.2.
   // $form['study_type'] -> $form['study_design']['experimental_design'].
-  $form['study_design']['experimental_design'] = [
+  $tppsForm->form['study_design']['experimental_design'] = [
     '#type' => 'select',
     '#title' => t('Experimental Design:'),
     '#options' => tpps_form_get_experimental_design_options(),
@@ -148,7 +127,7 @@ function tpps_page_2_create_form_tppsc(array &$form, array $form_state) {
     ],
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  $form['study_info'] = [
+  $tppsForm->form['study_info'] = [
     '#type' => 'fieldset',
     '#title' => t('Study Info'),
     '#tree' => TRUE,
@@ -173,41 +152,40 @@ function tpps_page_2_create_form_tppsc(array &$form, array $form_state) {
     ],
   ];
 
-  $form_bus = ['form' => &$form];
-  tppsc_page2_add_control_fields(array_merge($form_bus,
-    ['type' => 'co2', 'label' => 'CO2 level']));
-  tppsc_page2_add_control_fields(array_merge($form_bus,
-    ['type' => 'humidity', 'label' => 'Air Humidity level']));
-  tppsc_page2_add_control_fields(array_merge($form_bus,
-    ['type' => 'light', 'label' => 'Light Intensity level']));
-  tppsc_page2_add_control_fields(array_merge($form_bus,
-    ['type' => 'temp', 'label' => 'Temperature']));
+  tppsc_page2_add_control_fields(
+    ['type' => 'co2', 'label' => 'CO2 level']);
+  tppsc_page2_add_control_fields(
+    ['type' => 'humidity', 'label' => 'Air Humidity level']);
+  tppsc_page2_add_control_fields(
+    ['type' => 'light', 'label' => 'Light Intensity level']);
+  tppsc_page2_add_control_fields(
+    ['type' => 'temp', 'label' => 'Temperature']);
 
   // @TODO New fields. Check names.
-  tppsc_page2_add_control_fields(array_merge($form_bus,
-    ['type' => 'growth_medium', 'label' => 'Growth Medium']));
-  tppsc_page2_add_control_fields(array_merge($form_bus,
-    ['type' => 'ph_growth_medium', 'label' => 'pH of the growth medium']));
+  tppsc_page2_add_control_fields(
+    ['type' => 'growth_medium', 'label' => 'Growth Medium']);
+  tppsc_page2_add_control_fields(
+    ['type' => 'ph_growth_medium', 'label' => 'pH of the growth medium']);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   $form_bus['group'] = 'common_garden';
 
-  $subform = &$form_bus['form']['study_info'];
+  $subform = &$tppsForm->form['study_info'];
 
   //$num_arr = array_combine(range(1, 30), range(1, 30));
   // range()?
-  $num_arr = array();
+  $num_arr = [];
   $num_arr[0] = '- Select -';
   for ($i = 1; $i <= 30; $i++) {
     $num_arr[$i] = $i;
   }
 
-  $subform['assessions'] = array(
+  $subform['assessions'] = [
     '#type' => 'select',
     '#title' => t('Number of times the populations were assessed (on average):'),
     '#options' => $num_arr,
     '#required_when_visible' => TRUE,
-  );
+  ];
 
   $subform['irrigation'] = [
     '#type' => 'fieldset',
@@ -228,21 +206,21 @@ function tpps_page_2_create_form_tppsc(array &$form, array $form_state) {
     ),
   ];
 
-  $subform['irrigation']['other'] = array(
+  $subform['irrigation']['other'] = [
     '#type' => 'textfield',
     '#required_when_visible' => TRUE,
-    '#states' => array(
-      'visible' => array(
-        ':input[name="study_info[irrigation][option]"]' => array('value' => 'Other'),
-      ),
-    ),
-  );
+    '#states' => [
+      'visible' => [
+        ':input[name="study_info[irrigation][option]"]' => ['value' => 'Other'],
+      ],
+    ],
+  ];
 
 
-  $subform['biotic_env'] = array(
+  $subform['biotic_env'] = [
     '#type' => 'fieldset',
     '#tree' => TRUE,
-  );
+  ];
 
   $subform['biotic_env']['option'] = [
     '#type' => 'checkboxes',
@@ -259,19 +237,21 @@ function tpps_page_2_create_form_tppsc(array &$form, array $form_state) {
     ]),
   ];
 
-  $subform['biotic_env']['other'] = array(
+  $subform['biotic_env']['other'] = [
     '#type' => 'textfield',
     '#title' => t('Please specify Biotic Environment Type:'),
     '#required_when_visible' => TRUE,
-    '#states' => array(
-      'visible' => array(
-        ':input[name="study_info[biotic_env][option][Other]"]' => array('checked' => TRUE),
-      ),
-    ),
-  );
+    '#states' => [
+      'visible' => [
+        ':input[name="study_info[biotic_env][option][Other]"]' => ['checked' => TRUE],
+      ],
+    ],
+  ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  tppsc_page2_add_control_fields(array_merge($form_bus,
-    ['type' => 'treatment', 'label' => 'Treatment']));
+  tppsc_page2_add_control_fields(
+    ['type' => 'treatment', 'label' => 'Treatment']);
 
-  tpps_form_autofocus($form, ['study_design', 'data_type']);
+  // WARNING: no '#tree' element!
+  // @TODO Fix it.
+  $tppsForm->autoFocus(['study_design', 'data_type']);
 }

@@ -5,6 +5,9 @@
  * Core of the TPPS module.
  */
 
+use Drupal\tpps\Submission;
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 define("TPPS_MAJOR_VERSION", 1);
 define("TPPS_MINOR_VERSION", 2);
 define('TPPS_JS_PATH', '/js/tpps.js');
@@ -120,7 +123,7 @@ if (!is_live_site() || variable_get('tpps_debug_mode', FALSE)) {
   error_reporting(E_ALL);
 }
 
-module_load_include('inc', 'tpps', 'includes/array');
+require_once 'includes/array.inc';
 require_once 'includes/display.inc';
 require_once 'includes/chado_utils.inc';
 require_once 'includes/init_project.inc';
@@ -128,7 +131,7 @@ require_once 'includes/standard_coord.inc';
 require_once 'includes/file_utils.inc';
 require_once 'includes/submit_email.inc';
 require_once 'includes/accession_coordinates.inc';
-module_load_include('inc', 'tpps', 'includes/submissions');
+require_once 'includes/submissions.inc';
 require_once 'includes/zenodo.inc';
 require_once 'includes/match_trees.inc';
 require_once 'includes/ncbi_utils.inc';
@@ -137,12 +140,12 @@ module_load_include('inc', 'tpps', 'includes/form');
 module_load_include('inc', 'tpps', 'includes/form_utils');
 module_load_include('inc', 'tpps', 'includes/details');
 module_load_include('inc', 'tpps', 'includes/cvterm_utils');
-
 module_load_include('inc', 'tpps', 'includes/submission_file');
-require_once 'includes/phenotype_synonym.inc';
-require_once 'includes/phenotype_unit.inc';
-require_once 'includes/easy_report.inc';
-require_once 'api/tpps.api.inc';
+
+module_load_include('inc', 'tpps', 'includes/phenotype_synonym');
+module_load_include('inc', 'tpps', 'includes/phenotype_unit');
+module_load_include('inc', 'tpps', 'includes/easy_report');
+module_load_include('inc', 'tpps', 'api/tpps.api');
 
 /**
  * Implements hook_menu().
@@ -1851,6 +1854,13 @@ if (!function_exists('array_key_first')) {
  * Implements hook_init().
  */
 function tpps_init() {
+  // Load module's classes and set namespaces.
+  require_once __DIR__ . '/src/Submission.class.inc';
+  require_once __DIR__ . '/src/Organism.class.inc';
+  require_once __DIR__ . '/src/Form.class.inc';
+  //require_once dirname(__FILE__) . '/../src/Submission.class.inc';
+  //use Drupal\tpps\Submission as Submission;
+
   // Removed spam message:
   // Notice: Undefined variable: show_nafgs_menu in include() (line 147 of
   // :w
@@ -2777,6 +2787,7 @@ function tpps_is_main_form(array $form_state) {
  *   Returns Submission object or throw an exception if it's not found.
  */
 function tpps_submission($accession = '') {
+
   $submission = new Submission();
   if ($accession) {
     $submission->accession = $accession;
@@ -2805,6 +2816,8 @@ function tpps_submission($accession = '') {
  *   Returns Organism object or throw an exception if it's not found.
  */
 function tpps_organism($organism_key = '') {
+  require_once 'src/Organism.class.inc';
+  global $organism;
   $organism = new Organism($organism_key);
   if ($organism->doesNotExist()) {
     throw new Exception(
@@ -2824,7 +2837,9 @@ function tpps_organism($organism_key = '') {
  *   Returns Submission object.
  */
 function tpps_submission_load($accession) {
-  // @todo Minor. Use static caching.
+  // @todo Minor. Make $submission global variable. Requires testing.
+  // global $submission;
+  require_once __DIR__ . '/src/Submission.class.inc';
   $submission = new Submission($accession);
   return $submission;
 }

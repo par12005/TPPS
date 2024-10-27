@@ -13,6 +13,9 @@
 $tpps_job_logger = NULL;
 $tpps_job = NULL;
 
+// Load classes.
+require_once __DIR__ . '/src/Submission.class.inc';
+use Drupal\tpps\Submission;
 
 /**
  * Initialized the job logger which handles writing to job logs
@@ -425,18 +428,18 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
     $parts_count = count($parts);
     $organism_type_id = NULL;
     if (isset($parts[2]) and (
-        $parts[2] == 'subsp.' or 
-        $parts[2] == 'spp.' or 
-        $parts[2] == 'sp.' or 
-        $parts[2] == 'subspecies' or 
-        $parts[2] == 'var.' or 
-        $parts[2] == 'varieta' or 
-        $parts[2] == 'variety' or 
-        $parts[2] == 'subvar.' or 
-        $parts[2] == 'subvarieta' or 
-        $parts[2] == 'subvariety' or 
-        $parts[2] == 'f.' or 
-        $parts[2] == 'forma' or 
+        $parts[2] == 'subsp.' or
+        $parts[2] == 'spp.' or
+        $parts[2] == 'sp.' or
+        $parts[2] == 'subspecies' or
+        $parts[2] == 'var.' or
+        $parts[2] == 'varieta' or
+        $parts[2] == 'variety' or
+        $parts[2] == 'subvar.' or
+        $parts[2] == 'subvarieta' or
+        $parts[2] == 'subvariety' or
+        $parts[2] == 'f.' or
+        $parts[2] == 'forma' or
         $parts[2] == 'form'
       )
     ) {
@@ -477,7 +480,7 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
         foreach ($results_organism_type_id_results as $organism_type_id_row) {
           $organism_type_id = $organism_type_id_row->type_id;
         }
-      } 
+      }
       else if ($parts[2] == 'f.' or $parts[2] == 'forma' or $parts[2] == 'form') {
         $results_organism_type_id_results = chado_query('SELECT * FROM chado.cvterm WHERE name = :name', [
           ':name' => 'forma'
@@ -485,7 +488,7 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
         foreach ($results_organism_type_id_results as $organism_type_id_row) {
           $organism_type_id = $organism_type_id_row->type_id;
         }
-      }    
+      }
     }
 
     $record = [
@@ -587,9 +590,9 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
 
       // Now we still need to make sure there is no organism_dbxref record, search for one
       $organism_dbxref_id = NULL;
-      $results_organism_dbxref = chado_query('SELECT * FROM chado.organism_dbxref 
-        WHERE organism_id = :organism_id 
-        AND dbxref_id = :dbxref_id', 
+      $results_organism_dbxref = chado_query('SELECT * FROM chado.organism_dbxref
+        WHERE organism_id = :organism_id
+        AND dbxref_id = :dbxref_id',
       [
         ':organism_id' => $organism_results_id,
         ':dbxref_id' => $dbxref_id
@@ -597,7 +600,7 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
       foreach ($results_organism_dbxref as $organism_dbxref_row) {
         $organism_dbxref_id = $organism_dbxref_row->organism_dbxref_id;
       }
-      
+
       // If there is no organism_dbxref_id, we need to add it to the organism_dbxref table
       if ($organism_dbxref_id == NULL) {
         $organism_dbxref_id = tpps_chado_insert_record('organism_dbxref', [
@@ -1998,9 +2001,9 @@ function tpps_generate_species_codes_array_from_shared_state($shared_state) {
       ]);
     }
     else {
-      $organism_lookup_results = chado_query('SELECT organism_id FROM chado.organism 
-        WHERE genus ILIKE :genus 
-        AND species ILIKE :species 
+      $organism_lookup_results = chado_query('SELECT organism_id FROM chado.organism
+        WHERE genus ILIKE :genus
+        AND species ILIKE :species
         AND infraspecific_name ILIKE :infra',[
         ':genus' => $organism_name_genus,
         ':species' => $organism_name_species,
@@ -2030,7 +2033,7 @@ function tpps_generate_species_codes_array_from_shared_state($shared_state) {
     else {
       throw new Exception("Could not find the organism by name ($organism_name) or the species code for this organism");
     }
-    
+
     // OLD CODE BEFORE 8/12/2024
     // $species_codes[$shared_state['ids']['organism_ids'][$i]] = current(chado_select_record('organismprop', array('value'), array(
     //   'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id,
@@ -2049,14 +2052,14 @@ function tpps_generate_species_codes_array_from_shared_state($shared_state) {
  * and store it within files.
  */
 function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $shared_state, $regenerate_all = TRUE, TripalJob $job = NULL) {
-  
+
   $project_id = $shared_state['ids']['project_id'];
   $accession = $form_state['accession'];
 
   tpps_initialize_job_logger($accession, $job);
 
   $dest_folder = tpps_realpath('public://tpps_vcf_flat_files');
-  
+
   // print_r($form_state);
   // Generate species codes which is needed later on
   $organism_number = $shared_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
@@ -2111,7 +2114,7 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $sh
       if (!file_exists($snps_flat_file_location) || $regenerate_all == true) {
         // GOAL: We need to generate flat files for this study
         // Step 1: Get species_codes for this study
-        
+
         // New code by Rish to get the species code array
         $study_species_codes = tpps_generate_species_codes_array_from_shared_state($shared_state);
 
@@ -2438,11 +2441,11 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
 
       // @todo we probably want to use tpps_file_iterator to parse vcf files.
       $vcf_fid = $genotype['files']['vcf'];
-      
+
       // check project already exists
-      $results_project_file = chado_query("SELECT count(*) AS c1 FROM public.tpps_project_file_managed 
+      $results_project_file = chado_query("SELECT count(*) AS c1 FROM public.tpps_project_file_managed
         WHERE project_id = :project_id
-        AND fid = :fid", 
+        AND fid = :fid",
       [
         ':project_id' => $project_id,
         ':fid' => $vcf_fid
@@ -3077,7 +3080,7 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
             }
 
             $vcf_cols_count = count($vcf_line);
-            
+
             // echo "gen_name_index:$genotype_name_progress_count colcount:$vcf_cols_count ";
             for ($j = 9; $j < $vcf_cols_count; $j++) {
               // Rish: This was added on 09/12/2022
@@ -3389,7 +3392,7 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
         ':accession' => $accession
       ]);
       $accession_count = $accession_count_results->fetchObject()->c1;
-      
+
 
       // UNIQUE VARIANTS Step 2 - INSERT if no record exists or UPDATE if record exists
       if ($accession_count > 0) {
@@ -4450,7 +4453,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             // store where marker starts on chromosome etc.
             $srcfeature_id = NULL;
             if (isset($analysis_id)) {
-              // Get the srcfeature_id 
+              // Get the srcfeature_id
               echo 'Scaffold ID (srcfeature_id search): ' . $scaffold_id . "\n";
 
               // the scaffold_id is not an integer value, proceed as normal lookup

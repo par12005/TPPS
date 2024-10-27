@@ -8,6 +8,9 @@
  * module_load_include('inc', 'tpps', 'includes/form');
  */
 
+use Drupal\tpps\Submission;
+use Drupal\tpps\Form;
+
 /**
  * Adds buttons Back/Save/Next to the forms.
  *
@@ -29,97 +32,10 @@
  */
 function tpps_form_add_buttons(array $form_bus) {
   $form = &$form_bus['form'];
-  $page = $form_bus['page'];
-  $scope_list = ['header' => -1000, 'footer' => 1000];
-  $back_button = ['#type' => 'submit', '#value' => t('Back')];
+  $tppsForm = new Form($form);
+  $tppsForm->addButtons($form_bus);
 
-  foreach ($scope_list as $scope => $weight) {
-    $form[$scope] = [
-      '#type' => 'fieldset',
-      '#tree' => FALSE,
-      '#weight' => $weight,
-    ];
-    if ($page != 'summary') {
-      // @todo [VS] Use Drupal Form API 'required' attribute.
-      $form[$scope]['input_description'] = [
-        '#markup' => '<div class="input-description">* : Required Field</div>',
-        '#weight' => -($weight),
-      ];
-    }
-    switch ($page) {
-      case 'page_2':
-      case 'page_3':
-        // Back, Save, Next.
-        $form[$scope]['Back'] = $back_button;
-
-      default:
-      case 'page_1':
-        // Save, Next.
-        $form[$scope]['Save'] = ['#type' => 'submit', '#value' => t('Save')];
-        $form[$scope]['Next'] = [
-          '#type' => 'submit',
-          '#value' => t('Next'),
-          '#attributes' => ['class' => ['next-button']],
-        ];
-        break;
-
-      case 'page_4':
-        // Back, Save, Review, Submit, Pre-validate my VCF files.
-        $form[$scope]['Back'] = $back_button;
-        $form[$scope]['Save'] = ['#type' => 'submit', '#value' => t('Save')];
-        $form[$scope]['submit'] = [
-          '#type' => 'submit',
-          '#value' => t('Review and Submit'),
-          // We add class because we have buttons above and below the form.
-          '#attributes' => ['class' => ['review-and-submit-button']],
-        ];
-
-        // Pre-validate VCF.
-        if ($form['form_type']['#value'] == 'tppsc') {
-          // Build conditions for Drupal Form States API.
-          $pre_valid_states = [];
-          if ($form_bus['organism_number'] == 1) {
-            $pre_valid_states['[name="organism-1[genotype][SNPs][file-type]"]']
-              = ['value' => TPPS_GENOTYPING_FILE_TYPE_VCF];
-          }
-          elseif ($form_bus['organism_number'] > 1) {
-            // Multiple conditions have other format.
-            $pre_valid_states[] = [
-              '[name="organism-1[genotype][SNPs][file-type]"]'
-              => ['value' => TPPS_GENOTYPING_FILE_TYPE_VCF],
-            ];
-            for ($i = 2; $i <= $form_bus['organism_number']; $i++) {
-              $pre_valid_states[] = 'or';
-              $pre_valid_states[] = [
-                '[name="organism-' . $i . '[genotype][SNPs][file-type]"]'
-                => ['value' => TPPS_GENOTYPING_FILE_TYPE_VCF],
-              ];
-            }
-          }
-
-          $form[$scope]['pre_validate'] = [
-            '#type' => 'button',
-            '#value' => t('Pre-validate my VCF files'),
-            '#states' => ['visible' => $pre_valid_states],
-            '#suffix' => '<div>Sometimes large VCF files can cause problems '
-              . 'during the validation step. If your VCF file is very large, '
-              . 'you can click the "Pre-validate my VCF files" button to '
-              . 'validate your VCF file in the background, before clicking '
-              . '"Review Information and Submit".</div>',
-            '#attributes' => ['class' => ['vcf-pre-validate-button']],
-          ];
-          $form[$scope]['pre_validate']['#prefix'] =
-            '<div class="pre-validate-message"></div>';
-        }
-        break;
-
-      case 'summary':
-        // Back, Submit.
-        $form[$scope]['Back'] = $back_button;
-        $form[$scope]['Next'] = ['#type' => 'submit', '#value' => t('Submit')];
-        break;
-    }
-  }
+  $form_bus['form'] = $tppsForm->form;
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -798,40 +714,12 @@ function tpps_form_bus_debug(array $form_bus) {
  * @param array $path
  *   List of parents (if any) and field name.
  *
- * @TODO Minor. Use CSS id intead of name attribute to set focus.
+ * @todo Replace with 'Form' object.
  */
 function tpps_form_autofocus(array &$form = NULL, array $path) {
-  if (empty($field = drupal_array_get_nested_value($form, $path) ?? NULL)) {
-    return;
-  }
-  // HTML fieldname (not from field name).
-  if ($field['#type'] == 'managed_file') {
-    // Example: files[tree-accession_species-1_file].
-    $html_name = 'files[' . implode('_', $path) . ']';
-  }
-  elseif (count($path) == 1) {
-    // E.g., 'data-type'.
-    $html_name = $path[0];
-  }
-  else {
-    // E.g., 'organism-1[genotype][SNPs][vcf]', 'publication[status]', 'accession'.
-    $html_name = str_replace($path[0] . ']', $path[0], implode('][', $path));
-    $html_name .= ']';
-  }
-  tpps_add_css_js('autofocus', $form);
-  $form['#attached']['js'][] = [
-    'type' => 'setting',
-    'data' => [
-      'tpps' => [
-        'autoFocus' => [
-          'FieldName' => check_plain($html_name),
-          'Timeout' => check_plain(variable_get('tpps_autofocus_delay', 1000)),
-        ],
-      ],
-    ],
-  ];
-  // @TODO Minor. Field could be not on 1st level.
-  unset($field['#attributes']['autofocus']);
+  $tppsForm = new Form($form);
+  $tppsForm->autoFocus($path);
+  $form = $tppsForm->form;
 }
 
 /**
@@ -846,12 +734,15 @@ function tpps_form_autofocus(array &$form = NULL, array $path) {
  *   Returns 'tpps_main' (default) or 'tppsc_main'.
  */
 function tpps_form_get_id(array $form_state) {
+  // @TODO Use 'Form' class:
+  // $tppsForm = new Form($form, $form_state);
+  // $tppsForm->getFormId();
   return $form_state['saved_values']['frontpage']['form_id']
     ?? $form_state['build_info']['form_id'] ?? 'tpps_main';
 }
 
 /**
- * Get TPPS Form Id.
+ * Get TPPS Form Type.
  *
  * @param array $form_state
  *   Drupal Form State array.
@@ -860,6 +751,9 @@ function tpps_form_get_id(array $form_state) {
  *   Returns 'tpps_main' (default) or 'tppsc_main'.
  */
 function tpps_form_is_tppsc(array $form_state) {
+  // @TODO Use 'Form' class:
+  // $tppsForm = new Form($form, $form_state);
+  // $tppsForm->isCuration();
   $form_id = $form_state['saved_values']['front_page']['form_id']
     ?? $form_state['build_info']['form_id'] ?? 'tpps_main';
   return (bool) ($form_id == 'tppsc_main');
@@ -1279,6 +1173,7 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
       tpps_form_navigation_bar($form, $form_state);
     }
   }
+  global $tppsForm;
 
   switch ($form_state['stage']) {
     case TPPS_PAGE_1:
@@ -1287,8 +1182,18 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
       break;
 
     case TPPS_PAGE_2:
+      $tppsForm = new Form($form, $form_state);
       module_load_include('php', 'tpps', 'forms/build/page_2');
-      tpps_page_2_create_form($form, $form_state);
+      if ($tppsForm->isCuration()) {
+        tpps_page_2_create_form_tppsc();
+      }
+      else {
+        tpps_page_2_create_form_tpps($form, $form_state);
+        // We must to do this to add buttons using 'Form' class's method.
+        $tppsForm->form = $form;
+      }
+      $tppsForm->addButtons('page_2');
+      $form = $tppsForm->form;
       break;
 
     case TPPS_PAGE_3:

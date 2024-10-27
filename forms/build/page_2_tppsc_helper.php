@@ -175,10 +175,14 @@ function tppsc_page2_common_garden(array $form_bus) {
  *
  * @param array $form_bus
  *   Form Bus.
+ *
+ * @todo Replace with $tppsForm->addControlFields();
  */
 function tppsc_page2_add_control_fields(array $form_bus) {
+  global $tppsForm;
+
   // The form to be updated.
-  $subform = &$form_bus['form']['study_info'];
+  $subform = &$tppsForm->form['study_info'];
   // The machine-readable type of control options.
   $type = $form_bus['type'];
   $suffix = ($type == 'growth_medium' ? t('used in') : t('within'));
