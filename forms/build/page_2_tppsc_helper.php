@@ -12,25 +12,24 @@
  *   Data to build form.
  */
 function tppsc_page2_growth_chamber(array $form_bus) {
-  $form_bus['form']['study_info']['#title'] = t('Growth Chamber Information:');
-  $form_bus['group'] = 'growth_chamber';
+  global $tppsForm;
+  $tppsForm->form['study_info']['#title'] = t('Growth Chamber Information:');
+// @todo update!
+  $group = 'growth_chamber';
+  $list = [
+    'co2' => 'CO2 level',
+    'humidity' => 'Air Humidity level',
+    'light' => 'Light Intensity level',
+    'temp' => 'Temperature',
 
-  tppsc_page2_add_control_fields(array_merge($form_bus,
-    ['type' => 'co2', 'label' => 'CO2 level']));
-  tppsc_page2_add_control_fields(array_merge($form_bus,
-    ['type' => 'humidity', 'label' => 'Air Humidity level']));
-  tppsc_page2_add_control_fields(array_merge($form_bus,
-    ['type' => 'light', 'label' => 'Light Intensity level']));
-  tppsc_page2_add_control_fields(array_merge($form_bus,
-    ['type' => 'temp', 'label' => 'Temperature']));
-
-  // @TODO New fields. Check names.
-  tppsc_page2_add_control_fields(array_merge($form_bus,
-    ['type' => 'growth_medium', 'label' => 'Growth Medium']));
-  tppsc_page2_add_control_fields(array_merge($form_bus,
-    ['type' => 'ph_growth_medium', 'label' => 'pH of the growth medium']));
-  tppsc_page2_add_control_fields(array_merge($form_bus,
-    ['type' => 'treatment', 'label' => 'Treatment']));
+    // @TODO New fields. Check names.
+    'growth_medium' => 'Growth Medium',
+    'ph_growth_medium' => 'pH of the growth medium',
+    'treatment' => 'Treatment',
+  ];
+  foreach ($list as $type => $label) {
+    tppsc_page2_add_control_fields($group, $type, $label);
+  }
 }
 
 /**
@@ -40,24 +39,22 @@ function tppsc_page2_growth_chamber(array $form_bus) {
  *   Data to build form.
  */
 function tppsc_page2_greenhouse(array $form_bus) {
-  $form_bus['form']['study_info']['#title'] = t('GreenHouse Information:');
-  $form_bus['group'] = 'greenhouse';
-
-  // Note: no 'CO2'. 'growth_chamber' has 'CO2'.
-  tppsc_page2_add_control_fields(array_merge($form_bus,
-    ['type' => 'humidity', 'label' => 'Air Humidity level']));
-  tppsc_page2_add_control_fields(array_merge($form_bus,
-    ['type' => 'light', 'label' => 'Light Intensity level']));
-  tppsc_page2_add_control_fields(array_merge($form_bus,
-    ['type' => 'temp', 'label' => 'Temperature']));
-
-  // @TODO New fields. Check names.
-  tppsc_page2_add_control_fields(array_merge($form_bus,
-    ['type' => 'growth_medium', 'label' => 'Growth Medium']));
-  tppsc_page2_add_control_fields(array_merge($form_bus,
-    ['type' => 'ph_growth_medium', 'label' => 'pH of the growth medium']));
-  tppsc_page2_add_control_fields(array_merge($form_bus,
-    ['type' => 'treatment', 'label' => 'Treatment']));
+  global $tppsForm;
+  $tppsForm->form['study_info']['#title'] = t('GreenHouse Information:');
+  $group = 'greenhouse';
+  $list = [
+    // Note: no 'CO2'. 'growth_chamber' has 'CO2'.
+    'humidity' => 'Air Humidity level',
+    'light' => 'Light Intensity level',
+    'temp' => 'Temperature',
+    // @TODO New fields. Check names.
+    'growth_medium' => 'Growth Medium',
+    'ph_growth_medium' => 'pH of the growth medium',
+    'treatment' => 'Treatment',
+  ];
+  foreach ($list as $type => $label) {
+    tppsc_page2_add_control_fields($group, $type, $label);
+  }
 }
 
 /**
@@ -67,11 +64,15 @@ function tppsc_page2_greenhouse(array $form_bus) {
  *   Data to build form.
  */
 function tppsc_page2_plantation(array $form_bus) {
-  $form_bus['form']['study_info']['#title'] = t('Plantation Information:');
-  $form_bus['group'] = 'plantation';
-
-  tppsc_page2_add_control_fields(array_merge($form_bus,
-    ['type' => 'treatment', 'label' => 'Treatment']));
+  global $tppsForm;
+  $tppsForm->form['study_info']['#title'] = t('Plantation Information:');
+  $group = 'plantation';
+  $list = [
+    'treatment' => 'Treatment',
+  ];
+  foreach ($list as $type => $label) {
+    tppsc_page2_add_control_fields($group, $type, $label);
+  }
 }
 
 /**
@@ -83,24 +84,20 @@ function tppsc_page2_plantation(array $form_bus) {
  * @return void
  */
 function tppsc_page2_common_garden(array $form_bus) {
-  $form_bus['form']['study_info']['#title'] = t('Common Garden Information:');
-  $form_bus['group'] = 'common_garden';
+  global $tppsForm;
+  $tppsForm->form['study_info']['#title'] = t('Common Garden Information:');
+  $group = 'common_garden';
 
-  $subform = &$form_bus['form']['study_info'];
-
-  // range()?
-  $num_arr = array();
+  $subform = &$tppsForm->form['study_info'];
+  $num_arr = range(0, 30);
   $num_arr[0] = '- Select -';
-  for ($i = 1; $i <= 30; $i++) {
-    $num_arr[$i] = $i;
-  }
 
-  $subform['assessions'] = array(
+  $subform['assessions'] = [
     '#type' => 'select',
     '#title' => t('Number of times the populations were assessed (on average):'),
     '#options' => $num_arr,
     '#required_when_visible' => TRUE,
-  );
+  ];
 
   $subform['irrigation'] = [
     '#type' => 'fieldset',
@@ -111,31 +108,31 @@ function tppsc_page2_common_garden(array $form_bus) {
     '#type' => 'select',
     '#title' => t('Irrigation Type:'),
     '#required_when_visible' => TRUE,
-    '#options' => array(
+    '#options' => [
       0 => t('- Select -'),
       'Irrigation from top' => t('Irrigation from top'),
       'Irrigation from bottom' => t('Irrigation from bottom'),
       'Drip Irrigation' => t('Drip Irrigation'),
       'Other' => t('Other'),
       'No Irrigation' => t('No Irrigation'),
-    ),
+    ],
   ];
 
-  $subform['irrigation']['other'] = array(
+  $subform['irrigation']['other'] = [
     '#type' => 'textfield',
     '#required_when_visible' => TRUE,
-    '#states' => array(
-      'visible' => array(
-        ':input[name="study_info[irrigation][option]"]' => array('value' => 'Other'),
-      ),
-    ),
-  );
+    '#states' => [
+      'visible' => [
+        ':input[name="study_info[irrigation][option]"]' => ['value' => 'Other'],
+      ],
+    ],
+  ];
 
 
-  $form['biotic_env'] = array(
+  $form['biotic_env'] = [
     '#type' => 'fieldset',
     '#tree' => TRUE,
-  );
+  ];
 
   $form['biotic_env']['option'] = [
     '#type' => 'checkboxes',
@@ -152,19 +149,23 @@ function tppsc_page2_common_garden(array $form_bus) {
     ]),
   ];
 
-  $form['biotic_env']['other'] = array(
+  $form['biotic_env']['other'] = [
     '#type' => 'textfield',
     '#title' => t('Please specify Biotic Environment Type:'),
     '#required_when_visible' => TRUE,
-    '#states' => array(
-      'visible' => array(
-        ':input[name="study_info[biotic_env][option][Other]"]' => array('checked' => TRUE),
-      ),
-    ),
-  );
+    '#states' => [
+      'visible' => [
+        ':input[name="study_info[biotic_env][option][Other]"]' => ['checked' => TRUE],
+      ],
+    ],
+  ];
 
-  tppsc_page2_add_control_fields(array_merge($form_bus,
-    ['type' => 'treatment', 'label' => 'Treatment']));
+  $list = [
+    'treatment' => 'Treatment',
+  ];
+  foreach ($list as $type => $label) {
+    tppsc_page2_add_control_fields($group, $type, $label);
+  }
 }
 
 /**
@@ -173,21 +174,19 @@ function tppsc_page2_common_garden(array $form_bus) {
  * Fields which could be added:
  * co2, humidity, light intensity, salinity, and pH.
  *
- * @param array $form_bus
- *   Form Bus.
- *
- * @todo Replace with $tppsForm->addControlFields();
+ * @param string $group
+ *   Group.
+ * @param string $type
+ *   The machine-readable type of control options.
+ * @param string $label
+ *   The human-readable label for the control options.
  */
-function tppsc_page2_add_control_fields(array $form_bus) {
+function tppsc_page2_add_control_fields($group, $type, $label) {
   global $tppsForm;
 
   // The form to be updated.
   $subform = &$tppsForm->form['study_info'];
-  // The machine-readable type of control options.
-  $type = $form_bus['type'];
   $suffix = ($type == 'growth_medium' ? t('used in') : t('within'));
-  // The human-readable label for the control options.
-  $label = $form_bus['label'];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Yes/No field.
@@ -206,6 +205,9 @@ function tppsc_page2_add_control_fields(array $form_bus) {
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $type_list = [
+    'humidity', 'light', 'temp', 'growth_medium', 'ph_growth_medium',
+  ];
   // States.
   if ($type == 'co2') {
     $states = [
@@ -215,9 +217,7 @@ function tppsc_page2_add_control_fields(array $form_bus) {
       ],
     ];
   }
-  elseif (
-    in_array($type, ['humidity', 'light', 'temp', 'growth_medium', 'ph_growth_medium'])
-  ) {
+  elseif (in_array($type, $type_list)) {
     $states = [
       'visible' => [
         [
@@ -251,7 +251,7 @@ function tppsc_page2_add_control_fields(array $form_bus) {
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-  tpps_form_add_yesno_field(array_merge($form_bus, [
+  tpps_form_add_yesno_field([
     'stage' => TPPS_PAGE_2,
     'parents' => ['study_info'],
     'field_name' => $field_name,
@@ -259,7 +259,7 @@ function tppsc_page2_add_control_fields(array $form_bus) {
     '#default_value' => 0,
     '#required' => FALSE,
     '#states' => $states ?? [],
-  ]));
+  ]);
 
   $subform[$type] = [
     '#type' => 'fieldset',

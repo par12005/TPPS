@@ -144,11 +144,8 @@ function tpps_natural_population(array &$form) {
     '#description' => t('If you do not know which season your samples were collected, please select all.'),
   );
 
-  $num_arr = array();
+  $num_arr = range(0, 30);
   $num_arr[0] = '- Select -';
-  for ($i = 1; $i <= 30; $i++) {
-    $num_arr[$i] = $i;
-  }
 
   $form['assessions'] = array(
     '#type' => 'select',
@@ -344,11 +341,8 @@ function tpps_plantation(array &$form) {
     '#description' => t('If you do not know which season your samples were collected, please select all.'),
   );
 
-  $num_arr = array();
+  $num_arr = range(0, 30);
   $num_arr[0] = '- Select -';
-  for ($i = 1; $i <= 30; $i++) {
-    $num_arr[$i] = $i;
-  }
 
   $form['assessions'] = array(
     '#type' => 'select',

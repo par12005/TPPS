@@ -152,33 +152,25 @@ function tpps_page_2_create_form_tppsc() {
     ],
   ];
 
-  tppsc_page2_add_control_fields(
-    ['type' => 'co2', 'label' => 'CO2 level']);
-  tppsc_page2_add_control_fields(
-    ['type' => 'humidity', 'label' => 'Air Humidity level']);
-  tppsc_page2_add_control_fields(
-    ['type' => 'light', 'label' => 'Light Intensity level']);
-  tppsc_page2_add_control_fields(
-    ['type' => 'temp', 'label' => 'Temperature']);
-
-  // @TODO New fields. Check names.
-  tppsc_page2_add_control_fields(
-    ['type' => 'growth_medium', 'label' => 'Growth Medium']);
-  tppsc_page2_add_control_fields(
-    ['type' => 'ph_growth_medium', 'label' => 'pH of the growth medium']);
+  $group = '';
+  $list = [
+    'co2' => 'CO2 level',
+    'humidity' => 'Air Humidity level',
+    'light' => 'Light Intensity level',
+    'temp' => 'Temperature',
+    // @TODO New fields. Check names.
+    'growth_medium' => 'Growth Medium',
+    'ph_growth_medium' => 'pH of the growth medium',
+  ];
+  foreach ($list as $type => $label) {
+    tppsc_page2_add_control_fields($group, $type, $label);
+  }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-  $form_bus['group'] = 'common_garden';
+  $group = 'common_garden';
 
-  $subform = &$tppsForm->form['study_info'];
-
-  //$num_arr = array_combine(range(1, 30), range(1, 30));
-  // range()?
-  $num_arr = [];
+  $num_arr = range(0, 30);
   $num_arr[0] = '- Select -';
-  for ($i = 1; $i <= 30; $i++) {
-    $num_arr[$i] = $i;
-  }
 
   $subform['assessions'] = [
     '#type' => 'select',
@@ -196,14 +188,14 @@ function tpps_page_2_create_form_tppsc() {
     '#type' => 'select',
     '#title' => t('Irrigation Type:'),
     '#required_when_visible' => TRUE,
-    '#options' => array(
+    '#options' => [
       0 => t('- Select -'),
       'Irrigation from top' => t('Irrigation from top'),
       'Irrigation from bottom' => t('Irrigation from bottom'),
       'Drip Irrigation' => t('Drip Irrigation'),
       'Other' => t('Other'),
       'No Irrigation' => t('No Irrigation'),
-    ),
+    ],
   ];
 
   $subform['irrigation']['other'] = [
@@ -248,8 +240,13 @@ function tpps_page_2_create_form_tppsc() {
     ],
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  tppsc_page2_add_control_fields(
-    ['type' => 'treatment', 'label' => 'Treatment']);
+  $group = '';
+  $list = [
+    'treatment' => 'Treatment'
+  ];
+  foreach ($list as $type => $label) {
+    tppsc_page2_add_control_fields($group, $type, $label);
+  }
 
   // WARNING: no '#tree' element!
   // @TODO Fix it.

@@ -327,21 +327,19 @@ function tpps_form_search_field(array $array, $field_type = 'managed_file') {
  *        Unique name in $form array and HTML 'name' attribute.
  */
 function tpps_form_add_yesno_field(array $form_bus) {
-
+  global $tppsForm;
   // Validate required elements.
-  if (empty($form_bus['form'])) {
+  if (empty($tppsForm->form)) {
     watchdog('tpps', 'Empty $form received', [], WATCHDOG_ERROR);
     return;
   }
   else {
-    $form = &$form_bus['form'];
+    $form = &$tppsForm->form;
   }
-  if (empty($form_bus['stage'])) {
+  $stage = $tppsForm->currentPage;
+  if (empty($stage)) {
     watchdog('tpps', 'Empty stage received', [], WATCHDOG_ERROR);
     return;
-  }
-  else {
-    $stage = $form_bus['stage'];
   }
   if (empty($form_bus['field_name']) || empty($form_bus['#title'])) {
     watchdog('tpps', 'Empty "name" or "#title" received', [], WATCHDOG_ERROR);
@@ -360,9 +358,10 @@ function tpps_form_add_yesno_field(array $form_bus) {
     $options = [0 => t('- Select -')] + $options;
   }
   // Build field using defaults.
-  if (!empty($form_state['saved_values'])) {
-    $default_value = drupal_array_get_nested_value($form_state['saved_values'],
-        array_merge([$stage], $parents)
+  if (!empty($tppsForm->formState['saved_values'])) {
+    $default_value = drupal_array_get_nested_value(
+      $tppsForm->formState['saved_values'],
+      array_merge([$stage], $parents)
     );
   }
   $defaults = [
@@ -377,7 +376,7 @@ function tpps_form_add_yesno_field(array $form_bus) {
     return strpos($e, '#') !== FALSE;
   }, ARRAY_FILTER_USE_KEY);
   $field = array_merge($defaults, $field);
-  drupal_array_set_nested_value($form, $parents, $field);
+  drupal_array_set_nested_value($tppsForm->form, $parents, $field);
 }
 
 /**

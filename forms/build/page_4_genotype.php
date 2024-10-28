@@ -79,18 +79,19 @@ function tpps_genotype_subform(array $form_bus) {
     [$organism_name, 'genotype', 'marker-type'], []
   ));
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  global $tppsForm;
+  $tppsForm = new Form($form_bus['form'], $form_bus['form_state']);
   // Only for 1st organism.
   if ($i == 1 && $organism_number > 1) {
-    tpps_form_add_yesno_field(array_merge($form_bus,
-      [
-        'stage' => TPPS_PAGE_4,
-        'parents' => [$organism_name, $type],
-        'field_name' => 'are_genotype_markers_identical',
-        '#title' => t('Are your genotype markers identical across species?'),
-        '#default_value' => (($organism_number == 1) ? 'yes' : 0),
-        '#required' => TRUE,
-      ]
-    ));
+    tpps_form_add_yesno_field([
+      'stage' => TPPS_PAGE_4,
+      'parents' => [$organism_name, $type],
+      'field_name' => 'are_genotype_markers_identical',
+      '#title' => t('Are your genotype markers identical across species?'),
+      '#default_value' => (($organism_number == 1) ? 'yes' : 0),
+      '#required' => TRUE,
+    ]);
+    $form_bus['form'] = $tppsForm->form;
     // Оnly for non-first questions. Next 3 questions are dependent on 1st one.
     $form_bus['#states'] = [
       'invisible' => [
@@ -120,29 +121,26 @@ function tpps_genotype_subform(array $form_bus) {
       count($genotype_marker_type) == 0 ? 'no' :
       (in_array($marker_name, $genotype_marker_type) ? 'yes' : 'no')
     );
-    tpps_form_add_yesno_field(array_merge($form_bus,
-      [
-        'stage' => TPPS_PAGE_4,
-        'parents' => [$organism_name, $type],
-        'field_name' => $field_name,
-        // For search purpose only list of dynamically built items:
-        // Does your study include SNP data?
-        // Does your study include SSR/cpSSR data?
-        // Does your study include other genotypic data?
-        '#title' => t('Does your study include @marker_name data?',
-          [
-            '@marker_name' => ($marker_name == 'Other'
-            ? t('other genotypic') : str_replace('s', '', $marker_name)),
-          ]
-        ),
-        '#default_value' => $default_value ?? 'no',
-        '#required' => FALSE,
-        '#weight' => $weight,
-      ]
-    ));
+    tpps_form_add_yesno_field([
+      'stage' => TPPS_PAGE_4,
+      'parents' => [$organism_name, $type],
+      'field_name' => $field_name,
+      // For search purpose only list of dynamically built items:
+      // Does your study include SNP data?
+      // Does your study include SSR/cpSSR data?
+      // Does your study include other genotypic data?
+      '#title' => t('Does your study include @marker_name data?',
+        [
+          '@marker_name' => ($marker_name == 'Other'
+          ? t('other genotypic') : str_replace('s', '', $marker_name)),
+        ]
+      ),
+      '#default_value' => $default_value ?? 'no',
+      '#required' => FALSE,
+      '#weight' => $weight,
+    ]);
   }
-  unset($form_bus['parents']);
-  unset($form_bus['#states']);
+  $form_bus['form'] = $tppsForm->form;
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // This field is hidden but left to avoid changes in submit_all.php script
@@ -803,7 +801,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   // $options = ['key' => 'filename', 'recurse' => FALSE];
   // $genome_dir = variable_get('tpps_local_genome_dir', NULL);
   // if ($genome_dir) {
-    
+
   //   $results = file_scan_directory($genome_dir, '/^([A-Z][a-z]{3})$/', $options);
   //   $code_cvterm = tpps_load_cvterm('organism 4 letter code')->cvterm_id;
   //   foreach ($results as $key => $value) {
@@ -834,7 +832,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
     // $genome_query_row->name = str_ireplace(' assembly', '', $genome_query_row->name);
     $existing_genomes[$genome_query_row->name] = $genome_query_row->name;
   }
-  
+
   ksort($existing_genomes);
   $ref_genome_arr = array_merge(['0' => '- Select -'], $existing_genomes, [
     // @todo Use t() for option's names but first check if name not used in
