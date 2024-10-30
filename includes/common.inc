@@ -345,9 +345,12 @@ function tpps_js_debug_mode_get_features_list() {
     'Drupal.behaviors.tppsPage1',
     'Drupal.tpps.validateOrganismName',
     // TPPS Pages.
-    //'Drupal.behaviors.tppsPage2',
-    //'Drupal.behaviors.tppsPage3',
-    //'Drupal.behaviors.tppsPage4',
+    'Drupal.behaviors.tppsPage2',
+    'Drupal.behaviors.tppsPage3',
+    // Page 4.
+    'Drupal.behaviors.tppsPage4',
+    'vcfPreValidate',
+    'checkVCFJob',
   ];
 }
 

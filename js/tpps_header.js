@@ -185,9 +185,25 @@ Drupal.tpps.ajaxCache = Drupal.tpps.ajaxCache || {};
   }
 
   /**
+   * Checks if JS Debug Mode is enabled.
+   */
+  Drupal.tpps.isDebugMode = function() {
+    if (
+      'tpps' in Drupal.settings
+      && 'debugMode' in Drupal.settings.tpps
+      && Object.keys(Drupal.settings.tpps.debugMode).length
+    ) {
+      // JS Debug Mode was enabled.
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * Debug Log.
    *
    * Shows colored and well formatted messages using console.log().
+   * @author vlad.savitsky@gmail.com
    *
    * @param mix $message
    *   Message to be show.
@@ -197,12 +213,7 @@ Drupal.tpps.ajaxCache = Drupal.tpps.ajaxCache || {};
    *   Works bad with attach in Drupal.behaviors.
    */
   function dog(message, callerFunctionName = null, options = null) {
-    if ( !(
-      'tpps' in Drupal.settings
-      && 'debugMode' in Drupal.settings.tpps
-      && Object.keys(Drupal.settings.tpps.debugMode).length
-    )) {
-      // JS Debug Mode wasn't enabled.
+    if (!Drupal.tpps.isDebugMode()) {
       return;
     }
     let typeOfMessage = typeof message;

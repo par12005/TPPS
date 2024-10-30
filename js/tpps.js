@@ -134,15 +134,19 @@
         });
       });
 
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // VCF File pre-validation feature.
+      // @todo Minor. Move to separate file.
       var pending_jobs = {};
 
       /**
        * Checks status of the Tripal Job 'VCF File Pre-Validation'.
        *
-       * @TODO Do not allow re-validation of the same file. Store status of
-       * the check in browser.
+       * @TODO Minor. Avoid double validation of the same file.
+       * Store status of the check in Drupal.tpps.ajaxCache.
        */
       function checkVCFJob(jid) {
+        let featureName = 'checkVCFJob';
         // @TODO Use Drupal.settings.tpps.accession.
         var accession = $(':input[name="accession"]')[0].value;
         $.ajax({
@@ -175,7 +179,14 @@
             // If no jobs are pending, enable the submit button.
             if (jobs_complete) {
               $(vcfPreValidateButton).prop('disabled', false);
-              console.log(Drupal.t('All the jobs were completed.'));
+              if (Drupal.tpps.isDebugMode()) {
+                dog('VCF Files pre-validation completed.', featureName);
+                dog('Tripal Job object:', featureName);
+                dog(job, featureName);
+              }
+              else {
+                console.log(Drupal.t('All the jobs were completed.'));
+              }
               var message = '<div class="alert alert-block alert-success messages '
                 + 'status">' + Drupal.t('VCF File pre-validation completed!')
                 + '</div>';
@@ -193,14 +204,26 @@
             }
             // Otherwise, log the pending jobs.
             else {
-              console.log(pending_jobs);
+              if (Drupal.tpps.isDebugMode()) {
+                dog('Pending Jobs', pending_jobs, featureName);
+              }
+              else {
+                console.log(pending_jobs);
+              }
             }
           }
           // Otherwise, wait 5 seconds and check again.
           else {
-            console.log(Drupal.t('job @job_id status: @status',
-              {'@job_id': jid, '@status': job.status}
-            ));
+            if (Drupal.tpps.isDebugMode()) {
+              dog(Drupal.t('Job @job_id status: @status',
+                {'@job_id': jid, '@status': job.status}
+              ), featureName);
+            }
+            else {
+              console.log(Drupal.t('job @job_id status: @status',
+                {'@job_id': jid, '@status': job.status}
+              ));
+            }
             setTimeout(() => {
               checkVCFJob(job.job_id);
             }, 5000);
@@ -209,17 +232,29 @@
         .fail(function(job) {
           $('.review-and-submit-button').prop('disabled', false);
           $(vcfPreValidateButton).prop('disabled', false);
-          console.log(Drupal.t('Failed.'));
-          console.log(job);
+          if (Drupal.tpps.isDebugMode()) {
+            dog('VCF Files pre-validation failed.', job, featureName);
+          }
+          else {
+            console.log(Drupal.t('Failed.'));
+            console.log(job);
+          }
         });
       }
 
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Click on 'Pre-validate my VCF Files' button.
+      // @todo Minor. Move pre-validation feature to separate JS-file.
       $(vcfPreValidateButton).attr('type', 'button');
       $(vcfPreValidateButton).click(function() {
+        let featureName = 'vcfPreValidate';
         var accession = $(':input[name="accession"]')[0].value;
-        console.log(Drupal.t('Initializing jobs...'));
+        if (Drupal.tpps.isDebugMode()) {
+          dog('Collect data for VCF files pre-validation.', featureName);
+        }
+        else {
+          console.log(Drupal.t('Initializing jobs...'));
+        }
 
         // Get real number of organisms.
         let organismNumber = Drupal.settings.tpps.organismNumber || 1;
@@ -228,22 +263,35 @@
         // Loop each organism to get VCF fid or path (local/remote).
         for (let organismId = 1; organismId <= organismNumber; organismId++) {
           let organismName = 'organism-' + organismId;
+          dog('Processing organism: ' + organismId, featureName);
           let vcfFileLocation = $('select[name="' + organismName
             + '[genotype][SNPs][vcf_file-location]'
             + '"]').val();
           // Note: 'remote' means already stored on remote server (path) and
           // 'local' is stored on user's PC and must be uploaded via form.
           if (vcfFileLocation == 'local') {
-            // Process File Id. Value 'local'.
-            let vcfFid = $('input[name="' + organismName
-              + '[genotype][SNPs][vcf][fid]'
-              + '"]').val();
-            // Validate.
-            if (vcfFid === '0') {
-              missing_vcf = true;
+            // Check if checkbox "Genotype information for <organism N> is the
+            // same as genotype information for <organism 1>" was checked.
+            // Note: it checked by default.
+            let $vcfRepeatCheck = $('input[name="' + organismName
+              + '[genotype-repeat-check]"');
+            if ($vcfRepeatCheck.is(':checked')) {
+              dog('Skipped. Organism re-using Organism 1 file.', featureName);
+              // Skip to aviod validation of the same file multiple times.
             }
             else {
-              vcfs[organismId] = vcfFid;
+              // Process File Id. Value 'local'.
+              let vcfFid = $('input[name="' + organismName
+                + '[genotype][SNPs][vcf][fid]' + '"]').val();
+              // Validate.
+              if (vcfFid === '0') {
+                dog('VCF file is missing.', featureName);
+                missing_vcf = true;
+              }
+              else {
+                dog('Added to check-list file id: ' + vcfFid, featureName);
+                vcfs[organismId] = vcfFid;
+              }
             }
           }
           else {
@@ -252,13 +300,17 @@
               + '[genotype][SNPs][local_vcf]' + '"]').val();
             // Validate.
             if (vcfPath.length == 0) {
+              dog('Path to VCF file on server is empty.', featureName);
               missing_vcf = true;
             }
             else {
+              dog('Path to VCF file on server: ' + vcfPath, featureName);
               vcfs[organismId] = vcfPath;
             }
           }
         }
+
+        dog('List of VCF files for pre-validation:', vcfs, featureName);
 
         if (missing_vcf) {
           $('.pre-validate-message')
@@ -268,6 +320,21 @@
             ).show();
         }
         else {
+          dog('VCF files pre-validation started.', featureName);
+          // Open Tripal Job page to speed-up processing.
+          if (
+            // To enable/disable JSDebugMode open: admin/config/tpps/misc
+            Drupal.tpps.isDebugMode()
+            && window.location.hostname == 'tgwebdev.cam.uchc.edu'
+          ) {
+            let job_url = Drupal.settings.basePath + 'admin/tripal/tripal_jobs';
+            // Delay is required to have new Tripal Jobs on page.
+            setTimeout(() => {
+              window.open(job_url, 'blank').focus();
+              // @TODO Minor. Move value of delay to settings page.
+            }, 1000);
+          }
+
           $('.review-and-submit-button').prop('disabled', true);
           $(vcfPreValidateButton).prop('disabled', true);
           $.makeArray(vcfs).map((element) => { return element.value; });
@@ -297,10 +364,15 @@
               $(vcfPreValidateButton).prop('disabled', false);
             }
             else {
-              console.log(Drupal.t('Jobs initialized!'));
-              console.log(Drupal.t('List of jobs: \n!jobs',
-                {'!jobs': JSON.stringify(jobs, null, 2)}
-              ));
+              if (Drupal.tpps.isDebugMode()) {
+                dog('List of job ids', jobs, featureName);
+              }
+              else {
+                console.log(Drupal.t('Jobs initialized!'));
+                console.log(Drupal.t('List of jobs: \n!jobs',
+                  {'!jobs': JSON.stringify(jobs, null, 2)}
+                ));
+              }
               for (job of jobs) {
                 checkVCFJob(job);
                 pending_jobs[job] = true;
@@ -314,8 +386,13 @@
           .fail(function(jobs) {
             $('.review-and-submit-button').prop('disabled', false);
             $(vcfPreValidateButton).prop('disabled', false);
-            console.log('Check of the status of VCF-file pre-validation failed.');
-            console.log(jobs);
+            if (Drupal.tpps.isDebugMode()) {
+              dog('List of job ids', jobs, featureName);
+            }
+            else {
+              console.log('Check of the status of VCF-file pre-validation failed.');
+              console.log(jobs);
+            }
           });
         }
       });
