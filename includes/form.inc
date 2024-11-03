@@ -30,9 +30,40 @@
 function tpps_form_add_buttons(array $form_bus) {
   $form = &$form_bus['form'];
   $page = $form_bus['page'];
+
   $scope_list = [
     'header' => -1000,
     'footer' => 1000,
+  ];
+  $elements = [
+    'save' => [
+      '#type' => 'submit',
+      '#value' => t('Save'),
+      '#attributes' => ['class' => ['save-button']],
+      '#name' => 'save',
+    ],
+    'next' => [
+      '#type' => 'submit',
+      '#value' => t('Next'),
+      '#attributes' => ['class' => ['next-button']],
+      '#name' => 'next',
+    ],
+    'back' => [
+      '#type' => 'submit',
+      '#value' => t('Back'),
+      // Disable validation.
+      // Currently useless because all fields are optional but this
+      // could be changed in future. But it removed saved data of stage
+      // when 'Back' button clicked which is not good.
+      //'#limit_validation_errors' => [],
+    ],
+    'review-and-submit' => [
+      '#type' => 'submit',
+      '#value' => t('Review and Submit'),
+      // We add class because we have buttons above and below the form.
+      '#attributes' => ['class' => ['review-and-submit-button']],
+      '#name' => 'review-and-submit',
+    ],
   ];
 
   foreach ($scope_list as $scope => $weight) {
@@ -52,45 +83,20 @@ function tpps_form_add_buttons(array $form_bus) {
       case 'page_2':
       case 'page_3':
         // Back, Save, Next.
-        $form[$scope]['Back'] = [
-          '#type' => 'submit',
-          '#value' => t('Back'),
-          // Disable validation.
-          // Currently useless because all fields are optional but this
-          // could be changed in future. But it removed saved data of stage
-          // when 'Back' button clicked which is not good.
-          //'#limit_validation_errors' => [],
-        ];
+        $form[$scope]['Back'] = $elements['back'];
 
       default:
       case 'page_1':
         // Save, Next.
-        $form[$scope]['Save'] = ['#type' => 'submit', '#value' => t('Save')];
-        $form[$scope]['Next'] = [
-          '#type' => 'submit',
-          '#value' => t('Next'),
-          '#attributes' => ['class' => ['next-button']],
-        ];
+        $form[$scope]['Save'] = $elements['save'];
+        $form[$scope]['Next'] = $elements['next'];
         break;
 
       case 'page_4':
         // Back, Save, Review, Submit, Pre-validate my VCF files.
-        $form[$scope]['Back'] = [
-          '#type' => 'submit',
-          '#value' => t('Back'),
-          // Disable validation.
-          // Currently useless because all fields are optional but this
-          // could be changed in future. But it removed saved data of stage
-          // when 'Back' button clicked which is not good.
-          //'#limit_validation_errors' => [],
-        ];
-        $form[$scope]['Save'] = ['#type' => 'submit', '#value' => t('Save')];
-        $form[$scope]['submit'] = [
-          '#type' => 'submit',
-          '#value' => t('Review and Submit'),
-          // We add class because we have buttons above and below the form.
-          '#attributes' => ['class' => ['review-and-submit-button']],
-        ];
+        $form[$scope]['Back'] = $lements['back'];
+        $form[$scope]['Save'] = $elements['save'];
+        $form[$scope]['submit'] = $elements['review-and-submit'];
 
         // Pre-validate VCF.
         if ($form['form_type']['#value'] == 'tppsc') {
@@ -133,16 +139,8 @@ function tpps_form_add_buttons(array $form_bus) {
 
       case 'summary':
         // Back, Submit.
-        $form[$scope]['Back'] = [
-          '#type' => 'submit',
-          '#value' => t('Back'),
-          // Disable validation.
-          // Currently useless because all fields are optional but this
-          // could be changed in future. But it removed saved data of stage
-          // when 'Back' button clicked which is not good.
-          //'#limit_validation_errors' => [],
-        ];
-        $form[$scope]['Next'] = ['#type' => 'submit', '#value' => t('Submit')];
+        $form[$scope]['Back'] = $elements['back'];
+        $form[$scope]['Next'] = $elements['next'];
         break;
     }
   }
