@@ -341,6 +341,23 @@ function tpps_genotype_subform(array $form_bus) {
   // Assay Design File.
   $title = t('Assay Design File');
   $file_field_name = 'assay-design';
+
+
+// @TODO Asked Meghan list of data types to be used in the dropdown list.
+// https://plantcompgenomics.slack.com/archives/C05R396U4QK/p1730644338364809?thread_ts=1730430961.236099&cid=C05R396U4QKt
+
+
+  $column_options = [
+    'N/A',
+    'SNP ID',
+    'Scaffold',
+    'Position',
+    'Allele',
+    'Associated Trait',
+    'Confidence Value',
+    'Gene ID',
+    'Annotation',
+  ];
   // Add file upload field.
   // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
   tpps_form_build_file_field([
@@ -366,6 +383,28 @@ function tpps_genotype_subform(array $form_bus) {
             ['value' => TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE],
         ],
       ],
+    ],
+    'extra_elements' => [
+      'empty' => [
+        '#default_value' => tpps_array_get_value(
+          $form_bus['page4_values'],
+          [
+            $organism_name,
+            'genotype',
+            $snps_fieldset,
+            $file_field_name,
+            'empty',
+          ]
+        ) ?? 'NA',
+      ],
+      'columns' => [
+
+// @TODO Review description and update if necessary.
+
+        '#description' => t('Please define which columns hold the required data.'),
+      ],
+      'columns-options' => $column_options,
+      'no-header' => [],
     ],
   ]);
   // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
@@ -800,7 +839,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   // $options = ['key' => 'filename', 'recurse' => FALSE];
   // $genome_dir = variable_get('tpps_local_genome_dir', NULL);
   // if ($genome_dir) {
-    
+
   //   $results = file_scan_directory($genome_dir, '/^([A-Z][a-z]{3})$/', $options);
   //   $code_cvterm = tpps_load_cvterm('organism 4 letter code')->cvterm_id;
   //   foreach ($results as $key => $value) {
@@ -831,7 +870,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
     // $genome_query_row->name = str_ireplace(' assembly', '', $genome_query_row->name);
     $existing_genomes[$genome_query_row->name] = $genome_query_row->name;
   }
-  
+
   ksort($existing_genomes);
   $ref_genome_arr = array_merge(['0' => '- Select -'], $existing_genomes, [
     // @todo Use t() for option's names but first check if name not used in
