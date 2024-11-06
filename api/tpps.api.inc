@@ -183,7 +183,7 @@ function tpps_api_compress_files($accession = NULL) {
   }
   $zip_loc = tpps_realpath(TPPS_TEMP_ZIP) . '/' . $zip_name;
 
-  $files = $submission->state['files'];
+  $files = tpps_details_get_study_file_ids($submission->sharedState);
   foreach ($files as $fid) {
     $file_str[] = str_replace(' ', '\\ ', tpps_realpath(file_load($fid)->uri));
   }
