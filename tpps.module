@@ -442,7 +442,6 @@ function tpps_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  // [VS].
   tpps_menu_add_detials_pages($items);
   tpps_menu_add_settings_pages($items);
   tpps_menu_add_report_pages($items);
@@ -455,11 +454,8 @@ function tpps_menu() {
     'page arguments' => [2],
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
-    //'delivery callback' => 'ajax_deliver',
     'file' => 'tpps.ajax.inc',
   ];
-  // [/VS].
-  $items = array_merge($items, tpps_api_paths());
   return $items;
 }
 
@@ -2595,6 +2591,92 @@ function tpps_menu_add_api(array &$items = []) {
     'file' => 'api/submission/view.inc',
     'type' => MENU_CALLBACK,
     'delivery callback' => 'drupal_json_output',
+  ];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Menu items from function tpps_api_paths().
+
+  // All API paths start with `tpps/api/` and return their data as JSON objects.
+  // The api paths include:
+  //   check_accession/<accession number>
+  //   submission/<accession number>
+  //   submissions?<arguments>
+  //   submission_info?<arguments>
+
+  // tpps/api/refresh_views calls tpps_api_refresh_views which will
+  // update the tpps specific views used in particular for details pages
+  $items['tpps/api/refresh_views'] = [
+    'title' => 'TPPS Refresh Views',
+    'page callback' => 'tpps_api_refresh_views',
+    'page arguments' => [],
+    'access arguments' => ['access content'],
+    'delivery callback' => 'drupal_json_output',
+    'type' => MENU_CALLBACK,
+  ];
+
+  // tpps/api/check_accession calls tpps_api_check_accession on a provided
+  // accession number. It will return TRUE for accessions with a valid
+  // TPPS submission and FALSE for all other accessions.
+  $items['tpps/api/check_accession/%'] = [
+    'title' => 'TPPS Check Accession',
+    'page callback' => 'tpps_api_check_accession',
+    'page arguments' => [3],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['access content'],
+    'delivery callback' => 'drupal_json_output',
+    'type' => MENU_CALLBACK,
+  ];
+
+  // tpps/api/submission calls tpps_load_submission on a provided accession.
+  // If a valid TPPS submission exists for the accession, it will return the
+  // form_state of the submission.
+  $items['tpps/api/submission/%'] = [
+    'title' => 'TPPS Raw Submissions',
+    'page callback' => 'tpps_api_get_submission_state',
+    'page arguments' => [3],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['access content'],
+    'delivery callback' => 'drupal_json_output',
+    'type' => MENU_CALLBACK,
+  ];
+
+  // tpps/api/submissions calls tpps_api_submission_query. If no query
+  // conditions are provided, it will return information about all of the
+  // existing valid TPPS submissions. Otherwise, it will filter the submissions
+  // based on the provided conditions. Please see the tpps_api_submission_query
+  // function for more details.
+  $items['tpps/api/submissions'] = [
+    'title' => 'TPPS Submissions Query',
+    'page callback' => 'tpps_api_submission_query',
+    'page arguments' => [],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['access content'],
+    'delivery callback' => 'drupal_json_output',
+    'type' => MENU_CALLBACK,
+  ];
+
+  // tpps/api/submission_info calls tpps_api_submission_info. It will return
+  // data on multiple TPPS submissions based on accessions provided in the
+  // API query. The data returned can be specified using the data query
+  // argument. Please see the tpps_api_submission_info function for more
+  // details.
+  $items['tpps/api/submission_info'] = [
+    'title' => 'TPPS Submission Data',
+    'page callback' => 'tpps_api_submission_info',
+    'page arguments' => [],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['access content'],
+    'delivery callback' => 'drupal_json_output',
+    'type' => MENU_CALLBACK,
+  ];
+
+  $items['tpps/api/files/%'] = [
+    'title' => 'TPPS Submission Files Download',
+    'page callback' => 'tpps_api_compress_files',
+    'page arguments' => [3],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['access tpps details'],
+    'type' => MENU_NORMAL_ITEM,
   ];
 }
 
