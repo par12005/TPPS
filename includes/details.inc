@@ -756,12 +756,14 @@ function tpps_details_study(array &$state) {
   }
   $files = [];
   $study_file_ids = tpps_details_get_study_file_ids($state);
-  // foreach ($state['files'] as $fid) {
+  $params = ['attributes' => ['target' => '_blank']];
   foreach ($study_file_ids as $fid) {
     if ($file = tpps_file_load($fid)) {
       $file_url = check_plain(file_create_url($file->uri));
       if (stripos($file_url, 'core/labs') === FALSE) {
-        $files[] = "<a href='$file_url' target='blank'>$file->filename</a>";
+        $params['attributes']['title'] = 'File id: ' . $fid
+          . ', Size: ' . $file->filesize . ' bytes';
+        $files[] = l(check_plain($file->filename), $file_url, $params);
       }
     }
   }
@@ -783,8 +785,11 @@ function tpps_details_study(array &$state) {
   $rows[] = array('Species', implode('<br>', $species));
   $rows[] = array('Data Type', $page2_values['data_type']);
   module_load_include('inc', 'tpps', 'includes/form');
-  $rows[] = ['Study Type', tpps_form_get_study_type($page2_values['study_type'])];
-  $rows[] = array('File Downloads', implode('<br>', $files));
+  $rows[] = [
+    'Study Type',
+    tpps_form_get_study_type($page2_values['study_type']),
+  ];
+  $rows[] = ['File Downloads', implode('<br>', $files)];
   $rows[] = array('Population Size', $state['stats']['tree_count']);
   if (!empty($state['stats']['phenotype_count'])) {
     $rows[] = array('Phenotype Count', $state['stats']['phenotype_count']);
@@ -837,12 +842,14 @@ function tpps_details_get_study_file_ids(array $state) {
     ['phenotype', 'metadata'],
     // Genotype files.
     ['genotype', 'files', 'snps-assay'], // Shared State.
+    ['genotype', 'files', 'assay-design'],
     ['genotype', 'files', 'snps-association'],
+    ['genotype', 'files', 'snps-pop-struct'],
+    ['genotype', 'files', 'snps-kinship'],
     ['genotype', 'files', 'vcf'],
     ['genotype', 'files', 'ssrs'],
     ['genotype', 'files', 'ssrs_extra'],
-    // What about 'Other spreadsheet' field?
-    // ['genotype', 'files', 'other'],
+    ['genotype', 'files', 'other'],
   ];
   for ($j = 1; $j <= ($saved_values[TPPS_PAGE_1]['organism']['number'] ?? 1); $j++) {
     // Page 3.
