@@ -71,3 +71,59 @@ function tpps_admin_panel_logs(array $form, array &$form_state, $job_log_file = 
   ];
   return $form;
 }
+
+/**
+ * Menu callback. Shows Nextflow New Study Pipeline log page.
+ *
+ * Shows Nextflow New Study log file and updates it every 10 seconds.
+ *
+
+ * @param array $form
+ *   The form being created.
+ * @param array $form_state
+ *   The state of the form being created.
+ * @param string $accession
+ *  study accession (TGDR????)
+ *
+ * @return array
+ *   The administrative panel nextflow new study pipeline logs form.
+ */
+function tpps_admin_panel_nextflow_study_logs(array $form, array &$form_state, $accession = NULL) {
+  $form = $form ?? [];
+  tpps_add_css_js('main', $form);
+
+  // @todo Move JS to separate JS file and use drupal_add_js() instead.
+  $markup = l(
+      t('Return to TPPS Admin Panel - @accession', ['@accession' => $accession]),
+      'tpps-admin-panel/' . $accession
+    ) .'<br />'
+    // . "This page refreshes every 10 seconds.<br />"
+    // . "<iframe id='iframe_log' height='400px;' width='100%' src='/sites/default/files/nextflow_workflows/" . $accession . "/new-study-pipeline/.nextflow.log'></iframe>"
+    . "<div id='iframe_log' style='height: 400px; line-wrap: word; overflow-y: scroll;'></div>"
+    . "<script type='text/javascript'>
+      jQuery(document).ready(function() {
+        function refresh_log_file() {
+          jQuery.ajax({
+            url: '/sites/default/files/nextflow_workflows/$accession/new-study-pipeline/.nextflow.log',
+            method: 'GET',
+            contentType: 'text/html',
+            success: function (data) {
+              var data_lines = data.split('\\n');
+              var data_html = data_lines.join('<br />');
+              jQuery('#iframe_log').html(data_html);
+            },
+            error: function (err) {
+              jQuery('#iframe_log').html('This error likely means a .nextflow.log output file does not exist');
+            }
+          });
+        }
+        refresh_log_file();
+      });
+    </script>";
+
+  $form['markup'] = [
+    '#type' => 'markup',
+    '#markup' => $markup,
+  ];
+  return $form;
+}

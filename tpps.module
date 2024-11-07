@@ -156,6 +156,8 @@ function tpps_menu() {
       'access arguments' => ['access tpps form', 1],
     ];
   }
+
+
   $items['tpps/%/pre-validate'] = [
     'title' => 'TPPS File Pre-Validation',
     // File: includes/form_utils.inc.
@@ -189,6 +191,17 @@ function tpps_menu() {
     // 'access arguments' => array('access tpps form', 1),
     'type' => MENU_CALLBACK,
   );
+
+  $items['tpps/api/nextflow/new-study-pipeline-finished'] = [
+    'title' => 'New Study Pipeline Finished',
+    'page callback' => 'tpps_api_new_study_pipeline_finished',
+    'page arguments' => [],
+    'access arguments' => ['access content'],
+    'file' => 'api/tpps.api.inc',
+    // 'access callback' => 'tpps_access',
+    // 'access arguments' => array('access tpps form', 1),
+    'type' => MENU_CALLBACK,
+  ];
 
   // This will return information about a study's Accession tree ids
   // First % = accession
@@ -345,6 +358,16 @@ function tpps_menu() {
     'title' => 'TPPS Admin Panel',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('tpps_admin_panel_logs', 1),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('approve tpps submissions'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'admin/logs.php',
+  );
+
+  $items['tpps-admin-panel-nextflow-logs/study/%'] = array(
+    'title' => 'TPPS Admin Panel',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('tpps_admin_panel_nextflow_study_logs', 2),
     'access callback' => 'tpps_access',
     'access arguments' => array('approve tpps submissions'),
     'type' => MENU_NORMAL_ITEM,

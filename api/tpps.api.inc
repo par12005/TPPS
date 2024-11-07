@@ -13,6 +13,20 @@
 require_once 'tpps.submission.api.inc';
 require_once 'tpps.queries.api.inc';
 
+function tpps_api_new_study_pipeline_finished() {
+  $results = [];
+  $token = trim(variable_get('tpps_api_token'));
+  if ($token == check_plain($_GET['token'])) {
+    $results['get'] = $_GET;
+    $results['status'] = 'success';
+  }
+  else {
+    $results['status'] = 'Incorrect token';
+  }
+  
+  drupal_json_output($results);
+}
+
 /**
  * Performs a TPPS API call.
  *

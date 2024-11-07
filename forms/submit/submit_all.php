@@ -231,13 +231,13 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
 
 function tpps_nextflow_new_vcf_pipeline(array &$form_state) {
   $study_accession = $form_state['saved_values'][1]['accession'];
-  $store_directory = '/isg/treegenes/nextflow_workflows/' . $study_accession . '/new-vcf-pipeline';
+  $store_directory = '/isg/treegenes/nextflow_workflows/' . $study_accession . '/new-study-pipeline';
   mkdir($store_directory);
   $output = [];
   $result_code = 0;
   $four_letter_code = $_POST['autocomplete_four_letter_code'];
   $version = $_POST['input_version'];
-  $SCRIPT_LOCATION='/home/FCAM/tg-nginx/simple_test.sh';
+  // $SCRIPT_LOCATION='/home/FCAM/tg-nginx/simple_test.sh';
   $run_code = "#!/bin/bash
 #SBATCH --job-name=simple_test
 #SBATCH -N 1
