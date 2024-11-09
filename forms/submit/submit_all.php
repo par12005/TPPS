@@ -199,6 +199,10 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     tpps_submission_rename_files($accession);
     tpps_log("[INFO] Files renamed!\n");
 
+    tpps_log("[INFO] Nextflow New VCF Pipeline");
+    tpps_nextflow_new_vcf_pipeline($submission->sharedState);
+
+
     tpps_log("[INFO] Finishing up...");
     // Functions starting from tpps_submit_page_1() update $shared_state array
     // with new data so now we are going to update db record.
@@ -223,6 +227,56 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     watchdog_exception('tpps', $e);
     throw new Exception('Job failed.');
   }
+}
+
+function tpps_nextflow_new_vcf_pipeline(array &$form_state) {
+  $study_accession = $form_state['saved_values'][1]['accession'];
+  $store_directory = '/isg/treegenes/nextflow_workflows/' . $study_accession . '/new-study-pipeline';
+  mkdir($store_directory);
+  $output = [];
+  $result_code = 0;
+  $four_letter_code = $_POST['autocomplete_four_letter_code'];
+  $version = $_POST['input_version'];
+  // $SCRIPT_LOCATION='/home/FCAM/tg-nginx/simple_test.sh';
+  $run_code = "#!/bin/bash
+#SBATCH --job-name=simple_test
+#SBATCH -N 1
+#SBATCH -n 1
+#SBATCH -c 1
+#SBATCH --partition=general
+#SBATCH --qos=general
+#SBATCH --mail-type=END
+#SBATCH --mem=10G
+#SBATCH --mail-user=tg-nginx@cam.uchc.edu
+#SBATCH -o $store_directory/new_vcf_pipeline_%j.out
+#SBATCH -e $store_directory/new_vcf_pipeline_%j.err
+
+
+
+module load nextflow
+mkdir -p /scratch/tg-nginx/new_vcf_pipeline_\$SLURM_JOB_ID
+export NXF_TEMP=/scratch/tg-nginx/new_vcf_pipeline_\$SLURM_JOB_ID
+export NXF_WORK=/scratch/tg-nginx/new_vcf_pipeline_\$SLURM_JOB_ID
+export NXF_OPTS='-Xms5G -Xmx10G'
+cd $store_directory
+echo \$SLURM_JOB_ID > $store_directory/slurm_job_id.txt
+
+nextflow pull TreeGenes/new-vcf-pipeline -r main -hub gitlab
+";
+
+$slurm_job_id = file_get_contents($store_directory . '/slurm_job_id.txt');
+$SCRIPT_LOCATION = $store_directory . '/run_script.sh';
+
+// TODO: Add the correct run code from Gabe
+//$run_code .= "nextflow run TreeGenes/New_Genome_Pipeline -r master -profile xanadu ";
+
+/*
+    exec("
+        ssh tg-nginx@xanadu-submit-ext.cam.uchc.edu << EOF
+        sbatch $SCRIPT_LOCATION
+        EOF
+    ", $output, $result_code);
+*/
 }
 
 /**
