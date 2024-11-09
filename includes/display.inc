@@ -306,27 +306,25 @@ function tpps_completed_display($accession = NULL) {
  * @return string
  *   The HTML of the TPPS user tab.
  */
-function tpps_tab_create($uid) {
-
-  // @TODO [VS] Minor. Replace $user with $account. $user is a current user.
-  $user = user_load($uid);
-  if (empty($user)) {
-    drupal_goto('user');
-  }
+function tpps_tab_create($account) {
 
   global $base_url;
   $params = drupal_get_query_parameters();
 
   if (isset($params['accession']) && ($params['action'] ?? NULL) === 'DELETE') {
     $submission = new Submission($params['accession']);
-    $submission->delete();
-    drupal_goto("user/{$uid}/tpps");
+    // Remove submission and it's files.
+    // Remove record from 'chado.dbxref' table.
+    // Note delete() method removes only record from 'tpps_submission' table.
+    dpm($submission->accession . ' purged');
+    //$submission->purge();
+    drupal_goto("user/{$account->uid}/tpps");
   }
 
   $submission_list = tpps_load_submission_multiple(
     [
       'status' => TPPS_SUBMISSION_STATUS_INCOMPLETE,
-      'uid' => $user->uid,
+      'uid' => $account->uid,
     ]
   );
 
@@ -337,12 +335,10 @@ function tpps_tab_create($uid) {
     $page_1 = &$submission->state['saved_values'][TPPS_PAGE_1];
     $title = $abstract = $accession_cell = NULL;
 
-    if (isset($page_1['publication']['title'])) {
-      $title = "<a href='$base_url/$prefix/{$accession}' style='text-decoration: underline;'>" . check_plain($page_1['publication']['title']) . "</a>";
-    }
-    else {
-      $title = "<a href='$base_url/$prefix/{$accession}' style='text-decoration: underline;'>No Title</a>";
-    }
+    $link_title = check_plain($page_1['publication']['title']) ?? t('No Title');
+    $link_params = ['attributes' => ['style' => 'text-decoration: underline;']];
+    $link_url = $prefix . '/' . $accession;
+    $title = l($link_title, $link_url, $link_params);
 
     if (isset($page_1['publication']['abstract'])) {
       $abstract = check_plain($page_1['publication']['abstract']);
@@ -374,30 +370,28 @@ function tpps_tab_create($uid) {
     ];
   }
 
-  $headers = array(
-    'Title',
-    'Primary Author',
-    'Number of Species',
-    'Abstract',
-    'Journal',
-  );
+  $headers = [
+    t('Title'),
+    t('Primary Author'),
+    t('Number of Species'),
+    t('Abstract'),
+    t('Journal'),
+    t('Status/<br />Action'),
+  ];
 
-  $vars = array(
+  $table = [
     'header' => $headers,
     'rows' => $rows,
-    'attributes' => array(
-      'class' => array('view'),
+    'attributes' => [
+      'class' => ['view', 'tpps_table'],
       'id' => 'tpps_incomplete_table',
-    ),
-    'caption' => '',
-    'colgroups' => NULL,
-    'sticky' => FALSE,
-    'empty' => '',
-  );
+    ],
+    'sticky' => TRUE,
+  ];
 
   $final = $submission->doesExist() ? "<div class='tpps_table'><label for="
     . "'tpps_incomplete_table'>Incomplete Submissions</label>"
-    . theme('table', $vars) . '</div>' : "";
+    . theme('table', $table) . '</div>' : "";
   $submission_list = [];
 
   $submission_list = tpps_load_submission_multiple([
@@ -405,7 +399,7 @@ function tpps_tab_create($uid) {
       TPPS_SUBMISSION_STATUS_PENDING_APPROVAL,
       TPPS_SUBMISSION_STATUS_APPROVED,
     ],
-    'uid' => $user->uid,
+    'uid' => $account->uid,
   ]);
 
   $rows = array();
@@ -440,14 +434,13 @@ function tpps_tab_create($uid) {
     ];
   }
 
-  $headers[] = 'Status';
-  $vars['header'] = $headers;
-  $vars['rows'] = $rows;
-  $vars['attributes']['id'] = 'tpps_complete_table';
+  $table['header'] = $headers;
+  $table['rows'] = $rows;
+  $table['attributes']['id'] = 'tpps_complete_table';
 
   $final .= $submission->doesExist()
     ? "<div class='tpps_table'><label for='tpps_complete_table'>Complete "
-    . "Submissions</label>" . theme('table', $vars) . '</div>' : "";
+    . "Submissions</label>" . theme('table', $table) . '</div>' : "";
 
   if (empty($final)) {
     $final .= "<h2>Could not find any Submissions</h2>";

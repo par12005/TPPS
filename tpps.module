@@ -279,14 +279,14 @@ function tpps_menu() {
   );
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  $items['user/%/tpps'] = array(
+  $items['user/%user/tpps'] = [
     'title' => 'TPPS Submissions',
     'page callback' => 'tpps_tab_create',
-    'page arguments' => array(1),
+    'page arguments' => [1],
     'access callback' => 'tpps_access',
-    'access arguments' => array('user tpps submissions', 1),
+    'access arguments' => ['user tpps submissions', 1],
     'type' => MENU_LOCAL_TASK,
-  );
+  ];
   // @TODO Change URL to 'tpps/submission/%/delete' to be more REST API.
   // @TODO Major. Very dangerous because allows to remove without confirmation.
   // So XSS could be used to remove any study by sending link to someone who
@@ -482,6 +482,8 @@ function tpps_permission() {
       'title' => t('Administer TPPS module'),
       'description' => t('Make changes to TPPS configuration.'),
     ],
+    // @TODO Use naming rule <action> <scope> <details>.
+    // E.g., 'access own/all tpps submissions'.
     'user tpps submissions' => [
       'title' => t('User TPPS Submissions'),
       'description' => t('View all TPPS Submissions for a particular user.'),
@@ -548,33 +550,31 @@ function tpps_access() {
       }
       return FALSE;
 
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'user tpps submissions':
       $uid = $args[1] ?? NULL;
-      return (!empty($uid) && $uid == $user->uid);
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    case 'view own tpps submission':
-      $accession = $args[1] ?? NULL;
       // Allow admins to access any study.
       if (user_access('administer tpps module', $user)) {
         return TRUE;
       }
-      // Check if user submitted this study.
-      $submission = new Submission($accession);
-      return (bool) (
-        $submission->status != TPPS_SUBMISSION_STATUS_INCOMPLETE
-        && $submission->isCreator()
-      );
+      else {
+        // Users could access only own submissions.
+        return (!empty($uid) && $uid == $user->uid);
+      }
 
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    case 'view own tpps submission':
     case 'tpps delete submission':
-      $accession = $args[1] ?? NULL;
-      $submission = new Submission($accession);
-      return (bool) (
-        $submission->status == TPPS_SUBMISSION_STATUS_INCOMPLETE
-        && $submission->isCreator()
-      );
+      // Allow admins to access any study.
+      if (user_access('administer tpps module', $user)) {
+        return TRUE;
+      }
+      else {
+        $accession = $args[1] ?? NULL;
+        $submission = new Submission($accession);
+        return (bool) (
+          $submission->status != TPPS_SUBMISSION_STATUS_INCOMPLETE
+          && $submission->isCreator()
+        );
+      }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     default:

@@ -578,7 +578,7 @@ class Submission {
   /**
    * Delete submission from database.
    *
-   * @TODO Minor. Destroy object and do not allow chaining.
+   * @TODO Minor. Destroy object.
    */
   public function delete() {
     if (empty($this->state['saved_values']['frontpage']['use_old_tgdr'])) {
