@@ -1103,6 +1103,7 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
       tpps_preserve_valid_file($form_state, $snps_assay, $org_num, "Genotype_SNPs_Assay");
 
       if (!form_get_errors()) {
+        $field_name = 'snps-association';
         if (
           $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
           && $assoc_file
@@ -1115,13 +1116,13 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
             'Associated Trait' => ['trait' => [5]],
             'Confidence Value' => ['confidence' => [6]],
           ];
-          $file_element = $form[$id]['genotype'][$snps_fieldset]['snps-association'];
+          $file_element = $form[$id]['genotype'][$snps_fieldset][$field_name];
           $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
 
           if (!form_get_errors()) {
             // Check that SNP IDs match Genotype Assay.
             $snps_id_col = $groups['SNP ID'][1];
-            $assoc_no_header = $snps['snps-association-no-header'] ?? FALSE;
+            $assoc_no_header = $snps[$field_name . '-no-header'] ?? FALSE;
 
             $assay_snps = tpps_file_headers($snps_assay);
             unset($assay_snps[key($assay_snps)]);
@@ -1130,7 +1131,7 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
 
             if ($missing_snps !== array()) {
               $snps_id_str = implode(', ', $missing_snps);
-              form_set_error("$id][genotype][$snps_fieldset][snps-association",
+              form_set_error("$id][genotype][$snps_fieldset][$field_name",
                 t("SNP Association File: We detected SNP IDs that were not in "
                 . "your Genotype Assay. Please either remove these SNPs from "
                 . "your Association file, or add them to your Genotype Assay. "
@@ -1160,14 +1161,18 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
             }
 
             $missing_phenotypes = array_diff($association_phenotypes, $phenotype_meta_names);
-            if ($missing_phenotypes !== array()) {
-              $phenotype_names_str = implode(', ', $missing_phenotypes);
-              form_set_error("$id][genotype][$snps_fieldset][snps-association",
+            if ($missing_phenotypes !== []) {
+              form_set_error("$id][genotype][$snps_fieldset][$field_name",
                 t("SNP Association File: We detected Associated Traits that were "
                 . "not specified in the Phenotype Metadata Section. Please "
                 . "either remove these Traits from your Association file, "
                 . "or add them to your Phenotype Metadata section. The Trait "
-                . "names we foud were: $phenotype_names_str")
+                . "names we foud were: @phenotype_names",
+                  [
+                    '@phenotype_names' => implode(', ',
+                      array_unique($missing_phenotypes)),
+                  ]
+                )
               );
             }
 
@@ -1176,7 +1181,7 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
             $positions = tpps_parse_file_column($assoc_file, $position_col, $assoc_no_header);
             foreach ($positions as $position) {
               if (!preg_match('/^(\d+):(\d+)$/', $position)) {
-                form_set_error("$id][genotype][$snps_fieldset][snps-association",
+                form_set_error("$id][genotype][$snps_fieldset][$field_name",
                   t('SNP Association File: We detected SNP positions that do '
                   . 'not match the required format. '
                   . 'The correct format is: "start:stop".')

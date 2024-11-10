@@ -341,23 +341,7 @@ function tpps_genotype_subform(array $form_bus) {
   // Assay Design File.
   $title = t('Assay Design File');
   $file_field_name = 'assay-design';
-
-
-// @TODO Asked Meghan list of data types to be used in the dropdown list.
-// https://plantcompgenomics.slack.com/archives/C05R396U4QK/p1730644338364809?thread_ts=1730430961.236099&cid=C05R396U4QKt
-
-
-  $column_options = [
-    'N/A',
-    'SNP ID',
-    'Scaffold',
-    'Position',
-    'Allele',
-    'Associated Trait',
-    'Confidence Value',
-    'Gene ID',
-    'Annotation',
-  ];
+  $column_options = tpps_form_get_file_field_columns($file_field_name);
   // Add file upload field.
   // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
   tpps_form_build_file_field([
@@ -397,13 +381,7 @@ function tpps_genotype_subform(array $form_bus) {
           ]
         ) ?? 'NA',
       ],
-      'columns' => [
-
-// @TODO Review description and update if necessary.
-
-        '#description' => t('Please define which columns hold the required data.'),
-      ],
-      'columns-options' => $column_options,
+      'columns-options' => ['#type' => 'hidden', '#value' => $column_options],
       'no-header' => [],
     ],
   ]);
@@ -451,6 +429,7 @@ function tpps_genotype_subform(array $form_bus) {
   $file_field_name = 'snps-association';
   $title = t('SNP Association File');
   // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
+  $column_options = tpps_form_get_file_field_columns($file_field_name);
   tpps_form_build_file_field([
     'form' => &$form,
     'form_state' => $form_state,
@@ -488,25 +467,7 @@ function tpps_genotype_subform(array $form_bus) {
           [$organism_name, 'genotype', $snps_fieldset, $file_field_name, 'empty'])
           ?? 'NA',
       ],
-      'columns' => [
-        '#description' => t('Please define which columns hold the '
-          . 'required data: SNP ID, Scaffold, Position, Allele, '
-          . 'Associated Trait, Confidence Value.'),
-      ],
-      'columns-options' => [
-        '#type' => 'hidden',
-        '#value' => [
-          'N/A',
-          'SNP ID',
-          'Scaffold',
-          'Position',
-          'Allele',
-          'Associated Trait',
-          'Confidence Value',
-          'Gene ID',
-          'Annotation',
-        ],
-      ],
+      'columns-options' => ['#type' => 'hidden', '#value' => $column_options],
       'no-header' => [],
     ],
   ]);
