@@ -157,7 +157,9 @@ function tpps_form_add_buttons(array $form_bus) {
  * @param array $form_state
  *   Drupal Form API array with submitted values.
  * @param array $path
- *   Path to field form $form_state['complete form'] or $form.
+ *   Path to field form (including field name) to be used against:
+ *   - $form_state['complete form'] or
+ *   - $form.
  *   For example:
  *   ['organism-1', 'genotype', 'files', 'marker-type'].
  *

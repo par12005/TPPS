@@ -1223,24 +1223,14 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // SNPs Kinship File.
       if (!form_get_errors()) {
-        $field_name = 'snps-association';
-        $field_label = 'SNPs_Kinship';
-        $field_parents = [$id, 'genotype', $snps_fieldset, $field_name];
-        // File Id.
-        $field_value = drupal_array_get_nested_value(
-          $form_state['values'], $field_parents
-        );
-        if (
-          $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
-          && !empty($field_value)
-          && $snps['upload_snp_kinship'] == 'Yes'
-          && !tpps_is_required_field_empty($form_state, $field_parents)
-        ) {
-          // Preserve file if it is valid.
-          tpps_preserve_valid_file(
-            $form_state, $field_value, $org_num, $field_label
-          );
-        }
+        tpps_file_field([$id, 'genotype', $snps_fieldset, 'snps-kinship'])
+          ->isRequired(
+            $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
+            && $snps['upload_snp_kinship'] == 'Yes'
+          )
+          ->setFormState($form_state)
+          ->setOrganismNumber($org_num)
+          ->validate();
       }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     }
@@ -1253,7 +1243,7 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
     || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
   ) {
     $field_name = 'assay-design';
-    $field_parents = [$id, 'genotype', $snps_fieldset, $field_name]
+    $field_parents = [$id, 'genotype', $snps_fieldset, $field_name];
     $field_value = drupal_array_get_nested_value(
       $form_state['values'], $field_parents
     );

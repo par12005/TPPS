@@ -364,7 +364,7 @@ function tpps_form_state_info(array &$new, array &$old) {
  *   The form state being validated.
  * @param int $fid
  *   The Drupal file ID.
- * @param mixed $org_num
+ * @param int $org_num
  *   The species number to get the species name from the form state array.
  * @param mixed $prefix
  *   The standardized file name prefix.
