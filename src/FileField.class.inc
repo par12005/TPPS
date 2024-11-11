@@ -355,9 +355,7 @@ class FileField {
    *   Returns current object to allow method chaining.
    */
   public function isRequired($condition = '') {
-    if (is_bool($condition)) {
-      $this->isRequired = $condition;
-    }
+    $this->isRequired = (bool) $condition;
     return $this;
   }
 
@@ -378,6 +376,9 @@ class FileField {
 
       case 'snps-pop-struct':
         return 'SNPs_Population_Structure';
+
+      case 'assay-design':
+        return 'Genotype_Assay_Design';
     }
     return '';
   }
