@@ -92,6 +92,13 @@ function tpps_admin_panel_nextflow_study_logs(array $form, array &$form_state, $
   $form = $form ?? [];
   tpps_add_css_js('main', $form);
 
+  $store_directory = '/isg/treegenes/nextflow_workflows/' . $accession . '/new-study-pipeline';
+  $log_filename = 'completion_message.json';
+  if (!is_file($store_directory . '/' . $log_filename)) {
+    // If a completetion message is not found, revert back to trying .nextflow.log to show errors
+    $log_filename = '.nextflow.log';
+  }
+
   // @todo Move JS to separate JS file and use drupal_add_js() instead.
   $markup = l(
       t('Return to TPPS Admin Panel - @accession', ['@accession' => $accession]),
@@ -104,16 +111,42 @@ function tpps_admin_panel_nextflow_study_logs(array $form, array &$form_state, $
       jQuery(document).ready(function() {
         function refresh_log_file() {
           jQuery.ajax({
-            url: '/sites/default/files/nextflow_workflows/$accession/new-study-pipeline/.nextflow.log',
+            url: '/sites/default/files/nextflow_workflows/$accession/new-study-pipeline/$log_filename',
             method: 'GET',
             contentType: 'text/html',
+            dataType: 'text',
             success: function (data) {
-              var data_lines = data.split('\\n');
-              var data_html = data_lines.join('<br />');
-              jQuery('#iframe_log').html(data_html);
+              // Check to see if the file is json formatted
+              var json_parsed = undefined;
+              try {
+                json_parsed = JSON.parse(data);
+              } catch (err) {
+                console.log(err);
+              }
+              console.log('json_parsed', json_parsed);
+              if (json_parsed != undefined) {
+                var html = '';
+                var keys = Object.keys(json_parsed);
+                for (var i = 0 ; i < keys.length; i++) {
+                  html += '<div style=\"padding: 10px;\">';
+                  html += '<div style=\"width: 150px; display: inline-block; padding: 5px; border-radius: 2px; padding-left:10px; background-color: #469e71; color: #FFFFFF;\">';
+                  html += keys[i]
+                  html += '</div>';
+                  html += '<div style=\"display: inline-block; margin-left: 20px;\">';
+                  html += json_parsed[keys[i]];
+                  html += '</div>';
+                  html += '</div>';
+                }
+                jQuery('#iframe_log').html(html);
+              }
+              else {
+                var data_lines = data.split('\\n');
+                var data_html = data_lines.join('<br />');
+                jQuery('#iframe_log').html(data_html);
+              }
             },
             error: function (err) {
-              jQuery('#iframe_log').html('This error likely means a .nextflow.log output file does not exist');
+              jQuery('#iframe_log').html('This error likely means a log output file does not exist');
             }
           });
         }
