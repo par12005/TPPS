@@ -18,7 +18,7 @@ class FileField {
    *
    * @var string
    */
-  protected $name = '';
+  protected $name = NULL;
 
   /**
    * Submitted value of the field. Usually File Id.
@@ -32,21 +32,21 @@ class FileField {
    *
    * @var array
    */
-  protected $form;
+  protected $form = NULL;
 
   /**
    * Drupal Form API states array.
    *
    * @var array
    */
-  protected $formState;
+  protected $formState = NULL;
 
   /**
    * Form Field element.
    *
    * @var array
    */
-  protected $formElement;
+  protected $formElement = NULL;
 
   /**
    * List of the parent element's names in $form.
@@ -57,14 +57,7 @@ class FileField {
    *
    * @var array
    */
-  protected $parents;
-
-  /**
-   * Other name of the field used for validation.
-   *
-   * @var string
-   */
-  protected $label;
+  protected $parents = NULL;
 
   /**
    * Flag which shows if field is required in currect submission.
@@ -76,7 +69,7 @@ class FileField {
    *
    * @var bool
    */
-  protected $isRequired;
+  protected $isRequired = NULL;
 
   /**
    * Number of currently processed organism.
@@ -85,7 +78,7 @@ class FileField {
    *
    * @var int
    */
-  protected $organismNumber;
+  protected $organismNumber = NULL;
 
   /**
    * Data type which field belongs to.
@@ -95,7 +88,7 @@ class FileField {
    *
    * @var string
    */
-  protected $dataType;
+  protected $dataType = NULL;
 
   /**
    * File Field's metadata.
@@ -280,25 +273,29 @@ class FileField {
    */
   public function getFormElement(array $parents = []) {
     $element = NULL;
-    if (empty($this->formElement) || !empty($parents)) {
-      if (empty($parents)) {
+    if (is_null($this->formElement) || !empty($parents)) {
+      if ($update_form_element_property = empty($parents)) {
         $parents = $this->getParents();
       }
-      $array = $this->form ?? $this->formState['complete form'];
-      if (empty($array)) {
+      if (empty($array = $this->form ?? $this->formState['complete form'])) {
         return FALSE;
       }
-      $is_key_exists = NULL;
-      $element = drupal_array_get_nested_value($array, $parents, $is_key_exists);
-      if ($is_key_exists) {
-        // Set only when $this->parents was used.
-        if (empty($this->formElement) && empty($parents)) {
+      $is_key_exist = NULL;
+      $element = drupal_array_get_nested_value($array, $parents, $is_key_exist);
+      if ($is_key_exist) {
+        // Set only for current field (when method's argument wasn't used).
+        if ($update_form_element_property) {
           $this->formElement = $element;
         }
       }
       else {
-        // Element wasn't found.
-        // @todo Should we throw an exception?
+        throw new Exception(t("Form element wasn't found for field @field_name. "
+          . "Field parents: @field_parents.",
+          [
+            '@field_name' => $this->name,
+            '@field_parents' => implode(', ', $this->parents),
+          ]
+        ));
       }
     }
     return $element ?? $this->formElement ?? NULL;
@@ -311,7 +308,8 @@ class FileField {
    *   Returns TRUE when property is empty and FALSE otherwise.
    */
   public function isFormElementEmpty() {
-    return empty($this->getFormElement());
+    $this->getFormElement();
+    return empty($this->formElement);
   }
 
   /**
@@ -359,16 +357,16 @@ class FileField {
       !isset($this->value)
       && (!empty($this->parents) && !empty($this->formState))
     ) {
-      $key_exists = NULL;
+      $is_key_exist = NULL;
       $this->value = drupal_array_get_nested_value(
-        $this->formState['values'], $this->getParents(), $key_exists
+        $this->formState['values'], $this->getParents(), $is_key_exist
       );
-      if ($key_exists === FALSE) {
+      if ($is_key_exist === FALSE) {
         throw new Exception(t("Validation of field @field_name failed because "
           . "field wasn't found. Field parents: @field_parents.",
           [
             '@field_name' => $this->name,
-            '@field_parents_list' => implode(', ', $this->parents),
+            '@field_parents' => implode(', ', $this->parents),
           ]
         ));
       }
@@ -501,9 +499,9 @@ class FileField {
    *   Returns current object to allow method chaining.
    */
   public function validate() {
-    if ($this->name == 'assay-design') {
+if ($this->name == 'assay-design') {
 
-    }
+}
 
     // Field could became required depending on state of the other fields.
     if ($this->isRequired) {
@@ -522,6 +520,13 @@ class FileField {
       else {
         // Field is required and non-empty.
         if ($this->isColumns()) {
+
+//dpm('columns');
+
+
+
+
+
 
 
         }
