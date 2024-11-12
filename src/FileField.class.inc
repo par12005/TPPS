@@ -313,6 +313,45 @@ class FileField {
   }
 
   /**
+   * Get field's parent form element.
+   *
+   * @param array $parents
+   *   List of parent elements including desired element in the end.
+   *   When empty then $this->parents will be used to get current field parent
+   *   element.
+   *
+   * @return mixed
+   *   Returns parent element from $this->form found by $parents list.
+   *   When $parents is empty then parent element for current field will be
+   *   returned.
+   */
+  public function getFormParent(array $parents = []) {
+    if (empty($parents)) {
+      $parents = $this->getParents();
+    }
+    // Remove last element.
+    array_pop($parents);
+    return $this->getFormElement($parents);
+  }
+
+  /**
+   * Builds field name used in browser's DOM model.
+   *
+   * WARNING: no trailing ']'.
+   * Ready for form_set_error().
+   * See https://api.drupal.org/api/drupal/includes%21form.inc/function/form_set_error/7.x
+   *
+   * @return string
+   *   Returns $this->parents separated with ']['.
+   *   E.g., "organism-1[genotype][SNPs][snps-association][empty".
+   */
+  public function buildDomName() {
+    if ($this->parents) {
+      return implode('][', $this->parents);
+    }
+  }
+
+  /**
    * Checks if $formElement property is empty.
    *
    * @return bool
@@ -414,30 +453,35 @@ class FileField {
   }
 
   /**
-   * Gets prefix for filename.
+   * Gets meta data.
    *
    * Used in validate() method to build standardized filename.
    * See $form_state['file_info'] element.
+   *
+   * @param string $item_name
+   *   Name of the item to find in $metaData property.
+   *   Possible values are: 'prefix', 'required_groups'.
    *
    * @return mixed
    *   Returns predefined string for existing fields and empty string for
    *   non-existing fields.
    */
-  public function getFileNamePrefix() {
+  public function getMetaData(string $item_name) {
     $key_exists = NULL;
-    $prefix = drupal_array_get_nested_value(
+    $item_value = drupal_array_get_nested_value(
       $this->metaData,
-      [$this->dataType, $this->name, 'prefix'],
+      [$this->dataType, $this->name, $item_name],
       $key_exists
     );
-    if ($key_exists !== FALSE) {
-      return $prefix;
+    if ($key_exists) {
+      return $item_value;
     }
     else {
       // Field wasn't yet added to $this->metaData list.
       throw new Exception(t('Update list "@class::metaData" to get '
-        . 'filename prefix for the field "@field_name" of "@data_type".',
+        . ' @item_name for the field "@field_name" of "@data_type".',
         [
+          '@item_name' => $item_name,
           '@field_name' => $this->name,
           '@data_type' => $this->dataType,
           '@class' => get_class($this),
@@ -454,7 +498,7 @@ class FileField {
    * conflicts we use data types to make them more unique.
    * Note:
    * $this->parents couldn't be used to get filename prefixes using
-   * getFileNamePrefix() method because parents contains very specific
+   * getMetaData() method because parents contains very specific
    * $organismNumber.
    */
   public function detectDataType() {
