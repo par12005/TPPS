@@ -88,6 +88,37 @@ class FileField {
   protected $organismNumber;
 
   /**
+   * Data type which field belongs to.
+   *
+   * Posible values are: 'phenotype', 'genotype' and 'environmental_layer'.
+   * Detected automatically by detectDataType() method from $this->name.
+   *
+   * @var string
+   */
+  protected $dataType;
+
+  /**
+   * File Field's metadata.
+   *
+   * @var array
+   *
+   * @todo Move this list into separate file to avoid update of class's code.
+   */
+  private $metaData = [
+    'phenotype' => [
+      'metadata' => ['prefix' => 'Phenotype_Metadata'],
+      'file' => ['prefix' => 'Phenotype_Data'],
+
+    ],
+    'genotype' => [
+      'snps-kinship' => ['prefix' => 'SNPs_Kinship'],
+      'snps-pop-struct' => ['prefix' => 'SNPs_Population_Structure'],
+      'assay-design' => ['prefix' => 'Genotype_Assay_Design'],
+    ],
+    'environmental_layers' => [],
+  ];
+
+  /**
    * Class constructor.
    *
    * @param array $parents
@@ -182,7 +213,7 @@ class FileField {
     $last_item = end($parents);
     if (empty($this->name)) {
       // Name is empty. Use last item as a field name.
-      $this->name = $last_item;
+      $this->setName($last_item);
     }
     elseif ($last_item != $this->name) {
       // Short version of parents list was used.
@@ -203,6 +234,7 @@ class FileField {
    */
   public function setName(string $value) {
     $this->name = $value;
+    $this->detectDataType();
     return $this;
   }
 
@@ -317,15 +349,13 @@ class FileField {
         $this->formState['values'], $this->getParents(), $key_exists
       );
       if ($key_exists === FALSE) {
-        // @todo Throw an exception.
-        $message = "Validation of field @field_name failed because field "
-          . "wasn't found. Field parents: @field_parents.";
-        $params = [
-          '@field_name' => $this->name,
-          '@field_parents_list' => implode(', ', $this->parents),
-        ];
-        watchdog('tpps', $message, $params, WATCHDOG_ERROR);
-        drupal_set_message(t($message, $params), 'error');
+        throw new Exception(t("Validation of field @field_name failed because "
+          . "field wasn't found. Field parents: @field_parents.",
+          [
+            '@field_name' => $this->name,
+            '@field_parents_list' => implode(', ', $this->parents),
+          ]
+        ));
       }
     }
     return $this->value;
@@ -370,17 +400,51 @@ class FileField {
    *   non-existing fields.
    */
   public function getFileNamePrefix() {
-    switch ($this->name) {
-      case 'snps-kinship':
-        return 'SNPs_Kinship';
-
-      case 'snps-pop-struct':
-        return 'SNPs_Population_Structure';
-
-      case 'assay-design':
-        return 'Genotype_Assay_Design';
+    $key_exists = NULL;
+    $prefix = drupal_array_get_nested_value(
+      $this->metaData,
+      [$this->dataType, $this->name, 'prefix'],
+      $key_exists
+    );
+    if ($key_exists !== FALSE) {
+      return $prefix;
     }
-    return '';
+    else {
+      // Field wasn't yet added to $this->metaData list.
+      throw new Exception(t('Update list "@class::metaData" to get '
+        . 'filename prefix for the field "@field_name" of "@data_type".',
+        [
+          '@field_name' => $this->name,
+          '@data_type' => $this->dataType,
+          '@class' => get_class($this),
+        ]
+      ));
+    }
+  }
+
+  /**
+   * Detects DataType by field name.
+   *
+   * Field could have very common name like 'file' and multiple fields with
+   * the same name could be used on different TPPS Form pages. To avoid
+   * conflicts we use data types to make them more unique.
+   * Note:
+   * $this->parents couldn't be used to get filename prefixes using
+   * getFileNamePrefix() method because parents contains very specific
+   * $organismNumber.
+   */
+  public function detectDataType() {
+    foreach ($data_type_list as $data_type => $field_list) {
+      if (in_array($this->name, array_keys($field_list))) {
+        $this->dataType = $data_type;
+        return;
+      }
+    }
+    // When not found it means class was used for field which wasn't yet added.
+    throw new Exception(t('Update list "@class::metaData" to detect '
+      . 'data type of the field "@field_name".',
+      ['@field_name' => $this->name, '@class' => get_class($this)]
+    ));
   }
 
   /**
