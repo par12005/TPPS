@@ -256,37 +256,52 @@ class FileField {
   // Custom getters.
 
   /**
-   * Gets $formElement property.
+   * Gets form element using list of parent elements.
+   *
+   * Form array could be obtained from $form class property which not required
+   * and not always available and from $formState['complete form'] element
+   * which also contains form array. Class property $formState widly used and
+   * more chances to be non-empty (available).
+   *
+   * Could be used for debugging.
+   *
+   * @param array $parents
+   *   List of parent elements including desired element in the end.
+   *
+   *   When $parents array is empty then $parents property will be used
+   *   to get current field element and search result will be stored in
+   *   $formElement property.
+   *   When $parents argument is non-empty then $formElement class property
+   *   won't be updated.
    *
    * @return mixed
-   *   Returns file field form element.
+   *   Returns element from $this->form found by $parents list.
+   *   When $parents is empty then current field element will be returned.
    */
-  public function getFormElement() {
-    if (empty($this->formElement) && !empty($parents = $this->getParents())) {
-      // Form State.
-      if (!empty($form_state = $this->formState)) {
-        $this->formElement = drupal_array_get_nested_value(
-          $form_state['complete form'],
-          $parents
-        );
+  public function getFormElement(array $parents = []) {
+    $element = NULL;
+    if (empty($this->formElement) || !empty($parents)) {
+      if (empty($parents)) {
+        $parents = $this->getParents();
       }
-      // Form.
-      if (!empty($form = $this->form)) {
-        $this->formElement = drupal_array_get_nested_value($form, $parents);
+      $array = $this->form ?? $this->formState['complete form'];
+      if (empty($array)) {
+        return FALSE;
+      }
+      $is_key_exists = NULL;
+      $element = drupal_array_get_nested_value($array, $parents, $is_key_exists);
+      if ($is_key_exists) {
+        // Set only when $this->parents was used.
+        if (empty($this->formElement) && empty($parents)) {
+          $this->formElement = $element;
+        }
+      }
+      else {
+        // Element wasn't found.
+        // @todo Should we throw an exception?
       }
     }
-    return $this->formElement;
-  }
-
-  /**
-   * Validates $formElement property and logs error using watchdog.
-   */
-  public function validateFormElement() {
-    if ($this->isFormElementEmpty()) {
-      watchdog('tpps', "Field wasn't found in 'complete form'. Path: @path",
-        ['@path' => implode('/', $this->parents)], WATCHDOG_ERROR
-      );
-    }
+    return $element ?? $this->formElement ?? NULL;
   }
 
   /**
@@ -434,7 +449,7 @@ class FileField {
    * $organismNumber.
    */
   public function detectDataType() {
-    foreach ($data_type_list as $data_type => $field_list) {
+    foreach ($this->metaData as $data_type => $field_list) {
       if (in_array($this->name, array_keys($field_list))) {
         $this->dataType = $data_type;
         return;
@@ -486,24 +501,93 @@ class FileField {
    *   Returns current object to allow method chaining.
    */
   public function validate() {
+    if ($this->name == 'assay-design') {
+
+    }
+
+    // Field could became required depending on state of the other fields.
     if ($this->isRequired) {
-      $this->validateFormElement();
+      // Check if form had this field at all. We use data from the form to
+      // get human readable field name automatically.
+      if ($this->isFormElementEmpty()) {
+        throw new Exception(t("Field wasn't found at form. Field's path: @path.",
+          ['@path' => implode('/', $this->parents)]
+        ));
+      }
+      // First check if required field has value.
       if ($this->isEmpty()) {
         // Field is required but empty. Show error.
         tpps_form_error_required($this->formState, $this->getParents());
       }
       else {
         // Field is required and non-empty.
-        // Preserve file if it is valid.
-        tpps_preserve_valid_file(
-          $this->formState,
-          $this->getValue(),
-          $this->getOrganismNumber(),
-          $this->getFileNamePrefix()
-        );
+        if ($this->isColumns()) {
+
+
+        }
+        else {
+          // Preserve file if it is valid.
+          tpps_preserve_valid_file(
+            $this->formState,
+            $this->getValue(),
+            $this->getOrganismNumber(),
+            $this->getFileNamePrefix()
+          );
+        }
       }
     }
     return $this;
+  }
+
+  /**
+   * Searches $this->formState for the element using list of parent elements.
+   *
+   * Could be used for debugging.
+   *
+   * @param array $parents
+   *   List of parent elements including desired element in the end.
+   *   When empty $this->parents will be used to get current field element.
+   *
+   * @return mixed
+   *   Returns element from $this->formState found by $parents list.
+   *
+   * @todo Actually it's getting submitted value of the field.
+   * See tpps_get_ajax_value($form_state, $marker_parents, []);
+   */
+  public function findFormState(array $parents = []) {
+    $array = $this->formState;
+    if (empty($array)) {
+      return FALSE;
+    }
+    if (empty($parents)) {
+      $parents = $this->getParents();
+    }
+    $is_key_exists = NULL;
+    // Currently submitted values.
+    $element = drupal_array_get_nested_value($array['input'], $parents, $is_key_exists);
+    if ($is_key_exists === FALSE) {
+      // If element wasn't found try to search previously submitted steps/pages.
+      $element = drupal_array_get_nested_value($array['saved_values'], $parents);
+    }
+    return $element;
+  }
+
+  /**
+   * Checks if field uses columns feature to set column's data types.
+   *
+   * @return bool
+   *   Returns TRUE if form element non-empty and has 'columns' sub-element
+   *   Returns FALSE otherwise.
+   *
+   * @todo Rename method to something more meaningful.
+   */
+  public function isColumns() {
+    if ($this->isFormElementEmpty()) {
+      return FALSE;
+    }
+    // Field's value in $this->formState has sub-element 'columns-options'
+    // but seems it's less safe way to detect if this feature is in use.
+    return array_key_exists('columns', $this->formElement);
   }
 
 }
