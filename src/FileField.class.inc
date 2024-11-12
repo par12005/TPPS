@@ -107,6 +107,17 @@ class FileField {
       'snps-kinship' => ['prefix' => 'SNPs_Kinship'],
       'snps-pop-struct' => ['prefix' => 'SNPs_Population_Structure'],
       'assay-design' => ['prefix' => 'Genotype_Assay_Design'],
+      'snps-association' => [
+        'prefix' => 'SNPs_Association',
+        'required_groups' => [
+          'SNP ID' => ['id' => [1]],
+          'Scaffold' => ['scaffold' => [2]],
+          'Position' => ['position' => [3]],
+          'Allele' => ['allele' => [4]],
+          'Associated Trait' => ['trait' => [5]],
+          'Confidence Value' => ['confidence' => [6]],
+        ],
+      ],
     ],
     'environmental_layers' => [],
   ];
