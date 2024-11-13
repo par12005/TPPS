@@ -456,11 +456,36 @@ function tpps_compare_files($fid_1, $fid_2, $file_1_id_name, $file_2_id_name, $f
  *   The state of the form that the file is part of.
  * @param array $required_groups
  *   The required column option groups for the file.
+ *   Example:
+ *   [
+ *     'SNP ID' => ['id' => [1]],
+ *     'Scaffold' => ['scaffold' => [2]],
+ *     'Position' => ['position' => [3]],
+ *     'Allele' => ['allele' => [4]],
+ *     'Associated Trait' => ['trait' => [5]],
+ *     'Confidence Value' => ['confidence' => [6]],
+ *   ].
  * @param array $file_element
  *   The managed_file element of the file within the form.
  *
  * @return array
  *   The groups and the column option types that the file was valid for.
+ *
+ *   Example:
+ *   [
+ *     // <Name> => [
+ *     //   <id in the option's list> => <column index>,
+ *     //   '#type' => <key>
+ *     // ],
+ *     'SNP ID' => [1 => 'B', '#type' => 'id'],
+ *     'Scaffold' => [
+ *       '#type' => [], // < ---- Not found!
+ *     ],
+ *     'Position' => [3 => 'D', '#type' => 'position'],
+ *     'Allele' => [4 => 'E', '#type' => 'allele'],
+ *     'Associated Trait' => [5 => 'F', '#type' => 'trait'],
+ *     'Confidence Value' => [6 => 'G', '#type' => 'confidence'],
+ *   ];
  */
 function tpps_file_validate_columns(array &$form_state, array $required_groups, array $file_element) {
 

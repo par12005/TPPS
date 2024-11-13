@@ -106,10 +106,22 @@ class FileField {
     'genotype' => [
       'snps-kinship' => ['prefix' => 'SNPs_Kinship'],
       'snps-pop-struct' => ['prefix' => 'SNPs_Population_Structure'],
-      'assay-design' => ['prefix' => 'Genotype_Assay_Design'],
+      'assay-design' => [
+        'prefix' => 'Genotype_Assay_Design',
+        'required_groups' => [
+          // Name => key => <id in the option's list>.
+          'SNP ID' => ['id' => [1]],
+          'Scaffold' => ['scaffold' => [2]],
+          'Position' => ['position' => [3]],
+          'Allele' => ['allele' => [4]],
+          'Associated Trait' => ['trait' => [5]],
+          'Confidence Value' => ['confidence' => [6]],
+        ],
+      ],
       'snps-association' => [
         'prefix' => 'SNPs_Association',
         'required_groups' => [
+          // Name => key => <id in the option's list>.
           'SNP ID' => ['id' => [1]],
           'Scaffold' => ['scaffold' => [2]],
           'Position' => ['position' => [3]],
@@ -554,10 +566,13 @@ class FileField {
    *   Returns current object to allow method chaining.
    */
   public function validate() {
+
+// @TODO Remove debug code.
 if ($this->name == 'assay-design') {
 
 }
 
+dpm('validate ' . $this->name);
     // Field could became required depending on state of the other fields.
     if ($this->isRequired) {
       // Check if form had this field at all. We use data from the form to
@@ -576,25 +591,119 @@ if ($this->name == 'assay-design') {
         // Field is required and non-empty.
         if ($this->isColumns()) {
 
-//dpm('columns');
+// @TODO Remove debug code.
+dpm('Validate columns');
+
+          $field_dom_name = $this->buildDomName();
+          $snps = $this->getFormParent();
+          $id = $this->getOrganismNumber();
+
+          // @TODO Check if value is correct.
+          // $assoc_file = $this->getValue();
+          $assoc_file = $snps['snps-association'] ?? 0;
+          $snps_assay = $snps['snps-assay'] ?? 0;
 
 
-
-
-
-
-
-        }
-        else {
-          // Preserve file if it is valid.
-          tpps_preserve_valid_file(
+          // Check if file has all of the required columns.
+          $groups = tpps_file_validate_columns(
             $this->formState,
-            $this->getValue(),
-            $this->getOrganismNumber(),
-            $this->getFileNamePrefix()
+            $this->getMetaData('required_groups'),
+            $this->getFormElement()
           );
+
+          if (!form_get_errors()) {
+            // Check that SNP IDs match Genotype Assay.
+            $snps_id_col = $groups['SNP ID'][1];
+            $assoc_no_header = $snps[$this->name . '-no-header'] ?? FALSE;
+
+            $assay_snps = tpps_file_headers($snps_assay);
+            unset($assay_snps[key($assay_snps)]);
+            $assoc_snps = tpps_parse_file_column($assoc_file, $snps_id_col, $assoc_no_header);
+            $missing_snps = array_diff($assoc_snps, $assay_snps);
+
+            if ($missing_snps !== []) {
+              form_set_error($field_dom_name, t('@title: We detected SNP IDs '
+                  . 'that were not in your Genotype Assay. Please either '
+                  . 'remove these SNPs from your Association file, or add '
+                  . 'them to your Genotype Assay. The SNP Identifiers we '
+                  . 'found were: @snps_id_list.',
+                  [
+                    '@snps_id_list' => implode(', ', array_unique($missing_snps)),
+                    '@title' => $this->getTitle(),
+                  ]
+                )
+              );
+            }
+
+            // Check that Phenotype names match phenotype metadata section.
+            $association_phenotypes = tpps_parse_file_column(
+              $assoc_file,
+              $groups['Associated Trait'][5],
+              $assoc_no_header
+            );
+
+            $phenotype = $this->formState['values'][$id]['phenotype'];
+            $phenotype_meta = $phenotype['metadata'];
+            $phenotype_number = $phenotype['phenotypes-meta']['number'];
+
+            $phenotype_meta_names = [];
+            $phenotype_name_col = $phenotype['metadata-groups']['Phenotype Id']['1'] ?? NULL;
+            if (isset($phenotype_name_col)) {
+              $phenotype_meta_names = tpps_parse_file_column($phenotype_meta, $phenotype_name_col);
+            }
+
+            for ($i = 1; $i <= $phenotype_number; $i++) {
+              $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
+            }
+
+            $missing_phenotypes = array_diff(
+              $association_phenotypes,
+              $phenotype_meta_names
+            );
+            if ($missing_phenotypes !== []) {
+              form_set_error($field_dom_name, t('@title: We detected '
+                . 'Associated Traits that were not specified in the '
+                . 'Phenotype Metadata Section. Please either remove '
+                . 'these Traits from your Association file, or add them '
+                . 'to your Phenotype Metadata section. '
+                . 'The Trait names we foud were: @phenotype_names',
+                  [
+                    '@phenotype_names' => implode(', ',
+                      array_unique($missing_phenotypes)),
+                    '@title' => $this->getTitle(),
+                  ]
+                )
+              );
+            }
+
+            // Check that position values are correctly formatted.
+            $positions = tpps_parse_file_column(
+              $assoc_file,
+              $groups['Position'][3],
+              $assoc_no_header
+            );
+            foreach ($positions as $position) {
+              if (!preg_match('/^(\d+):(\d+)$/', $position)) {
+                form_set_error($field_dom_name, t('@title: We detected SNP '
+                    . 'positions that do not match the required format. '
+                    . 'The correct format is: "start:stop".',
+                    ['@title' => $this->getTitle()]
+                  )
+                );
+                break;
+              }
+            }
+          }
         }
+        // Preserve file if it is valid.
+        tpps_preserve_valid_file(
+          $this->formState,
+          $this->getValue(),
+          $this->getOrganismNumber(),
+          $this->getMetaData('prefix')
+        );
       }
+
     }
     return $this;
   }
@@ -650,4 +759,15 @@ if ($this->name == 'assay-design') {
     return array_key_exists('columns', $this->formElement);
   }
 
+  /**
+   * Gets field's human readable title.
+   *
+   * @return string
+   *   Returns field's title.
+   */
+  public function getTitle() {
+    $this->getFormElement();
+    // Remove colon ':' and required field label.
+    return strtok($this->formElement['#title'], ':');
+  }
 }

@@ -233,6 +233,7 @@ function tpps_form_error(array $form_state, array $path, $message) {
     return;
   }
   // Remove colon ':' and required field label.
+  // @TODO See FileField::getHumanName().
   $title = strtok($field['#title'], ':');
 
   // Since we update title of the field using JS in browser we could update
