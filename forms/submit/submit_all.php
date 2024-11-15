@@ -188,7 +188,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     tpps_log("[INFO] Accession information submitted!\n");
 
     tpps_log("[INFO] Submitting Genotype (Raw) data...");
-    // tpps_submit_page_4($submission->sharedState, $job);
+    tpps_submit_page_4($submission->sharedState, $job);
     tpps_log("[INFO] Genotype (Raw) data submitted!\n");
 
     tpps_log("[INFO] Submitting Summary information...");
@@ -196,11 +196,11 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     tpps_log("[INFO] Summary information submitted!\n");
 
     tpps_log("[INFO] Renaming files...");
-    // tpps_submission_rename_files($accession);
+    tpps_submission_rename_files($accession);
     tpps_log("[INFO] Files renamed!\n");
 
-    tpps_log("[INFO] Nextflow New VCF Pipeline");
-    tpps_nextflow_new_vcf_pipeline($submission->sharedState);
+    tpps_log("[INFO] Nextflow New Study Pipeline");
+    tpps_nextflow_new_study_pipeline($submission->sharedState);
 
 
     tpps_log("[INFO] Finishing up...");
@@ -229,7 +229,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   }
 }
 
-function tpps_nextflow_new_vcf_pipeline(array &$form_state) {
+function tpps_nextflow_new_study_pipeline(array &$form_state) {
   // Get all required nextflow flag parameters from the shared state
   $study_accession = $form_state['saved_values'][1]['accession'];
   $vcf = NULL;
@@ -254,7 +254,45 @@ function tpps_nextflow_new_vcf_pipeline(array &$form_state) {
   $ref_genome = NULL;
   try {
     $ref_genome = $form_state['saved_values'][4]['organism-1']['genotype']['ref-genome'];
-  } catch (Exception $ex) { } 
+  } catch (Exception $ex) { }
+
+  if ($ref_genome != NULL) {
+    // Clean up ref_genome
+    $ref_genome = trim($ref_genome);
+    // This will replace multiple spaces with single spaces
+    $ref_genome = preg_replace('!\s+!', ' ', $ref_genome);
+
+    $rg_parts = explode(' ', $ref_genome);
+    $rg_parts_count = count($rg_parts);
+    if ($rg_parts_count > 4) {
+      throw new Exception('The ref genome has more than 4 parts so it is not formatted correctly and needs to be resolved.');
+    }
+    else {
+      // These are the default assignments
+      $genus = $rg_parts[0];
+      $species = strtolower($rg_parts[1]);
+      $type = strtolower($rg_parts[2]);
+      $version = NULL;
+      if ($rg_parts_count > 3) {
+        $version = strtolower($rg_parts[3]);
+      }
+      // If the 3rd part starts with v or is a number, then this is a version representation
+      if (strtolower(substr($rg_parts[2],0,1)) == 'v' or ctype_digit(substr($rg_parts[2],0,1))) {
+        $version = strtolower($rg_parts[2]);
+        // So the 4th part if it exists would be the type
+        if ($rg_parts_count > 3) {
+          $type = strtolower($rg_parts[3]);
+        }
+        // Else if there is no part, then the type is missing so set it as null
+        else {
+          $type = 'null';
+        }
+      }
+      // Now create over the ref_genome value
+      $ref_genome = $genus . ' ' . $species . ' ' . $type . ' ' . $version;
+      tpps_log('ref_genome formatted: ' . $ref_genome . '\n');
+    }
+  }
   // TODO: Make this more robust by checking if any NULLs were found and do not run the workflow
 
   $store_directory = '/isg/treegenes/nextflow_workflows/' . $study_accession . '/new-study-pipeline';
@@ -283,28 +321,31 @@ function tpps_nextflow_new_vcf_pipeline(array &$form_state) {
 #SBATCH --mail-type=END
 #SBATCH --mem=10G
 #SBATCH --mail-user=tg-nginx@cam.uchc.edu
-#SBATCH -o $store_directory/new_vcf_pipeline_%j.out
-#SBATCH -e $store_directory/new_vcf_pipeline_%j.err
+#SBATCH -o $store_directory/new_study_pipeline_%j.out
+#SBATCH -e $store_directory/new_study_pipeline_%j.err
 
 
 
 module load nextflow
-mkdir -p /scratch/tg-nginx/new_vcf_pipeline_\$SLURM_JOB_ID
-export NXF_TEMP=/scratch/tg-nginx/new_vcf_pipeline_\$SLURM_JOB_ID
-export NXF_WORK=/scratch/tg-nginx/new_vcf_pipeline_\$SLURM_JOB_ID
-export NXF_OPTS='-Xms5G -Xmx10G'
+mkdir -p /scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
+export TMPDIR=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
+export NXF_TEMP=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
+export NXF_WORK=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
+export NXF_OPTS='-Xms5G -Xmx20G'
 cd $store_directory
 echo \$SLURM_JOB_ID > $store_directory/slurm_job_id.txt
 
+rm -rf ~/.nextflow/assets/TreeGenes/new-study-pipeline
 nextflow pull TreeGenes/new-vcf-pipeline -r main -hub gitlab 
-nextflow run TreeGenes/new-study-pipeline -r main -profile singularity --tgdr $study_accession --vcf '$vcf' --ref_genome '$ref_genome'
+nextflow run TreeGenes/new-study-pipeline -r main -profile treegenes -resume --tgdr $study_accession --vcf '$vcf' --ref_genome '$ref_genome'
 ";
 
 // Override temporarily since we're running on TREEGENESDEV and not on the cluster (so sbatch commands will not work)
 $run_code = "#!/bin/bash
 cd $store_directory
+rm -rf ~/.nextflow/assets/TreeGenes/new-study-pipeline
 nextflow pull TreeGenes/new-study-pipeline -r main -hub gitlab 
-nextflow run TreeGenes/new-study-pipeline -r main -profile singularity -resume --tgdr $study_accession --vcf '$vcf' --ref_genome '$ref_genome'
+nextflow run TreeGenes/new-study-pipeline -r main -profile treegenes -resume --tgdr $study_accession --vcf '$vcf' --ref_genome '$ref_genome'
 ";
 
 
