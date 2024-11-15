@@ -121,7 +121,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
         . "'>Latest job log file ($accession) - nextflow new study pipeline</a></div>";
     }
     else {
-      $display .= "<div style='padding: 10px;'>Could not find nextflow new study pipeline log file "
+      $display .= "<div style='padding: 10px;'>No nextflow new study pipeline log file "
         . "(this can happen if the log file was deleted - resubmit study "
         . "if necessary to regenerate log file)</div>";
     }

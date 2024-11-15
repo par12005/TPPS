@@ -1,4 +1,26 @@
 (function ($) {
+
+  // Submit form on 'Enter' pressing.
+  // When user presses 'Enter/Return' on any text field then 'Next' or
+  // 'Review and Submit' button must be shows instead of the first 'Back'
+  // button. Using HTML's tabindex requires to set focus to this button but
+  // we set focus to the main field to speed-up form filling instead of buttons.
+  window.addEventListener("keyup", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      let $nextButton = $('input.next-button');
+      if ($nextButton.length) {
+        $nextButton[0].click();
+      }
+      else {
+        let $submitButton = $('input.review-and-submit-button');
+        if ($submitButton.length) {
+          $submitButton[0].click();
+        }
+      }
+    }
+  });
+
   Drupal.behaviors.tppsMain = {
     attach:function (context) {
 
