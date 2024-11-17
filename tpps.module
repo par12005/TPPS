@@ -998,7 +998,8 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
 
   // Note: edit-organism-1-genotype-tripal-fasta-file-file-upload-upload
   // has no title.
-  if (!($element['#simple_file'] ?? FALSE)
+  if (
+    !($element['#simple_file'] ?? FALSE)
     && $fid && ($file = tpps_file_load($fid))
   ) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1137,28 +1138,32 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
 
     $rows = $content;
     unset($rows['headers']);
-    $vars = [
+    $table = theme('table', [
       'header' => $content['headers'],
       'rows' => $rows,
       'attributes' => ['class' => ['view']],
-      'caption' => '',
-      'colgroups' => NULL,
       'sticky' => FALSE,
-      'empty' => '',
-    ];
-    $table = theme('table', $vars);
+    ]);
 
-    preg_match(
-      '/(*UTF8)\A(.*<thead[A-Z|a-z|"|\'|-|_|0-9]*>).*(<\/thead>.*<\/table>)/us',
-      $table, $matches
-    );
+    // VS: This regex fails on files with huge headers.
+    //$regex = '/(*UTF8)\A(.*<thead[A-Z|a-z|"|\'|-|_|0-9]*>).*(<\/thead>.*<\/table>)/us';
+    //preg_match($regex, $table, $matches);
+    //$element['columns'][$first_col]['#prefix'] = '<div style="overflow-x:auto">'
+    //  . $matches[1] . '<tr>' . $element['columns'][$first_col]['#prefix'];
+    //$element['columns'][$key]['#suffix'] = '</tr>' . $matches[2] . '</div>'
+    //  . t('Please note that if you remain idle on a TPPS page with files '
+    //  . 'for more than 6 hours, you run the risk of having those files '
+    //  . 'reset if you do not click "Save".');
 
+    // VS: Exclude content between <thead></thead> and tags itself.
+    $start = explode('<thead>', $table);
+    $end = explode('</thead>', $start[1]);
     $element['columns'][$first_col]['#prefix'] = '<div style="overflow-x:auto">'
-      . $matches[1] . '<tr>' . $element['columns'][$first_col]['#prefix'];
-    $element['columns'][$key]['#suffix'] = '</tr>' . $matches[2] . '</div>'
-      . t('Please note that if you remain idle on a TPPS page with files '
-      . 'for more than 6 hours, you run the risk of having those files '
-      . 'reset if you do not click "Save".');
+      . $start[0] . '<thead><tr>' . $element['columns'][$first_col]['#prefix'];
+    $element['columns'][$key]['#suffix'] = '</tr></thead>' . $end[1] . '</div>'
+       . t('Please note that if you remain idle on a TPPS page with files '
+       . 'for more than 6 hours, you run the risk of having those files '
+       . 'reset if you do not click "Save".');
     $element['columns']['#weight'] = 100;
   }
 
