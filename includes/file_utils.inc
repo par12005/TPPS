@@ -538,7 +538,7 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
       foreach ($required_groups_flat as $group => $types) {
         if (in_array($type, $types)) {
           if (!isset($groups[$group][$type])) {
-            $groups[$group][$type] = array($name);
+            $groups[$group][$type] = [$name];
           }
           else {
             $groups[$group][$type][] = $name;
@@ -579,6 +579,17 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
     }
   }
 
+  // Replaces list of column names with a single value when was found only one. Instead of this:
+  // [
+  //   'Flank sequence' => [
+  //     '4' => ['0' => 'B'],
+  //     '#type' => ['0' => 'sequence'],
+  //   ]
+  // ];
+  // we will get this:
+  // [
+  //   'Flank sequence' => ['4' => 'B', '#type' => 'sequence'],
+  // ];
   foreach ($groups as $key => $group) {
     foreach ($group as $opt_num => $col_names) {
       if (count($col_names) == 1) {

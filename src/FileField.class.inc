@@ -110,18 +110,21 @@ class FileField {
         'prefix' => 'Genotype_Assay_Design',
         'required_groups' => [
           // Name => key => <id in the option's list>.
+          // SNP ID should always be required.
+          // The user must also have EITHER:
+          // 1. scaffold and position, OR
+          // 2. Flank sequence.
           'SNP ID' => ['id' => [1]],
           'Scaffold' => ['scaffold' => [2]],
           'Position' => ['position' => [3]],
-          'Allele' => ['allele' => [4]],
-          'Associated Trait' => ['trait' => [5]],
-          'Confidence Value' => ['confidence' => [6]],
+          'Flank sequence' => ['sequence' => [4]],
         ],
       ],
       'snps-association' => [
         'prefix' => 'SNPs_Association',
         'required_groups' => [
           // Name => key => <id in the option's list>.
+          // All columns are required.
           'SNP ID' => ['id' => [1]],
           'Scaffold' => ['scaffold' => [2]],
           'Position' => ['position' => [3]],
@@ -259,11 +262,13 @@ class FileField {
    *
    * @param array $value
    *   Drupal Form API State array.
+   *   Passed by reference so original array must be updated when 'formState'
+   *   property updated.
    *
    * @return object
    *   Returns current object to allow method chaining.
    */
-  public function setFormState(array $value) {
+  public function setFormState(array &$value) {
     $this->formState = $value;
     return $this;
   }
@@ -572,7 +577,8 @@ if ($this->name == 'assay-design') {
 
 }
 
-dpm('validate ' . $this->name);
+dpm('Validate: ' . $this->name);
+
     // Field could became required depending on state of the other fields.
     if ($this->isRequired) {
       // Check if form had this field at all. We use data from the form to
@@ -594,105 +600,232 @@ dpm('validate ' . $this->name);
 // @TODO Remove debug code.
 dpm('Validate columns');
 
-          $field_dom_name = $this->buildDomName();
-          $snps = $this->getFormParent();
-          $id = $this->getOrganismNumber();
+          if ($this->name == 'snps-association') {
+            $field_dom_name = $this->buildDomName();
+            $snps = $this->getFormParent();
 
-          // @TODO Check if value is correct.
-          // $assoc_file = $this->getValue();
-          $assoc_file = $snps['snps-association'] ?? 0;
-          $snps_assay = $snps['snps-assay'] ?? 0;
+            // @TODO Check if value is correct.
+            // $assoc_file = $this->getValue();
+            $assoc_file = $snps['snps-association'] ?? 0;
+            $snps_assay = $snps['snps-assay'] ?? 0;
 
 
-          // Check if file has all of the required columns.
-          $groups = tpps_file_validate_columns(
-            $this->formState,
-            $this->getMetaData('required_groups'),
-            $this->getFormElement()
-          );
-
-          if (!form_get_errors()) {
-            // Check that SNP IDs match Genotype Assay.
-            $snps_id_col = $groups['SNP ID'][1];
-            $assoc_no_header = $snps[$this->name . '-no-header'] ?? FALSE;
-
-            $assay_snps = tpps_file_headers($snps_assay);
-            unset($assay_snps[key($assay_snps)]);
-            $assoc_snps = tpps_parse_file_column($assoc_file, $snps_id_col, $assoc_no_header);
-            $missing_snps = array_diff($assoc_snps, $assay_snps);
-
-            if ($missing_snps !== []) {
-              form_set_error($field_dom_name, t('@title: We detected SNP IDs '
-                  . 'that were not in your Genotype Assay. Please either '
-                  . 'remove these SNPs from your Association file, or add '
-                  . 'them to your Genotype Assay. The SNP Identifiers we '
-                  . 'found were: @snps_id_list.',
-                  [
-                    '@snps_id_list' => implode(', ', array_unique($missing_snps)),
-                    '@title' => $this->getTitle(),
-                  ]
-                )
-              );
-            }
-
-            // Check that Phenotype names match phenotype metadata section.
-            $association_phenotypes = tpps_parse_file_column(
-              $assoc_file,
-              $groups['Associated Trait'][5],
-              $assoc_no_header
+            // Check if file has all of the required columns.
+            $groups = $this->validateColumns(
+              $this->formState,
+              $this->getMetaData('required_groups'),
+              $this->getFormElement()
             );
 
-            $phenotype = $this->formState['values'][$id]['phenotype'];
-            $phenotype_meta = $phenotype['metadata'];
-            $phenotype_number = $phenotype['phenotypes-meta']['number'];
+            if (!form_get_errors()) {
+              // Check that SNP IDs match Genotype Assay.
+              $snps_id_col = $groups['SNP ID'][1];
+              $assoc_no_header = $snps[$this->name . '-no-header'] ?? FALSE;
 
-            $phenotype_meta_names = [];
-            $phenotype_name_col = $phenotype['metadata-groups']['Phenotype Id']['1'] ?? NULL;
-            if (isset($phenotype_name_col)) {
-              $phenotype_meta_names = tpps_parse_file_column($phenotype_meta, $phenotype_name_col);
-            }
+              $assay_snps = tpps_file_headers($snps_assay);
+              unset($assay_snps[key($assay_snps)]);
+              $assoc_snps = tpps_parse_file_column($assoc_file, $snps_id_col, $assoc_no_header);
+              $missing_snps = array_diff($assoc_snps, $assay_snps);
 
-            for ($i = 1; $i <= $phenotype_number; $i++) {
-              $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
-            }
-
-            $missing_phenotypes = array_diff(
-              $association_phenotypes,
-              $phenotype_meta_names
-            );
-            if ($missing_phenotypes !== []) {
-              form_set_error($field_dom_name, t('@title: We detected '
-                . 'Associated Traits that were not specified in the '
-                . 'Phenotype Metadata Section. Please either remove '
-                . 'these Traits from your Association file, or add them '
-                . 'to your Phenotype Metadata section. '
-                . 'The Trait names we foud were: @phenotype_names',
-                  [
-                    '@phenotype_names' => implode(', ',
-                      array_unique($missing_phenotypes)),
-                    '@title' => $this->getTitle(),
-                  ]
-                )
-              );
-            }
-
-            // Check that position values are correctly formatted.
-            $positions = tpps_parse_file_column(
-              $assoc_file,
-              $groups['Position'][3],
-              $assoc_no_header
-            );
-            foreach ($positions as $position) {
-              if (!preg_match('/^(\d+):(\d+)$/', $position)) {
-                form_set_error($field_dom_name, t('@title: We detected SNP '
-                    . 'positions that do not match the required format. '
-                    . 'The correct format is: "start:stop".',
-                    ['@title' => $this->getTitle()]
+              if ($missing_snps !== []) {
+                form_set_error($field_dom_name, t('@title: We detected SNP IDs '
+                    . 'that were not in your Genotype Assay. Please either '
+                    . 'remove these SNPs from your Association file, or add '
+                    . 'them to your Genotype Assay. The SNP Identifiers we '
+                    . 'found were: @snps_id_list.',
+                    [
+                      '@snps_id_list' => implode(', ', array_unique($missing_snps)),
+                      '@title' => $this->getTitle(),
+                    ]
                   )
                 );
-                break;
+              }
+
+              // Check that Phenotype names match phenotype metadata section.
+              $association_phenotypes = tpps_parse_file_column(
+                $assoc_file,
+                $groups['Associated Trait'][5],
+                $assoc_no_header
+              );
+
+              $phenotype = $this->formState['values'][$this->getOrganismNumber()]['phenotype'];
+              $phenotype_meta = $phenotype['metadata'];
+              $phenotype_number = $phenotype['phenotypes-meta']['number'];
+
+              $phenotype_meta_names = [];
+              $phenotype_name_col = $phenotype['metadata-groups']['Phenotype Id']['1'] ?? NULL;
+              if (isset($phenotype_name_col)) {
+                $phenotype_meta_names = tpps_parse_file_column(
+                  $phenotype_meta,
+                  $phenotype_name_col
+                );
+              }
+
+              for ($i = 1; $i <= $phenotype_number; $i++) {
+                $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
+              }
+
+              $missing_phenotypes = array_diff(
+                $association_phenotypes,
+                $phenotype_meta_names
+              );
+              if ($missing_phenotypes !== []) {
+                form_set_error($field_dom_name, t('@title: We detected '
+                  . 'Associated Traits that were not specified in the '
+                  . 'Phenotype Metadata Section. Please either remove '
+                  . 'these Traits from your Association file, or add them '
+                  . 'to your Phenotype Metadata section. '
+                  . 'The Trait names we foud were: @phenotype_names',
+                    [
+                      '@phenotype_names' => implode(', ',
+                        array_unique($missing_phenotypes)),
+                      '@title' => $this->getTitle(),
+                    ]
+                  )
+                );
+              }
+
+              // Check that position values are correctly formatted.
+              $positions = tpps_parse_file_column(
+                $assoc_file,
+                $groups['Position'][3],
+                $assoc_no_header
+              );
+              foreach ($positions as $position) {
+                if (!preg_match('/^(\d+):(\d+)$/', $position)) {
+                  form_set_error($field_dom_name, t('@title: We detected SNP '
+                      . 'positions that do not match the required format. '
+                      . 'The correct format is: "start:stop".',
+                      ['@title' => $this->getTitle()]
+                    )
+                  );
+                  break;
+                }
               }
             }
+            // End of the 'snps-association' field.
+
+          }
+          elseif ($this->name == 'assay-design') {
+            $field_dom_name = $this->buildDomName();
+            $snps = $this->getFormParent();
+
+            // @TODO Check if value is correct.
+            // $assoc_file = $this->getValue();
+            $assoc_file = $snps['snps-association'] ?? 0;
+            $snps_assay = $snps['snps-assay'] ?? 0;
+
+
+            // Check if file has all of the required columns.
+            $all_columns = $this->getMetaData('required_groups');
+            // Case 1. SNP ID, scaffold and position.
+            $case1_columns = $all_columns;
+            unset($case1_columns['Flank sequence']);
+
+dpm($all_columns);
+dpm($case1_columns);
+            $silent_mode = TRUE;
+
+            $case1_groups = $this->validateColumns($case1_columns, $silent_mode = TRUE);
+
+            // Case 2. SNP ID, Flank sequence.
+            $case2_columns = $all_columns;
+            unset($case2_columns['Scaffold']);
+            unset($case2_columns['Position']);
+            $case2_groups = $this->validateColumns($case2_columns, $silent_mode = TRUE);
+
+dpm(print_r($case1_groups, 1), 'Case 1 groups');
+dpm(print_r($case2_groups, 1), 'Case 2 groups');
+
+
+            if (!form_get_errors()) {
+              // Check that SNP IDs match Genotype Assay.
+              $snps_id_col = $groups['SNP ID'][1];
+              $assoc_no_header = $snps[$this->name . '-no-header'] ?? FALSE;
+
+              $assay_snps = tpps_file_headers($snps_assay);
+              unset($assay_snps[key($assay_snps)]);
+              $assoc_snps = tpps_parse_file_column($assoc_file, $snps_id_col, $assoc_no_header);
+              $missing_snps = array_diff($assoc_snps, $assay_snps);
+
+              if ($missing_snps !== []) {
+                form_set_error($field_dom_name, t('@title: We detected SNP IDs '
+                    . 'that were not in your Genotype Assay. Please either '
+                    . 'remove these SNPs from your Association file, or add '
+                    . 'them to your Genotype Assay. The SNP Identifiers we '
+                    . 'found were: @snps_id_list.',
+                    [
+                      '@snps_id_list' => implode(', ', array_unique($missing_snps)),
+                      '@title' => $this->getTitle(),
+                    ]
+                  )
+                );
+              }
+
+              // Check that Phenotype names match phenotype metadata section.
+              $association_phenotypes = tpps_parse_file_column(
+                $assoc_file,
+                $groups['Associated Trait'][5],
+                $assoc_no_header
+              );
+
+              $phenotype = $this->formState['values'][$this->getOrganismNumber()]['phenotype'];
+              $phenotype_meta = $phenotype['metadata'];
+              $phenotype_number = $phenotype['phenotypes-meta']['number'];
+
+              $phenotype_meta_names = [];
+              $phenotype_name_col = $phenotype['metadata-groups']['Phenotype Id']['1'] ?? NULL;
+              if (isset($phenotype_name_col)) {
+                $phenotype_meta_names = tpps_parse_file_column(
+                  $phenotype_meta,
+                  $phenotype_name_col
+                );
+              }
+
+              for ($i = 1; $i <= $phenotype_number; $i++) {
+                $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
+              }
+
+              $missing_phenotypes = array_diff(
+                $association_phenotypes,
+                $phenotype_meta_names
+              );
+              if ($missing_phenotypes !== []) {
+                form_set_error($field_dom_name, t('@title: We detected '
+                  . 'Associated Traits that were not specified in the '
+                  . 'Phenotype Metadata Section. Please either remove '
+                  . 'these Traits from your Association file, or add them '
+                  . 'to your Phenotype Metadata section. '
+                  . 'The Trait names we foud were: @phenotype_names',
+                    [
+                      '@phenotype_names' => implode(', ',
+                        array_unique($missing_phenotypes)),
+                      '@title' => $this->getTitle(),
+                    ]
+                  )
+                );
+              }
+
+              // Check that position values are correctly formatted.
+              $positions = tpps_parse_file_column(
+                $assoc_file,
+                $groups['Position'][3],
+                $assoc_no_header
+              );
+              foreach ($positions as $position) {
+                if (!preg_match('/^(\d+):(\d+)$/', $position)) {
+                  form_set_error($field_dom_name, t('@title: We detected SNP '
+                      . 'positions that do not match the required format. '
+                      . 'The correct format is: "start:stop".',
+                      ['@title' => $this->getTitle()]
+                    )
+                  );
+                  break;
+                }
+              }
+            }
+
+            // End of the 'snps-association' field.
           }
         }
         // Preserve file if it is valid.
@@ -770,4 +903,188 @@ dpm('Validate columns');
     // Remove colon ':' and required field label.
     return strtok($this->formElement['#title'], ':');
   }
+
+  /**
+   * This function validates that the file contains all of the required groups.
+   *
+   * Based on code from function tpps_file_validate_columns().
+   *
+   * A "required group" is a column type that must be present within the file for
+   * the file to be considered valid. For instance, a required group for a plant
+   * accession file would be the "Location" group. The required groups array
+   * should satisfy the structure:
+   *  array(
+   *    '<group name>' => array(
+   *      '<type>' => array(<column option index>[, <column option index>...])[,
+   *      '<type>' => array(<column option index>[, <column option index>...])...]
+   *    )[,
+   *    '<group name>' => array(
+   *      '<type>' => array(<column option index>[, <column option index>...])[,
+   *      '<type>' => array(<column option index>[, <column option index>...])...]
+   *    )...]
+   *  )
+   * where <group name> is the name of the required group, <type> is the name of
+   * the set of options that could satisfy the required group, and each of the
+   * <column option index>s is a key within the file element['column-options']
+   * field.
+   *
+   * @param bool $silent_mode
+   *   Default is FALSE.
+   *   When FALSE and silent mode is disabled then form_set_error() will be called
+   *   which means error message on page will appear and form validation fails.
+   *   When TRUE and silent mode is enabled then no error message will be shown
+   *   and form will be left valid. This could be useful when not all columns are
+   *   required and multiple groups or columns must be checked.
+   *   For example:
+   *   case 1: Required columns: A, B, C;
+   *   case 2: Required columns: A, D, E, F.
+   *
+   * @return array
+   *   The groups and the column option types that the file was valid for.
+   *   Example:
+   *   [
+   *     // <Name> => [
+   *     //   <id in the option's list> => <column index>,
+   *     //   '#type' => <key>
+   *     // ],
+   *     'SNP ID' => [1 => 'B', '#type' => 'id'],
+   *     'Scaffold' => [
+   *       '#type' => [], // < ---- Not found!
+   *     ],
+   *     'Position' => [3 => 'D', '#type' => 'position'],
+   *     'Allele' => [4 => 'E', '#type' => 'allele'],
+   *     'Associated Trait' => [5 => 'F', '#type' => 'trait'],
+   *     'Confidence Value' => [6 => 'G', '#type' => 'confidence'],
+   *   ];
+   *
+   *
+   * @todo Remove arguments.
+   * 2. Make silent mode default (TRUE).
+   * @todo replace tpps_file_validate_columns().
+   */
+  public function validateColumns($required_groups = NULL, $silent_mode = FALSE) {
+
+    $required_groups = $required_groups ?? $this->getMetaData('required_groups');
+    $file_element = $this->getFormElement();
+
+    $title_parts = explode(':', $file_element['#title']);
+    $error_prompt = $title_parts[0];
+
+    // Check if file has zero length (empty).
+    if (!($file_element['#file']->filesize ?? NULL)) {
+      // We highlight an empty value field because file field not visible
+      // when file was uploaded.
+      form_set_error($file_element['#name'] . '[empty]',
+        $error_prompt . ': File is empty.'
+      );
+      // No need to validate empty file.
+      return [];
+    }
+
+    $cols = $file_element['#value']['columns'] ?? NULL;
+    $parents = $file_element['#parents'];
+    $new_end_columns = end($parents) . "-columns";
+    $new_end_no_header = end($parents) . "-no-header";
+    $new_end_empty = end($parents) . "-empty";
+    $group_path = array_pop($parents) . "-groups";
+    $values = drupal_array_get_nested_value($this->formState['values'], $parents);
+    // Initialize form column values in form state.
+    $values[$new_end_columns] = [];
+    // Hold onto the location of the columns in form state.
+    $state_column_values = &$values[$new_end_columns];
+    $values[$new_end_no_header] = $file_element['#value']['no-header'] ?? NULL;
+    $values[$new_end_empty] = $file_element['#value']['empty'] ?? NULL;
+
+    $groups = [];
+    $required_groups_flat = [];
+    foreach ($required_groups as $group => $combinations) {
+      $groups[$group] = array();
+      $required_groups_flat[$group] = [];
+      foreach ($combinations as $name => $combination) {
+        $required_groups_flat[$group] = array_merge(
+          $required_groups_flat[$group],
+          $combination
+        );
+      }
+    }
+
+    if ($cols) {
+      // Note: $cols will be empty when user just added file (not clicked 'Upload'
+      // button and submitted form (clicked 'Next' button).
+      // Probably columns could be detected automatically because they are shown
+      // at page and so we could use default values here.
+      // @TODO Get default set of columns.
+      foreach ($cols as $name => $type) {
+        $state_column_values[$name] = $type;
+        foreach ($required_groups_flat as $group => $types) {
+          if (in_array($type, $types)) {
+            if (!isset($groups[$group][$type])) {
+              $groups[$group][$type] = [$name];
+            }
+            else {
+              $groups[$group][$type][] = $name;
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    foreach ($required_groups as $group => $combinations) {
+      $group_valid = FALSE;
+      $groups[$group]['#type'] = [];
+      foreach ($combinations as $name => $combination) {
+        $combination_valid = TRUE;
+        foreach ($combination as $type) {
+          if (!isset($groups[$group][$type])) {
+            $combination_valid = FALSE;
+            break;
+          }
+        }
+        if ($combination_valid) {
+          $groups[$group]['#type'][] = $name;
+          $group_valid = TRUE;
+        }
+      }
+
+      if (!$group_valid && !$silent_mode) {
+        form_set_error(
+          $file_element['#name'] . "[columns][$group",
+          t('@field_name: Please specify a column or columns that hold @group.',
+            [
+              '@field_name' => $error_prompt,
+              '@group' => $group,
+            ]
+          )
+        );
+      }
+    }
+
+    // Replaces list of column names with a single value when was found only one. Instead of this:
+    // [
+    //   'Flank sequence' => [
+    //     '4' => ['0' => 'B'],
+    //     '#type' => ['0' => 'sequence'],
+    //   ]
+    // ];
+    // we will get this:
+    // [
+    //   'Flank sequence' => ['4' => 'B', '#type' => 'sequence'],
+    // ];
+    foreach ($groups as $key => $group) {
+      foreach ($group as $opt_num => $col_names) {
+        if (count($col_names) == 1) {
+          $groups[$key][$opt_num] = $col_names[0];
+        }
+      }
+    }
+
+    $values[$group_path] = $groups;
+    drupal_array_set_nested_value($this->formState['values'], $parents, $values);
+
+// @todo Check if original $form_state array was updated.
+
+    return $groups;
+  }
+
 }
