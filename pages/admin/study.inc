@@ -107,6 +107,26 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
     }
   }
 
+  if ($job_id == -1) {
+    $display .= "<div style='padding: 10px;'>No log file exists for this "
+      . "study (resubmit this study to generate a log file if necessary)</div>";
+  }
+  else {
+    $nextflow_path = '/isg/treegenes/nextflow_workflows/' . $accession . '/new-study-pipeline/';
+    // dpm($log_path . $accession . "_" . $job_id . ".txt");
+    if (file_exists($nextflow_path . ".nextflow.log")) {
+      $display .= "<div style='padding: 10px;background: #e9f9ef;border: "
+        . "1px solid #90bea9;font-size: 18px;'><a target='_blank' "
+        . "href='../tpps-admin-panel-nextflow-logs/study/" . $accession
+        . "'>Latest job log file ($accession) - nextflow new study pipeline</a></div>";
+    }
+    else {
+      $display .= "<div style='padding: 10px;'>No nextflow new study pipeline log file "
+        . "(this can happen if the log file was deleted - resubmit study "
+        . "if necessary to regenerate log file)</div>";
+    }
+  }
+
   // Check for log file
   // Step 1b - Look for the last tripal job for Flat File processing if exists.
   $results = db_query("SELECT * FROM public.tripal_jobs WHERE job_name LIKE 
