@@ -91,6 +91,15 @@ class FileField {
   protected $dataType = NULL;
 
   /**
+   * List of specified column data types.
+   *
+   * See tpps_file_validate_columns(), FileField::validateColumns().
+   *
+   * @var array
+   */
+  protected $columns = NULL;
+
+  /**
    * File Field's metadata.
    *
    * @var array
@@ -110,14 +119,15 @@ class FileField {
         'prefix' => 'Genotype_Assay_Design',
         'required_groups' => [
           // Name => key => <id in the option's list>.
-          // SNP ID should always be required.
-          // The user must also have EITHER:
-          // 1. scaffold and position, OR
-          // 2. Flank sequence.
-          'SNP ID' => ['id' => [1]],
-          'Scaffold' => ['scaffold' => [2]],
-          'Position' => ['position' => [3]],
-          'Flank sequence' => ['sequence' => [4]],
+          [
+            'SNP ID' => ['id' => [1]],
+            'Scaffold' => ['scaffold' => [2]],
+            'Position' => ['position' => [3]],
+          ],
+          [
+            'SNP ID' => ['id' => [1]],
+            'Flank sequence' => ['sequence' => [4]],
+          ],
         ],
       ],
       'snps-association' => [
@@ -125,12 +135,14 @@ class FileField {
         'required_groups' => [
           // Name => key => <id in the option's list>.
           // All columns are required.
-          'SNP ID' => ['id' => [1]],
-          'Scaffold' => ['scaffold' => [2]],
-          'Position' => ['position' => [3]],
-          'Allele' => ['allele' => [4]],
-          'Associated Trait' => ['trait' => [5]],
-          'Confidence Value' => ['confidence' => [6]],
+          [
+            'SNP ID' => ['id' => [1]],
+            'Scaffold' => ['scaffold' => [2]],
+            'Position' => ['position' => [3]],
+            'Allele' => ['allele' => [4]],
+            'Associated Trait' => ['trait' => [5]],
+            'Confidence Value' => ['confidence' => [6]],
+          ],
         ],
       ],
     ],
@@ -584,7 +596,7 @@ dpm('Validate: ' . $this->name);
       // Check if form had this field at all. We use data from the form to
       // get human readable field name automatically.
       if ($this->isFormElementEmpty()) {
-        throw new Exception(t("Field wasn't found at form. Field's path: @path.",
+        throw new Eeption(t("Field wasn't found at form. Field's path: @path.",
           ['@path' => implode('/', $this->parents)]
         ));
       }
@@ -609,17 +621,12 @@ dpm('Validate columns');
             $assoc_file = $snps['snps-association'] ?? 0;
             $snps_assay = $snps['snps-assay'] ?? 0;
 
-
             // Check if file has all of the required columns.
-            $groups = $this->validateColumns(
-              $this->formState,
-              $this->getMetaData('required_groups'),
-              $this->getFormElement()
-            );
+            $this->validateColumns();
 
             if (!form_get_errors()) {
               // Check that SNP IDs match Genotype Assay.
-              $snps_id_col = $groups['SNP ID'][1];
+              $snps_id_col = $this->columns['SNP ID'][1];
               $assoc_no_header = $snps[$this->name . '-no-header'] ?? FALSE;
 
               $assay_snps = tpps_file_headers($snps_assay);
@@ -644,7 +651,7 @@ dpm('Validate columns');
               // Check that Phenotype names match phenotype metadata section.
               $association_phenotypes = tpps_parse_file_column(
                 $assoc_file,
-                $groups['Associated Trait'][5],
+                $this->columns['Associated Trait'][5],
                 $assoc_no_header
               );
 
@@ -688,7 +695,7 @@ dpm('Validate columns');
               // Check that position values are correctly formatted.
               $positions = tpps_parse_file_column(
                 $assoc_file,
-                $groups['Position'][3],
+                $this->columns['Position'][3],
                 $assoc_no_header
               );
               foreach ($positions as $position) {
@@ -716,31 +723,13 @@ dpm('Validate columns');
             $snps_assay = $snps['snps-assay'] ?? 0;
 
 
-            // Check if file has all of the required columns.
-            $all_columns = $this->getMetaData('required_groups');
-            // Case 1. SNP ID, scaffold and position.
-            $case1_columns = $all_columns;
-            unset($case1_columns['Flank sequence']);
 
-dpm($all_columns);
-dpm($case1_columns);
-            $silent_mode = TRUE;
-
-            $case1_groups = $this->validateColumns($case1_columns, $silent_mode = TRUE);
-
-            // Case 2. SNP ID, Flank sequence.
-            $case2_columns = $all_columns;
-            unset($case2_columns['Scaffold']);
-            unset($case2_columns['Position']);
-            $case2_groups = $this->validateColumns($case2_columns, $silent_mode = TRUE);
-
-dpm(print_r($case1_groups, 1), 'Case 1 groups');
-dpm(print_r($case2_groups, 1), 'Case 2 groups');
+            $this->validateColumns($silent_mode = TRUE);
 
 
             if (!form_get_errors()) {
               // Check that SNP IDs match Genotype Assay.
-              $snps_id_col = $groups['SNP ID'][1];
+              $snps_id_col = $this->columns['SNP ID'][1];
               $assoc_no_header = $snps[$this->name . '-no-header'] ?? FALSE;
 
               $assay_snps = tpps_file_headers($snps_assay);
@@ -765,7 +754,7 @@ dpm(print_r($case2_groups, 1), 'Case 2 groups');
               // Check that Phenotype names match phenotype metadata section.
               $association_phenotypes = tpps_parse_file_column(
                 $assoc_file,
-                $groups['Associated Trait'][5],
+                $this->columns['Associated Trait'][5],
                 $assoc_no_header
               );
 
@@ -809,7 +798,7 @@ dpm(print_r($case2_groups, 1), 'Case 2 groups');
               // Check that position values are correctly formatted.
               $positions = tpps_parse_file_column(
                 $assoc_file,
-                $groups['Position'][3],
+                $this->columns['Position'][3],
                 $assoc_no_header
               );
               foreach ($positions as $position) {
@@ -960,131 +949,141 @@ dpm(print_r($case2_groups, 1), 'Case 2 groups');
    *
    * @todo Remove arguments.
    * 2. Make silent mode default (TRUE).
+   * 3. Return boolean value.
    * @todo replace tpps_file_validate_columns().
    */
-  public function validateColumns($required_groups = NULL, $silent_mode = FALSE) {
+  public function validateColumns($silent_mode = FALSE) {
 
-    $required_groups = $required_groups ?? $this->getMetaData('required_groups');
-    $file_element = $this->getFormElement();
+    $required_groups = $this->getMetaData('required_groups');
+    foreach ($required_groups as $case) {
+      $file_element = $this->getFormElement();
 
-    $title_parts = explode(':', $file_element['#title']);
-    $error_prompt = $title_parts[0];
+      $title_parts = explode(':', $file_element['#title']);
+      $error_prompt = $title_parts[0];
 
-    // Check if file has zero length (empty).
-    if (!($file_element['#file']->filesize ?? NULL)) {
-      // We highlight an empty value field because file field not visible
-      // when file was uploaded.
-      form_set_error($file_element['#name'] . '[empty]',
-        $error_prompt . ': File is empty.'
-      );
-      // No need to validate empty file.
-      return [];
-    }
-
-    $cols = $file_element['#value']['columns'] ?? NULL;
-    $parents = $file_element['#parents'];
-    $new_end_columns = end($parents) . "-columns";
-    $new_end_no_header = end($parents) . "-no-header";
-    $new_end_empty = end($parents) . "-empty";
-    $group_path = array_pop($parents) . "-groups";
-    $values = drupal_array_get_nested_value($this->formState['values'], $parents);
-    // Initialize form column values in form state.
-    $values[$new_end_columns] = [];
-    // Hold onto the location of the columns in form state.
-    $state_column_values = &$values[$new_end_columns];
-    $values[$new_end_no_header] = $file_element['#value']['no-header'] ?? NULL;
-    $values[$new_end_empty] = $file_element['#value']['empty'] ?? NULL;
-
-    $groups = [];
-    $required_groups_flat = [];
-    foreach ($required_groups as $group => $combinations) {
-      $groups[$group] = array();
-      $required_groups_flat[$group] = [];
-      foreach ($combinations as $name => $combination) {
-        $required_groups_flat[$group] = array_merge(
-          $required_groups_flat[$group],
-          $combination
+      // Check if file has zero length (empty).
+      if (!($file_element['#file']->filesize ?? NULL)) {
+        // We highlight an empty value field because file field not visible
+        // when file was uploaded.
+        form_set_error($file_element['#name'] . '[empty]',
+          $error_prompt . ': File is empty.'
         );
+        // No need to validate empty file.
+        return [];
       }
-    }
 
-    if ($cols) {
-      // Note: $cols will be empty when user just added file (not clicked 'Upload'
-      // button and submitted form (clicked 'Next' button).
-      // Probably columns could be detected automatically because they are shown
-      // at page and so we could use default values here.
-      // @TODO Get default set of columns.
-      foreach ($cols as $name => $type) {
-        $state_column_values[$name] = $type;
-        foreach ($required_groups_flat as $group => $types) {
-          if (in_array($type, $types)) {
+      $cols = $file_element['#value']['columns'] ?? NULL;
+      $parents = $file_element['#parents'];
+      $new_end_columns = end($parents) . "-columns";
+      $new_end_no_header = end($parents) . "-no-header";
+      $new_end_empty = end($parents) . "-empty";
+      $group_path = array_pop($parents) . "-groups";
+      $values = drupal_array_get_nested_value($this->formState['values'], $parents);
+      // Initialize form column values in form state.
+      $values[$new_end_columns] = [];
+      // Hold onto the location of the columns in form state.
+      $state_column_values = &$values[$new_end_columns];
+      $values[$new_end_no_header] = $file_element['#value']['no-header'] ?? NULL;
+      $values[$new_end_empty] = $file_element['#value']['empty'] ?? NULL;
+
+      $this->columns = [];
+      $required_groups_flat = [];
+      foreach ($case as $group => $combinations) {
+        $this->columns[$group] = [];
+        $required_groups_flat[$group] = [];
+        foreach ($combinations as $name => $combination) {
+          $required_groups_flat[$group] = array_merge(
+            $required_groups_flat[$group],
+            $combination
+          );
+        }
+      }
+
+      if ($cols) {
+        // Note: $cols will be empty when user just added file (not clicked 'Upload'
+        // button and submitted form (clicked 'Next' button).
+        // Probably columns could be detected automatically because they are shown
+        // at page and so we could use default values here.
+        // @TODO Get default set of columns.
+        foreach ($cols as $name => $type) {
+          $state_column_values[$name] = $type;
+          foreach ($required_groups_flat as $group => $types) {
+            if (in_array($type, $types)) {
+              if (!isset($this->columns[$group][$type])) {
+                $this->columns[$group][$type] = [$name];
+              }
+              else {
+                $this->columns[$group][$type][] = $name;
+              }
+              break;
+            }
+          }
+        }
+      }
+
+      foreach ($case as $group => $combinations) {
+        $group_valid = FALSE;
+        $this->columns[$group]['#type'] = [];
+        foreach ($combinations as $name => $combination) {
+          $combination_valid = TRUE;
+          foreach ($combination as $type) {
             if (!isset($groups[$group][$type])) {
-              $groups[$group][$type] = [$name];
+              $combination_valid = FALSE;
+              break;
             }
-            else {
-              $groups[$group][$type][] = $name;
-            }
-            break;
+          }
+          if ($combination_valid) {
+            $this->columns[$group]['#type'][] = $name;
+            $group_valid = TRUE;
+          }
+        }
+
+        if (!$group_valid && !$silent_mode) {
+          form_set_error(
+            $file_element['#name'] . "[columns][$group",
+            t('@field_name: Please specify a column or columns that hold @group.',
+              [
+                '@field_name' => $error_prompt,
+                '@group' => $group,
+              ]
+            )
+          );
+        }
+      }
+
+      // Replaces list of column names with a single value when was found only one. Instead of this:
+      // [
+      //   'Flank sequence' => [
+      //     '4' => ['0' => 'B'],
+      //     '#type' => ['0' => 'sequence'],
+      //   ]
+      // ];
+      // we will get this:
+      // [
+      //   'Flank sequence' => ['4' => 'B', '#type' => 'sequence'],
+      // ];
+      foreach ($this->columns as $key => $group) {
+        foreach ($group as $opt_num => $col_names) {
+          if (count($col_names) == 1) {
+            $this->columns[$key][$opt_num] = $col_names[0];
           }
         }
       }
+
+      $values[$group_path] = $this->columns;
+      drupal_array_set_nested_value($this->formState['values'], $parents, $values);
+
+      // @todo Check if original $form_state array was updated.
+
     }
 
-    foreach ($required_groups as $group => $combinations) {
-      $group_valid = FALSE;
-      $groups[$group]['#type'] = [];
-      foreach ($combinations as $name => $combination) {
-        $combination_valid = TRUE;
-        foreach ($combination as $type) {
-          if (!isset($groups[$group][$type])) {
-            $combination_valid = FALSE;
-            break;
-          }
-        }
-        if ($combination_valid) {
-          $groups[$group]['#type'][] = $name;
-          $group_valid = TRUE;
-        }
-      }
 
-      if (!$group_valid && !$silent_mode) {
-        form_set_error(
-          $file_element['#name'] . "[columns][$group",
-          t('@field_name: Please specify a column or columns that hold @group.',
-            [
-              '@field_name' => $error_prompt,
-              '@group' => $group,
-            ]
-          )
-        );
-      }
-    }
+    dpm(print_r($this->columns, 1));
 
-    // Replaces list of column names with a single value when was found only one. Instead of this:
-    // [
-    //   'Flank sequence' => [
-    //     '4' => ['0' => 'B'],
-    //     '#type' => ['0' => 'sequence'],
-    //   ]
-    // ];
-    // we will get this:
-    // [
-    //   'Flank sequence' => ['4' => 'B', '#type' => 'sequence'],
-    // ];
-    foreach ($groups as $key => $group) {
-      foreach ($group as $opt_num => $col_names) {
-        if (count($col_names) == 1) {
-          $groups[$key][$opt_num] = $col_names[0];
-        }
-      }
-    }
+    // @todo Return result of validation or rename method.
+    $result = TRUE;
 
-    $values[$group_path] = $groups;
-    drupal_array_set_nested_value($this->formState['values'], $parents, $values);
-
-// @todo Check if original $form_state array was updated.
-
-    return $groups;
+    return $result;
   }
 
 }
