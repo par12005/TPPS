@@ -525,6 +525,8 @@ function tpps_form_add_report(array &$form, array $meta) {
  * @return array
  *   Returns list of data types for specified field.
  *   Indexes are very important and used for validation and processing.
+ *
+ * @todo Combine with FileField::metaData property.
  */
 function tpps_form_get_file_field_columns($field_name = '') {
   switch ($field_name) {

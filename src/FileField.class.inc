@@ -100,6 +100,14 @@ class FileField {
   protected $columns = NULL;
 
   /**
+   * Flag which holds status of columns validation.
+   *
+   * See FileField::isColumnsValid() and FileField::validateColumns();
+   *
+   * @var bool
+   */
+  protected $isColumnsValid = NULL;
+  /**
    * File Field's metadata.
    *
    * @var array
@@ -119,12 +127,12 @@ class FileField {
         'prefix' => 'Genotype_Assay_Design',
         'required_groups' => [
           // Name => key => <id in the option's list>.
-          [
+          'case 1' => [
             'SNP ID' => ['id' => [1]],
             'Scaffold' => ['scaffold' => [2]],
             'Position' => ['position' => [3]],
           ],
-          [
+          'case 2' => [
             'SNP ID' => ['id' => [1]],
             'Flank sequence' => ['sequence' => [4]],
           ],
@@ -364,19 +372,54 @@ class FileField {
   }
 
   /**
-   * Builds field name used in browser's DOM model.
+   * Builds field's name used only by form_set_error().
    *
-   * WARNING: no trailing ']'.
-   * Ready for form_set_error().
+   * WARNING: no trailing ']' and has first ']'.
+   * To get full name see getDomElemntName() method.
+   *
+   * Difference:
+   * getFormSetErrorName(): "organism-1][genotype][SNPs][snps-association".
+   *                                   ^                                 ^
+   * getDomElemntName(): "organism-1[genotype][SNPs][snps-association]".
+   *                               ^                                 ^
    * See https://api.drupal.org/api/drupal/includes%21form.inc/function/form_set_error/7.x
    *
    * @return string
    *   Returns $this->parents separated with ']['.
    *   E.g., "organism-1[genotype][SNPs][snps-association][empty".
    */
-  public function buildDomName() {
+  public function getFormSetErrorName() {
     if ($this->parents) {
       return implode('][', $this->parents);
+    }
+  }
+
+  /**
+   * Builds field's form name used in browser's DOM model in 'name' attribute.
+   *
+   * E.g., "organism-1[genotype][SNPs][snps-association][empty]".
+   * Could be used in browser but not for $form or $form_state.
+   *
+   * WARNING: Can't be used in form_set_error().
+   * See getFormSetErrorName() method.
+   *
+   * @return string
+   *   Returns field's form name.
+   */
+  public function getDomElementName() {
+    // Try '#name' element of the form because it's faster.
+    // Note: property formElement not always set.
+    if (!$this->isFormElementEmpty()) {
+      if (!empty($this->formElement['#name'])) {
+        return $this->formElement['#name'];
+      }
+    }
+    // Build it from $parents property which always must be set.
+    if ($this->parents) {
+      reset($this->parents);
+      $key = key($this->parents);
+      $first = $this->parents[$key];
+      return $first . '[' . implode('][', array_slice($this->parents, 1)) . ']';
     }
   }
 
@@ -613,7 +656,7 @@ dpm('Validate: ' . $this->name);
 dpm('Validate columns');
 
           if ($this->name == 'snps-association') {
-            $field_dom_name = $this->buildDomName();
+            $error_name = $this->getFormSetErrorName();
             $snps = $this->getFormParent();
 
             // @TODO Check if value is correct.
@@ -623,6 +666,24 @@ dpm('Validate columns');
 
             // Check if file has all of the required columns.
             $this->validateColumns();
+            if (!$this->isColumnsValid()) {
+              $file_element = $this->getFormElement();
+dpm($file_element['#name'], 'file field #name');
+
+// @todo Get real value for $group.
+
+              $group = 'sdfsdf';
+              // Get human readable field name.
+              form_set_error(
+                $file_element['#name'] . "[columns][$group",
+                t('@field_title: Please specify a column or columns that hold @group.',
+                  [
+                    '@field_title' => $this->getTitle(),
+                    '@group' => $group,
+                  ]
+                )
+              );
+            }
 
             if (!form_get_errors()) {
               // Check that SNP IDs match Genotype Assay.
@@ -635,7 +696,7 @@ dpm('Validate columns');
               $missing_snps = array_diff($assoc_snps, $assay_snps);
 
               if ($missing_snps !== []) {
-                form_set_error($field_dom_name, t('@title: We detected SNP IDs '
+                form_set_error($error_name, t('@title: We detected SNP IDs '
                     . 'that were not in your Genotype Assay. Please either '
                     . 'remove these SNPs from your Association file, or add '
                     . 'them to your Genotype Assay. The SNP Identifiers we '
@@ -677,7 +738,7 @@ dpm('Validate columns');
                 $phenotype_meta_names
               );
               if ($missing_phenotypes !== []) {
-                form_set_error($field_dom_name, t('@title: We detected '
+                form_set_error($error_name, t('@title: We detected '
                   . 'Associated Traits that were not specified in the '
                   . 'Phenotype Metadata Section. Please either remove '
                   . 'these Traits from your Association file, or add them '
@@ -700,7 +761,7 @@ dpm('Validate columns');
               );
               foreach ($positions as $position) {
                 if (!preg_match('/^(\d+):(\d+)$/', $position)) {
-                  form_set_error($field_dom_name, t('@title: We detected SNP '
+                  form_set_error($error_name, t('@title: We detected SNP '
                       . 'positions that do not match the required format. '
                       . 'The correct format is: "start:stop".',
                       ['@title' => $this->getTitle()]
@@ -714,7 +775,7 @@ dpm('Validate columns');
 
           }
           elseif ($this->name == 'assay-design') {
-            $field_dom_name = $this->buildDomName();
+            $error_name = $this->getFormSetErrorName();
             $snps = $this->getFormParent();
 
             // @TODO Check if value is correct.
@@ -738,7 +799,7 @@ dpm('Validate columns');
               $missing_snps = array_diff($assoc_snps, $assay_snps);
 
               if ($missing_snps !== []) {
-                form_set_error($field_dom_name, t('@title: We detected SNP IDs '
+                form_set_error($error_name, t('@title: We detected SNP IDs '
                     . 'that were not in your Genotype Assay. Please either '
                     . 'remove these SNPs from your Association file, or add '
                     . 'them to your Genotype Assay. The SNP Identifiers we '
@@ -780,7 +841,7 @@ dpm('Validate columns');
                 $phenotype_meta_names
               );
               if ($missing_phenotypes !== []) {
-                form_set_error($field_dom_name, t('@title: We detected '
+                form_set_error($error_name, t('@title: We detected '
                   . 'Associated Traits that were not specified in the '
                   . 'Phenotype Metadata Section. Please either remove '
                   . 'these Traits from your Association file, or add them '
@@ -803,7 +864,7 @@ dpm('Validate columns');
               );
               foreach ($positions as $position) {
                 if (!preg_match('/^(\d+):(\d+)$/', $position)) {
-                  form_set_error($field_dom_name, t('@title: We detected SNP '
+                  form_set_error($error_name, t('@title: We detected SNP '
                       . 'positions that do not match the required format. '
                       . 'The correct format is: "start:stop".',
                       ['@title' => $this->getTitle()]
@@ -889,7 +950,7 @@ dpm('Validate columns');
    */
   public function getTitle() {
     $this->getFormElement();
-    // Remove colon ':' and required field label.
+    // Remove colon (':'), remove required field mark ('*').
     return strtok($this->formElement['#title'], ':');
   }
 
@@ -955,38 +1016,43 @@ dpm('Validate columns');
   public function validateColumns($silent_mode = FALSE) {
 
     $required_groups = $this->getMetaData('required_groups');
-    foreach ($required_groups as $case) {
-      $file_element = $this->getFormElement();
-
-      $title_parts = explode(':', $file_element['#title']);
-      $error_prompt = $title_parts[0];
-
-      // Check if file has zero length (empty).
-      if (!($file_element['#file']->filesize ?? NULL)) {
+    $file_element = $this->getFormElement();
+    $error_prompt = $this->getTitle();
+    // Check if file has zero length (empty).
+    if (!($file_element['#file']->filesize ?? NULL)) {
+      form_set_error(
         // We highlight an empty value field because file field not visible
         // when file was uploaded.
-        form_set_error($file_element['#name'] . '[empty]',
-          $error_prompt . ': File is empty.'
-        );
-        // No need to validate empty file.
-        return [];
-      }
+        //$file_element['#name'] . '[empty]',
+        // There is no 'empty' element for file fields.
+        $file_element['#name'],
+        $error_prompt . ': File is empty.'
+      );
+      // No need to validate empty file.
+      return [];
+    }
 
-      $cols = $file_element['#value']['columns'] ?? NULL;
-      $parents = $file_element['#parents'];
-      $new_end_columns = end($parents) . "-columns";
-      $new_end_no_header = end($parents) . "-no-header";
-      $new_end_empty = end($parents) . "-empty";
-      $group_path = array_pop($parents) . "-groups";
-      $values = drupal_array_get_nested_value($this->formState['values'], $parents);
-      // Initialize form column values in form state.
-      $values[$new_end_columns] = [];
-      // Hold onto the location of the columns in form state.
-      $state_column_values = &$values[$new_end_columns];
-      $values[$new_end_no_header] = $file_element['#value']['no-header'] ?? NULL;
-      $values[$new_end_empty] = $file_element['#value']['empty'] ?? NULL;
+dpm($file_element['#name'], 'file field #name');
+dpm($this->getFormSetErrorName());
+dpm($this->getDomElementName());
 
-      $this->columns = [];
+    $cols = $file_element['#value']['columns'] ?? NULL;
+    $parents = $file_element['#parents'];
+    $new_end_columns = end($parents) . "-columns";
+    $new_end_no_header = end($parents) . "-no-header";
+    $new_end_empty = end($parents) . "-empty";
+    $group_path = array_pop($parents) . "-groups";
+    $values = drupal_array_get_nested_value($this->formState['values'], $parents);
+    // Initialize form column values in form state.
+    $values[$new_end_columns] = [];
+    // Hold onto the location of the columns in form state.
+    $state_column_values = &$values[$new_end_columns];
+    $values[$new_end_no_header] = $file_element['#value']['no-header'] ?? NULL;
+    $values[$new_end_empty] = $file_element['#value']['empty'] ?? NULL;
+
+    $this->columns = [];
+
+    foreach ($required_groups as $case) {
       $required_groups_flat = [];
       foreach ($case as $group => $combinations) {
         $this->columns[$group] = [];
@@ -998,6 +1064,8 @@ dpm('Validate columns');
           );
         }
       }
+
+dpm($required_groups_flat);
 
       if ($cols) {
         // Note: $cols will be empty when user just added file (not clicked 'Upload'
@@ -1084,6 +1152,20 @@ dpm('Validate columns');
     $result = TRUE;
 
     return $result;
+  }
+
+  /**
+   * Checks if data types in colums are valid.
+   *
+   * @return bool
+   *   Returns TRUE when all required columns has correct data types.
+   *   Returns FALSe otherwise.
+   */
+  public function isColumnsValid() {
+    if (is_null($this->isColumnsValid) && is_null($this->columns)) {
+      $this->validateColumns();
+    }
+    return $this->isColumnsValid;
   }
 
 }
