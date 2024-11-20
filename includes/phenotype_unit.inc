@@ -54,6 +54,7 @@ function tpps_unit_get_list($synonym_id = 'all', array $options = [], $reset = F
       ->condition('cps.synonym', 0, '>')
       ->execute()
       ->fetchAllAssoc('phenotype_synonyms_id', PDO::FETCH_ASSOC);
+
     foreach ($synonym_table as $synonym) {
       $synonym_list[$synonym['phenotype_synonyms_id']] = $synonym['synonym'];
       $synonym_unit_group_list[$synonym['phenotype_synonyms_id']] = $synonym['unit_group'];
@@ -71,9 +72,10 @@ function tpps_unit_get_list($synonym_id = 'all', array $options = [], $reset = F
         'unit_group',
       ])
       ->execute()
-      ->fetchAllAssoc('unit_cvterm_id', PDO::FETCH_ASSOC);
+      ->fetchAll(PDO::FETCH_ASSOC);
     // Create list of all units and list of unit groups.
-    foreach ($unit_table as $unit_id => $unit) {
+    foreach ($unit_table as $unit) {
+      $unit_id = $unit['unit_cvterm_id'];
       $data['all'][$unit_id] = $unit['unit_name'];
       $groups[$unit['unit_group']][$unit['unit_cvterm_id']]
         = $unit['unit_name'];
