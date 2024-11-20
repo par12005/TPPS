@@ -39,20 +39,25 @@ function tpps_synonym_get_list(array $options = [], $reset = FALSE) {
       ->fields('cps', ['phenotype_synonyms_id', 'synonym'])
       ->condition('cps.synonym', 0, '>')
       ->orderBy('cps.phenotype_synonyms_id');
-    $cache = $query->execute()->fetchAllKeyed();
-    $list = $cache;
+    $data = $query->execute()->fetchAllKeyed();
+    asort($data);
+    cache_set($synonym_cid, $data, $cache_bin);
+    $list = $data;
   }
   else {
     $list = $cache->data;
   }
-  // This option must be last.
-  if ($options['not_in_list_option']) {
-    $list[0] = t("I can't find phenotype");
+  if (variable_get('tpps_page_4_use_alphabetic_list', TRUE)) {
+    $list = tpps_build_alphabetic_list($list);
   }
   if ($options['debug']) {
     foreach ($list as $key => $value) {
       $list[$key] = $key . ': ' . $value;
     }
+  }
+  // This option must be last.
+  if ($options['not_in_list_option']) {
+    $list[0] = t("I can't find phenotype");
   }
   return $list;
 }
