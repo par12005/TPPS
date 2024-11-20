@@ -59,8 +59,8 @@ function tpps_unit_get_list($synonym_id = 'all', array $options = [], $reset = F
       $synonym_list[$synonym['phenotype_synonyms_id']] = $synonym['synonym'];
       $synonym_unit_group_list[$synonym['phenotype_synonyms_id']] = $synonym['unit_group'];
     }
-    asort($synonym_list);
-    asort($synonym_unit_group_list);
+    asort($synonym_list, SORT_STRING | SORT_FLAG_CASE | SORT_NATURAL);
+    asort($synonym_unit_group_list, SORT_STRING | SORT_FLAG_CASE | SORT_NATURAL);
     // Update cached list of synonyms.
     cache_set($synonym_cid, $synonym_list, $cache_bin);
 
@@ -86,10 +86,10 @@ function tpps_unit_get_list($synonym_id = 'all', array $options = [], $reset = F
       if (empty($groups[$unit_group])) {
         continue;
       }
-      asort($groups[$unit_group]);
+      asort($groups[$unit_group], SORT_STRING | SORT_FLAG_CASE | SORT_NATURAL);
       $data[$id] = $groups[$unit_group];
     }
-    asort($data['all']);
+    asort($data['all'], SORT_STRING | SORT_FLAG_CASE | SORT_NATURAL);
 
     cache_set($unit_cid, $data, $cache_bin);
     $list = $data[$synonym_id] ?? $data['all'] ?? [];

@@ -40,7 +40,7 @@ function tpps_synonym_get_list(array $options = [], $reset = FALSE) {
       ->condition('cps.synonym', 0, '>')
       ->orderBy('cps.phenotype_synonyms_id');
     $data = $query->execute()->fetchAllKeyed();
-    asort($data);
+    asort($data, SORT_STRING | SORT_FLAG_CASE | SORT_NATURAL);
     cache_set($synonym_cid, $data, $cache_bin);
     $list = $data;
   }
