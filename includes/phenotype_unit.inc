@@ -54,12 +54,13 @@ function tpps_unit_get_list($synonym_id = 'all', array $options = [], $reset = F
       ->condition('cps.synonym', 0, '>')
       ->execute()
       ->fetchAllAssoc('phenotype_synonyms_id', PDO::FETCH_ASSOC);
+
     foreach ($synonym_table as $synonym) {
       $synonym_list[$synonym['phenotype_synonyms_id']] = $synonym['synonym'];
       $synonym_unit_group_list[$synonym['phenotype_synonyms_id']] = $synonym['unit_group'];
     }
-    ksort($synonym_list);
-    ksort($synonym_unit_group_list);
+    asort($synonym_list);
+    asort($synonym_unit_group_list);
     // Update cached list of synonyms.
     cache_set($synonym_cid, $synonym_list, $cache_bin);
 
@@ -71,31 +72,42 @@ function tpps_unit_get_list($synonym_id = 'all', array $options = [], $reset = F
         'unit_group',
       ])
       ->execute()
-      ->fetchAllAssoc('unit_cvterm_id', PDO::FETCH_ASSOC);
+      ->fetchAll(PDO::FETCH_ASSOC);
     // Create list of all units and list of unit groups.
-    foreach ($unit_table as $unit_id => $unit) {
+    foreach ($unit_table as $unit) {
+      $unit_id = $unit['unit_cvterm_id'];
       $data['all'][$unit_id] = $unit['unit_name'];
-      $groups[$unit['unit_group']][$unit['unit_cvterm_id']]
+      $groups[$unit['unit_group']][$unit_id]
         = $unit['unit_name'];
     }
+
     // Create list of units per synonym.
     foreach ($synonym_unit_group_list as $id => $unit_group) {
-      $data[$id] = ($groups[$unit_group] ?? NULL);
+      if (empty($groups[$unit_group])) {
+        continue;
+      }
+      asort($groups[$unit_group]);
+      $data[$id] = $groups[$unit_group];
     }
+    asort($data['all']);
+
     cache_set($unit_cid, $data, $cache_bin);
     $list = $data[$synonym_id] ?? $data['all'] ?? [];
   }
   else {
     $list = $cache->data[$synonym_id] ?? $cache->data['all'] ?? [];
   }
-  // This option must be last.
-  if (!empty($list) && $options['not_in_list_option']) {
-    $list['other'] = t('My unit is not in this list');
-  }
   if ($options['debug']) {
     foreach ($list as $key => $value) {
       $list[$key] = $key . ': ' . $value;
     }
+  }
+  if (variable_get('tpps_page_4_use_alphabetic_list', TRUE)) {
+    $list = tpps_build_alphabetic_list($list);
+  }
+  // This option must be last.
+  if (!empty($list) && $options['not_in_list_option']) {
+    $list['other'] = t('My unit is not in this list');
   }
   return $list;
 }

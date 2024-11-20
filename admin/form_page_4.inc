@@ -38,6 +38,18 @@ function tpps_form_page_4_settings_form(array $form, array &$form_state) {
       . " updated according to current selection."
     ),
   ];
+  $form['tpps_page_4_use_alphabetic_list'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Use Alphabetic Lists'),
+    '#default_value' => variable_get('tpps_page_4_use_alphabetic_list', TRUE),
+    '#description' => t(
+      'Default is <strong>checked</strong>.<br />When checked lists will be '
+      . 'splitted by letter to improve readability. Could be applied to '
+      . 'synonym and unit lists. Example: <pre>@unit_list</pre>',
+      ['@unit_list' => print_r(tpps_unit_get_list('1'), 1)]
+    ),
+  ];
+
   $form['#submit'][] = 'tpps_form_page_4_settings_form_submit';
   return system_settings_form($form);
 }
