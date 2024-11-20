@@ -510,3 +510,41 @@ function tpps_get_organisms_without_taxonomy_id($debug_mode = FALSE) {
   }
   return $query->orderBy('organism_id')->execute()->fetchAllKeyed();
 }
+
+/**
+ * Creates array under alphabetical letters.
+ *
+ * Could be used as option's list for dropdown menu form elements.
+ * Idea: https://stackoverflow.com/a/35543688/1041470
+ *
+ * @param array $list
+ *   Associative array of the items.
+ *   Note: keys will be left without change.
+ *
+ * @return array
+ *   Returns list splitted by letters.
+ *   Example of the output:
+ *   [
+ *     'A' => [
+ *       '123' => 'Alligator'
+ *       '345' => 'Alpha'
+ *     ],
+ *     'B' => [
+ *       '663' => 'Bear'
+ *       '224' => 'Bees'
+ *       '455' => 'Banana'
+ *     ],
+ *     'C' => [
+ *       '223' => 'Cat',
+ *       '977' => 'Cougar',
+ *     ],
+ *   ];
+ */
+function tpps_build_alphabetic_list(array $list) {
+  $result = [];
+  foreach ($list as $key => $value) {
+    $firstLetter = substr(strtoupper($value), 0, 1);
+    $result[$firstLetter][$key] = $value;
+  }
+  return $result;
+}
