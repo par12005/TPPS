@@ -234,13 +234,15 @@ form.tppsc-form       .form-button:focus {
 
 /* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: * /
 /* Start of TPPS Navigation Bar */
+.tppsc-form .navigation-bar .stage.current,
 .tppsc-form .navigation-bar .stage {
   /* Light Gray */
-  color: #c9c9c9;
+  color: #777;
+
 }
 .tppsc-form .navigation-bar .stage:active {
-  /* Dark Gray */
-  color: #3b413b;
+  /* Green */
+  color: #5a7736;
 }
 /* End of TPPS Status Bar */
 
