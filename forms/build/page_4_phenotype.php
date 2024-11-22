@@ -227,17 +227,17 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
             'visible' => [tpps_synonym_selector($id) => ['value' => 0]]
           ],
         ],
-        'env-check' => array(
+        'env-check' => [
           '#type' => 'checkbox',
           '#title' => 'Phenotype !num is an environmental phenotype',
-          '#ajax' => array(
+          '#ajax' => [
             'callback' => 'tpps_update_phenotype_meta',
             'wrapper' => "org_{$id}_phenotype_!num_meta",
-          ),
-          '#states' => [
-            'visible' => [tpps_synonym_selector($id) => ['value' => 0]]
           ],
-        ),
+          '#states' => [
+            'visible' => [tpps_synonym_selector($id) => ['value' => 0]],
+          ],
+        ],
         'attribute' => array(
           '#type' => 'select',
           '#title' => 'Phenotype !num Attribute: *',
@@ -247,7 +247,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
             'wrapper' => "org_{$id}_phenotype_!num_meta",
           ),
           '#states' => [
-            'visible' => [tpps_synonym_selector($id) => ['value' => 0]]
+            'visible' => [tpps_synonym_selector($id) => ['value' => 0]],
           ],
         ),
         'attr-other' => array(
@@ -257,9 +257,13 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           '#attributes' => array(
             'data-toggle' => array('tooltip'),
             'data-placement' => array('right'),
-            'title' => array('If your attribute is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
+            'title' => [t("If your attribute is not in the autocomplete list, "
+              . "don't worry about it! We will create new phenotype metadata "
+              . "in the database for you.")],
           ),
-          '#description' => t('Some examples of attributes include: "amount", "width", "mass density", "area", "height", "age", "broken", "time", "color", "composition", etc.'),
+          '#description' => t('Some examples of attributes include: "amount", '
+            . '"width", "mass density", "area", "height", "age", "broken", '
+            . '"time", "color", "composition", etc.'),
           '#states' => array(
             'visible' => array(
               ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][attribute]"]'
@@ -270,7 +274,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         ),
         'description' => tpps_build_field_description() + [
           '#states' => [
-            'visible' => [tpps_synonym_selector($id) => ['value' => 0]]
+            'visible' => [tpps_synonym_selector($id) => ['value' => 0]],
           ],
         ],
         'unit' => [
@@ -315,23 +319,37 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           '#validated' => TRUE,
         ],
         // [/VS]
-        'struct-other' => array(
+        'struct-other' => [
           '#type' => 'textfield',
           '#title' => 'Phenotype !num Custom Structure: *',
           '#autocomplete_path' => 'tpps/autocomplete/structure',
-          '#attributes' => array(
-            'data-toggle' => array('tooltip'),
-            'data-placement' => array('right'),
-            'title' => array('If your structure is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
-          ),
-          '#description' => t('Some examples of structure descriptors include: "stem", "bud", "leaf", "xylem", "whole plant", "meristematic apical cell", etc.'),
-          '#states' => array(
-            'visible' => array(
-              ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][structure]"]' => array('value' => 'other'),
-            ),
-          ),
-        ),
+          '#attributes' => [
+            'data-toggle' => ['tooltip'],
+            'data-placement' => ['right'],
+            'title' => [t("If your structure is not in the autocomplete list, "
+              . "don't worry about it! We will create new phenotype metadata "
+              . "in the database for you.")],
+          ],
+          '#description' => t('Some examples of structure descriptors include: '
+            . '"stem", "bud", "leaf", "xylem", "whole plant", '
+            . '"meristematic apical cell", etc.'),
+          '#states' => [
+            'visible' => [
+              ':input[name="' . $id . '[phenotype][phenotypes-meta][!num]'
+                . '[structure]"]' => ['value' => 'other'],
+            ],
+          ],
+        ],
       );
+
+      // Extra tuning of the 'Phenotype N is an environmental phenotype' field.
+      if (variable_get('tpps_page_4_env_check_always_visible', TRUE)) {
+        unset($field['env-check']['#states']);
+      }
+      if (variable_get('tpps_page_4_env_check_ajax_update', FALSE)) {
+        unset($field['env-check']['#ajax']);
+      }
+
       cache_set($phenotype_cid, $field, $cache_bin);
     }
 
@@ -542,20 +560,17 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           break;
       }
 
-      // @TODO Reduces list of structures. Fix it!
-
+      // Note: When 'is phenotype environmental' ('env-check' field) checked
+      // AJAX-request updates form to have 'Structure' limited number of items.
+      // @TODO Use JS to reduce list of structure field options.
       if ($phenotypes[$i]['env-check']) {
-        $terms = array(
+        $terms = [
           'whole plant' => 'Whole Plant',
-          'soil_type' => 'Soil',
-          'atmosphere' => 'Atmosphere',
-        );
-
-        $new_options = array();
+        ];
+        $new_options = [];
         foreach ($terms as $term => $label) {
           $new_options[tpps_load_cvterm($term)->cvterm_id] = $label;
         }
-
         $form[$id]['phenotype']['phenotypes-meta'][$i]['structure']['#options'] = $new_options;
       }
     }

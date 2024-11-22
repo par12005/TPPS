@@ -84,6 +84,8 @@ function tpps_install() {
   variable_set('tpps_page_4_cache_unit_list', FALSE);
   variable_set('tpps_page_4_update_ploidy_description', TRUE);
   variable_set('tpps_page_4_use_alphabetic_list', TRUE);
+  variable_set('tpps_page_4_env_check_always_visible', TRUE);
+  variable_set('tpps_page_4_env_check_ajax_update', TRUE);
   // Submit All.
   variable_set('tpps_submitall_log_cli_show_time', FALSE);
   variable_set('tpps_submitall_skip_gps_request', FALSE);
@@ -445,6 +447,8 @@ function tpps_uninstall() {
   variable_del('tpps_page_4_cache_unit_list');
   variable_del('tpps_page_4_update_ploidy_description');
   variable_del('tpps_page_4_use_alphabetic_list');
+  variable_del('tpps_page_4_env_check_always_visible');
+  variable_del('tpps_page_4_env_check_ajax_update');
   // Submit All settings.
   variable_del('tpps_submitall_skip_gps_request');
   variable_del('tpps_submitall_phenotype_debug_mode');
@@ -2336,4 +2340,12 @@ function tpps_update_7124() {
   variable_set('tpps_validation_regex_single_space', '/^[^\s]*\s[^\s]*$/');
 
   cache_clear_all();
+}
+
+/**
+ * Fixed 'Is phenotype environemental' checkbox.
+ */
+function tpps_update_7125() {
+  variable_set('tpps_page_4_env_check_always_visible', TRUE);
+  variable_set('tpps_page_4_env_check_ajax_update', TRUE);
 }
