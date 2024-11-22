@@ -1,6 +1,9 @@
 // @file
 // Manage Google Map and advanced markers.
 
+// @TODO Use detection of the field's organism Id in the loop from name
+// attribute by removing suffix and prefix. See js/tpps_page_4.js for synonyms.
+
 // Marker used to label map wrapper already processed to avoid double messages,
 // AJAX-requests and extra processing.
 const TPPS_MAP_WRAPPER_MARKER = 'tpps-google-map-processed';
@@ -212,7 +215,7 @@ Drupal.tpps = Drupal.tpps || {};
     attach:function (context) {
 
       // Feature name will be used for log messages via dog().
-      let featureName = 'Drupal.behaviors.tppsGoogleMap';
+      const featureName = 'Drupal.behaviors.tppsGoogleMap';
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Show map on page load if file was uploaded before on Page 3.
       // Loop managed file fields.
@@ -369,7 +372,7 @@ Drupal.tpps = Drupal.tpps || {};
    *   Managed File Id.
    */
   Drupal.tpps.getColumnsFromManagedFileField = function(fid = null, organismId = null) {
-    let featureName = 'Drupal.tpps.getColumnsFromManagedFileField';
+    const featureName = 'Drupal.tpps.getColumnsFromManagedFileField';
     if (
       fid != null
       && 'tpps' in Drupal
