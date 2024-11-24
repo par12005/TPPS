@@ -1549,10 +1549,30 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
         // Get metadata column values.
         $groups = $phenotype['metadata-groups'];
         $column_vals = $phenotype['metadata-columns'];
-        $struct = array_search('5', $column_vals);
-        $min = array_search('6', $column_vals);
-        $max = array_search('7', $column_vals);
-        $columns = array(
+        // Here key is a column ordinal number in file and value is a data type.
+        //metadata-columns: {
+        //  A: "1", // Phenotype Id
+        //  B: "2",
+        //  C: "3",
+        //  D: "4",
+        //  E: "5", // Structure
+        //  F: "6", // Min
+        //  G: "7"  // Max
+        //}
+        $struct = array_search(
+          TPPS_PHENOTYPE_META_DATA_TYPE_STRUCTURE, $column_vals
+        );
+        $min = array_search(
+          TPPS_PHENOTYPE_META_DATA_TYPE_MINIMUM_VALUE, $column_vals
+        );
+        $max = array_search(
+          TPPS_PHENOTYPE_META_DATA_TYPE_MAXIMUM_VALUE, $column_vals
+        );
+        // Value will be a column's letter or FALSE.
+        $env = array_search(
+          TPPS_PHENOTYPE_META_DATA_TYPE_IS_ENVIRONMENTAL, $column_vals
+        );
+        $columns = [
           'name' => $groups['Phenotype Id']['1'],
           'attr' => $groups['Attribute']['2'],
           'desc' => $groups['Description']['3'],
@@ -1560,10 +1580,12 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
           'struct' => !empty($struct) ? $struct : NULL,
           'min' => !empty($min) ? $min : NULL,
           'max' => !empty($max) ? $max : NULL,
-        );
+          // @TODO use $is_env ?? NULL.
+          'env' => !empty($env) ? $env : NULL,
+        ];
         // print_r($columns);
 
-        $meta_options = array(
+        $meta_options = [
           'no_header' => $phenotype['metadata-no-header'],
           'meta_columns' => $columns,
           // [VS] $phenotypes_meta seems empty when metadata file used.
@@ -1571,7 +1593,7 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
           // with data from phenotype metadata file. Keys will be phenotype
           // names from file in lowercase.
           'meta' => &$phenotypes_meta,
-        );
+        ];
 
         tpps_log('[INFO] - Processing phenotype_meta file data...');
         tpps_file_iterator($meta_fid, 'tpps_process_phenotype_meta', $meta_options);
@@ -5584,7 +5606,7 @@ function tpps_check_organisms($row, array &$options = array()) {
  * @param array $options
  *   Additional options set when calling tpps_file_iterator().
  */
-function tpps_process_phenotype_meta($row, array &$options = array()) {
+function tpps_process_phenotype_meta($row, array &$options = []) {
   global $tpps_job;
   $job = $tpps_job;
   $columns = $options['meta_columns'];
@@ -5596,16 +5618,17 @@ function tpps_process_phenotype_meta($row, array &$options = array()) {
   // print_r($row);
 
   $name = strtolower($row[$columns['name']]);
-  $meta[$name] = array();
+  $meta[$name] = [];
   $meta[$name]['attr'] = 'other';
   $meta[$name]['attr-other'] = $row[$columns['attr']];
   $meta[$name]['desc'] = $row[$columns['desc']];
   $meta[$name]['unit'] = 'other';
   $meta[$name]['unit-other'] = $row[$columns['unit']];
+  $meta[$name]['env'] = $row[$columns['env']];
   if (
     !empty($columns['struct'])
-    and isset($row[$columns['struct']])
-    and $row[$columns['struct']] != ''
+    && isset($row[$columns['struct']])
+    && $row[$columns['struct']] != ''
   ) {
     $meta[$name]['struct'] = 'other';
     $meta[$name]['struct-other'] = $row[$columns['struct']];

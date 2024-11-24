@@ -359,46 +359,33 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         ],
       ],
       '#tree' => TRUE,
+      // Columns.
+      'empty' => [
+        '#default_value' => $values["$id"]['phenotype']['metadata']['empty'] ?? 'NA',
+      ],
+      'columns' => [
+        '#description' => t('Please define which columns hold the required '
+          . 'data: Phenotype name'),
+      ],
+      'columns-options' => [
+        '#type' => 'hidden',
+        '#value' => tpps_get_phenotype_file_data_type_options(),
+      ],
+      'no-header' => [],
     ];
-
-    $form[$id]['phenotype']['metadata']['empty'] = [
-      '#default_value' => $values["$id"]['phenotype']['metadata']['empty'] ?? 'NA',
-    ];
-
-    $form[$id]['phenotype']['metadata']['columns'] = [
-      '#description' => t('Please define which columns hold the required data: Phenotype name'),
-    ];
-
-    $column_options = array(
-      'N/A',
-      'Phenotype Name/Identifier',
-      'Attribute',
-      'Description',
-      'Unit',
-      'Structure',
-      'Minimum Value',
-      'Maximum Value',
-    );
-
-    $form[$id]['phenotype']['metadata']['columns-options'] = array(
-      '#type' => 'hidden',
-      '#value' => $column_options,
-    );
-
-    $form[$id]['phenotype']['metadata']['no-header'] = array();
 
     // Get names of manual phenotypes.
-    $meta = tpps_get_ajax_value($form_state, array(
+    $meta = tpps_get_ajax_value($form_state, [
       $id,
       'phenotype',
       'phenotypes-meta',
-    ));
-    $number = tpps_get_ajax_value($form_state, array(
+    ]);
+    $number = tpps_get_ajax_value($form_state, [
       $id,
       'phenotype',
       'phenotypes-meta',
       'number',
-    ));
+    ]);
     $phenotype_names = [];
     for ($i = 1; $i <= $number; $i++) {
       if (!empty($meta[$i]['name'])) {
@@ -408,18 +395,21 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     }
 
     // Get names of phenotypes in metadata file.
-    $columns = tpps_get_ajax_value($form_state, array(
+    $columns = tpps_get_ajax_value($form_state, [
       $id,
       'phenotype',
       'metadata',
       'columns',
-    ), array(), 'metadata');
+    ], [], 'metadata');
     $meta_fid = tpps_get_ajax_value($form_state, [$id, 'phenotype', 'metadata']);
     $name_col = NULL;
     foreach ($columns as $key => $info) {
       if (preg_match('/^[A-Z]+$/', $key)) {
         $val = !empty($info['#value']) ? $info['#value'] : $info;
-        if (!empty($val) and $column_options[$val] == 'Phenotype Name/Identifier') {
+        if (
+          !empty($val)
+          && $val == TPPS_PHENOTYPE_META_DATA_TYPE_IDENTIFIER
+        ) {
           $name_col = $key;
           break;
         }
@@ -446,23 +436,27 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     );
 
     if ($time_default) {
-      $message = t('It looks like some of your phenotypes might be time-based. If this is the case, please indicate which ones are time-based with the section below.');
-      $form[$id]['phenotype']['time']['#prefix'] = "<div class=\"alert alert-block alert-dismissible alert-warning messages warning\">
-        <a class=\"close\" data-dismiss=\"alert\" href=\"#\">×</a>
+      $message = t('It looks like some of your phenotypes might be time-based. '
+        . 'If this is the case, please indicate which ones are time-based '
+        . 'with the section below.');
+      // @TODO Use l() to build a link to avoid HTML in PHP-code.
+      $form[$id]['phenotype']['time']['#prefix'] = '<div class="alert '
+        . 'alert-block alert-dismissible alert-warning messages warning">'
+        . "<a class=\"close\" data-dismiss=\"alert\" href=\"#\">×</a>
         <h4 class=\"element-invisible\">Warning message</h4>
         {$message}</div>";
     }
 
-    $form[$id]['phenotype']['time']['time-check'] = array(
+    $form[$id]['phenotype']['time']['time-check'] = [
       '#type' => 'checkbox',
       '#title' => t('Some of my phenotypes are time-based'),
       '#default_value' => $time_default,
-      '#ajax' => array(
+      '#ajax' => [
         'callback' => 'tpps_update_phenotype',
         'wrapper' => "phenotype-main-$id",
         'effect' => 'slide',
-      ),
-    );
+      ],
+    ];
 
     $time_check = tpps_get_ajax_value($form_state,
       [$id, 'phenotype', 'time', 'time-check'],
@@ -483,10 +477,10 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         '#description' => t('Please select the phenotypes which are time-based'),
       ];
 
-      $form[$id]['phenotype']['time']['time_values'] = array(
+      $form[$id]['phenotype']['time']['time_values'] = [
         '#type' => 'fieldset',
         '#title' => t('PHENOTYPE TIME VALUES:'),
-      );
+      ];
 
       foreach ($time_options as $key => $name) {
         $form[$id]['phenotype']['time']['time_values'][$key] = array(
@@ -888,4 +882,25 @@ function tpps_get_structure_option_list() {
   }
   $options['other'] = t('My structure term is not in this list');
   return $options;
+}
+
+/**
+ * Builds list of options for phenotype file data type selector (columns).
+ *
+ * @return array
+ *   Returns list of options.
+ */
+function tpps_get_phenotype_file_data_type_options() {
+  // @TODO Covert indexes into php constants.
+  return [
+    0 => 'N/A',
+    TPPS_PHENOTYPE_META_DATA_TYPE_IDENTIFIER       => 'Phenotype Name/Identifier',
+    TPPS_PHENOTYPE_META_DATA_TYPE_ATTRIBUTE        => 'Attribute',
+    TPPS_PHENOTYPE_META_DATA_TYPE_DESCRIPTION      => 'Description',
+    TPPS_PHENOTYPE_META_DATA_TYPE_UNIT             => 'Unit',
+    TPPS_PHENOTYPE_META_DATA_TYPE_STRUCTURE        => 'Structure',
+    TPPS_PHENOTYPE_META_DATA_TYPE_MINIMUM_VALUE    => 'Minimum Value',
+    TPPS_PHENOTYPE_META_DATA_TYPE_MAXIMUM_VALUE    => 'Maximum Value',
+    TPPS_PHENOTYPE_META_DATA_TYPE_IS_ENVIRONMENTAL => 'Is environmental',
+  ];
 }
