@@ -1560,17 +1560,17 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
         //  G: "7"  // Max
         //}
         $struct = array_search(
-          TPPS_PHENOTYPE_META_DATA_TYPE_STRUCTURE, $column_vals
+          PhenotypeFields::META_DATA_TYPE_STRUCTURE, $column_vals
         );
         $min = array_search(
-          TPPS_PHENOTYPE_META_DATA_TYPE_MINIMUM_VALUE, $column_vals
+          PhenotypeFields::META_DATA_TYPE_MINIMUM_VALUE, $column_vals
         );
         $max = array_search(
-          TPPS_PHENOTYPE_META_DATA_TYPE_MAXIMUM_VALUE, $column_vals
+          PhenotypeFields::META_DATA_TYPE_MAXIMUM_VALUE, $column_vals
         );
         // Value will be a column's letter or FALSE.
         $env = array_search(
-          TPPS_PHENOTYPE_META_DATA_TYPE_IS_ENVIRONMENTAL, $column_vals
+          PhenotypeFields::META_DATA_TYPE_IS_ENVIRONMENTAL, $column_vals
         );
         $columns = [
           'name' => $groups['Phenotype Id']['1'],
@@ -5656,6 +5656,7 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
   $local_db = variable_get('tpps_local_db');
   $term_types = array(
     'attr' => array(
+      // @TODO Should t() be used here for labels?
       'label' => 'Attribute',
       'ontology' => 'pato',
     ),

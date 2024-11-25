@@ -265,15 +265,12 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
           }
         }
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        $required_groups = [
-          'Phenotype Id' => ['id' => [1]],
-          'Attribute' => ['attr' => [2]],
-          'Description' => ['desc' => [3]],
-          'Unit' => ['unit' => [4]],
-          'Structure' => ['structure' => [5]],
-        ];
         $file_element = $form[$id]['phenotype']['metadata'];
-        $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
+        $groups = tpps_file_validate_columns(
+          $form_state,
+          tpps_phenotype_files()->getRequiredColumnList(),
+          $file_element
+        );
         if (!form_get_errors()) {
           // Get phenotype name column.
           $phenotype_name_col = $groups['Phenotype Id']['1'];
@@ -499,6 +496,7 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
     }
 
     if (!empty($phenotype_file)) {
+      // For phenotype file (not metadata file).
       $required_groups = [
         'Tree Identifier' => ['id' => [1]],
         'Phenotype Data' => ['phenotype-data' => [0]],

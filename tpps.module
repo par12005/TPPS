@@ -79,17 +79,6 @@ define(
 );
 define('TPPS_GENOTYPING_FILE_TYPE_VCF', 'VCF');
 
-
-// Page 4. Phenotypes.
-define('TPPS_PHENOTYPE_META_DATA_TYPE_IDENTIFIER', 1);
-define('TPPS_PHENOTYPE_META_DATA_TYPE_ATTRIBUTE', 2);
-define('TPPS_PHENOTYPE_META_DATA_TYPE_DESCRIPTION', 3);
-define('TPPS_PHENOTYPE_META_DATA_TYPE_UNIT', 4);
-define('TPPS_PHENOTYPE_META_DATA_TYPE_STRUCTURE', 5);
-define('TPPS_PHENOTYPE_META_DATA_TYPE_MINIMUM_VALUE', 6);
-define('TPPS_PHENOTYPE_META_DATA_TYPE_MAXIMUM_VALUE', 7);
-define('TPPS_PHENOTYPE_META_DATA_TYPE_IS_ENVIRONMENTAL', 8);
-
 module_load_include('inc', 'tpps', 'includes/common');
 
 // WARNING:
@@ -2863,6 +2852,7 @@ function tpps_is_main_form(array $form_state) {
  *   Returns Submission object or throw an exception if it's not found.
  */
 function tpps_submission($accession = '') {
+  // @TODO Make this variable global.
   $submission = new Submission();
   if ($accession) {
     $submission->accession = $accession;
@@ -2898,6 +2888,20 @@ function tpps_organism($organism_key = '') {
     );
   }
   return $organism;
+}
+
+/**
+ * Creates new PhenotypeFields object.
+ *
+ * How to use:
+ * $form['phenotype'] = tpps_phenotype_fields()-build($id);
+ *
+ * @return object
+ *   Returns object of the PhenotypeFields class.
+ */
+function tpps_phenotype_fields() {
+  $phenotypeFields = new PhenotypeFields();
+  return $phenotypeFields;
 }
 
 /**
