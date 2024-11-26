@@ -457,15 +457,18 @@ function tpps_genotype_subform(array $form_bus) {
       'columns-options' => [
         '#type' => 'hidden',
         '#value' => [
-          'N/A',
-          'SNP ID',
-          'Scaffold',
-          'Position',
-          'Allele',
-          'Associated Trait',
-          'Confidence Value',
-          'Gene ID',
-          'Annotation',
+          // @TODO Minor. Move to Genotype class and use it's constants.
+          // @TODO Use t() for names.
+          0 => 'N/A',
+          1 => 'SNP ID',
+          2 => 'Scaffold',
+          3 => 'Position',
+          4 => 'Allele',
+          5 => 'Associated Trait',
+          6 => 'Confidence Value',
+          7 => 'Gene ID',
+          8 => 'Annotation',
+          9 => 'Year',
         ],
       ],
       'no-header' => [],
@@ -800,7 +803,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   // $options = ['key' => 'filename', 'recurse' => FALSE];
   // $genome_dir = variable_get('tpps_local_genome_dir', NULL);
   // if ($genome_dir) {
-    
+
   //   $results = file_scan_directory($genome_dir, '/^([A-Z][a-z]{3})$/', $options);
   //   $code_cvterm = tpps_load_cvterm('organism 4 letter code')->cvterm_id;
   //   foreach ($results as $key => $value) {
@@ -831,7 +834,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
     // $genome_query_row->name = str_ireplace(' assembly', '', $genome_query_row->name);
     $existing_genomes[$genome_query_row->name] = $genome_query_row->name;
   }
-  
+
   ksort($existing_genomes);
   $ref_genome_arr = array_merge(['0' => '- Select -'], $existing_genomes, [
     // @todo Use t() for option's names but first check if name not used in

@@ -1112,6 +1112,10 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
             'Allele' => ['allele' => [4]],
             'Associated Trait' => ['trait' => [5]],
             'Confidence Value' => ['confidence' => [6]],
+            // Optional:
+            // 7 => 'Gene ID',
+            // 8 => 'Annotation',
+            // 9 => 'Year'.
           ];
           $file_element = $form[$id]['genotype'][$snps_fieldset]['snps-association'];
           $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
