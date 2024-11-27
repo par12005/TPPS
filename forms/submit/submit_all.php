@@ -293,10 +293,12 @@ function tpps_nextflow_new_study_pipeline(array &$form_state) {
       tpps_log('ref_genome formatted: ' . $ref_genome . '\n');
     }
   }
-  // TODO: Make this more robust by checking if any NULLs were found and do not run the workflow
+  // @TODO Check if any NULLs were found and do not run the workflow.
 
   $store_directory = '/isg/treegenes/nextflow_workflows/' . $study_accession . '/new-study-pipeline';
-  mkdir($store_directory, 0755, true);
+  if (!file_exists($store_directory)) {
+    mkdir($store_directory, 0755, TRUE);
+  }
 
   // If the directory was already created previously, we want to delete the old log files
   // [RISH] 11/27/2024
@@ -308,8 +310,8 @@ function tpps_nextflow_new_study_pipeline(array &$form_state) {
 
   $output = [];
   $result_code = 0;
-  $four_letter_code = $_POST['autocomplete_four_letter_code'];
-  $version = $_POST['input_version'];
+  $four_letter_code = $_POST['autocomplete_four_letter_code'] ?? NULL;
+  $version = $_POST['input_version'] ?? NULL;
   // $SCRIPT_LOCATION='/home/FCAM/tg-nginx/simple_test.sh';
   $run_code = "#!/bin/bash
 #SBATCH --job-name=simple_test
@@ -340,7 +342,8 @@ nextflow pull TreeGenes/new-vcf-pipeline -r main -hub gitlab
 nextflow run TreeGenes/new-study-pipeline -r main -profile treegenes -resume --tgdr $study_accession --vcf '$vcf' --ref_genome '$ref_genome'
 ";
 
-// Override temporarily since we're running on TREEGENESDEV and not on the cluster (so sbatch commands will not work)
+// Override temporarily since we're running on TREEGENESDEV and not on the
+// cluster (so sbatch commands will not work).
 $run_code = "#!/bin/bash
 cd $store_directory
 rm -rf ~/.nextflow/assets/TreeGenes/new-study-pipeline
@@ -349,34 +352,35 @@ nextflow run TreeGenes/new-study-pipeline -r main -profile treegenes -resume --t
 ";
 
 
-$slurm_job_id = file_get_contents($store_directory . '/slurm_job_id.txt');
-$SCRIPT_LOCATION = $store_directory . '/run_script.sh';
-tpps_log('NEXTFLOW NEW STUDY PIPELINE SCRIPT LOCATION: ' . $SCRIPT_LOCATION . PHP_EOL);
-file_put_contents($SCRIPT_LOCATION, $run_code);
-chmod($SCRIPT_LOCATION, 0755);
+  if (file_exists($store_directory . '/slurm_job_id.txt')) {
+    // @TODO Check why this varible not used.
+    $slurm_job_id = file_get_contents($store_directory . '/slurm_job_id.txt');
+  }
+  $SCRIPT_LOCATION = $store_directory . '/run_script.sh';
+  tpps_log('NEXTFLOW NEW STUDY PIPELINE SCRIPT LOCATION: ' . $SCRIPT_LOCATION . PHP_EOL);
+  file_put_contents($SCRIPT_LOCATION, $run_code);
+  chmod($SCRIPT_LOCATION, 0755);
 
-// TODO: Add the correct run code from Gabe
-//$run_code .= "nextflow run TreeGenes/New_Genome_Pipeline -r master -profile xanadu ";
+  // TODO: Add the correct run code from Gabe
+  //$run_code .= "nextflow run TreeGenes/New_Genome_Pipeline -r master -profile xanadu ";
 
-tpps_log("Attempting to run nextflow new study pipeline on treegenesdev...\n");
+  tpps_log("Attempting to run nextflow new study pipeline on treegenesdev...\n");
 
-exec("
-    ssh tg-nginx@treegenesdev.cam.uchc.edu << EOF
-    $SCRIPT_LOCATION
-    EOF
-", $output, $result_code);
+  exec("
+      ssh tg-nginx@treegenesdev.cam.uchc.edu << EOF
+      $SCRIPT_LOCATION
+      EOF
+  ", $output, $result_code);
 
-// THIS IS FOR THE CLUSTER BUT WE ARE CURRENTLY RUNNING ON TREEGENESDEV SO SBATCH COMMAND WILL NOT WORK
-// exec("
-//     ssh tg-nginx@treegenesdev.cam.uchc.edu << EOF
-//     sbatch $SCRIPT_LOCATION
-//     EOF
-// ", $output, $result_code);
+  // THIS IS FOR THE CLUSTER BUT WE ARE CURRENTLY RUNNING ON TREEGENESDEV
+  // SO SBATCH COMMAND WILL NOT WORK.
+  // exec("
+  //     ssh tg-nginx@treegenesdev.cam.uchc.edu << EOF
+  //     sbatch $SCRIPT_LOCATION
+  //     EOF
+  // ", $output, $result_code);
 
-
-
-tpps_log(print_r($output, true));
-
+  tpps_log(print_r($output, 1));
 }
 
 /**
@@ -397,6 +401,15 @@ function tpps_job_logger_write($string, $replacements = []) {
   // Add timestamp.
   $time_now = time();
   $timestamp_now = date('m/d/y g:i:s A', $time_now);
+
+// @TODO Remove debug code.
+if (!is_string($string)) {
+  print_r(debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3), 1);
+  dpm(print_r(debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3), 1));
+  dpm(print_r($string, 1));
+}
+
+
 
   $string = "\n" . $timestamp_now . " " . $string;
 
@@ -1514,14 +1527,17 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
         $phenotypes_meta[$name]['struct-other'] = $phenotype['phenotypes-meta'][$j]['struct-other'];
       }
       $phenotypes_meta[$name]['env'] = !empty($phenotype['phenotypes-meta'][$j]['env-check']);
+      $phenotypes_meta[$name]['year'] = $phenotype['phenotypes-meta'][$j]['year'];
+      if (!empty($phenotypes_meta[$name]['year'])) {
+        // The same phenotype could have multiple years accociated with it.
+        // So we need to store them inside this loop (not like 'env' does).
+        tpps_save_phenotype_year($phenotype_meta[$name]);
+      }
       if ($phenotypes_meta[$name]['env']) {
         $env_phenotypes = TRUE;
       }
     }
     if ($env_phenotypes) {
-
-//dpm($phenotypes_meta[$name]);
-
       // Update only existing synonyms.
       if (!empty($phenotypes_meta[$name]['synonym_id'])) {
         $fields = [
@@ -1572,6 +1588,9 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
         $env = array_search(
           PhenotypeFields::META_DATA_TYPE_IS_ENVIRONMENTAL, $column_vals
         );
+        $year = array_search(
+          PhenotypeFields::META_DATA_TYPE_YEAR, $column_vals
+        );
         $columns = [
           'name' => $groups['Phenotype Id']['1'],
           'attr' => $groups['Attribute']['2'],
@@ -1582,8 +1601,8 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
           'max' => !empty($max) ? $max : NULL,
           // @TODO use $is_env ?? NULL.
           'env' => !empty($env) ? $env : NULL,
+          'year' => !empty($year) ? $year : NULL,
         ];
-        // print_r($columns);
 
         $meta_options = [
           'no_header' => $phenotype['metadata-no-header'],
@@ -2160,33 +2179,44 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
 }
 
 /**
- * [RISH] [8/12/2024] Function to generate species_codes array from shared_state
+ * Generates list of species codes.
+ *
+ * @param array $shared_state
+ *   Submission Shared State array.
+ *
+ * @return array
+ *   Returns list of species codes.
  */
-function tpps_generate_species_codes_array_from_shared_state($shared_state) {
-  $species_codes = array();
+function tpps_generate_species_codes_array_from_shared_state(array $shared_state) {
+  $species_codes = [];
   $organism_number = $shared_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
   for ($i = 1; $i <= $organism_number; $i++) {
-    // Get the organism id from the organism name due to breaking changed made by Vlad
     $organism_name = $shared_state['saved_values'][1]['organism'][$i]['name'];
     $organism_name_parts = explode(" ", $organism_name, 3);
     tpps_log($organism_name_parts);
     $organism_name_genus = $organism_name_parts[0];
     $organism_name_species = $organism_name_parts[1];
-    $organism_name_extra = trim($organism_name_parts[2]);
+    $organism_name_extra = trim($organism_name_parts[2] ?? NULL);
     if ($organism_name_extra == NULL) {
-      $organism_lookup_results = chado_query('SELECT organism_id FROM chado.organism WHERE genus ILIKE :genus AND species ILIKE :species',[
+      $sql = 'SELECT organism_id
+        FROM chado.organism
+        WHERE genus ILIKE :genus
+          AND species ILIKE :species';
+      $organism_lookup_results = chado_query($sql, [
         ':genus' => $organism_name_genus,
         ':species' => $organism_name_species,
       ]);
     }
     else {
-      $organism_lookup_results = chado_query('SELECT organism_id FROM chado.organism
+      $sql = 'SELECT organism_id
+        FROM chado.organism
         WHERE genus ILIKE :genus
-        AND species ILIKE :species
-        AND infraspecific_name ILIKE :infra',[
+          AND species ILIKE :species
+          AND infraspecific_name ILIKE :infra';
+      $organism_lookup_results = chado_query($sql, [
         ':genus' => $organism_name_genus,
         ':species' => $organism_name_species,
-        ':infra' => $organism_name_extra
+        ':infra' => $organism_name_extra,
       ]);
     }
     $organism_id = NULL;
@@ -2195,8 +2225,12 @@ function tpps_generate_species_codes_array_from_shared_state($shared_state) {
       tpps_log("ORGANISM ID ($organism_name): " . $organism_id . "\n");
     }
 
-    // Use the organism_id to lookup the 4 letter code
-    $four_letter_code_results = chado_query('SELECT value FROM chado.organismprop WHERE type_id = :type_id AND organism_id = :organism_id', [
+    // Use the organism_id to lookup the 4 letter code.
+    $sql = 'SELECT value
+      FROM chado.organismprop
+      WHERE type_id = :type_id
+        AND organism_id = :organism_id';
+    $four_letter_code_results = chado_query($sql, [
       ':organism_id' => $organism_id,
       'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id
     ]);
@@ -2210,16 +2244,12 @@ function tpps_generate_species_codes_array_from_shared_state($shared_state) {
       $species_codes[$organism_id] = $four_letter_code;
     }
     else {
-      throw new Exception("Could not find the organism by name ($organism_name) or the species code for this organism");
+      $message = t('Could not find the organism by name "@organism_name" or '
+        . 'the species code for this organism.',
+        ['@organism_name' => $organism_name]
+      );
+      throw new Exception($message);
     }
-
-    // OLD CODE BEFORE 8/12/2024
-    // $species_codes[$shared_state['ids']['organism_ids'][$i]] = current(chado_select_record('organismprop', array('value'), array(
-    //   'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id,
-    //   'organism_id' => $shared_state['ids']['organism_ids'][$i],
-    // ), array(
-    //   'limit' => 1,
-    // )))->value;
   }
   return $species_codes;
 }
@@ -5482,7 +5512,6 @@ function tpps_submit_vcf_render_genotype_combination($raw_value, $ref, $alt) {
   return $genotype_combination;
 }
 
-
 /**
  * Submits environmental information for one species.
  *
@@ -5625,6 +5654,7 @@ function tpps_process_phenotype_meta($row, array &$options = []) {
   $meta[$name]['unit'] = 'other';
   $meta[$name]['unit-other'] = $row[$columns['unit']];
   $meta[$name]['env'] = $row[$columns['env']];
+  $meta[$name]['year'] = $row[$columns['year']];
   if (
     !empty($columns['struct'])
     && isset($row[$columns['struct']])
@@ -6029,6 +6059,10 @@ function tpps_process_phenotype_data($row, array &$options = []) {
         '#fk' => ['phenotype' => $phenotype_name],
       ];
     }
+
+
+// @TODO We have also 'year' column and we need to process it.
+
     if ($phenotype_count >= $record_group) {
       tpps_log('[INFO] -- Inserting data into database using insert_multi...');
       tpps_chado_insert_multi($records);
@@ -6090,7 +6124,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
   if ($marker == 'SSRs') {
     $marker = 'SSR';
   }
-  else if($marker == 'cpSSRs') {
+  elseif($marker == 'cpSSRs') {
     $marker = 'cpSSR';
   }
 
@@ -6772,6 +6806,10 @@ function tpps_process_genotype_snp_assay_design($row, array &$options = array())
  *   The item yielded by the TPPS file generator.
  * @param array $options
  *   Additional options set when calling tpps_file_iterator().
+ *
+ * @TODO There is new data type 'Year' which also must be processed and stored
+ * in database but now it's not clear where exaclty.
+ * Posible temporary place: 'public.tpps_phenotype_year.year'.
  */
 function tpps_process_snp_association($row, array &$options = array()) {
   global $tpps_job;
@@ -8142,6 +8180,9 @@ function tpps_get_code_parts($part) {
  */
 function tpps_log($message, array $variables = [], $severity = TRIPAL_INFO) {
   global $tpps_job;
+  if (!is_string($message)) {
+    $message = print_r($message, 1);
+  }
   // Writes to file and will be shown at site.
   tpps_job_logger_write($message, $variables);
   // Add time to CLI output. Tripal logs will be unchanged.
@@ -8192,4 +8233,19 @@ function tpps_ssr_process(array &$form_state, $fid, array &$options, $job, array
   tpps_log('[INFO] - Done.');
   // CREATE INDEXES FROM GENOTYPE_CALL TABLE.
   // tpps_create_genotype_call_indexes($job);
+}
+
+/**
+ * Saves relation between phenotype and year.
+ *
+ * @param array $values
+ *   List of values to be stored in db table.
+ *   Keys are: 'phenotype_name', 'synonym_id', 'year'.
+ *   More details:
+ *     module_load_include('install', 'tpps');
+ *     dpm(tpps_schema()['tpps_phenotype_year']);
+ */
+function tpps_save_phenotype_year(array $values) {
+  $table = 'tpps_phenotype_year';
+  db_insert($table, 't')->fields('t')->values($values)->execute();
 }

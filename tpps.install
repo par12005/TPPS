@@ -896,6 +896,40 @@ function tpps_schema() {
     ],
   ];
 
+  // Table to store relations between phenotype and the year.
+  // This is temporary solution. Data could be moved to other table later.
+  $schema['tpps_phenotype_year'] = [
+    'description' => 'Store relation between phenotype and year.',
+    'fields' => [
+      'name' => [
+        'description' => 'Phenotype name.',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => FALSE,
+      ],
+      'synonym_id' => [
+        'description' => 'Phenotype Synonym Id.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => FALSE,
+      ],
+      'year' => [
+        'description' => 'Phenotype year.',
+        'type' => 'int',
+        // -32768 to +32767.
+        'size' => 'small',
+        // Mysql: 64К. Postres: -32K..+32K.
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+    ],
+    'indexes' => [
+      'phenotype_name' => ['name'],
+      'synonym_id' => ['synonym_id'],
+      'year' => ['year', 'name'],
+    ],
+  ];
+
   return $schema;
 }
 
@@ -2335,9 +2369,11 @@ function tpps_update_7124() {
     }
   }
   // Set regex for validation.
-  variable_set('tpps_validation_regex_doi', '/^10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+$/');
-  variable_set('tpps_validation_regex_organism_name', '/^10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+$/');
-  variable_set('tpps_validation_regex_single_space', '/^[^\s]*\s[^\s]*$/');
+  if (empty(variable_get('tpps_validation_regex_doi'))) {
+    variable_set('tpps_validation_regex_doi', '/^10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+$/');
+    variable_set('tpps_validation_regex_organism_name', '/^10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+$/');
+    variable_set('tpps_validation_regex_single_space', '/^[^\s]*\s[^\s]*$/');
+  }
 
   cache_clear_all();
 }
@@ -2346,6 +2382,19 @@ function tpps_update_7124() {
  * Fixed 'Is phenotype environemental' checkbox.
  */
 function tpps_update_7125() {
-  variable_set('tpps_page_4_env_check_always_visible', TRUE);
-  variable_set('tpps_page_4_env_check_ajax_update', TRUE);
+  if (empty(variable_get('tpps_page_4_env_check_always_visible'))) {
+    variable_set('tpps_page_4_env_check_always_visible', TRUE);
+    variable_set('tpps_page_4_env_check_ajax_update', TRUE);
+  }
+}
+
+/**
+ * Create table 'tpps_phenotype_year'.
+ */
+function tpps_update_7126() {
+  $table = 'tpps_phenotype_year';
+  $schema = tpps_schema();
+  if (!db_table_exists($table) && !empty($schema[$table])) {
+    db_create_table($table, $schema[$table]);
+  }
 }

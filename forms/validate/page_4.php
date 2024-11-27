@@ -268,7 +268,7 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
         $file_element = $form[$id]['phenotype']['metadata'];
         $groups = tpps_file_validate_columns(
           $form_state,
-          tpps_phenotype_files()->getRequiredColumnList(),
+          tpps_phenotype_fields()->getRequiredColumnList(),
           $file_element
         );
         if (!form_get_errors()) {

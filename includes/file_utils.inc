@@ -483,6 +483,11 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
   $new_end_columns = end($parents) . "-columns";
   $new_end_no_header = end($parents) . "-no-header";
   $new_end_empty = end($parents) . "-empty";
+  // For searching purposes:
+  // 'snps-association-groups'
+  // 'file-groups'
+  // 'metadata-groups'
+  // @TODO Only validate and don't touch existing data. Collect data on submit.
   $group_path = array_pop($parents) . "-groups";
   $values = drupal_array_get_nested_value($form_state['values'], $parents);
   // Initialize form column values in form state.
