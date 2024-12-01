@@ -22,8 +22,9 @@
   });
 
   Drupal.behaviors.tppsMain = {
-    attach:function (context) {
+    attach: function (context) {
 
+      // VCF PreValidation feature.
       var vcfPreValidateButton = '.vcf-pre-validate-button';
       // Bootstrap tooltip functionality.
       $('[data-toggle="tooltip"]', context).tooltip();

@@ -1404,3 +1404,87 @@ function tpps_logical_opeation($value1, $value2, $logic_operator) {
   }
   return NULL;
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// Fieldset Collapsed Status feature.
+
+/**
+ * Adds abililty to store fieldset status.
+ *
+ * Note: Since data is stored on form_state array feature works only during
+ * current session.
+ *
+ * WARNING: Be sure to add after actual fieldset added to $form array.
+ *
+ * @param array $form
+ *   Drupal Form API array.
+ * @param array $form_state
+ *   Drupal Form API State array.
+ * @param string $fieldset_name
+ *   Name of the fieldset in Drupal Form array (not in browser's DOM).
+ *
+ * @todo Add custom Form API element property '#status' and use hooks to
+ *   add neccesary fields and make changes.
+ */
+function tpps_form_add_fieldset_collapsed_status(array &$form, array $form_state, $fieldset_name) {
+  $settings = tpps_form_get_fieldset_collapsed_status_settings();
+  if (empty($form[$fieldset_name])) {
+    throw new Exception(t('Fieldset "@name" not found. Call "@function()" after '
+      . 'adding fieldset to form array.',
+      ['@name' => $fieldset_name, '@function' => __FUNCTION__])
+    );
+  }
+  // Send class name to browser.
+  $form['#attached']['js'][] = [
+    'type' => 'setting',
+    'data' => ['tpps' => ['fieldsetCollapsedStatus' => $settings]],
+  ];
+
+  $hidden_field_name = $settings['prefix'] . $fieldset_name;
+  $value = $_SESSION[$settings['class']][$hidden_field_name] ?? NULL;
+
+  $form[$hidden_field_name] = [
+    '#type' => 'hidden',
+    '#attributes' => [
+      'class' => [$settings['class']],
+      'fieldset' => $fieldset_name,
+    ],
+    '#value' => $value ?? FALSE,
+  ];
+  // Force fieldset to be collapsible to aviod case when it's closed and there
+  // is no ability to open it.
+  $form[$fieldset_name]['#collapsible'] = TRUE;
+  $form[$fieldset_name]['#collapsed']
+    = (bool) ($value
+    // Respect default settings.
+    ?? $form[$fieldset_name]['#collapsed'] ?? FALSE);
+  tpps_add_css_js('fieldset', $form);
+  if (!isset($form['#submit']['tpps_form_submit_fieldset_collapsed_status'])) {
+    $form['#submit'][] = 'tpps_form_submit_fieldset_collapsed_status';
+  }
+}
+
+/**
+ * Form submitter for 'fieldset_collapsed_status' feature.
+ *
+ * Copies submitted values to permanent storage to reuse them later.
+ */
+function tpps_form_submit_fieldset_collapsed_status(array $form, array &$form_state) {
+  $settings = tpps_form_get_fieldset_collapsed_status_settings();
+  foreach ($form_state['values'] as $name => $value) {
+    if (strpos($name, $settings['prefix']) === FALSE) {
+      continue;
+    }
+    $_SESSION[$settings['class']][$name] = $form_state['input'][$name];
+  }
+}
+
+/**
+ * Gets common settings for Fieldset Collapsed Status feature.
+ */
+function tpps_form_get_fieldset_collapsed_status_settings() {
+  return [
+    'class' => 'fieldset_collapsed_status',
+    'prefix' => 'is_fieldset_collapsed_',
+  ];
+}
