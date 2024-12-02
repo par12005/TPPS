@@ -46,6 +46,7 @@ function tpps_generate_doi($accession) {
   $page2_values = $state['saved_values'][TPPS_PAGE_2] ?? NULL;
 
   $id = tpps_doi_create();
+  // dpm('Zenodo ID created using tpps_doi_create function: ' . $id);
   $creators = array(
     (object) array(
       'name' => tpps_doi_format_name($state['saved_values'][TPPS_PAGE_1]['primaryAuthor']),
@@ -85,10 +86,19 @@ function tpps_generate_doi($accession) {
       ),
     ),
   );
+  // dpm('Metadata');
+  // dpm($metadata);
 
-  tpps_doi_upload_files($id, $state);
+
+  $has_uploads = tpps_doi_upload_files($id, $state);
+  if ($has_uploads == FALSE) {
+    echo "This study does not have any uploads so zenodo will never publish this study. Please update the study with at least one file.<br />";
+    // Apparently a study submission must have at least one meta data file
+  }
 
   $upload = tpps_doi_metadata($id, $metadata);
+  // dpm('Upload Metadata response');
+  // dpm($upload);
 
   return $upload;
 }
@@ -105,7 +115,6 @@ function tpps_doi_create() {
   curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
   curl_setopt($ch, CURLOPT_POST, 1);
   curl_setopt($ch, CURLOPT_POSTFIELDS, '{}');
-
   $out = json_decode(curl_exec($ch));
   curl_close($ch);
   return $out->id;
@@ -126,6 +135,8 @@ function tpps_doi_metadata($id, $metadata) {
 
   $data = new stdClass();
   $data->metadata = $metadata;
+  $token = variable_get('tpps_zenodo_api_key', NULL);
+  // $data->access_token = $token;
   $data_json = json_encode($data);
 
   $ch = curl_init(tpps_zenodo_build_url($id));
@@ -208,20 +219,41 @@ function tpps_doi_upload_files($id, array &$state) {
   }
   $files = array_filter($files);
 
+  $token = variable_get('tpps_zenodo_api_key', NULL);
+  $upload_file_count = 0;
   foreach ($files as $fid) {
-    if ($fid && $file = tpps_file_load($fid) && $file->filesize < TPPS_20GB) {
+    if ($fid != '' && $file = tpps_file_load($fid) && $file->filesize < TPPS_20GB) {
+      if (!is_object($file)) {
+        continue;
+      }
+      dpm('Uploading file:');
+      dpm('FID:' . $fid);
+      dpm($file);
       $path = tpps_realpath($file->uri);
       $data = [
         'file' => curl_file_create($path, $file->filemime, $file->filename),
+        'token' => $token
       ];
       $ch = curl_init(tpps_zenodo_build_url("$id/files"));
+      // $headers = array();
+      // $headers[] = 'access_token: ' . $token;
+      // curl_setopt($ch, CURLOPT_HTTPHEADER,$headers);
       curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
       curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: multipart/form-data'));
       curl_setopt($ch, CURLOPT_POST, 1);
       curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-      curl_exec($ch);
+      $out = curl_exec($ch);
+      dpm('Upload output');
+      dpm($out);
       curl_close($ch);
+      $upload_file_count++;
     }
+  }
+  if ($upload_file_count > 0) {
+    return true;
+  }
+  else {
+    return false;
   }
 }
 
@@ -236,6 +268,14 @@ function tpps_doi_upload_files($id, array &$state) {
  */
 function tpps_doi_publish($id) {
   $ch = curl_init(tpps_zenodo_build_url("$id/actions/publish"));
+  // This is the new API
+  $prefix = variable_get('tpps_zenodo_prefix', '');
+  $token = variable_get('tpps_zenodo_api_key', NULL);
+  // dpm($token);
+  // $ch = curl_init('https://zenodo.org/api/deposit/depositions/'. $id . '/actions/publish');
+  // $headers = array();
+  // $headers[] = 'access_token: ' . $token;
+  // curl_setopt($ch, CURLOPT_HTTPHEADER,$headers);
   curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
   curl_setopt($ch, CURLOPT_POST, 1);
   curl_setopt($ch, CURLOPT_POSTFIELDS, '');

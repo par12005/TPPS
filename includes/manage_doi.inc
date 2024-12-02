@@ -28,7 +28,7 @@ function tpps_manage_doi($accession) {
 
   $token = variable_get('tpps_zenodo_api_key', NULL);
   if (!empty($token)) {
-    if (empty($submission->state['zenodo_id'])) {
+    if (empty($submission->state['zenodo_id']) || isset($_GET['force'])) {
       $submission->state['zenodo_id'] = tpps_generate_doi($accession)->id;
       $doi_object = tpps_doi_publish($submission->state['zenodo_id']);
       $submission->save();
@@ -39,18 +39,33 @@ function tpps_manage_doi($accession) {
     }
   }
 
+  dpm($doi_object);
   if (
     empty($token)
     || empty($doi_object)
-    || (isset($doi_object->status) && $doi_object->status != 200)
+    // [RISH] 12/2/2024 - Deprecated since it seems the doi_object format has changed
+    // || (isset($doi_object->status) && $doi_object->status != 200 */
+    
   ) {
     $output .= "<h4>Unable to load Zenodo DOI. There is likely a problem with "
       . "the Zenodo API key. Please contact your system administrator.</h4>";
   }
   else {
+    // $doi_count = count($doi_object);
+    $doi_objects = $doi_object;
+
+    // It can be an array if you're looking up a previously submitted DOI
+    // or else it's a single object  (when you now submit a DOI)
+    if (is_array($doi_object)) {
+      $doi_object = $doi_objects[0];
+    }
     $doi = $doi_object->doi;
     $url = $doi_object->doi_url;
     $badge = $doi_object->links->badge;
+    $output .= 'Displaying the latest DOI data submitted to Zenodo for this study -<br />';
+    //$output .= 'DOI State: ' . $doi_object->state . '<br />';
+    //$output .= 'DOI Submitted: ' . $doi_object->submitted . '<br />';
+    $output .= 'DOI Created: ' . $doi_object->created . '<br />';
     $output .= "DOI: <a target=\"blank\" href=\"$url\">$doi</a><br>"
     . "DOI Badge: <a target=\"blank\" href=\"$badge\"><img src=\"$badge\"></a><br>";
   }
