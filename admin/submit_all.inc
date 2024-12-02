@@ -54,6 +54,17 @@ function tpps_submit_all_settings_form(array $form, array &$form_state) {
     'log_tripal' => 'Tripal Log',
   ];
 
+  // To allow search dynamically build variable names:
+  // 'tpps_submitall_log_cli_severity_level'.
+  // 'tpps_submitall_log_cli_show_time'.
+  // 'tpps_submitall_log_cli_time_format'.
+  // 'tpps_submitall_log_cli_colorful'.
+  // 'tpps_submitall_log_file_severity_level'.
+  // 'tpps_submitall_log_file_show_time'.
+  // 'tpps_submitall_log_file_time_format'.
+  // 'tpps_submitall_log_tripal_severity_level'.
+  // 'tpps_submitall_log_tripal_show_time'.
+  // 'tpps_submitall_log_tripal_time_format'.
   foreach ($list as $key => $value) {
     $params = ['@log_type' => $value];
     $form[$key] = [
@@ -101,4 +112,3 @@ function tpps_submit_all_settings_form(array $form, array &$form_state) {
   }
   return system_settings_form($form);
 }
-

@@ -13,7 +13,6 @@
 $tpps_job_logger = NULL;
 $tpps_job = NULL;
 
-
 /**
  * Initialized the job logger which handles writing to job logs
  * and also outputting Tripal Job log messages at the same time.
@@ -407,62 +406,76 @@ function tpps_job_logger_write($string, $replacements = [], $severity = TRIPAL_I
   }
   $string = tpps_log_get_tag($severity) . $string;
   $file_message = $cli_message = $string;
-  if (
-    !empty($timestamp_format = variable_get('tpps_submitall_log_cli_time_format'))
-    && variable_get('tpps_submitall_log_cli_show_time')
-  ) {
-    $cli_message = date($timestamp_format) . ' ' . $cli_message;
-  }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  $prefix = '';
+  // CLI Logging.
 
-// @TODO Add tags to UI messages. See
-  // https://tgwebdev.cam.uchc.edu/admin/tripal/tripal_jobs/view/273407
+  if ($severity <= variable_set('tpps_submitall_log_cli_severity_level', 7)) {
+    if (
+      !empty($timestamp_format = variable_get('tpps_submitall_log_cli_time_format'))
+      && variable_get('tpps_submitall_log_cli_show_time')
+    ) {
+      $cli_message = date($timestamp_format) . ' ' . $cli_message;
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Do not show messages with severity level higher then allowed.
+    // 2 - critical, 7 - debug.
+    echo tpps_log_get_color($severity) . $cli_message . "\e[0m" . PHP_EOL;
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Log to file.
+  if ($severity <= variable_set('tpps_submitall_log_file_severity_level', 7)) {
+    // Do not show messages with severity level higher then allowed.
+    // 2 - critical, 7 - debug.
+    if (
+      $timestamp_format = variable_get('tpps_submitall_log_file_time_format')
+      && variable_get('tpps_submitall_log_file_show_time')
+    ) {
+      $timestamp = format_date(time(), 'custom', $timestamp_format);
+      $file_message = $timestamp . ' ' . $file_message;
+    }
+    $file_message = PHP_EOL . $file_message;
+    try {
+      @fwrite($tpps_job_logger['log_file_handle'], $file_message);
+      @fflush($tpps_job_logger['log_file_handle']);
+    }
+    catch (Exception $e) {
+      print_r($e->getMessage());
+    }
+  }
+}
+
+/**
+ * Gets color codes for CLI log messages.
+ *
+ * @param string $severity
+ *   The severity of the message.
+ *
+ * @return string
+ *   Returns bash color.
+ */
+function tpps_log_get_color($severity = TRIPAL_INFO) {
   switch ($severity) {
     case TRIPAL_CRITICAL:
     case TRIPAL_ERROR:
       // Red.
-      $prefix = "\e[31m";
-      break;
+      return "\e[31m";
 
     case TRIPAL_WARNING:
       // Yellow.
-      $prefix = "\e[33m";
-      break;
+      return "\e[33m";
 
     case TRIPAL_NOTICE:
     case TRIPAL_INFO:
       // Green.
-      $prefix = "\e[32m";
-      break;
+      return "\e[32m";
 
     case TRIPAL_DEBUG:
       // Cyan.
-      $prefix = "\e[36m";
-      break;
+      return "\e[36m";
 
     default:
-      $prefix = "\e[0m";
-      break;
-  }
-  // CLI Logging.
-  echo $prefix . $cli_message . "\e[0m" . PHP_EOL;
-
-  // Log to file.
-  if (
-    $timestamp_format = variable_get('tpps_submitall_log_file_time_format')
-    && variable_get('tpps_submitall_log_file_show_time')
-  ) {
-    $timestamp = format_date(time(), 'custom', $timestamp_format);
-    $file_message = $timestamp . ' ' . $file_message;
-  }
-  $file_message = PHP_EOL . $file_message;
-  try {
-    @fwrite($tpps_job_logger['log_file_handle'], $file_message);
-    @fflush($tpps_job_logger['log_file_handle']);
-  }
-  catch (Exception $e) {
-    print_r($e->getMessage());
+      return "\e[0m";
   }
 }
 
@@ -8288,6 +8301,8 @@ function tpps_get_code_parts($part) {
  */
 function tpps_log($message, array $variables = [], $severity = TRIPAL_INFO) {
   global $tpps_job;
+
+
   if (!is_string($message)) {
     $message = print_r($message, 1);
   }
@@ -8296,6 +8311,11 @@ function tpps_log($message, array $variables = [], $severity = TRIPAL_INFO) {
   tpps_job_logger_write($message, $variables, $severity);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Tripal logging.
+  if ($severity > variable_set('tpps_submitall_log_tripal_severity_level', 7)) {
+    // Do not show messages with severity level higher then allowed.
+    // 2 - critical, 7 - debug.
+    return;
+  }
   $tripal_message = $message;
   if (
     $timestamp_format = variable_get('tpps_submitall_log_tripal_time_format')
