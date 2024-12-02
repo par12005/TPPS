@@ -198,8 +198,10 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     tpps_submission_rename_files($accession);
     tpps_log('Files renamed!' . PHP_EOL, [], TRIPAL_INFO);
 
-    tpps_log('Nextflow New Study Pipeline', [], TRIPAL_INFO);
-    tpps_nextflow_new_study_pipeline($submission->sharedState);
+    if (variable_get('tpps_submitall_log_tripal_suppress_cli', TRUE)) {
+      tpps_log('Nextflow New Study Pipeline', [], TRIPAL_INFO);
+      tpps_nextflow_new_study_pipeline($submission->sharedState);
+    }
 
 
     tpps_log('Finishing up...', [], TRIPAL_INFO);
@@ -228,6 +230,12 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   }
 }
 
+/**
+ * Run nextflow.
+ *
+ * @param array $form_state
+ *   Actually it's a shared state.
+ */
 function tpps_nextflow_new_study_pipeline(array &$form_state) {
   // Get all required nextflow flag parameters from the shared state
   $study_accession = $form_state['saved_values'][1]['accession'];
@@ -313,42 +321,43 @@ function tpps_nextflow_new_study_pipeline(array &$form_state) {
   $version = $_POST['input_version'] ?? NULL;
   // $SCRIPT_LOCATION='/home/FCAM/tg-nginx/simple_test.sh';
   $run_code = "#!/bin/bash
-#SBATCH --job-name=simple_test
-#SBATCH -N 1
-#SBATCH -n 1
-#SBATCH -c 1
-#SBATCH --partition=general
-#SBATCH --qos=general
-#SBATCH --mail-type=END
-#SBATCH --mem=10G
-#SBATCH --mail-user=tg-nginx@cam.uchc.edu
-#SBATCH -o $store_directory/new_study_pipeline_%j.out
-#SBATCH -e $store_directory/new_study_pipeline_%j.err
+  #SBATCH --job-name=simple_test
+  #SBATCH -N 1
+  #SBATCH -n 1
+  #SBATCH -c 1
+  #SBATCH --partition=general
+  #SBATCH --qos=general
+  #SBATCH --mail-type=END
+  #SBATCH --mem=10G
+  #SBATCH --mail-user=tg-nginx@cam.uchc.edu
+  #SBATCH -o $store_directory/new_study_pipeline_%j.out
+  #SBATCH -e $store_directory/new_study_pipeline_%j.err
 
 
+  module load nextflow
+  mkdir -p /scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
+  export TMPDIR=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
+  export NXF_TEMP=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
+  export NXF_WORK=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
+  export NXF_OPTS='-Xms5G -Xmx20G'
+  cd $store_directory
+  echo \$SLURM_JOB_ID > $store_directory/slurm_job_id.txt
 
-module load nextflow
-mkdir -p /scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
-export TMPDIR=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
-export NXF_TEMP=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
-export NXF_WORK=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
-export NXF_OPTS='-Xms5G -Xmx20G'
-cd $store_directory
-echo \$SLURM_JOB_ID > $store_directory/slurm_job_id.txt
+  rm -rf ~/.nextflow/assets/TreeGenes/new-study-pipeline
+  nextflow pull TreeGenes/new-vcf-pipeline -r main -hub gitlab
+  nextflow run TreeGenes/new-study-pipeline -r main -profile treegenes \
+    -resume --tgdr $study_accession --vcf '$vcf' --ref_genome '$ref_genome'
+  ";
 
-rm -rf ~/.nextflow/assets/TreeGenes/new-study-pipeline
-nextflow pull TreeGenes/new-vcf-pipeline -r main -hub gitlab
-nextflow run TreeGenes/new-study-pipeline -r main -profile treegenes -resume --tgdr $study_accession --vcf '$vcf' --ref_genome '$ref_genome'
-";
-
-// Override temporarily since we're running on TREEGENESDEV and not on the
-// cluster (so sbatch commands will not work).
-$run_code = "#!/bin/bash
-cd $store_directory
-rm -rf ~/.nextflow/assets/TreeGenes/new-study-pipeline
-nextflow pull TreeGenes/new-study-pipeline -r main -hub gitlab
-nextflow run TreeGenes/new-study-pipeline -r main -profile treegenes -resume --tgdr $study_accession --vcf '$vcf' --ref_genome '$ref_genome'
-";
+  // Override temporarily since we're running on TREEGENESDEV and not on the
+  // cluster (so sbatch commands will not work).
+  $run_code = "#!/bin/bash
+  cd $store_directory
+  rm -rf ~/.nextflow/assets/TreeGenes/new-study-pipeline
+  nextflow pull TreeGenes/new-study-pipeline -r main -hub gitlab
+  nextflow run TreeGenes/new-study-pipeline -r main -profile treegenes \
+    -resume --tgdr $study_accession --vcf '$vcf' --ref_genome '$ref_genome'
+  ";
 
 
   if (file_exists($store_directory . '/slurm_job_id.txt')) {
@@ -356,15 +365,17 @@ nextflow run TreeGenes/new-study-pipeline -r main -profile treegenes -resume --t
     $slurm_job_id = file_get_contents($store_directory . '/slurm_job_id.txt');
   }
   $SCRIPT_LOCATION = $store_directory . '/run_script.sh';
-  tpps_log('NEXTFLOW NEW STUDY PIPELINE SCRIPT LOCATION: ' . $SCRIPT_LOCATION . PHP_EOL);
+  tpps_log(
+    'NEXTFLOW NEW STUDY PIPELINE SCRIPT LOCATION: @location',
+    ['@location' => $SCRIPT_LOCATION]
+  );
   file_put_contents($SCRIPT_LOCATION, $run_code);
   chmod($SCRIPT_LOCATION, 0755);
 
   // TODO: Add the correct run code from Gabe
   //$run_code .= "nextflow run TreeGenes/New_Genome_Pipeline -r master -profile xanadu ";
 
-  tpps_log("Attempting to run nextflow new study pipeline on treegenesdev...\n");
-
+  tpps_log("Attempting to run nextflow new study pipeline on treegenesdev...");
   exec("
       ssh tg-nginx@treegenesdev.cam.uchc.edu << EOF
       $SCRIPT_LOCATION
@@ -409,7 +420,7 @@ function tpps_job_logger_write($string, $replacements = [], $severity = TRIPAL_I
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // CLI Logging.
 
-  if ($severity <= variable_set('tpps_submitall_log_cli_severity_level', 7)) {
+  if ($severity <= variable_get('tpps_submitall_log_cli_severity_level', 7)) {
     if (
       !empty($timestamp_format = variable_get('tpps_submitall_log_cli_time_format'))
       && variable_get('tpps_submitall_log_cli_show_time')
@@ -424,7 +435,7 @@ function tpps_job_logger_write($string, $replacements = [], $severity = TRIPAL_I
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Log to file.
-  if ($severity <= variable_set('tpps_submitall_log_file_severity_level', 7)) {
+  if ($severity <= variable_get('tpps_submitall_log_file_severity_level', 7)) {
     // Do not show messages with severity level higher then allowed.
     // 2 - critical, 7 - debug.
     if (
@@ -8311,33 +8322,29 @@ function tpps_log($message, array $variables = [], $severity = TRIPAL_INFO) {
   tpps_job_logger_write($message, $variables, $severity);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Tripal logging.
-  if ($severity > variable_set('tpps_submitall_log_tripal_severity_level', 7)) {
+  if ($severity <= variable_get('tpps_submitall_log_tripal_severity_level', 7)) {
     // Do not show messages with severity level higher then allowed.
     // 2 - critical, 7 - debug.
-    return;
-  }
-  $tripal_message = $message;
-  if (
-    $timestamp_format = variable_get('tpps_submitall_log_tripal_time_format')
-    && variable_get('tpps_submitall_log_tripal_show_time')
-  ) {
-    $timestamp = format_date(time(), 'custom', $timestamp_format);
-    $tripal_message = $timestamp . ' ' . $message;
-  }
-  try {
-    if (variable_get('tpps_submitall_log_tripal_suppress_cli')) {
-      ob_start();
+    $tripal_message = $message;
+    if (
+      $timestamp_format = variable_get('tpps_submitall_log_tripal_time_format')
+      && variable_get('tpps_submitall_log_tripal_show_time')
+    ) {
+      $tripal_message = date($timestamp_format) . ' ' . $message;
     }
-    $tpps_job->logMessage($tripal_message, $variables, $severity);
-    if (variable_get('tpps_submitall_log_tripal_suppress_cli')) {
-      ob_end_clean();
+    try {
+      if (variable_get('tpps_submitall_log_tripal_suppress_cli')) {
+        ob_start();
+      }
+      $tpps_job->logMessage($tripal_message, $variables, $severity);
+      if (variable_get('tpps_submitall_log_tripal_suppress_cli')) {
+        ob_end_clean();
+      }
     }
-  }
-  catch (Exception $ex) {
-
-  }
-  catch (Error $err) {
-
+    catch (Exception $ex) {
+    }
+    catch (Error $err) {
+    }
   }
 }
 

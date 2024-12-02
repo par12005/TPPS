@@ -38,6 +38,11 @@ function tpps_submit_all_settings_form(array $form, array &$form_state) {
     '#description' => t('Tripal log messages usually duplicate CLI messages '
       . 'and could be disabled.')
   ];
+  $form['common']['tpps_submitall_run_nextflow'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Allow to run nextflow'),
+    '#default_value' => variable_get('tpps_submitall_run_nextflow'),
+  ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Logging.
   $severity_options = [
