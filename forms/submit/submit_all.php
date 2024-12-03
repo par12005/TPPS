@@ -1821,7 +1821,7 @@ tpps_log("Year: \n" . print_r($phenotypes_meta[$name]['year'], 1), [], TRIPAL_DE
       'struct_id' => tpps_load_cvterm('whole plant')->cvterm_id,
     );
 
-    print_r('ISO_FID:' . $iso_fid . "\n");
+    tpps_log('ISO_FID: ' . $iso_fid, [], TRIPAL_DEBUG);
     tpps_log('Processing phenotype_data file data...', [], TRIPAL_INFO);
     tpps_file_iterator($iso_fid, 'tpps_process_phenotype_data', $options);
     tpps_log('Inserting phenotype_data into database using insert_multi...', [], TRIPAL_INFO);
@@ -2023,7 +2023,7 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
 
     if (!empty($genotype['files']['snps-association'])) {
       $assoc_fid = $genotype['files']['snps-association'];
-      print_r("Association file ID: " . $assoc_fid . "\n");
+      tpps_log("Association file ID: " . $assoc_fid, [], TRIPAL_DEBUG);
       tpps_add_project_file($shared_state, $assoc_fid);
 
       $options['records']['featureloc'] = array();
@@ -2147,24 +2147,24 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
     echo "Ref-genome: $ref_genome\n";
     // Lookup analysis id from reference genome and add it to options array.
     $options['analysis_id'] = tpps_get_analysis_id_from_ref_genome($ref_genome);
-    print_r("ANALYSIS ID: " . $options['analysis_id'] . "\n");
+    tpps_log("ANALYSIS ID: " . $options['analysis_id'], [], TRIPAL_DEBUG);
 
     // We must have an analysis_id to tie back to the srcfeature.
     if ($options['analysis_id'] != NULL) {
       // Initialize new records with featureloc array to store records.
-      $options['records']['featureloc'] = array();
-      $options['records']['featureprop'] = array();
+      $options['records']['featureloc'] = [];
+      $options['records']['featureprop'] = [];
 
       $options['headers'] = tpps_file_headers($design_fid);
-      print_r("HEADERS:\n");
-      print_r($options['headers']);
-      print_r("\n");
+      tpps_log("HEADERS:\n@headers\n",
+        ['@headers' => print_r($options['headers'], 1)], TRIPAL_DEBUG);
 
       // Find the marker name header.
       $options['file_columns'] = [];
       foreach ($options['headers'] as $column => $column_name) {
         $column_name = strtolower(trim($column_name));
-        print_r("spreadsheet column name:" . $column_name . " column: $column\n");
+        tpps_log("Spreadsheet column name:" . $column_name . " column: $column",
+          [], TRIPAL_DEBUG);
         switch ($column_name) {
           case 'chr':
             $options['file_columns']['chr'] = $column;
@@ -2188,8 +2188,7 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
         elseif (strpos($column_name, 'marker name') !== FALSE) {
           $options['file_columns']['marker_name'] = $column;
         }
-        print($options['file_columns']);
-        print_r($options['file_columns']);
+        tpps_log(print_r($options['file_columns'], 1), [], TRIPAL_DEBUG);
       }
 
       // We want to process this Genotype SNP Assay Design file before
@@ -2791,8 +2790,8 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
       $depth_cvterm = tpps_load_cvterm('read_depth')->cvterm_id;
       $n_sample_cvterm = tpps_load_cvterm('number_samples')->cvterm_id;
 
-      // This means it was uploaded
-      print_r("VCF_FID: $vcf_id\n");
+      // This means it was uploaded.j
+      tpps_log("VCF_FID: $vcf_id", [], TRIPAL_DEBUG);
       if ($vcf_fid > 0) {
         $vcf_file = file_load($vcf_fid);
         $location = tpps_get_location($vcf_file->uri);
@@ -2800,7 +2799,7 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
       else {
         $location = $genotype['files']['local_vcf'];
       }
-      if ($location == null || $location == "") {
+      if ($location == NULL || $location == "") {
         throw new Exception('Could not find location of VCF even though the VCF option was specified.
         File ID was 0 so its not an uploaded file. local_vcf variable returned empty so cannot use that');
       }
@@ -2809,9 +2808,10 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
       // [RISH] [12/14/2023] [STEP 1] Perform one liner related code for flat files and db insertions
       // [STEP 1 A - Run a check for duplicate sample names]
       $cmd_output = [];
-      $found_duplicate_sample_ids = false;
+      $found_duplicate_sample_ids = FALSE;
       $pathinfo = pathinfo($location);
-      $duplicate_warnings_location = $pathinfo['dirname'] . '/' .  $pathinfo['filename'] . '-duplicate-warnings.txt';
+      $duplicate_warnings_location = $pathinfo['dirname'] . '/'
+        . $pathinfo['filename'] . '-duplicate-warnings.txt';
       $cmd = 'bcftools query -l ' . $location . ' &> ' . $duplicate_warnings_location;
       exec($cmd);
       echo "Duplicate sample names checked\n";
