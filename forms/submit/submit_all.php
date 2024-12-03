@@ -198,11 +198,10 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     tpps_submission_rename_files($accession);
     tpps_log('Files renamed!' . PHP_EOL, [], TRIPAL_INFO);
 
-    if (variable_get('tpps_submitall_log_tripal_suppress_cli', TRUE)) {
+    if (variable_get('tpps_submitall_run_nextflow', TRUE)) {
       tpps_log('Nextflow New Study Pipeline', [], TRIPAL_INFO);
       tpps_nextflow_new_study_pipeline($submission->sharedState);
     }
-
 
     tpps_log('Finishing up...', [], TRIPAL_INFO);
     // Functions starting from tpps_submit_page_1() update $shared_state array
@@ -750,14 +749,15 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
       'type_id' => $organism_type_id,
     ];
 
-    echo "This is the record data to check for OR ELSE insert this data into the db\n";
-    print_r($record);
+    tpps_log("This is the record data to check for OR ELSE insert this data into the db\n@record",
+      ['@record' => print_r($record, 1)], TRIPAL_DEBUG);
 
     // if (preg_match('/ x /', $species)) {
     //   $record['type_id'] = tpps_load_cvterm('speciesaggregate')->cvterm_id;
     // }
 
-    echo "Checking to see if records exist for genus $genus, species $species, infr $infra\n";
+    tpps_log("Checking to see if records exist for genus $genus, species $species, infr $infra.",
+      [], TRIPAL_DEBUG);
     // Let's check to see if genus and species match, if so, get the id
     // if it does not return any rows, then create organism
     $organism_results = chado_query('SELECT * FROM chado.organism WHERE genus = :genus AND species = :species
@@ -771,7 +771,10 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
     foreach ($organism_results as $organism_row) {
       $organism_results_id = $organism_row->organism_id;
     }
-    echo "Found organism results id: " . $organism_results_id . "\n";
+    tpps_log('Found organism results id: @result',
+      ['@result' => ($organism_results_id == -1 ? 'Not found' : $organism_results_id)],
+      TRIPAL_DEBUG
+    );
     // throw new Exception('DEBUG');
 
 
@@ -785,10 +788,11 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
     if ($organism_results_id == -1) {
       // Lookup to see if this species exists on NCBI
       $taxons = tpps_ncbi_get_taxon_id($raw_name, TRUE);
-      tpps_log('NCBI taxon data found: ' . print_r($taxons, true));
+      tpps_log("NCBI taxon data found: \n@taxons_dump",
+        ['@taxons_dump' => print_r($taxons, 1)], TRIPAL_DEBUG);
       $taxons = json_decode(json_encode($taxons))->Id;
-      tpps_log('NCBI taxon data found: ' . print_r($taxons, true));
-      // print_r($taxons);
+      tpps_log("NCBI taxon data found: \n@taxons_dump",
+        ['@taxons_dump' => print_r($taxons, 1)], TRIPAL_DEBUG);
 
       if (empty($taxons) || count($taxons) === 0) {
         // throw new Exception("This study contains a species in which we could not find a matching record on NCBI: " . $raw_name);
@@ -829,15 +833,17 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
 
       // If there is no NCBI ID in dbxref, add it
       if ($dbxref_id == NULL) {
-        tpps_log('Did not find NCBI ID $ncbi_id, adding it to dbxref table\n', [], TRIPAL_INFO);
+        tpps_log('Did not find NCBI ID @ncbi_id, adding it to dbxref table.',
+          ['@ncbi_id' => $ncbi_id], TRIPAL_INFO);
         $dbxref_id = tpps_chado_insert_record('dbxref', [
           'db_id' => $ncbi_db_id,
           'accession' => $ncbi_id,
-          'version' => ''
+          'version' => '',
         ]);
       }
       else {
-        tpps_log('NCBI ID $ncbi_id already exists in dbxref table\n', [], TRIPAL_INFO);
+        tpps_log('NCBI ID @ncbi_id already exists in dbxref table.',
+          ['@ncbi_id' => $ncbi_id], TRIPAL_INFO);
       }
 
       // Now we still need to make sure there is no organism_dbxref record, search for one
@@ -859,14 +865,17 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
           'organism_id' => $organism_results_id,
           'dbxref_id' => $dbxref_id,
         ]);
-        tpps_log('Did not find organism_dbxref_id, adding it to the organism_dbxref table\n', [], TRIPAL_INFO);
+        tpps_log("Did not find organism_dbxref_id, adding it to the organism_dbxref table.",
+          [], TRIPAL_INFO);
       }
       else {
-        tpps_log('organism_dbxref_id $organism_dbxref_id already exists in organism_dbxref table\n', [], TRIPAL_INFO);
+        tpps_log("organism_dbxref_id $organism_dbxref_id already exists in organism_dbxref table.",
+          [], TRIPAL_INFO);
       }
     }
     else {
-      tpps_log("[WARNING] NO NCBI ID could be found from NCBI for $genus $species $infra");
+      tpps_log("NO NCBI ID could be found from NCBI for $genus $species $infra",
+        [], TRIPAL_WARNING);
     }
     // throw new Exception('debug');
 
@@ -1724,9 +1733,9 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
     }
 
     if (($debug_mode ?? NULL) || 0) {
-      print_r("Phenotypes Meta:\n");
-      print_r($phenotypes_meta);
-      print_r("\n");
+      tpps_log("Phenotypes Meta: \n@meta",
+        ['@meta' => print_r($phenotypes_meta, 1)], TRIPAL_DEBUG
+      );
     }
 
     $time_options = array();
@@ -1776,8 +1785,9 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
     $options['file_empty'] = $phenotype['file-empty'];
     $options['organism_name'] = $organism_name;
 
-    print_r('DATA_FID:' . $data_fid . "\n");
+    tpps_log('DATA_FID:' . $data_fid, [], TRIPAL_DEBUG);
     tpps_log('Processing phenotype_data file data...', [], TRIPAL_INFO);
+
 
 tpps_log("Year: \n" . print_r($phenotypes_meta[$name]['year'], 1), [], TRIPAL_DEBUG);
 
@@ -5382,13 +5392,10 @@ function tpps_generate_popstruct($study_accession, $vcf_location) {
 
   // In case there are already files in here, delete them
   $files = glob($popstruct_temp_dir . '/*'); // get all file names
-  foreach($files as $file){ // iterate files
-    if(is_file($file)) {
-      tpps_job_logger_write("[CLEAN UP BEFORE BEGIN] Removing $file from the popstruct directory");
-      echo("[CLEAN UP BEFORE BEGIN] Removing $file from the popstruct directory\n");
-      tpps_job_logger_write("[FILE CLEAN/DELETE] $file");
-      echo("[FILE CLEAN/DELETE] $file\n");
-      // echo "TODO: Perform the actual delete\n";
+  foreach ($files as $file) { // iterate files
+    if (is_file($file)) {
+      tpps_log("[CLEAN UP BEFORE BEGIN] Removing $file from the popstruct directory", [], TRIPAL_DEBUG);
+      tpps_log("[FILE CLEAN/DELETE] $file", [], TRIPAL_DEBUG);
       unlink($file); // delete file
     }
   }
@@ -5842,8 +5849,8 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
             $result = tpps_ols_install_term("{$info['ontology']}:{$data["{$type}-other"]}");
             if ($result !== FALSE) {
               $meta[$name]["{$type}_id"] = $result->cvterm_id;
-              $job->logMessage(
-                "[INFO] New OLS Term '{$info['ontology']}:{$data["{$type}-other"]}' installed"
+              tpps_log("New OLS Term '{$info['ontology']}:{$data["{$type}-other"]}' installed",
+                [], TRIPAL_INFO
               );
             }
           }
@@ -5872,19 +5879,19 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
               'definition' => '',
               'cv_name' => $local_cv->name,
             ];
-            tpps_log("[CREATING] New CVTERM for custom unit FROM metafile\n", [], TRIPAL_DEBUG);
-            tpps_log(print_r($cvterm_row_values, true));
+            tpps_log("[CREATING] New CVTERM for custom unit FROM metafile: \n@data",
+              ['@data' => print_r($cvterm_row_values, 1)], TRIPAL_DEBUG
+            );
 
             $meta[$name]["{$type}_id"] = chado_insert_cvterm($cvterm_row_values)->cvterm_id;
             tpps_log('CVTERM ID (unit_cvterm_id): ' . $meta[$name]["{$type}_id"], [], TRIPAL_DEBUG);
-            tpps_log("\n");
             if (!empty($meta[$name]["{$type}_id"])) {
               if ($cvterm_name == 'no unit') {
                 // 'other-other'.
-                $job->logMessage("[INFO] Used Local '{$info['label']}' Term '{$cvterm_name}'.");
+                tpps_log("Used Local '{$info['label']}' Term '{$cvterm_name}'.");
               }
               else {
-                $job->logMessage("[INFO] New Local '{$info['label']}' Term '{$cvterm_name}' installed");
+                tpps_log("New Local '{$info['label']}' Term '{$cvterm_name}' installed");
               }
             }
           }
@@ -5915,7 +5922,7 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
         $meta[$name]['synonym_id'] = $synonym_id;
       }
       else {
-        tpps_log('Unit #@unit_id has no phenotype synonym. @raw',
+        tpps_log("Unit #@unit_id has no phenotype synonym. \n@raw",
           [
             '@unit_id' => $meta[$name]['unit_id'],
             '@raw' => print_r($meta[$name], 1),
@@ -5925,7 +5932,7 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
       }
     }
   }
-  print_r($meta);
+  tpps_log("Meta: \n@meta", ['@meta' => print_r($meta, 1)], TRIPAL_DEBUG);
 }
 
 /**
@@ -7154,11 +7161,14 @@ function tpps_generate_genotype_materialized_view($project_id) {
 
   // Added to fix previous queries that used stock_genotype which we don't
   // want to keep using.
-  echo "Attempting to drop materialized view (if exist): " . $view_name . "\n";
+  tpps_log("Attempting to drop materialized view (if exist): @name.",
+    ['@name' => $view_name], TRIPAL_DEBUG
+  );
   // Check first to see if it is a materialized view
-  $mat_view_results = chado_query("select count(*) as c1 from pg_matviews where matviewname = :view_name;", [
-    ':view_name' => $view_name_without_schema
-  ]);
+  $mat_view_results = chado_query("select count(*) as c1
+    from pg_matviews where matviewname = :view_name;",
+    [':view_name' => $view_name_without_schema]
+  );
   $mat_view_count = $mat_view_results->fetchObject()->c1;
   // If count is more than 0, then the materialized view exists, so drop it
   if ($mat_view_count > 0) {
@@ -7168,11 +7178,18 @@ function tpps_generate_genotype_materialized_view($project_id) {
   // V3 - Emily decided to use tables (3/20/2024)
   $table_name = $view_name; // the table names will be the same as what the view names used to be
   chado_query('SET search_path TO chado,public;');
-  echo "Attempting to drop table (if exist): " . $view_name . "\n";
+  tpps_log("Attempting to drop table (if exist): @name.",
+    ['@name' => $view_name], TRIPAL_DEBUG);
   chado_query("DROP TABLE IF EXISTS " . $table_name . ";");
-  echo "Attempting to create table (if it does not exist): " . $table_name . "\n";
+  tpps_log("Attempting to create table (if it does not exist): @name.",
+    ['@name' => $table_name],
+    TRIPAL_DEBUG
+  );
   chado_query("select create_project_genotype_table(" . intval($project_id) . ");");
-  echo "Genotype view table has finished being generated: " . $table_name . "\n";
+  tpps_log("Genotype view table has finished being generated: @name.",
+    ['@name' => $table_name],
+    TRIPAL_DEBUG
+  );
 
   // echo "Attempting to create materialized view (if it does not exist): " . $view_name . "\n";
 
@@ -8290,7 +8307,12 @@ function tpps_get_code_parts($part) {
 }
 
 /**
- * Adds message to 2 logs [VS].
+ * Adds message to CLI log, file log and Tripal Log.
+ *
+ * WARNING:
+ * To temporary disable some log messages don't chnage code but rather
+ * use TRIPAL_DEBUG severity and set severity level lower then 'Debug'
+ * to exclude them at settings page /admin/config/tpps/submit-all.
  *
  * @param string $message
  *   The message to store in the logs.
