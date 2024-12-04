@@ -43,6 +43,38 @@ function tpps_submit_all_settings_form(array $form, array &$form_state) {
     '#title' => t('Allow to run nextflow'),
     '#default_value' => variable_get('tpps_submitall_run_nextflow'),
   ];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // CVTerms.
+  $cvterm_list = [
+    // 'tpps_submitall_cvterm_phenotype_year'.
+    'phenotype_year',
+  ];
+  $form['cvterm'] = [
+    '#type' => 'fieldset',
+    '#title' => t('CVTerms'),
+  ];
+  foreach ($cvterm_list as $name) {
+    $human_name = ucwords(str_replace('_', ' ', $name));
+    if ($cvterm_id = variable_get('tpps_submitall_cvterm_' . $name)) {
+      // @TODO Get cvterm data from DB and show it in description.
+      $description = l(
+        t('See details of cvterm #@cvterm_id.', ['@cvterm_id' => $cvterm_id]),
+        'admin/reports/db/chado.cvterm',
+        [
+          'query' => ['chado.cvterm.cvterm_id' => $cvterm_id],
+          'attributes' => ['target' => '_blank'],
+        ]
+      );
+    }
+    $form['cvterm']['tpps_submitall_cvterm_' . $name] = [
+      '#type' => 'textfield',
+      '#title' => t('CVTerm Id for "@name"', ['@name' => $human_name]),
+      '#default_value' => $cvterm_id,
+      '#description' => $description ?? NULL,
+    ];
+  }
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Logging.
   $severity_options = [
@@ -71,6 +103,7 @@ function tpps_submit_all_settings_form(array $form, array &$form_state) {
   // 'tpps_submitall_log_tripal_show_time'.
   // 'tpps_submitall_log_tripal_time_format'.
   foreach ($list as $key => $value) {
+
     $params = ['@log_type' => $value];
     $form[$key] = [
       '#type' => 'fieldset',
