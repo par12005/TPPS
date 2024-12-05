@@ -1580,6 +1580,9 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
     // [/VS]
     'environment' => tpps_load_cvterm('environment')->cvterm_id,
     'intensity' => tpps_load_cvterm('intensity')->cvterm_id,
+    // @TODO cvterm 54188 (year) doesn't work at dev-server.
+    // 'year' => tpps_load_cvterm('year')->cvterm_id,
+    'year' => variable_get('tpps_submitall_cvterm_phenotype_year', ''),
   );
 
   $records = [
@@ -1635,12 +1638,6 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
       $phenotypes_meta[$name]['env'] = !empty($phenotype['phenotypes-meta'][$j]['env-check']);
       $phenotypes_meta[$name]['year'] = $phenotype['phenotypes-meta'][$j]['year'];
 
-      if (!empty($phenotypes_meta[$name]['year'])) {
-        tpps_log("Year: \n" . print_r($phenotypes_meta[$name]['year'], 1), TRIPAL_DEBUG);
-        // The same phenotype could have multiple years accociated with it.
-        // So we need to store them inside this loop (not like 'env' does).
-        tpps_save_phenotype_year($phenotype_meta[$name]);
-      }
       if ($phenotypes_meta[$name]['env']) {
         $env_phenotypes = TRUE;
       }
@@ -1788,11 +1785,6 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
     tpps_log('DATA_FID:' . $data_fid, [], TRIPAL_DEBUG);
     tpps_log('Processing phenotype_data file data...', [], TRIPAL_INFO);
 
-
-tpps_log("Year: \n" . print_r($phenotypes_meta[$name]['year'], 1), [], TRIPAL_DEBUG);
-
-
-
     tpps_file_iterator($data_fid, 'tpps_process_phenotype_data', $options);
     $shared_state['data']['phenotype_meta'] += $phenotypes_meta;
     tpps_log('Inserting data into database using insert_multi...', [], TRIPAL_INFO);
@@ -1810,7 +1802,7 @@ tpps_log("Year: \n" . print_r($phenotypes_meta[$name]['year'], 1), [], TRIPAL_DE
     $options['cvterms'] = $phenotype_cvterms;
     $options['file_headers'] = tpps_file_headers($iso_fid);
     $options['organism_name'] = $organism_name;
-    $options['meta'] = array(
+    $options['meta'] = [
       'desc' => "Mass Spectrometry",
       // Unit name replaced with Unit Id (cvterm_id for 'chemical substance').
       // Outdated: 'unit' => "intensity (arbitrary nits)".
@@ -1819,7 +1811,8 @@ tpps_log("Year: \n" . print_r($phenotypes_meta[$name]['year'], 1), [], TRIPAL_DE
       'attr_id' => tpps_load_cvterm('intensity')->cvterm_id,
       // Manual term for MASS Spec.
       'struct_id' => tpps_load_cvterm('whole plant')->cvterm_id,
-    );
+      // @TODO Should 'year' and 'env' be added here?
+    ];
 
     tpps_log('ISO_FID: ' . $iso_fid, [], TRIPAL_DEBUG);
     tpps_log('Processing phenotype_data file data...', [], TRIPAL_INFO);
@@ -6128,26 +6121,24 @@ function tpps_process_phenotype_data($row, array &$options = []) {
       'stock_id' => $tree_info[$tree_id]['stock_id'],
       '#fk' => ['phenotype' => $phenotype_name],
     );
-    if (isset($meta[strtolower($name)]['time'])) {
-      $records['phenotypeprop']["$phenotype_name-time"] = array(
-        'type_id' => $cvterms['time'],
-        'value' => $meta[strtolower($name)]['time'],
-        '#fk' => ['phenotype' => $phenotype_name],
-      );
-      $options['data'][$phenotype_name]['time'] = $meta[strtolower($name)]['time'];
+
+    // List of properties which could be set manually using form or
+    // found in uploaded phenotype metadata file.
+    foreach (['time', 'year'] as $property_name) {
+
+// @TODO Use only $options.
+
+
+      tpps_submitall_prepare_phenotypeprop([
+        'phenotype_name' => $name,
+        'property_name' => $property_name,
+        'meta' => $meta,
+        'records' => $records,
+        'options' => $options,
+        'meta_headers' => $meta_headers,
+      ]);
     }
-    elseif (isset($meta_headers['time'])) {
-      $val = $row[$meta_headers['time']];
-      if (is_int($val)) {
-        $val = tpps_xlsx_translate_date($val);
-      }
-      $records['phenotypeprop']["$phenotype_name-time"] = array(
-        'type_id' => $cvterms['time'],
-        'value' => $val,
-        '#fk' => ['phenotype' => $phenotype_name],
-      );
-      $options['data'][$phenotype_name]['time'] = $val;
-    }
+
     $records['phenotypeprop']["$phenotype_name-desc"] = array(
       'type_id' => $cvterms['desc'],
       'value' => $iso ? $meta['desc'] : $meta[strtolower($name)]['desc'],
@@ -8409,16 +8400,51 @@ function tpps_ssr_process(array &$form_state, $fid, array &$options, $job, array
 }
 
 /**
- * Saves relation between phenotype and year.
+ * Prepare data to be stored in table  'chado.phenotypeprop'.
  *
- * @param array $values
- *   List of values to be stored in db table.
- *   Keys are: 'phenotype_name', 'synonym_id', 'year'.
- *   More details:
- *     module_load_include('install', 'tpps');
- *     dpm(tpps_schema()['tpps_phenotype_year']);
+ * Currently used for 'time' and 'year' phenotype properties.
+ * Will not returns anything but $data['records'] and $data['options'] which
+ * received by reference will be updated.
+ *
+ * @param array $data
+ *   Required data. Keys are:
+ *     'phenotype_name' => $name,
+ *     'property_name' => $property_name,
+ *     'meta' => $meta,
+ *     'records' => $records,
+ *     'options' => $options,
+ *     'meta_headers' => $meta_headers.
  */
-function tpps_save_phenotype_year(array $values) {
-  $table = 'tpps_phenotype_year';
-  db_insert($table, 't')->fields('t')->values($values)->execute();
+function tpps_submitall_prepare_phenotypeprop(array $data) {
+  // Extract data explicitly.
+  $name = $data['phenotype_name'] ?? NULL;
+  $property_name = $data['property_name'] ?? NULL;
+  $meta = $data['meta'] ?? NULL;
+  $records = &$data['records'] ?? NULL;
+  $options = &$data['options'] ?? NULL;
+  $meta_headers = $data['meta_headers'] ?? NULL;
+
+tpps_log($meta_headers);
+tpps_log($meta);
+
+  // @TODO Should this data be validated? Is it optional?
+
+  // Get phenotype metadata.
+  $phenotype = $meta[strtolower($name)];
+  if (isset($phenotype[$property_name])) {
+    $value = $phenotype[$property_name];
+  }
+  elseif (isset($meta_headers[$property_name])) {
+    if (is_int($value = $row[$meta_headers[$property_name]])) {
+      $value = tpps_xlsx_translate_date($value);
+    }
+  }
+  if ($value) {
+    $records['phenotypeprop']["$phenotype_name-$property_name"] = [
+      'type_id' => $cvterms[$property_name],
+      'value' => $value,
+      '#fk' => ['phenotype' => $phenotype_name],
+    ];
+    $options['data'][$phenotype_name][$property_name] = $value;
+  }
 }
