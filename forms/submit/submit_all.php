@@ -8314,8 +8314,12 @@ function tpps_get_code_parts($part) {
  * use TRIPAL_DEBUG severity and set severity level lower then 'Debug'
  * to exclude them at settings page /admin/config/tpps/submit-all.
  *
- * @param string $message
+ * To dump array/object very quickly for debugging use: tpps_log($variable);
+ *
+ * @param mixed $message
  *   The message to store in the logs.
+ *   When $message is array or object it will be printed out using print_r()
+ *   and $severity will be set to TRIPAL_DEBUG.
  * @param array $variables
  *   Array of variables to replace in the message on display.
  *   or NULL if message is already translated or not possible to translate.
@@ -8328,16 +8332,17 @@ function tpps_get_code_parts($part) {
  *      TRIPAL_INFO: (default) Informational messages (6).
  *      TRIPAL_DEBUG: Debug-level messages (7).
  *   See more: https://api.tripal.info/api/tripal/tripal%21api%21tripal.notice.api.inc/3.x
- *
- * @TODO Show 'DEBUG' messages only in debug mode.
- * @TODO Implement ability to set severity level from admin area.
+ *   When $message is array or object value of $severity will be overwritten
+ *   and set to TRIPAL_DEBUG.
  */
 function tpps_log($message, array $variables = [], $severity = TRIPAL_INFO) {
   global $tpps_job;
 
-
-  if (!is_string($message)) {
-    $message = print_r($message, 1);
+  // To dump array/object during debugging/testing.
+  if ((is_array($message) || is_object($message)) && empty($variables)) {
+    $variables = ['@dump' => print_r($message, 1)];
+    $message = '@dump';
+    $severity = TRIPAL_DEBUG;
   }
 
   // CLI and file logging.
