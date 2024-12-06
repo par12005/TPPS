@@ -5805,9 +5805,7 @@ function tpps_process_phenotype_meta($row, array &$options = []) {
  *   The TripalJob object for the submission job.
  */
 function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(), TripalJob &$job = NULL) {
-  // tpps_log('Meta array');
-  // tpps_log(print_r($meta, true));
-  // tpps_log("\n");
+  // tpps_log($meta, 'Meta array');
   $cvt_cache = [];
   $local_cv = chado_get_cv(['name' => 'local']);
   $local_db = variable_get('tpps_local_db');
@@ -6064,7 +6062,9 @@ function tpps_process_phenotype_data($row, array &$options = []) {
     );
   }
   $phenotype_name_previous = "<none set>";
+  // Loop columns.
   foreach ($values as $id => $name) {
+    tpps_log("$id -> $name", [], TRIPAL_DEBUG);
     // $name is a phenotype name. For example: 'flower color'.
     // $id is column name. For example: 'D'.
     if ($name == NULL || $name == "") {
@@ -8430,8 +8430,8 @@ function tpps_submitall_prepare_phenotypeprop(array $data) {
   $options = &$data['options'] ?? NULL;
   $meta_headers = $data['meta_headers'] ?? NULL;
 
-tpps_log($meta_headers, 'Meta headers');
-tpps_log($meta, 'Meta array');
+//tpps_log($meta_headers, 'Meta headers');
+//tpps_log($meta, 'Meta array');
 
   // @TODO Should this data be validated? Is it optional?
 

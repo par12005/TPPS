@@ -929,40 +929,6 @@ function tpps_schema() {
     ],
   ];
 
-  // Table to store relations between phenotype and the year.
-  // This is temporary solution. Data could be moved to other table later.
-  $schema['tpps_phenotype_year'] = [
-    'description' => 'Store relation between phenotype and year.',
-    'fields' => [
-      'name' => [
-        'description' => 'Phenotype name.',
-        'type' => 'varchar',
-        'size' => 'normal',
-        'not null' => FALSE,
-      ],
-      'synonym_id' => [
-        'description' => 'Phenotype Synonym Id.',
-        'type' => 'int',
-        'size' => 'big',
-        'not null' => FALSE,
-      ],
-      'year' => [
-        'description' => 'Phenotype year.',
-        'type' => 'int',
-        // -32768 to +32767.
-        'size' => 'small',
-        // Mysql: 64К. Postres: -32K..+32K.
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-      ],
-    ],
-    'indexes' => [
-      'phenotype_name' => ['name'],
-      'synonym_id' => ['synonym_id'],
-      'year' => ['year', 'name'],
-    ],
-  ];
-
   return $schema;
 }
 
@@ -2422,14 +2388,9 @@ function tpps_update_7125() {
 }
 
 /**
- * Create table 'tpps_phenotype_year'.
+ * Create log variables.
  */
 function tpps_update_7126() {
-  $table = 'tpps_phenotype_year';
-  $schema = tpps_schema();
-  if (!db_table_exists($table) && !empty($schema[$table])) {
-    db_create_table($table, $schema[$table]);
-  }
   if (empty(variable_get('tpps_submitall_log_cli_colorful'))) {
     variable_set('tpps_submitall_log_tripal_suppress_cli', TRUE);
     variable_set('tpps_submitall_run_nextflow', TRUE);
@@ -2444,7 +2405,7 @@ function tpps_update_7126() {
     variable_set('tpps_submitall_log_file_show_time', FALSE);
     // Format preferred by Rish.
     variable_set('tpps_submitall_log_file_time_format', 'm/d/y g:i:s A');
-    // Submit All / Tripal Log Settings.
+  :  // Submit All / Tripal Log Settings.
     variable_set('tpps_submitall_log_tripal_severity_level', 7);
     variable_set('tpps_submitall_log_tripal_show_time', FALSE);
     variable_set('tpps_submitall_log_tripal_time_format', 'Y/m/d H:i:s O');
