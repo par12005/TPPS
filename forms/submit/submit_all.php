@@ -408,11 +408,13 @@ function tpps_nextflow_new_study_pipeline(array &$form_state) {
  *      TRIPAL_INFO: (default) Informational messages.
  *      TRIPAL_DEBUG: Debug-level messages.
  */
-function tpps_job_logger_write($string, $replacements = [], $severity = TRIPAL_INFO) {
+function tpps_job_logger_write($string, array $replacements = [], $severity = TRIPAL_INFO) {
   global $tpps_job_logger;
 
-  foreach ($replacements as $key_string => $replace_string) {
-    $string = str_replace($key_string, $replace_string, $string);
+  if (!empty($replacements)) {
+    foreach ($replacements as $key_string => $replace_string) {
+      $string = str_replace($key_string, $replace_string, $string);
+    }
   }
   $string = tpps_log_get_tag($severity) . $string;
   $file_message = $cli_message = $string;
@@ -426,6 +428,8 @@ function tpps_job_logger_write($string, $replacements = [], $severity = TRIPAL_I
     ) {
       $cli_message = date($timestamp_format) . ' ' . $cli_message;
     }
+
+    tpps_log_show_caller_function($cli_message, 'cli', $severity);
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Do not show messages with severity level higher then allowed.
     // 2 - critical, 7 - debug.
@@ -445,6 +449,8 @@ function tpps_job_logger_write($string, $replacements = [], $severity = TRIPAL_I
       $file_message = $timestamp . ' ' . $file_message;
     }
     $file_message = PHP_EOL . $file_message;
+    tpps_log_show_caller_function($file_message, 'file', $severity);
+
     try {
       @fwrite($tpps_job_logger['log_file_handle'], $file_message);
       @fflush($tpps_job_logger['log_file_handle']);
@@ -454,6 +460,29 @@ function tpps_job_logger_write($string, $replacements = [], $severity = TRIPAL_I
     }
   }
 }
+
+/**
+ * Adds caller function name, file and line to debug log-messages.
+ *
+ * @param string $message
+ *   Log message
+ * @param string $log_type
+ *   Log type. Possible values: 'file', 'cli', 'tripal'.
+ * @param int $severity
+ *   Severity.
+ */
+function tpps_log_show_caller_function(&$message, $log_type, $severity) {
+  if (variable_get('tpps_submitall_log_' . $log_type . '_show_caller_function')) {
+    $level = 3;
+    $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, $level + 1);
+    if ($severity == TRIPAL_DEBUG) {
+      // @TODO Add colors.
+      $message .= "\n    " . $stack[$level]['function'] . '() '
+        . $stack[$level-1]['file'] . ':' .$stack[$level-1]['line'];
+    }
+  }
+}
+
 
 /**
  * Gets color codes for CLI log messages.
@@ -6064,7 +6093,6 @@ function tpps_process_phenotype_data($row, array &$options = []) {
   $phenotype_name_previous = "<none set>";
   // Loop columns.
   foreach ($values as $id => $name) {
-    tpps_log("$id -> $name", [], TRIPAL_DEBUG);
     // $name is a phenotype name. For example: 'flower color'.
     // $id is column name. For example: 'D'.
     if ($name == NULL || $name == "") {
@@ -8332,8 +8360,13 @@ function tpps_get_code_parts($part) {
 function tpps_log($message, $variables = [], $severity = TRIPAL_INFO) {
   global $tpps_job;
 
+
   // To dump array/object during debugging/testing.
-  if (is_array($message) || is_object($message)) {
+  // @TODO Add setting to allow dumps in each log type (file, CLI and Tripal).
+  if (
+    (!empty($variables) && is_string($variables))
+    || (is_array($message) || is_object($message))
+  ) {
     $severity = TRIPAL_DEBUG;
     $dump = print_r($message, 1);
     $line = "\n-------------------------------------------------------------\n";
@@ -8356,6 +8389,8 @@ function tpps_log($message, $variables = [], $severity = TRIPAL_INFO) {
     ) {
       $tripal_message = date($timestamp_format) . ' ' . $message;
     }
+    tpps_log_show_caller_function($cli_message, 'tripal', $severity);
+
     try {
       if (variable_get('tpps_submitall_log_tripal_suppress_cli')) {
         ob_start();

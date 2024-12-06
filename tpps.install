@@ -99,15 +99,21 @@ function tpps_install() {
   // Submit All / CLI Log Settings.
   variable_set('tpps_submitall_log_cli_severity_level', 7);
   variable_set('tpps_submitall_log_cli_show_time', FALSE);
+  variable_set('tpps_submitall_log_cli_show_function', FALSE);
+  variable_set('tpps_submitall_log_cli_show_linenumber', FALSE);
   variable_set('tpps_submitall_log_cli_time_format', 'Y/m/d H:i:s O');
   variable_set('tpps_submitall_log_cli_colorful', FALSE);
   // Submit All / File Log Settings.
   variable_set('tpps_submitall_log_file_severity_level', 7);
   variable_set('tpps_submitall_log_file_show_time', FALSE);
+  variable_set('tpps_submitall_log_file_show_function', FALSE);
+  variable_set('tpps_submitall_log_file_show_linenumber', FALSE);
   variable_set('tpps_submitall_log_file_time_format', 'Y/m/d H:i:s O');
   // Submit All / Tripal Log Settings.
   variable_set('tpps_submitall_log_tripal_severity_level', 7);
   variable_set('tpps_submitall_log_tripal_show_time', FALSE);
+  variable_set('tpps_submitall_log_tripal_show_function', FALSE);
+  variable_set('tpps_submitall_log_tripal_show_linenumber', FALSE);
   variable_set('tpps_submitall_log_tripal_time_format', 'Y/m/d H:i:s O');
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -477,15 +483,18 @@ function tpps_uninstall() {
   // Submit All / CLI Log Settings.
   variable_del('tpps_submitall_log_cli_severity_level');
   variable_del('tpps_submitall_log_cli_show_time');
+  variable_del('tpps_submitall_log_cli_show_caller_function');
   variable_del('tpps_submitall_log_cli_time_format');
   variable_del('tpps_submitall_log_cli_colorful');
   // Submit All / File Log Settings.
-  variable_del('tpps_submitall_log_file_severity_level', 7);
-  variable_del('tpps_submitall_log_file_show_time', FALSE);
-  variable_del('tpps_submitall_log_file_time_format', 'Y/m/d H:i:s O');
+  variable_del('tpps_submitall_log_file_severity_level');
+  variable_del('tpps_submitall_log_file_show_time');
+  variable_del('tpps_submitall_log_file_show_caller_function');
+  variable_del('tpps_submitall_log_file_time_format');
   // Submit All / Tripal Log Settings.
   variable_del('tpps_submitall_log_tripal_severity_level');
   variable_del('tpps_submitall_log_tripal_show_time');
+  variable_del('tpps_submitall_log_tripal_show_caller_function');
   variable_del('tpps_submitall_log_tripal_time_format');
 
   // Misc Settings.
@@ -2397,17 +2406,20 @@ function tpps_update_7126() {
     // Submit All / CLI Log Settings.
     variable_set('tpps_submitall_log_cli_severity_level', 7);
     variable_set('tpps_submitall_log_cli_show_time', FALSE);
+    variable_set('tpps_submitall_log_cli_show_caller_function', FALSE);
     // Time format example: 2023/11/28 14:04:32 +0200.
     variable_set('tpps_submitall_log_cli_time_format', 'Y/m/d H:i:s O');
     variable_set('tpps_submitall_log_cli_colorful', FALSE);
     // Submit All / File Log Settings.
     variable_set('tpps_submitall_log_file_severity_level', 7);
     variable_set('tpps_submitall_log_file_show_time', FALSE);
+    variable_set('tpps_submitall_log_file_show_caller_function', FALSE);
     // Format preferred by Rish.
     variable_set('tpps_submitall_log_file_time_format', 'm/d/y g:i:s A');
   :  // Submit All / Tripal Log Settings.
     variable_set('tpps_submitall_log_tripal_severity_level', 7);
     variable_set('tpps_submitall_log_tripal_show_time', FALSE);
+    variable_set('tpps_submitall_log_tripal_show_caller_function', FALSE);
     variable_set('tpps_submitall_log_tripal_time_format', 'Y/m/d H:i:s O');
   }
   variable_del('tpps_submit_all_log_cli_show_time');
