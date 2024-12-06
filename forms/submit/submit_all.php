@@ -8306,14 +8306,17 @@ function tpps_get_code_parts($part) {
  * to exclude them at settings page /admin/config/tpps/submit-all.
  *
  * To dump array/object very quickly for debugging use: tpps_log($variable);
+ * To dump array/object with header: tpps_log($variable, 'Variable Hame');
  *
  * @param mixed $message
  *   The message to store in the logs.
  *   When $message is array or object it will be printed out using print_r()
  *   and $severity will be set to TRIPAL_DEBUG.
- * @param array $variables
+ * @param string $variables
  *   Array of variables to replace in the message on display.
  *   or NULL if message is already translated or not possible to translate.
+ *   When $message is an array or object and $variables is string it will be
+ *   used as a title for the array/object dump.
  * @param string $severity
  *   The severity of the message; one of the following values:
  *      TRIPAL_CRITICAL: Critical conditions (2)
@@ -8326,14 +8329,17 @@ function tpps_get_code_parts($part) {
  *   When $message is array or object value of $severity will be overwritten
  *   and set to TRIPAL_DEBUG.
  */
-function tpps_log($message, array $variables = [], $severity = TRIPAL_INFO) {
+function tpps_log($message, $variables = [], $severity = TRIPAL_INFO) {
   global $tpps_job;
 
   // To dump array/object during debugging/testing.
-  if ((is_array($message) || is_object($message)) && empty($variables)) {
-    $variables = ['@dump' => print_r($message, 1)];
-    $message = '@dump';
+  if (is_array($message) || is_object($message)) {
     $severity = TRIPAL_DEBUG;
+    $dump = print_r($message, 1);
+    $line = "\n-------------------------------------------------------------\n";
+    $message = ((is_string($variables ?? NULL)) ? "{$line}{$variables}:" : '')
+      . "$line@dump$line";
+    $variables = ['@dump' => $dump];
   }
 
   // CLI and file logging.
@@ -8424,8 +8430,8 @@ function tpps_submitall_prepare_phenotypeprop(array $data) {
   $options = &$data['options'] ?? NULL;
   $meta_headers = $data['meta_headers'] ?? NULL;
 
-tpps_log($meta_headers);
-tpps_log($meta);
+tpps_log($meta_headers, 'Meta headers');
+tpps_log($meta, 'Meta array');
 
   // @TODO Should this data be validated? Is it optional?
 
@@ -8439,7 +8445,7 @@ tpps_log($meta);
       $value = tpps_xlsx_translate_date($value);
     }
   }
-  if ($value) {
+  if (!empty($value)) {
     $records['phenotypeprop']["$phenotype_name-$property_name"] = [
       'type_id' => $cvterms[$property_name],
       'value' => $value,
