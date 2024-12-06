@@ -6150,21 +6150,17 @@ function tpps_process_phenotype_data($row, array &$options = []) {
       '#fk' => ['phenotype' => $phenotype_name],
     );
 
+
+
+
+
+
     // List of properties which could be set manually using form or
     // found in uploaded phenotype metadata file.
+    //
+tpps_log(array_keys($options), 'options');
     foreach (['time', 'year'] as $property_name) {
-
-// @TODO Use only $options.
-
-
-      tpps_submitall_prepare_phenotypeprop([
-        'phenotype_name' => $name,
-        'property_name' => $property_name,
-        'meta' => $meta,
-        'records' => $records,
-        'options' => $options,
-        'meta_headers' => $meta_headers,
-      ]);
+      tpps_submitall_prepare_phenotypeprop($phenotype_name, $property_name, $row, $options);
     }
 
     $records['phenotypeprop']["$phenotype_name-desc"] = array(
@@ -8447,31 +8443,22 @@ function tpps_ssr_process(array &$form_state, $fid, array &$options, $job, array
  * Will not returns anything but $data['records'] and $data['options'] which
  * received by reference will be updated.
  *
- * @param array $data
- *   Required data. Keys are:
- *     'phenotype_name' => $name,
- *     'property_name' => $property_name,
- *     'meta' => $meta,
- *     'records' => $records,
- *     'options' => $options,
- *     'meta_headers' => $meta_headers.
+ * @param string $phenotype_name
+ *   Phenotype name.
+ * @param string $property_name
+ *   Property name. E.g., 'year', 'time'.
+ * @param array $row
+ *   One row with data from file.
+ * @param array $options
+ *   Required keys are: 'meta', 'records', 'meta_headers', 'cvterms'.
  */
-function tpps_submitall_prepare_phenotypeprop(array $data) {
-  // Extract data explicitly.
-  $name = $data['phenotype_name'] ?? NULL;
-  $property_name = $data['property_name'] ?? NULL;
-  $meta = $data['meta'] ?? NULL;
-  $records = &$data['records'] ?? NULL;
-  $options = &$data['options'] ?? NULL;
-  $meta_headers = $data['meta_headers'] ?? NULL;
-
-//tpps_log($meta_headers, 'Meta headers');
-//tpps_log($meta, 'Meta array');
-
-  // @TODO Should this data be validated? Is it optional?
+function tpps_submitall_prepare_phenotypeprop($phenotype_name, $property_name, $row, array &$options) {
+  $records = &$options['records'] ?? NULL;
+  $meta = $options['meta'] ?? NULL;
+  $meta_headers = $options['meta_headers'] ?? NULL;
 
   // Get phenotype metadata.
-  $phenotype = $meta[strtolower($name)];
+  $phenotype = $meta[strtolower($phenotype_name)];
   if (isset($phenotype[$property_name])) {
     $value = $phenotype[$property_name];
   }
@@ -8482,10 +8469,11 @@ function tpps_submitall_prepare_phenotypeprop(array $data) {
   }
   if (!empty($value)) {
     $records['phenotypeprop']["$phenotype_name-$property_name"] = [
-      'type_id' => $cvterms[$property_name],
+      'type_id' => $options['cvterms'][$property_name],
       'value' => $value,
       '#fk' => ['phenotype' => $phenotype_name],
     ];
+    tpps_log($records['phenotypeprop']["$phenotype_name-$property_name"], 'item');
     $options['data'][$phenotype_name][$property_name] = $value;
   }
 }
