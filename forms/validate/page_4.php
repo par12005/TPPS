@@ -245,11 +245,21 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
         // Note: number of phenotypes not equal to number of columns.
         if (!form_get_errors() && !empty($phenotype_file)) {
           $file_header = tpps_file_get_header($phenotype_file);
+          // Note: $phenotype_meta contains file id.
           $metadata_file_len = tpps_file_len($phenotype_meta);
           if (
             is_array($file_header)
             && $file_phenotypes_count = count($file_header)
           ) {
+            // If phenotype file has column 'year' which is not actually
+            // phenotype and doesn't have own row in metadata file we need to
+            // compare files differently.
+            //
+            // @TODO Get column data type for 'year' and fix conditions.
+            //if (in_array('year', array_values($file_header))) {
+            //  // Has 'year' column.
+            //  $condition = ($metadata_file_len - $file_phenotypes_count != 2);
+            //}
             if ($metadata_file_len != ($file_phenotypes_count - 1)) {
               $message = t('Number of phenotypes in Phenotype Metadata file '
                 . ' NOT matches number of columns in Phenotype file.'

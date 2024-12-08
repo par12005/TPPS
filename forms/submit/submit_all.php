@@ -1755,12 +1755,10 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
     }
 
     if (($debug_mode ?? NULL) || 0) {
-      tpps_log("Phenotypes Meta: \n@meta",
-        ['@meta' => print_r($phenotypes_meta, 1)], TRIPAL_DEBUG
-      );
+      tpps_log($phenotypes_meta, 'Phenotypes Meta');
     }
 
-    $time_options = array();
+    $time_options = [];
     if ($phenotype['time']['time-check']) {
       $time_options = $phenotype['time'];
     }
@@ -1807,6 +1805,7 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
     $options['file_empty'] = $phenotype['file-empty'];
     $options['organism_name'] = $organism_name;
 
+    // Phenotype data (not metadata).
     tpps_log('DATA_FID:' . $data_fid, [], TRIPAL_DEBUG);
     tpps_log('Processing phenotype_data file data...', [], TRIPAL_INFO);
 
@@ -5828,34 +5827,34 @@ function tpps_process_phenotype_meta($row, array &$options = []) {
  *   The array of options for time-based phenotypes.
  * @param TripalJob $job
  *   The TripalJob object for the submission job.
+ *
+ * @TODO $job function's argument isn't used and could be removed.
  */
-function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(), TripalJob &$job = NULL) {
+function tpps_refine_phenotype_meta(array &$meta, array $time_options = [], TripalJob &$job = NULL) {
   // tpps_log($meta, 'Meta array');
   $cvt_cache = [];
   $local_cv = chado_get_cv(['name' => 'local']);
   $local_db = variable_get('tpps_local_db');
-  $term_types = array(
-    'attr' => array(
-      // @TODO Should t() be used here for labels?
+  $term_types = [
+    'attr' => [
       'label' => 'Attribute',
       'ontology' => 'pato',
-    ),
-    'unit' => array(
+    ],
+    'unit' => [
       'label' => 'Unit',
       'ontology' => 'po',
-    ),
-    'struct' => array(
+    ],
+    'struct' => [
       'label' => 'Structure',
       'ontology' => 'po',
-    ),
-  );
+    ],
+  ];
   foreach ($meta as $name => $data) {
-    // echo "Name: $name\n";
-    // echo "Data:\n";
-    // print_r ($data);
-    // echo "\n";
+    // tpps_log($name, 'Name');
+    // tpps_log($data, 'Data');
+    // $data is a list of phenotype properties like 'attr', 'unit', 'year'.
     foreach ($term_types as $type => $info) {
-      $meta[$name]["{$type}_id"] = $data["{$type}"];
+      $meta[$name]["{$type}_id"] = $data[$type];
 
       if ($data["{$type}"] == 'other') {
         $meta[$name]["{$type}_id"] = $cvt_cache[$data["{$type}-other"]] ?? NULL;
@@ -5948,7 +5947,7 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
       }
     }
   }
-  tpps_log("Meta: \n@meta", ['@meta' => print_r($meta, 1)], TRIPAL_DEBUG);
+  tpps_log($meta, 'Phenotype Metadata');
 }
 
 /**
@@ -6110,13 +6109,13 @@ function tpps_process_phenotype_data($row, array &$options = []) {
     $value = $row[$id];
     $phenotype_name = "$accession-$tree_id-$name-$suffix";
     $phenotype_name .= '-' . $value_4lettercode;
-    $options['data']["$tree_id-$name-$suffix"] = array(
+    $options['data']["$tree_id-$name-$suffix"] = [
       'uniquename' => "$tree_id-$name-$suffix",
       'name' => $name,
       'stock_id' => $tree_info[$tree_id]['stock_id'],
       'time' => NULL,
       'value' => $value,
-    );
+    ];
 
     $struct_id = NULL;
     if (isset($meta[strtolower($name)]['struct_id'])) {
@@ -6146,17 +6145,20 @@ function tpps_process_phenotype_data($row, array &$options = []) {
       '#fk' => ['phenotype' => $phenotype_name],
     );
 
-
-
-
-
-
     // List of properties which could be set manually using form or
-    // found in uploaded phenotype metadata file.
-    //
-tpps_log(array_keys($options), 'options');
-    foreach (['time', 'year'] as $property_name) {
-      tpps_submitall_prepare_phenotypeprop($phenotype_name, $property_name, $row, $options);
+    // found in uploaded phenotype data (not metadata) file.
+    // foreach (['time', 'year'] as $property_name) {
+    foreach (['time'] as $property_name) {
+      // Note: Both $name and $phenotype_name must be sent here!!!
+      // $phenotype_name is a generated "full phenotype name".
+      // E.g., 'TGDR1020-24-height-23-Arth'.
+      // $name is a "short phenotype name" used in phenotype metadata file.
+      // E.g., 'height'.
+      // $value contains data from phenotype metadata file.
+      $value = $meta[strtolower($name)][$property_name] ?? NULL;
+      tpps_submitall_prepare_phenotypeprop(
+        $phenotype_name, $value, $property_name, $row, $options
+      );
     }
 
     $records['phenotypeprop']["$phenotype_name-desc"] = array(
@@ -8440,7 +8442,10 @@ function tpps_ssr_process(array &$form_state, $fid, array &$options, $job, array
  * received by reference will be updated.
  *
  * @param string $phenotype_name
- *   Phenotype name.
+ *   Full phenotype name. E.g., 'TGDR1020-24-height-23-Arth'.
+ * @param mixed $value
+ *   Value of the phenotype.
+ *   When NULL then value fromn the some other file will be used.
  * @param string $property_name
  *   Property name. E.g., 'year', 'time'.
  * @param array $row
@@ -8448,17 +8453,11 @@ function tpps_ssr_process(array &$form_state, $fid, array &$options, $job, array
  * @param array $options
  *   Required keys are: 'meta', 'records', 'meta_headers', 'cvterms'.
  */
-function tpps_submitall_prepare_phenotypeprop($phenotype_name, $property_name, $row, array &$options) {
+function tpps_submitall_prepare_phenotypeprop($phenotype_name, $value = NULL, $property_name, array $row, array &$options) {
   $records = &$options['records'] ?? NULL;
-  $meta = $options['meta'] ?? NULL;
   $meta_headers = $options['meta_headers'] ?? NULL;
 
-  // Get phenotype metadata.
-  $phenotype = $meta[strtolower($phenotype_name)];
-  if (isset($phenotype[$property_name])) {
-    $value = $phenotype[$property_name];
-  }
-  elseif (isset($meta_headers[$property_name])) {
+  if (is_null($value) && isset($meta_headers[$property_name])) {
     if (is_int($value = $row[$meta_headers[$property_name]])) {
       $value = tpps_xlsx_translate_date($value);
     }
@@ -8469,7 +8468,6 @@ function tpps_submitall_prepare_phenotypeprop($phenotype_name, $property_name, $
       'value' => $value,
       '#fk' => ['phenotype' => $phenotype_name],
     ];
-    tpps_log($records['phenotypeprop']["$phenotype_name-$property_name"], 'item');
     $options['data'][$phenotype_name][$property_name] = $value;
   }
 }
