@@ -1722,9 +1722,6 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
         $env = array_search(
           PhenotypeFields::META_DATA_TYPE_IS_ENVIRONMENTAL, $column_vals
         );
-        $year = array_search(
-          PhenotypeFields::META_DATA_TYPE_YEAR, $column_vals
-        );
         $columns = [
           'name' => $groups['Phenotype Id']['1'],
           'attr' => $groups['Attribute']['2'],
@@ -1735,7 +1732,6 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
           'max' => !empty($max) ? $max : NULL,
           // @TODO use $is_env ?? NULL.
           'env' => !empty($env) ? $env : NULL,
-          'year' => !empty($year) ? $year : NULL,
         ];
 
         $meta_options = [

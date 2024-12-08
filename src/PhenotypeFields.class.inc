@@ -28,7 +28,6 @@ class PhenotypeFields {
   const META_DATA_TYPE_MINIMUM_VALUE = 6;
   const META_DATA_TYPE_MAXIMUM_VALUE = 7;
   const META_DATA_TYPE_IS_ENVIRONMENTAL = 8;
-  const META_DATA_TYPE_YEAR = 9;
 
   /**
    * Builds list of options for phenotype file data type selector (columns).
@@ -53,7 +52,6 @@ class PhenotypeFields {
       self::META_DATA_TYPE_MINIMUM_VALUE    => t('Minimum Value'),
       self::META_DATA_TYPE_MAXIMUM_VALUE    => t('Maximum Value'),
       self::META_DATA_TYPE_IS_ENVIRONMENTAL => t('Environmental Phenotype'),
-      self::META_DATA_TYPE_YEAR             => t('Year'),
     ];
     return (!is_null($key) && isset($list[$key])) ? $list[$key] : $list;
   }
