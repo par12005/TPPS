@@ -113,23 +113,29 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
           $form_state, ["organism-$i", 'phenotype', 'format'], 0
         );
 
+        // @TODO Move both lists to PhenotypeFields class.
         if ($format == 0) {
+          // WARNING: Use explicit keys to avoid errors when order changed.
           $column_options = [
-            'Phenotype Data',
-            'Plant Identifier',
-            'Timepoint',
-            'Clone Number',
-            'N/A',
+            '0' => 'Phenotype Data',
+            '1' => 'Plant Identifier',
+            '2' => 'Timepoint',
+            '3' => 'Clone Number',
+            '4' => 'N/A',
+            '5' => 'Year',
           ];
         }
         else {
+          // WARNING: Use explicit keys to avoid errors when order changed.
           $column_options = [
-            'N/A',
-            'Plant Identifier',
-            'Phenotype Name/Identifier',
-            'Value(s)',
-            'Timepoint',
-            'Clone Number',
+            '0' => 'N/A',
+            '1' => 'Plant Identifier',
+            '2' => 'Phenotype Name/Identifier',
+            '3' => 'Value(s)',
+            '4' => 'Timepoint',
+            '5' => 'Clone Number',
+            // Note: Added but not tested.
+            '6' => 'Year',
           ];
           $form["organism-$i"]['phenotype']['file']['#title'] =
             t('Phenotype file: Please upload a file containing columns '
