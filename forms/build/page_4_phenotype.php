@@ -79,7 +79,8 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
   }
 
   if (!empty($normal_check)) {
-    $field = tpps_phenotype_fields()->buildManual($id);
+    // @TODO Use static call of build() method.
+    $field = tpps_phenotype_manual()->build($id);
     // Loop phenotypes to get unique form fields for each phenotype.
     tpps_dynamic_list($form, $form_state, 'phenotypes-meta', $field, array(
       'label' => 'Phenotype',
@@ -348,7 +349,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     );
     // @TODO Minor. Rename to $phenotype. Name $phenotypeFields used to avoid conflicts.
     // See Phenotype data 'managed_file' field in tpps_page_4_create_form().
-    $phenotypeFields = new PhenotypeFields();
     $form[$id]['phenotype']['metadata'] = [
       '#type' => 'managed_file',
       '#title' => t('Phenotype Metadata File: <br/ >Please upload a file '
@@ -372,7 +372,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       ],
       'columns-options' => [
         '#type' => 'hidden',
-        '#value' => $phenotypeFields->getMetadataColumnOptions(),
+        '#value' => PhenotypeMeta::getColumnOptions(),
       ],
       'no-header' => [],
     ];
@@ -411,7 +411,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         $val = !empty($info['#value']) ? $info['#value'] : $info;
         if (
           !empty($val)
-          && $val == PhenotypeFields::META_DATA_TYPE_IDENTIFIER
+          && $val == PhenotypeMeta::DATA_TYPE_IDENTIFIER
         ) {
           $name_col = $key;
           break;

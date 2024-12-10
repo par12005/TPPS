@@ -2,59 +2,20 @@
 
 /**
  * @file
- * Contains 'PhenotypeFields' class.
+ * Contains 'PhenotypeManual' class.
  *
- * The main reason to have PhenotypeFields class is that each organism could have
+ * The main reason to have PhenotypeManual class is that each organism could have
  * multiple number of phenotypes so form fields must be processed in a
  * different way.
  */
 
 /**
- * Manages Phenotype fields on TPPS Form.
+ * Manages fields to manually add phenotypes on TPPS Form.
  *
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class PhenotypeFields {
-
-
-  // Keys for Phenotype Metadata file columns (data types) options.
-  // See PhenotypeFields::getMetadataColumnOptions().
-  const META_DATA_TYPE_IDENTIFIER = 1;
-  const META_DATA_TYPE_ATTRIBUTE = 2;
-  const META_DATA_TYPE_DESCRIPTION = 3;
-  const META_DATA_TYPE_UNIT = 4;
-  const META_DATA_TYPE_STRUCTURE = 5;
-  const META_DATA_TYPE_MINIMUM_VALUE = 6;
-  const META_DATA_TYPE_MAXIMUM_VALUE = 7;
-  const META_DATA_TYPE_IS_ENVIRONMENTAL = 8;
-
-  /**
-   * Builds list of options for phenotype file data type selector (columns).
-   *
-   * @param int $key
-   *   Key of the item in the list. When non-empty name of the option could be
-   *   obtained.
-   *
-   * @return mixed
-   *   Returns list of options when $key is empty.
-   *   Returns name of the option when $key is not empty and exists in the list
-   *   of options.
-   */
-  public function getMetadataColumnOptions($key = NULL) {
-    $list = [
-      0 => t('N/A'),
-      self::META_DATA_TYPE_IDENTIFIER       => t('Phenotype Name/Identifier'),
-      self::META_DATA_TYPE_ATTRIBUTE        => t('Attribute'),
-      self::META_DATA_TYPE_DESCRIPTION      => t('Description'),
-      self::META_DATA_TYPE_UNIT             => t('Unit'),
-      self::META_DATA_TYPE_STRUCTURE        => t('Structure'),
-      self::META_DATA_TYPE_MINIMUM_VALUE    => t('Minimum Value'),
-      self::META_DATA_TYPE_MAXIMUM_VALUE    => t('Maximum Value'),
-      self::META_DATA_TYPE_IS_ENVIRONMENTAL => t('Environmental Phenotype'),
-    ];
-    return (!is_null($key) && isset($list[$key])) ? $list[$key] : $list;
-  }
+class PhenotypeManual {
 
   /**
    * Creates set of fields for single phenotype.
@@ -68,7 +29,7 @@ class PhenotypeFields {
    * @return array
    *   Returns Drupal Form API Array with fields for single phenotype.
    */
-  public function buildManual($id) {
+  public function build($id) {
     $phenotype_cid = 'tpps_phenotype_field';
     $cache_bin = TPPS_CACHE_BIN ?? 'cache';
     $cache = cache_get($phenotype_cid, $cache_bin);
@@ -422,25 +383,6 @@ class PhenotypeFields {
           ),
         ]
       ),
-    ];
-  }
-
-  /**
-   * Gets list of required columns of phenotype metadata file.
-   *
-   * This list used to validate file. See tpps_validate_phenotype().
-   *
-   * @return array
-   *   Returns list of required columns in format:
-   *   <Group Name> => [<key> => [<data type key in the columns list>]].
-   */
-  public function getRequiredColumnList() {
-    return [
-      'Phenotype Id' => ['id' => [self::META_DATA_TYPE_IDENTIFIER]],
-      'Attribute' => ['attr' => [self::META_DATA_TYPE_ATTRIBUTE]],
-      'Description' => ['desc' => [self::META_DATA_TYPE_DESCRIPTION]],
-      'Unit' => ['unit' => [self::META_DATA_TYPE_UNIT]],
-      'Structure' => ['structure' => [self::META_DATA_TYPE_STRUCTURE]],
     ];
   }
 

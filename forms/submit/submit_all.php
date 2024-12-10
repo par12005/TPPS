@@ -1710,17 +1710,17 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
         //  G: "7"  // Max
         //}
         $struct = array_search(
-          PhenotypeFields::META_DATA_TYPE_STRUCTURE, $column_vals
+          PhenotypeMeta::DATA_TYPE_STRUCTURE, $column_vals
         );
         $min = array_search(
-          PhenotypeFields::META_DATA_TYPE_MINIMUM_VALUE, $column_vals
+          PhenotypeMeta::DATA_TYPE_MINIMUM_VALUE, $column_vals
         );
         $max = array_search(
-          PhenotypeFields::META_DATA_TYPE_MAXIMUM_VALUE, $column_vals
+          PhenotypeMeta::DATA_TYPE_MAXIMUM_VALUE, $column_vals
         );
         // Value will be a column's letter or FALSE.
         $env = array_search(
-          PhenotypeFields::META_DATA_TYPE_IS_ENVIRONMENTAL, $column_vals
+          PhenotypeMeta::DATA_TYPE_IS_ENVIRONMENTAL, $column_vals
         );
         $columns = [
           'name' => $groups['Phenotype Id']['1'],

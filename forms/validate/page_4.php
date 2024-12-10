@@ -274,11 +274,12 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
             }
           }
         }
+
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         $file_element = $form[$id]['phenotype']['metadata'];
         $groups = tpps_file_validate_columns(
           $form_state,
-          tpps_phenotype_fields()->getRequiredColumnList(),
+          PhenotypeMeta::getRequiredColumnList(),
           $file_element
         );
         if (!form_get_errors()) {
@@ -352,6 +353,9 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
     }
     // Manually added Phenotype Metadata. File wasn't used.
     else {
+      // @TODO Phenotype Metadata file could optionally have 'Year' column
+      // which not yet implemented for manually added phenotypes.
+      //
       // $phenotype['metadata'] could have Phenotype Metadata File Id if user
       // first uploaded file and then decided to manually add phenotypes.
       // We need to remove this file if it exists.

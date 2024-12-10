@@ -2891,17 +2891,34 @@ function tpps_organism($organism_key = '') {
 }
 
 /**
- * Creates new PhenotypeFields object.
+ * Creates new PhenotypeManual object.
  *
  * How to use:
- * $form['phenotype'] = tpps_phenotype_fields()-build($id);
+ * $form['phenotype'] = tpps_phenotype_manual()-build($id);
  *
  * @return object
- *   Returns object of the PhenotypeFields class.
+ *   Returns object of the PhenotypeManual class.
  */
-function tpps_phenotype_fields() {
-  $phenotypeFields = new PhenotypeFields();
-  return $phenotypeFields;
+function tpps_phenotype_manual() {
+  $phenotypeManual = new PhenotypeManual();
+  return $phenotypeManual;
+}
+
+/**
+ * Creates new PhenotypeMeta object.
+ *
+ * How to use:
+ * $form['phenotype'] = tpps_phenotype_meta()-build($id);
+ *
+ * @return object
+ *   Returns object of the PhenotypeManual class.
+ *
+ * @todo Minor. Merge with PhenotypeManual class and use 'Phenotype' name
+ * but now it's overloaded and will be hard to search and use.
+ */
+function tpps_phenotype_meta() {
+  $phenotypeMeta = new PhenotypeMeta();
+  return $phenotypeMeta;
 }
 
 /**
