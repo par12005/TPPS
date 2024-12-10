@@ -347,7 +347,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       . 'standardized controlled vocabulary terms, which makes your data '
       . 'more findable, interoperable, and reusable.'),
     );
-    // @TODO Minor. Rename to $phenotype. Name $phenotypeFields used to avoid conflicts.
     // See Phenotype data 'managed_file' field in tpps_page_4_create_form().
     $form[$id]['phenotype']['metadata'] = [
       '#type' => 'managed_file',

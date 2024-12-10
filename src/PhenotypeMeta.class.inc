@@ -40,7 +40,7 @@ class PhenotypeMeta {
    *   Returns name of the option when $key is not empty and exists in the list
    *   of options.
    */
-  public function getColumnOptions($key = NULL) {
+  public static function getColumnOptions($key = NULL) {
     $list = [
       0 => t('N/A'),
       self::DATA_TYPE_IDENTIFIER       => t('Phenotype Name/Identifier'),
@@ -64,7 +64,7 @@ class PhenotypeMeta {
    *   Returns list of required columns in format:
    *   <Group Name> => [<key> => [<data type key in the columns list>]].
    */
-  public function getRequiredColumnList() {
+  public static function getRequiredColumnList() {
     return [
       'Phenotype Id' => ['id' => [self::DATA_TYPE_IDENTIFIER]],
       'Attribute' => ['attr' => [self::DATA_TYPE_ATTRIBUTE]],
@@ -73,5 +73,7 @@ class PhenotypeMeta {
       'Structure' => ['structure' => [self::DATA_TYPE_STRUCTURE]],
     ];
   }
+
+  public static function validate() {}
 
 }

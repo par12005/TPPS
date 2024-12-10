@@ -12,3 +12,4 @@ files[] = src/Submission.class.inc
 files[] = src/Organism.class.inc
 files[] = src/PhenotypeManual.class.inc
 files[] = src/PhenotypeMeta.class.inc
+files[] = src/PhenotypeData.class.inc

@@ -2416,7 +2416,7 @@ function tpps_update_7126() {
     variable_set('tpps_submitall_log_file_show_caller_function', FALSE);
     // Format preferred by Rish.
     variable_set('tpps_submitall_log_file_time_format', 'm/d/y g:i:s A');
-  :  // Submit All / Tripal Log Settings.
+    // Submit All / Tripal Log Settings.
     variable_set('tpps_submitall_log_tripal_severity_level', 7);
     variable_set('tpps_submitall_log_tripal_show_time', FALSE);
     variable_set('tpps_submitall_log_tripal_show_caller_function', FALSE);

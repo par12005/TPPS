@@ -244,7 +244,7 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
         // Check if number of Phenotypes matches number of phenotypes in file.
         // Note: number of phenotypes not equal to number of columns.
         if (!form_get_errors() && !empty($phenotype_file)) {
-          $file_header = tpps_file_get_header($phenotype_file);
+          $file_header = tpps_phenotype_data()->getHeader($phenotype_file);
           // Note: $phenotype_meta contains file id.
           $metadata_file_len = tpps_file_len($phenotype_meta);
           if (
@@ -510,95 +510,7 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
     }
 
     if (!empty($phenotype_file)) {
-      // For phenotype file (not metadata file).
-      $required_groups = [
-        'Tree Identifier' => ['id' => [1]],
-        'Phenotype Data' => ['phenotype-data' => [0]],
-      ];
-      if ($phenotype['format'] != 0) {
-        $required_groups = [
-          'Tree Identifier' => ['id' => [1]],
-          'Phenotype Name/Identifier' => ['phenotype-name' => [2]],
-          'Phenotype Value(s)' => ['val' => [3]],
-        ];
-      }
-
-      $file_element = $form[$id]['phenotype']['file'];
-      $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
-
-      if (!form_get_errors()) {
-        $phenotype_file_tree_col = $groups['Tree Identifier']['1'];
-        $phenotype_names = array();
-        if ($phenotype['format'] == 0) {
-          // If there is only one column with data then it will be a string
-          // but we need an array.
-          $phenotype_file_name_cols = is_array($groups['Phenotype Data']['0'])
-            ? $groups['Phenotype Data']['0'] : [$groups['Phenotype Data']['0']];
-          $headers = tpps_file_headers($phenotype_file, !empty($phenotype['file-no-header']));
-          foreach ($phenotype_file_name_cols as $column_index) {
-            $phenotype_names[] = $headers[$column_index];
-          }
-        }
-        if ($phenotype['format'] != 0) {
-          $phenotype_file_name_col = $groups['Phenotype Name/Identifier']['2'];
-          $phenotype_names = tpps_parse_file_column($phenotype_file, $phenotype_file_name_col);
-        }
-
-        $phenotype_meta_names = array();
-        if (isset($phenotype_name_col)) {
-          $phenotype_meta_names = tpps_parse_file_column($phenotype_meta, $phenotype_name_col);
-        }
-
-        for ($i = 1; $i <= $phenotype_number; $i++) {
-          $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
-        }
-        $missing_phenotypes = array_diff($phenotype_names, $phenotype_meta_names);
-        if (!empty($missing_phenotypes)) {
-          $phenotype_id_str = implode(', ', $missing_phenotypes);
-          form_set_error("$id][phenotype][file", "Phenotype file: We detected Phenotypes that were not in your Phenotype Metadata file. Please either remove these phenotypes from your Phenotype file, or add them to your Phenotype Metadata file. The phenotypes we detected with missing definitions were: $phenotype_id_str");
-        }
-
-        if (isset($phenotype_file_tree_col)) {
-          $species_index = empty($page3['tree-accession']['check']) ? 'species-1' : "species-$org_num";
-          $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file'];
-          $column_vals = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-columns'];
-
-          foreach ($column_vals as $col => $val) {
-            if ($val == '1') {
-              $id_col_accession_name = $col;
-              break;
-            }
-          }
-          $acc_no_header = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-no-header'];
-          $phenotype_no_header = $form_state['values'][$id]['phenotype']['file-no-header'];
-
-          $missing_trees = tpps_compare_files(
-            $form_state['values'][$id]['phenotype']['file'],
-            $tree_accession_file,
-            $phenotype_file_tree_col,
-            $id_col_accession_name,
-            $phenotype_no_header,
-            $acc_no_header
-          );
-          if ($missing_trees !== array()) {
-            $tree_id_str = implode(', ', $missing_trees);
-            form_set_error("$id][phenotype][file",
-              "Phenotype file: We detected Plant Identifiers that were not "
-              . "in your Plant Accession file. Please either remove these "
-              . "plants from your Phenotype file, or add them to your Plant "
-              . "Accession file. The Plant Identifiers we found were: $tree_id_str"
-            );
-          }
-        }
-      }
-
-      // Preserve file if it is valid.
-      tpps_preserve_valid_file(
-        $form_state,
-        $form_state['values'][$id]['phenotype']['file'],
-        $org_num,
-        "Phenotype_Data"
-      );
+      PhenotypeData::validate($org_num, $form, $form_state);
     }
   }
 
