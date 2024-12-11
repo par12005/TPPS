@@ -241,61 +241,36 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Metadata file was used.
       else {
-        // Check if number of Phenotypes matches number of phenotypes in file.
-        // Note: number of phenotypes not equal to number of columns.
-        if (!form_get_errors() && !empty($phenotype_file)) {
-          $file_header = tpps_phenotype_data()->getHeader($phenotype_file);
-          // Note: $phenotype_meta contains file id.
-          $metadata_file_len = tpps_file_len($phenotype_meta);
-          if (
-            is_array($file_header)
-            && $file_phenotypes_count = count($file_header)
-          ) {
-            // If phenotype file has column 'year' which is not actually
-            // phenotype and doesn't have own row in metadata file we need to
-            // compare files differently.
-            //
-            // @TODO Get column data type for 'year' and fix conditions.
-            //if (in_array('year', array_values($file_header))) {
-            //  // Has 'year' column.
-            //  $condition = ($metadata_file_len - $file_phenotypes_count != 2);
-            //}
-            if ($metadata_file_len != ($file_phenotypes_count - 1)) {
-              $message = t('Number of phenotypes in Phenotype Metadata file '
-                . ' NOT matches number of columns in Phenotype file.'
-                . '<br />Number of phenotypes in Metadata File: <strong>@count</strong>.'
-                . '<br />Number of phenotypes in Phenotype File: <strong>@file_count</strong>.',
-                [
-                  '@count' => $metadata_file_len,
-                  '@file_count' => ($file_phenotypes_count - 1),
-                ]
-              );
-              form_set_error("$id][phenotype][file", $message);
-            }
-          }
-        }
-
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // Check if all required columns was set.
         $file_element = $form[$id]['phenotype']['metadata'];
         $groups = tpps_file_validate_columns(
           $form_state,
           PhenotypeMeta::getRequiredColumnList(),
           $file_element
         );
-        if (!form_get_errors()) {
-          // Get phenotype name column.
-          $phenotype_name_col = $groups['Phenotype Id']['1'];
-          // Preserve file if it is valid.
-          tpps_preserve_valid_file(
-            $form_state,
-            $form_state['values'][$id]['phenotype']['metadata'],
-            $org_num,
-            "Phenotype_Metadata"
-          );
+        // Not all required columns was set. Can't proceed validation.
+        if (form_get_errors()) {
+          return;
         }
+        // Get phenotype name column.
+        $phenotype_name_col = $groups['Phenotype Id']['1'];
+        // Preserve file if it is valid.
+        tpps_preserve_valid_file(
+          $form_state,
+          $form_state['values'][$id]['phenotype']['metadata'],
+          $org_num,
+          "Phenotype_Metadata"
+        );
       }
-      // Do not allow empty units in metadata file.
-      if ($groups = $phenotype['metadata-groups'] ?? NULL) {
+
+      $groups = $phenotype['metadata-groups'] ?? NULL;
+      if (empty($groups)) {
+        form_set_error("$id][phenotype][metadata",
+          t("Phenotype Metadata File: No groups found.")
+        );
+      }
+      else {
+        // Do not allow empty units in metadata file.
         $columns = [
           'name' => $groups['Phenotype Id']['1'],
           'attr' => $groups['Attribute']['2'],
@@ -309,6 +284,9 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
         tpps_file_iterator($phenotype_meta, 'tpps_unit_validate_metafile', $meta_options);
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Validate if metafile matches phenotype file using columns.
+        // Get Phenotype Data header which could have 'year' column.
+        // @todo Move this validation to PhenotypeData class.
+        $file_header = tpps_file_get_header($phenotype_file);
         if ($file_header) {
           // $form_state['values'] has no value but $form_state['input']
           // has is so we will use it.
@@ -345,50 +323,9 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
         }
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       }
-      else {
-        form_set_error("$id][phenotype][metadata",
-          t("Phenotype Metadata File: No groups found.")
-        );
-      }
     }
     // Manually added Phenotype Metadata. File wasn't used.
     else {
-      // @TODO Phenotype Metadata file could optionally have 'Year' column
-      // which not yet implemented for manually added phenotypes.
-      //
-      // $phenotype['metadata'] could have Phenotype Metadata File Id if user
-      // first uploaded file and then decided to manually add phenotypes.
-      // We need to remove this file if it exists.
-      if (!empty($phenotype['metadata'])) {
-        // Remove already uploaded file.
-        $file = tpps_file_load(($phenotype['metadata'] ?? ''));
-        file_delete($file);
-        // Clear metadatafile field.
-        unset($phenotype['metadata']);
-      }
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Check number of phenotypes.
-      // Note: number of phenotypes not equal to number of columns.
-      if (!form_get_errors() && !empty($phenotype_file)) {
-        $file_header = tpps_file_get_header($phenotype_file);
-        if (
-          is_array($file_header)
-          && $file_phenotypes_count = count($file_header)
-        ) {
-          if ($phenotype_number != ($file_phenotypes_count - 1)) {
-            $message = t('Number of phenotypes NOT matches number of columns '
-                . 'in Phenotype File.'
-                . '<br />Number of manually added phenotypes: <strong>@count</strong>.'
-                . '<br />Number of phenotypes in Phenotype File: <strong>@file_count</strong>.',
-                [
-                  '@count' => $phenotype_number,
-                  '@file_count' => ($file_phenotypes_count - 1),
-                ]
-              );
-            form_set_error("$id][phenotype][file", $message);
-          }
-        }
-      }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       for ($i = 1; $i <= $phenotype_number; $i++) {
         $current_phenotype = &$phenotype['phenotypes-meta']["$i"];

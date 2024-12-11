@@ -4,6 +4,9 @@
  * @file
  * Contains 'PhenotypeData' class.
  *
+ * Phenotype data file is always required. Metadata could be added manually
+ * (PhenotypeManual class) or using file (PhenotypeMeta class).
+ *
  * @todo File format is important for build() and validate(). Maybe helper
  * methods must get it as an argument?
  */
@@ -26,11 +29,15 @@ class PhenotypeData {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Phenotype file formats.
-  // Default is FILE_FORMAT_1.
-  // Each column is a phenotype.
+  //
+  // Phenotypes in columns.
+  // Default format of the data file where each column has phenotype data.
+  // Header: tree_id, phenotype_1, ..., phenotype_N.
   // Example: TPPS_IMAGES_PATH . 'phenotype_format_1.png.
   const FILE_FORMAT_1 = 0;
-  // One of the columns has phenotype name in each row.
+  // Phenotypes in rows.
+  // Phenotype's name in one column and phenotype's value in other.
+  // Header: tree_id, phenotype, value.
   // Example: TPPS_IMAGES_PATH . 'phenotype_format_2.png.
   const FILE_FORMAT_2 = 1;
 
@@ -157,9 +164,91 @@ class PhenotypeData {
     $file_element = $form[$id]['phenotype']['file'];
     $file_id = $phenotype['file'] ?? NULL;
     $metadata_file_id = $phenotype['metadata'];
+
+    // Checkbox (checked by default):
+    // My phenotypes include traits and/or environmental information other
+    // than mass spectrometry or isotope analysis
     $normal_check = $phenotype['normal-check'] ?? NULL;
+    // Checkbox:
+    // My phenotypes include results from a mass spectrometry or isotope analysis
     $iso_check = $phenotype['iso-check'] ?? NULL;
 
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Check if number of phenotypes in Phenotype Metadata file matches
+    // number of columns in Phenotype Data file.
+    if ($normal_check) {
+      self::validateNormal($org_num, $form, $form_state);
+      if (!form_get_errors()) {
+        // Preserve file if validation passed.
+        tpps_preserve_valid_file($form_state, $file_id, $org_num, "Phenotype_Data");
+      }
+    }
+    if ($iso_check) {
+      // Add validaiton for "iso" file.
+    }
+
+  }
+
+  /**
+   * Gets list of column data types.
+   *
+   * @param int $format
+   *   Phenotype Data file format. Possible values are:
+   *   0 - default. Each column is a phenotype.
+   *   1 - one of the columns has phenotype name in each row.
+   *
+   * @return array
+   *   Returns list of options to be used in dropdown menu.
+   */
+  public static function getColumnOptions($format = 0) {
+    if ($format == self::FILE_FORMAT_1) {
+      // WARNING: Use explicit keys to avoid errors when order changed.
+      return [
+        self::DATA_TYPE_PHENOTYPE_DATA => 'Phenotype Data',
+        self::DATA_TYPE_PLANT_IDENTIFIER => 'Plant Identifier',
+        self::DATA_TYPE_TIMEPOINT => 'Timepoint',
+        self::DATA_TYPE_CLONE_NUMBER => 'Clone Number',
+        '4' => 'N/A',
+        self::DATA_TYPE_YEAR => 'Year',
+      ];
+    }
+    else {
+      // WARNING: Use explicit keys to avoid errors when order changed.
+      // @TODO Use the same keys as $format == 0 does (if possible).
+      return [
+        '0' => 'N/A',
+        '1' => 'Plant Identifier',
+        '2' => 'Phenotype Name/Identifier',
+        '3' => 'Value(s)',
+        '4' => 'Timepoint',
+        '5' => 'Clone Number',
+        // Note: Added but not tested.
+        '6' => 'Year',
+      ];
+    }
+  }
+
+  public static function validateNormal($org_num, array &$form, array &$form_state) {
+    $id = "organism-$org_num";
+    $page3_values = $form_state['saved_values'][TPPS_PAGE_3] ?? NULL;
+    // The form_state values of the phenotype fieldset for organism $id.
+    $phenotype = &$form_state['values']["organism-$org_num"]['phenotype'] ?? NULL;
+    $file_element = $form[$id]['phenotype']['file'];
+    $file_id = $phenotype['file'] ?? NULL;
+    $metadata_file_id = $phenotype['metadata'];
+
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Check if required data file was uploaded.
+    if (empty($file_id)) {
+      $message = 'Phenotype File is required.';
+      form_set_error("$id][phenotype][file", t($message));
+      return;
+    }
+    $is_metadata_file = (bool) ($phenotype['check'] && !empty($file_id));
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Check if required columns are present in file.
     switch ($phenotype['format']) {
       case self::FILE_FORMAT_1:
@@ -190,21 +279,13 @@ class PhenotypeData {
       return;
     }
 
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Check if number of phenotypes in Phenotype Metadata file matches
-    // number of columns in Phenotype Data file.
-    if ($normal_check) {
-      $is_metadata_file = (bool) ($phenotype['check'] && !empty($file_id));
-
-
-
-// @todo Check if FILE_FORMAT_2 supported.
-
-
-      if (empty($file_id)) {
-        // @todo required file is missing.
-        return;
-      }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Check if number of rows in data file matches number of phenotypes in
+    // metadata file.
+    if ($phenotype['format'] == self::FILE_FORMAT_2) {
+      // @todo Implement/add for FILE_FORMAT_2.
+    }
+    elseif ($phenotype['format'] == self::FILE_FORMAT_1) {
       $file_header = tpps_file_get_header($file_id);
       if (
         is_array($file_header)
@@ -252,43 +333,49 @@ class PhenotypeData {
           }
           $message .= '<br />Number of phenotypes in Phenotype File: <strong>@file_count</strong>.';
           form_set_error("$id][phenotype][file", t($message, $params));
+          return;
         }
       }
     }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     if (form_get_errors()) {
       return;
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Check if all phenotypes listed in Phenotype Metadata file are present
-    // in Phenotype Data file.
-    $phenotype_file_tree_col = $groups['Tree Identifier']['1'];
-    $phenotype_names = [];
-    switch ($phenotype['format']) {
-      case self::FILE_FORMAT_1:
-        // If there is only one column with data then it will be a string
-        // but we need an array.
-        $phenotype_file_name_cols = is_array($groups['Phenotype Data']['0'])
-          ? $groups['Phenotype Data']['0'] : [$groups['Phenotype Data']['0']];
-        $headers = tpps_file_headers($file_id, !empty($phenotype['file-no-header']));
-        foreach ($phenotype_file_name_cols as $column_index) {
-          $phenotype_names[] = $headers[$column_index];
-        }
-        break;
+    // Check if phenotype names in data and metadata files matches.
+    if ($is_metadata_file) {
+      $phenotype_names = [];
+      switch ($phenotype['format']) {
+        case self::FILE_FORMAT_1:
+          // If there is only one column with data then it will be a string
+          // but we need an array.
+          $phenotype_file_name_cols = is_array($groups['Phenotype Data']['0'])
+            ? $groups['Phenotype Data']['0'] : [$groups['Phenotype Data']['0']];
+          $headers = tpps_file_headers($file_id, !empty($phenotype['file-no-header']));
+          foreach ($phenotype_file_name_cols as $column_index) {
+            $phenotype_names[] = $headers[$column_index];
+          }
+          break;
 
-      case self::FILE_FORMAT_2:
-        $phenotype_file_name_col = $groups['Phenotype Name/Identifier']['2'];
-        $phenotype_names = tpps_parse_file_column($file_id, $phenotype_file_name_col);
-        break;
+        case self::FILE_FORMAT_2:
+          $phenotype_file_name_col = $groups['Phenotype Name/Identifier']['2'];
+          $phenotype_names = tpps_parse_file_column($file_id, $phenotype_file_name_col);
+          break;
+      }
+
+      // Check if phenotype names in data and metadata files matches.
+      $phenotype_meta_names = [];
+      if (isset($phenotype_name_col)) {
+        $phenotype_meta_names = tpps_parse_file_column($metadata_file_id, $phenotype_name_col);
+      }
     }
-
-    $phenotype_meta_names = [];
-    if (isset($phenotype_name_col)) {
-      $phenotype_meta_names = tpps_parse_file_column($metadata_file_id, $phenotype_name_col);
-    }
-
-    for ($i = 1; $i <= $phenotype_number; $i++) {
-      $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
+    else {
+      // Manual metadata.
+      $phenotype_meta_names = [];
+      for ($i = 1; $i <= $phenotype_number; $i++) {
+        $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
+      }
     }
     $missing_phenotypes = array_diff($phenotype_names, $phenotype_meta_names);
     if (!empty($missing_phenotypes)) {
@@ -299,82 +386,54 @@ class PhenotypeData {
         . "detected with missing definitions were: @list.",
         ['@list' => implode(', ', $missing_phenotypes)]
       ));
+      return;
     }
 
-    if (isset($phenotype_file_tree_col)) {
-      $species_index = empty($page3_values['tree-accession']['check']) ? 'species-1' : "species-$org_num";
-      $tree_accession_file = $page3_values['tree-accession'][$species_index]['file'];
-      $column_vals = $page3_values['tree-accession'][$species_index]['file-columns'];
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Check if number of trees in data file matches number of rows in
+    // accession file added on Page 3.
+    if ($is_metadata_file) {
+      $phenotype_file_tree_col = $groups['Tree Identifier']['1'];
+      if (isset($phenotype_file_tree_col)) {
+        $species_index = empty($page3_values['tree-accession']['check']) ? 'species-1' : "species-$org_num";
+        $tree_accession_file = $page3_values['tree-accession'][$species_index]['file'];
+        $column_vals = $page3_values['tree-accession'][$species_index]['file-columns'];
 
-      foreach ($column_vals as $col => $val) {
-        if ($val == '1') {
-          $id_col_accession_name = $col;
-          break;
+        foreach ($column_vals as $col => $val) {
+          if ($val == '1') {
+            $id_col_accession_name = $col;
+            break;
+          }
+        }
+        $acc_no_header = $page3_values['tree-accession'][$species_index]['file-no-header'];
+        $phenotype_no_header = $phenotype['file-no-header'];
+
+        $missing_trees = tpps_compare_files(
+          $file_id,
+          $tree_accession_file,
+          $phenotype_file_tree_col,
+          $id_col_accession_name,
+          $phenotype_no_header,
+          $acc_no_header
+        );
+        if (!empty($missing_trees)) {
+          form_set_error("$id][phenotype][file", t("Phenotype file: We "
+            . "detected Plant Identifiers that were not "
+            . "in your Plant Accession file. Please either remove these "
+            . "plants from your Phenotype file, or add them to your Plant "
+            . "Accession file. The Plant Identifiers we found were: @list.",
+            ['@list' => implode(', ', $missing_trees)]
+          ));
+          return;
         }
       }
-      $acc_no_header = $page3_values['tree-accession'][$species_index]['file-no-header'];
-      $phenotype_no_header = $phenotype['file-no-header'];
-
-      $missing_trees = tpps_compare_files(
-        $phenotype['file'],
-        $tree_accession_file,
-        $phenotype_file_tree_col,
-        $id_col_accession_name,
-        $phenotype_no_header,
-        $acc_no_header
-      );
-      if (!empty($missing_trees)) {
-        form_set_error("$id][phenotype][file", t("Phenotype file: We "
-          . "detected Plant Identifiers that were not "
-          . "in your Plant Accession file. Please either remove these "
-          . "plants from your Phenotype file, or add them to your Plant "
-          . "Accession file. The Plant Identifiers we found were: @list.",
-          ['@list' => implode(', ', $missing_trees)]
-        ));
+      else {
+        // @TODO What to do if tree id column wasn't selected? Probably this
+        // will never happen because earlier we check required columns and
+        // tree id is a required column for both file formats.
       }
     }
 
-    // Preserve file if validation passed.
-    tpps_preserve_valid_file($form_state, $phenotype['file'], $org_num, "Phenotype_Data");
-  }
-
-  /**
-   * Gets list of column data types.
-   *
-   * @param int $format
-   *   Phenotype Data file format. Possible values are:
-   *   0 - default. Each column is a phenotype.
-   *   1 - one of the columns has phenotype name in each row.
-   *
-   * @return array
-   *   Returns list of options to be used in dropdown menu.
-   */
-  public static function getColumnOptions($format = 0) {
-    if ($format == self::FILE_FORMAT_1) {
-      // WARNING: Use explicit keys to avoid errors when order changed.
-      return [
-        self::DATA_TYPE_PHENOTYPE_DATA => 'Phenotype Data',
-        self::DATA_TYPE_PLANT_IDENTIFIER => 'Plant Identifier',
-        self::DATA_TYPE_TIMEPOINT => 'Timepoint',
-        self::DATA_TYPE_CLONE_NUMBER => 'Clone Number',
-        '4' => 'N/A',
-        self::DATA_TYPE_YEAR => 'Year',
-      ];
-    }
-    else {
-      // WARNING: Use explicit keys to avoid errors when order changed.
-      // @TODO Use the same keys as $format == 0 does (if possible).
-      return [
-        '0' => 'N/A',
-        '1' => 'Plant Identifier',
-        '2' => 'Phenotype Name/Identifier',
-        '3' => 'Value(s)',
-        '4' => 'Timepoint',
-        '5' => 'Clone Number',
-        // Note: Added but not tested.
-        '6' => 'Year',
-      ];
-    }
   }
 
 }
