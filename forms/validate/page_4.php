@@ -447,53 +447,23 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
     }
 
     if (!empty($phenotype_file)) {
-      PhenotypeData::validate($org_num, $form, $form_state);
+      PhenotypeData::validateNormal($org_num, $form, $form_state);
+    }
+    if (!form_get_errors()) {
+      tpps_preserve_valid_file($form_state,
+        //Phenotype data file id.
+        $phenotype['file'], $org_num, "Phenotype_Data");
     }
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Iso/Mass Spectrometry.
   if ($iso_check) {
-    if (empty($phenotype['iso'])) {
-      form_set_error("$id][phenotype][iso",
-        t("Phenotype Isotope/Mass Spectrometry File: field is required.")
-      );
-    }
-
+    PhenotypeData::validateIso($org_num, $form, $form_state);
     if (!form_get_errors()) {
-      $headers = tpps_file_headers($phenotype['iso']);
-      $id_col_name = key($headers);
-      while (($k = array_search(NULL, $headers))) {
-        unset($headers[$k]);
-      }
-      $num_columns = tpps_file_width($phenotype['iso']) - 1;
-      $num_unique_columns = count(array_unique($headers)) - 1;
-
-      if ($num_unique_columns != $num_columns) {
-        form_set_error("$id][phenotype][iso", t("Mass spectrometry/Isotope file: "
-          . "some columns in the file you provided are missing or "
-          . "have duplicate header values. Please either enter valid header "
-          . "values for those columns or remove those columns, then reupload your file."));
-      }
+      // Preserve file if it is valid.
+      tpps_preserve_valid_file($form_state, $phenotype['iso'], $org_num, "Phenotype_Data");
     }
-
-    if (!form_get_errors()) {
-      $species_index = empty($page3['tree-accession']['check'])
-        ? 'species-1' : "species-$org_num";
-      $tree_accession_file = $page3['tree-accession'][$species_index]['file'];
-      $id_col_accession_name = $page3['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
-
-      $acc_no_header = $page3['tree-accession'][$species_index]['file-no-header'];
-      $missing_trees = tpps_compare_files($phenotype['iso'], $tree_accession_file, $id_col_name, $id_col_accession_name, FALSE, $acc_no_header);
-
-      if ($missing_trees !== []) {
-        $tree_id_str = implode(', ', $missing_trees);
-        form_set_error("$id][phenotype][iso", "Mass spectrometry/Isotope file: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your file, or add them to your Plant Accession file. The Plant Identifiers we found were: $tree_id_str");
-      }
-    }
-
-    // Preserve file if it is valid.
-    tpps_preserve_valid_file($form_state, $phenotype['iso'], $org_num, "Phenotype_Data");
   }
 }
 

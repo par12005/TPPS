@@ -157,37 +157,32 @@ class PhenotypeData {
    * @todo Rename $org_num.
    */
   public static function validate($org_num, array &$form, array &$form_state) {
-    $id = "organism-$org_num";
-    $page3_values = $form_state['saved_values'][TPPS_PAGE_3] ?? NULL;
-    // The form_state values of the phenotype fieldset for organism $id.
     $phenotype = &$form_state['values']["organism-$org_num"]['phenotype'] ?? NULL;
-    $file_element = $form[$id]['phenotype']['file'];
-    $file_id = $phenotype['file'] ?? NULL;
-    $metadata_file_id = $phenotype['metadata'];
 
-    // Checkbox (checked by default):
-    // My phenotypes include traits and/or environmental information other
-    // than mass spectrometry or isotope analysis
+    // Checkbox (checked by default): "My phenotypes include traits and/or
+    // environmental information other than mass spectrometry or isotope analysis.
     $normal_check = $phenotype['normal-check'] ?? NULL;
-    // Checkbox:
-    // My phenotypes include results from a mass spectrometry or isotope analysis
+    // Checkbox: "My phenotypes include results from a mass spectrometry or
+    // isotope analysis".
     $iso_check = $phenotype['iso-check'] ?? NULL;
 
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Check if number of phenotypes in Phenotype Metadata file matches
-    // number of columns in Phenotype Data file.
     if ($normal_check) {
       self::validateNormal($org_num, $form, $form_state);
       if (!form_get_errors()) {
-        // Preserve file if validation passed.
-        tpps_preserve_valid_file($form_state, $file_id, $org_num, "Phenotype_Data");
+        tpps_preserve_valid_file($form_state,
+          // Phenotype data file id.
+          $phenotype['file'], $org_num, "Phenotype_Data");
       }
     }
     if ($iso_check) {
-      // Add validaiton for "iso" file.
+      self::validateIso($org_num, $form, $form_state);
+      if (!form_get_errors()) {
+        tpps_preserve_valid_file($form_state,
+          // Phenotype iso file id.
+          $phenotype['iso'],
+          $org_num, "Phenotype_Data");
+      }
     }
-
   }
 
   /**
@@ -229,21 +224,36 @@ class PhenotypeData {
     }
   }
 
+  /**
+   * Validated normal phenotype data file.
+   *
+   * @param int $org_num
+   *   Ordinal number of organism.
+   * @param array $form
+   *   Drupal Form API Array.
+   * @param array $form_state
+   *   Drupal Form API State Array.
+   */
   public static function validateNormal($org_num, array &$form, array &$form_state) {
+    $phenotype = &$form_state['values']["organism-$org_num"]['phenotype'] ?? NULL;
+    if (empty($phenotype['normal-check']) || empty($phenotype)) {
+      return;
+    }
+
     $id = "organism-$org_num";
     $page3_values = $form_state['saved_values'][TPPS_PAGE_3] ?? NULL;
     // The form_state values of the phenotype fieldset for organism $id.
-    $phenotype = &$form_state['values']["organism-$org_num"]['phenotype'] ?? NULL;
+    // @TODO Minor. Rename to $file_form_element.
     $file_element = $form[$id]['phenotype']['file'];
     $file_id = $phenotype['file'] ?? NULL;
     $metadata_file_id = $phenotype['metadata'];
-
+    $form_field_error_name = "$id][phenotype][file";
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Check if required data file was uploaded.
     if (empty($file_id)) {
       $message = 'Phenotype File is required.';
-      form_set_error("$id][phenotype][file", t($message));
+      form_set_error($form_field_error_name, t($message));
       return;
     }
     $is_metadata_file = (bool) ($phenotype['check'] && !empty($file_id));
@@ -332,7 +342,7 @@ class PhenotypeData {
             }
           }
           $message .= '<br />Number of phenotypes in Phenotype File: <strong>@file_count</strong>.';
-          form_set_error("$id][phenotype][file", t($message, $params));
+          form_set_error($form_field_error_name, t($message, $params));
           return;
         }
       }
@@ -379,7 +389,8 @@ class PhenotypeData {
     }
     $missing_phenotypes = array_diff($phenotype_names, $phenotype_meta_names);
     if (!empty($missing_phenotypes)) {
-      form_set_error("$id][phenotype][file", t("Phenotype file: We detected "
+      form_set_error($form_field_error_name,
+        t("Phenotype file: We detected "
         . "Phenotypes that were not in your Phenotype Metadata file. "
         . "Please either remove these phenotypes from your Phenotype file, "
         . "or add them to your Phenotype Metadata file. The phenotypes we "
@@ -417,7 +428,7 @@ class PhenotypeData {
           $acc_no_header
         );
         if (!empty($missing_trees)) {
-          form_set_error("$id][phenotype][file", t("Phenotype file: We "
+          form_set_error($form_field_error_name, t("Phenotype file: We "
             . "detected Plant Identifiers that were not "
             . "in your Plant Accession file. Please either remove these "
             . "plants from your Phenotype file, or add them to your Plant "
@@ -434,6 +445,81 @@ class PhenotypeData {
       }
     }
 
+  }
+
+  /**
+   * Validates Phenotype ISO file.
+   *
+   * This file used when checkbox "My phenotypes include results from a
+   * mass spectrometry or isotope analysis" on Page 4 was checked.
+   *
+   * @param int $org_num
+   *   Ordinal number of organism.
+   * @param array $form
+   *   Drupal Form API Array.
+   * @param array $form_state
+   *   Drupal Form API State Array.
+   */
+  public static function validateIso($org_num, array &$form, array &$form_state) {
+    $phenotype = &$form_state['values']["organism-$org_num"]['phenotype'] ?? NULL;
+    if (empty($phenotype['iso-check']) || empty($phenotype)) {
+      return;
+    }
+
+    $id = "organism-$org_num";
+    $page3_values = $form_state['saved_values'][TPPS_PAGE_3] ?? NULL;
+    $form_field_error_name = "$id][phenotype][iso";
+
+    if (empty($phenotype['iso'])) {
+      form_set_error($form_field_error_name,
+        t("Phenotype Isotope/Mass Spectrometry File: field is required.")
+      );
+      return;
+    }
+
+    $headers = tpps_file_headers($phenotype['iso']);
+    $id_col_name = key($headers);
+    while (($k = array_search(NULL, $headers))) {
+      unset($headers[$k]);
+    }
+    $num_columns = tpps_file_width($phenotype['iso']) - 1;
+    $num_unique_columns = count(array_unique($headers)) - 1;
+
+    if ($num_unique_columns != $num_columns) {
+      form_set_error($form_field_error_name, t("Mass spectrometry/Isotope "
+        . "file: some columns in the file you provided are missing or have "
+        . "duplicate header values. Please either enter valid header values "
+        . "for those columns or remove those columns, then reupload your file.")
+      );
+      return;
+    }
+
+    // Get correct accession file and it's metadata for current organism.
+    $species_index = empty($page3_values['tree-accession']['check'])
+      ? 'species-1' : "species-$org_num";
+    $species = $page3_values['tree-accession'][$species_index];
+    $tree_accession_file = $species['file'];
+    $id_col_accession_name = $species['file-groups']['Tree Id']['1'];
+    $acc_no_header = $species['file-no-header'];
+
+    // Compare files.
+    $missing_trees = tpps_compare_files(
+      $phenotype['iso'],
+      $tree_accession_file,
+      $id_col_name,
+      $id_col_accession_name,
+      FALSE,
+      $acc_no_header
+    );
+
+    if (empty($missing_trees)) {
+      $params = ['@list' => implode(', ', $missing_trees)];
+      $message = "Mass spectrometry/Isotope file: We detected Plant "
+        . "Identifiers that were not in your Plant Accession file. Please "
+        . "either remove these plants from your file, or add them to your "
+        . "Plant Accession file. The Plant Identifiers we found were: @list.";
+      form_set_error($form_field_error_name, t($message, $params));
+    }
   }
 
 }
