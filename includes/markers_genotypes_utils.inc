@@ -42,9 +42,9 @@ function tpps_remove_all_markers_genotypes($accession, TripalJob $job = NULL) {
         }
         tpps_log('[INFO] PROJECT_ID: ' . $project_id);
 
-        tpps_log('[INFO] Attempting to drop table chado.genotypes_' . $project_id . '...');
+        tpps_log('[INFO] Attempting to drop materialized view chado.genotypes_' . $project_id . '...');
         $sql = "";
-        $sql .= "drop table IF EXISTS chado.genotypes_" . $project_id . ";";
+        $sql .= "drop materialized view IF EXISTS chado.genotypes_" . $project_id . ";";
         chado_query($sql, []);
         
 
