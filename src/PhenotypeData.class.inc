@@ -376,9 +376,18 @@ class PhenotypeData {
 
       // Check if phenotype names in data and metadata files matches.
       $phenotype_meta_names = [];
+      $phenotype_name_col = self::getPhenotypeNameColumn($org_num, $form_state);
       if (isset($phenotype_name_col)) {
-        $phenotype_meta_names = tpps_parse_file_column($metadata_file_id, $phenotype_name_col);
+        $phenotype_meta_names = tpps_parse_file_column(
+          $metadata_file_id,
+          $phenotype_name_col
+        );
       }
+      $message = "Phenotype file: We detected "
+        . "Phenotypes that were not in your Phenotype Metadata file. "
+        . "Please either remove these phenotypes from your Phenotype file, "
+        . "or add them to your Phenotype Metadata file. The phenotypes we "
+        . "detected with missing definitions were: @list.";
     }
     else {
       // Manual metadata.
@@ -386,20 +395,23 @@ class PhenotypeData {
       for ($i = 1; $i <= $phenotype_number; $i++) {
         $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
       }
-    }
-    $missing_phenotypes = array_diff($phenotype_names, $phenotype_meta_names);
-    if (!empty($missing_phenotypes)) {
-      form_set_error($form_field_error_name,
-        t("Phenotype file: We detected "
+      // @todo Update massage for manually added phenotypes.
+      $message = "Phenotype file: We detected "
         . "Phenotypes that were not in your Phenotype Metadata file. "
         . "Please either remove these phenotypes from your Phenotype file, "
         . "or add them to your Phenotype Metadata file. The phenotypes we "
-        . "detected with missing definitions were: @list.",
-        ['@list' => implode(', ', $missing_phenotypes)]
+        . "detected with missing definitions were: @list.";
+    }
+
+    $missing_phenotypes = array_diff($phenotype_names, $phenotype_meta_names);
+    if (!empty($missing_phenotypes)) {
+      form_set_error($form_field_error_name,
+        t($message, ['@list' => implode(', ', $missing_phenotypes)]
       ));
       return;
     }
 
+    //
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Check if number of trees in data file matches number of rows in
     // accession file added on Page 3.
@@ -520,6 +532,33 @@ class PhenotypeData {
         . "Plant Accession file. The Plant Identifiers we found were: @list.";
       form_set_error($form_field_error_name, t($message, $params));
     }
+  }
+
+  /**
+   * Gets index of the Phenotype Name column.
+   *
+   * @param int $id
+   *   Organism ordinal number.
+   * @param array $form_state
+   *   Drupal Form API State array.
+   *
+   * @return string
+   *   Returns index of the column which holds phenotype name. E.g., "A".
+   */
+  public static function getPhenotypeNameColumn($id, array $form_state) {
+    $path = [
+      "organism-$id", 'phenotype', 'metadata-groups',
+      // 'Phenotype Id' is name of the column (not option's name or index)
+      // which created on server side during validation.
+      'Phenotype Id',
+      // This value doesn't depend from file format and will always be '1'
+      // for 'Phenotype Id'.
+      '1',
+    ];
+    return drupal_array_get_nested_value($form_state['input'], $path)
+      ?? drupal_array_get_nested_value($form_state['values'], $path)
+      ?? drupal_array_get_nested_value($form_state['saved_values'][TPPS_PAGE_4], $path)
+      ?? NULL;
   }
 
 }

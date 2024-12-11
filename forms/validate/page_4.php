@@ -983,9 +983,8 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
             $phenotype_meta = $phenotype['metadata'];
             $phenotype_number = $phenotype['phenotypes-meta']['number'];
 
-            $phenotype_meta_names = array();
-            $phenotype_name_col = $form_state['values'][$id]['phenotype']
-              ['metadata-groups']['Phenotype Id']['1'] ?? NULL;
+            $phenotype_meta_names = [];
+            $phenotype_name_col = PhenotypeData::getPhenotypeNameColumn($org_num, $form_state);
             if (isset($phenotype_name_col)) {
               $phenotype_meta_names = tpps_parse_file_column($phenotype_meta, $phenotype_name_col);
             }
