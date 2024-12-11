@@ -34,16 +34,6 @@ class PhenotypeData {
   // Example: TPPS_IMAGES_PATH . 'phenotype_format_2.png.
   const FILE_FORMAT_2 = 1;
 
-
-  /**
-   * Contains Drupal managed file id of the phenotype data file.
-   *
-   * Note: File id not always exists and must be optional.
-   *
-   * @todo Implement __construct($file_id).
-   */
-  public fileId;
-
   /**
    * Builds form fields for Phenotype Data file.
    *
@@ -165,6 +155,10 @@ class PhenotypeData {
     // The form_state values of the phenotype fieldset for organism $id.
     $phenotype = &$form_state['values']["organism-$org_num"]['phenotype'] ?? NULL;
     $file_element = $form[$id]['phenotype']['file'];
+    $file_id = $phenotype['file'] ?? NULL;
+    $metadata_file_id = $phenotype['metadata'];
+    $normal_check = $phenotype['normal-check'] ?? NULL;
+    $iso_check = $phenotype['iso-check'] ?? NULL;
 
     // Check if required columns are present in file.
     switch ($phenotype['format']) {
@@ -192,30 +186,91 @@ class PhenotypeData {
         break;
     }
     $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
-
     if (form_get_errors()) {
       return;
     }
-    // Check if number of phenotypes in Phenotype Metadata file matches number of
-    // columns in Phenotype Data file.
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Check if number of phenotypes in Phenotype Metadata file matches
+    // number of columns in Phenotype Data file.
+    if ($normal_check) {
+      $is_metadata_file = (bool) ($phenotype['check'] && !empty($file_id));
 
 
 
+// @todo Check if FILE_FORMAT_2 supported.
 
-    // Check if all phenotypes listed in Phenotype Metadata file are present
-    // in Phenotype Data file.
-    if (!form_get_errors()) {
+
+      if (empty($file_id)) {
+        // @todo required file is missing.
+        return;
+      }
+      $file_header = tpps_file_get_header($file_id);
+      if (
+        is_array($file_header)
+        && ($column_number = count($file_header))
+      ) {
+        if ($is_metadata_file) {
+          $phenotype_number = tpps_file_len($metadata_file_id);
+        }
+        else {
+          $phenotype_number = $phenotype['phenotypes-meta']['number'];
+        }
+        // One column has Plant Id and we need to exclude it.
+        $file_phenotypes_count = $column_number - 1;
+        // If phenotype file has column 'year' which is not actually
+        // phenotype and doesn't have own row in metadata file we need to
+        // compare files differently.
+        if ($has_year_column) {
+          $file_phenotypes_count = $file_phenotypes_count - 1;
+        }
+        if ($phenotype_number != $file_phenotypes_count) {
+          $params = [
+            '@count' => $phenotype_number,
+            '@file_count' => $file_phenotypes_count,
+          ];
+          if ($is_metadata_file) {
+            $message = 'Number of phenotypes in Phenotype Metadata file '
+              . 'NOT matches number of columns in Phenotype file. <br />Number '
+              . 'of phenotypes in Metadata File: <strong>@count</strong>.';
+          }
+          else {
+            // Manually added Phenotype Metadata. File wasn't used.
+            $message = 'Number of phenotypes NOT matches number of columns '
+              . 'in Phenotype File. <br />Number of manually added phenotypes: '
+              . '<strong>@count</strong>.';
+            // $phenotype['metadata'] could have Phenotype Metadata File Id if user
+            // first uploaded file and then decided to manually add phenotypes.
+            // We need to remove this file if it exists.
+            if (!empty($phenotype['metadata'])) {
+              // Remove already uploaded file.
+              $file = tpps_file_load(($phenotype['metadata'] ?? ''));
+              file_delete($file);
+              // Clear metadatafile field.
+              unset($phenotype['metadata']);
+            }
+          }
+          $message .= '<br />Number of phenotypes in Phenotype File: <strong>@file_count</strong>.';
+          form_set_error("$id][phenotype][file", t($message, $params));
+        }
+      }
+    }
+    if (form_get_errors()) {
       return;
     }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Check if all phenotypes listed in Phenotype Metadata file are present
+    // in Phenotype Data file.
     $phenotype_file_tree_col = $groups['Tree Identifier']['1'];
-    $phenotype_names = array();
+    $phenotype_names = [];
     switch ($phenotype['format']) {
       case self::FILE_FORMAT_1:
         // If there is only one column with data then it will be a string
         // but we need an array.
         $phenotype_file_name_cols = is_array($groups['Phenotype Data']['0'])
           ? $groups['Phenotype Data']['0'] : [$groups['Phenotype Data']['0']];
-        $headers = tpps_file_headers($phenotype_file, !empty($phenotype['file-no-header']));
+        $headers = tpps_file_headers($file_id, !empty($phenotype['file-no-header']));
         foreach ($phenotype_file_name_cols as $column_index) {
           $phenotype_names[] = $headers[$column_index];
         }
@@ -223,13 +278,13 @@ class PhenotypeData {
 
       case self::FILE_FORMAT_2:
         $phenotype_file_name_col = $groups['Phenotype Name/Identifier']['2'];
-        $phenotype_names = tpps_parse_file_column($phenotype_file, $phenotype_file_name_col);
+        $phenotype_names = tpps_parse_file_column($file_id, $phenotype_file_name_col);
         break;
     }
 
     $phenotype_meta_names = [];
     if (isset($phenotype_name_col)) {
-      $phenotype_meta_names = tpps_parse_file_column($phenotype_meta, $phenotype_name_col);
+      $phenotype_meta_names = tpps_parse_file_column($metadata_file_id, $phenotype_name_col);
     }
 
     for ($i = 1; $i <= $phenotype_number; $i++) {
@@ -320,37 +375,6 @@ class PhenotypeData {
         '6' => 'Year',
       ];
     }
-  }
-
-  /**
-   * Gets file header (first row).
-   *
-   * @param int $file_id
-   *   Drupal managed file id.
-   *
-   * @return array
-   *   Returns first row of the file.
-   *
-   * @todo This is very common function and could be moved to parent class.
-   */
-  public function getFileHeader($file_id = NULL) {
-    $file_id = $file_id ?? $this->fileId ?? NULL;
-    if (!empty($file_id)) {
-      return tpps_file_get_header($file_id);
-    }
-  }
-
-  /**
-   * Returns the number of rows in a file.
-   *
-   * @param int $file_id
-   *   The Drupal managed file identifier of the file.
-   *
-   * @return int
-   *   The number of lines or rows in the file.
-   */
-  public function getFileRowNumber($file_id) {
-    return tpps_file_len($file_id);
   }
 
 }
