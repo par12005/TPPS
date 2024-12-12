@@ -42,6 +42,14 @@ function tpps_submit_all_settings_form(array $form, array &$form_state) {
     '#type' => 'checkbox',
     '#title' => t('Allow to run nextflow'),
     '#default_value' => variable_get('tpps_submitall_run_nextflow'),
+    '#description' => t("Not all studies has VCF files and running "
+      . "nextflow causes error in those cases."),
+  ];
+  $form['common']['tpps_submitall_rename_files'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Allow to files renaming'),
+    '#default_value' => variable_get('tpps_submitall_rename_files'),
+    '#description' => t("Renaming files doesn't work on dev server."),
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

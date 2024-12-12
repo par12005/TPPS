@@ -194,11 +194,16 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     tpps_submit_summary($submission->sharedState);
     tpps_log('Summary information submitted!' . PHP_EOL, [], TRIPAL_INFO);
 
-    tpps_log('Renaming files...', [], TRIPAL_INFO);
-    tpps_submission_rename_files($accession);
-    tpps_log('Files renamed!' . PHP_EOL, [], TRIPAL_INFO);
+    if (variable_get('tpps_submitall_rename_files', TRUE)) {
+      tpps_log('Renaming files...', [], TRIPAL_INFO);
+      tpps_submission_rename_files($accession);
+      tpps_log('Files renamed!' . PHP_EOL, [], TRIPAL_INFO);
+    }
 
     if (variable_get('tpps_submitall_run_nextflow', TRUE)) {
+
+// @TODO Run only when study has VCF files.
+
       tpps_log('Nextflow New Study Pipeline', [], TRIPAL_INFO);
       tpps_nextflow_new_study_pipeline($submission->sharedState);
     }
@@ -1730,7 +1735,6 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
           'struct' => !empty($struct) ? $struct : NULL,
           'min' => !empty($min) ? $min : NULL,
           'max' => !empty($max) ? $max : NULL,
-          // @TODO use $is_env ?? NULL.
           'env' => !empty($env) ? $env : NULL,
         ];
 
@@ -8353,7 +8357,6 @@ function tpps_get_code_parts($part) {
  */
 function tpps_log($message, $variables = [], $severity = TRIPAL_INFO) {
   global $tpps_job;
-
 
   // To dump array/object during debugging/testing.
   // @TODO Add setting to allow dumps in each log type (file, CLI and Tripal).
