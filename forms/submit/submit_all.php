@@ -499,24 +499,49 @@ function tpps_log_show_caller_function(&$message, $log_type, $severity) {
  *   Returns bash color.
  */
 function tpps_log_get_color($severity = TRIPAL_INFO) {
+  //  Color   FG  BG
+  //  Black   30  40
+  //  Red     31  41
+  //  Green   32  42
+  //  Yellow  33  43
+  //  Blue    34  44
+  //  Magenta 35  45
+  //  Cyan    36  46
+  //  Gray    90  100
+  //  White   97  107
+  //
+  //  Color           FG  BG
+  //  Light Gray      37  47
+  //  Light Red       91  101
+  //  Light Green     92  102
+  //  Light Yellow    93  103
+  //  Light Blue      94  104
+  //  Light Magenta   95  105
+  //  Light Cyan      96  106
+
   switch ($severity) {
     case TRIPAL_CRITICAL:
+      // Light Red.
+      return "\e[91m";
     case TRIPAL_ERROR:
       // Red.
       return "\e[31m";
 
     case TRIPAL_WARNING:
+      // Light Yellow.
+      return "\e[93m";
+
+    case TRIPAL_NOTICE:
       // Yellow.
       return "\e[33m";
 
-    case TRIPAL_NOTICE:
     case TRIPAL_INFO:
       // Green.
       return "\e[32m";
 
     case TRIPAL_DEBUG:
-      // Cyan.
-      return "\e[36m";
+      // Light Blue.
+      return "\e[94m";
 
     default:
       return "\e[0m";
@@ -1646,6 +1671,9 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
     if (!($debug_mode ?? NULL)) {
       tpps_add_project_file($shared_state, $data_fid);
     }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Manual.
     $env_phenotypes = FALSE;
     // Populate $phenotypes_meta with manually entered metadata.
     for ($j = 1; $j <= $phenotype_number; $j++) {
@@ -1769,22 +1797,52 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
     tpps_refine_phenotype_meta($phenotypes_meta, $time_options, $job);
     // Get metadata header values.
     $groups = $phenotype['file-groups'];
+
+tpps_log($groups, 'groups');
+
     $column_vals = $phenotype['file-columns'];
-    $time_index = ($phenotype['format'] == 0) ? '2' : '4';
-    $clone_index = ($phenotype['format'] == 0) ? '3' : '5';
+    switch ($phenotype['format']) {
+      case PhenotypeData::FILE_FORMAT_1:
+        $time_index  = PhenotypeData::DATA_TYPE_TIMEPOINT;
+        $clone_index = PhenotypeData::DATA_TYPE_CLONE_NUMBER;
+        $year_index  = PhenotypeData::DATA_TYPE_YEAR;
+        break;
+
+      case PhenotypeData::FILE_FORMAT_2:
+        $time_index  = '4';
+        $clone_index = '5';
+        $year_index  = '6';
+        break;
+    }
     $time = array_search($time_index, $column_vals);
     $clone = array_search($clone_index, $column_vals);
-    $meta_headers = array(
+    // Get column index which holds 'year' data. E.g., 'B'.
+    $year = array_search($year_index, $column_vals);
+    $meta_headers = [
       'name' => $groups['Phenotype Name/Identifier']['2'] ?? NULL,
       'value' => $groups['Phenotype Value(s)']['3'] ?? NULL,
       'time' => !empty($time) ? $time : NULL,
       'clone' => !empty($clone) ? $clone : NULL,
-    );
+      'year' => !empty($year) ? $year : NULL,
+    ];
+
+
+
+tpps_log($meta_headers, 'meta headers');
+
+
 
     // Get data header values.
     // [VS]
-    if ($phenotype['format'] == 0) {
+    if ($phenotype['format'] == PhenotypeData::FILE_FORMAT_1) {
       $file_headers = tpps_file_headers($data_fid, $phenotype['file-no-header']);
+
+
+
+tpps_log($file_headers, 'file_headers');
+
+
+
       $data_columns = [];
       if (
         is_array($groups['Phenotype Data']['0'])
@@ -1813,14 +1871,22 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
     tpps_log('DATA_FID:' . $data_fid, [], TRIPAL_DEBUG);
     tpps_log('Processing phenotype_data file data...', [], TRIPAL_INFO);
 
+// @todo process year here.
+
+    // @TODO Function tpps_process_phenotype_data() checks 'iso' key to detect
+    // if it's iso or normal-check but this key not set explicitly here.
+    // So processing assumes that if 'iso' not set then it's 'normal' which is
+    // wrong because both could be selected at the same time.
     tpps_file_iterator($data_fid, 'tpps_process_phenotype_data', $options);
     $shared_state['data']['phenotype_meta'] += $phenotypes_meta;
     tpps_log('Inserting data into database using insert_multi...', [], TRIPAL_INFO);
 
     $id_list = tpps_chado_insert_multi($options['records'], ['fks' => 'phenotype']);
     tpps_log('Done.', [], TRIPAL_INFO);
-  }
+  } // End of normal check.
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // ISO.
   if (!empty($phenotype['iso-check'])) {
     $iso_fid = $phenotype['iso'];
     tpps_add_project_file($shared_state, $iso_fid);
@@ -5809,7 +5875,6 @@ function tpps_process_phenotype_meta($row, array &$options = []) {
   $meta[$name]['unit'] = 'other';
   $meta[$name]['unit-other'] = $row[$columns['unit']];
   $meta[$name]['env'] = $row[$columns['env']];
-  $meta[$name]['year'] = $row[$columns['year']];
   if (
     !empty($columns['struct'])
     && isset($row[$columns['struct']])
@@ -6065,6 +6130,11 @@ function tpps_process_phenotype_data($row, array &$options = []) {
   }
   else {
     // 'Normal Check'.
+    // @TODO Set 'normal check' explicitly in $options because both iso and
+    // normal check could be at the same time.
+    //
+
+
     if (isset($meta_headers['name']) and (isset($meta_headers['value']))) {
       $id = $row[$meta_headers['value']];
       $values = [$id => $row[$meta_headers['name']]];
@@ -6076,6 +6146,8 @@ function tpps_process_phenotype_data($row, array &$options = []) {
     $clone_col = $meta_headers['clone'] ?? NULL;
     if (isset($clone_col)
       and !empty($row[$clone_col])
+      // @todo Rename to $empty_symbol or similar to have unique name and
+      // improve ability to search.
       and $row[$clone_col] !== $empty
     ) {
       $tree_id .= "-" . $row[$clone_col];
@@ -6163,6 +6235,25 @@ function tpps_process_phenotype_data($row, array &$options = []) {
       tpps_submitall_prepare_phenotypeprop(
         $phenotype_name, $value, $property_name, $row, $options
       );
+    }
+
+    // @TODO Add year from manual meta.
+
+    // Process 'year' column which is not a phenotype.
+    if (!$iso) {
+      // Normal check.
+      if (!empty($meta_headers['year'])) {
+        // $meta_headers['year'] // B.
+        // tpps_log($row[$meta_headers['year']], 'year value');
+        $records['phenotypeprop']["$phenotype_name-year"] = [
+          'type_id' => $cvterms['year'],
+          'value' => $row[$meta_headers['year']],
+          '#fk' => ['phenotype' => $phenotype_name],
+        ];
+      }
+    }
+    else {
+      // @TODO What to do with iso?
     }
 
     $records['phenotypeprop']["$phenotype_name-desc"] = array(
