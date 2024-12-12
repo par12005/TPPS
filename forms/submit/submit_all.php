@@ -230,6 +230,13 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
 }
 
 function tpps_nextflow_new_study_pipeline(array &$form_state) {
+  tpps_log("Refreshing chado.plant_location_view since this is required before running the nextflow new study pipeline\n");
+  try {
+    chado_query("REFRESH MATERIALIZED VIEW chado.plant_location_view");
+  }
+  catch (Exception $ex) {
+    tpps_log("Could not refresh materialized view chado.plant_location_view\n");
+  }
   // Get all required nextflow flag parameters from the shared state
   $study_accession = $form_state['saved_values'][1]['accession'];
   $vcf = NULL;
