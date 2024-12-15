@@ -30,6 +30,7 @@ function tpps_initialize_job_logger($accession, TripalJob $job = NULL) {
   // Get public path.
   $log_path = tpps_realpath('public://') . '/tpps_job_logs/';
 
+  chado_query('SET search_path TO chado,public;');
   tpps_log('[INFO] Initializing log path: ' . $log_path);
 
   if (!is_dir($log_path)) {
@@ -1309,7 +1310,7 @@ function tpps_submit_page_4(array &$shared_state, TripalJob &$job = NULL) {
     ':name' => 'sequencing method'
   ]);
   foreach ($cvterm_results as $cvterm_row) {
-    $cvterm_id_sequencing_method = $cvterm_row['cvterm_id'];
+    $cvterm_id_sequencing_method = $cvterm_row->cvterm_id;
   }
   if (isset($project_id)) {
     chado_query('DELETE FROM chado.projectprop WHERE project_id = :project_id AND type_id = :type_id', [
