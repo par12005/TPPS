@@ -663,21 +663,17 @@ function tpps_form_build_file_field(array $form_bus) {
         = $parent_element[$field_name]['#value']['fid'];
     }
   }
-  // Most of fields have used this code so only 2 must be excluded.
-  if (!in_array($field_name, ['snps-association', 'other'])) {
-    // Field 'snps-association' excluded because it didn't have this code.
-    if (isset($parent_element[$field_name]['#value'])) {
-      $parent_element[$field_name]['#default_value']
-        = $parent_element[$field_name]['#value'];
-    }
-    $file = tpps_file_load($parent_element[$field_name]['#default_value'] ?? '');
-    if ($file) {
-      // Stop using the file so it can be deleted if the user clicks 'remove'.
-      if (variable_get('tpps_genotype_file_usage_delete', TRUE)) {
-        // Study Id is a number in 'TGDRXXX'.
-        $study_id = substr($form_state['accession'], 4);
-        file_usage_delete($file, 'tpps', 'tpps_project', $study_id);
-      }
+  if (isset($parent_element[$field_name]['#value'])) {
+    $parent_element[$field_name]['#default_value']
+      = $parent_element[$field_name]['#value'];
+  }
+  $file = tpps_file_load($parent_element[$field_name]['#default_value'] ?? '');
+  if ($file) {
+    // Stop using the file so it can be deleted if the user clicks 'remove'.
+    if (variable_get('tpps_genotype_file_usage_delete', TRUE)) {
+      // Study Id is a number in 'TGDRXXX'.
+      $study_id = substr($form_state['accession'], 4);
+      file_usage_delete($file, 'tpps', 'tpps_project', $study_id);
     }
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
