@@ -412,6 +412,7 @@ function tpps_genotype_subform(array $form_bus) {
   $file_field_name = 'snps-association';
   $title = t('SNP Association File');
   // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
+  // @todo Move to SnpAssociation::build() method.
   tpps_form_build_file_field([
     'form' => &$form,
     'form_state' => $form_state,
@@ -456,25 +457,24 @@ function tpps_genotype_subform(array $form_bus) {
       ],
       'columns-options' => [
         '#type' => 'hidden',
-        '#value' => [
-          // @TODO Minor. Move to Genotype class and use it's constants.
-          // @TODO Use t() for names.
-          0 => 'N/A',
-          1 => 'SNP ID',
-          2 => 'Scaffold',
-          3 => 'Position',
-          4 => 'Allele',
-          5 => 'Associated Trait',
-          6 => 'Confidence Value',
-          7 => 'Gene ID',
-          8 => 'Annotation',
-          9 => 'Year',
-        ],
+        '#value' => SnpAssociation::getColumnOptions(),
       ],
       'no-header' => [],
     ],
   ]);
+  // Send Option Id of the 'Year' data type to browser to enable/disable this
+  // option when Phenotype Data file has/hasn't 'Year' column.
+  $form['#attached']['js'][] = [
+    'type' => 'setting',
+    'data' => [
+      'tpps' => [
+        'snpAssociation' => ['dataTypeYear' => SnpAssociation::DATA_TYPE_YEAR],
+      ],
+    ],
+    'scope' => 'footer',
+  ];
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
   // This field must be optional to not block submission but later will be
   // moved to new page5.

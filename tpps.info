@@ -13,3 +13,4 @@ files[] = src/Organism.class.inc
 files[] = src/PhenotypeManual.class.inc
 files[] = src/PhenotypeMeta.class.inc
 files[] = src/PhenotypeData.class.inc
+files[] = src/SnpAssociation.class.inc

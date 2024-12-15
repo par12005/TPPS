@@ -23,32 +23,37 @@
               repeatCounter = 1;
               // Note: 1st organism doesn't have checkbox 'genotype-repeat-check'.
               for (let i = 2; i <= settings.tpps.organismNumber; i++) {
-                $repeatCheckBox = $('input[name="organism-' + i + '[genotype-repeat-check]"]', $form);
+                $repeatCheckBox = $('input[name="organism-' + i
+                  + '[genotype-repeat-check]"]', $form);
                 repeatCounter = +repeatCounter + +$repeatCheckBox.prop('checked');
               }
               if (settings.tpps.organismNumber == repeatCounter) {
                 // Only when all organisms has the checkbox checked.
-                $('.form-select[name="organism-1[genotype][are_genotype_markers_identical]"]', $form).val('yes');
+                $('.form-select[name="organism-1[genotype]'
+                  + '[are_genotype_markers_identical]"]', $form).val('yes');
               }
               else if (repeatCounter) {
                 // If at least some of them was set then not identical for sure.
-                $('.form-select[name="organism-1[genotype][are_genotype_markers_identical]"]', $form).val('no');
+                $('.form-select[name="organism-1[genotype]'
+                  + '[are_genotype_markers_identical]"]', $form).val('no');
               }
               // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-              $('.form-select[name="organism-1[genotype][are_genotype_markers_identical]"]', $form)
-              .blur(function() {
-                let value = $(this).val();
-                for (let i = 2; i <= settings.tpps.organismNumber; i++) {
-                  $repeatCheckBox = $('input[name="organism-' + i
-                    + '[genotype-repeat-check]"]', $form);
-                  if (value == 'yes') {
-                    $repeatCheckBox.prop('checked', true).trigger('change');
-                  }
-                  else if (value == 'no') {
-                    $repeatCheckBox.prop('checked', false).trigger('change');
+              $('.form-select[name="organism-1[genotype]'
+                + '[are_genotype_markers_identical]"]', $form)
+                .blur(function() {
+                  let value = $(this).val();
+                  for (let i = 2; i <= settings.tpps.organismNumber; i++) {
+                    $repeatCheckBox = $('input[name="organism-' + i
+                      + '[genotype-repeat-check]"]', $form);
+                    if (value == 'yes') {
+                      $repeatCheckBox.prop('checked', true).trigger('change');
+                    }
+                    else if (value == 'no') {
+                      $repeatCheckBox.prop('checked', false).trigger('change');
+                    }
                   }
                 }
-              });
+              );
               // When manually disabled 'Repeat Check' for non-first genotype
               // then set to 'No' selectbox with title
               // "Are your genotype markers identical accross species?"
@@ -57,20 +62,53 @@
                 $('input[name="organism-' + i + '[' + fieldName + ']"]', $form)
                 .click(function() {
                   if (! this.checked) {
-                    $('.form-select[name="organism-1[genotype][are_genotype_markers_identical]"]', $form).val('no');
+                    $('.form-select[name="organism-1[genotype]'
+                      + '[are_genotype_markers_identical]"]', $form).val('no');
                   }
                 });
               }
             }
-            // Replacement for selectbox 'Marker Type'.
-            // We have 3 select boxes instead of 2 selectbox which allows
-            // multiple selections. Original selectbox 'Marker Type' was left
-            // to avoid changes in submit_all.php and merge conflicts.
-            //
-            // organism-1[genotype][does_study_include_other_genotypic_data]
-            // organism-1[genotype][does_study_include_snp_data]
-            // organism-1[genotype][does_study_include_ssr_cpssr_data]
             for (let i = 1; i <= settings.tpps.organismNumber; i++) {
+              // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+              var featureName = 'snpAssociationYear';
+
+
+// @TODO Do the same on 'SNP Association' file upload and on page reload.
+
+              // SNP Association file field must have 'Year' option only when
+              // Phenotype Data file has column 'Year'.
+              // fieldset#edit-organism-1-phenotype-file-columns table.view select.form-select
+              let phenotypeDataFileFieldsetId = 'edit-organism-' + i
+                + '-phenotype-file-columns';
+              $('fieldset#' + phenotypeDataFileFieldsetId + ' table .form-select')
+                .on('change', function() {
+                  console.log('changed');
+                  // $TODO Get organism Id.
+                  let currentOrganismId = 1;
+                  let snpAssociationFileFieldsetId = 'edit-organism-'
+                    + currentOrganismId + '-genotype-snps-snps-association-columns';
+                  // @TODO Disable option 'Year'
+                  let $snpAssociationColomnSelectList = $('fieldset#'
+                    + snpAssociationFileFieldsetId + ' table .form-select');
+                  if ($snpAssociationColomnSelectList.length) {
+                    // SNP Association file was uploaded and table with
+                    // column data type selectors exists.
+                    $snpAssociationColomnSelectList.find('option[value="'
+                      + settings.tpps.snpAssociation.dataTypeYear
+                      + '"]').attr('disabled', 'disabled');
+                  }
+                });
+
+              // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+              var featureName = 'genotypeMarkerType';
+              // Replacement for selectbox 'Marker Type'.
+              // We have 3 select boxes instead of 2 selectbox which allows
+              // multiple selections. Original selectbox 'Marker Type' was left
+              // to avoid changes in submit_all.php and merge conflicts.
+              //
+              // organism-1[genotype][does_study_include_other_genotypic_data]
+              // organism-1[genotype][does_study_include_snp_data]
+              // organism-1[genotype][does_study_include_ssr_cpssr_data]
               let markerTypeName = 'organism-' + i + '[genotype][marker-type][]';
               let $markerTypeField = $(':input[name="' + markerTypeName + '"]', $form);
               // Main field must be hidden.
