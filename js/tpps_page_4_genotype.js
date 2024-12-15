@@ -27,7 +27,7 @@
           // SNP Association file was uploaded and table with
           // column data type selectors exists.
           $yearOptions = $snpAssociationColomnSelectList.find('option[value="'
-            + settings.tpps.snpAssociation.dataTypeYear + '"]');
+            + Drupal.settings.tpps.snpAssociation.dataTypeYear + '"]');
 
           if (action  == 'disable') {
             $yearOptions.attr('disabled', 'disabled');
@@ -86,6 +86,28 @@
         return $('fieldset#edit-organism-' + organismId + '-'
           + fieldName + '-columns table .form-select');
       };
+
+      // SNP Association 'Year' option.
+      for (let i = 1; i <= Drupal.settings.tpps.organismNumber; i++) {
+        // Disable all 'Year' options by default so if SNP Association
+        // file will be uploaded before Phenotype Data file 'Year' option
+        // will be disabled.
+        SnpAssociation.YearOption(i, 'disable');
+        // SNP Association file field must have 'Year' option only when
+        // Phenotype Data file has column 'Year'.
+        // fieldset#edit-organism-1-phenotype-file-columns table.view select.form-select
+        let phenotypeDataFileFieldsetId = 'edit-organism-' + i
+          + '-phenotype-file-columns';
+        $('fieldset#' + phenotypeDataFileFieldsetId + ' table .form-select')
+          .on('change', function() {
+            // @TODO Minor. Get element from even object to remove
+            // function() wrapper.
+            SnpAssociation.syncYearOption($(this));
+          })
+          .each(function() {
+            SnpAssociation.syncYearOption($(this));
+          });
+      }
 
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Attach event handlers only once.
@@ -156,27 +178,8 @@
                 });
               }
             }
+
             for (let i = 1; i <= settings.tpps.organismNumber; i++) {
-              // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-              var featureName = 'snpAssociationYear';
-
-
-// @TODO Do the same on 'SNP Association' file upload.
-
-              // SNP Association file field must have 'Year' option only when
-              // Phenotype Data file has column 'Year'.
-              // fieldset#edit-organism-1-phenotype-file-columns table.view select.form-select
-              let phenotypeDataFileFieldsetId = 'edit-organism-' + i
-                + '-phenotype-file-columns';
-              $('fieldset#' + phenotypeDataFileFieldsetId + ' table .form-select')
-                .on('change', function() {
-                  SnpAssociation.syncYearOption($(this));
-                })
-                .each(function() {
-                  SnpAssociation.syncYearOption($(this));
-                  //console.log($(this));
-                });
-
               // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
               var featureName = 'genotypeMarkerType';
               // Replacement for selectbox 'Marker Type'.
