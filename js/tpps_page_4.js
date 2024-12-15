@@ -14,18 +14,11 @@
       // 'SynonymField' object.
       // @TODO Minor. Covert into separate and more common class to reuse it.
       const SynonymField = {
-        // Prefix of the the field's name. Used to build field name and parse
-        // field name to get Organism Id and Phenotype Id.
-        'namePrefix' : '[phenotype][phenotypes-meta][',
-
-        // Suffix of the the field's name. Used to build field name and parse
-        // field name to get Organism Id and Phenotype Id.
-        'nameSuffix' : '][synonym_id]',
-
+        // Common.
         // Value of the 'name' attribute. Name of the form element in DOM.
         'name' : '',
 
-        // Synonym form element (select element of the DOM).
+        // Form element (select element of the DOM).
         'element' : '',
 
         /**
@@ -142,6 +135,16 @@
           }
         },
 
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // Custom.
+
+        // Prefix of the the field's name. Used to build field name and parse
+        // field name to get Organism Id and Phenotype Id.
+        'namePrefix' : '[phenotype][phenotypes-meta][',
+
+        // Suffix of the the field's name. Used to build field name and parse
+        // field name to get Organism Id and Phenotype Id.
+        'nameSuffix' : '][synonym_id]',
         /**
          * Gets Phenotype Id.
          *

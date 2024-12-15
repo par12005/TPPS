@@ -469,6 +469,7 @@ function tpps_genotype_subform(array $form_bus) {
     'data' => [
       'tpps' => [
         'snpAssociation' => ['dataTypeYear' => SnpAssociation::DATA_TYPE_YEAR],
+        'phenotypeData' => ['dataTypeYear' => PhenotypeData::DATA_TYPE_YEAR],
       ],
     ],
     'scope' => 'footer',

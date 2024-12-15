@@ -1,6 +1,93 @@
 (function ($) {
   Drupal.behaviors.tpps_page_4_genotype = {
     attach: function (context, settings) {
+
+
+      var featureName = 'Drupal.behaviors.tppsPage4_genotype';
+
+      // Common namespace for all managed files.
+      var ManagedFile = {};
+      // SNP Association custom namespace.
+      // @TODO Class SnpAssociation must extend ManagedFile class.
+      var SnpAssociation = {};
+
+      /**
+       * Enables/Disables 'Year' option of the SNP Association column data type.
+       *
+       * @param int organismId
+       *   Ordinal number of organism on page.
+       * @param string action
+       *   Posible values: 'enable' and 'disable'.
+       */
+      SnpAssociation.YearOption = function(organismId, action = 'disable') {
+        let $snpAssociationColomnSelectList = ManagedFile.getColumnSelects(
+          organismId, 'genotype-snps-snps-association'
+        );
+        if ($snpAssociationColomnSelectList.length) {
+          // SNP Association file was uploaded and table with
+          // column data type selectors exists.
+          $yearOptions = $snpAssociationColomnSelectList.find('option[value="'
+            + settings.tpps.snpAssociation.dataTypeYear + '"]');
+
+          if (action  == 'disable') {
+            $yearOptions.attr('disabled', 'disabled');
+          }
+          else if (action  == 'enable') {
+            $yearOptions.removeAttr('disabled');
+          }
+        }
+      };
+
+      /**
+       * Syncs Phenotype Data file 'Year' option and SNP Association file option.
+       *
+       * SNP Association file column data type must have 'Year' option only
+       * when Phenotype Data file has 'Year' column.
+       *
+       * @param object element
+       *  Phenotype Data file column selection dropdown menu.
+       */
+      SnpAssociation.syncYearOption = function(element) {
+        let organismId = $(element).parents('.form-managed-file')
+          .prop('id').replace('edit-organism-', '')
+          .replace('-phenotype-file-upload', '');
+        // Check if any column has 'Year' selected.
+        let $phenotypeDataColomnSelectList = ManagedFile
+          .getColumnSelects(organismId, 'phenotype-file');
+        // Default action is to have disabled 'Year' option of the
+        // column data types dropdowns of SNP Association file field.
+        // Which means 'Year' column data type of the Phenotype Data
+        // file was NOT defined.
+        let action = 'disable';
+        // Check if any of Phenotype Data file column was defined
+        // as 'Year' data type.
+        if (
+          $phenotypeDataColomnSelectList.find(":selected")
+          .map(function() {return $(this).val();}).get()
+          .includes(
+            String(Drupal.settings.tpps.phenotypeData.dataTypeYear)
+          )
+        ) {
+          // 'Year' column was defined.
+          action = 'enable';
+        }
+        SnpAssociation.YearOption(organismId, action);
+      };
+
+      /**
+       * Gets all dropdowns of the column selection widget.
+       *
+       * @params int organismId
+       *   Ordinal number of organism on page.
+       * @param string fieldName
+       *   Part of fieldset id which includes path to field.
+       */
+      ManagedFile.getColumnSelects = function(organismId, fieldName) {
+        return $('fieldset#edit-organism-' + organismId + '-'
+          + fieldName + '-columns table .form-select');
+      };
+
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Attach event handlers only once.
       $('form[id^=tppsc-main]', context).once('tpps_page_4_genotype', function() {
         // WARNING:
@@ -17,6 +104,7 @@
             typeof(settings.tpps) != 'undefined'
             && typeof(settings.tpps.organismNumber) != 'undefined'
           ) {
+
             if (settings.tpps.organismNumber > 1) {
               // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
               // Check if genotype data is identical.
@@ -73,7 +161,7 @@
               var featureName = 'snpAssociationYear';
 
 
-// @TODO Do the same on 'SNP Association' file upload and on page reload.
+// @TODO Do the same on 'SNP Association' file upload.
 
               // SNP Association file field must have 'Year' option only when
               // Phenotype Data file has column 'Year'.
@@ -82,21 +170,11 @@
                 + '-phenotype-file-columns';
               $('fieldset#' + phenotypeDataFileFieldsetId + ' table .form-select')
                 .on('change', function() {
-                  console.log('changed');
-                  // $TODO Get organism Id.
-                  let currentOrganismId = 1;
-                  let snpAssociationFileFieldsetId = 'edit-organism-'
-                    + currentOrganismId + '-genotype-snps-snps-association-columns';
-                  // @TODO Disable option 'Year'
-                  let $snpAssociationColomnSelectList = $('fieldset#'
-                    + snpAssociationFileFieldsetId + ' table .form-select');
-                  if ($snpAssociationColomnSelectList.length) {
-                    // SNP Association file was uploaded and table with
-                    // column data type selectors exists.
-                    $snpAssociationColomnSelectList.find('option[value="'
-                      + settings.tpps.snpAssociation.dataTypeYear
-                      + '"]').attr('disabled', 'disabled');
-                  }
+                  SnpAssociation.syncYearOption($(this));
+                })
+                .each(function() {
+                  SnpAssociation.syncYearOption($(this));
+                  //console.log($(this));
                 });
 
               // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
