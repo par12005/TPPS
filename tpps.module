@@ -2290,6 +2290,15 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/reports.inc',
   ];
+  $items['admin/config/tpps/js-debug-mode'] = [
+    'title' => 'JS Debug Mode',
+    'description' => 'JS Debug Mode Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_js_debug_mode_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/js_debug_mode.inc',
+  ];
 }
 
 /**
