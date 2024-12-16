@@ -462,6 +462,7 @@ function tpps_genotype_subform(array $form_bus) {
       'no-header' => [],
     ],
   ]);
+  tpps_add_css_js('page_4_snp_association', $form);
   // Send Option Id of the 'Year' data type to browser to enable/disable this
   // option when Phenotype Data file has/hasn't 'Year' column.
   $form['#attached']['js'][] = [

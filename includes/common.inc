@@ -331,6 +331,8 @@ function tpps_js_debug_mode_get_features_list() {
     'Drupal.behaviors.tppsPage3',
     // Page 4.
     'Drupal.behaviors.tppsPage4',
+    'Drupal.behaviors.tpps_page_4_genotype',
+    'Drupal.behaviors.tpps_page_4_snp_association',
     'vcfPreValidate',
     'checkVCFJob',
   ];
