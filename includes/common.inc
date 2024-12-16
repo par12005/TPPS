@@ -301,6 +301,11 @@ function tpps_build_google_map_wrapper($fid, array &$form = NULL) {
 /**
  * Gets list of functions/features which supports "JS Debug Mode".
  *
+ * Note:
+ * This function must be here so other functions could find it without
+ * explicitly include settings form file.
+ * See tpps_js_debug_mode_settings_form().
+ *
  * @return array
  *   Returns list of features which will be sent into client's browser to manage
  *   "JS Debug Mode" in browser.
@@ -318,6 +323,7 @@ function tpps_js_debug_mode_get_features_list() {
     'smoothZoom',
     'Drupal.tpps.getCoordinates',
     'Drupal.tpps.getColumnsFromManagedFileField',
+    'Drupal.behaviors.tppsFieldsetCollapsedStatus',
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // js/tpps_header.js
     'Drupal.tpps.showMessages',

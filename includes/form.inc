@@ -1454,6 +1454,7 @@ function tpps_form_add_fieldset_collapsed_status(array &$form, array $form_state
     = (bool) ($value
     // Respect default settings.
     ?? $form[$fieldset_name]['#collapsed'] ?? FALSE);
+  tpps_add_css_js('header', $form);
   tpps_add_css_js('fieldset', $form);
   if (!isset($form['#submit']['tpps_form_submit_fieldset_collapsed_status'])) {
     $form['#submit'][] = 'tpps_form_submit_fieldset_collapsed_status';
