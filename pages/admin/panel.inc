@@ -31,7 +31,7 @@ module_load_include('inc', 'tpps', 'includes/common');
  */
 function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
   if (empty($accession)) {
-    tpps_admin_panel_show_all($form);
+    tpps_admin_panel_show_all($form, $form_state);
   }
   else {
     // Shows single study.
@@ -47,10 +47,12 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
  *
  * @param array $form
  *   The form element of the TPPS admin panel page.
+ * @param array $form_state
+ *   Drupal Form API State array.
  * @param bool $reset
  *   Flag is cache must be resetted. Default if FALSE.
  */
-function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
+function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FALSE) {
   global $base_url;
 
   tpps_admin_panel_reports($form);
@@ -342,6 +344,7 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
         '#title' => $title[$status_name],
         '#collapsible' => TRUE,
       ];
+      tpps_form_add_fieldset_collapsed_status($form, $form_state, $status_name);
       $table = theme('table', [
         'header' => $header[$status_name],
         'rows' => $status_list,
@@ -389,6 +392,7 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
         ]),
       ],
     ];
+    tpps_form_add_fieldset_collapsed_status($form, $form_state, 'resubmit');
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -456,6 +460,7 @@ function tpps_admin_panel_show_all(array &$form, $reset = FALSE) {
           ),
         ],
       ];
+      tpps_form_add_fieldset_collapsed_status($form, $form_state, 'new_species');
     }
   }
 }

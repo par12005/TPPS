@@ -1419,6 +1419,7 @@ function tpps_logical_opeation($value1, $value2, $logic_operator) {
  * @param string $fieldset_name
  *   Name of the fieldset in Drupal Form array (not in browser's DOM).
  *
+ * @todo Loop all fieldsets using JS in browser and store using AJAX.
  * @todo Add custom Form API element property '#status' and use hooks to
  *   add neccesary fields and make changes.
  */
@@ -1483,5 +1484,6 @@ function tpps_form_get_fieldset_collapsed_status_settings() {
   return [
     'class' => 'fieldset_collapsed_status',
     'prefix' => 'is_fieldset_collapsed_',
+    'ajaxUrl' => '/' . TPPS_AJAX_URL . '/fieldset_collapsed_status',
   ];
 }
