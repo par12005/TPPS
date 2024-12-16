@@ -9,7 +9,6 @@
     attach: function (context, settings) {
 
       var featureName = 'Drupal.behaviors.tpps_page_4_snp_association';
-      dog('loaded', featureName);
 
       // Common namespace for all managed files.
       // @TODO Minor. Create a JS class for managed files.
@@ -79,6 +78,23 @@
           action = 'enable';
         }
         SnpAssociation.YearOption(organismId, action);
+
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // Check if other organisms reuse this phenotype data file.
+        // Note: 'action' could be reused.
+        if (organismId == 1 && Drupal.settings.tpps.organismNumber >= 2) {
+          for (let i = 1; i <= Drupal.settings.tpps.organismNumber; i++) {
+            if (
+              i == 1
+              || $('[name="organism-' + i + '[genotype-repeat-check]"]').is(":checked")
+            ) {
+              continue;
+            }
+            // Non-first organism and checkbox 'Genotype is the same' not checked.
+            // Disable by default.
+            SnpAssociation.YearOption(i, action);
+          }
+        }
       };
 
       /**
@@ -95,22 +111,46 @@
       };
 
 
-// @TODO Implement case: More then one organism and checkboxes 'Phenotype
-// the same' and/or 'Genotype the same' was checked. We need to use data from
-// organism 1.
       //organism-2[phenotype-repeat-check]
       //organism-2[genotype-repeat-check]
 
-      // SNP Association 'Year' option.
+      // SNP Association 'Year' option must be available only when
+      // Phenotype Data file also has column 'Year'.
       for (let i = 1; i <= Drupal.settings.tpps.organismNumber; i++) {
+        // Non-first organism has checkbox 'Genotype information is the same'
+        // and when it's checked genotype fields (including SNP Association file
+        // field) will not be shown at page so we don't need to process them.
+        if (
+          i >= 2
+          && $('[name="organism-' + i + '[genotype-repeat-check]"]').is(":checked")
+        ) {
+          dog('Skipped because genotype is the same as 1st organism.', featureName);
+          continue;
+        }
+        dog('Processing SNP Association file for ' + i + ' organism.', featureName);
         // Disable all 'Year' options by default so if SNP Association
         // file will be uploaded before Phenotype Data file 'Year' option
         // will be disabled.
         SnpAssociation.YearOption(i, 'disable');
-        // SNP Association file field must have 'Year' option only when
-        // Phenotype Data file has column 'Year'.
-        // fieldset#edit-organism-1-phenotype-file-columns table.view select.form-select
-        let phenotypeDataFileFieldsetId = 'edit-organism-' + i
+
+        // Check phenotype data file field and update 'Year' option of
+        // SNP Association file field.
+        // When more then one organism in study and checkboxes
+        // 'Phenotype the same' and/or 'Genotype the same' was checked
+        // sync with phenotype data file for organism 1.
+        let organismId = i;
+        if (
+          i >= 2
+          && $('[name="organism-' + i + '[phenotype-repeat-check]"]').is(":checked")
+        ) {
+          organismId = 1;
+        }
+        dog('Sync SNP Association for organism ' + i
+          + ' with phenotype data file for organism ' + organismId + '.',
+          featureName
+        );
+
+        let phenotypeDataFileFieldsetId = 'edit-organism-' + organismId
           + '-phenotype-file-columns';
         $('fieldset#' + phenotypeDataFileFieldsetId + ' table .form-select')
           .on('change', function() {
@@ -122,7 +162,6 @@
             SnpAssociation.syncYearOption($(this));
           });
       }
-
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     }
   }
