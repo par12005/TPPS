@@ -196,13 +196,12 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     tpps_submit_summary($submission->sharedState);
     tpps_log("[INFO] Summary information submitted!\n");
 
-    tpps_log("[INFO] Renaming files...");
-    tpps_submission_rename_files($accession);
-    tpps_log("[INFO] Files renamed!\n");
+    // tpps_log("[INFO] Renaming files...");
+    // tpps_submission_rename_files($accession);
+    // tpps_log("[INFO] Files renamed!\n");
 
-    tpps_log("[INFO] Nextflow New Study Pipeline");
-    tpps_nextflow_new_study_pipeline($submission->sharedState);
-
+    // tpps_log("[INFO] Nextflow New Study Pipeline");
+    // tpps_nextflow_new_study_pipeline($submission->sharedState);
 
     tpps_log("[INFO] Finishing up...");
     // Functions starting from tpps_submit_page_1() update $shared_state array
