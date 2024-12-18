@@ -1,9 +1,9 @@
 /**
  * @file
  *
- * TPPS Fieldset Collapsed State.
+ * TPPS Remember Fieldset Collapsed State.
  *
- * Remembers status of the fieldset when form submitted.
+ * Remembers status of collapsible fieldsets.
  */
 (function ($) {
   Drupal.behaviors.tppsFieldsetCollapsedState = {
@@ -12,7 +12,7 @@
        * Stores state of the fieldset.
        *
        * @param object element
-       *   JQuery objec of the element.
+       *   JQuery object of the element.
        */
       function storeState(element, op) {
         let $fieldset = element.parents('fieldset');
@@ -22,12 +22,12 @@
         if (op == 'click') {
           value = !value;
         }
-        console.log(value);
         $.ajax({
             url: Drupal.settings.tpps.fieldsetCollapsedState.ajaxUrl,
             method: 'post',
             dataType: 'json',
             data: {
+              'form_id': element.parents('form').attr('id'),
               'name': $fieldset.attr('id'),
               'value': value ? 1 : 0,
             },

@@ -164,15 +164,24 @@ function tpps_ajax_get_ncbi_taxonomy_id(array $data) {
 }
 
 /**
- * Process status of the fieldset.
+ * AJAX callback for 'Remember Fieldset Collapsed State' feature.
+ *
+ * Stores state of given fieldset.
  *
  * @param array $data
  *   POST data.
+ *
+ * @return bool
+ *   Returns TRUE in case of success and FALSE otherwise.
  */
-function tpps_ajax_fieldset_collapsed_state(array $data) {
-  if (empty($data['name']) && !isset($data['value'])) {
+function tpps_ajax_remember_fieldset_collapsed_state(array $data) {
+  if (
+    empty($data['name'])
+    && empty($data['form_id'])
+    && !isset($data['value'])
+  ) {
     return FALSE;
   }
-  $_SESSION['fieldset_collapsed_state'][$data['name']] = (int) $data['value'];
+  $_SESSION[TPPS_RFCS_KEY][$data['form_id']][$data['name']] = (int) $data['value'];
   return TRUE;
 }

@@ -1401,55 +1401,47 @@ function tpps_logical_opeation($value1, $value2, $logic_operator) {
   return NULL;
 }
 
-// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-// Fieldset Collapsed Status feature.
-
 /**
- * Adds abililty to store fieldset state.
+ * Implements 'Remember Fieldset Collapsed Status' feature for given form.
  *
- * Note: Since data is stored on form_state array feature works only during
- * current session.
- *
- * WARNING: Be sure to add after actual fieldset added to $form array.
+ * Note: Only collapsible fieldsets will be affected.
  *
  * @param array $form
  *   Drupal Form API array.
- * @param array $form_state
- *   Drupal Form API State array.
- * @param string $fieldset_name
- *   Name of the fieldset in Drupal Form array (not in browser's DOM).
- *   @TODO Minor. Remove this attribute.
- *
- * @todo Add custom Form API element property '#status' and use hooks to
- *   add neccesary fields and make changes.
+ * @param string $form_id
+ *   Form Id.
  */
-function tpps_form_add_fieldset_collapsed_state(array &$form, array $form_state, $fieldset_name) {
-  if (empty($form[$fieldset_name])) {
-    throw new Exception(t('Fieldset "@name" not found. Call "@function()" after '
-      . 'adding fieldset to form array.',
-      ['@name' => $fieldset_name, '@function' => __FUNCTION__])
-    );
-  }
-  // Send class name to browser.
-  $form['#attached']['js'][] = [
-    'type' => 'setting',
-    'data' => [
-      'tpps' => [
-        'fieldsetCollapsedState' => [
-          'ajaxUrl' => '/' . TPPS_AJAX_URL . '/fieldset_collapsed_state',
-        ],
-      ],
-    ],
-  ];
+function tpps_form_add_fieldset_collapsed_state(array &$form, $form_id = NULL) {
 
-  // Force fieldset to be collapsible to aviod case when it's closed and there
-  // is no ability to open it.
-  $form[$fieldset_name]['#collapsible'] = TRUE;
-  // 1 - collapsed, 0 - expended.
-  $form[$fieldset_name]['#collapsed'] = (bool) (
-    $_SESSION['fieldset_collapsed_state']['edit-' . str_replace('_', '-', $fieldset_name)]
-    // Respect default settings.
-    ?? $form[$fieldset_name]['#collapsed'] ?? FALSE
-  );
-  tpps_add_css_js('fieldset', $form);
+return;
+
+  $form_id = $form_id ?? ($form['#form_id'] ?? NULL);
+  $is_exists = FALSE;
+  if (empty($form_id) || empty($_SESSION[TPPS_RFCS_KEY][$form_id] ?? NULL)) {
+    return;
+  }
+  foreach ($form as $name => $element) {
+    if (
+      ($element['#type'] ?? NULL) != 'fieldset'
+      || ($element['#collapsible'] ?? NULL) != TRUE
+    ) {
+      continue;
+    }
+    $is_exists = TRUE;
+    // 1 - collapsed, 0 - expended.
+    $form[$name]['#collapsed'] = (bool) (
+      // Name in DOM and in Drupal Form API differs.
+      $_SESSION[TPPS_RFCS_KEY][$form_id]['edit-' . str_replace('_', '-', $name)]
+      // Respect default settings.
+      ?? $element['#collapsed'] ?? FALSE
+    );
+    // Process child fieldsets.
+    foreach (array_keys($element) as $sub_name) {
+      if (strpos('#', $sub_name) === FALSE) {
+        continue;
+      }
+      tpps_form_add_fieldset_collapsed_state($element[$sub_name], $form_id);
+    }
+  }
+  return $is_exists;
 }
