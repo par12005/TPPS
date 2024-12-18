@@ -36,7 +36,12 @@
             + Drupal.settings.tpps.snpAssociation.dataTypeYear + '"]');
 
           if (action  == 'disable') {
-            $yearOptions.attr('disabled', 'disabled');
+            $yearOptions
+              // Disable option so it can't be selected.
+              .attr('disabled', 'disabled')
+              // Unselect option if it was set before.
+              .removeAttr('selected');
+
           }
           else if (action  == 'enable') {
             $yearOptions.removeAttr('disabled');
