@@ -344,7 +344,7 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
         '#title' => $title[$status_name],
         '#collapsible' => TRUE,
       ];
-      tpps_form_add_fieldset_collapsed_status($form, $form_state, $status_name);
+      tpps_form_add_fieldset_collapsed_state($form, $form_state, $status_name);
       $table = theme('table', [
         'header' => $header[$status_name],
         'rows' => $status_list,
@@ -392,7 +392,7 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
         ]),
       ],
     ];
-    tpps_form_add_fieldset_collapsed_status($form, $form_state, 'resubmit');
+    tpps_form_add_fieldset_collapsed_state($form, $form_state, 'resubmit');
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -460,7 +460,7 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
           ),
         ],
       ];
-      tpps_form_add_fieldset_collapsed_status($form, $form_state, 'new_species');
+      tpps_form_add_fieldset_collapsed_state($form, $form_state, 'new_species');
     }
   }
 }

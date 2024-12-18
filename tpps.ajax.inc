@@ -169,11 +169,10 @@ function tpps_ajax_get_ncbi_taxonomy_id(array $data) {
  * @param array $data
  *   POST data.
  */
-function tpps_ajax_fieldset_collapsed_status(array $data) {
-  if (empty($data['name']) && empty($data['value'])) {
+function tpps_ajax_fieldset_collapsed_state(array $data) {
+  if (empty($data['name']) && !isset($data['value'])) {
     return FALSE;
   }
-  $settings = tpps_form_get_fieldset_collapsed_status_settings();
-  $_SESSION[$settings['class']][$data['name']] = $data['value'];
+  $_SESSION['fieldset_collapsed_state'][$data['name']] = (int) $data['value'];
   return TRUE;
 }
