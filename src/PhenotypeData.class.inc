@@ -52,7 +52,7 @@ class PhenotypeData {
    *   Drupal Form API State Array.
    */
   public static function build($id, array &$form, array $form_state) {
-    $page4_values = $form_state['saved_values']['4'];
+    $page4_values = $form_state['saved_values']['4'] ?? NULL;
     $phenotype_dir = variable_get('tpps_phenotype_files_dir', 'tpps_phenotype');
     $normal_check = tpps_get_ajax_value(
       $form_state, ["organism-$id", 'phenotype', 'normal-check'],
@@ -559,6 +559,25 @@ class PhenotypeData {
       ?? drupal_array_get_nested_value($form_state['values'], $path)
       ?? drupal_array_get_nested_value($form_state['saved_values'][TPPS_PAGE_4], $path)
       ?? NULL;
+  }
+
+  /**
+   * Checks if given DataType was set using column's widget.
+   *
+   * @param array $form_state
+   *   Drupal Form API State array.
+   * @param int $org_num
+   *   Ordinal number of organism on page.
+   * @param int $data_type_id
+   *   Data type Id. See constants of this class.
+   *
+   * @return bool
+   *   Returns TRUE if data type was set and FALSE otherwise.
+   */
+  public static function isDataTypeSet(array $form_state, $org_num, $data_type_id) {
+    $selected_columns = $form_state['input']["organism-$org_num"]['phenotype']
+      ['file']['columns'];
+    return in_array($data_type_id, $selected_columns);
   }
 
 }
