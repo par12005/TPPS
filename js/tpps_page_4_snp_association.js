@@ -133,13 +133,6 @@
           continue;
         }
         dog('Processing SNP Association file for ' + i + ' organism.', featureName);
-        // Disable all 'Year' options by default so if SNP Association
-        // file will be uploaded before Phenotype Data file 'Year' option
-        // will be disabled.
-        SnpAssociation.YearOption(i, 'disable');
-
-        // Check phenotype data file field and update 'Year' option of
-        // SNP Association file field.
         // When more then one organism in study and checkboxes
         // 'Phenotype the same' and/or 'Genotype the same' was checked
         // sync with phenotype data file for organism 1.
@@ -157,6 +150,13 @@
 
         let phenotypeDataFileFieldsetId = 'edit-organism-' + organismId
           + '-phenotype-file-columns';
+        // Disable 'Year' options of SNP Association file if Phenotype Data
+        // file wasn't yet uploaded.
+        if ($('fieldset#' + phenotypeDataFileFieldsetId).length == 0) {
+          SnpAssociation.YearOption(i, 'disable');
+        }
+        // Check phenotype data file field and update 'Year' option of
+        // SNP Association file field.
         $('fieldset#' + phenotypeDataFileFieldsetId + ' table .form-select')
           .on('change', function() {
             // @TODO Minor. Get element from even object to remove
