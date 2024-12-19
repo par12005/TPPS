@@ -1009,13 +1009,20 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
             $position_col = $groups['Position'][3];
             $positions = tpps_parse_file_column($assoc_file, $position_col, $assoc_no_header);
             foreach ($positions as $position) {
-              if (is_int($position) || preg_match('/^(\d+):(\d+)$/', $position)) {
+              if (
+                // Numeric (integer).
+                is_numeric($position)
+                // Format: 'start:stop'.
+                || preg_match('/^(\d+):(\d+)$/', $position)
+              ) {
                 continue;
               }
               form_set_error("$id][genotype][$snps_fieldset][snps-association",
                 t('SNP Association File: We detected SNP positions that do '
-                . 'not match the required format. '
-                . 'The correct format is: "start:stop" or integer .')
+                  . 'not match the required format: @position.'
+                  . '<br />The correct format is: "start:stop" or integer.',
+                  ['@position' => $position]
+                )
               );
               break;
             }
