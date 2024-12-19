@@ -1199,6 +1199,16 @@ function tpps_form_alter(array &$form, array &$form_state, $form_id) {
 }
 
 /**
+ * Implements hook_form_FORM_ID_alter() for 'tpps_js_debug_mode_settings_form'.
+ */
+function tpps_form_tpps_js_debug_mode_settings_form_alter(array &$form, array $form_state) {
+  $name = 'tpps_js_debug_mode';
+  // Must be added because it will return the first item.
+  $form[$name]['#pre_render'][] = 'form_process_checkboxes';
+  $form[$name]['#pre_render'][] = 'tpps_js_debug_mode_settings_form_disable_element';
+}
+
+/**
  * Adds JS setting to form.
  *
  * @param array $form

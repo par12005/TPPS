@@ -43,16 +43,51 @@ function tpps_js_debug_mode_settings_form(array $form, array &$form_state) {
   ];
   tpps_form_add_fieldset_collapsed_state($form, $form_state, $fieldset);
 
+  $default_value = variable_get('tpps_js_debug_mode');
   $features = tpps_js_debug_mode_get_features_list();
+  // Add always checked and disabled option.
+  $disabled_key = 'quickDebugMode';
+  $default_value[$disabled_key] = $disabled_key;
+  $form['#submit'][] = 'tpps_js_debug_mode_settings_form_submit';
+  // See tpps_form_js_debug_mode_settings_form_alter() which adds processing
+  // for element.
   $form['tpps_js_debug_mode'] = [
     '#type' => 'checkboxes',
     '#title' => t('JS functions/features which supports "JS Debug Mode"'),
     '#description' => t('Special feature "quickDebugMode" was designed for '
       . 'quick debugging. It\'s enabled by default and must NOT be used '
       . 'on regular basis.'),
-    '#default_value' => variable_get('tpps_js_debug_mode'),
+    '#default_value' => $default_value,
     '#options' => array_combine($features, $features),
   ];
 
   return system_settings_form($form);
+}
+
+/**
+ * Disables single option of 'checkboxes' element.
+ *
+ * @param array $element
+ *   Drupal Form API array element.
+ */
+function tpps_js_debug_mode_settings_form_disable_element(array $element) {
+  $disabled_key = 'quickDebugMode';
+  foreach (element_children($element) as $key) {
+    if ($key == $disabled_key) {
+      $element[$key]['#attributes']['disabled'] = 'disabled';
+      return $element;
+    }
+  }
+  return $element;
+}
+
+/**
+ * Form Submitter for 'tpps_js_debug_mode_settings_form' form.
+ */
+function tpps_js_debug_mode_settings_form_submit(array $form, array &$form_state) {
+  $disabled_key = 'quickDebugMode';
+  // Since disabled option do not give it's value we need to add it manually.
+  // @TODO Leave only one.
+  $form_state['input']['tpps_js_debug_mode'][$disabled_key] = $disabled_key;
+  $form_state['values']['tpps_js_debug_mode'][$disabled_key] = $disabled_key;
 }
