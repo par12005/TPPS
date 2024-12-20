@@ -1808,8 +1808,6 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
     // Get metadata header values.
     $groups = $phenotype['file-groups'];
 
-tpps_log($groups, 'groups');
-
     $column_vals = $phenotype['file-columns'];
     switch ($phenotype['format']) {
       case PhenotypeData::FILE_FORMAT_1:
@@ -1880,8 +1878,6 @@ tpps_log($file_headers, 'file_headers');
     // Phenotype data (not metadata).
     tpps_log('DATA_FID:' . $data_fid, [], TRIPAL_DEBUG);
     tpps_log('Processing phenotype_data file data...', [], TRIPAL_INFO);
-
-// @todo process year here.
 
     // @TODO Function tpps_process_phenotype_data() checks 'iso' key to detect
     // if it's iso or normal-check but this key not set explicitly here.
@@ -2129,7 +2125,7 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
       $options['records']['feature_cvterm'] = array();
       $options['records']['feature_cvtermprop'] = array();
 
-      $options['associations'] = array();
+      $options['associations'] = [];
       $options['associations_tool'] = $genotype['files']['snps-association-tool'];
       $options['associations_groups'] = $genotype['files']['snps-association-groups'];
       $options['scaffold_cvterm'] = tpps_load_cvterm('scaffold')->cvterm_id;
@@ -2160,18 +2156,23 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
         default:
           break;
       }
+
+// @TODO Process 'year' from SNP Association file.
+
+      // WARNING: 'tpps_process_snp_association' must be called before
+      // 'tpps_process_genotype_spreadsheet' to bring 'year' column data.
       tpps_log('Processing snp_association file data...', [], TRIPAL_INFO);
       tpps_file_iterator($assoc_fid, 'tpps_process_snp_association', $options);
       tpps_log('Done.', [], TRIPAL_INFO);
 
-      $multi_insert_options['fk_overrides']['featureloc'] = array(
-        'srcfeature' => array(
+      $multi_insert_options['fk_overrides']['featureloc'] = [
+        'srcfeature' => [
           'table' => 'feature',
-          'columns' => array(
+          'columns' => [
             'srcfeature_id' => 'feature_id',
-          ),
-        ),
-      );
+          ],
+        ],
+      ];
       $multi_insert_options['fk_overrides']['feature_relationship'] = array(
         'subject' => array(
           'table' => 'feature',
@@ -3906,7 +3907,7 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
     $options['records']['feature_cvterm'] = array();
     $options['records']['feature_cvtermprop'] = array();
 
-    $options['associations'] = array();
+    $options['associations'] = [];
     $options['associations_tool'] = $genotype['files']['snps-association-tool'];
     $options['associations_groups'] = $genotype['files']['snps-association-groups'];
     $options['scaffold_cvterm'] = tpps_load_cvterm('scaffold')->cvterm_id;
@@ -4016,14 +4017,14 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
   if ($marker == 'SSRs') {
     $marker = 'SSR';
   }
-  else if($marker == 'cpSSRs') {
+  elseif($marker == 'cpSSRs') {
     $marker = 'cpSSR';
   }
 
   $type_cvterm = $options['type_cvterm'];
   $seq_var_cvterm = $options['seq_var_cvterm'];
   $multi_insert_options = $options['multi_insert'];
-  $associations = $options['associations'] ?? array();
+  $associations = $options['associations'] ?? [];
   $vcf_processing_completed = $options['vcf_processing_completed'];
   $analysis_id = $options['analysis_id'];
   // echo "Analysis ID: $analysis_id\n";
@@ -4276,11 +4277,11 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
       $assoc_feature_name = "{$variant_name}-{$options['associations_type']}-{$association['trait']}";
 
       echo "Association data for this row is being processed\n";
-      $records['feature'][$association['scaffold']] = array(
+      $records['feature'][$association['scaffold']] = [
         'organism_id' => $current_id,
         'uniquename' => $association['scaffold'],
         'type_id' => $options['scaffold_cvterm'],
-      );
+      ];
 
       $records['feature'][$assoc_feature_name] = array(
         'organism_id' => $current_id,
@@ -4289,21 +4290,21 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
       );
 
       if (!empty($association['trait_attr'])) {
-        $records['feature_cvterm'][$assoc_feature_name] = array(
+        $records['feature_cvterm'][$assoc_feature_name] = [
           'cvterm_id' => $association['trait_attr'],
           'pub_id' => $options['pub_id'],
-          '#fk' => array(
+          '#fk' => [
             'feature' => $assoc_feature_name,
-          ),
-        );
+          ],
+        ];
 
         if (!empty($association['trait_obs'])) {
-          $records['feature_cvtermprop'][$assoc_feature_name] = array(
+          $records['feature_cvtermprop'][$assoc_feature_name] = [
             'type_id' => $association['trait_obs'],
-            '#fk' => array(
+            '#fk' => [
               'feature_cvterm' => $assoc_feature_name,
-            ),
-          );
+            ],
+          ];
         }
       }
 
@@ -4315,24 +4316,24 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
       );
 
       // PETER's code - which doesn't connect to analysis
-      $records['featureloc'][$variant_name] = array(
+      $records['featureloc'][$variant_name] = [
         'fmin' => $association['start'],
         'fmax' => $association['stop'],
         'residue_info' => $association['allele'],
-        '#fk' => array(
+        '#fk' => [
           'feature' => $variant_name,
           'srcfeature' => $association['scaffold'],
-        ),
-      );
+        ],
+      ];
 
-      $records['feature_relationship'][$assoc_feature_name] = array(
+      $records['feature_relationship'][$assoc_feature_name] = [
         'type_id' => $options['associations_type'],
         'value' => $association['confidence'],
-        '#fk' => array(
+        '#fk' => [
           'subject' => $variant_name,
           'object' => $assoc_feature_name,
-        ),
-      );
+        ],
+      ];
     }
 
     // RISH 7/17/2023
@@ -4754,14 +4755,16 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
           // $genotype_name = "$marker-$species_code-$scaffold_id-$position"; // Original by Peter
 
-          // Instead, we have multiple genotypes we need to generate, so lets do a key val array
-          $detected_genotypes = array();
-          $first_genotypes = array(); // used to save the first genotype in each row of the VCF (used for genotype_call table)
+          // Instead, we have multiple genotypes we need to generate, so lets do a key val array.
+          $detected_genotypes = [];
+          // Used to save the first genotype in each row of the VCF (used for genotype_call table).
+          $first_genotypes = [];
           $count_columns = count($vcf_line);
           for ($j = 9; $j < $count_columns; $j++) {
 
             $j_column_data = $vcf_line[$j];
-            // @TODO We need to cater for extra metadata eg. 1/1:0,98:98:99:3055,289,0 <-- the data after the : is metadata
+            // @TODO We need to cater for extra metadata.
+            // eg. 1/1:0,98:98:99:3055,289,0 <-- the data after the : is metadata
             $j_read = explode(':',$j_column_data)[0]; // gets the 1/1 part
 
             $genotype_combination = tpps_submit_vcf_render_genotype_combination($j_read, $ref, $alt); // eg AG (removed the : part of code on 5/31/2023)
@@ -5867,32 +5870,58 @@ function tpps_check_organisms($row, array &$options = array()) {
  *   Additional options set when calling tpps_file_iterator().
  */
 function tpps_process_phenotype_meta($row, array &$options = []) {
-  global $tpps_job;
-  $job = $tpps_job;
-  $columns = $options['meta_columns'];
+  $column_list = $options['meta_columns'];
   $meta = &$options['meta'];
 
-  // print_r("COLUMNS:\n");
-  // print_r($columns);
-  // print_r("ROW:\n");
-  // print_r($row);
+  // tpps_log($column_list, "COLUMNS");
+  // tpps_log($row, "ROW");
 
-  $name = strtolower($row[$columns['name']]);
-  $meta[$name] = [];
-  $meta[$name]['attr'] = 'other';
-  $meta[$name]['attr-other'] = $row[$columns['attr']];
-  $meta[$name]['desc'] = $row[$columns['desc']];
-  $meta[$name]['unit'] = 'other';
-  $meta[$name]['unit-other'] = $row[$columns['unit']];
-  $meta[$name]['env'] = $row[$columns['env']];
+  if (empty($name = strtolower($row[$column_list['name']]))) {
+    tpps_log('Empty phenotype "@name".', ['@name' => $name], TRIPAL_ERROR);
+    return;
+  }
+  $meta[$name] = [
+    'attr' => 'other',
+    'attr-other' => $row[$column_list['attr']],
+    'desc' => $row[$column_list['desc']],
+    'unit' => 'other',
+    'unit-other' => $row[$column_list['unit']],
+    'env' => $row[$column_list['env']],
+  ];
   if (
-    !empty($columns['struct'])
-    && isset($row[$columns['struct']])
-    && $row[$columns['struct']] != ''
+    !empty($column_list['struct'])
+    && isset($row[$column_list['struct']])
+    && $row[$column_list['struct']] != ''
   ) {
     $meta[$name]['struct'] = 'other';
-    $meta[$name]['struct-other'] = $row[$columns['struct']];
+    $meta[$name]['struct-other'] = $row[$column_list['struct']];
   }
+
+  // Search for synonym.
+  $table = 'chado.phenotype_synonyms';
+  $synonym_id = db_select($table, 't')
+    ->fields('t', ['phenotype_synonyms_id'])
+    ->condition('synonym', $name)
+    ->execute()->fetchField();
+  if (empty($synonym_id)) {
+    tpps_log('No synonym found for phenotype "@name".', ['@name' => $name], TRIPAL_WARNING);
+    return;
+  }
+  tpps_log('Found synonym #@synonym_id for phenotype "@name".',
+    ['@name' => $name, '@synonym_id' => $synonym_id], TRIPAL_DEBUG
+  );
+  $meta[$name]['synonym_id'] = $synonym_id;
+
+  if (!isset($column_list['env'])) {
+    tpps_log("No 'Environmental Phenotype' in Phenotype Metadata.", [], TRIPAL_DEBUG);
+    return;
+  }
+
+  // Store 'Environmental Phenotype' value.
+  db_update($table)
+    ->fields(['is_environmental_phenotype' => (bool) $row[$column_list['env']]])
+    ->condition('phenotype_synonyms_id', $synonym_id)
+    ->execute();
 }
 
 /**
@@ -6233,7 +6262,6 @@ function tpps_process_phenotype_data($row, array &$options = []) {
 
     // List of properties which could be set manually using form or
     // found in uploaded phenotype data (not metadata) file.
-    // foreach (['time', 'year'] as $property_name) {
     foreach (['time'] as $property_name) {
       // Note: Both $name and $phenotype_name must be sent here!!!
       // $phenotype_name is a generated "full phenotype name".
@@ -6247,14 +6275,15 @@ function tpps_process_phenotype_data($row, array &$options = []) {
       );
     }
 
-    // @TODO Add year from manual meta.
+    // @TODO Add year from manual meta. Needs form fields.
 
     // Process 'year' column which is not a phenotype.
-    if (!$iso) {
+    if ($iso) {
+      // @TODO What to do with isotop analysis?
+    }
+    else {
       // Normal check.
       if (!empty($meta_headers['year'])) {
-        // $meta_headers['year'] // B.
-        // tpps_log($row[$meta_headers['year']], 'year value');
         $records['phenotypeprop']["$phenotype_name-year"] = [
           'type_id' => $cvterms['year'],
           'value' => $row[$meta_headers['year']],
@@ -6262,15 +6291,12 @@ function tpps_process_phenotype_data($row, array &$options = []) {
         ];
       }
     }
-    else {
-      // @TODO What to do with iso?
-    }
 
-    $records['phenotypeprop']["$phenotype_name-desc"] = array(
+    $records['phenotypeprop']["$phenotype_name-desc"] = [
       'type_id' => $cvterms['desc'],
       'value' => $iso ? $meta['desc'] : $meta[strtolower($name)]['desc'],
       '#fk' => ['phenotype' => $phenotype_name],
-    );
+    ];
     // $iso means "intensity / mass spectrometry".
     if ($iso) {
       // "Iso Check"
@@ -6443,15 +6469,18 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     }
 
     // [RISH] This is a minor adjustment for diploid done on 8/3/2023
-    if($options['ploidy'] == 'Diploid' && substr($headers[$key], $header_length - 2, 2) == "_B") {
+    if (
+      $options['ploidy'] == 'Diploid'
+      && substr($headers[$key], $header_length - 2, 2) == "_B"
+    ) {
       $options['diploid_val'] .= ',' . $val;
 
-      // Reset to these new values for insertion into the database later on
+      // Reset to these new values for insertion into the database later on.
       $headers[$key] = $options['diploid_header'];
       $val = $options['diploid_val'];
       echo "Diploid val: $val\n";
     }
-    // End of cater for diploids
+    // End of cater for diploids.
 
     // Cater for Polyploids [RISH: 8/7/2023]
     // Get header without the trailing _X (_1,_2,_3 etc)
@@ -6465,7 +6494,10 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       $header_without_polyploid_index .= $header_parts[$j];
     }
 
-    if($options['ploidy'] == 'Polyploid' && $options['polyploid_header'] != $header_without_polyploid_index) {
+    if (
+      $options['ploidy'] == 'Polyploid'
+      && $options['polyploid_header'] != $header_without_polyploid_index
+    ) {
       // Remove the _1 from the first diploid header
       // and allow the below code to continue to be processed so the SSR can be imported in
       $headers[$key] = $header_without_polyploid_index;
@@ -6713,10 +6745,10 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
         'description' => $val,
         'type_id' => $type_cvterm,
       ]);
-
-      $results = chado_query('SELECT genotype_id FROM chado.genotype WHERE uniquename = :uniquename', [
-        ':uniquename' => $genotype_name
-      ]);
+      // @TODO Use data returned by chado_insert_record() to get genotype_id.
+      // https://tripal.readthedocs.io/en/latest/dev_guide/chado.html
+      $sql = 'SELECT genotype_id FROM chado.genotype WHERE uniquename = :uniquename';
+      $results = chado_query($sql, [':uniquename' => $genotype_name]);
       $genotype_id = NULL;
       foreach ($results as $row) {
         $genotype_id = $row->genotype_id;
@@ -7058,41 +7090,68 @@ function tpps_process_genotype_snp_assay_design($row, array &$options = array())
  *   The item yielded by the TPPS file generator.
  * @param array $options
  *   Additional options set when calling tpps_file_iterator().
- *
- * @TODO There is new data type 'Year' which also must be processed and stored
- * in database but now it's not clear where exaclty.
- * Posible temporary place: 'public.tpps_phenotype_year.year'.
  */
-function tpps_process_snp_association($row, array &$options = array()) {
-  global $tpps_job;
-  $job = $tpps_job;
+function tpps_process_snp_association($row, array &$options = []) {
   $groups = $options['associations_groups'];
   $associations = &$options['associations'];
 
   $id = $row[$groups['SNP ID'][1]];
-
-  preg_match('/^(\d+):(\d+)$/', $row[$groups['Position'][3]], $matches);
-  $start = $matches[1];
-  $stop = $matches[2];
-  if ($start > $stop) {
-    $temp = $start;
-    $start = $stop;
-    $stop = $temp;
-  }
-
   $trait = $row[$groups['Associated Trait'][5]];
 
-  $associations[$id] = array(
+  $confidence = $row[$groups['Confidence Value'][6]];
+  $associations[$id] = [
     'id' => $id,
     'scaffold' => $row[$groups['Scaffold'][2]],
-    'start' => $start,
-    'stop' => $stop,
     'allele' => $row[$groups['Allele'][4]],
     'trait' => $trait,
     'trait_attr' => $options['phenotype_meta'][strtolower($trait)]['attr_id'],
     'trait_obs' => $options['phenotype_meta'][strtolower($trait)]['struct_id'] ?? NULL,
-    'confidence' => $row[$groups['Confidence Value'][6]],
-  );
+    'confidence' => $confidence,
+    // @TODO Add optional year.
+    //tpps_log(SnpAssociation::DATA_TYPE_YEAR);
+    'year' => $row[$groups['Year'][9]] ?? NULL,
+  ];
+
+  $position = $row[$groups['Position'][3]];
+  preg_match('/^(\d+):(\d+)$/', $position, $matches);
+  if (!empty($matches)) {
+    // Format: start:stop:
+    $start = $matches[1];
+    $stop = $matches[2];
+    // Swap.
+    if ($start > $stop) {
+      $temp = $start;
+      $start = $stop;
+      $stop = $temp;
+    }
+    $associations[$id]['start'] = $start;
+    $associations[$id]['stop'] = $stop;
+  }
+  else {
+    // Format: integer.
+// @TODO Implement usage of new 'position option.
+    $associations[$id]['start'] = $position;
+    $associations[$id]['stop'] = $position;
+  }
+
+// @TODO Remove debug code.
+  //// 'Year' is required only when Phenotype Data file has column 'Year'.
+  //if (!empty($year = $row[$groups['Year'][9]])) {
+  //  // @TODO Do we need to update existing records?
+  //  // Store here because we use custom table.
+  //  $table = 'genotype_phenotype_snp_association';
+  //  tpps_log($table);
+  //  tpps_log(SnpAssociation::DATA_TYPE_YEAR);
+  //  //tpps_chado_insert_record($table, [
+  //  //  'genotype_id' => '',
+  //  //  'phenotype_synonyms_id' => '',
+  //  //  'year' => $year,
+  //  //  'confidence' => $confidence,
+  //  //]);
+  //}
+
+
+
 }
 
 /**
@@ -8487,7 +8546,7 @@ function tpps_log($message, $variables = [], $severity = TRIPAL_INFO) {
     ) {
       $tripal_message = date($timestamp_format) . ' ' . $message;
     }
-    tpps_log_show_caller_function($cli_message, 'tripal', $severity);
+    tpps_log_show_caller_function('tripal', $severity, $tripal_message);
 
     try {
       if (variable_get('tpps_submitall_log_tripal_suppress_cli')) {
