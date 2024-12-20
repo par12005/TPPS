@@ -434,7 +434,8 @@ function tpps_job_logger_write($string, array $replacements = [], $severity = TR
       $cli_message = date($timestamp_format) . ' ' . $cli_message;
     }
 
-    tpps_log_show_caller_function($cli_message, 'cli', $severity);
+    // Show light gray caller function and line number.
+    $cli_message .= "\e[90m" . tpps_log_show_caller_function('cli', $severity) . "\e[0m";
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Do not show messages with severity level higher then allowed.
     // 2 - critical, 7 - debug.
@@ -454,7 +455,7 @@ function tpps_job_logger_write($string, array $replacements = [], $severity = TR
       $file_message = $timestamp . ' ' . $file_message;
     }
     $file_message = PHP_EOL . $file_message;
-    tpps_log_show_caller_function($file_message, 'file', $severity);
+    tpps_log_show_caller_function('file', $severity, $file_message);
 
     try {
       @fwrite($tpps_job_logger['log_file_handle'], $file_message);
@@ -469,25 +470,32 @@ function tpps_job_logger_write($string, array $replacements = [], $severity = TR
 /**
  * Adds caller function name, file and line to debug log-messages.
  *
- * @param string $message
- *   Log message
  * @param string $log_type
  *   Log type. Possible values: 'file', 'cli', 'tripal'.
  * @param int $severity
  *   Severity.
+ * @param string $message
+ *   Log message.
+ *
+ * @return mixed
+ *
+ *   When set it will be updated but if not - caller function will
+ *   be returned
  */
-function tpps_log_show_caller_function(&$message, $log_type, $severity) {
+function tpps_log_show_caller_function($log_type, $severity, &$message = NULL) {
   if (variable_get('tpps_submitall_log_' . $log_type . '_show_caller_function')) {
     $level = 3;
     $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, $level + 1);
     if ($severity == TRIPAL_DEBUG) {
-      // @TODO Add colors.
-      $message .= "\n    " . $stack[$level]['function'] . '() '
-        . $stack[$level-1]['file'] . ':' .$stack[$level-1]['line'];
+      $caller_message = "\n    " . $stack[$level]['function'] . "() \t"
+        . $stack[$level - 1]['file'] . ':' . $stack[$level - 1]['line'];
+      if (!empty($message)) {
+        $message .= $caller_message;
+      }
+      return $caller_message;
     }
   }
 }
-
 
 /**
  * Gets color codes for CLI log messages.
@@ -518,6 +526,8 @@ function tpps_log_get_color($severity = TRIPAL_INFO) {
   //  Light Blue      94  104
   //  Light Magenta   95  105
   //  Light Cyan      96  106
+  //
+  // Color off:  "\e[0m";
 
   switch ($severity) {
     case TRIPAL_CRITICAL:
