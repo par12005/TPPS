@@ -323,7 +323,6 @@ function tpps_js_debug_mode_get_features_list() {
     'smoothZoom',
     'Drupal.tpps.getCoordinates',
     'Drupal.tpps.getColumnsFromManagedFileField',
-    'Drupal.behaviors.tppsFieldsetCollapsedStatus',
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // js/tpps_header.js
     'Drupal.tpps.showMessages',

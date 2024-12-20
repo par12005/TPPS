@@ -6,15 +6,18 @@
  * Remembers status of collapsible fieldsets.
  */
 (function ($) {
-  Drupal.behaviors.tppsFieldsetCollapsedState = {
+
+  Drupal.behaviors.FieldsetCollapsedState = {
     attach: function (context) {
+
+      Drupal.FieldsetCollapsedState = {}
       /**
        * Stores state of the fieldset.
        *
        * @param object element
        *   JQuery object of the element.
        */
-      function storeState(element, op) {
+      Drupal.FieldsetCollapsedState.storeState = function(element, op) {
         let $fieldset = element.parents('fieldset');
         let value = $fieldset.hasClass('collapsed');
         // Strange but values are reverted. Probably because we check
@@ -27,8 +30,8 @@
             method: 'post',
             dataType: 'json',
             data: {
-              'form_id': element.parents('form').attr('id'),
-              'name': $fieldset.attr('id'),
+              'form_id': element.parents('form').attr('id').replace(/-/g, '_'),
+              'name': $fieldset.attr('id').replace(/-/g, '_'),
               'value': value ? 1 : 0,
             },
         });
@@ -38,11 +41,11 @@
       $('fieldset.collapsible legend a.fieldset-title', context)
         // 'click' event can't be used because fieldset not have 'collapsed'
         // class yet.
-        .on('mouseup keyup', function() {
-          storeState($(this), 'click');
+      .on('mouseup keyup', function() {
+          Drupal.FieldsetCollapsedState.storeState($(this), 'click');
       })
       .each(function() {
-        storeState($(this), 'load');
+        Drupal.FieldsetCollapsedState.storeState($(this), 'load');
       });
     }
   };

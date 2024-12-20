@@ -1189,12 +1189,11 @@ function tpps_form_alter(array &$form, array &$form_state, $form_id) {
   }
   // Remember fieldset collapsed state.
   if (variable_get('tpps_remember_fieldset_collapsed_state', FALSE)) {
+    tpps_form_add_fieldset_collapsed_state($form, $form_id);
+    tpps_form_add_js_setting($form, 'fieldsetCollapsedState',
+      ['ajaxUrl' => '/' . TPPS_AJAX_URL . '/' . TPPS_RFCS_KEY]
+    );
     tpps_add_css_js('fieldset', $form);
-    if (tpps_form_add_fieldset_collapsed_state($form, $form_id)) {
-      tpps_form_add_js_setting($form, 'fieldsetCollapsedState',
-        ['ajaxUrl' => '/' . TPPS_AJAX_URL . '/' . TPPS_RFCS_KEY]
-      );
-    }
   }
 }
 

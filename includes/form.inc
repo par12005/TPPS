@@ -1412,13 +1412,14 @@ function tpps_logical_opeation($value1, $value2, $logic_operator) {
  *   Form Id.
  */
 function tpps_form_add_fieldset_collapsed_state(array &$form, $form_id = NULL) {
-
-return;
-
-  $form_id = $form_id ?? ($form['#form_id'] ?? NULL);
+  $form_id = $form_id ?? $form['#form_id'] ?? NULL;
   $is_exists = FALSE;
-  if (empty($form_id) || empty($_SESSION[TPPS_RFCS_KEY][$form_id] ?? NULL)) {
-    return;
+  if (
+    empty($form_id)
+    || !is_string($form_id)
+    || empty($_SESSION[TPPS_RFCS_KEY][$form_id])
+  ) {
+    return $is_exists;
   }
   foreach ($form as $name => $element) {
     if (
@@ -1431,7 +1432,7 @@ return;
     // 1 - collapsed, 0 - expended.
     $form[$name]['#collapsed'] = (bool) (
       // Name in DOM and in Drupal Form API differs.
-      $_SESSION[TPPS_RFCS_KEY][$form_id]['edit-' . str_replace('_', '-', $name)]
+      $_SESSION[TPPS_RFCS_KEY][$form_id]['edit_' . $name]
       // Respect default settings.
       ?? $element['#collapsed'] ?? FALSE
     );
