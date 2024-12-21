@@ -1,12 +1,19 @@
 (function ($) {
 
-  // Submit form on 'Enter' pressing.
+  // Submit form on 'Enter' pressing in any field (except 'Upload' buttons).
   // When user presses 'Enter/Return' on any text field then 'Next' or
-  // 'Review and Submit' button must be shows instead of the first 'Back'
-  // button. Using HTML's tabindex requires to set focus to this button but
-  // we set focus to the main field to speed-up form filling instead of buttons.
+  // 'Review and Submit' button must be clicked. But first button on form is
+  // the 'Back' button and browsers clicks by default the first button.
+  // Using HTML's tabindex requires to set focus to this button but we set
+  // focus to the main field to speed-up form filling instead of buttons.
   window.addEventListener("keyup", (event) => {
     if (event.key === "Enter") {
+      // Skip 'Upload' buttons to avoid page reload and validation errors.
+      if ($(event.target).hasClass('html')) {
+        // This is "Upload" button which detects as a click on BODY element.
+        return;
+      }
+      event.stopPropagation();
       event.preventDefault();
       let $nextButton = $('input.next-button');
       if ($nextButton.length) {
