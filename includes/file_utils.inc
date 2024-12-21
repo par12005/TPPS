@@ -1084,7 +1084,18 @@ function tpps_file_headers($fid, $no_header = FALSE) {
  *   Returns TRUE on success, otherwise FALSE.
  */
 function tpps_file_iterator($fid, $function, array &$options = array()) {
-  if (!function_exists($function)) {
+  // Check static method.
+  if (strpos($function, '::') !== FALSE) {
+    list($class, $method) = explode('::', $function);
+    if (
+      !class_exists($class)
+      || empty($method)
+      || !method_exists($class, $method)
+    ) {
+      return FALSE;
+    }
+  }
+  elseif (!function_exists($function)) {
     return FALSE;
   }
 
@@ -1100,7 +1111,7 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
   if (in_array($extension, ['jpg', 'jpeg', 'png'])) {
     return TRUE;
   }
-  // Item / line counter
+  // Item / line counter.
   $item_count = 0;
 
   foreach (tpps_file_generator($fid, $options) as $item) {
@@ -1142,7 +1153,7 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
       }
     }
     else {
-      // print_r($item);
+      // tpps_log($item);
       // echo json_encode($item) . "\n";
       // echo "[TPPS FILE ITERATOR] Found a line/item that was empty, ignoring this item\n";
       // echo "[TPPS FILE ITERATOR] File location: " . $file_location . "\n";
