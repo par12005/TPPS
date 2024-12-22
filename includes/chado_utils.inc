@@ -795,4 +795,73 @@ function tpps_add_project_file(array &$state, &$fid) {
   }
 }
 
-
+/**
+ * Wrapper for chado_insert_record() which checks if record exists.
+ *
+ * Provides a generic routine for inserting into any Chado table.
+ *
+ * Use this function to insert a record into any Chado table.  The first
+ * argument specifies the table for inserting and the second is an array
+ * of values to be inserted.  The array is mutli-dimensional such that
+ * foreign key lookup values can be specified.
+ *
+ * @param $table
+ *  The name of the chado table for inserting
+ * @param $values
+ *  An associative array containing the values for inserting.
+ * @param $options
+ *  An array of options such as:
+ *  - skip_validation: TRUE or FALSE. If TRUE will skip all the validation
+ *   steps and just try to insert as is. This is much faster but results in
+ *   unhandled non user-friendly errors if the insert fails.
+ *  - return_record: by default, the function will return the record but with
+ *     the primary keys added after insertion.  To simply return TRUE on
+ *   success
+ *     set this option to FALSE
+ *
+ * @return
+ *  On success this function returns the inserted record with the new primary
+ *   keys added to the returned array. On failure, it returns FALSE.
+ *
+ * Example usage:
+ * @code
+ *   $values =  array(
+ *     'organism_id' => array(
+ *         'genus' => 'Citrus',
+ *         'species' => 'sinensis',
+ *      ),
+ *     'name' => 'orange1.1g000034m.g',
+ *     'uniquename' => 'orange1.1g000034m.g',
+ *     'type_id' => array (
+ *         'cv_id' => array (
+ *            'name' => 'sequence',
+ *         ),
+ *         'name' => 'gene',
+ *         'is_obsolete' => 0
+ *      ),
+ *   );
+ *   $result = chado_insert_record('feature',$values);
+ * @endcode
+ * The above code inserts a record into the feature table.  The $values array
+ *   is
+ * nested such that the organism is selected by way of the organism_id foreign
+ * key constraint by specifying the genus and species.  The cvterm is also
+ * specified using its foreign key and the cv_id for the cvterm is nested as
+ * well.
+ *
+ * @ingroup tripal_chado_query_api
+ *
+ * @todo Rename:
+ * tpps_chado_insert_record() => tpps_chado_merge()
+ * tpps_safe_chado_insert_record() => tpps_chado_insert_record()
+ */
+function tpps_safe_chado_insert_record($table, $values, $options = []) {
+  $key = array_keys($values)[0] ?? NULL;
+  if (!chado_select_record($table, [$key], $values)) {
+    chado_insert_record($table, $values, $options);
+  }
+  else {
+    tpps_log("Not inserted new record to table '@table' because it's already exists.",
+      ['@table' => $table], TRIPAL_DEBUG);
+  }
+}

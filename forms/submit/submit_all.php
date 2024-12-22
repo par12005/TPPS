@@ -6739,7 +6739,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       //   'description' => $val,
       //   'type_id' => $type_cvterm,
       // );
-      chado_insert_record('genotype', [
+      tpps_safe_chado_insert_record('genotype', [
         'name' => $genotype_name_without_call,
         'uniquename' => $genotype_name,
         'description' => $val,
@@ -6747,6 +6747,8 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       ]);
       // @TODO Use data returned by chado_insert_record() to get genotype_id.
       // https://tripal.readthedocs.io/en/latest/dev_guide/chado.html
+      // On success this function returns the inserted record with the new primary
+      // keys added to the returned array. On failure, it returns FALSE.
       $sql = 'SELECT genotype_id FROM chado.genotype WHERE uniquename = :uniquename';
       $results = chado_query($sql, [':uniquename' => $genotype_name]);
       $genotype_id = NULL;
@@ -6754,9 +6756,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
         $genotype_id = $row->genotype_id;
       }
 
-      // RISH - 12/18/2023 - Requested by Emily
-      ob_start();
-      chado_insert_record('feature_genotype', [
+      tpps_safe_chado_insert_record('feature_genotype', [
         'feature_id' => $variant_name_id,
         'genotype_id' => $genotype_id,
         'chromosome_id' => NULL,
@@ -6764,8 +6764,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
         'cgroup' => 0,
         'cvterm_id' => $type_cvterm,
       ]);
-      // echo "feature_id: $variant_name_id, genotype_id: $genotype_id\n";
-      ob_end_clean();
+      // tpps_log("feature_id: $variant_name_id, genotype_id: $genotype_id");
 
       // [RISH] 07/06/2023 - REMOVED SO WE CAN USE HYBRID COPY SYSTEM
       // $records['genotype_call']["$stock_id-$genotype_name"] = array(
