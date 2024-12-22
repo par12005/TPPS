@@ -21,9 +21,8 @@ function tpps_admin_submissions_all_files_report() {
     'other',
   ];
 
-
   if ($reset || empty($cache) || empty($cache->data[$key])) {
-    // Get new data.
+    // Line counter.
     $i = 0;
     // Get list of all managed files.
     $existing_fid_list = db_select('file_managed', 't')
@@ -34,9 +33,12 @@ function tpps_admin_submissions_all_files_report() {
     $rows = [];
     $options = ['query' => ['token' => variable_get('tpps_api_token')]];
 
+    // @TODO Change order to have latest first.
     $submission_list = tpps_load_submission_multiple();
     foreach ($submission_list as $submission) {
+      $organism_number = $submission->sharedState['saved_values'][TPPS_PAGE_1]['organism']['number'] ?? 1;
       if ($files = tpps_submission_file_get_id_list($submission->state)) {
+
         $file_row = [];
         $final_file_row = [];
         foreach ($files as $fid) {
@@ -49,8 +51,55 @@ function tpps_admin_submissions_all_files_report() {
               }
               if (strpos($file->uri, $group) !== FALSE) {
                 $found = TRUE;
+                $key = NULL;
+                // Accession files.
+                if ($group == 'tpps_accession') {
+                  $page3_tree_accession = $submission->sharedState['saved_values']
+                    [TPPS_PAGE_3]['tree-accession'] ?? NULL;
+                  for ($n = 1; $n <= $organism_number; $n++) {
+                    $species_accession_fid = $page3_tree_accession['species-'
+                      . $n]['file'] ?? NULL;
+                    if ($fid == $species_accession_fid) {
+                      // Get organism name from Page 1.
+                      $key = $submission->sharedState['saved_values']
+                        [TPPS_PAGE_1]['organism'][$n]['name'] ?? NULL;
+                      $key = ' (' . $key . ')';
+                      break;
+                    }
+                  }
+                }
+                // Genotype.
+                elseif ($group == 'tpps_genotype') {
+                  for ($n = 1; $n <= $organism_number; $n++) {
+                    $submission_file_list = $submission->sharedState['saved_values']
+                      [TPPS_PAGE_4]['organism-' . $n]['genotype']['files'] ?? [];
+                    if ($key = array_search($fid, $submission_file_list)) {
+                      $key = ' (' . $key . ')';
+                      break;
+                    }
+                  }
+                }
+                // Phenotype.
+                elseif ($group == 'tpps_phenotype') {
+                  for ($n = 1; $n <= $organism_number; $n++) {
+                    $phenotype = $submission->sharedState['saved_values']
+                      [TPPS_PAGE_4]['organism-' . $n]['phenotype'] ?? NULL;
+                    if ($fid == ($phenotype['file'] ?? NULL)) {
+                      $key = ' (data)';
+                      break;
+                    }
+                    elseif ($fid == ($phenotype['metadata'] ?? NULL)) {
+                      $key = ' (meta)';
+                      break;
+                    }
+                  }
+                }
+                $api_file_link .= $key ?? '';
                 $file_row[$group][] = $api_file_link;
                 break;
+              }
+              else {
+                // @todo Minor. Check 'vcf' and 'local vcf' in $file->uri.
               }
             }
             if (!$found) {
@@ -96,5 +145,14 @@ function tpps_admin_submissions_all_files_report() {
       $file_column_list
     ),
     'rows' => $rows,
+  ])
+  . theme('item_list', [
+    'items' => [
+      l(t('Clear TPPS Cache'), 'admin/config/tpps/cache'),
+      t('WARNING: Only studies with files were shown. '
+        . 'To get list of studies without file see report: ') .
+      l(t('Submissions without Files'),
+          'admin/reports/tpps/submissions-without-files'),
+    ],
   ]);
 }

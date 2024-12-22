@@ -198,11 +198,11 @@ function tpps_report_show_table(array $report) {
   $per_page = variable_get('tpps_report_items_per_page', 20);
   $current_page = pager_default_initialize(count($rows), $per_page);
   $chunks = array_chunk($rows, $per_page, TRUE);
-  $pager = theme('pager', ['quantity', count($rows)]);
+  $pager = theme('pager', ['quantity', count($rows) ?? 0]);
   return $pager . theme('table', [
     'caption' => tpps_report_get_list()[$report_name]['description'],
     'header' => $report['header'] ?? [],
-    'rows' => $chunks[$current_page],
+    'rows' => $chunks[$current_page] ?? [],
     'empty' => $report['empty'] ?? NULL,
   ]) . $pager;
 }
