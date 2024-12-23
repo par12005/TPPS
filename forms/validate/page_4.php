@@ -222,110 +222,12 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
     // Phenotype Metafile was used.
     $is_metadata_file = (bool) ($phenotype['check'] && !empty($phenotype_file));
     if ($is_metadata_file) {
-      // Clear manually added metadata to show correct data at edit page.
-      if (!empty($phenotype['phenotypes-meta']['number'])) {
-        for ($i = 1; $i <= $phenotype_number; $i++) {
-          unset($phenotype['phenotypes-meta'][$i]);
-        }
-        $phenotype['phenotypes-meta']['number'] = 0;
-      }
-      if (empty($phenotype['metadata'])) {
-        // $phenotype['metadata'] holds File Id of Phenotype Metadata file.
-        // @TODO Use:
-        // tpps_form_error_required($form_state, [$id, 'phenotype', 'metadata']);
-        form_set_error("$id][phenotype][metadata",
-          t('Phenotype Metadata File: field is required.')
-        );
-      }
-
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Metadata file was used.
-      else {
-        // Check if all required columns was set.
-        $file_element = $form[$id]['phenotype']['metadata'];
-        $groups = tpps_file_validate_columns(
-          $form_state,
-          PhenotypeMeta::getRequiredColumnList(),
-          $file_element
-        );
-        // Not all required columns was set. Can't proceed validation.
-        if (form_get_errors()) {
-          return;
-        }
-        // Get phenotype name column.
-        $phenotype_name_col = $groups['Phenotype Id']['1'];
-        // Preserve file if it is valid.
-        tpps_preserve_valid_file(
-          $form_state,
-          $form_state['values'][$id]['phenotype']['metadata'],
-          $org_num,
-          "Phenotype_Metadata"
-        );
-      }
-
-      $groups = $phenotype['metadata-groups'] ?? NULL;
-      if (empty($groups)) {
-        form_set_error("$id][phenotype][metadata",
-          t("Phenotype Metadata File: No groups found.")
-        );
-      }
-      else {
-        // Do not allow empty units in metadata file.
-        $columns = [
-          'name' => $groups['Phenotype Id']['1'],
-          'attr' => $groups['Attribute']['2'],
-          'desc' => $groups['Description']['3'],
-          'unit' => $groups['Unit']['4'],
-        ];
-        $meta_options = [
-          'meta_columns' => $columns,
-          'id' => $id,
-        ];
-        tpps_file_iterator($phenotype_meta, 'tpps_unit_validate_metafile', $meta_options);
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        // Validate if metafile matches phenotype file using columns.
-        // Get Phenotype Data header which could have 'year' column.
-        // @todo Move this validation to PhenotypeData class.
-        $file_header = tpps_file_get_header($phenotype_file);
-        if ($file_header) {
-          // $form_state['values'] has no value but $form_state['input']
-          // has is so we will use it.
-          $phenotype_no_header = $form_state['input'][$id]['phenotype']['file']['no-header'] ?? NULL;
-          // Check if checkbox 'My file has no header row' wasn't checked.
-          if ($phenotype_no_header) {
-            // @TODO Check if phenotype file could be without header?
-            drupal_set_message(
-              t('Phenotype file has no header in 1st row so validation was NOT'
-              . ' completed. Please check if Phenotype Names in both files are'
-              . ' the same.'),
-              'warning'
-            );
-          }
-          else {
-            $phenotype_metadata_fid = $phenotype['metadata'];
-            // Check if list of phenotype names from metafile matches column names
-            // in phenotype file.
-            // $file_header contains list of phenotype file column names.
-            $options = [
-              'columns' => [$columns['name']],
-              // List of phenotype file column names.
-              'phenotypes' => $file_header,
-              // $id is a string (not integer). Example: 'organism-1'.
-              'organism_name' => $id,
-              'column_name' => $columns['name'],
-            ];
-            tpps_file_iterator(
-              $phenotype_metadata_fid,
-              'tpps_validate_metafile_phenotype_names',
-              $options
-            );
-          }
-        }
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      }
+      module_load_include('inc', 'tpps', 'src/PhenotypeMeta.class');
+      PhenotypeMeta::validate($org_num, $form, $form_state);
     }
     // Manually added Phenotype Metadata. File wasn't used.
     else {
+      // @TODO Move to PhenotypeManual::validate().
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       for ($i = 1; $i <= $phenotype_number; $i++) {
         $current_phenotype = &$phenotype['phenotypes-meta']["$i"];

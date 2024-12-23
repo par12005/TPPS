@@ -1084,18 +1084,7 @@ function tpps_file_headers($fid, $no_header = FALSE) {
  *   Returns TRUE on success, otherwise FALSE.
  */
 function tpps_file_iterator($fid, $function, array &$options = array()) {
-  // Check static method.
-  if (strpos($function, '::') !== FALSE) {
-    list($class, $method) = explode('::', $function);
-    if (
-      !class_exists($class)
-      || empty($method)
-      || !method_exists($class, $method)
-    ) {
-      return FALSE;
-    }
-  }
-  elseif (!function_exists($function)) {
+  if (!is_callable($function)) {
     return FALSE;
   }
 
@@ -1106,7 +1095,7 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
 
   $file = tpps_file_load($fid);
   $file_location = tpps_get_location($file->uri);
-  // Do not process tree images.
+  // Do not process images of the plants.
   $extension = tpps_get_path_extension($file_location);
   if (in_array($extension, ['jpg', 'jpeg', 'png'])) {
     return TRUE;
@@ -1116,8 +1105,8 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
 
   foreach (tpps_file_generator($fid, $options) as $item) {
     $item_count = $item_count + 1;
-    // echo "ITEM COUNT: " . $item_count . "\n";
-    if(isset($options['test'])) {
+    // tpps_log("ITEM COUNT: " . $item_count);
+    if (isset($options['test'])) {
       // This will reduce the amount of processing in the file iterator
       // This is an attempt to speed up coding and testing by just not
       // processing all files per file (and may not always work)
@@ -1128,8 +1117,8 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
       }
     }
 
-    // Assume the item IS NOT EMPTY
-    $item_is_not_empty = true;
+    // Assume the item IS NOT EMPTY.
+    $item_is_not_empty = TRUE;
     if(is_array($item)) {
       // Check each key value
       $values_count = count($item);
@@ -1141,13 +1130,14 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
       }
       // Check if $values_count == $values_empty_count (this means item is empty)
       if ($values_count == $values_empty_count) {
-        $item_is_not_empty = false;
+        $item_is_not_empty = FALSE;
       }
     }
 
     // if the item is not empty, proceed to process the line
     if ($item_is_not_empty) {
-      $function($item, $options);
+      // Note: we need to pass arguments by reference.
+      call_user_func_array($function, [$item, &$options]);
       if (!empty($options['job'])) {
         $options['job']->addItemsHandled(1);
       }

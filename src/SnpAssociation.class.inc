@@ -73,7 +73,6 @@ class SnpAssociation {
    *   Drupal Form API State array.
    */
   public static function validate($org_num, array &$form, array &$form_state) {
-    dpm('aval');
     $id = "organism-$org_num";
     $snps_fieldset = 'SNPs';
     $snps = $genotype[$snps_fieldset] ?? NULL;
