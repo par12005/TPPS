@@ -11,7 +11,7 @@ module_load_include('inc', 'tpps', 'includes/form');
  * Defines the data integrity checks for the fourth page of the form.
  *
  * Note: File size validation will be done in includes/file_utils.inc
- * if function tpps_file_validate_columns().
+ * in tpps_file_validate_columns().
  *
  * @param array $form
  *   The form that is being validated.
@@ -143,6 +143,8 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
         && $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING
         && $file_type == TPPS_GENOTYPING_FILE_TYPE_VCF
       ) {
+        // Remove files which was uploaded before settings on form was changed
+        // and those files became useless but already uploaded to server.
         if (tpps_file_remove($genotype[$snps_fieldset]['snps-assay'])) {
           $genotype[$snps_fieldset]['snps-assay'] = 0;
         }
@@ -1095,25 +1097,6 @@ function tpps_ssr_valid_ploidy($ploidy, $num_columns, $num_unique_columns, $org_
 
     default:
       break;
-  }
-}
-
-/**
- * Check if 'unit' column has empty values.
- *
- * @param mixed $row
- *   The item yielded by the TPPS file generator.
- * @param array $options
- *   Additional options set when calling tpps_file_iterator().
- */
-function tpps_unit_validate_metafile($row, array &$options = []) {
-  $columns = $options['meta_columns'];
-  if (empty($row[$columns['unit']])) {
-    form_set_error(
-      $options['id'] . '][phenotype][metadata',
-      t('Phenotype Metadata File: Empty unit not allowed.')
-      . '<br />Row: ' . implode(', ', $row)
-    );
   }
 }
 

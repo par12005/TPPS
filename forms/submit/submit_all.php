@@ -2157,12 +2157,11 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
           break;
       }
 
-// @TODO Process 'year' from SNP Association file.
-
       // WARNING: 'tpps_process_snp_association' must be called before
       // 'tpps_process_genotype_spreadsheet' to bring 'year' column data.
-      tpps_log('Processing snp_association file data...', [], TRIPAL_INFO);
-      tpps_file_iterator($assoc_fid, 'tpps_process_snp_association', $options);
+      tpps_log('Processing "SNP Association" file data...', [], TRIPAL_INFO);
+      module_load_include('inc', 'tpps', 'src/SnpAssociation.class');
+      tpps_file_iterator($assoc_fid, 'SnpAssociation::processRow', $options);
       tpps_log('Done.', [], TRIPAL_INFO);
 
       $multi_insert_options['fk_overrides']['featureloc'] = [
@@ -6776,9 +6775,9 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       //     'marker' => $marker_name,
       //   ),
       // );
-      echo "Genotype_call key: $stock_id-$genotype_name\n";
+      tpps_log("Genotype_call key: @key", ['@key' => $stock_id . '-' . $genotype_name]);
       if (isset($records2['genotype_call']["$stock_id-$genotype_name"])) {
-        echo "This genotype_call key is already set (so uniqueness is maybe broken?\n";
+        tpps_log("This genotype_call key is already set (so uniqueness is maybe broken?");
       }
 
       // [RISH] Removed on 02/26/2024 in favor of new genotype_reads_per_plant
@@ -7077,80 +7076,6 @@ function tpps_process_genotype_snp_assay_design($row, array &$options = array())
     tpps_log("srcfeature_id for $chr_name could not be found - we cannot add featureloc data.",
       [], TRIPAL_ERROR);
   }
-}
-
-/**
- * This function processes a single row of a genotype association file.
- *
- * This function is used for SNP association files. This function is meant to
- * be used with tpps_file_iterator().
- *
- * @param mixed $row
- *   The item yielded by the TPPS file generator.
- * @param array $options
- *   Additional options set when calling tpps_file_iterator().
- */
-function tpps_process_snp_association($row, array &$options = []) {
-  $groups = $options['associations_groups'];
-  $associations = &$options['associations'];
-
-  $id = $row[$groups['SNP ID'][1]];
-  $trait = $row[$groups['Associated Trait'][5]];
-
-  $confidence = $row[$groups['Confidence Value'][6]];
-  $associations[$id] = [
-    'id' => $id,
-    'scaffold' => $row[$groups['Scaffold'][2]],
-    'allele' => $row[$groups['Allele'][4]],
-    'trait' => $trait,
-    'trait_attr' => $options['phenotype_meta'][strtolower($trait)]['attr_id'],
-    'trait_obs' => $options['phenotype_meta'][strtolower($trait)]['struct_id'] ?? NULL,
-    'confidence' => $confidence,
-    // @TODO Add optional year.
-    //tpps_log(SnpAssociation::DATA_TYPE_YEAR);
-    'year' => $row[$groups['Year'][9]] ?? NULL,
-  ];
-
-  $position = $row[$groups['Position'][3]];
-  preg_match('/^(\d+):(\d+)$/', $position, $matches);
-  if (!empty($matches)) {
-    // Format: start:stop:
-    $start = $matches[1];
-    $stop = $matches[2];
-    // Swap.
-    if ($start > $stop) {
-      $temp = $start;
-      $start = $stop;
-      $stop = $temp;
-    }
-    $associations[$id]['start'] = $start;
-    $associations[$id]['stop'] = $stop;
-  }
-  else {
-    // Format: integer.
-// @TODO Implement usage of new 'position option.
-    $associations[$id]['start'] = $position;
-    $associations[$id]['stop'] = $position;
-  }
-
-// @TODO Remove debug code.
-  //// 'Year' is required only when Phenotype Data file has column 'Year'.
-  //if (!empty($year = $row[$groups['Year'][9]])) {
-  //  // @TODO Do we need to update existing records?
-  //  // Store here because we use custom table.
-  //  $table = 'genotype_phenotype_snp_association';
-  //  tpps_log($table);
-  //  tpps_log(SnpAssociation::DATA_TYPE_YEAR);
-  //  //tpps_chado_insert_record($table, [
-  //  //  'genotype_id' => '',
-  //  //  'phenotype_synonyms_id' => '',
-  //  //  'year' => $year,
-  //  //  'confidence' => $confidence,
-  //  //]);
-  //}
-
-
-
 }
 
 /**
@@ -8526,8 +8451,10 @@ function tpps_log($message, $variables = [], $severity = TRIPAL_INFO) {
     $severity = TRIPAL_DEBUG;
     $dump = print_r($message, 1);
     $line = "\n-------------------------------------------------------------\n";
-    $message = ((is_string($variables ?? NULL)) ? "{$line}{$variables}:" : '')
-      . "$line@dump$line";
+    // Magenta.
+    $color = "\e[35m";
+    $message = $color . ((is_string($variables ?? NULL))
+      ? "{$line}{$variables}:" : '') . "$line@dump$line" . "\e[0m";
     $variables = ['@dump' => $dump];
   }
 

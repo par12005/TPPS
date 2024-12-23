@@ -500,7 +500,7 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
   $groups = [];
   $required_groups_flat = [];
   foreach ($required_groups as $group => $combinations) {
-    $groups[$group] = array();
+    $groups[$group] = [];
     $required_groups_flat[$group] = [];
     foreach ($combinations as $name => $combination) {
       $required_groups_flat[$group] = array_merge($required_groups_flat[$group], $combination);
@@ -518,7 +518,7 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
       foreach ($required_groups_flat as $group => $types) {
         if (in_array($type, $types)) {
           if (!isset($groups[$group][$type])) {
-            $groups[$group][$type] = array($name);
+            $groups[$group][$type] = [$name];
           }
           else {
             $groups[$group][$type][] = $name;
@@ -1060,7 +1060,7 @@ function tpps_file_headers($fid, $no_header = FALSE) {
  *   The funciton to be applied to each item returned by the generator.
  *   Callback function must be defined like this:
  *   $function(array $row, array $options = []);
- *   See tpps_unit_validate_metafile().
+ *   See PhenotypeMeta::processRow().
  * @param array $options
  *   Options that will be passed to both $function and the generator.
  *

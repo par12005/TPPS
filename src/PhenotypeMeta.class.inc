@@ -156,7 +156,7 @@ class PhenotypeMeta {
         'meta_columns' => $columns,
         'id' => $id,
       ];
-      tpps_file_iterator($meta_fid, 'tpps_unit_validate_metafile', $options);
+      tpps_file_iterator($meta_fid, 'PhenotypeMeta::validateRow', $options);
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Validate if metafile matches phenotype file using columns.
       // Get Phenotype Data header which could have 'year' column.
@@ -196,6 +196,26 @@ class PhenotypeMeta {
           );
         }
       }
+    }
+  }
+
+  /**
+   * Validates single row of file.
+   *
+   * @param mixed $row
+   *   The item yielded by the TPPS file generator.
+   * @param array $options
+   *   Additional options set when calling tpps_file_iterator().
+   */
+  public static function validateRow($row, array &$options = []) {
+    // Check if 'unit' column has empty values.
+    $columns = $options['meta_columns'];
+    if (empty($row[$columns['unit']])) {
+      form_set_error(
+        $options['id'] . '][phenotype][metadata',
+        t('Phenotype Metadata File: Empty unit not allowed.')
+        . '<br />Row: ' . implode(', ', $row)
+      );
     }
   }
 
