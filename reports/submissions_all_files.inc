@@ -127,6 +127,8 @@ function tpps_admin_submissions_all_files_report() {
           ++$i,
           l($submission->accession,
             'api/submission/' . $submission->accession . '/view/shared_state'),
+          $submission->uid,
+          $submission->state['stage'],
           $submission->getStatus(),
         ], $final_file_row);
       }
@@ -144,7 +146,7 @@ function tpps_admin_submissions_all_files_report() {
   return tpps_report_show_table([
     'report_name' => 'submissions_all_files',
     'header' => array_merge(
-      ['#', t('Accession'), t('Status')],
+      ['#', t('Accession'), t('UID'), t('Stage'), t('Status')],
       $file_column_list
     ),
     'rows' => $rows,
