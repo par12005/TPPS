@@ -23,6 +23,7 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
     return;
   }
   $snps_fieldset = 'SNPs';
+  $other_fieldset = 'other';
   unset($form_state['file_info'][TPPS_PAGE_4]);
 
   $form_values = $form_state['values'];
@@ -67,62 +68,22 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
     }
   }
 
-  if (form_get_errors() and !$form_state['rebuild']) {
+  if (form_get_errors() && !$form_state['rebuild']) {
     $form_state['rebuild'] = TRUE;
-    $new_form = drupal_rebuild_form('tpps_main', $form_state, $form);
-
     for ($i = 1; $i <= $organism_number; $i++) {
-      if (isset($new_form["organism-$i"]['phenotype']['metadata']['upload'])) {
-        $form["organism-$i"]['phenotype']['metadata']['upload']
-          = $new_form["organism-$i"]['phenotype']['metadata']['upload'];
-        $form["organism-$i"]['phenotype']['metadata']['upload']['#id']
-          = "edit-organism-$i-phenotype-metadata-upload";
-      }
-      if (isset($new_form["organism-$i"]['phenotype']['metadata']['columns'])) {
-        $form["organism-$i"]['phenotype']['metadata']['columns']
-          = $new_form["organism-$i"]['phenotype']['metadata']['columns'];
-        $form["organism-$i"]['phenotype']['metadata']['columns']['#id']
-          = "edit-organism-$i-phenotype-metadata-columns";
-      }
-
-      if (isset($form["organism-$i"]['phenotype']['file'])) {
-        foreach (['upload', 'columns'] as $field) {
-          $form["organism-$i"]['phenotype']['file'][$field]
-            = $new_form["organism-$i"]['phenotype']['file'][$field];
-          $form["organism-$i"]['phenotype']['file'][$field]['#id']
-            = "edit-organism-$i-phenotype-file-$field";
-        }
-      }
-
-      foreach (['snps-assay'] as $type) {
-        foreach (['upload', 'columns'] as $field) {
-          if (
-            isset($form["organism-$i"]['genotype'][$snps_fieldset][$type][$field])
-            && isset($new_form["organism-$i"]['genotype'][$snps_fieldset][$type][$field])
-          ) {
-            $form["organism-$i"]['genotype'][$snps_fieldset][$type][$field]
-              = $new_form["organism-$i"]['genotype'][$snps_fieldset][$type][$field];
-            $form["organism-$i"]['genotype'][$snps_fieldset][$type][$field]['#id']
-              = "edit-organism-$i-genotype-snps-{$type}-{$field}";
-          }
-        }
-      }
-
+      tpps_validate_restore_file_field_on_form_rebuild($form, $form_state,
+        ['organism-' . $i, 'phenotype', 'metadata']
+      );
+      tpps_validate_restore_file_field_on_form_rebuild($form, $form_state,
+        ['organism-' . $i, 'phenotype', 'file']
+      );
+      tpps_validate_restore_file_field_on_form_rebuild($form, $form_state,
+        ['organism-' . $i, 'genotype', $snps_fieldset, 'snps-assay']
+      );
       // Note: this field will be relocated later.
-      $other_fieldset = 'other';
-      foreach (['other'] as $type) {
-        foreach (['upload', 'columns'] as $field) {
-          if (
-            isset($form["organism-$i"]['genotype'][$other_fieldset][$type][$field])
-            && isset($new_form["organism-$i"]['genotype'][$other_fieldset][$type][$field])
-          ) {
-            $form["organism-$i"]['genotype'][$other_fieldset][$type][$field]
-              = $new_form["organism-$i"]['genotype'][$other_fieldset][$type][$field];
-            $form["organism-$i"]['genotype'][$other_fieldset][$type][$field]['#id']
-              = "edit-organism-$i-genotype-${other_fieldset}-{$type}-{$field}";
-          }
-        }
-      }
+      tpps_validate_restore_file_field_on_form_rebuild($form, $form_state,
+        ['organism-' . $i, 'genotype', $other_fieldset, 'other']
+      );
     }
   }
 
@@ -1358,5 +1319,54 @@ function tpps_validate_genotype_ssr(array &$genotype, $org_num, array $form, arr
       tpps_validate_ssr($form_state, $org_num, 'ssrs');
     }
   }
+}
 
+/**
+ * Restores 'upload' and 'columns' sub-elements for file fields.
+ *
+ * Restores value of 'upload' sub-element (which is file id) and it's DOM id.
+ * Restores 'columns' sub-element value.
+ *
+ * @param array $form
+ *   Drupal Form API array.
+ * @param array $form_state
+ *   Drupal Form API State array.
+ * @param array $parents
+ *   File field parents.
+ */
+function tpps_validate_restore_file_field_on_form_rebuild(array &$form, array &$form_state, array $parents) {
+  $new_form = &drupal_static(__FUNCTION__);
+  if (empty($new_form)) {
+    $new_form = drupal_rebuild_form('tpps_main', $form_state);
+  }
+
+  // @todo Minor. Use static caching for $new_form and create it inside function.
+  $debug_mode = FALSE;
+  $key_exists = NULL;
+  $new_key_exists = NULL;
+  $element = &drupal_array_get_nested_value($form, $parents, $key_exists);
+  $new_element = &drupal_array_get_nested_value($new_form, $parents, $new_key_exists);
+  if (!$key_exists || empty($element) || !$new_key_exists || empty($new_element)) {
+    return;
+  }
+  foreach (['upload', 'columns'] as $field) {
+    if (isset($element[$field]) && isset($new_element[$field])) {
+      if ($debug_mode) {
+        $diff = array_diff(
+          array_map('serialize', $element[$field]),
+          array_map('serialize', $new_element[$field])
+        );
+        dpm(print_r(array_map('unserialize', $diff), 1), $field . ' diff (before)');
+      }
+      // 'upload' will get attached JS setting which has element's id and
+      // allowed file extensions. That's why DOM id of the element must be
+      // restored to original to do not have suffixes like '--2' and so on.
+      // 'columns' will get huge array with column's data types.
+      $element[$field] = $new_element[$field];
+      // Changes DOM id of the fieldset for 'columns' and id of the file-field.
+      // On rebuild those fields gets extra suffix like '--2'.
+      $element[$field]['#id']
+        = 'edit-' . implode('-', array_merge($parents, [$field]));
+    }
+  }
 }
