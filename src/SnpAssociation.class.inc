@@ -97,16 +97,14 @@ class SnpAssociation {
       'Allele' => ['allele' => [self::DATA_TYPE_ALLELE]],
       'Associated Trait' => ['trait' => [self::DATA_TYPE_ASSOCIATED_TRAIT]],
       'Confidence Value' => ['confidence' => [self::DATA_TYPE_CONFIDENCE_VALUE]],
-      // Optional:
+      // Optional.
       // 7 => 'Gene ID',
       // 8 => 'Annotation',
-      // Only required when Phenotype data file has 'Year' column:
+      // Conditional. Required when Phenotype data file has 'Year'column.
       // 9 => 'Year'.
     ];
 
-    // When Phenotype Data file has 'Year' column then 'Year' column also
-    // required.
-    if (PhenotypeData::isDataTypeSet($form_state, $org_num, self::DATA_TYPE_YEAR)) {
+    if (PhenotypeData::isDataTypeSet($form_state, $org_num, PhenotypeData::DATA_TYPE_YEAR)) {
       $required_groups['Year'] = ['year' => [self::DATA_TYPE_YEAR]];
     }
 
