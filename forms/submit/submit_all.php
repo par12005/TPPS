@@ -3441,7 +3441,10 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
             $genotype_id = tpps_submitall_get_genotype_id($genotype_desc);
             // 1.
             SnpAssociation::process($organism_index, $shared_state,
-              array_merge($options, ['genotype_id' => $genotype_id])
+              array_merge($options, [
+                'genotype_id' => $genotype_id,
+                'genotype_name' => $genotype_desc,
+              ])
             );
             // $debug_info = "Uniquename: $genotype_desc Type_id:$format_cvterm Value:$format Genotype_id:$genotype_id Variant_id:$variant_id Marker_id:$marker_id\n";
             // $debug_info = "Variant_name: $variant_name, Variant_id: $variant_id\n";
@@ -4339,7 +4342,10 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = [])
       $genotype_id = tpps_submitall_get_genotype_id($genotype_name);
       // 2.
       SnpAssociation::process($organism_index, $options['shared_state'],
-        array_merge($options, ['genotype_id' => $genotype_id])
+        array_merge($options, [
+          'genotype_id' => $genotype_id,
+          'genotype_name' => $genotype_name,
+        ])
       );
 
       // [RISH] 07/06/2023 - REMOVED SO WE CAN USE HYBRID COPY SYSTEM
@@ -5006,7 +5012,10 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             $genotype_id = tpps_submitall_get_genotype_id($genotype_desc);
             // 3.
             SnpAssociation::process($organism_index, $form_state,
-              array_merge($options, ['genotype_id' => $genotype_id])
+              array_merge($options, [
+                'genotype_id' => $genotype_id,
+                'genotype_name' => $genotype_desc,
+              ])
             );
 
             // $debug_info = "Uniquename: $genotype_desc Type_id:$format_cvterm Value:$format Genotype_id:$genotype_id Variant_id:$variant_id Marker_id:$marker_id\n";
@@ -6728,12 +6737,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       SnpAssociation::process($organism_index, $options['shared_state'],
         array_merge($options, [
           'genotype_id' => $genotype_id,
-          'genotype_name' => [
-            'marker' => $marker,
-            'variant_name' => $variant_name,
-            'species_code' => $species_code,
-            'val' => $val,
-          ],
+          'genotype_name' => $genotype_name,
         ])
       );
 

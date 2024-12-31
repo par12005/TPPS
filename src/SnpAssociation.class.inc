@@ -214,10 +214,17 @@ class SnpAssociation {
     if (empty($groups)) {
       return;
     }
+    // Get genotype variant name.
+    // Format: $genotype_name = "$marker-$variant_name-$species_code-$val";
+    $name = explode('-', $options['genotype_name']);
+    // 2nd item (index is '1') called 'variant_name'.
+    if (!is_array($name) || count($name) != 4 || empty($name[1])) {
+      return;
+    }
+
     // While $row has values, $named_row has keys for each value.
     $named_row = self::getNamedRow($row, $options);
-
-    if ($named_row['id'] != $options['genotype_name']['variant_name']) {
+    if ($named_row['id'] != $name[1]) {
       // This is another genotype.
       return;
     }
@@ -284,6 +291,7 @@ class SnpAssociation {
     else {
       db_insert('chado.' . $table)->fields($record)->execute();
     }
+    tpps_log($record, 'Inserted');
   }
 
   /**
@@ -449,8 +457,6 @@ class SnpAssociation {
    */
   public static function processRow($row, array &$options = []) {
     if (empty($options['genotype_name'])) {
-      // Only 1 call from 4 has this data so we should skip processing for them.
-      // @todo Update all calls and remove this check.
       return;
     }
     self::getNamedRow($row, $options);
