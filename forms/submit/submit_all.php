@@ -12,6 +12,7 @@
 // Global variables.
 $tpps_job_logger = NULL;
 $tpps_job = NULL;
+module_load_include('inc', 'tpps', 'src/SnpAssociation.class');
 
 /**
  * Initialized the job logger which handles writing to job logs
@@ -1911,7 +1912,6 @@ tpps_log($file_headers, 'file_headers');
       'attr_id' => tpps_load_cvterm('intensity')->cvterm_id,
       // Manual term for MASS Spec.
       'struct_id' => tpps_load_cvterm('whole plant')->cvterm_id,
-      // @TODO Should 'year' and 'env' be added here?
     ];
 
     tpps_log('ISO_FID: ' . $iso_fid, [], TRIPAL_DEBUG);
@@ -2157,13 +2157,6 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
           break;
       }
 
-      // WARNING: 'tpps_process_snp_association' must be called before
-      // 'tpps_process_genotype_spreadsheet' to bring 'year' column data.
-      tpps_log('Processing "SNP Association" file data...', [], TRIPAL_INFO);
-      module_load_include('inc', 'tpps', 'src/SnpAssociation.class');
-      tpps_file_iterator($assoc_fid, 'SnpAssociation::processRow', $options);
-      tpps_log('Done.', [], TRIPAL_INFO);
-
       $multi_insert_options['fk_overrides']['featureloc'] = [
         'srcfeature' => [
           'table' => 'feature',
@@ -2203,7 +2196,9 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
     print_r($options['species_codes']);
     echo "Tree Info:\n";
     print_r($options['tree_info']);
-    tpps_file_iterator($snp_fid, 'tpps_process_genotype_spreadsheet', $options);
+    tpps_file_iterator($snp_fid, 'tpps_process_genotype_spreadsheet',
+      array_merge($options, ['shared_state' => $shared_state])
+    );
     tpps_log('Done.', [], TRIPAL_INFO);
 
     tpps_log('Inserting SNP genotype_spreadsheet data into database using insert_multi...', [], TRIPAL_INFO);
@@ -2358,7 +2353,9 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
 
     tpps_log('Processing OTHER MARKER genotype_spreadsheet file data...', [], TRIPAL_INFO);
     echo "trace 5\n";
-    tpps_file_iterator($other_fid, 'tpps_process_genotype_spreadsheet', $options);
+    tpps_file_iterator($other_fid, 'tpps_process_genotype_spreadsheet',
+      array_merge($options, ['shared_state' => $shared_state])
+    );
     tpps_log('Done.', [], TRIPAL_INFO);
 
     tpps_log('Inserting data into database using insert_multi...', [], TRIPAL_INFO);
@@ -2397,40 +2394,7 @@ function tpps_generate_species_codes_array_from_shared_state(array $shared_state
   $species_codes = [];
   $organism_number = $shared_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
   for ($i = 1; $i <= $organism_number; $i++) {
-    $organism_name = $shared_state['saved_values'][1]['organism'][$i]['name'];
-    $organism_name_parts = explode(" ", $organism_name, 3);
-    tpps_log($organism_name_parts);
-    $organism_name_genus = $organism_name_parts[0];
-    $organism_name_species = $organism_name_parts[1];
-    $organism_name_extra = trim($organism_name_parts[2] ?? NULL);
-    if ($organism_name_extra == NULL) {
-      $sql = 'SELECT organism_id
-        FROM chado.organism
-        WHERE genus ILIKE :genus
-          AND species ILIKE :species';
-      $organism_lookup_results = chado_query($sql, [
-        ':genus' => $organism_name_genus,
-        ':species' => $organism_name_species,
-      ]);
-    }
-    else {
-      $sql = 'SELECT organism_id
-        FROM chado.organism
-        WHERE genus ILIKE :genus
-          AND species ILIKE :species
-          AND infraspecific_name ILIKE :infra';
-      $organism_lookup_results = chado_query($sql, [
-        ':genus' => $organism_name_genus,
-        ':species' => $organism_name_species,
-        ':infra' => $organism_name_extra,
-      ]);
-    }
-    $organism_id = NULL;
-    foreach ($organism_lookup_results as $organism_lookup_results_row) {
-      $organism_id = $organism_lookup_results_row->organism_id;
-      tpps_log("ORGANISM ID ($organism_name): " . $organism_id . "\n");
-    }
-
+    $organism_id = tpps_submitall_get_organism_id($i, $shared_state);
     // Use the organism_id to lookup the 4 letter code.
     $sql = 'SELECT value
       FROM chado.organismprop
@@ -3474,11 +3438,11 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
             }
             // throw new Exception('DEBUG');
             // get the feature_id.
-            $results = chado_query('SELECT genotype_id FROM chado.genotype WHERE uniquename = :uniquename', [
-              ':uniquename' => $genotype_desc
-            ]);
-            $row_object = $results->fetchObject();
-            $genotype_id = $row_object->genotype_id;
+            $genotype_id = tpps_submitall_get_genotype_id($genotype_desc);
+            // 1.
+            SnpAssociation::process($organism_index, $shared_state,
+              array_merge($options, ['genotype_id' => $genotype_id])
+            );
             // $debug_info = "Uniquename: $genotype_desc Type_id:$format_cvterm Value:$format Genotype_id:$genotype_id Variant_id:$variant_id Marker_id:$marker_id\n";
             // $debug_info = "Variant_name: $variant_name, Variant_id: $variant_id\n";
             // echo("DEBUG INFO: $debug_info");
@@ -3946,7 +3910,9 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
       echo "Remove all markers_and_study_accession_per_individual for accession $accession\n";
       chado_query("DELETE FROM chado.markers_and_study_accession_per_individual_tree WHERE accession = '$accession'");
       // Run the file_iterator which will populate flat files and also populate chado.markers_and_study_accession_per_individual_tree
-      tpps_file_iterator($snp_fid, 'tpps_process_genotype_spreadsheet_flat_file', $options);
+      tpps_file_iterator($snp_fid, 'tpps_process_genotype_spreadsheet_flat_file',
+        array_merge($options, ['shared_state' => $shared_state])
+      );
       tpps_log('Done.', [], TPIPAL_INFO);
 
       tpps_log('Inserting SNP genotype_spreadsheet data into database using insert_multi...', [], TPIPAL_INFO);
@@ -3991,7 +3957,16 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
   }
 }
 
-function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = array()) {
+/**
+ * Processes single row of the SNP Assay file.
+ *
+ * Run the file_iterator which will populate flat files and
+ * also populate chado.markers_and_study_accession_per_individual_tree.
+ *
+ * @param mixed $row
+ * @param array $options
+ */
+function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = []) {
   // print_r($row);
   global $tpps_job;
   $job = $tpps_job;
@@ -4361,13 +4336,11 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
       // echo "name: $genotype_name_without_call, uniquename: $genotype_name, $val, $type_cvterm\n";
 
 
-      $results = chado_query('SELECT genotype_id FROM chado.genotype WHERE uniquename = :uniquename', [
-        ':uniquename' => $genotype_name
-      ]);
-      $genotype_id = NULL;
-      foreach ($results as $row) {
-        $genotype_id = $row->genotype_id;
-      }
+      $genotype_id = tpps_submitall_get_genotype_id($genotype_name);
+      // 2.
+      SnpAssociation::process($organism_index, $options['shared_state'],
+        array_merge($options, ['genotype_id' => $genotype_id])
+      );
 
       // [RISH] 07/06/2023 - REMOVED SO WE CAN USE HYBRID COPY SYSTEM
       // $records['genotype_call']["$stock_id-$genotype_name"] = array(
@@ -4477,11 +4450,9 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
  * @param array $form_state
  * @param array $species_codes
  * @param mixed $i
+ *   Ordinal organism number of page.
  * @param TripalJob $job
  * @param string $insert_mode
- * @access public
- *
- * @return void
  */
 function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, $i, TripalJob &$job = NULL, $insert_mode = 'hybrid', array &$options) {
   $organism_index = $i;
@@ -5032,12 +5003,12 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
             }
             // throw new Exception('DEBUG');
-            // get the feature_id.
-            $results = chado_query('SELECT genotype_id FROM chado.genotype WHERE uniquename = :uniquename', [
-              ':uniquename' => $genotype_desc
-            ]);
-            $row_object = $results->fetchObject();
-            $genotype_id = $row_object->genotype_id;
+            $genotype_id = tpps_submitall_get_genotype_id($genotype_desc);
+            // 3.
+            SnpAssociation::process($organism_index, $form_state,
+              array_merge($options, ['genotype_id' => $genotype_id])
+            );
+
             // $debug_info = "Uniquename: $genotype_desc Type_id:$format_cvterm Value:$format Genotype_id:$genotype_id Variant_id:$variant_id Marker_id:$marker_id\n";
             // $debug_info = "Variant_name: $variant_name, Variant_id: $variant_id\n";
             // echo("DEBUG INFO: $debug_info");
@@ -6376,6 +6347,7 @@ function tpps_process_phenotype_data($row, array &$options = []) {
  *   The item yielded by the TPPS file generator.
  * @param array $options
  *   Additional options set when calling tpps_file_iterator().
+ *   Keys are: 'shared_state' and etc.
  */
 function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
   global $tpps_job;
@@ -6400,7 +6372,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
   if ($marker == 'SSRs') {
     $marker = 'SSR';
   }
-  elseif($marker == 'cpSSRs') {
+  elseif ($marker == 'cpSSRs') {
     $marker = 'cpSSR';
   }
 
@@ -6523,7 +6495,10 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       $header_next_without_polyploid_index .= $header_next_parts[$j];
     }
 
-    if($options['ploidy'] == 'Polyploid' && $options['polyploid_header'] == $header_without_polyploid_index) {
+    if (
+      $options['ploidy'] == 'Polyploid'
+      && $options['polyploid_header'] == $header_without_polyploid_index
+    ) {
       $options['polyploid_val'] .= ',' . $val; // append the new value to what was already there
 
       // Check if the next header does not match current header (this would mean next header starts a new SSR polyploid) OR
@@ -6748,12 +6723,19 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       // https://tripal.readthedocs.io/en/latest/dev_guide/chado.html
       // On success this function returns the inserted record with the new primary
       // keys added to the returned array. On failure, it returns FALSE.
-      $sql = 'SELECT genotype_id FROM chado.genotype WHERE uniquename = :uniquename';
-      $results = chado_query($sql, [':uniquename' => $genotype_name]);
-      $genotype_id = NULL;
-      foreach ($results as $row) {
-        $genotype_id = $row->genotype_id;
-      }
+      $genotype_id = tpps_submitall_get_genotype_id($genotype_name);
+      // 4.
+      SnpAssociation::process($organism_index, $options['shared_state'],
+        array_merge($options, [
+          'genotype_id' => $genotype_id,
+          'genotype_name' => [
+            'marker' => $marker,
+            'variant_name' => $variant_name,
+            'species_code' => $species_code,
+            'val' => $val,
+          ],
+        ])
+      );
 
       tpps_safe_chado_insert_record('feature_genotype', [
         'feature_id' => $variant_name_id,
@@ -6859,7 +6841,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
         $records['featureprop'] = array();
       }
       $options['genotype_total'] += $genotype_count;
-      tpps_log('Genotypes inserted:' . $options['genotype_total'],  [], TRIPAL_INFO);
+      tpps_log('Genotypes inserted:' . $options['genotype_total'], [], TRIPAL_INFO);
       $genotype_count = 0;
     }
   }
@@ -8493,7 +8475,7 @@ function tpps_log($message, $variables = [], $severity = TRIPAL_INFO) {
 /**
  * Processes SSR file.
  *
- * @param array $form_state
+ * @param array $shared_state
  *   Drupal Form State.
  * @param int $fid
  *   Managed File Id.
@@ -8504,13 +8486,15 @@ function tpps_log($message, $variables = [], $severity = TRIPAL_INFO) {
  * @param array $multi_insert_options
  *   Some options again.
  */
-function tpps_ssr_process(array &$form_state, $fid, array &$options, $job, array $multi_insert_options) {
-  tpps_add_project_file($form_state, $fid);
+function tpps_ssr_process(array &$shared_state, $fid, array &$options, $job, array $multi_insert_options) {
+  tpps_add_project_file($shared_state, $fid);
   // tpps_drop_genotype_call_indexes($job);
 
   tpps_log('Processing EXTRA genotype_spreadsheet file data...', [], TRIPAL_INFO);
   echo "trace 3\n";
-  tpps_file_iterator($fid, 'tpps_process_genotype_spreadsheet', $options);
+  tpps_file_iterator($fid, 'tpps_process_genotype_spreadsheet',
+    array_merge($options, ['shared_state' => $shared_state])
+  );
   tpps_log('Done.', [], TRIPAL_INFO);
 
   tpps_log('Inserting data into database using insert_multi...', [], TRIPAL_INFO);
@@ -8559,4 +8543,60 @@ function tpps_submitall_prepare_phenotypeprop($phenotype_name, $value = NULL, $p
     ];
     $options['data'][$phenotype_name][$property_name] = $value;
   }
+}
+
+/**
+ * Gets genotype Id from chado.genotype table.
+ *
+ * @param string $genotype_name
+ *   Genotype name. E.g., 'SNP-SNP1-Arth-A/A333'.
+ *
+ * @return int
+ *   Returns Genotype Id.
+ */
+function tpps_submitall_get_genotype_id($genotype_name) {
+  $sql = 'SELECT genotype_id FROM chado.genotype WHERE uniquename = :uniquename';
+  $genotype_id = db_query($sql, [':uniquename' => $genotype_name])->fetchField();
+  // @todo Check if other code expects NULL and remove if posible.
+  $genotype_id = (empty($genotype_id) ? NULL : $genotype_id);
+  return $genotype_id;
+}
+
+/**
+ * Gets Organism Id from chado.organism by organism name.
+ *
+ * @param int $org_num
+ *   Ordinal number of organism at page.
+ * @param array $shared_state
+ *   Submission Shared State array.
+ *
+ * @return int
+ *   Returns organism Id or NULL.
+ */
+function tpps_submitall_get_organism_id($org_num, array $shared_state) {
+  $organism_name = $shared_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name'];
+  $organism_name_parts = explode(" ", $organism_name, 3);
+  tpps_log($organism_name_parts);
+  $organism_name_genus = $organism_name_parts[0];
+  $organism_name_species = $organism_name_parts[1];
+  $organism_name_extra = trim($organism_name_parts[2] ?? NULL);
+  $sql = 'SELECT organism_id
+    FROM chado.organism
+    WHERE genus ILIKE :genus
+      AND species ILIKE :species';
+  $args = [
+    ':genus' => $organism_name_genus,
+    ':species' => $organism_name_species,
+  ];
+  if (!empty($organism_name_extra)) {
+    $sql .= ' AND infraspecific_name ILIKE :infra';
+    $args[':infra'] = $organism_name_extra;
+  }
+  $organism_lookup_results = chado_query($sql, $args);
+  $organism_id = NULL;
+  foreach ($organism_lookup_results as $organism_lookup_results_row) {
+    $organism_id = $organism_lookup_results_row->organism_id;
+    tpps_log("ORGANISM ID ($organism_name): " . $organism_id);
+  }
+  return $organism_id;
 }

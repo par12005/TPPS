@@ -24,6 +24,10 @@ class SnpAssociation {
   const DATA_TYPE_ANNOTATION = 8;
   const DATA_TYPE_YEAR = 9;
 
+  // CV if of the 'PATO'.
+  // @todo Get it dynamically.
+  const CV_ID_PATO = 105;
+
   /**
    * Gets list of column data types.
    *
@@ -90,6 +94,8 @@ class SnpAssociation {
       return;
     }
 
+    // @todo Minor. Implement ability to run this code when study was already
+    // submitted (on processing step).
     $required_groups = [
       'SNP ID' => ['id' => [self::DATA_TYPE_SNP_ID]],
       'Scaffold' => ['scaffold' => [self::DATA_TYPE_SCAFFOLD]],
@@ -186,6 +192,15 @@ class SnpAssociation {
       );
       break;
     }
+    if (form_get_errors()) {
+      return;
+    }
+    $options = [
+      'associations_groups' => $groups,
+      'id' => $id,
+      'column_list' => $snps['snps-association-columns'],
+    ];
+    tpps_file_iterator($fid, 'SnpAssociation::validateRow', $options);
 
     // Preserve file if it is valid.
     tpps_preserve_valid_file($form_state, $fid, $org_num, "SNPs_Association");
@@ -196,70 +211,187 @@ class SnpAssociation {
    */
   public static function storeYear($row, array &$options = []) {
     $groups = $options['associations_groups'];
-
-    if ($debug_mode) {
-      tpps_log($row, __METHOD__ . ' row');
-      tpps_log($options, __METHOD__ . ' options');
-      tpps_log($groups, __METHOD__ . ' groups');
+    if (empty($groups)) {
+      return;
     }
+    // While $row has values, $named_row has keys for each value.
+    $named_row = self::getNamedRow($row, $options);
 
-
-
-// @TODO Empty
-// $groups['Year'][self::DATA_TYPE_YEAR].
-
-    if (empty($year = $row[$groups['Year'][self::DATA_TYPE_YEAR]] ?? NULL)) {
+    if ($named_row['id'] != $options['genotype_name']['variant_name']) {
+      // This is another genotype.
       return;
     }
 
-    // 'Year' is required only when Phenotype Data file has column 'Year'.
-    if (!empty($year = $row[$groups['Year'][9]])) {
-      // @TODO Do we need to update existing records?
-      // Store here because we use custom table.
-      $table = 'genotype_phenotype_snp_association';
-      tpps_log($table);
-      tpps_log(self::DATA_TYPE_YEAR, ":::::::::::::::::::::");
-      //tpps_chado_insert_record($table, [
-      //  'genotype_id' => '',
-      //  'phenotype_synonyms_id' => '',
-      //  'year' => $year,
-      //  'confidence' => $confidence,
-      //]);
+    // Extra check just to be sure that we have non-empty 'year' field value.
+    $year = $named_row['year'];
+    $confidence = $named_row['confidence'];
+    $associated_trait = $named_row['trait'];
+
+    if ($debug_mode) {
+      tpps_log($named_row, 'named row');
+      tpps_log(print_r(array_keys($options, 1)), __METHOD__ . ' options');
+      tpps_log($row, __METHOD__ . ', row:');
+      tpps_log($groups, __METHOD__ . ' groups');
+      //tpps_log($options, __METHOD__ . ' options');
+      tpps_log('Year: ' . $year . '; Confidencs:' . $confidence);
+      tpps_log($options['genotype_id'], 'genotype_id');
+      tpps_log($options['genotype_name'], 'genotype_name');
+    }
+
+    // Note: Other way to get genotype id.
+    //
+    // The information on the SNP and genotype should be used to get the
+    // correct genotype id
+    // 1. Get the marker name from feature.uniquename
+    // 2. Using marker_id get the genotype ids from that using feature_genotype.
+    // 3. Use genotype.description to match allele read)
+    // which will then be stored in the table I made.
+
+
+    // Get phenotype synonym id.
+    // I wrote down (at Scrum Meeting) to
+    // use 'Associated trait' (from SNP Association file)
+    // to get Phenotype name
+    // (from Phenotype Metadata file) and then use it's 'Attribute'
+    // to get 'Phenotype Synonym Id'. Should I use new way you've described above or this one?
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Get synonym id.
+    // Note: Other way is to parse Phenotype Meta file.
+    $query = db_select('chado.phenotype_synonyms', 'ps')
+      ->fields('ps', ['phenotype_synonyms_id']);
+    $query->join('chado.cvterm', 'ct', 'ct.cvterm_id = ps.attribute_id');
+    // 'Associated trait' column from SNP Association file).
+    $query->condition('ct.name', $named_row['trait']);
+    $query->condition('ct.cv_id', self::CV_ID_PATO);
+    $phenotype_synonyms_id = $query->range(0, 1)->execute()->fetchField();
+    if (empty($phenotype_synonyms_id)) {
+      // Synonym wasn't found.
+      return;
+    }
+
+    $record = [
+      'genotype_id' => $options['genotype_id'],
+      'phenotype_synonyms_id' => $phenotype_synonyms_id,
+      'year' => $year,
+      'confidence' => $confidence,
+    ];
+    // @TODO Minor. Remove records when study removed.
+    $table = 'genotype_phenotype_snp_association';
+    if (variable_get('tpps_snp_association_use_chado', FALSE)) {
+      tpps_chado_insert_record($table, $record);
+    }
+    else {
+      db_insert('chado.' . $table)->fields($record)->execute();
     }
   }
 
   /**
-   * Processes a single row of a 'SNP Association' file.
-   *
-   * Must be used with tpps_file_iterator().
+   * Validates single row of file.
    *
    * @param mixed $row
    *   The item yielded by the TPPS file generator.
    * @param array $options
    *   Additional options set when calling tpps_file_iterator().
-   *
-   * @todo Use class's constants.
+   *   Required keys:
+   *   'groups' - list of required columns.
+   *   'id' - string e.g., 'organism-1'.
    */
-  public static function processRow($row, array &$options = []) {
+  public static function validateRow($row, array &$options = []) {
+    $name = $options['id'] . '][genotype][snps-association';
+    self::getNamedRow($row, $options);
+    $associations = $options['associations'];
+    $column_list = $options['column_list'];
     $groups = $options['associations_groups'];
-    $associations = &$options['associations'];
+    $params = [
+      '@field_title' => t('SNP Association File'),
+      '@list' => implode(', ', $row),
+    ];
 
+    // Check if required columns has non-empty fields (values).
+    $non_empty_column_list['required'] = self::getColumnOptions();
+    // Note: optional 'Gene Id' and 'Annotation' columns could have empty
+    // values or be missing in file at all so we don't check them.
+    unset($non_empty_column_list['required'][self::DATA_TYPE_GENE_ID]);
+    unset($non_empty_column_list['required'][self::DATA_TYPE_ANNOTATION]);
+    // Conditional.
+    $non_empty_column_list['conditional'][self::DATA_TYPE_YEAR]
+      = $non_empty_column_list['required'][self::DATA_TYPE_YEAR];
+    unset($non_empty_column_list['required'][self::DATA_TYPE_YEAR]);
+    foreach ($non_empty_column_list as $type => $item) {
+      foreach ($item as $column_key => $column_title) {
+        $column_index = array_search($column_key, $column_list);
+        if (empty($row[$column_index])) {
+          if (
+            $type == 'conditional'
+            // Do not show error if column wasn't found in the list of required
+            // columns which means it's not required not (conditions wasn't met).
+            && empty($groups['Year'][self::DATA_TYPE_YEAR])
+          ) {
+            continue;
+          }
+          else {
+            $params['@column_title'] = t($column_title);
+            form_set_error($name, t('@field_title: Empty "@column_title" '
+              . 'column is not allowed.<br />Row: @list.', $params));
+          }
+        }
+      }
+    }
+  }
 
-    $id = $row[$groups['SNP ID'][1]];
+  /**
+   * Replaces column index with column data type in $row.
+   *
+   * @param array $row
+   *   Values of the single row. E.g.,
+   *   Array
+   *    (
+   *        [A] => SNP3
+   *        [B] => scaffold_3
+   *        [C] => 2038
+   *        [D] => T
+   *        [E] => daylight hours
+   *        [F] => 2021
+   *        [G] => 2.13E-07
+   *        [H] => GENEID3
+   *        [I] => intergenic_region
+   *   )
+   * @param array $options
+   *   Data for processing.
+   *
+   * @return array
+   *   Returns associated array where keys are column name and values are
+   *   values from the $row. Note: $options['associations'] also updated.
+   */
+  public static function getNamedRow($row, array &$options = []) {
+    $groups = $options['associations_groups'];
+    if (empty($groups)) {
+      return;
+    }
+
+    $id = $row[($groups['SNP ID'][self::DATA_TYPE_SNP_ID] ?? NULL)] ?? NULL;
     $position = $row[$groups['Position'][3]];
     $trait = $row[$groups['Associated Trait'][5]];
 
     $confidence = $row[$groups['Confidence Value'][6]];
+    $associations = &$options['associations'];
     $associations[$id] = [
+      // Required.
       'id' => $id,
       'scaffold' => $row[$groups['Scaffold'][2]],
       'start' => $position,
       'stop' => $position,
       'allele' => $row[$groups['Allele'][4]],
       'trait' => $trait,
-      'trait_attr' => $options['phenotype_meta'][strtolower($trait)]['attr_id'],
-      'trait_obs' => $options['phenotype_meta'][strtolower($trait)]['struct_id'] ?? NULL,
       'confidence' => $confidence,
+      // Extra.
+      //'trait_attr' => $options['phenotype_meta'][strtolower($trait)]['attr_id'],
+      //'trait_obs' => $options['phenotype_meta'][strtolower($trait)]['struct_id'] ?? NULL,
+      // Optional.
+      'gene_id' => $row[($groups['Gene ID'][self::DATA_TYPE_GENE_ID] ?? NULL)] ?? NULL,
+      'annotation' => $row[($groups['Annotation'][self::DATA_TYPE_ANNOTATION] ?? NULL)] ?? NULL,
+      // Conditional.
       'year' => $row[$groups['Year'][9]] ?? NULL,
     ];
 
@@ -278,33 +410,51 @@ class SnpAssociation {
       $associations[$id]['start'] = $start;
       $associations[$id]['stop'] = $stop;
     }
-    self::storeYear($row, $options);
+    return $associations[$id];
   }
 
-  private function buildSomeColumnsWIP() {
-    // @TODO Reuse already created structure.
-    if (empty($groups)) {
-      form_set_error("$id][genotype][snps-association",
-        t("SNP Association File: No groups found.")
-      );
+  /**
+   * Processes a file.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number on page.
+   * @param array $shared_state
+   *   Submission's Shared State.
+   * @param array $options
+   *   Necessary data.
+   *   WARNING: 'genotype_id' is required to store 'year' column on file.
+   */
+  public static function process($organism_index, array $shared_state, array &$options = []) {
+    $fid = $shared_state['saved_values'][TPPS_PAGE_4]["organism-$organism_index"]
+      ['genotype']['files']['snps-association'] ?? NULL;
+    if (empty($fid)) {
+      return;
     }
-    else {
-      // Empty units in metadata file are not allowed.
-      $columns = [
-        'id' => $groups['SNP ID'][self::DATA_TYPE_SNP_ID],
-        'scaffold' => $groups['Scaffold'][self::DATA_TYPE_SCAFFOLD],
-        'position' => $groups['Position'][self::DATA_TYPE_POSITION],
-        'allele' => $groups['Allele'][self::DATA_TYPE_ALLELE],
-        'trait' => $groups['Associated Trait'][self::DATA_TYPE_ASSOCIATED_TRAIT],
-        'confidence' => $groups['Confidence Value'][self::DATA_TYPE_CONFIDENCE_VALUE],
-        // Optional fields:
-        'gene_id' => $groups['Gene ID'][self::DATA_TYPE_GENE_ID] ?? NULL,
-        'annotation' => $groups['Annotation'][self::DATA_TYPE_ANNOTATION] ?? NULL,
-        // Required when Phenotype data file has 'Year' column:
-        'year' => $groups['Year'][self::DATA_TYPE_YEAR] ?? NULL,
-      ];
-      //$snps['snps-assosiation-columns'] = $columns;
+
+    tpps_log('Processing "SNP Association" file data...', [], TRIPAL_INFO);
+    // Note: Full class name must be used (not 'self').
+    tpps_file_iterator($fid, 'SnpAssociation::processRow', $options);
+    tpps_log('Done.', [], TRIPAL_INFO);
+  }
+
+  /**
+   * Processes a single row of a 'SNP Association' file.
+   *
+   * Must be used with tpps_file_iterator().
+   *
+   * @param mixed $row
+   *   The item yielded by the TPPS file generator.
+   * @param array $options
+   *   Additional options set when calling tpps_file_iterator().
+   */
+  public static function processRow($row, array &$options = []) {
+    if (empty($options['genotype_name'])) {
+      // Only 1 call from 4 has this data so we should skip processing for them.
+      // @todo Update all calls and remove this check.
+      return;
     }
+    self::getNamedRow($row, $options);
+    self::storeYear($row, $options);
   }
 
 }
