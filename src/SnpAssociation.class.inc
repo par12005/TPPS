@@ -446,7 +446,7 @@ class SnpAssociation {
   }
 
   /**
-   * Processes a single row of a 'SNP Association' file.
+   * Processes a single row of the file.
    *
    * Must be used with tpps_file_iterator().
    *

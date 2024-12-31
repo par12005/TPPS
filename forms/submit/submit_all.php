@@ -13,6 +13,7 @@
 $tpps_job_logger = NULL;
 $tpps_job = NULL;
 module_load_include('inc', 'tpps', 'src/SnpAssociation.class');
+module_load_include('inc', 'tpps', 'src/PhenotypeMeta.class');
 
 /**
  * Initialized the job logger which handles writing to job logs
@@ -355,7 +356,7 @@ function tpps_nextflow_new_study_pipeline(array &$form_state) {
   echo \$SLURM_JOB_ID > $store_directory/slurm_job_id.txt
 
 rm -rf ~/.nextflow/assets/TreeGenes/new-study-pipeline
-nextflow pull TreeGenes/new-vcf-pipeline -r main -hub gitlab 
+nextflow pull TreeGenes/new-vcf-pipeline -r main -hub gitlab
 # nextflow run TreeGenes/new-study-pipeline -r main -profile treegenes -resume --tgdr $study_accession --vcf '$vcf' --ref_genome '$ref_genome'
 ";
 
@@ -363,7 +364,7 @@ nextflow pull TreeGenes/new-vcf-pipeline -r main -hub gitlab
 $run_code = "#!/bin/bash
 cd $store_directory
 rm -rf ~/.nextflow/assets/TreeGenes/new-study-pipeline
-nextflow pull TreeGenes/new-study-pipeline -r main -hub gitlab 
+nextflow pull TreeGenes/new-study-pipeline -r main -hub gitlab
 # nextflow run TreeGenes/new-study-pipeline -r main -profile treegenes -resume --tgdr $study_accession --vcf '$vcf' --ref_genome '$ref_genome'
 ";
 
@@ -1753,7 +1754,7 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
       // Update only existing synonyms.
       if (!empty($phenotypes_meta[$name]['synonym_id'])) {
         $fields = [
-          'is_environmental_phenotype' => (bool) $phenotypes_meta[$name]['env'],
+          'is_environmental_phenotype' => (empty($phenotypes_meta[$name]['env']) ? 0 : 1),
         ];
         db_update('chado.phenotype_synonyms', 'ps')
           ->fields($fields)
@@ -1815,14 +1816,14 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
           'no_header' => $phenotype['metadata-no-header'],
           'meta_columns' => $columns,
           // [VS] $phenotypes_meta seems empty when metadata file used.
-          // But later tpps_process_phenotype_meta() will fill 'meta' element
+          // But later PhenotypeMeta::processRow() will fill 'meta' element
           // with data from phenotype metadata file. Keys will be phenotype
           // names from file in lowercase.
           'meta' => &$phenotypes_meta,
         ];
 
         tpps_log('Processing phenotype_meta file data...', [], TRIPAL_INFO);
-        tpps_file_iterator($meta_fid, 'tpps_process_phenotype_meta', $meta_options);
+        tpps_file_iterator($meta_fid, 'PhenotypeMeta::processRow', $meta_options);
         tpps_log('Done.', [], TRIPAL_INFO);
       }
       else {
@@ -5875,69 +5876,6 @@ function tpps_check_organisms($row, array &$options = array()) {
 }
 
 /**
- * This function will process a row from a phenotype metadata file.
- *
- * @param mixed $row
- *   The item yielded by the TPPS file generator.
- * @param array $options
- *   Additional options set when calling tpps_file_iterator().
- */
-function tpps_process_phenotype_meta($row, array &$options = []) {
-  $column_list = $options['meta_columns'];
-  $meta = &$options['meta'];
-
-  // tpps_log($column_list, "COLUMNS");
-  // tpps_log($row, "ROW");
-
-  if (empty($name = strtolower($row[$column_list['name']]))) {
-    tpps_log('Empty phenotype "@name".', ['@name' => $name], TRIPAL_ERROR);
-    return;
-  }
-  $meta[$name] = [
-    'attr' => 'other',
-    'attr-other' => $row[$column_list['attr']],
-    'desc' => $row[$column_list['desc']],
-    'unit' => 'other',
-    'unit-other' => $row[$column_list['unit']],
-    'env' => $row[$column_list['env']],
-  ];
-  if (
-    !empty($column_list['struct'])
-    && isset($row[$column_list['struct']])
-    && $row[$column_list['struct']] != ''
-  ) {
-    $meta[$name]['struct'] = 'other';
-    $meta[$name]['struct-other'] = $row[$column_list['struct']];
-  }
-
-  // Search for synonym.
-  $table = 'chado.phenotype_synonyms';
-  $synonym_id = db_select($table, 't')
-    ->fields('t', ['phenotype_synonyms_id'])
-    ->condition('synonym', $name)
-    ->execute()->fetchField();
-  if (empty($synonym_id)) {
-    tpps_log('No synonym found for phenotype "@name".', ['@name' => $name], TRIPAL_WARNING);
-    return;
-  }
-  tpps_log('Found synonym #@synonym_id for phenotype "@name".',
-    ['@name' => $name, '@synonym_id' => $synonym_id], TRIPAL_DEBUG
-  );
-  $meta[$name]['synonym_id'] = $synonym_id;
-
-  if (!isset($column_list['env'])) {
-    tpps_log("No 'Environmental Phenotype' in Phenotype Metadata.", [], TRIPAL_DEBUG);
-    return;
-  }
-
-  // Store 'Environmental Phenotype' value.
-  db_update($table)
-    ->fields(['is_environmental_phenotype' => (bool) $row[$column_list['env']]])
-    ->condition('phenotype_synonyms_id', $synonym_id)
-    ->execute();
-}
-
-/**
  * This function will further refine existing phenotype metadata.
  *
  * The function mostly just adds cvterm ids where applicable.
@@ -5949,7 +5887,7 @@ function tpps_process_phenotype_meta($row, array &$options = []) {
  * @param TripalJob $job
  *   The TripalJob object for the submission job.
  *
- * @TODO $job function's argument isn't used and could be removed.
+ * @todo $job function's argument isn't used and could be removed.
  */
 function tpps_refine_phenotype_meta(array &$meta, array $time_options = [], TripalJob &$job = NULL) {
   // tpps_log($meta, 'Meta array');

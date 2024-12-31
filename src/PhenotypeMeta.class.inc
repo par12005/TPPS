@@ -219,4 +219,72 @@ class PhenotypeMeta {
     }
   }
 
+
+  /**
+   * Processes single row from file.
+   *
+   * Must be used with tpps_file_iterator().
+   *
+   * @param mixed $row
+   *   The item yielded by the TPPS file generator.
+   * @param array $options
+   *   Additional options set when calling tpps_file_iterator().
+   */
+  public static function processRow($row, array &$options = []) {
+    $column_list = $options['meta_columns'];
+    $meta = &$options['meta'];
+
+    // tpps_log($column_list, "COLUMNS");
+    // tpps_log($row, "ROW");
+
+    if (empty($name = strtolower($row[$column_list['name']]))) {
+      tpps_log('Empty phenotype "@name".', ['@name' => $name], TRIPAL_ERROR);
+      return;
+    }
+    $meta[$name] = [
+      'attr' => 'other',
+      'attr-other' => $row[$column_list['attr']],
+      'desc' => $row[$column_list['desc']],
+      'unit' => 'other',
+      'unit-other' => $row[$column_list['unit']],
+      'env' => $row[$column_list['env']],
+    ];
+    if (
+      !empty($column_list['struct'])
+      && isset($row[$column_list['struct']])
+      && $row[$column_list['struct']] != ''
+    ) {
+      $meta[$name]['struct'] = 'other';
+      $meta[$name]['struct-other'] = $row[$column_list['struct']];
+    }
+
+    // Search for synonym.
+    $table = 'chado.phenotype_synonyms';
+    $synonym_id = db_select($table, 't')
+      ->fields('t', ['phenotype_synonyms_id'])
+      ->condition('synonym', $name)
+      ->execute()->fetchField();
+    if (empty($synonym_id)) {
+      tpps_log('No synonym found for phenotype "@name".', ['@name' => $name], TRIPAL_WARNING);
+      return;
+    }
+    tpps_log('Found synonym #@synonym_id for phenotype "@name".',
+      ['@name' => $name, '@synonym_id' => $synonym_id], TRIPAL_DEBUG
+    );
+    $meta[$name]['synonym_id'] = $synonym_id;
+
+    if (!isset($column_list['env'])) {
+      tpps_log("No 'Environmental Phenotype' in Phenotype Metadata.", [], TRIPAL_DEBUG);
+      return;
+    }
+
+    // Store 'Environmental Phenotype' value.
+    db_update($table)
+      ->fields([
+        'is_environmental_phenotype' => (empty($row[$column_list['env']]) ? 0 : 1),
+      ])
+      ->condition('phenotype_synonyms_id', $synonym_id)
+      ->execute();
+  }
+
 }
