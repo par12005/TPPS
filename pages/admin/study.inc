@@ -28,7 +28,7 @@ module_load_include('inc', 'tpps', 'includes/common');
  */
 //function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
 //  if (empty($accession)) {
-//    tpps_admin_panel_show_all($form);
+//    tpps_admin_panel_show_all($form, $form_state);
 //  }
 //  else {
 //    // Shows single study.
@@ -78,7 +78,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
 
   // Check for log file
   // Step 1 - Look for the last tripal job that has the accession.
-  $results = db_query("SELECT * FROM public.tripal_jobs WHERE job_name LIKE 
+  $results = db_query("SELECT * FROM public.tripal_jobs WHERE job_name LIKE
     :search ORDER BY submit_date DESC LIMIT 1;", [
       ':search' => "%Record Submission - $accession%"
     ]);
@@ -129,7 +129,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
 
   // Check for log file
   // Step 1b - Look for the last tripal job for Flat File processing if exists.
-  $results = db_query("SELECT * FROM public.tripal_jobs WHERE job_name LIKE 
+  $results = db_query("SELECT * FROM public.tripal_jobs WHERE job_name LIKE
     :search ORDER BY submit_date DESC LIMIT 1;", [
       ':search' => "%Generate VCF to SNPs Flat file - %$accession%"
     ]);
@@ -156,11 +156,11 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
         . "(this can happen if the log file was deleted - flat file processing "
         . "if necessary to regenerate log file)</div>";
     }
-  } 
+  }
 
   // Check for log file
   // Step 1c - Look for the last tripal job for marker removal if exists.
-  $results = db_query("SELECT * FROM public.tripal_jobs WHERE job_name LIKE 
+  $results = db_query("SELECT * FROM public.tripal_jobs WHERE job_name LIKE
     :search ORDER BY submit_date DESC LIMIT 1;", [
       ':search' => "%TPPS REMOVE all%$accession%"
     ]);
@@ -187,10 +187,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
         . "(this can happen if the log file was deleted - marker and genotype removals "
         . "if necessary to regenerate log file)</div>";
     }
-  } 
-
-
-
+  }
 
   if ($submission->status == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
     $options['files'] = [

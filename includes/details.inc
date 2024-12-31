@@ -270,6 +270,16 @@ function tpps_details_tabs(array &$state) {
  */
 function tpps_details_tab($accession, $type) {
   $function = "tpps_details_$type";
+  // @TODO Make more unique function names.
+  // List of dynamically built function's names for searching purpose:
+  // tpps_details_tabs().
+  // tpps_details_species() - 'Species' tab.
+  // tpps_details_study() - 'Study Details' tab.
+  // tpps_details_trees() - 'Plants' tab.
+  // tpps_details_phenotype().
+  // tpps_details_genotype().
+  // tpps_details_mass_spectrometry().
+  // tpps_details_list().
   $submission = new Submission($accession);
   print($function($submission->sharedState));
 }

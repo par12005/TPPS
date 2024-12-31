@@ -140,7 +140,7 @@ function tpps_synonym_restore_values(array &$current_phenotype) {
  *   Item format: $phenotype_name => $phenotype_id.
  */
 function tpps_synonym_save(array $phenotypes_meta, array $id_list) {
-  tpps_log('[INFO] Phenotype Synonyms processing started...');
+  tpps_log('Phenotype Synonyms processing started...');
   // Create a small array to make search of phenotype name easier.
   foreach ($phenotypes_meta as $item) {
     // Note: It's possible that synonym not exists when it was automatically
@@ -175,7 +175,7 @@ function tpps_synonym_save(array $phenotypes_meta, array $id_list) {
       }
     }
   }
-  tpps_log('[INFO] Phenotype Synonyms processing completed.');
+  tpps_log('Phenotype Synonyms processing completed.');
 }
 
 /**

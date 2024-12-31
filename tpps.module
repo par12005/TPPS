@@ -80,6 +80,10 @@ define(
 define('TPPS_GENOTYPING_FILE_TYPE_VCF', 'VCF');
 
 
+// Rememeber fieldset collapsed state.
+define('TPPS_RFCS_KEY', 'remember_fieldset_collapsed_state');
+
+
 module_load_include('inc', 'tpps', 'includes/common');
 
 // WARNING:
@@ -1172,11 +1176,10 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
 
 /**
  * Implements hook_form_alter().
- *
- * Initializes $form_state['values'] and 'saved_values' to empty arrays,
- * and calls the tpps_leaves(), which populates most default values.
  */
-function tpps_form_alter(&$form, &$form_state, $form_id) {
+function tpps_form_alter(array &$form, array &$form_state, $form_id) {
+  // Initializes $form_state['values'] and 'saved_values' to empty arrays,
+  // and calls the tpps_leaves(), which populates most default values.
   if (in_array($form['#form_id'], ['tpps_main', 'tppsc_main'])) {
     $stage = $form_state['stage'];
     $form_state['saved_values'][$stage] = $form_state['saved_values'][$stage] ?? [];
@@ -1184,6 +1187,41 @@ function tpps_form_alter(&$form, &$form_state, $form_id) {
     // Initialize default values for each of the leaves in the form tree.
     tpps_leaves($form, $form_state['values'], $form_state['saved_values'][$stage]);
   }
+  // Remember fieldset collapsed state.
+  if (variable_get('tpps_remember_fieldset_collapsed_state', FALSE)) {
+    tpps_form_add_fieldset_collapsed_state($form, $form_id);
+    tpps_form_add_js_setting($form, 'fieldsetCollapsedState',
+      ['ajaxUrl' => '/' . TPPS_AJAX_URL . '/' . TPPS_RFCS_KEY]
+    );
+    tpps_add_css_js('fieldset', $form);
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for 'tpps_js_debug_mode_settings_form'.
+ */
+function tpps_form_tpps_js_debug_mode_settings_form_alter(array &$form, array $form_state) {
+  $name = 'tpps_js_debug_mode';
+  // Must be added because it will return the first item.
+  $form[$name]['#pre_render'][] = 'form_process_checkboxes';
+  $form[$name]['#pre_render'][] = 'tpps_js_debug_mode_settings_form_disable_element';
+}
+
+/**
+ * Adds JS setting to form.
+ *
+ * @param array $form
+ *   Drupal Form API array.
+ * @param string $name
+ *   Name of the feature. E.g., 'fieldsetCollapsedState'.
+ * @param array $data
+ *   List of settings.
+ */
+function tpps_form_add_js_setting(array &$form, $name, array $data) {
+  $form['#attached']['js'][] = [
+    'type' => 'setting',
+    'data' => ['tpps' => [$name => $data]],
+  ];
 }
 
 /**
@@ -2291,6 +2329,15 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/reports.inc',
   ];
+  $items['admin/config/tpps/js-debug-mode'] = [
+    'title' => 'JS Debug Mode',
+    'description' => 'JS Debug Mode Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_js_debug_mode_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/js_debug_mode.inc',
+  ];
 }
 
 /**
@@ -2853,6 +2900,7 @@ function tpps_is_main_form(array $form_state) {
  *   Returns Submission object or throw an exception if it's not found.
  */
 function tpps_submission($accession = '') {
+  // @TODO Make this variable global.
   $submission = new Submission();
   if ($accession) {
     $submission->accession = $accession;
@@ -2888,6 +2936,37 @@ function tpps_organism($organism_key = '') {
     );
   }
   return $organism;
+}
+
+/**
+ * Creates new PhenotypeManual object.
+ *
+ * How to use:
+ * $form['phenotype'] = tpps_phenotype_manual()-build($id);
+ *
+ * @return object
+ *   Returns object of the PhenotypeManual class.
+ */
+function tpps_phenotype_manual() {
+  $phenotypeManual = new PhenotypeManual();
+  return $phenotypeManual;
+}
+
+/**
+ * Creates new PhenotypeMeta object.
+ *
+ * How to use:
+ * $form['phenotype'] = tpps_phenotype_meta()-build($id);
+ *
+ * @return object
+ *   Returns object of the PhenotypeManual class.
+ *
+ * @todo Minor. Merge with PhenotypeManual class and use 'Phenotype' name
+ * but now it's overloaded and will be hard to search and use.
+ */
+function tpps_phenotype_meta() {
+  $phenotypeMeta = new PhenotypeMeta();
+  return $phenotypeMeta;
 }
 
 /**
