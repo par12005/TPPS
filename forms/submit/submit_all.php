@@ -30,6 +30,7 @@ function tpps_initialize_job_logger($accession, TripalJob $job = NULL) {
   // Get public path.
   $log_path = tpps_realpath('public://') . '/tpps_job_logs/';
 
+  chado_query('SET search_path TO chado,public;');
   tpps_log('Initializing log path: @path', ['@path' => $log_path], TRIPAL_INFO);
 
   if (!is_dir($log_path)) {
@@ -202,9 +203,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     }
 
     if (variable_get('tpps_submitall_run_nextflow', TRUE)) {
-
-// @TODO Run only when study has VCF files.
-
+      // @TODO Run only when study has VCF files.
       tpps_log('Nextflow New Study Pipeline', [], TRIPAL_INFO);
       tpps_nextflow_new_study_pipeline($submission->sharedState);
     }
@@ -242,6 +241,13 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
  *   Actually it's a shared state.
  */
 function tpps_nextflow_new_study_pipeline(array &$form_state) {
+  tpps_log("Refreshing chado.plant_location_view since this is required before running the nextflow new study pipeline\n");
+  try {
+    chado_query("REFRESH MATERIALIZED VIEW chado.plant_location_view");
+  }
+  catch (Exception $ex) {
+    tpps_log("Could not refresh materialized view chado.plant_location_view\n");
+  }
   // Get all required nextflow flag parameters from the shared state
   $study_accession = $form_state['saved_values'][1]['accession'];
   $vcf = NULL;
@@ -1474,6 +1480,37 @@ function tpps_submit_page_3(array &$shared_state, TripalJob &$job = NULL) {
 function tpps_submit_page_4(array &$shared_state, TripalJob &$job = NULL) {
   $page1_values = $shared_state['saved_values'][TPPS_PAGE_1];
   $page4_values = $shared_state['saved_values'][TPPS_PAGE_4];
+
+  // RISH: 12/11/2024 - Save the sequencing method (genotype-design) value to projectprop
+  $project_id = $shared_state['ids']['project_id'];
+  $cvterm_id_sequencing_method = -1;
+  $cvterm_results = chado_query('SELECT * FROM chado.cvterm WHERE name = :name LIMIT 1', [
+    ':name' => 'sequencing method'
+  ]);
+  foreach ($cvterm_results as $cvterm_row) {
+    $cvterm_id_sequencing_method = $cvterm_row->cvterm_id;
+  }
+  if (isset($project_id)) {
+    chado_query('DELETE FROM chado.projectprop WHERE project_id = :project_id AND type_id = :type_id', [
+      ':project_id' => $project_id,
+      ':type_id' => $cvterm_id_sequencing_method
+    ]);
+  }
+  $organism_count = $page1_values['organism']['number'];
+  for ($i = 1; $i <= $organism_count; $i++) {
+    $genotype_design_key = $shared_state['saved_values'][TPPS_PAGE_4]['organism-' . $i]['genotype']['SNPs']['genotyping-design'];
+    $genotype_design_value = tpps_form_get_genotyping_design_field_options($genotype_design_key);
+    if ($genotype_design_key > 0) {
+      tpps_log("Genotype design $genotype_design_value added to projectprop\n");
+      chado_insert_record('projectprop', [
+        'project_id' => $project_id,
+        'type_id' => $cvterm_id_sequencing_method,
+        'value' => $genotype_design_value,
+      ]);
+    }
+  }
+
+
   $organism_number = $page1_values['organism']['number'];
   // RISH 8/12/2024 - New function to generate species_codes array from shared_state
   $species_codes = tpps_generate_species_codes_array_from_shared_state($shared_state);

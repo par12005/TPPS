@@ -96,8 +96,8 @@ function tpps_install() {
   variable_set('tpps_submitall_skip_gps_request', FALSE);
   variable_set('tpps_submitall_phenotype_debug_mode', FALSE);
   variable_set('tpps_submitall_log_tripal_suppress_cli', TRUE);
-  variable_set('tpps_submitall_run_nextflow', TRUE);
-  variable_set('tpps_submitall_rename_files', TRUE);
+  variable_set('tpps_submitall_run_nextflow', FALSE);
+  variable_set('tpps_submitall_rename_files', FALSE);
   // Submit All / CLI Log Settings.
   variable_set('tpps_submitall_log_cli_severity_level', 7);
   variable_set('tpps_submitall_log_cli_show_time', FALSE);
@@ -2406,8 +2406,8 @@ function tpps_update_7125() {
 function tpps_update_7126() {
   if (empty(variable_get('tpps_submitall_log_cli_colorful'))) {
     variable_set('tpps_submitall_log_tripal_suppress_cli', TRUE);
-    variable_set('tpps_submitall_run_nextflow', TRUE);
-    variable_set('tpps_submitall_rename_files', TRUE);
+    variable_set('tpps_submitall_run_nextflow', FALSE);
+    variable_set('tpps_submitall_rename_files', FALSE);
     // Submit All / CLI Log Settings.
     variable_set('tpps_submitall_log_cli_severity_level', 7);
     variable_set('tpps_submitall_log_cli_show_time', FALSE);

@@ -1003,7 +1003,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       $includes = [];
       $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
       $includes[] = module_load_include('inc', 'tpps', 'includes/markers_genotypes_utils');
-      $jid = tripal_add_job("TPPS REMOVE all study markers and genotypes - $accession",
+      $jid = tripal_add_job("TPPS REMOVE all study markers and genotypes - $accession [" . date(DATE_RFC2822) . "]",
         'tpps', 'tpps_remove_all_markers_genotypes', [$accession],
         $user->uid, 10, $includes, TRUE
       );
