@@ -201,7 +201,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     // tpps_log("[INFO] Files renamed!\n");
 
     // tpps_log("[INFO] Nextflow New Study Pipeline");
-    // tpps_nextflow_new_study_pipeline($submission->sharedState);
+    tpps_nextflow_new_study_pipeline($submission->sharedState);
 
     tpps_log("[INFO] Finishing up...");
     // Functions starting from tpps_submit_page_1() update $shared_state array
@@ -344,7 +344,7 @@ echo \$SLURM_JOB_ID > $store_directory/slurm_job_id.txt
 
 rm -rf ~/.nextflow/assets/TreeGenes/new-study-pipeline
 nextflow pull TreeGenes/new-vcf-pipeline -r main -hub gitlab 
-nextflow run TreeGenes/new-study-pipeline -r main -profile treegenes -resume --tgdr $study_accession --vcf '$vcf' --ref_genome '$ref_genome'
+# nextflow run TreeGenes/new-study-pipeline -r main -profile treegenes -resume --tgdr $study_accession --vcf '$vcf' --ref_genome '$ref_genome'
 ";
 
 // Override temporarily since we're running on TREEGENESDEV and not on the cluster (so sbatch commands will not work)
@@ -352,7 +352,7 @@ $run_code = "#!/bin/bash
 cd $store_directory
 rm -rf ~/.nextflow/assets/TreeGenes/new-study-pipeline
 nextflow pull TreeGenes/new-study-pipeline -r main -hub gitlab 
-nextflow run TreeGenes/new-study-pipeline -r main -profile treegenes -resume --tgdr $study_accession --vcf '$vcf' --ref_genome '$ref_genome'
+# nextflow run TreeGenes/new-study-pipeline -r main -profile treegenes -resume --tgdr $study_accession --vcf '$vcf' --ref_genome '$ref_genome'
 ";
 
 
