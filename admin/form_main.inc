@@ -57,6 +57,13 @@ function tpps_form_main_settings_form(array $form, array &$form_state) {
       . '<br />When page loaded scripts waits for a while and then hightlights '
       . 'specified field. When there is no delay it looks ugly.'),
   ];
+  $form['tpps_remember_fieldset_collapsed_state'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Remember Fieldset Collapsed State'),
+    '#default_value' => variable_get('tpps_remember_fieldset_collapsed_state'),
+    '#description' => t("All module's forms will be affected. "
+    . "<br />Only collapsible fieldsets will be affected."),
+  ];
   $form['#submit'][] = 'tpps_form_main_settings_form_submit';
   return system_settings_form($form);
 }
@@ -75,5 +82,12 @@ function tpps_form_main_settings_form_submit(array $form, array &$form_state) {
     != variable_get('tpps_dark_theme', FALSE)
   ) {
     cache_clear_all();
+  }
+  // When feature 'Remember Fieldset Collapsed State' enabled/disabled we must
+  // to clear all previously stored fieldset's states to allow reset and avoid
+  // unexpected behavoir when this feature will be enabled again.
+  $key = 'fieldset_collapsed_state';
+  if (($form_state['values'][$key] ?? NULL) != variable_get($key, 'default')) {
+    unset($_SESSION[TPPS_RFCS_KEY]);
   }
 }
