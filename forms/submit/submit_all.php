@@ -1673,8 +1673,26 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
   }
   tpps_submission_add_tag($shared_state['accession'], 'Phenotype');
 
+  // Get CVTerm if for 'year' column in phenotype data file which must exists
+  // even if phenotype data file has not 'year' column.
+  try {
+    $year_cvterm_id = tpps_load_cvterm('year')->cvterm_id;
+  }
+  catch (Exception $e) {
+    // Note: cvterm 54188 (year) doesn't work at dev-server.
+    $year_cvterm_id = variable_get('tpps_submitall_cvterm_phenotype_year', '');
+  }
+  if (empty($year_cvterm_id)) {
+    tpps_log(t("CV Term Id for phenotype's 'Year' column in data file wasn't set."
+      . "Create cvterm or manually set it's value at @url."),
+      ['@url' => url('admin/config/tpps/submit-all', ['absolute' => TRUE])],
+      TRIPAL_ERROR
+    );
+  }
+
   // Get appropriate cvterms.
-  $phenotype_cvterms = array(
+  // @todo Wrap with try-catch to avoid fatal error and create meaningful error message.
+  $phenotype_cvterms = [
     'time' => tpps_load_cvterm('time')->cvterm_id,
     'desc' => tpps_load_cvterm('description')->cvterm_id,
     // @TODO [VS] Not sure this is needed since units are in separate table
@@ -1685,10 +1703,8 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
     // [/VS]
     'environment' => tpps_load_cvterm('environment')->cvterm_id,
     'intensity' => tpps_load_cvterm('intensity')->cvterm_id,
-    // @TODO cvterm 54188 (year) doesn't work at dev-server.
-    // 'year' => tpps_load_cvterm('year')->cvterm_id,
-    'year' => variable_get('tpps_submitall_cvterm_phenotype_year', ''),
-  );
+    'year' => $year_cvterm_id,
+  ];
 
   $records = [
     'phenotype' => [],
@@ -6226,21 +6242,14 @@ function tpps_process_phenotype_data($row, array &$options = []) {
       );
     }
 
-    // @TODO Add year from manual meta. Needs form fields.
-
     // Process 'year' column which is not a phenotype.
-    if ($iso) {
-      // @TODO What to do with isotop analysis?
-    }
-    else {
-      // Normal check.
-      if (!empty($meta_headers['year'])) {
-        $records['phenotypeprop']["$phenotype_name-year"] = [
-          'type_id' => $cvterms['year'],
-          'value' => $row[$meta_headers['year']],
-          '#fk' => ['phenotype' => $phenotype_name],
-        ];
-      }
+    // Both cases will be processed: Normal check and isotop analysis.
+    if (!empty($meta_headers['year'])) {
+      $records['phenotypeprop']["$phenotype_name-year"] = [
+        'type_id' => $cvterms['year'],
+        'value' => $row[$meta_headers['year']],
+        '#fk' => ['phenotype' => $phenotype_name],
+      ];
     }
 
     $records['phenotypeprop']["$phenotype_name-desc"] = [
