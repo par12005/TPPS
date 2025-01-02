@@ -6222,7 +6222,7 @@ function tpps_process_phenotype_data($row, array &$options = []) {
       // $value contains data from phenotype metadata file.
       $value = $meta[strtolower($name)][$property_name] ?? NULL;
       tpps_submitall_prepare_phenotypeprop(
-        $phenotype_name, $value, $property_name, $row, $options
+        $phenotype_name, $property_name, $row, $options, $value
       );
     }
 
@@ -8492,17 +8492,17 @@ function tpps_ssr_process(array &$shared_state, $fid, array &$options, $job, arr
  *
  * @param string $phenotype_name
  *   Full phenotype name. E.g., 'TGDR1020-24-height-23-Arth'.
- * @param mixed $value
- *   Value of the phenotype.
- *   When NULL then value fromn the some other file will be used.
  * @param string $property_name
  *   Property name. E.g., 'year', 'time'.
  * @param array $row
  *   One row with data from file.
  * @param array $options
  *   Required keys are: 'meta', 'records', 'meta_headers', 'cvterms'.
+ * @param mixed $value
+ *   Value of the phenotype.
+ *   When NULL then value from the some other file will be used.
  */
-function tpps_submitall_prepare_phenotypeprop($phenotype_name, $value = NULL, $property_name, array $row, array &$options) {
+function tpps_submitall_prepare_phenotypeprop($phenotype_name, $property_name, array $row, array &$options, $value = NULL) {
   $records = &$options['records'] ?? NULL;
   $meta_headers = $options['meta_headers'] ?? NULL;
 
@@ -8512,12 +8512,20 @@ function tpps_submitall_prepare_phenotypeprop($phenotype_name, $value = NULL, $p
     }
   }
   if (!empty($value)) {
-    $records['phenotypeprop']["$phenotype_name-$property_name"] = [
-      'type_id' => $options['cvterms'][$property_name],
-      'value' => $value,
-      '#fk' => ['phenotype' => $phenotype_name],
-    ];
-    $options['data'][$phenotype_name][$property_name] = $value;
+    if ($type_id = $options['cvterms'][$property_name]) {
+      $records['phenotypeprop']["$phenotype_name-$property_name"] = [
+        'type_id' => $options['cvterms'][$property_name],
+        'value' => $value,
+        '#fk' => ['phenotype' => $phenotype_name],
+      ];
+      $options['data'][$phenotype_name][$property_name] = $value;
+    }
+    else {
+      tpps_log(t("CV Term Id for '@name' wasn't found. Phenotype: @phenotype_name."),
+        ['@name' => $property_name, '@phenotype_name' => $phenotype_name],
+        TRIPAL_WARNING
+      );
+    }
   }
 }
 
