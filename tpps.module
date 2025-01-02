@@ -561,14 +561,17 @@ function tpps_access() {
         // Study has no record in tpps_submission table.
         return FALSE;
       }
-      if ($submission->isTppsc()) {
+
+      // Note: $submission->isTppsc() not always works correct so we allow
+      // admins and curation team to edit any study..
+      if (tpps_is_admin_or_curation()) {
         return TRUE;
       }
       else {
         // TPPS Form.
         if (
-          $submission->status == TPPS_SUBMISSION_STATUS_INCOMPLETE
-          && $submission->isCreator()
+          $submission->isCreator()
+          && $submission->status == TPPS_SUBMISSION_STATUS_INCOMPLETE
         ) {
           return TRUE;
         }
