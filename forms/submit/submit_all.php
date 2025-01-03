@@ -421,17 +421,27 @@ nextflow pull TreeGenes/new-study-pipeline -r main -hub gitlab
 function tpps_job_logger_write($string, array $replacements = [], $severity = TRIPAL_INFO) {
   global $tpps_job_logger;
 
+  $string = tpps_log_get_tag($severity) . $string;
   if (!empty($replacements)) {
     foreach ($replacements as $key_string => $replace_string) {
       $string = str_replace($key_string, $replace_string, $string);
     }
   }
-  $string = tpps_log_get_tag($severity) . $string;
   $file_message = $cli_message = $string;
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // CLI Logging.
 
   if ($severity <= variable_get('tpps_submitall_log_cli_severity_level', 7)) {
+    // Set color of dump-messages.
+    $replacements = [
+      // Magenta.
+      '@debug_color_on' => "\e[35m",
+      '@debug_color_off' => "\e[0m",
+    ];
+    foreach ($replacements as $key_string => $replace_string) {
+      $cli_message = str_replace($key_string, $replace_string, $cli_message);
+    }
+
     if (
       !empty($timestamp_format = variable_get('tpps_submitall_log_cli_time_format'))
       && variable_get('tpps_submitall_log_cli_show_time')
@@ -8410,7 +8420,6 @@ function tpps_log($message, $variables = [], $severity = TRIPAL_INFO) {
   global $tpps_job;
 
   // To dump array/object during debugging/testing.
-  // @TODO Add setting to allow dumps in each log type (file, CLI and Tripal).
   if (
     (!empty($variables) && is_string($variables))
     || (is_array($message) || is_object($message))
@@ -8418,11 +8427,14 @@ function tpps_log($message, $variables = [], $severity = TRIPAL_INFO) {
     $severity = TRIPAL_DEBUG;
     $dump = print_r($message, 1);
     $line = "\n-------------------------------------------------------------\n";
-    // Magenta.
-    $color = "\e[35m";
-    $message = $color . ((is_string($variables ?? NULL))
-      ? "{$line}{$variables}:" : '') . "$line@dump$line" . "\e[0m";
-    $variables = ['@dump' => $dump];
+    $message = "@debug_color_on" . ((is_string($variables ?? NULL))
+      ? "{$line}{$variables}:" : '') . "$line@dump$line" . "@debug_color_off";
+    $variables = [
+      '@dump' => $dump,
+      // Tripal log must not have colors.
+      '@debug_color_on' => '',
+      '@debug_color_off' => '',
+    ];
   }
 
   // CLI and file logging.
@@ -8432,7 +8444,7 @@ function tpps_log($message, $variables = [], $severity = TRIPAL_INFO) {
   if ($severity <= variable_get('tpps_submitall_log_tripal_severity_level', 7)) {
     // Do not show messages with severity level higher then allowed.
     // 2 - critical, 7 - debug.
-    $tripal_message = $message;
+    $tripal_message = tpps_log_get_tag($severity) . $message;
     if (
       $timestamp_format = variable_get('tpps_submitall_log_tripal_time_format')
       && variable_get('tpps_submitall_log_tripal_show_time')
