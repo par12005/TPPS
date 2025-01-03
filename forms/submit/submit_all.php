@@ -1807,7 +1807,7 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
         // Here key is a column ordinal number in file and value is a data type.
         //metadata-columns: {
         //  A: "1", // Phenotype Id
-        //  B: "2",
+        //  B: "2", // Attribute.
         //  C: "3",
         //  D: "4",
         //  E: "5", // Structure
@@ -1828,10 +1828,10 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
           PhenotypeMeta::DATA_TYPE_IS_ENVIRONMENTAL, $column_vals
         );
         $columns = [
-          'name' => $groups['Phenotype Id']['1'],
-          'attr' => $groups['Attribute']['2'],
-          'desc' => $groups['Description']['3'],
-          'unit' => $groups['Unit']['4'],
+          'name' => $groups['Phenotype Id'][PhenotypeMeta::DATA_TYPE_IDENTIFIER],
+          'attr' => $groups['Attribute'][PhenotypeMeta::DATA_TYPE_ATTRIBUTE],
+          'desc' => $groups['Description'][PhenotypeMeta::DATA_TYPE_DESCRIPTION],
+          'unit' => $groups['Unit'][PhenotypeMeta::DATA_TYPE_UNIT],
           'struct' => !empty($struct) ? $struct : NULL,
           'min' => !empty($min) ? $min : NULL,
           'max' => !empty($max) ? $max : NULL,
@@ -1841,8 +1841,8 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
         $meta_options = [
           'no_header' => $phenotype['metadata-no-header'],
           'meta_columns' => $columns,
-          // [VS] $phenotypes_meta seems empty when metadata file used.
-          // But later PhenotypeMeta::processRow() will fill 'meta' element
+          // $phenotypes_meta is empty at the beginning.
+          // Later PhenotypeMeta::processRow() will fill 'meta' element
           // with data from phenotype metadata file. Keys will be phenotype
           // names from file in lowercase.
           'meta' => &$phenotypes_meta,
@@ -2455,6 +2455,7 @@ function tpps_generate_species_codes_array_from_shared_state(array $shared_state
   $species_codes = [];
   $organism_number = $shared_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
   for ($i = 1; $i <= $organism_number; $i++) {
+    $organism_name = tpps_submitall_get_organism_name($i, $shared_state);
     $organism_id = tpps_submitall_get_organism_id($i, $shared_state);
     // Use the organism_id to lookup the 4 letter code.
     $sql = 'SELECT value
@@ -4402,12 +4403,10 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = [])
 
       $genotype_id = tpps_submitall_get_genotype_id($genotype_name);
       // 2.
-      SnpAssociation::process($organism_index, $options['shared_state'],
-        array_merge($options, [
-          'genotype_id' => $genotype_id,
-          'genotype_name' => $genotype_name,
-        ])
+      $options = array_merge($options,
+        ['genotype_id' => $genotype_id, 'genotype_name' => $genotype_name]
       );
+      SnpAssociation::process($organism_index, $options['shared_state'], $options);
 
       // [RISH] 07/06/2023 - REMOVED SO WE CAN USE HYBRID COPY SYSTEM
       // $records['genotype_call']["$stock_id-$genotype_name"] = array(
@@ -5072,12 +5071,10 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             // throw new Exception('DEBUG');
             $genotype_id = tpps_submitall_get_genotype_id($genotype_desc);
             // 3.
-            SnpAssociation::process($organism_index, $form_state,
-              array_merge($options, [
-                'genotype_id' => $genotype_id,
-                'genotype_name' => $genotype_desc,
-              ])
+            $options = array_merge($options,
+              ['genotype_id' => $genotype_id, 'genotype_name' => $genotype_desc]
             );
+            SnpAssociation::process($organism_index, $shared_state, $options);
 
             // $debug_info = "Uniquename: $genotype_desc Type_id:$format_cvterm Value:$format Genotype_id:$genotype_id Variant_id:$variant_id Marker_id:$marker_id\n";
             // $debug_info = "Variant_name: $variant_name, Variant_id: $variant_id\n";
@@ -6349,7 +6346,7 @@ function tpps_process_phenotype_data($row, array &$options = []) {
  *   Additional options set when calling tpps_file_iterator().
  *   Keys are: 'shared_state' and etc.
  */
-function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
+function tpps_process_genotype_spreadsheet($row, array &$options = []) {
   global $tpps_job;
   $job = $tpps_job;
   $type = $options['type'];
@@ -6425,23 +6422,23 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     echo "Header before alterations:" . $headers[$key] . "\n";
 
     $header_length = strlen($headers[$key]);
-    // Cater for Diploids [Rish: 8/3/2023]
-    if($options['ploidy'] == 'Diploid' && substr($headers[$key], $header_length - 2, 2) == "_A") {
+    // Cater for Diploids [Rish: 8/3/2023].
+    if (($options['ploidy'] ?? NULL) == 'Diploid' && substr($headers[$key], $header_length - 2, 2) == "_A") {
       // Remove the _A from the first diploid header
       // and allow the below code to continue to be processed so the SSR can be imported in
       $headers[$key] = substr($headers[$key], 0, $header_length - 2);
       $options['diploid_header'] = $headers[$key];
       $options['diploid_val'] = $val;
-      // Save this header for use in a later iteration when _B gets called
-      // This reason for this is we want _A and _B values recorded
+      // Save this header for use in a later iteration when _B gets called.
+      // This reason for this is we want _A and _B values recorded.
       echo "Diploid first header reset to: " . $headers[$key] . "\n";
-      // This will skip processing iteration by ONE iteration if _A (SSR diploid detected)
+      // This will skip processing iteration by ONE iteration if _A (SSR diploid detected).
       continue;
     }
 
     // [RISH] This is a minor adjustment for diploid done on 8/3/2023
     if (
-      $options['ploidy'] == 'Diploid'
+      ($options['ploidy'] ?? NULL) == 'Diploid'
       && substr($headers[$key], $header_length - 2, 2) == "_B"
     ) {
       $options['diploid_val'] .= ',' . $val;
@@ -6466,7 +6463,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     }
 
     if (
-      $options['ploidy'] == 'Polyploid'
+      ($options['ploidy'] ?? NULL) == 'Polyploid'
       && $options['polyploid_header'] != $header_without_polyploid_index
     ) {
       // Remove the _1 from the first diploid header
@@ -6496,7 +6493,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     }
 
     if (
-      $options['ploidy'] == 'Polyploid'
+      ($options['ploidy'] ?? NULL) == 'Polyploid'
       && $options['polyploid_header'] == $header_without_polyploid_index
     ) {
       $options['polyploid_val'] .= ',' . $val; // append the new value to what was already there
@@ -6576,9 +6573,8 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     // );
 
     // Check if feature exists, if not insert
-    $feature_check_results = chado_query('SELECT count(*) as c1 FROM chado.feature WHERE uniquename = :marker_name',[
-      ':marker_name' => $marker_name
-    ]);
+    $sql = 'SELECT count(*) as c1 FROM chado.feature WHERE uniquename = :marker_name';
+    $feature_check_results = chado_query($sql, [':marker_name' => $marker_name]);
     $feature_check_count = $feature_check_results->fetchObject()->c1;
     if ($feature_check_count <= 0) {
       chado_insert_record('feature', [
@@ -6589,11 +6585,8 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       ]);
     }
     // Lookup the marker_name_id.
-    $results = chado_query("SELECT feature_id FROM chado.feature
-      WHERE uniquename = :uniquename", [
-        ':uniquename' => $marker_name,
-        // ':organism_id' => $organism_id
-    ]);
+    $sql = "SELECT feature_id FROM chado.feature WHERE uniquename = :uniquename";
+    $results = chado_query($sql, [':uniquename' => $marker_name]);
     $marker_name_id = NULL;
     foreach ($results as $row) {
       $marker_name_id = $row->feature_id;
@@ -6725,12 +6718,10 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       // keys added to the returned array. On failure, it returns FALSE.
       $genotype_id = tpps_submitall_get_genotype_id($genotype_name);
       // 4.
-      SnpAssociation::process($organism_index, $options['shared_state'],
-        array_merge($options, [
-          'genotype_id' => $genotype_id,
-          'genotype_name' => $genotype_name,
-        ])
+      $options = array_merge($options,
+        ['genotype_id' => $genotype_id, 'genotype_name' => $genotype_name]
       );
+      SnpAssociation::process($organism_index, $options['shared_state'], $options);
 
       tpps_safe_chado_insert_record('feature_genotype', [
         'feature_id' => $variant_name_id,
@@ -7223,6 +7214,11 @@ function tpps_generate_all_genotype_materialized_views() {
  *
  * Project Id you must get from the state object.
  * This is used for the tpps/details genotypes tab.
+ *
+ * How to use:
+ *   $project_id = 3708;
+ *   module_load_include('php', 'tpps', 'forms/submit/submit_all');
+ *   tpps_generate_genotype_materialized_view($project_id);
  *
  * @param mixed $project_id
  *   The project ID of the study. NOT THE STUDY ACCESSION!
@@ -8577,9 +8573,11 @@ function tpps_submitall_get_genotype_id($genotype_name) {
  *
  * @return int
  *   Returns organism Id or NULL.
+ *
+ * @todo move to 'Submission' class.
  */
 function tpps_submitall_get_organism_id($org_num, array $shared_state) {
-  $organism_name = $shared_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name'];
+  $organism_name = tpps_submitall_get_organism_name($org_num, $shared_state);
   $organism_name_parts = explode(" ", $organism_name, 3);
   tpps_log($organism_name_parts);
   $organism_name_genus = $organism_name_parts[0];
@@ -8604,4 +8602,22 @@ function tpps_submitall_get_organism_id($org_num, array $shared_state) {
     tpps_log("ORGANISM ID ($organism_name): " . $organism_id);
   }
   return $organism_id;
+}
+
+/**
+ * Gets Organism name.
+ *
+ * @param int $organism_index
+ *   Ordinal number of organism at page.
+ * @param array $shared_state
+ *   Submission Shared State array.
+ *
+ * @return int
+ *   Returns organism name or NULL.
+ *
+ * @todo move to 'Submission' class.
+ */
+function tpps_submitall_get_organism_name($organism_index, array $shared_state) {
+  return $shared_state['saved_values'][TPPS_PAGE_1]['organism']
+    [$organism_index]['name'] ?? NULL;
 }

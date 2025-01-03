@@ -145,7 +145,7 @@ function tpps_synonym_save(array $phenotypes_meta, array $id_list) {
   foreach ($phenotypes_meta as $item) {
     // Note: It's possible that synonym not exists when it was automatically
     // detected by unit from Metadata File.
-    if (!empty($item['synonym_id'])) {
+    if (!empty($item['synonym_id']) && !empty($item['name'])) {
       // $item['name'] is Phenotype name in lowser case. For example: 'leaf a'.
       // Phenotype uniquename is using the same name but not lowercased so
       // it couldn't be used.

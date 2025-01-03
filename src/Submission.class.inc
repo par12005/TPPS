@@ -785,8 +785,13 @@ class Submission {
   /**
    * Checks if form type is 'tppsc'.
    *
+   * WARNING: $submission->isTppsc() checks form_id which is not always set.
+   * See: tpps_is_admin_or_curation().
+   *
    * @return bool
    *   Returns TRUE if form Id is 'tppsc_main' and FALSE otherwise.
+   *
+   * @todo Check 'state/saved_values/frontpage/form_type'.
    */
   public function isTppsc() {
     return ($this->getFormId() == 'tppsc_main');
