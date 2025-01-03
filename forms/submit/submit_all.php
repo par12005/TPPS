@@ -1807,7 +1807,7 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
         // Here key is a column ordinal number in file and value is a data type.
         //metadata-columns: {
         //  A: "1", // Phenotype Id
-        //  B: "2",
+        //  B: "2", // Attribute.
         //  C: "3",
         //  D: "4",
         //  E: "5", // Structure
@@ -1828,10 +1828,10 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
           PhenotypeMeta::DATA_TYPE_IS_ENVIRONMENTAL, $column_vals
         );
         $columns = [
-          'name' => $groups['Phenotype Id']['1'],
-          'attr' => $groups['Attribute']['2'],
-          'desc' => $groups['Description']['3'],
-          'unit' => $groups['Unit']['4'],
+          'name' => $groups['Phenotype Id'][PhenotypeMeta::DATA_TYPE_IDENTIFIER],
+          'attr' => $groups['Attribute'][PhenotypeMeta::DATA_TYPE_ATTRIBUTE],
+          'desc' => $groups['Description'][PhenotypeMeta::DATA_TYPE_DESCRIPTION],
+          'unit' => $groups['Unit'][PhenotypeMeta::DATA_TYPE_UNIT],
           'struct' => !empty($struct) ? $struct : NULL,
           'min' => !empty($min) ? $min : NULL,
           'max' => !empty($max) ? $max : NULL,
@@ -1841,8 +1841,8 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
         $meta_options = [
           'no_header' => $phenotype['metadata-no-header'],
           'meta_columns' => $columns,
-          // [VS] $phenotypes_meta seems empty when metadata file used.
-          // But later PhenotypeMeta::processRow() will fill 'meta' element
+          // $phenotypes_meta is empty at the beginning.
+          // Later PhenotypeMeta::processRow() will fill 'meta' element
           // with data from phenotype metadata file. Keys will be phenotype
           // names from file in lowercase.
           'meta' => &$phenotypes_meta,
@@ -7214,6 +7214,11 @@ function tpps_generate_all_genotype_materialized_views() {
  *
  * Project Id you must get from the state object.
  * This is used for the tpps/details genotypes tab.
+ *
+ * How to use:
+ *   $project_id = 3708;
+ *   module_load_include('php', 'tpps', 'forms/submit/submit_all');
+ *   tpps_generate_genotype_materialized_view($project_id);
  *
  * @param mixed $project_id
  *   The project ID of the study. NOT THE STUDY ACCESSION!
