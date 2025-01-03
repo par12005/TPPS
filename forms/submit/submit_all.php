@@ -421,17 +421,27 @@ nextflow pull TreeGenes/new-study-pipeline -r main -hub gitlab
 function tpps_job_logger_write($string, array $replacements = [], $severity = TRIPAL_INFO) {
   global $tpps_job_logger;
 
+  $string = tpps_log_get_tag($severity) . $string;
   if (!empty($replacements)) {
     foreach ($replacements as $key_string => $replace_string) {
       $string = str_replace($key_string, $replace_string, $string);
     }
   }
-  $string = tpps_log_get_tag($severity) . $string;
   $file_message = $cli_message = $string;
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // CLI Logging.
 
   if ($severity <= variable_get('tpps_submitall_log_cli_severity_level', 7)) {
+    // Set color of dump-messages.
+    $replacements = [
+      // Magenta.
+      '@debug_color_on' => "\e[35m",
+      '@debug_color_off' => "\e[0m",
+    ];
+    foreach ($replacements as $key_string => $replace_string) {
+      $cli_message = str_replace($key_string, $replace_string, $cli_message);
+    }
+
     if (
       !empty($timestamp_format = variable_get('tpps_submitall_log_cli_time_format'))
       && variable_get('tpps_submitall_log_cli_show_time')
@@ -1673,8 +1683,26 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
   }
   tpps_submission_add_tag($shared_state['accession'], 'Phenotype');
 
+  // Get CVTerm if for 'year' column in phenotype data file which must exists
+  // even if phenotype data file has not 'year' column.
+  try {
+    $year_cvterm_id = tpps_load_cvterm('year')->cvterm_id;
+  }
+  catch (Exception $e) {
+    // Note: cvterm 54188 (year) doesn't work at dev-server.
+    $year_cvterm_id = variable_get('tpps_submitall_cvterm_phenotype_year', '');
+  }
+  if (empty($year_cvterm_id)) {
+    tpps_log(t("CV Term Id for phenotype's 'Year' column in data file wasn't set."
+      . "Create cvterm or manually set it's value at @url."),
+      ['@url' => url('admin/config/tpps/submit-all', ['absolute' => TRUE])],
+      TRIPAL_ERROR
+    );
+  }
+
   // Get appropriate cvterms.
-  $phenotype_cvterms = array(
+  // @todo Wrap with try-catch to avoid fatal error and create meaningful error message.
+  $phenotype_cvterms = [
     'time' => tpps_load_cvterm('time')->cvterm_id,
     'desc' => tpps_load_cvterm('description')->cvterm_id,
     // @TODO [VS] Not sure this is needed since units are in separate table
@@ -1685,10 +1713,8 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
     // [/VS]
     'environment' => tpps_load_cvterm('environment')->cvterm_id,
     'intensity' => tpps_load_cvterm('intensity')->cvterm_id,
-    // @TODO cvterm 54188 (year) doesn't work at dev-server.
-    // 'year' => tpps_load_cvterm('year')->cvterm_id,
-    'year' => variable_get('tpps_submitall_cvterm_phenotype_year', ''),
-  );
+    'year' => $year_cvterm_id,
+  ];
 
   $records = [
     'phenotype' => [],
@@ -6219,25 +6245,18 @@ function tpps_process_phenotype_data($row, array &$options = []) {
       // $value contains data from phenotype metadata file.
       $value = $meta[strtolower($name)][$property_name] ?? NULL;
       tpps_submitall_prepare_phenotypeprop(
-        $phenotype_name, $value, $property_name, $row, $options
+        $phenotype_name, $property_name, $row, $options, $value
       );
     }
 
-    // @TODO Add year from manual meta. Needs form fields.
-
     // Process 'year' column which is not a phenotype.
-    if ($iso) {
-      // @TODO What to do with isotop analysis?
-    }
-    else {
-      // Normal check.
-      if (!empty($meta_headers['year'])) {
-        $records['phenotypeprop']["$phenotype_name-year"] = [
-          'type_id' => $cvterms['year'],
-          'value' => $row[$meta_headers['year']],
-          '#fk' => ['phenotype' => $phenotype_name],
-        ];
-      }
+    // Both cases will be processed: Normal check and isotop analysis.
+    if (!empty($meta_headers['year'])) {
+      $records['phenotypeprop']["$phenotype_name-year"] = [
+        'type_id' => $cvterms['year'],
+        'value' => $row[$meta_headers['year']],
+        '#fk' => ['phenotype' => $phenotype_name],
+      ];
     }
 
     $records['phenotypeprop']["$phenotype_name-desc"] = [
@@ -8392,7 +8411,6 @@ function tpps_log($message, $variables = [], $severity = TRIPAL_INFO) {
   global $tpps_job;
 
   // To dump array/object during debugging/testing.
-  // @TODO Add setting to allow dumps in each log type (file, CLI and Tripal).
   if (
     (!empty($variables) && is_string($variables))
     || (is_array($message) || is_object($message))
@@ -8400,11 +8418,14 @@ function tpps_log($message, $variables = [], $severity = TRIPAL_INFO) {
     $severity = TRIPAL_DEBUG;
     $dump = print_r($message, 1);
     $line = "\n-------------------------------------------------------------\n";
-    // Magenta.
-    $color = "\e[35m";
-    $message = $color . ((is_string($variables ?? NULL))
-      ? "{$line}{$variables}:" : '') . "$line@dump$line" . "\e[0m";
-    $variables = ['@dump' => $dump];
+    $message = "@debug_color_on" . ((is_string($variables ?? NULL))
+      ? "{$line}{$variables}:" : '') . "$line@dump$line" . "@debug_color_off";
+    $variables = [
+      '@dump' => $dump,
+      // Tripal log must not have colors.
+      '@debug_color_on' => '',
+      '@debug_color_off' => '',
+    ];
   }
 
   // CLI and file logging.
@@ -8414,7 +8435,7 @@ function tpps_log($message, $variables = [], $severity = TRIPAL_INFO) {
   if ($severity <= variable_get('tpps_submitall_log_tripal_severity_level', 7)) {
     // Do not show messages with severity level higher then allowed.
     // 2 - critical, 7 - debug.
-    $tripal_message = $message;
+    $tripal_message = tpps_log_get_tag($severity) . $message;
     if (
       $timestamp_format = variable_get('tpps_submitall_log_tripal_time_format')
       && variable_get('tpps_submitall_log_tripal_show_time')
@@ -8483,17 +8504,17 @@ function tpps_ssr_process(array &$shared_state, $fid, array &$options, $job, arr
  *
  * @param string $phenotype_name
  *   Full phenotype name. E.g., 'TGDR1020-24-height-23-Arth'.
- * @param mixed $value
- *   Value of the phenotype.
- *   When NULL then value fromn the some other file will be used.
  * @param string $property_name
  *   Property name. E.g., 'year', 'time'.
  * @param array $row
  *   One row with data from file.
  * @param array $options
  *   Required keys are: 'meta', 'records', 'meta_headers', 'cvterms'.
+ * @param mixed $value
+ *   Value of the phenotype.
+ *   When NULL then value from the some other file will be used.
  */
-function tpps_submitall_prepare_phenotypeprop($phenotype_name, $value = NULL, $property_name, array $row, array &$options) {
+function tpps_submitall_prepare_phenotypeprop($phenotype_name, $property_name, array $row, array &$options, $value = NULL) {
   $records = &$options['records'] ?? NULL;
   $meta_headers = $options['meta_headers'] ?? NULL;
 
@@ -8503,12 +8524,20 @@ function tpps_submitall_prepare_phenotypeprop($phenotype_name, $value = NULL, $p
     }
   }
   if (!empty($value)) {
-    $records['phenotypeprop']["$phenotype_name-$property_name"] = [
-      'type_id' => $options['cvterms'][$property_name],
-      'value' => $value,
-      '#fk' => ['phenotype' => $phenotype_name],
-    ];
-    $options['data'][$phenotype_name][$property_name] = $value;
+    if ($type_id = $options['cvterms'][$property_name]) {
+      $records['phenotypeprop']["$phenotype_name-$property_name"] = [
+        'type_id' => $options['cvterms'][$property_name],
+        'value' => $value,
+        '#fk' => ['phenotype' => $phenotype_name],
+      ];
+      $options['data'][$phenotype_name][$property_name] = $value;
+    }
+    else {
+      tpps_log(t("CV Term Id for '@name' wasn't found. Phenotype: @phenotype_name."),
+        ['@name' => $property_name, '@phenotype_name' => $phenotype_name],
+        TRIPAL_WARNING
+      );
+    }
   }
 }
 
