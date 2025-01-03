@@ -262,7 +262,7 @@ class PhenotypeMeta {
     $table = 'chado.phenotype_synonyms';
     $synonym_id = db_select($table, 't')
       ->fields('t', ['phenotype_synonyms_id'])
-      ->condition('synonym', $name)
+      ->condition('synonym', strtolower($row[$column_list['attr']]))
       ->execute()->fetchField();
     if (empty($synonym_id)) {
       tpps_log('No synonym found for phenotype "@name".', ['@name' => $name], TRIPAL_WARNING);
@@ -273,11 +273,13 @@ class PhenotypeMeta {
     );
     $meta[$name]['synonym_id'] = $synonym_id;
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Process 'is environmental phenotype' column.
+    // Note: synonym_id is required.
     if (!isset($column_list['env'])) {
       tpps_log("No 'Environmental Phenotype' in Phenotype Metadata.", [], TRIPAL_DEBUG);
       return;
     }
-
     // Store 'Environmental Phenotype' value.
     db_update($table)
       ->fields([

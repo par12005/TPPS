@@ -214,6 +214,7 @@ class SnpAssociation {
     if (empty($groups)) {
       return;
     }
+    $debug_mode = FALSE;
     // Get genotype variant name.
     // Format: $genotype_name = "$marker-$variant_name-$species_code-$val";
     $name = explode('-', $options['genotype_name']);
