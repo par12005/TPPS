@@ -2864,16 +2864,6 @@ function tpps_menu_add_detials_pages(array &$items = []) {
     'type' => MENU_NORMAL_ITEM,
     'file' => 'pages/details/study.inc',
   ];
-  // AJAX-callback for Study Details pae tab.
-  // See /js/tpps.js function detailsTab().
-  $items['tpps/details/%/%'] = [
-    'title' => 'TPPS Details Tab Callback',
-    'page callback' => 'tpps_details_tab',
-    'page arguments' => [2, 3],
-    'access callback' => 'tpps_access',
-    'access arguments' => ['access tpps details'],
-    'type' => MENU_CALLBACK,
-  ];
 }
 
 /**

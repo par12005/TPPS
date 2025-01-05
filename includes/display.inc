@@ -531,6 +531,7 @@ function tpps_entity_link($id, $name, $label) {
   }
   $entity_id = chado_get_record_entity_by_bundle($bundle, $id);
   if (!empty($entity_id)) {
+    // @todo Minor. Use l().
     return "<a href=\"$base_url/bio_data/$entity_id\">$name</a>";
   }
   return $name;
@@ -539,6 +540,8 @@ function tpps_entity_link($id, $name, $label) {
 /**
  * Displays tags with proper styling.
  *
+ * Used at Study Details pages and tabs.
+ *
  * @param array $tags
  *   The array of tags to display.
  *
@@ -546,10 +549,10 @@ function tpps_entity_link($id, $name, $label) {
  *   HTML string displaying all of the tags.
  */
 function tpps_show_tags(array $tags) {
-  $display = "";
   foreach ($tags as $tag) {
-    $color = !empty($tag['color']) ? $tag['color'] : 'white';
-    $display .= "<span class=\"tag\" style=\"background-color:$color\"><span class=\"tag-text\">{$tag['name']}</span></span>";
+    $display = ($display ?? '') . '<span class="tag" style="background-color:'
+      . (empty($tag['color']) ? 'white' : $tag['color'])
+      . '"><span class="tag-text">' . $tag['name'] . '</span></span>';
   }
-  return $display;
+  return $display ?? '';
 }

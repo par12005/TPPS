@@ -540,7 +540,11 @@ var detail_pages = {
   "submission": 0,
 };
 
+/**
+ * Gets Study Details page's tab content.
+ */
 function detailsTab() {
+  featureName = 'detailsTab';
   var clicked_tab = jQuery(this)[0];
   var path = clicked_tab.pathname;
   var detail_type = clicked_tab.hash.substr(1);
@@ -578,12 +582,9 @@ function detailsTab() {
     }
   }, 1000);
 
-  // OLD version from Peter
-  // var request = jQuery.post(path + '/' + detail_type, {
-  //   page: page
-  // });
-
-  // New version from Rish with XHR status
+  // Get tab content.
+// @todo Add caching for ajax requests.
+// See Drupal.settings.tpps.cacheAjaxResponses
   var request = jQuery.ajax({
       xhr: function() {
         var xhr = new window.XMLHttpRequest();
@@ -602,54 +603,67 @@ function detailsTab() {
           try {
             clearInterval(query_timer);
           } catch (err) {}
-          console.log(evt);
+          dog(evt, featureName);
           jQuery('#' + detail_type)[0].innerHTML = "Loading "
             + detail_type + " information... " + Math.ceil(evt.loaded / 100) + ' KB';
           if (evt.lengthComputable) {
               var percentComplete = evt.loaded / evt.total;
               // Do something with download progress
               console.log(percentComplete);
-              //jQuery('#' + detail_type)[0].innerHTML = "Loading " + detail_type + " information... " + Math.ceil(percentComplete * 100) + ' %';
+              //jQuery('#' + detail_type)[0].innerHTML = "Loading "
+              //+ detail_type + " information... "
+              //+ Math.ceil(percentComplete * 100) + ' %';
           }
       }, false);
-
       return xhr;
     },
     type: 'POST',
-    url: path + '/' + detail_type,
+    url: '/ajax/tpps/get_' + detail_type + '_details_tab',
     data: {
-      page: page
+      accession: path.replace('/tpps/details/', ''),
+      page: page,
     }
   });
 
   request.done(function (data) {
-    jQuery('#' + detail_type)[0].innerHTML = data;
-    var details_pagers = jQuery('#' + detail_type + ' > div > ul');
-    if (details_pagers.length > 0) {
-      var pages = jQuery('#' + detail_type + ' > div > ul > li > a');
-      jQuery.each(pages, function() {
-        var page = 0;
-        if (this.search.match(/\?page=(.*)/) !== null) {
-          page = this.search.match(/\?page=(.*)/)[1];
-        }
-        if (detail_type != 'submission') {
-          this.href = '#' + detail_type + ':' + page;
-        }
-        else {
-          var path = window.location.pathname;
-          this.href = this.href + '/' + path.substring(path.lastIndexOf('/') + 1);
-        }
-        jQuery(this).click(detailsTab);
-      });
+    if (typeof (data) == 'undefined' || data.success != true) {
+      jQuery('#' + detail_type)[0].innerHTML = data.errors;
+      dog(data.errors, featureName);
+      // @todo Show error messages at page somehow.
+      return;
+    }
+    else {
+      jQuery('#' + detail_type)[0].innerHTML = data.content;
+      var details_pagers = jQuery('#' + detail_type + ' > div > ul');
+      if (details_pagers.length > 0) {
+        var pages = jQuery('#' + detail_type + ' > div > ul > li > a');
+        jQuery.each(pages, function() {
+          var page = 0;
+          if (this.search.match(/\?page=(.*)/) !== null) {
+            page = this.search.match(/\?page=(.*)/)[1];
+          }
+          if (detail_type != 'submission') {
+            this.href = '#' + detail_type + ':' + page;
+          }
+          else {
+            var path = window.location.pathname;
+            this.href = this.href + '/' + path.substring(path.lastIndexOf('/') + 1);
+          }
+          jQuery(this).click(detailsTab);
+        });
+      }
     }
   });
 }
 
+/**
+ * initDetailPages.
+ */
 function initDetailPages() {
-  var details_pages = jQuery('#tpps-details-table > div > ul > li > a');
+  let details_pages = jQuery('#tpps-details-table > div > ul > li > a');
   if (details_pages.length > 0) {
     jQuery.each(details_pages, function() {
-      var page = 0;
+      let page = 0;
         if (this.search.match(/\?page=(.*)/) !== null) {
           page = this.search.match(/\?page=(.*)/)[1];
         }
@@ -661,7 +675,7 @@ function initDetailPages() {
 
 function detailSearch() {
   var path = '/tpps/details/top';
-  var page = 0;
+  let page = 0;
   if (this.hash != null && this.hash.match(/#.*:(.*)/) != null) {
     page = this.hash.match(/#.*:(.*)/)[1];
   }
