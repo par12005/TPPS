@@ -185,3 +185,11 @@ function tpps_ajax_remember_fieldset_collapsed_state(array $data) {
   $_SESSION[TPPS_RFCS_KEY][$data['form_id']][$data['name']] = (int) $data['value'];
   return TRUE;
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// Study Details Callbacks.
+// @todo check access.
+    //'access callback' => 'tpps_access',
+    //'access arguments' => ['access tpps details'],
+    //
+
