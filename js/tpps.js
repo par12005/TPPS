@@ -507,6 +507,193 @@
     }
   };
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Study details page.
+  var detail_pages = {
+    "trees": 0,
+    "phenotype": 0,
+    "genotype": 0,
+    "environment": 0,
+    "submission": 0,
+  };
+
+  /**
+   * Gets Study Details page's tab content.
+   */
+  function detailsTab() {
+    let featureName = 'detailsTab';
+    var clicked_tab = jQuery(this)[0];
+    var path = clicked_tab.pathname;
+    var detail_type = clicked_tab.hash.substr(1);
+    var page = detail_pages[detail_type];
+
+    if (clicked_tab.hash.match(/#(.*):(.*)/) !== null) {
+      detail_type = clicked_tab.hash.match(/#(.*):(.*)/)[1];
+      page = clicked_tab.hash.match(/#(.*):(.*)/)[2];
+      detail_pages[detail_type] = page;
+    }
+    else {
+      if (jQuery('#' + detail_type)[0].innerHTML !== "") {
+        // If we aren't loading a new page and we already have data for this tab,
+        // then we don't need to change any of the HTML.
+        return;
+      }
+    }
+    jQuery('#' + detail_type)[0].innerHTML = Drupal.t('Querying database for '
+      + '@detail_type information...', {'@detail_type': detail_type})
+      + '<div id="query_timer"></div>';
+
+    // create a timer
+    var query_timer_current = 0;
+    var query_timer = setInterval(function() {
+      query_timer_current = query_timer_current + 1;
+      if(query_timer_current > 5) {
+        jQuery('#query_timer')
+          .html(Drupal.t('Querying time: @time seconds.',
+            {'@time': query_timer_current})
+            + '<br /><strong>' + Drupal.t('Thank you for your patience, '
+            + 'first time pulls can take up to a minute to '
+            + 'complete depending on the size of our dataset but gets faster '
+            + 'after the first page load.') + '</strong>'
+          );
+      }
+    }, 1000);
+
+    // Get tab content.
+  // @todo Add caching for ajax requests.
+  // See Drupal.settings.tpps.cacheAjaxResponses
+    var request = jQuery.ajax({
+        xhr: function() {
+          var xhr = new window.XMLHttpRequest();
+
+          // Upload progress
+          xhr.upload.addEventListener("progress", function(evt){
+              if (evt.lengthComputable) {
+                  var percentComplete = evt.loaded / evt.total;
+                  //Do something with upload progress
+                  console.log(percentComplete);
+              }
+        }, false);
+
+        // Download progress
+        xhr.addEventListener("progress", function(evt){
+            try {
+              clearInterval(query_timer);
+            } catch (err) {}
+            dog(evt, featureName);
+            jQuery('#' + detail_type)[0].innerHTML = "Loading "
+              + detail_type + " information... " + Math.ceil(evt.loaded / 100) + ' KB';
+            if (evt.lengthComputable) {
+                var percentComplete = evt.loaded / evt.total;
+                // Do something with download progress
+                console.log(percentComplete);
+                //jQuery('#' + detail_type)[0].innerHTML = "Loading "
+                //+ detail_type + " information... "
+                //+ Math.ceil(percentComplete * 100) + ' %';
+            }
+        }, false);
+        return xhr;
+      },
+      type: 'POST',
+      url: '/ajax/tpps/get_' + detail_type + '_details_tab',
+      data: {
+        accession: path.replace('/tpps/details/', ''),
+        page: page,
+      }
+    });
+
+    request.done(function (data) {
+      if (typeof (data) == 'undefined' || data.success != true) {
+        jQuery('#' + detail_type)[0].innerHTML = data.errors;
+        dog(data.errors, featureName);
+        // @todo Show error messages at page somehow.
+        return;
+      }
+      else {
+        jQuery('#' + detail_type)[0].innerHTML = data.content;
+        var details_pagers = jQuery('#' + detail_type + ' > div > ul');
+        if (details_pagers.length > 0) {
+          var pages = jQuery('#' + detail_type + ' > div > ul > li > a');
+          jQuery.each(pages, function() {
+            var page = 0;
+            if (this.search.match(/\?page=(.*)/) !== null) {
+              page = this.search.match(/\?page=(.*)/)[1];
+            }
+            if (detail_type != 'submission') {
+              this.href = '#' + detail_type + ':' + page;
+            }
+            else {
+              var path = window.location.pathname;
+              this.href = this.href + '/' + path.substring(path.lastIndexOf('/') + 1);
+            }
+            jQuery(this).click(detailsTab);
+          });
+        }
+      }
+    });
+  }
+
+  /**
+   * initDetailPages.
+   */
+  function initDetailPages() {
+    let details_pages = jQuery('#tpps-details-table > div > ul > li > a');
+    if (details_pages.length > 0) {
+      jQuery.each(details_pages, function() {
+        let page = 0;
+          if (this.search.match(/\?page=(.*)/) !== null) {
+            page = this.search.match(/\?page=(.*)/)[1];
+          }
+        this.href = '#top:' + page;
+        jQuery(this).click(detailSearch);
+      });
+    }
+  }
+
+  function detailSearch() {
+    var path = '/tpps/details/top';
+    let page = 0;
+    if (this.hash != null && this.hash.match(/#.*:(.*)/) != null) {
+      page = this.hash.match(/#.*:(.*)/)[1];
+    }
+
+    jQuery('#tpps-details-table')[0].innerHTML = 'Loading...';
+    var request = jQuery.post(path, {
+      type: jQuery('select').filter(function() { return this.id.match(/edit-details-type/); })[0].value,
+      value: jQuery('input').filter(function() { return this.id.match(/edit-details-value/); })[0].value,
+      op: jQuery('select').filter(function() { return this.id.match(/edit-details-op/); })[0].value,
+      page: page
+    });
+
+    request.done(function (data) {
+      jQuery('#tpps-details-table')[0].innerHTML = data;
+      initDetailPages();
+    });
+  }
+
+  function detailTagSearch() {
+    var path = '/tpps/details/top';
+    var page = 0;
+    if (this.hash != null && this.hash.match(/#.*:(.*)/) != null) {
+      page = this.hash.match(/#.*:(.*)/)[1];
+    }
+
+    jQuery('#tpps-details-table')[0].innerHTML = 'Loading...';
+    jQuery('select').filter(function() { return this.id.match(/edit-details-type/); })[0].value = 'tags';
+    jQuery('input').filter(function() { return this.id.match(/edit-details-value/); })[0].value = jQuery(this).text();
+    jQuery('select').filter(function() { return this.id.match(/edit-details-op/); })[0].value = '=';
+    var request = jQuery.post(path, {
+      type: 'tags',
+      value: jQuery(this).text(),
+      op: '=',
+      page: page
+    });
+
+    request.done(function (data) {
+      jQuery('#tpps-details-table')[0].innerHTML = data;
+      initDetailPages();
+    });
+  }
 }(jQuery));
 
 
@@ -532,191 +719,6 @@ function previewFile(element, num_rows = 3) {
   });
 }
 
-var detail_pages = {
-  "trees": 0,
-  "phenotype": 0,
-  "genotype": 0,
-  "environment": 0,
-  "submission": 0,
-};
-
-/**
- * Gets Study Details page's tab content.
- */
-function detailsTab() {
-  featureName = 'detailsTab';
-  var clicked_tab = jQuery(this)[0];
-  var path = clicked_tab.pathname;
-  var detail_type = clicked_tab.hash.substr(1);
-  var page = detail_pages[detail_type];
-
-  if (clicked_tab.hash.match(/#(.*):(.*)/) !== null) {
-    detail_type = clicked_tab.hash.match(/#(.*):(.*)/)[1];
-    page = clicked_tab.hash.match(/#(.*):(.*)/)[2];
-    detail_pages[detail_type] = page;
-  }
-  else {
-    if (jQuery('#' + detail_type)[0].innerHTML !== "") {
-      // If we aren't loading a new page and we already have data for this tab,
-      // then we don't need to change any of the HTML.
-      return;
-    }
-  }
-  jQuery('#' + detail_type)[0].innerHTML = Drupal.t('Querying database for '
-    + '@detail_type information...', {'@detail_type': detail_type})
-    + '<div id="query_timer"></div>';
-
-  // create a timer
-  var query_timer_current = 0;
-  var query_timer = setInterval(function() {
-    query_timer_current = query_timer_current + 1;
-    if(query_timer_current > 5) {
-      jQuery('#query_timer')
-        .html(Drupal.t('Querying time: @time seconds.',
-          {'@time': query_timer_current})
-          + '<br /><strong>' + Drupal.t('Thank you for your patience, '
-          + 'first time pulls can take up to a minute to '
-          + 'complete depending on the size of our dataset but gets faster '
-          + 'after the first page load.') + '</strong>'
-        );
-    }
-  }, 1000);
-
-  // Get tab content.
-// @todo Add caching for ajax requests.
-// See Drupal.settings.tpps.cacheAjaxResponses
-  var request = jQuery.ajax({
-      xhr: function() {
-        var xhr = new window.XMLHttpRequest();
-
-        // Upload progress
-        xhr.upload.addEventListener("progress", function(evt){
-            if (evt.lengthComputable) {
-                var percentComplete = evt.loaded / evt.total;
-                //Do something with upload progress
-                console.log(percentComplete);
-            }
-      }, false);
-
-      // Download progress
-      xhr.addEventListener("progress", function(evt){
-          try {
-            clearInterval(query_timer);
-          } catch (err) {}
-          dog(evt, featureName);
-          jQuery('#' + detail_type)[0].innerHTML = "Loading "
-            + detail_type + " information... " + Math.ceil(evt.loaded / 100) + ' KB';
-          if (evt.lengthComputable) {
-              var percentComplete = evt.loaded / evt.total;
-              // Do something with download progress
-              console.log(percentComplete);
-              //jQuery('#' + detail_type)[0].innerHTML = "Loading "
-              //+ detail_type + " information... "
-              //+ Math.ceil(percentComplete * 100) + ' %';
-          }
-      }, false);
-      return xhr;
-    },
-    type: 'POST',
-    url: '/ajax/tpps/get_' + detail_type + '_details_tab',
-    data: {
-      accession: path.replace('/tpps/details/', ''),
-      page: page,
-    }
-  });
-
-  request.done(function (data) {
-    if (typeof (data) == 'undefined' || data.success != true) {
-      jQuery('#' + detail_type)[0].innerHTML = data.errors;
-      dog(data.errors, featureName);
-      // @todo Show error messages at page somehow.
-      return;
-    }
-    else {
-      jQuery('#' + detail_type)[0].innerHTML = data.content;
-      var details_pagers = jQuery('#' + detail_type + ' > div > ul');
-      if (details_pagers.length > 0) {
-        var pages = jQuery('#' + detail_type + ' > div > ul > li > a');
-        jQuery.each(pages, function() {
-          var page = 0;
-          if (this.search.match(/\?page=(.*)/) !== null) {
-            page = this.search.match(/\?page=(.*)/)[1];
-          }
-          if (detail_type != 'submission') {
-            this.href = '#' + detail_type + ':' + page;
-          }
-          else {
-            var path = window.location.pathname;
-            this.href = this.href + '/' + path.substring(path.lastIndexOf('/') + 1);
-          }
-          jQuery(this).click(detailsTab);
-        });
-      }
-    }
-  });
-}
-
-/**
- * initDetailPages.
- */
-function initDetailPages() {
-  let details_pages = jQuery('#tpps-details-table > div > ul > li > a');
-  if (details_pages.length > 0) {
-    jQuery.each(details_pages, function() {
-      let page = 0;
-        if (this.search.match(/\?page=(.*)/) !== null) {
-          page = this.search.match(/\?page=(.*)/)[1];
-        }
-      this.href = '#top:' + page;
-      jQuery(this).click(detailSearch);
-    });
-  }
-}
-
-function detailSearch() {
-  var path = '/tpps/details/top';
-  let page = 0;
-  if (this.hash != null && this.hash.match(/#.*:(.*)/) != null) {
-    page = this.hash.match(/#.*:(.*)/)[1];
-  }
-
-  jQuery('#tpps-details-table')[0].innerHTML = 'Loading...';
-  var request = jQuery.post(path, {
-    type: jQuery('select').filter(function() { return this.id.match(/edit-details-type/); })[0].value,
-    value: jQuery('input').filter(function() { return this.id.match(/edit-details-value/); })[0].value,
-    op: jQuery('select').filter(function() { return this.id.match(/edit-details-op/); })[0].value,
-    page: page
-  });
-
-  request.done(function (data) {
-    jQuery('#tpps-details-table')[0].innerHTML = data;
-    initDetailPages();
-  });
-}
-
-function detailTagSearch() {
-  var path = '/tpps/details/top';
-  var page = 0;
-  if (this.hash != null && this.hash.match(/#.*:(.*)/) != null) {
-    page = this.hash.match(/#.*:(.*)/)[1];
-  }
-
-  jQuery('#tpps-details-table')[0].innerHTML = 'Loading...';
-  jQuery('select').filter(function() { return this.id.match(/edit-details-type/); })[0].value = 'tags';
-  jQuery('input').filter(function() { return this.id.match(/edit-details-value/); })[0].value = jQuery(this).text();
-  jQuery('select').filter(function() { return this.id.match(/edit-details-op/); })[0].value = '=';
-  var request = jQuery.post(path, {
-    type: 'tags',
-    value: jQuery(this).text(),
-    op: '=',
-    page: page
-  });
-
-  request.done(function (data) {
-    jQuery('#tpps-details-table')[0].innerHTML = data;
-    initDetailPages();
-  });
-}
 
 /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 /* [VS] */

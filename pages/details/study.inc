@@ -139,7 +139,7 @@ function tpps_details_main($accession = NULL) {
       $items[] = l(t('Edit publication information'), 'tpps/' . $accession . '/edit-publication');
     }
     $output .= theme('item_list', ['items' => $items]);
-    $output .= tpps_details_tab_list($submission->state);
+    $output .= tpps_details_tab_list($submission);
     return $output;
   }
 
@@ -166,14 +166,16 @@ function tpps_details_main($accession = NULL) {
  * Note that all links in content will be replaced with current path and
  * fragment so update /js/tpps.js if you don't want that. Search 'submission'.
  *
- * @param array $state
- *   The form state of the submission.
+ * @param array $submission
+ *   Study Submission object.
  *
  * @return string
  *   HTML for the details tabs.
  */
-function tpps_details_tab_list(array &$state) {
+function tpps_details_tab_list($submission) {
+  $state = &$submission->state;
   $page4 = $state['saved_values'][TPPS_PAGE_4] ?? NULL;
+
 
   $tab_items = [];
   $content = [];
@@ -186,7 +188,13 @@ function tpps_details_tab_list(array &$state) {
     if (!empty($page4["organism-$i"]['phenotype'])) {
       $tabs_list['phenotype'] = 'Phenotypes / Environments';
     }
-    if (!empty($page4["organism-$i"]['genotype'])) {
+    if (!empty($genotype = $page4["organism-$i"]['genotype'] ?? NULL)
+      && (
+        ($genotype['does_study_include_snp_data'] ?? NULL) == "yes"
+        || ($genotype['does_study_include_ssr_cpssr_data'] ?? NULL) == "yes"
+        || ($genotype['does_study_include_other_genotypic_data'] ?? NULL) == "yes"
+      )
+    ) {
       $tabs_list['genotype'] = 'Genotypes';
     }
     if (

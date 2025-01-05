@@ -5,27 +5,11 @@
  * Study Details page AJAX-callbacks.
  *
  * See /tpps.ajax.inc.
- *
- *
- * study
- * "trees": 0,
-    "phenotype": 0,
-    "genotype": 0,
-
-  "environment": 0,
-  "submission": 0,
  */
-  // tpps_details_species() - 'Species' tab.
-  // tpps_details_study() - 'Study Details' tab.
-  // tpps_details_trees() - 'Plants' tab.
-  // tpps_details_phenotype().
-  // tpps_details_genotype().
-  // tpps_details_mass_spectrometry().
 
 // @todo check access.
-    //'access callback' => 'tpps_access',
-    //'access arguments' => ['access tpps details'],
-    //
+//'access callback' => 'tpps_access',
+//'access arguments' => ['access tpps details'],
 
 /**
  * Gets content of the 'Species' tab of Study Details page.
@@ -222,12 +206,8 @@ function tpps_ajax_get_trees_details_tab(array $data) {
 
   $path = current_path();
   $args = explode('/', $path);
-  $params = drupal_get_query_parameters($_POST);
-  $page = 0;
-  if (!empty($params['page'])) {
-    $page = $params['page'];
-  }
-  $rows = array();
+  $page = $data['page'] ?? 0;
+  $rows = [];
   $per_page = 20;
 
   // @TODO Be sure to use shared_state instead of form_state.
@@ -305,15 +285,13 @@ function tpps_ajax_get_phenotype_details_tab(array $data) {
   $submission = new Submission($data['accession']);
   $state = $submission->sharedState;
 
-  $params = drupal_get_query_parameters($_POST);
-  $page = 0;
-  if (!empty($params['page'])) {
-    $page = $params['page'];
-  }
-  $rows = array();
+  $page = $data['page'] ?? 0;
+
+  $rows = [];
   $per_page = 20;
   $start = $page * $per_page;
 
+  // Get total amount.
   $query = db_select('chado.phenotype', 'p');
   $query->join('chado.stock_phenotype', 'sp', 'sp.phenotype_id = p.phenotype_id');
   $query->join('chado.project_stock', 'ps', 'ps.stock_id = sp.stock_id');
@@ -323,6 +301,7 @@ function tpps_ajax_get_phenotype_details_tab(array $data) {
   $query = $query->execute();
   $total = $query->fetchObject()->count;
 
+  // Init pager.
   $_GET['page'] = $page;
   pager_default_initialize($total, $per_page);
 
@@ -330,14 +309,14 @@ function tpps_ajax_get_phenotype_details_tab(array $data) {
   $query->join('chado.stock_phenotype', 'sp', 'sp.phenotype_id = p.phenotype_id');
   $query->join('chado.project_stock', 'ps', 'ps.stock_id = sp.stock_id');
   $query->join('chado.stock', 's', 's.stock_id = sp.stock_id');
-  $query->fields('p', array(
+  $query->fields('p', [
     'phenotype_id',
     'name',
     'attr_id',
     'observable_id',
     'value',
-  ));
-  $query->fields('s', array('uniquename', 'stock_id'));
+  ]);
+  $query->fields('s', ['uniquename', 'stock_id']);
   $query->condition('ps.project_id', $state['ids']['project_id']);
   $query->range($start, $per_page);
   $query = $query->execute();
@@ -414,11 +393,7 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
   $state = $submission->sharedState;
 
   $project_id = $state['ids']['project_id'];
-  $params = drupal_get_query_parameters($_POST);
-  $page = 0;
-  if (!empty($params['page'])) {
-    $page = $params['page'];
-  }
+  $page = $data['page'] ?? 0;
   $rows = array();
   $per_page = 20;
   $start = $page * $per_page;
@@ -560,12 +535,8 @@ function tpps_ajax_get_mass_spectrometry_details_tab(array $data) {
   $submission = new Submission($data['accession']);
   $state = $submission->sharedState;
 
-  $params = drupal_get_query_parameters($_POST);
-  $page = 0;
-  if (!empty($params['page'])) {
-    $page = $params['page'];
-  }
-  $rows = array();
+  $page = $data['page'] ?? 0;
+  $rows = [];
   $per_page = 20;
   $start = $page * $per_page;
 

@@ -59,9 +59,9 @@ function tpps_details_list() {
  */
 function tpps_details_search(array $form, array $form_state) {
   $params = drupal_get_query_parameters();
-  $form['details_type'] = array(
+  $form['details_type'] = [
     '#type' => 'select',
-    '#options' => array(
+    '#options' => [
       'title' => t('Title'),
       'species' => t('Species'),
       'accession' => t('Accession'),
@@ -72,92 +72,48 @@ function tpps_details_search(array $form, array $form_state) {
       'genotype_name' => t('Genotype Name'),
       'genotype_marker' => t('Genotype Marker Type'),
       'tags' => t('Tags'),
-    ),
-    '#ajax' => array(
+    ],
+    '#ajax' => [
       'wrapper' => 'tpps-details-form',
       'callback' => 'tpps_details_form_callback',
-    ),
+    ],
     '#prefix' => '<div id="tpps-details-form">',
     '#default_value' => $params['type'] ?? NULL,
-  );
-
-  $ops = array(
+  ];
+  $ops = [
     '~*' => '~*',
     'LIKE' => 'LIKE',
     '=' => '=',
-  );
-
-  $form['details_op'] = array(
+  ];
+  $form['details_op'] = [
     '#type' => 'select',
     '#options' => $ops,
     '#default_value' => $params['op'] ?? NULL,
-  );
-
-  $form['details_value'] = array(
+  ];
+  $form['details_value'] = [
     '#type' => 'textfield',
     '#suffix' => '</div>',
     '#autocomplete_path' => 'tpps/autocomplete/project_title',
     '#default_value' => $params['value'] ?? NULL,
-  );
-
+  ];
   if (empty($form_state['values']['details_type'])) {
     $form_state['values']['details_type'] = $params['type'] ?? NULL;
   }
-
   if (!empty($form_state['values']['details_type'])) {
-    switch ($form_state['values']['details_type']) {
-      case 'title':
-        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/project_title';
-        break;
-
-      case 'species':
-        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/species';
-        break;
-
-      case 'accession':
-        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/project_accession';
-        break;
-
-      case 'author':
-        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/author';
-        break;
-
-      case 'phenotype_name':
-        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/phenotype';
-        break;
-
-      case 'phenotype_ontology':
-        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/phenotype_ontology';
-        break;
-
-      case 'genotype_name':
-        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/genotype';
-        break;
-
-      case 'genotype_marker':
-        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/genotype_marker';
-        break;
-
-      default:
-        $form['details_value']['#autocomplete_path'] = NULL;
-        break;
-    }
+    $form['details_value']['#autocomplete_path'] =
+      tpps_details_get_autocomplete_path($form_state['values']['details_type']);
   }
-
-  $form['details_search'] = array(
+  $form['details_search'] = [
     '#type' => 'button',
     '#button_type' => 'button',
     '#value' => t('Search'),
-  );
-
-  $form['reset_button'] = array(
+  ];
+  $form['reset_button'] = [
     '#markup' => '<button class="btn btn-primary form-button" type="reset"/>Reset</button>',
-  );
-
-  $form['#attributes'] = array(
+  ];
+  $form['#attributes'] = [
     'style' => 'text-align:center',
-  );
-
+  ];
   return $form;
 }
 
@@ -178,4 +134,27 @@ function tpps_details_tags_sort() {
   return '<label for="tpps-tags-filter">' . t('Sort by tags:')
     . '</label><div id="tpps-tags-filter">' . (tpps_show_tags($tags) ?? '')
     . '</div>';
+}
+
+/**
+ * Gets autocomplete path for given details type.
+ *
+ * @param string $type
+ *   Details type.
+ *
+ * @return string
+ *   Returns relative autocomplete path.
+ */
+function tpps_details_get_autocomplete_path($type) {
+  $list = [
+    'title' => 'tpps/autocomplete/project_title',
+    'species' => 'tpps/autocomplete/species',
+    'accession' => 'tpps/autocomplete/project_accession',
+    'author' => 'tpps/autocomplete/author',
+    'phenotype_name' => 'tpps/autocomplete/phenotype',
+    'phenotype_ontology' => 'tpps/autocomplete/phenotype_ontology',
+    'genotype_name' => 'tpps/autocomplete/genotype',
+    'genotype_marker' => 'tpps/autocomplete/genotype_marker'
+  ];
+  return $list[$type] ?? NULL;
 }
