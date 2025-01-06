@@ -176,33 +176,23 @@ function tpps_details_tab_list($submission) {
   $state = &$submission->state;
   $page4 = $state['saved_values'][TPPS_PAGE_4] ?? NULL;
 
-
   $tab_items = [];
   $content = [];
+  // Required tabs.
   $tabs_list = [
     'species' => 'Species',
     'study' => 'Study Details',
     'trees' => 'Plants',
   ];
-  for ($i = 1; $i <= $state['stats']['species_count']; $i++) {
-    if (!empty($page4["organism-$i"]['phenotype'])) {
-      $tabs_list['phenotype'] = 'Phenotypes / Environments';
-    }
-    if (!empty($genotype = $page4["organism-$i"]['genotype'] ?? NULL)
-      && (
-        ($genotype['does_study_include_snp_data'] ?? NULL) == "yes"
-        || ($genotype['does_study_include_ssr_cpssr_data'] ?? NULL) == "yes"
-        || ($genotype['does_study_include_other_genotypic_data'] ?? NULL) == "yes"
-      )
-    ) {
-      $tabs_list['genotype'] = 'Genotypes';
-    }
-    if (
-      !empty($page4["organism-$i"]['phenotype'])
-      && !empty($page4["organism-$i"]['phenotype']['iso-check'])
-    ) {
-      $tabs_list['mass_spectrometry'] = 'Mass Spectrometry';
-    }
+  // Conditional tabs.
+  if ($submission->hasPhenotypeData()) {
+    $tabs_list['phenotype'] = 'Phenotypes / Environments';
+  }
+  if ($submission->hasGenotypeData()) {
+    $tabs_list['genotype'] = 'Genotypes';
+  }
+  if ($submission->hasMassSpectrometryData()) {
+    $tabs_list['mass_spectrometry'] = 'Mass Spectrometry';
   }
   // Build HTML.
   // Only first element must have class 'active'.
