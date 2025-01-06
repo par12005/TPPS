@@ -1643,27 +1643,24 @@ class Submission {
             if (!empty($geno['files']['snps-assay'])) { // Shared State. flatten().
               $data["$org_name SNP Genotype Assay File"] = $geno['files']['snps-assay'];
             }
-
+            if (!empty($geno['files']['snps-association'])) {
+              $data["$org_name SNP Association File"] = $geno['files']['snps-association'];
+            }
             if (!empty($geno['files']['assay-design'])) {
               $data["$org_name Assay Design File"] = $geno['files']['assay-design'];
             }
-
             if (!empty($geno['files']['ssrs'])) {
               $data["$org_name SSRs Genotype File"] = $geno['files']['ssrs'];
             }
-
             if (!empty($geno['files']['ssrs_extra'])) {
               $data["$org_name cpSSRs Additional Genotype File"] = $geno['files']['ssrs_extra'];
             }
-
             //if (!empty($geno['files']['indels'])) {
             //  $data["$org_name Indel Genotype File"] = $geno['files']['indels'];
             //}
-
             if (!empty($geno['files']['other'])) {
               $data["$org_name Other Marker Genotype File"] = $geno['files']['other'];
             }
-
             // Note: Shared State.
             if (!empty($geno['files']['local_vcf'])) {
               $data["$org_name VCF File (cluster)"] = $geno['files']['local_vcf'];
