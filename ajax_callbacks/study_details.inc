@@ -9,12 +9,9 @@
  * To debug
  * $accession = 'TGDR1033';
  * module_load_include('inc', 'tpps', 'ajax_callbacks/study_details');
- * dpm(tpps_ajax_get_species_details_tab(['accession' => $accession, 'page' =>0]));
+ * $content = tpps_ajax_get_species_details_tab(['accession' => $accession, 'page' =>0]);
+ * dpm($content);
  */
-
-// @todo check access.
-//'access callback' => 'tpps_access',
-//'access arguments' => ['access tpps details'],
 
 /**
  * Gets content of the 'Species' tab of Study Details page.
@@ -30,6 +27,9 @@
  *   The HTML table of species associated with the submission.
  */
 function tpps_ajax_get_species_details_tab(array $data) {
+  if (!tpps_access('access tpps details')) {
+    return ['errors' => [t('Access denied')]];
+  }
   $submission = new Submission($data['accession']);
 
   $query = db_select('chado.organism', 'o');
@@ -117,6 +117,9 @@ function tpps_ajax_get_species_details_tab(array $data) {
  *   The HTML table of study information of the submission.
  */
 function tpps_ajax_get_study_details_tab(array $data) {
+  if (!tpps_access('access tpps details')) {
+    return ['errors' => [t('Access denied')]];
+  }
   $submission = new Submission($data['accession']);
   $state = $submission->sharedState;
 
@@ -206,6 +209,9 @@ function tpps_ajax_get_study_details_tab(array $data) {
  *   The HTML table of plants associated with the submission.
  */
 function tpps_ajax_get_trees_details_tab(array $data) {
+  if (!tpps_access('access tpps details')) {
+    return ['errors' => [t('Access denied')]];
+  }
   $submission = new Submission($data['accession']);
   $state = $submission->sharedState;
 
@@ -286,6 +292,9 @@ function tpps_ajax_get_trees_details_tab(array $data) {
  *   The HTML table of plants and phenotypes associated with the submission.
  */
 function tpps_ajax_get_phenotype_details_tab(array $data) {
+  if (!tpps_access('access tpps details')) {
+    return ['errors' => [t('Access denied')]];
+  }
   $submission = new Submission($data['accession']);
   $state = $submission->sharedState;
 
@@ -353,6 +362,9 @@ function tpps_ajax_get_phenotype_details_tab(array $data) {
  *   The HTML table of plants and genotypes associated with the submission.
  */
 function tpps_ajax_get_genotype_details_tab(array $data) {
+  if (!tpps_access('access tpps details')) {
+    return ['errors' => [t('Access denied')]];
+  }
   $submission = new Submission($data['accession']);
   $state = $submission->sharedState;
 
@@ -499,6 +511,9 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
  *   The HTML table of plants and genotypes associated with the submission.
  */
 function tpps_ajax_get_mass_spectrometry_details_tab(array $data) {
+  if (!tpps_access('access tpps details')) {
+    return ['errors' => [t('Access denied')]];
+  }
   $submission = new Submission($data['accession']);
   $state = $submission->sharedState;
 
