@@ -7414,7 +7414,7 @@ function tpps_process_environment_layers($row, array &$options = array()) {
       if ($type == 'attr_id') {
         $records['phenotype'][$phenotype_name]['attr_id'] = $env_cvterm;
       }
-      if ($type != 'attr_id') {
+      else {
         $records['phenotype_cvterm'][$phenotype_name] = array(
           'cvterm_id' => $env_cvterm,
           '#fk' => array(
