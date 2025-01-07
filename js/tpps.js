@@ -1,4 +1,4 @@
-(function ($) {
+(function ($, Drupal) {
 
   // Submit form on 'Enter' pressing in any field (except 'Upload' buttons).
   // When user presses 'Enter/Return' on any text field then 'Next' or
@@ -31,6 +31,7 @@
   Drupal.behaviors.tppsMain = {
     attach: function (context) {
 
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // VCF PreValidation feature.
       var vcfPreValidateButton = '.vcf-pre-validate-button';
       // Bootstrap tooltip functionality.
@@ -151,8 +152,8 @@
       var preview_buttons = $('input.preview_button');
       $.each(preview_buttons, function() {
         $(this).click(function(e) {
-          previewFile(this, 3);
           e.preventDefault();
+          previewFile(this, 3);
         });
       });
 
@@ -509,6 +510,7 @@
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Study details page.
+  // @TODO Minor. Replace jQuery with '$'.
   var detail_pages = {
     "trees": 0,
     "phenotype": 0,
@@ -694,35 +696,50 @@
       initDetailPages();
     });
   }
-}(jQuery));
 
+  /**
+   * Get's file content for preview.
+   *
+   * @param object $element
+   *   DOM element of clicked button which has File Id in DOM element id.
+   * @param int num_rows
+   *   Number of rows to be shown. 0 means all rows.
+   */
+  function previewFile(element, num_rows = 3) {
+    $(element).prop('disabled', true);
+    let fid;
+    if (element.id.match(/fid_(.*)/) === null) {
+      return;
+    }
+    fid = element.id.match(/fid_(.*)/)[1];
+    let $previewElement = jQuery('.preview_' + fid);
+    if ($previewElement.length !== 0) {
+      //$previewElement.remove();
+      $previewElement.fadeOut(500, function() {
+        $previewElement.remove();
+      });
+    }
 
-function previewFile(element, num_rows = 3) {
-  var fid;
-  if (element.id.match(/fid_(.*)/) === null) {
-    return;
-  }
-  fid = element.id.match(/fid_(.*)/)[1];
-  let $previewElement = jQuery('.preview_' + fid);
-  if ($previewElement.length !== 0) {
-    //$previewElement.remove();
-    $previewElement.fadeOut(500, function() {
-      $previewElement.remove();
+    // Show status of the loading message.
+    $(element).before('<div class="file-preview-status-message">'
+      + Drupal.t('Loading...') + '</div>');
+
+    // Note: there is no need to cache AJAX-request results to allow refresh
+    // file's preview.
+    var request = jQuery.post('/tpps-preview-file', {
+      fid: fid,
+      rows: num_rows
+    });
+    request.done(function (data) {
+      $(element).before(data).prop('disabled', false)
+        // Remove status of the loading message.
+        .parent().find('.file-preview-status-message').remove();
     });
   }
-  var request = jQuery.post('/tpps-preview-file', {
-    fid: fid,
-    rows: num_rows
-  });
-  request.done(function (data) {
-    jQuery('#fid_' + fid).before(data);
-  });
-}
 
 
-/* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
-/* [VS] */
-(function ($, Drupal) {
+
+  /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
   // Create namespaces.
   Drupal.tpps = Drupal.tpps || {};
   // @TODO Minor. Rename 'doi' to 'publication_doi'.
