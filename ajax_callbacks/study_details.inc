@@ -5,6 +5,11 @@
  * Study Details page AJAX-callbacks.
  *
  * See /tpps.ajax.inc.
+ *
+ * To debug
+ * $accession = 'TGDR1033';
+ * module_load_include('inc', 'tpps', 'ajax_callbacks/study_details');
+ * dpm(tpps_ajax_get_species_details_tab(['accession' => $accession, 'page' =>0]));
  */
 
 // @todo check access.
@@ -231,11 +236,11 @@ function tpps_ajax_get_trees_details_tab(array $data) {
 
     $tree_id = tpps_entity_link($info['stock_id'], $name, 'Stock');
 
-    $row = array(
+    $row = [
       strtoupper($args[2]) . '-' . strip_tags($tree_id),
       tpps_entity_link($info['stock_id'], $name, 'Stock'),
       tpps_entity_link($id, $species_name, 'Organism'),
-    );
+    ];
     $row[] = $info['lat'];
     $row[] = $info['lng'];
     $rows[] = $row;
@@ -251,7 +256,8 @@ function tpps_ajax_get_trees_details_tab(array $data) {
     $header[] = t('Longitude');
   //}
 
-  $vars = [
+  $pager = theme('pager', ['quantity', count($shared_state['tree_info'])]);
+  $table = theme('table', [
     'header' => $header,
     'rows' => $rows,
     'attributes' => ['class' => ['view'], 'id' => 'tpps_table_display'],
@@ -259,9 +265,7 @@ function tpps_ajax_get_trees_details_tab(array $data) {
     'colgroups' => NULL,
     'sticky' => FALSE,
     'empty' => '',
-  ];
-  $pager = theme('pager', ['quantity', count($shared_state['tree_info'])]);
-  $table = theme('table', $vars);
+  ]);
   return [
     'success' => TRUE,
     'content' => $pager . $table,
@@ -319,7 +323,6 @@ function tpps_ajax_get_phenotype_details_tab(array $data) {
   $query->fields('s', ['uniquename', 'stock_id']);
   $query->condition('ps.project_id', $state['ids']['project_id']);
   $query->range($start, $per_page);
-  $query = $query->execute();
 
   // $query = db_select('chado.new_pheno_view_update', 'p');
   // $query->addField('p', 'phenotype_id', 'phenotype_id');
@@ -333,46 +336,7 @@ function tpps_ajax_get_phenotype_details_tab(array $data) {
   // $query->range($start, $per_page);
   // $query = $query->execute();
 
-  while (($result = $query->fetchObject())) {
-    // preg_match('/^TGDR...-(.*)$/', $result->uniquename, $matches);
-    preg_match('/^TGDR.{1,4}-(.*)$/', $result->uniquename, $matches);
-    $tree = $matches[1];
-    $obs = chado_get_cvterm(array(
-      'cvterm_id' => $result->observable_id,
-    ))->name ?? "";
-    $attr = chado_get_cvterm(array(
-      'cvterm_id' => $result->attr_id,
-    ))->name ?? "";
-
-    $rows[] = array(
-      tpps_entity_link($result->stock_id, $tree, 'Stock'),
-      tpps_entity_link($result->phenotype_id, $result->name, 'Phenotype'),
-      $attr,
-      $obs,
-      $result->value,
-    );
-  }
-
-  $table = theme('table', [
-    'header' => [
-      t('Plant'),
-      t('Name'),
-      t('Attribute'),
-      t('Entity'),
-      t('Value'),
-    ],
-    'rows' => $rows,
-    'attributes' => ['class' => ['view'], 'id' => 'tpps_table_display'],
-    'caption' => '',
-    'colgroups' => NULL,
-    'sticky' => FALSE,
-    'empty' => '',
-  ]);
-  $pager = theme('pager', ['quantity', $total]);
-  return [
-    'success' => TRUE,
-    'content' => $pager . $table,
-  ];
+  return _tpps_details_tab_build_table($query, $total);
 }
 
 /**
@@ -481,20 +445,23 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
     " order by index_id asc
     limit " . $per_page . ";",[]);
 
+  $cvterm_list = [];
   while (($result = $query->fetchObject())) {
     // preg_match('/^TGDR...-(.*)$/', $result->s_uniquename, $matches);
     preg_match('/^TGDR.{1,4}-(.*)$/', $result->s_uniquename, $matches);
     $tree = $matches[1];
-    $type = chado_get_cvterm(array(
-      'cvterm_id' => $result->type_id,
-    ))->name ?? "";
-    $rows[] = array(
+    if (empty($cvterm_list[$result->name])) {
+      $cvterm_list[$result->name] = [
+        'type' => chado_get_cvterm(['cvterm_id' => $result->type_id])->name ?? '',
+      ];
+    }
+    $rows[] = [
       tpps_entity_link($result->stock_id, $tree, 'Stock'),
       // tpps_entity_link($result->genotype_id, $result->uniquename, 'Genotype'),
       $result->name,
       $result->description,
-      $type,
-    );
+      $cvterm_list[$result->name]['type'],
+    ];
   }
 
   $table = theme('table', [
@@ -567,60 +534,87 @@ function tpps_ajax_get_mass_spectrometry_details_tab(array $data) {
   $query->join('chado.stock_phenotype', 'sp', 'sp.phenotype_id = p.phenotype_id');
   $query->join('chado.project_stock', 'ps', 'ps.stock_id = sp.stock_id');
   $query->join('chado.stock', 's', 's.stock_id = sp.stock_id');
-  $query->fields('p', array(
+  $query->fields('p', [
     'phenotype_id',
     'name',
     'attr_id',
     'observable_id',
     'value',
-  ));
+  ]);
   $query->fields('s', array('uniquename', 'stock_id'));
   $query->condition('p.attr_id', tpps_load_cvterm('intensity')->cvterm_id);
   $query->condition('ps.project_id', $state['ids']['project_id']);
   $query->range($start, $per_page);
+
+  return _tpps_details_tab_build_table($query, $total);
+}
+
+/**
+ * Builds table for 'phenotype' and 'mass spectrometry' tabs.
+ *
+ * Helper table to avoid code duplication.
+ *
+ * @param object $query
+ *   DB Query object.
+ * @param mixed $total
+ *   Total amount of records for pager.
+ *
+ * @return array
+ *   Returns rendered table with pager.
+ */
+function _tpps_details_tab_build_table($query, $total) {
   $query = $query->execute();
 
+  // Note: Below code is the same as mass spectrometry has.
+  $cvterm_list = [];
   while (($result = $query->fetchObject())) {
-    preg_match('/^TGDR...-(.*)$/', $result->uniquename, $matches);
+    $name = $result->name;
+    preg_match('/^TGDR.{1,4}-(.*)$/', $result->uniquename, $matches);
     $tree = $matches[1];
-    $obs = chado_get_cvterm(array(
-      'cvterm_id' => $result->observable_id,
-    ))->name ?? "";
-    $attr = chado_get_cvterm(array(
-      'cvterm_id' => $result->attr_id,
-    ))->name ?? "";
 
-    $rows[] = array(
+    if (empty($cvterm_list[$name])) {
+      $attr = chado_get_cvterm(['cvterm_id' => $result->attr_id])->name ?? '';
+      $synonym_id = db_select('chado.phenotype_synonyms', 't')
+        ->fields('t', ['phenotype_synonyms_id'])
+        ->condition('synonym', $attr)
+        ->range(0, 1)->execute()->fetchField();
+      $cvterm_list[$name] = [
+        'obs' => chado_get_cvterm(['cvterm_id' => $result->observable_id])->name ?? '',
+        'attr' => $attr,
+        'synonym_id' => $synonym_id,
+      ];
+    }
+
+    $rows[] = [
       tpps_entity_link($result->stock_id, $tree, 'Stock'),
-      tpps_entity_link($result->phenotype_id, $result->name, 'Phenotype'),
-      $attr,
-      $obs,
+      tpps_entity_link($result->phenotype_id, $name, 'Phenotype'),
+      $cvterm_list[$name]['attr'],
+      $cvterm_list[$name]['obs'],
+      $cvterm_list[$name]['synonym_id'],
       $result->value,
-    );
+    ];
   }
 
-  $vars = array(
-    'header' => array(
-      'Plant',
-      'Name',
-      'Attribute',
-      'Entity',
-      'Value',
-    ),
+  $table = theme('table', [
+    'header' => [
+      t('Plant'),
+      t('Name'),
+      t('Attribute'),
+      t('Entity'),
+      t('Synonym Id'),
+      t('Value'),
+    ],
     'rows' => $rows,
-    'attributes' => array(
-      'class' => array('view'),
-      'id' => 'tpps_table_display',
-    ),
+    'attributes' => ['class' => ['view'], 'id' => 'tpps_table_display'],
     'caption' => '',
     'colgroups' => NULL,
     'sticky' => FALSE,
     'empty' => '',
-  );
-  $table = theme('table', $vars);
-  $pager = theme('pager', array('quantity', $total));
+  ]);
+  $pager = theme('pager', ['quantity', $total]);
   return [
     'success' => TRUE,
     'content' => $pager . $table,
   ];
+
 }
