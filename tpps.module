@@ -479,6 +479,7 @@ function tpps_menu() {
     // Use POST to send data and GET to just get data.
     'page callback' => 'tpps_ajax_callback',
     'page arguments' => [2],
+    'delivery callback' => 'drupal_json_output',
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
     'file' => 'tpps.ajax.inc',

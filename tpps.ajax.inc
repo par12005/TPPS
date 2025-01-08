@@ -32,8 +32,8 @@ module_load_include('inc', 'tpps', 'ajax_callbacks/study_details');
  *   List of functions for search purpose:
  *   - tpps_ncbi_get_taxon_id().
  *
- * @return string
- *   Returns callback-function result in JSON format.
+ * @return array
+ *   Returns data ready to be sent to browser.
  */
 function tpps_ajax_callback($callback = '') {
   $function = 'tpps_ajax_' . check_plain($callback);
@@ -61,6 +61,5 @@ function tpps_ajax_callback($callback = '') {
   }
   // If we never succed we fail.
   $response['success'] = $response['success'] ?? FALSE;
-  return drupal_json_output($response);
+  return $response;
 }
-

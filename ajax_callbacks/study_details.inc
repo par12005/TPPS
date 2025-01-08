@@ -9,7 +9,7 @@
  * To debug
  * $accession = 'TGDR1033';
  * module_load_include('inc', 'tpps', 'ajax_callbacks/study_details');
- * $content = tpps_ajax_get_species_details_tab(['accession' => $accession, 'page' =>0]);
+ * $content = tpps_ajax_get_phenotype_details_tab(['accession' => $accession, 'page' => 0]);
  * dpm($content);
  */
 
