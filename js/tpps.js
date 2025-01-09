@@ -564,6 +564,7 @@
     // Get tab content.
     // @todo Minor. Add caching for ajax requests.
     // See Drupal.settings.tpps.cacheAjaxResponses
+    let path_parts = path.match(/[^\/]+/g);
     var request = jQuery.ajax({
         xhr: function() {
           var xhr = new window.XMLHttpRequest();
@@ -599,7 +600,7 @@
       type: 'POST',
       url: '/ajax/tpps/get_' + detail_type + '_details_tab',
       data: {
-        accession: path.replace('/tpps/details/', ''),
+        accession: path_parts[2],
         page: page,
       }
     });
