@@ -131,7 +131,7 @@ function tpps_ajax_get_study_details_tab(array $data) {
     $species[] = tpps_entity_link($id, $species_name, 'Organism');
   }
   $files = [];
-  $study_file_ids = tpps_details_get_study_file_ids($state);
+  $study_file_ids = tpps_details_get_study_file_ids($submission->sharedState);
   $params = ['attributes' => ['target' => '_blank']];
   foreach ($study_file_ids as $fid) {
     if ($file = tpps_file_load($fid)) {
@@ -213,16 +213,13 @@ function tpps_ajax_get_trees_details_tab(array $data) {
     return ['errors' => [t('Access denied')]];
   }
   $submission = new Submission($data['accession']);
-  $state = $submission->sharedState;
-
   $path = current_path();
   $args = explode('/', $path);
   $page = $data['page'] ?? 0;
   $rows = [];
   $per_page = 20;
 
-  // @TODO Be sure to use shared_state instead of form_state.
-  if (empty($shared_state['tree_info'])) {
+  if (empty($submission->sharedState['tree_info'])) {
     return [
       'errors' => [
         t('The plant information for this study has not been properly updated. '
@@ -232,13 +229,14 @@ function tpps_ajax_get_trees_details_tab(array $data) {
   }
 
   $_GET['page'] = $page;
-  pager_default_initialize(count($shared_state['tree_info']), $per_page);
-  $chunks = array_chunk($shared_state['tree_info'], $per_page, TRUE);
+  pager_default_initialize(count($submission->sharedState['tree_info']), $per_page);
+  $chunks = array_chunk($submission->sharedState['tree_info'], $per_page, TRUE);
 
   foreach ($chunks[$page] as $name => $info) {
     $id = $info['organism_id'];
     $form_number = array_search($id, $share_state['ids']['organism_ids']);
-    $species_name = $shared_state['saved_values'][TPPS_PAGE_1]['organism'][$form_number]['name'];
+    $species_name = $submission->sharedState['saved_values'][TPPS_PAGE_1]
+      ['organism'][$form_number]['name'];
 
     $tree_id = tpps_entity_link($info['stock_id'], $name, 'Stock');
 
@@ -251,18 +249,16 @@ function tpps_ajax_get_trees_details_tab(array $data) {
     $row[] = $info['lng'];
     $rows[] = $row;
   }
-
   $header = [
     t('TreeGenes Identifier'),
     t('Identifier'),
     t('Species'),
+    t('Latitude'),
+    t('Longitude'),
   ];
-  //if (!$skip) {
-    $header[] = t('Latitude');
-    $header[] = t('Longitude');
-  //}
-
-  $pager = theme('pager', ['quantity', count($shared_state['tree_info'])]);
+  $pager = theme('pager',
+    ['quantity', count($submission->sharedState['tree_info'])]
+  );
   $table = theme('table', [
     'header' => $header,
     'rows' => $rows,
@@ -296,8 +292,6 @@ function tpps_ajax_get_phenotype_details_tab(array $data) {
     return ['errors' => [t('Access denied')]];
   }
   $submission = new Submission($data['accession']);
-  $state = $submission->sharedState;
-
   $page = $data['page'] ?? 0;
 
   $rows = [];
@@ -310,7 +304,7 @@ function tpps_ajax_get_phenotype_details_tab(array $data) {
   $query->join('chado.project_stock', 'ps', 'ps.stock_id = sp.stock_id');
   $query->join('chado.stock', 's', 's.stock_id = sp.stock_id');
   $query->addExpression('count(p.phenotype_id)', 'count');
-  $query->condition('ps.project_id', $state['ids']['project_id']);
+  $query->condition('ps.project_id', $submission->getProjectId());
   $query = $query->execute();
   $total = $query->fetchObject()->count;
 
@@ -340,7 +334,7 @@ function tpps_ajax_get_phenotype_details_tab(array $data) {
     'value',
   ]);
   $query->fields('s', ['uniquename', 'stock_id']);
-  $query->condition('ps.project_id', $state['ids']['project_id']);
+  $query->condition('ps.project_id', $submission->getProjectId());
   $query->range($start, $per_page);
 
   // $query = db_select('chado.new_pheno_view_update', 'p');
@@ -351,7 +345,7 @@ function tpps_ajax_get_phenotype_details_tab(array $data) {
   // $query->addField('p', 'value', 'value');
   // $query->addField('p', 'tree_acc', 'uniquename');
   // $query->addField('p', 'stock_id', 'stock_id');
-  // $query->condition('p.project_id', $state['ids']['project_id']);
+  // $query->condition('ps.project_id', $submission->getProjectId());
   // $query->range($start, $per_page);
   // $query = $query->execute();
 
@@ -376,9 +370,8 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
     return ['errors' => [t('Access denied')]];
   }
   $submission = new Submission($data['accession']);
-  $state = $submission->sharedState;
 
-  $project_id = $state['ids']['project_id'];
+  $project_id = $submission->getProjectId();
   $page = $data['page'] ?? 0;
   $rows = array();
   $per_page = 20;
@@ -388,7 +381,7 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
   // $total_check = false;
 
   // // Check cache to see if a total is available
-  // $total_array = variable_get('tpps_tab_genotype_' + $state['ids']['project_id'] + '_total');
+  // $total_array = variable_get('tpps_tab_genotype_' + $project_id + '_total');
   // if($total_array == NULL) {
   //   $total_check = true;
   // }
@@ -415,7 +408,7 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
   //   $query->join('chado.stock_genotype', 'sg', 'sg.genotype_id = g.genotype_id');
   //   $query->join('chado.project_stock', 'ps', 'ps.stock_id = sg.stock_id');
   //   $query->addExpression('count(g.genotype_id)', 'count');
-  //   $query->condition('ps.project_id', $state['ids']['project_id']);
+  //   $query->condition('ps.project_id', $project_id;
   //   $query = $query->execute();
   //   $total = $query->fetchObject()->count;
 
@@ -423,20 +416,19 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
   //     'expire_time' => time() + variable_get('tpps_tab_genotype_total_cache_time', 7*(24*60*60)),
   //     'total' => $total
   //   );
-  //   variable_set('tpps_tab_genotype_' + $state['ids']['project_id'] + '_total', $total_array);
+  //   variable_set('tpps_tab_genotype_' + $project_id + '_total', $total_array);
   // }
 
   // VERSION 2 - RISH - better but far from perfect - can get as slow a 1 minute per query
   // $query_results = chado_query('SELECT COUNT(*) as c1 FROM chado.genotypes_' . $project_id);
 
   // @NEW -RISH using Emily's redesign that uses index_id. Fast response in ms.
-  $query_results = chado_query('select max(index_id) as c1 FROM chado.genotypes_' . $project_id,[]);
+  $query_results = chado_query('select max(index_id) as c1 FROM chado.genotypes_' . $project_id, []);
 
   $total = 0;
   foreach ($query_results as $row) {
     $total = $row->c1;
   }
-
 
   $_GET['page'] = $page;
   pager_default_initialize($total, $per_page);
@@ -454,7 +446,7 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
   //   'type_id',
   // ));
   // $query->fields('s', array('uniquename', 'stock_id'));
-  // $query->condition('ps.project_id', $state['ids']['project_id']);
+  // $query->condition('ps.project_id', $project_id);
   // $query->range($start, $per_page);
   // $query = $query->execute();
 
@@ -525,7 +517,6 @@ function tpps_ajax_get_mass_spectrometry_details_tab(array $data) {
     return ['errors' => [t('Access denied')]];
   }
   $submission = new Submission($data['accession']);
-  $state = $submission->sharedState;
 
   $page = $data['page'] ?? 0;
   $rows = [];
@@ -537,7 +528,7 @@ function tpps_ajax_get_mass_spectrometry_details_tab(array $data) {
   // $query->join('chado.project_stock', 'ps', 'ps.stock_id = sp.stock_id');
   // $query->join('chado.stock', 's', 's.stock_id = sp.stock_id');
   // $query->addExpression('count(p.phenotype_id)', 'count');
-  // $query->condition('ps.project_id', $state['ids']['project_id']);
+  // $query->condition('ps.project_id', $submission->getProjectId());
   // $query = $query->execute();
   // $total = $query->fetchObject()->count;
 
@@ -548,7 +539,7 @@ function tpps_ajax_get_mass_spectrometry_details_tab(array $data) {
   $query->join('chado.stock', 's', 's.stock_id = sp.stock_id');
   $query->addExpression('count(p.phenotype_id)', 'count');
   $query->condition('p.attr_id', tpps_load_cvterm('intensity')->cvterm_id);
-  $query->condition('ps.project_id', $state['ids']['project_id']);
+  $query->condition('ps.project_id', $submission->getProjectId());
   $query = $query->execute();
   $total = $query->fetchObject()->count;
 
@@ -568,7 +559,7 @@ function tpps_ajax_get_mass_spectrometry_details_tab(array $data) {
   ]);
   $query->fields('s', array('uniquename', 'stock_id'));
   $query->condition('p.attr_id', tpps_load_cvterm('intensity')->cvterm_id);
-  $query->condition('ps.project_id', $state['ids']['project_id']);
+  $query->condition('ps.project_id', $submission->getProjectId());
   $query->range($start, $per_page);
 
   return _tpps_details_tab_build_table($query, $total, $submission);

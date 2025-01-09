@@ -765,6 +765,20 @@ class Submission {
   }
 
   /**
+   * Gets Project Id.
+   *
+   * @return int
+   *   Returns project id.
+   *   Rerurns NULL if submission doesn't exist.
+   */
+  public function getProjectId() {
+    if ($this->doesNotExist()) {
+      return NULL;
+    }
+    return ($this->sharedState['ids']['project_id'] ?? NULL);
+  }
+
+  /**
    * Gets number of the organisms.
    *
    * Note: Could be used when TPPS Page 1 submitted.
