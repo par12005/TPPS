@@ -153,3 +153,6 @@ form.tppsc-form textarea {
 .tppsc-form .navigation-bar .stage:active {
   color: white;
 }
+.page-tpps-details .tab-content .tab-pane {
+  color: white;
+}

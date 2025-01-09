@@ -1067,7 +1067,7 @@ function tpps_file_headers($fid, $no_header = FALSE) {
  * @return bool
  *   Returns TRUE on success, otherwise FALSE.
  */
-function tpps_file_iterator($fid, $function, array &$options = array()) {
+function tpps_file_iterator($fid, $function, array &$options = []) {
   if (!is_callable($function)) {
     return FALSE;
   }

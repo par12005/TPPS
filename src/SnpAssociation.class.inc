@@ -114,8 +114,9 @@ class SnpAssociation {
       $required_groups['Year'] = ['year' => [self::DATA_TYPE_YEAR]];
     }
 
-    $file_element = $form[$id]['genotype'][$snps_fieldset]['snps-association'];
-    $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
+    // Note: File id stored in $form (!) but not stored in $form_state.
+    $file_id = $form[$id]['genotype'][$snps_fieldset]['snps-association'];
+    $groups = tpps_file_validate_columns($form_state, $required_groups, $file_id);
 
     if (form_get_errors()) {
       return;
@@ -423,6 +424,19 @@ class SnpAssociation {
   }
 
   /**
+   * Gets File Id from Shared State array.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number on page.
+   * @param array $shared_state
+   *   Submission's Shared State.
+   */
+  public static function getFileId($organism_index, array $shared_state) {
+    return $shared_state['saved_values'][TPPS_PAGE_4]["organism-$organism_index"]
+      ['genotype']['files']['snps-association'] ?? NULL;
+  }
+
+  /**
    * Processes a file.
    *
    * @param int $organism_index
@@ -434,9 +448,7 @@ class SnpAssociation {
    *   WARNING: 'genotype_id' is required to store 'year' column on file.
    */
   public static function process($organism_index, array $shared_state, array &$options = []) {
-    $fid = $shared_state['saved_values'][TPPS_PAGE_4]["organism-$organism_index"]
-      ['genotype']['files']['snps-association'] ?? NULL;
-    if (empty($fid)) {
+    if (empty($fid = self::getFileId($organism_index, $shared_state))) {
       return;
     }
 
@@ -462,6 +474,37 @@ class SnpAssociation {
     }
     self::getNamedRow($row, $options);
     self::storeYear($row, $options);
+  }
+
+  /**
+   * Processes a single row of the file.
+   *
+   * Must be used with tpps_file_iterator().
+   *
+   * @param mixed $row
+   *   The item yielded by the TPPS file generator.
+   * @param array $options
+   *   Additional options set when calling tpps_file_iterator().
+   */
+  public static function processRowSynonymYear($row, array &$options = []) {
+    if (empty($organism_index = ($options['organism_index'] ?? NULL))) {
+      return;
+    }
+    if (
+      empty($trait_column = ($options['trait_column'][$organism_index] ?? NULL))
+      || empty($year_column = ($options['year_column'][$organism_index] ?? NULL))
+    ) {
+      return;
+    }
+
+    // 'Associated Trait' column in SNP Association file equals to the
+    // Phenotype Synonym name.
+    if (!empty($year_value = $row[$year_column])) {
+      $trait = $row[$trait_column];
+      // @todo When it will be confirmed that different organisms couldn't use
+      // the same attribute ids and years the $organism_index could be removed.
+      $options['snp_association_year'][$trait][$organism_index] = $year_value;
+    }
   }
 
 }
