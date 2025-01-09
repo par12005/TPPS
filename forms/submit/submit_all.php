@@ -14,6 +14,7 @@ $tpps_job_logger = NULL;
 $tpps_job = NULL;
 module_load_include('inc', 'tpps', 'src/SnpAssociation.class');
 module_load_include('inc', 'tpps', 'src/PhenotypeMeta.class');
+module_load_include('inc', 'tpps', 'src/PhenotypeData.class');
 
 /**
  * Initialized the job logger which handles writing to job logs
@@ -1683,15 +1684,7 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
   }
   tpps_submission_add_tag($shared_state['accession'], 'Phenotype');
 
-  // Get CVTerm if for 'year' column in phenotype data file which must exists
-  // even if phenotype data file has not 'year' column.
-  try {
-    $year_cvterm_id = tpps_load_cvterm('year')->cvterm_id;
-  }
-  catch (Exception $e) {
-    // Note: cvterm 54188 (year) doesn't work at dev-server.
-    $year_cvterm_id = variable_get('tpps_submitall_cvterm_phenotype_year', '');
-  }
+  $year_cvterm_id = PhenotypeData::getYearCvTermId();
   if (empty($year_cvterm_id)) {
     tpps_log(t("CV Term Id for phenotype's 'Year' column in data file wasn't set."
       . "Create cvterm or manually set it's value at @url."),
@@ -6119,6 +6112,7 @@ function tpps_process_phenotype_data($row, array &$options = []) {
     LIMIT 1',
     [':type_id' => $cvterm_id_4lettercode, ':organism_id' => $organism_id]
   );
+  // @todo Use fetchField() instead of loop.
   foreach ($organismprop_results as $organismprop_row) {
     $value_4lettercode = $organismprop_row->value;
   }
@@ -6174,6 +6168,9 @@ function tpps_process_phenotype_data($row, array &$options = []) {
   }
   $phenotype_name_previous = "<none set>";
   // Loop columns.
+  // Note: $id here is not ordinal number of column or column letter but
+  // column key. See constants DATA_TYPE_* in PhenotypeData class.
+  // $name, I guess, is a phenotype name in the Phenotype data file.
   foreach ($values as $id => $name) {
     // $name is a phenotype name. For example: 'flower color'.
     // $id is column name. For example: 'D'.
@@ -6194,8 +6191,8 @@ function tpps_process_phenotype_data($row, array &$options = []) {
         . 'data to not be added to database correctly.');
     }
     $value = $row[$id];
-    $phenotype_name = "$accession-$tree_id-$name-$suffix";
-    $phenotype_name .= '-' . $value_4lettercode;
+    $phenotype_name = PhenotypeData::buildPhenotypeName($accession, $tree_id,
+      $name, $suffix, $value_4lettercode);
     $options['data']["$tree_id-$name-$suffix"] = [
       'uniquename' => "$tree_id-$name-$suffix",
       'name' => $name,

@@ -9,6 +9,9 @@
  *
  * @todo File format is important for build() and validate(). Maybe helper
  * methods must get it as an argument?
+ *
+ * Values of column 'year' will be stored in table 'chado.phenotypeprop'.
+ * See method getYearCvTermId() for more details.
  */
 
 /**
