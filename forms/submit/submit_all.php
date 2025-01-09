@@ -14,6 +14,7 @@ $tpps_job_logger = NULL;
 $tpps_job = NULL;
 module_load_include('inc', 'tpps', 'src/SnpAssociation.class');
 module_load_include('inc', 'tpps', 'src/PhenotypeMeta.class');
+module_load_include('inc', 'tpps', 'src/PhenotypeData.class');
 
 /**
  * Initialized the job logger which handles writing to job logs
@@ -1683,15 +1684,7 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
   }
   tpps_submission_add_tag($shared_state['accession'], 'Phenotype');
 
-  // Get CVTerm if for 'year' column in phenotype data file which must exists
-  // even if phenotype data file has not 'year' column.
-  try {
-    $year_cvterm_id = tpps_load_cvterm('year')->cvterm_id;
-  }
-  catch (Exception $e) {
-    // Note: cvterm 54188 (year) doesn't work at dev-server.
-    $year_cvterm_id = variable_get('tpps_submitall_cvterm_phenotype_year', '');
-  }
+  $year_cvterm_id = PhenotypeData::getYearCvTermId();
   if (empty($year_cvterm_id)) {
     tpps_log(t("CV Term Id for phenotype's 'Year' column in data file wasn't set."
       . "Create cvterm or manually set it's value at @url."),
@@ -2257,9 +2250,8 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
     print_r($options['species_codes']);
     echo "Tree Info:\n";
     print_r($options['tree_info']);
-    tpps_file_iterator($snp_fid, 'tpps_process_genotype_spreadsheet',
-      array_merge($options, ['shared_state' => $shared_state])
-    );
+    $options['shared_state'] = $shared_state;
+    tpps_file_iterator($snp_fid, 'tpps_process_genotype_spreadsheet', $options);
     tpps_log('Done.', [], TRIPAL_INFO);
 
     tpps_log('Inserting SNP genotype_spreadsheet data into database using insert_multi...', [], TRIPAL_INFO);
@@ -2414,9 +2406,8 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
 
     tpps_log('Processing OTHER MARKER genotype_spreadsheet file data...', [], TRIPAL_INFO);
     echo "trace 5\n";
-    tpps_file_iterator($other_fid, 'tpps_process_genotype_spreadsheet',
-      array_merge($options, ['shared_state' => $shared_state])
-    );
+    $options['shared_state'] = $shared_state;
+    tpps_file_iterator($other_fid, 'tpps_process_genotype_spreadsheet', $options);
     tpps_log('Done.', [], TRIPAL_INFO);
 
     tpps_log('Inserting data into database using insert_multi...', [], TRIPAL_INFO);
@@ -3502,12 +3493,11 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
             // get the feature_id.
             $genotype_id = tpps_submitall_get_genotype_id($genotype_desc);
             // 1.
-            SnpAssociation::process($organism_index, $shared_state,
-              array_merge($options, [
-                'genotype_id' => $genotype_id,
-                'genotype_name' => $genotype_desc,
-              ])
-            );
+            $options = array_merge($options, [
+              'genotype_id' => $genotype_id,
+              'genotype_name' => $genotype_desc,
+            ]);
+            SnpAssociation::process($organism_index, $shared_state, $options);
             // $debug_info = "Uniquename: $genotype_desc Type_id:$format_cvterm Value:$format Genotype_id:$genotype_id Variant_id:$variant_id Marker_id:$marker_id\n";
             // $debug_info = "Variant_name: $variant_name, Variant_id: $variant_id\n";
             // echo("DEBUG INFO: $debug_info");
@@ -3975,9 +3965,8 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
       echo "Remove all markers_and_study_accession_per_individual for accession $accession\n";
       chado_query("DELETE FROM chado.markers_and_study_accession_per_individual_tree WHERE accession = '$accession'");
       // Run the file_iterator which will populate flat files and also populate chado.markers_and_study_accession_per_individual_tree
-      tpps_file_iterator($snp_fid, 'tpps_process_genotype_spreadsheet_flat_file',
-        array_merge($options, ['shared_state' => $shared_state])
-      );
+      $options['shared_state'] = $shared_state;
+      tpps_file_iterator($snp_fid, 'tpps_process_genotype_spreadsheet_flat_file', $options);
       tpps_log('Done.', [], TPIPAL_INFO);
 
       tpps_log('Inserting SNP genotype_spreadsheet data into database using insert_multi...', [], TPIPAL_INFO);
@@ -4403,9 +4392,10 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = [])
 
       $genotype_id = tpps_submitall_get_genotype_id($genotype_name);
       // 2.
-      $options = array_merge($options,
-        ['genotype_id' => $genotype_id, 'genotype_name' => $genotype_name]
-      );
+      $options = array_merge($options, [
+        'genotype_id' => $genotype_id,
+        'genotype_name' => $genotype_name,
+      ]);
       SnpAssociation::process($organism_index, $options['shared_state'], $options);
 
       // [RISH] 07/06/2023 - REMOVED SO WE CAN USE HYBRID COPY SYSTEM
@@ -5071,9 +5061,10 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             // throw new Exception('DEBUG');
             $genotype_id = tpps_submitall_get_genotype_id($genotype_desc);
             // 3.
-            $options = array_merge($options,
-              ['genotype_id' => $genotype_id, 'genotype_name' => $genotype_desc]
-            );
+            $options = array_merge($options, [
+              'genotype_id' => $genotype_id,
+              'genotype_name' => $genotype_desc,
+            ]);
             SnpAssociation::process($organism_index, $shared_state, $options);
 
             // $debug_info = "Uniquename: $genotype_desc Type_id:$format_cvterm Value:$format Genotype_id:$genotype_id Variant_id:$variant_id Marker_id:$marker_id\n";
@@ -6121,6 +6112,7 @@ function tpps_process_phenotype_data($row, array &$options = []) {
     LIMIT 1',
     [':type_id' => $cvterm_id_4lettercode, ':organism_id' => $organism_id]
   );
+  // @todo Use fetchField() instead of loop.
   foreach ($organismprop_results as $organismprop_row) {
     $value_4lettercode = $organismprop_row->value;
   }
@@ -6176,6 +6168,9 @@ function tpps_process_phenotype_data($row, array &$options = []) {
   }
   $phenotype_name_previous = "<none set>";
   // Loop columns.
+  // Note: $id here is not ordinal number of column or column letter but
+  // column key. See constants DATA_TYPE_* in PhenotypeData class.
+  // $name, I guess, is a phenotype name in the Phenotype data file.
   foreach ($values as $id => $name) {
     // $name is a phenotype name. For example: 'flower color'.
     // $id is column name. For example: 'D'.
@@ -6196,8 +6191,8 @@ function tpps_process_phenotype_data($row, array &$options = []) {
         . 'data to not be added to database correctly.');
     }
     $value = $row[$id];
-    $phenotype_name = "$accession-$tree_id-$name-$suffix";
-    $phenotype_name .= '-' . $value_4lettercode;
+    $phenotype_name = PhenotypeData::buildPhenotypeName($accession, $tree_id,
+      $name, $suffix, $value_4lettercode);
     $options['data']["$tree_id-$name-$suffix"] = [
       'uniquename' => "$tree_id-$name-$suffix",
       'name' => $name,
@@ -6718,9 +6713,10 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
       // keys added to the returned array. On failure, it returns FALSE.
       $genotype_id = tpps_submitall_get_genotype_id($genotype_name);
       // 4.
-      $options = array_merge($options,
-        ['genotype_id' => $genotype_id, 'genotype_name' => $genotype_name]
-      );
+      $options = array_merge($options, [
+        'genotype_id' => $genotype_id,
+        'genotype_name' => $genotype_name,
+      ]);
       SnpAssociation::process($organism_index, $options['shared_state'], $options);
 
       tpps_safe_chado_insert_record('feature_genotype', [
@@ -7414,7 +7410,7 @@ function tpps_process_environment_layers($row, array &$options = array()) {
       if ($type == 'attr_id') {
         $records['phenotype'][$phenotype_name]['attr_id'] = $env_cvterm;
       }
-      if ($type != 'attr_id') {
+      else {
         $records['phenotype_cvterm'][$phenotype_name] = array(
           'cvterm_id' => $env_cvterm,
           '#fk' => array(
@@ -8485,9 +8481,8 @@ function tpps_ssr_process(array &$shared_state, $fid, array &$options, $job, arr
 
   tpps_log('Processing EXTRA genotype_spreadsheet file data...', [], TRIPAL_INFO);
   echo "trace 3\n";
-  tpps_file_iterator($fid, 'tpps_process_genotype_spreadsheet',
-    array_merge($options, ['shared_state' => $shared_state])
-  );
+  $options['shared_state'] = $shared_state;
+  tpps_file_iterator($fid, 'tpps_process_genotype_spreadsheet', $options);
   tpps_log('Done.', [], TRIPAL_INFO);
 
   tpps_log('Inserting data into database using insert_multi...', [], TRIPAL_INFO);

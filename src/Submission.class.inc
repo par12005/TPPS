@@ -180,7 +180,7 @@ class Submission {
    *   populate $this->accession with value form $state array.
    */
   public function __construct(string $accession = NULL) {
-    // @TODO Minor. Validate $accession.
+    // @todo Minor. Validate $accession.
     if (!empty($accession)) {
       $this->accession = $accession;
       $this->load();
@@ -514,7 +514,7 @@ class Submission {
   /**
    * Get Submission's state.
    *
-   * Will be called any type $submission->state requested.
+   * Will be called any time when $submission->state requested.
    * See Submission:__get().
    *
    * @param bool $reset
@@ -528,6 +528,8 @@ class Submission {
     if ($reset || (empty($this->state) && !empty($this->accession))) {
       $this->load();
     }
+    // @todo Check case when $accession and $state both empty. What should
+    // be returned?
     return $this->state;
   }
 
@@ -778,6 +780,7 @@ class Submission {
     return (
       $this->state['saved_values'][TPPS_PAGE_1]['organism']['number']
       ?? $this->sharedState['saved_values'][TPPS_PAGE_1]['organism']['number']
+      ?? $this->state['stats']['species_count']
       ?? NULL
     );
   }
@@ -1640,27 +1643,24 @@ class Submission {
             if (!empty($geno['files']['snps-assay'])) { // Shared State. flatten().
               $data["$org_name SNP Genotype Assay File"] = $geno['files']['snps-assay'];
             }
-
+            if (!empty($geno['files']['snps-association'])) {
+              $data["$org_name SNP Association File"] = $geno['files']['snps-association'];
+            }
             if (!empty($geno['files']['assay-design'])) {
               $data["$org_name Assay Design File"] = $geno['files']['assay-design'];
             }
-
             if (!empty($geno['files']['ssrs'])) {
               $data["$org_name SSRs Genotype File"] = $geno['files']['ssrs'];
             }
-
             if (!empty($geno['files']['ssrs_extra'])) {
               $data["$org_name cpSSRs Additional Genotype File"] = $geno['files']['ssrs_extra'];
             }
-
             //if (!empty($geno['files']['indels'])) {
             //  $data["$org_name Indel Genotype File"] = $geno['files']['indels'];
             //}
-
             if (!empty($geno['files']['other'])) {
               $data["$org_name Other Marker Genotype File"] = $geno['files']['other'];
             }
-
             // Note: Shared State.
             if (!empty($geno['files']['local_vcf'])) {
               $data["$org_name VCF File (cluster)"] = $geno['files']['local_vcf'];
@@ -1806,6 +1806,70 @@ class Submission {
       }
     }
     return $last_completed_stage;
+  }
+
+  /**
+   * Checks if study has phenote data.
+   *
+   * @return bool
+   *   Returns TRUE when study has phenotype data and FALSE otherwise.
+   */
+  public function hasPhenotypeData() {
+    $this->getState();
+    for ($i = 1; $i <= $this->getOrganismNumber(); $i++) {
+      if (
+        // Phenotype medatadata file could be missing when data added manually
+        // but data file is required.
+        !empty($this->state['saved_values'][TPPS_PAGE_4]
+        ["organism-$i"]['phenotype']['file'])
+      ) {
+        return TRUE;
+      }
+    }
+    return FALSE;
+  }
+
+  /**
+   * Checks if study has Mass Spectrometry data.
+   *
+   * @return bool
+   *   Returns TRUE when study has phenotype data and FALSE otherwise.
+   */
+  public function hasMassSpectrometryData() {
+    $this->getState();
+    for ($i = 1; $i <= $this->getOrganismNumber(); $i++) {
+      if (
+        !empty($this->state['saved_values'][TPPS_PAGE_4]
+        ["organism-$i"]['phenotype']['iso-check'])
+      ) {
+        return TRUE;
+      }
+    }
+    return FALSE;
+  }
+
+  /**
+   * Checks if study has genotype data.
+   *
+   * @return bool
+   *   Returns TRUE when study has phenotype data and FALSE otherwise.
+   */
+  public function hasGenotypeData() {
+    $this->getState();
+    $page4 = $this->state['saved_values'][TPPS_PAGE_4] ?? NULL;
+    for ($i = 1; $i <= $this->getOrganismNumber(); $i++) {
+      if (!empty($page4)
+        && !empty($genotype = $page4["organism-$i"]['genotype'] ?? NULL)
+        && (
+          ($genotype['does_study_include_snp_data'] ?? NULL) == "yes"
+          || ($genotype['does_study_include_ssr_cpssr_data'] ?? NULL) == "yes"
+          || ($genotype['does_study_include_other_genotypic_data'] ?? NULL) == "yes"
+        )
+      ) {
+        return TRUE;
+      }
+    }
+    return FALSE;
   }
 
 }

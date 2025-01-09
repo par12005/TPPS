@@ -9,6 +9,9 @@
  *
  * @todo File format is important for build() and validate(). Maybe helper
  * methods must get it as an argument?
+ *
+ * Values of column 'year' will be stored in table 'chado.phenotypeprop'.
+ * See method getYearCvTermId() for more details.
  */
 
 /**
@@ -578,6 +581,117 @@ class PhenotypeData {
     $selected_columns = $form_state['input']["organism-$org_num"]['phenotype']
       ['file']['columns'];
     return in_array($data_type_id, $selected_columns);
+  }
+
+  /**
+   * Gets CVTerm Id for phenotype's year.
+   *
+   * Note: cvterm 54188 (year) doesn't work at dev-server.
+   * CVTerm must exist even if phenotype data file has no 'year' column.
+   *
+   * @return int
+   *   Returns CV Term Id for 'year' from phenotype data file.
+   */
+  public static function getYearCvTermId() {
+    try {
+      $year_cvterm_id = tpps_load_cvterm('year')->cvterm_id;
+    }
+    catch (Exception $e) {
+      // Note: cvterm 54188 (year) doesn't work at dev-server.
+      $year_cvterm_id = variable_get('tpps_submitall_cvterm_phenotype_year', '');
+    }
+    return $year_cvterm_id ?? NULL;
+  }
+
+  /**
+   * Builds Phenotype Name.
+   *
+   * @param string $accession
+   *   Study accession. E.g., 'TGDR1234'.
+   * @param string $tree_id
+   *   Value of the 'self::DATA_TYPE_PLANT_IDENTIFIER' column from the data file.
+   * @param mixed $name
+   *   Probably phenotype name in the file.
+   * @param string $suffix
+   *   Suffix?
+   * @param string $value_4lettercode
+   *   Organism's 4-letter code.
+   *
+   * @return string
+   *   Returns phenotype name to be used in DB.
+   *   E.g., 'TGDR1034-ZYMJ10-5-Yellowing, 50%-2747-Potr'
+   *   'TGDR1034-ZYMJ10-5-Leaf drop-2747-Potr',
+   *
+   * @todo Decrease number of arguments. Get data inside those function.
+   */
+  public static function buildPhenotypeName($accession, $tree_id, $name, $suffix, $value_4lettercode) {
+    return "$accession-$tree_id-$name-$suffix-$value_4lettercode";
+  }
+
+  /**
+   * Gets list of user specified data types for columns.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number on page.
+   * @param object $submission
+   *   Study Submission object.
+   *
+   * @return mixed
+   *   Returns acciative array where keys are column letters and values are
+   *   data type keys (see current class constants).
+   */
+  public static function getColumns($organism_index, $submission) {
+    $shared_state = $submission->getSharedState();
+    return $shared_state['saved_values'][TPPS_PAGE_4]['organism-'
+      . $organism_index]['phenotype']['file-columns'] ?? NULL;
+  }
+
+  /**
+   * Gets data type format.
+   *
+   * Note: Phenotype data file specific.
+   * See class's consatants: FILE_FORMAT_*.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number on page.
+   * @param object $submission
+   *   Study Submission object.
+   *
+   * @return int
+   *   Returns value of file format choosen by user at Page 4.
+   */
+  public static function getFormat($organism_index, $submission) {
+    $shared_state = $submission->getSharedState();
+    return $shared_state['saved_values'][TPPS_PAGE_4]['organism-'
+      . $organism_index]['phenotype']['format'] ?? self::FILE_FORMAT_1;
+  }
+
+  /**
+   * Checks if given column data type was set by user.
+   *
+   * Note: Required data types won't pass validation but optional
+   * data types like 'Year' requires those check.
+   *
+   * @param string $column_data_type
+   *   Human readable column name. E.g., 'Year'.
+   * @param int $organism_index
+   *   Ordinal organism number on page.
+   * @param object $submission
+   *   Study Submission object.
+   *
+   * @return bool
+   *   Returns TRUE if given data type was set by user and FALSE otherwise.
+   */
+  public static function hasColumn($column_data_type, $organism_index, $submission) {
+    $columns = self::getColumns($organism_index, $submission);
+    // Get format.
+    // @todo Minor. Check if method 'getFormat' exists to make this method
+    // re-usable and move to parent class.
+    $format = self::getFormat($organism_index, $submission);
+    // Get column key.
+    $options = self::getColumnOptions($format);
+    $key = array_search($column_data_type, $options);
+    return in_array($key, $columns);
   }
 
 }

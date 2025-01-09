@@ -479,6 +479,7 @@ function tpps_menu() {
     // Use POST to send data and GET to just get data.
     'page callback' => 'tpps_ajax_callback',
     'page arguments' => [2],
+    'delivery callback' => 'drupal_json_output',
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
     'file' => 'tpps.ajax.inc',
@@ -2841,6 +2842,7 @@ function tpps_menu_add_detials_pages(array &$items = []) {
     'access callback' => 'tpps_access',
     'access arguments' => ['access tpps details'],
     'type' => MENU_NORMAL_ITEM,
+    'file' => 'pages/details/list.inc',
   ];
   // This is actually an AJAX-callback which used to repload pages on page
   // 'tpps/details'. Seems it's a custom pager and could be replaced with
@@ -2852,24 +2854,16 @@ function tpps_menu_add_detials_pages(array &$items = []) {
     'access callback' => 'tpps_access',
     'access arguments' => ['access tpps details'],
     'type' => MENU_CALLBACK,
+    'file' => 'pages/details/top.inc',
   ];
   $items['tpps/details/%'] = [
     'title' => 'TPPS Details',
-    'page callback' => 'tpps_details',
+    'page callback' => 'tpps_details_main',
     'page arguments' => [2],
     'access callback' => 'tpps_access',
     'access arguments' => ['access tpps details'],
     'type' => MENU_NORMAL_ITEM,
-  ];
-  // AJAX-callback for Tabs. See /js/tpps.js function detailsTab().
-  $items['tpps/details/%/%'] = [
-    'title' => 'TPPS Details Tab Callback',
-    'page callback' => 'tpps_details_tab',
-    // 1st is accession, 2nd is tab machine name.
-    'page arguments' => [2, 3],
-    'access callback' => 'tpps_access',
-    'access arguments' => ['access tpps details'],
-    'type' => MENU_CALLBACK,
+    'file' => 'pages/details/study.inc',
   ];
 }
 
