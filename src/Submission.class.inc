@@ -180,7 +180,7 @@ class Submission {
    *   populate $this->accession with value form $state array.
    */
   public function __construct(string $accession = NULL) {
-    // @TODO Minor. Validate $accession.
+    // @todo Minor. Validate $accession.
     if (!empty($accession)) {
       $this->accession = $accession;
       $this->load();

@@ -562,8 +562,8 @@
     }, 1000);
 
     // Get tab content.
-  // @todo Add caching for ajax requests.
-  // See Drupal.settings.tpps.cacheAjaxResponses
+    // @todo Minor. Add caching for ajax requests.
+    // See Drupal.settings.tpps.cacheAjaxResponses
     var request = jQuery.ajax({
         xhr: function() {
           var xhr = new window.XMLHttpRequest();
@@ -608,7 +608,6 @@
       if (typeof (data) == 'undefined' || data.success != true) {
         jQuery('#' + detail_type)[0].innerHTML = data.errors;
         dog(data.errors, featureName);
-        // @todo Show error messages at page somehow.
         return;
       }
       else {

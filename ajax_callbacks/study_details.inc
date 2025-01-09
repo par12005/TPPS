@@ -322,6 +322,16 @@ function tpps_ajax_get_phenotype_details_tab(array $data) {
   $query->join('chado.stock_phenotype', 'sp', 'sp.phenotype_id = p.phenotype_id');
   $query->join('chado.project_stock', 'ps', 'ps.stock_id = sp.stock_id');
   $query->join('chado.stock', 's', 's.stock_id = sp.stock_id');
+
+  // Get optional 'year' column only when 'year exists in data file.
+  // WARNING: 1st phenotype data file could have no 'Year' column but others
+  // do have and this will not work in this case.
+  if (PhenotypeData::hasColumn('Year', 1, $submission)) {
+    $query->join('chado.phenotypeprop', 'pp', 'p.phenotype_id = pp.phenotype_id');
+    $query->condition('pp.type_id', PhenotypeData::getYearCvTermId());
+    $query->addField('pp', 'value', 'year');
+  }
+
   $query->fields('p', [
     'phenotype_id',
     'name',
@@ -345,7 +355,7 @@ function tpps_ajax_get_phenotype_details_tab(array $data) {
   // $query->range($start, $per_page);
   // $query = $query->execute();
 
-  return _tpps_details_tab_build_table($query, $total);
+  return _tpps_details_tab_build_table($query, $total, $submission);
 }
 
 /**
@@ -561,7 +571,7 @@ function tpps_ajax_get_mass_spectrometry_details_tab(array $data) {
   $query->condition('ps.project_id', $state['ids']['project_id']);
   $query->range($start, $per_page);
 
-  return _tpps_details_tab_build_table($query, $total);
+  return _tpps_details_tab_build_table($query, $total, $submission);
 }
 
 /**
@@ -573,15 +583,62 @@ function tpps_ajax_get_mass_spectrometry_details_tab(array $data) {
  *   DB Query object.
  * @param mixed $total
  *   Total amount of records for pager.
+ * @param object $submission
+ *   TPPS Submission Object.
  *
  * @return array
  *   Returns rendered table with pager.
  */
-function _tpps_details_tab_build_table($query, $total) {
+function _tpps_details_tab_build_table($query, $total, $submission) {
   $query = $query->execute();
+  $shared_state = $submission->sharedState;
 
   // Note: Below code is the same as mass spectrometry has.
   $cvterm_list = [];
+  $options = [];
+
+  $organism_number = $submission->getOrganismNumber();
+  if (variable_get('tpps_study_details_use_snp_accosiation_year', FALSE)) {
+    // Get value of the year from SNP Association file using synonym id.
+    // Status: development not completed (works but requires more testing).
+    // @todo Minor. Move to the SnpAssociation class.
+    for ($i = 1; $i <= $organism_number; $i++) {
+      if (empty($fid = SnpAssociation::getFileId($i, $shared_state))) {
+        continue;
+      }
+      // @todo Get index of the year column in file.
+      $snp_association_file_columns = drupal_array_get_nested_value(
+        $submission->sharedState,
+        [
+          'saved_values',
+          TPPS_PAGE_4,
+          'organism-' . $i,
+          'genotype',
+          'files',
+          'snps-association-columns',
+        ]
+      );
+      if (empty($snp_association_file_columns)) {
+        // @TODO Report an error. No columns for existing file.
+        continue;
+      }
+      // Get 'Year' column letter in SNP Association file.
+      $options['year_column'][$i] = array_search(
+        SnpAssociation::DATA_TYPE_YEAR,
+        $snp_association_file_columns
+      );
+      // Get 'Year' column letter in SNP Association file.
+      $options['trait_column'][$i] = array_search(
+        SnpAssociation::DATA_TYPE_ASSOCIATED_TRAIT,
+        $snp_association_file_columns
+      );
+      $options['organism_index'] = $i;
+      // Gets 'year' column of the SNP Association file in:
+      // $options['snp_association_year'][$phenotype_attribute_name][$organism_index].
+      tpps_file_iterator($fid, 'SnpAssociation::processRowSynonymYear', $options);
+    }
+  }
+
   while (($result = $query->fetchObject())) {
     $name = $result->name;
     preg_match('/^TGDR.{1,4}-(.*)$/', $result->uniquename, $matches);
@@ -589,36 +646,75 @@ function _tpps_details_tab_build_table($query, $total) {
 
     if (empty($cvterm_list[$name])) {
       $attr = chado_get_cvterm(['cvterm_id' => $result->attr_id])->name ?? '';
-      $synonym_id = db_select('chado.phenotype_synonyms', 't')
-        ->fields('t', ['phenotype_synonyms_id'])
-        ->condition('synonym', $attr)
-        ->range(0, 1)->execute()->fetchField();
       $cvterm_list[$name] = [
         'obs' => chado_get_cvterm(['cvterm_id' => $result->observable_id])->name ?? '',
         'attr' => $attr,
-        'synonym_id' => $synonym_id,
       ];
     }
 
-    $rows[] = [
-      tpps_entity_link($result->stock_id, $tree, 'Stock'),
-      tpps_entity_link($result->phenotype_id, $name, 'Phenotype'),
-      $cvterm_list[$name]['attr'],
-      $cvterm_list[$name]['obs'],
-      $cvterm_list[$name]['synonym_id'],
-      $result->value,
-    ];
-  }
+    // @TODO Minor. Remove duplicate code.
+    if (!empty($options['snp_association_year'])) {
+      // Show 'Year' column.
+      // Add 'Year' from SNP Association file.
+      $year = implode(', ', array_values($options['snp_association_year']
+        [$cvterm_list[$name]['attr']] ?? []));
+      $rows[] = [
+        tpps_entity_link($result->stock_id, $tree, 'Stock'),
+        tpps_entity_link($result->phenotype_id, $name, 'Phenotype'),
+        $cvterm_list[$name]['attr'],
+        $cvterm_list[$name]['obs'],
+        $year,
+        $result->value,
+      ];
+      $header = [
+        t('Plant'),
+        t('Name'),
+        t('Attribute'),
+        t('Entity'),
+        t('Year'),
+        t('Value'),
+      ];
+    }
+    elseif (!empty($result->year)) {
+      // Show 'Year' column.
+      $header = [
+        t('Plant'),
+        t('Name'),
+        t('Attribute'),
+        t('Entity'),
+        t('Year'),
+        t('Value'),
+      ];
+      $rows[] = [
+        tpps_entity_link($result->stock_id, $tree, 'Stock'),
+        tpps_entity_link($result->phenotype_id, $name, 'Phenotype'),
+        $cvterm_list[$name]['attr'],
+        $cvterm_list[$name]['obs'],
+        $result->year,
+        $result->value,
+      ];
 
+    }
+    else {
+      // No 'Year' column.
+      $rows[] = [
+        tpps_entity_link($result->stock_id, $tree, 'Stock'),
+        tpps_entity_link($result->phenotype_id, $name, 'Phenotype'),
+        $cvterm_list[$name]['attr'],
+        $cvterm_list[$name]['obs'],
+        $result->value,
+      ];
+      $header = [
+        t('Plant'),
+        t('Name'),
+        t('Attribute'),
+        t('Entity'),
+        t('Value'),
+      ];
+    }
+  }
   $table = theme('table', [
-    'header' => [
-      t('Plant'),
-      t('Name'),
-      t('Attribute'),
-      t('Entity'),
-      t('Synonym Id'),
-      t('Value'),
-    ],
+    'header' => $header,
     'rows' => $rows,
     'attributes' => ['class' => ['view'], 'id' => 'tpps_table_display'],
     'caption' => '',

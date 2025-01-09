@@ -476,4 +476,35 @@ class SnpAssociation {
     self::storeYear($row, $options);
   }
 
+  /**
+   * Processes a single row of the file.
+   *
+   * Must be used with tpps_file_iterator().
+   *
+   * @param mixed $row
+   *   The item yielded by the TPPS file generator.
+   * @param array $options
+   *   Additional options set when calling tpps_file_iterator().
+   */
+  public static function processRowSynonymYear($row, array &$options = []) {
+    if (empty($organism_index = ($options['organism_index'] ?? NULL))) {
+      return;
+    }
+    if (
+      empty($trait_column = ($options['trait_column'][$organism_index] ?? NULL))
+      || empty($year_column = ($options['year_column'][$organism_index] ?? NULL))
+    ) {
+      return;
+    }
+
+    // 'Associated Trait' column in SNP Association file equals to the
+    // Phenotype Synonym name.
+    if (!empty($year_value = $row[$year_column])) {
+      $trait = $row[$trait_column];
+      // @todo When it will be confirmed that different organisms couldn't use
+      // the same attribute ids and years the $organism_index could be removed.
+      $options['snp_association_year'][$trait][$organism_index] = $year_value;
+    }
+  }
+
 }
