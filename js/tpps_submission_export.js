@@ -22,7 +22,6 @@
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Copy to clipboard Submission State field value if any.
   async function copySubmissionState() {
-    console.log('sdfsf');
     try {
       const hasPermissions = await permissionsCheck();
       if (hasPermissions && document.hasFocus()) {
@@ -40,8 +39,8 @@
           }
         }
       } else {
-        console.log('WARNING: Close console so window will get focus and '
-          + 'submission state array will be copied into clipboard.');
+        console.log('\nWARNING: Main window must have focus to copy submission '
+          + 'state array into clipboard. Please close developer console.\n');
       }
     } catch (err) {
       console.error(err);
