@@ -13,15 +13,16 @@ function tpps_admin_submissions_all_files_report() {
   $cid = __FUNCTION__;
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   $cache = cache_get($cid, $cache_bin);
-  $key = $cid;
+  $cache_key = $cid;
   $file_column_list = [
     'tpps_accession',
     'tpps_phenotype',
     'tpps_genotype',
+    // Group 'other' used for files whith has fid but not belong to any group.
     'other',
   ];
 
-  if ($reset || empty($cache) || empty($cache->data[$key])) {
+  if ($reset || empty($cache) || !isset($cache->data[$cache_key])) {
     // Line counter.
     $i = 0;
     // Get list of all managed files.
@@ -49,12 +50,14 @@ function tpps_admin_submissions_all_files_report() {
             $api_file_link = l($fid, 'api/file/' . $fid . '/info', $options);
             $found = FALSE;
             foreach ($file_column_list as $group) {
+              // @todo Minor. Change format of the output and add organism name.
+              // Format: 'org_name' : fid1, fid2, ... fidN.
               if ($group == 'other' || $found) {
                 continue;
               }
               if (strpos($file->uri, $group) !== FALSE) {
                 $found = TRUE;
-                $key = NULL;
+                $token = NULL;
                 // Accession files.
                 if ($group == 'tpps_accession') {
                   $page3_tree_accession = $submission->sharedState['saved_values']
@@ -64,9 +67,9 @@ function tpps_admin_submissions_all_files_report() {
                       . $n]['file'] ?? NULL;
                     if ($fid == $species_accession_fid) {
                       // Get organism name from Page 1.
-                      $key = $submission->sharedState['saved_values']
+                      $token = $submission->sharedState['saved_values']
                         [TPPS_PAGE_1]['organism'][$n]['name'] ?? NULL;
-                      $key = ' (' . $key . ')';
+                      $token = ' (' . $token . ')';
                       break;
                     }
                   }
@@ -76,8 +79,8 @@ function tpps_admin_submissions_all_files_report() {
                   for ($n = 1; $n <= $organism_number; $n++) {
                     $submission_file_list = $submission->sharedState['saved_values']
                       [TPPS_PAGE_4]['organism-' . $n]['genotype']['files'] ?? [];
-                    if ($key = array_search($fid, $submission_file_list)) {
-                      $key = ' (' . $key . ')';
+                    if ($token = array_search($fid, $submission_file_list)) {
+                      $token = ' (' . $token . ')';
                       break;
                     }
                   }
@@ -88,16 +91,16 @@ function tpps_admin_submissions_all_files_report() {
                     $phenotype = $submission->sharedState['saved_values']
                       [TPPS_PAGE_4]['organism-' . $n]['phenotype'] ?? NULL;
                     if ($fid == ($phenotype['file'] ?? NULL)) {
-                      $key = ' (data)';
+                      $token = ' (data)';
                       break;
                     }
                     elseif ($fid == ($phenotype['metadata'] ?? NULL)) {
-                      $key = ' (meta)';
+                      $token = ' (meta)';
                       break;
                     }
                   }
                 }
-                $api_file_link .= $key ?? '';
+                $api_file_link .= $token ?? '';
                 $file_row[$group][] = $api_file_link;
                 break;
               }
@@ -111,6 +114,13 @@ function tpps_admin_submissions_all_files_report() {
           }
           else {
             $file_row['other'][] = $fid;
+          }
+        }
+        // Process local VCF files.
+        for ($n = 1; $n <= $organism_number; $n++) {
+          if ($submission->hasLocalVcf($n)) {
+            $file_row['other'][] = $submission->getOrganismName($n) . ': ' .
+              $submission->getLocalVcf($n);
           }
         }
         // Convert to strings.
@@ -135,11 +145,9 @@ function tpps_admin_submissions_all_files_report() {
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     unset($_GET['reset']);
-    $cache->data[$key] = $rows;
+    $cache->data[$cache_key] = $rows;
     cache_set($cid, $cache->data, $cache_bin);
   }
-  $rows = $cache->data[$key] ?? [];
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output.
   // Show report table.
@@ -149,7 +157,7 @@ function tpps_admin_submissions_all_files_report() {
       ['#', t('Accession'), t('UID'), t('Stage'), t('Status')],
       $file_column_list
     ),
-    'rows' => $rows,
+    'rows' => ($cache->data[$cache_key] ?? []),
   ])
   . theme('item_list', [
     'items' => [

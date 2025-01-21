@@ -524,15 +524,13 @@ function tpps_preview_file() {
  *   The constructed link, or the provided name if no entity is found.
  */
 function tpps_entity_link($id, $name, $label) {
-  global $base_url;
-  $bundle = tripal_load_bundle_entity(array('label' => $label));
+  $bundle = tripal_load_bundle_entity(['label' => $label]);
   if (empty($bundle)) {
     return $name;
   }
   $entity_id = chado_get_record_entity_by_bundle($bundle, $id);
   if (!empty($entity_id)) {
-    // @todo Minor. Use l().
-    return "<a href=\"$base_url/bio_data/$entity_id\">$name</a>";
+    return l($name, 'bio_data/' . $entity_id);
   }
   return $name;
 }

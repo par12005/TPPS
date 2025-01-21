@@ -3206,7 +3206,8 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
           print_r('Record count:' . $record_count . "\n");
           $genotype_count += count($stocks);
           $vcf_line = explode("\t", $vcf_line);
-          $scaffold_id = explode(" ",$vcf_line[0])[0]; // take the first part if it is space delimited (8/13/2024 RISH discussion with Emily)
+          // Take the first part if it is space delimited (8/13/2024 RISH discussion with Emily).
+          $scaffold_id = explode(" ", $vcf_line[0])[0];
           $position = &$vcf_line[1];
           $variant_name = &$vcf_line[2];
           $ref = &$vcf_line[3];
@@ -3377,10 +3378,12 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
               }
             }
 
-            // If reference genome found (analysis_id) but no srcfeature found
+            // If reference genome found (analysis_id) but no srcfeature found.
             if (isset($analysis_id) && !isset($srcfeature_id)) {
-              throw new Exception("Genotype VCF processing found reference genome but no
-                srcfeature could be found. This action was recommended by Database Administrator.");
+              throw new Exception("Genotype flat VCF processing found reference "
+                . "genome but no srcfeature could be found. "
+                . "This action was recommended by Database Administrator."
+              );
             }
 
             // if srcfeature_id was found, then we have enough info to add featureloc data
@@ -4904,12 +4907,10 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           // );
 
           if ($feature_exists) {
-            tpps_log("Feature (variant): $variant_name exists already, featureloc will not be added\n");
-            echo("Feature (variant): $variant_name exists, featureloc will not be added\n");
+            tpps_log("Feature (variant): $variant_name exists already, featureloc will not be added.");
           }
           else {
-            tpps_log("Feature (variant): $variant_name not found so it was created\n");
-            echo("Feature (variant): $variant_name not found so it was created\n");
+            tpps_log("Feature (variant): $variant_name not found so it was created.");
           }
 
           if ($feature_exists != true) {
@@ -4921,7 +4922,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             $srcfeature_id = NULL;
             if (isset($analysis_id)) {
               // Get the srcfeature_id
-              echo 'Scaffold ID (srcfeature_id search): ' . $scaffold_id . "\n";
+              tpps_log('Scaffold ID (srcfeature_id search): ' . $scaffold_id);
 
               // the scaffold_id is not an integer value, proceed as normal lookup
               $srcfeature_results = chado_query('select feature.feature_id from chado.feature
@@ -4939,18 +4940,21 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             }
 
             if ($srcfeature_id) {
-              tpps_log("SRC Feature: $srcfeature_id found\n");
-              echo("SRC Feature: $srcfeature_id exists\n");
+              tpps_log("SRC Feature: $srcfeature_id found.");
             }
             else {
-              tpps_log("SRC Feature not found\n");
-              echo("SRC Feature not found\n");
+              tpps_log("SRC Feature not found.");
             }
 
             // If reference genome found (analysis_id) but no srcfeature found
             if (isset($analysis_id) && !isset($srcfeature_id)) {
-              throw new Exception("Genotype VCF processing found reference genome but no
-                srcfeature could be found. This action was recommended by Database Administrator.");
+              tpps_log($analysis_id);
+              tpps_log($srcfeature_id);
+
+              throw new Exception("Genotype VCF processing found reference "
+                . "genome but no srcfeature could be found. "
+                . "This action was recommended by Database Administrator."
+              );
             }
 
             // if srcfeature_id was found, then we have enough info to add featureloc data
@@ -5065,7 +5069,8 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
               'genotype_id' => $genotype_id,
               'genotype_name' => $genotype_desc,
             ]);
-            SnpAssociation::process($organism_index, $shared_state, $options);
+            // @todo Check if SNP Association was uploaded.
+            SnpAssociation::process($organism_index, $form_state, $options);
 
             // $debug_info = "Uniquename: $genotype_desc Type_id:$format_cvterm Value:$format Genotype_id:$genotype_id Variant_id:$variant_id Marker_id:$marker_id\n";
             // $debug_info = "Variant_name: $variant_name, Variant_id: $variant_id\n";
