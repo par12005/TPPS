@@ -1886,4 +1886,59 @@ class Submission {
     return FALSE;
   }
 
+  /**
+   * Checks if study has local (located on server) VCF file.
+   *
+   * @param int $organism_index
+   *   Ordinal number of the organism at page.
+   *
+   * @return bool
+   *   Returns TRUE if study has local VCF file and FALSE otherwise.
+   */
+  public function hasLocalVcf($organism_index = 1) {
+    $this->getSharedState();
+    if (
+      ($this->sharedState['saved_values'][TPPS_PAGE_4]
+        ['organism-' . $organism_index]['genotype']['files']
+        ['vcf_file-location'] ?? NULL) == 'remote'
+      && !empty($this->sharedState['saved_values'][TPPS_PAGE_4]
+        ['organism-' . $organism_index]['genotype']['files']['local_vcf'])
+    ) {
+      return TRUE;
+    }
+    return FALSE;
+  }
+
+  /**
+   * Checks if study has local (located on server) VCF file.
+   *
+   * @param int $organism_index
+   *   Ordinal number of the organism at page.
+   *
+   * @return bool
+   *   Returns path to the local VCF file or NULL if study has no local VCF file.
+   */
+  public function getLocalVcf($organism_index = 1) {
+    if (!$this->hasLocalVcf($organism_index)) {
+      return NULL;
+    }
+    return $this->sharedState['saved_values'][TPPS_PAGE_4]
+      ['organism-' . $organism_index]['genotype']['files']['local_vcf'];
+  }
+
+  /**
+   * Gets name of the organism specified on Page 1.
+   *
+   * @param int $organism_index
+   *   Ordinal number of the organism at page.
+   *
+   * @return mixed
+   *   Returns name of the organism or NULL.
+   */
+  public function getOrganismName($organism_index = 1) {
+    $this->getSharedState();
+    return $this->sharedState['saved_values'][TPPS_PAGE_1]['organism']
+      [$organism_index]['name'] ?? NULL;
+  }
+
 }

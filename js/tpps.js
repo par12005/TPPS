@@ -573,8 +573,8 @@
           xhr.upload.addEventListener("progress", function(evt){
               if (evt.lengthComputable) {
                   var percentComplete = evt.loaded / evt.total;
-                  //Do something with upload progress
-                  console.log(percentComplete);
+                  // Do something with upload progress.
+                  //console.log(percentComplete);
               }
         }, false);
 

@@ -14,8 +14,8 @@ function tpps_admin_doi_duplicates_report($reset = FALSE) {
   $cid = __FUNCTION__;
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   $cache = cache_get($cid, $cache_bin);
-  $key = $cid;
-  if ($reset || empty($cache) || empty($cache->data[$key])) {
+  $cache_key = $cid;
+  if ($reset || empty($cache) || empty($cache->data[$cache_key])) {
     // Get new data.
 
     // Get data.
@@ -51,10 +51,10 @@ function tpps_admin_doi_duplicates_report($reset = FALSE) {
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     unset($_GET['reset']);
-    $cache->data[$key] = $rows ?? [];
+    $cache->data[$cache_key] = $rows ?? [];
     cache_set($cid, $cache->data, $cache_bin);
   }
-  $rows = $cache->data[$key] ?? [];
+  $rows = $cache->data[$cache_key] ?? [];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output.
