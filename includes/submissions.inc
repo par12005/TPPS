@@ -36,6 +36,9 @@ function tpps_api_get_submission_state($accession) {
 /**
  * This function loads multiple TPPS submissions based on conditions.
  *
+ * To have sorting:
+ * asort(tpps_load_submission_multiple(...), SORT_NATURAL);
+ *
  * @param array $conditions
  *   The conditions that each TPPS submission must meet.
  *

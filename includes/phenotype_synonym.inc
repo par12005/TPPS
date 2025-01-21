@@ -39,20 +39,25 @@ function tpps_synonym_get_list(array $options = [], $reset = FALSE) {
       ->fields('cps', ['phenotype_synonyms_id', 'synonym'])
       ->condition('cps.synonym', 0, '>')
       ->orderBy('cps.phenotype_synonyms_id');
-    $cache = $query->execute()->fetchAllKeyed();
-    $list = $cache;
+    $data = $query->execute()->fetchAllKeyed();
+    asort($data, SORT_STRING | SORT_FLAG_CASE | SORT_NATURAL);
+    cache_set($synonym_cid, $data, $cache_bin);
+    $list = $data;
   }
   else {
     $list = $cache->data;
   }
-  // This option must be last.
-  if ($options['not_in_list_option']) {
-    $list[0] = t("I can't find phenotype");
+  if (variable_get('tpps_page_4_use_alphabetic_list', TRUE)) {
+    $list = tpps_build_alphabetic_list($list);
   }
   if ($options['debug']) {
     foreach ($list as $key => $value) {
       $list[$key] = $key . ': ' . $value;
     }
+  }
+  // This option must be last.
+  if ($options['not_in_list_option']) {
+    $list[0] = t("I can't find phenotype");
   }
   return $list;
 }
@@ -135,12 +140,12 @@ function tpps_synonym_restore_values(array &$current_phenotype) {
  *   Item format: $phenotype_name => $phenotype_id.
  */
 function tpps_synonym_save(array $phenotypes_meta, array $id_list) {
-  tpps_log('[INFO] Phenotype Synonyms processing started...');
+  tpps_log('Phenotype Synonyms processing started...');
   // Create a small array to make search of phenotype name easier.
   foreach ($phenotypes_meta as $item) {
     // Note: It's possible that synonym not exists when it was automatically
     // detected by unit from Metadata File.
-    if (!empty($item['synonym_id'])) {
+    if (!empty($item['synonym_id']) && !empty($item['name'])) {
       // $item['name'] is Phenotype name in lowser case. For example: 'leaf a'.
       // Phenotype uniquename is using the same name but not lowercased so
       // it couldn't be used.
@@ -170,7 +175,7 @@ function tpps_synonym_save(array $phenotypes_meta, array $id_list) {
       }
     }
   }
-  tpps_log('[INFO] Phenotype Synonyms processing completed.');
+  tpps_log('Phenotype Synonyms processing completed.');
 }
 
 /**

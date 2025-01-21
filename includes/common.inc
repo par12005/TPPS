@@ -198,11 +198,11 @@ function tpps_report_show_table(array $report) {
   $per_page = variable_get('tpps_report_items_per_page', 20);
   $current_page = pager_default_initialize(count($rows), $per_page);
   $chunks = array_chunk($rows, $per_page, TRUE);
-  $pager = theme('pager', ['quantity', count($rows)]);
+  $pager = theme('pager', ['quantity', count($rows) ?? 0]);
   return $pager . theme('table', [
     'caption' => tpps_report_get_list()[$report_name]['description'],
     'header' => $report['header'] ?? [],
-    'rows' => $chunks[$current_page],
+    'rows' => $chunks[$current_page] ?? [],
     'empty' => $report['empty'] ?? NULL,
   ]) . $pager;
 }
@@ -301,6 +301,11 @@ function tpps_build_google_map_wrapper($fid, array &$form = NULL) {
 /**
  * Gets list of functions/features which supports "JS Debug Mode".
  *
+ * Note:
+ * This function must be here so other functions could find it without
+ * explicitly include settings form file.
+ * See tpps_js_debug_mode_settings_form().
+ *
  * @return array
  *   Returns list of features which will be sent into client's browser to manage
  *   "JS Debug Mode" in browser.
@@ -331,6 +336,8 @@ function tpps_js_debug_mode_get_features_list() {
     'Drupal.behaviors.tppsPage3',
     // Page 4.
     'Drupal.behaviors.tppsPage4',
+    'Drupal.behaviors.tpps_page_4_genotype',
+    'Drupal.behaviors.tpps_page_4_snp_association',
     'vcfPreValidate',
     'checkVCFJob',
   ];
@@ -509,4 +516,42 @@ function tpps_get_organisms_without_taxonomy_id($debug_mode = FALSE) {
     $query->range(0, 11);
   }
   return $query->orderBy('organism_id')->execute()->fetchAllKeyed();
+}
+
+/**
+ * Creates array under alphabetical letters.
+ *
+ * Could be used as option's list for dropdown menu form elements.
+ * Idea: https://stackoverflow.com/a/35543688/1041470
+ *
+ * @param array $list
+ *   Associative array of the items.
+ *   Note: keys will be left without change.
+ *
+ * @return array
+ *   Returns list splitted by letters.
+ *   Example of the output:
+ *   [
+ *     'A' => [
+ *       '123' => 'Alligator'
+ *       '345' => 'Alpha'
+ *     ],
+ *     'B' => [
+ *       '663' => 'Bear'
+ *       '224' => 'Bees'
+ *       '455' => 'Banana'
+ *     ],
+ *     'C' => [
+ *       '223' => 'Cat',
+ *       '977' => 'Cougar',
+ *     ],
+ *   ];
+ */
+function tpps_build_alphabetic_list(array $list) {
+  $result = [];
+  foreach ($list as $key => $value) {
+    $firstLetter = substr(strtoupper($value), 0, 1);
+    $result[$firstLetter][$key] = $value;
+  }
+  return $result;
 }

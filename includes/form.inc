@@ -725,21 +725,17 @@ function tpps_form_build_file_field(array $form_bus) {
         = $parent_element[$field_name]['#value']['fid'];
     }
   }
-  // Most of fields have used this code so only 2 must be excluded.
-  if (!in_array($field_name, ['snps-association', 'other'])) {
-    // Field 'snps-association' excluded because it didn't have this code.
-    if (isset($parent_element[$field_name]['#value'])) {
-      $parent_element[$field_name]['#default_value']
-        = $parent_element[$field_name]['#value'];
-    }
-    $file = tpps_file_load($parent_element[$field_name]['#default_value'] ?? '');
-    if ($file) {
-      // Stop using the file so it can be deleted if the user clicks 'remove'.
-      if (variable_get('tpps_genotype_file_usage_delete', TRUE)) {
-        // Study Id is a number in 'TGDRXXX'.
-        $study_id = substr($form_state['accession'], 4);
-        file_usage_delete($file, 'tpps', 'tpps_project', $study_id);
-      }
+  if (isset($parent_element[$field_name]['#value'])) {
+    $parent_element[$field_name]['#default_value']
+      = $parent_element[$field_name]['#value'];
+  }
+  $file = tpps_file_load($parent_element[$field_name]['#default_value'] ?? '');
+  if ($file) {
+    // Stop using the file so it can be deleted if the user clicks 'remove'.
+    if (variable_get('tpps_genotype_file_usage_delete', TRUE)) {
+      // Study Id is a number in 'TGDRXXX'.
+      $study_id = substr($form_state['accession'], 4);
+      file_usage_delete($file, 'tpps', 'tpps_project', $study_id);
     }
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1465,4 +1461,50 @@ function tpps_logical_opeation($value1, $value2, $logic_operator) {
       return ($value1 xor $value2);
   }
   return NULL;
+}
+
+/**
+ * Implements 'Remember Fieldset Collapsed Status' feature for given form.
+ *
+ * Note: Only collapsible fieldsets will be affected.
+ *
+ * @param array $form
+ *   Drupal Form API array.
+ * @param string $form_id
+ *   Form Id.
+ */
+function tpps_form_add_fieldset_collapsed_state(array &$form, $form_id = NULL) {
+  $form_id = $form_id ?? $form['#form_id'] ?? NULL;
+  $is_exists = FALSE;
+  if (
+    empty($form_id)
+    || !is_string($form_id)
+    || empty($_SESSION[TPPS_RFCS_KEY][$form_id])
+  ) {
+    return $is_exists;
+  }
+  foreach ($form as $name => $element) {
+    if (
+      ($element['#type'] ?? NULL) != 'fieldset'
+      || ($element['#collapsible'] ?? NULL) != TRUE
+    ) {
+      continue;
+    }
+    $is_exists = TRUE;
+    // 1 - collapsed, 0 - expended.
+    $form[$name]['#collapsed'] = (bool) (
+      // Name in DOM and in Drupal Form API differs.
+      $_SESSION[TPPS_RFCS_KEY][$form_id]['edit_' . $name]
+      // Respect default settings.
+      ?? $element['#collapsed'] ?? FALSE
+    );
+    // Process child fieldsets.
+    foreach (array_keys($element) as $sub_name) {
+      if (strpos('#', $sub_name) === FALSE) {
+        continue;
+      }
+      tpps_form_add_fieldset_collapsed_state($element[$sub_name], $form_id);
+    }
+  }
+  return $is_exists;
 }

@@ -1,12 +1,19 @@
-(function ($) {
+(function ($, Drupal) {
 
-  // Submit form on 'Enter' pressing.
+  // Submit form on 'Enter' pressing in any field (except 'Upload' buttons).
   // When user presses 'Enter/Return' on any text field then 'Next' or
-  // 'Review and Submit' button must be shows instead of the first 'Back'
-  // button. Using HTML's tabindex requires to set focus to this button but
-  // we set focus to the main field to speed-up form filling instead of buttons.
+  // 'Review and Submit' button must be clicked. But first button on form is
+  // the 'Back' button and browsers clicks by default the first button.
+  // Using HTML's tabindex requires to set focus to this button but we set
+  // focus to the main field to speed-up form filling instead of buttons.
   window.addEventListener("keyup", (event) => {
     if (event.key === "Enter") {
+      // Skip 'Upload' buttons to avoid page reload and validation errors.
+      if ($(event.target).hasClass('html')) {
+        // This is "Upload" button which detects as a click on BODY element.
+        return;
+      }
+      event.stopPropagation();
       event.preventDefault();
       let $nextButton = $('input.next-button');
       if ($nextButton.length) {
@@ -22,8 +29,10 @@
   });
 
   Drupal.behaviors.tppsMain = {
-    attach:function (context) {
+    attach: function (context) {
 
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // VCF PreValidation feature.
       var vcfPreValidateButton = '.vcf-pre-validate-button';
       // Bootstrap tooltip functionality.
       $('[data-toggle="tooltip"]', context).tooltip();
@@ -143,8 +152,8 @@
       var preview_buttons = $('input.preview_button');
       $.each(preview_buttons, function() {
         $(this).click(function(e) {
-          previewFile(this, 3);
           e.preventDefault();
+          previewFile(this, 3);
         });
       });
 
@@ -499,206 +508,238 @@
     }
   };
 
-}(jQuery));
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Study details page.
+  // @TODO Minor. Replace jQuery with '$'.
+  var detail_pages = {
+    "trees": 0,
+    "phenotype": 0,
+    "genotype": 0,
+    "environment": 0,
+    "submission": 0,
+  };
 
+  /**
+   * Gets Study Details page's tab content.
+   */
+  function detailsTab() {
+    let featureName = 'detailsTab';
+    var clicked_tab = jQuery(this)[0];
+    var path = clicked_tab.pathname;
+    var detail_type = clicked_tab.hash.substr(1);
+    var page = detail_pages[detail_type];
 
-function previewFile(element, num_rows = 3) {
-  var fid;
-  if (element.id.match(/fid_(.*)/) === null) {
-    return;
-  }
-  fid = element.id.match(/fid_(.*)/)[1];
-  let $previewElement = jQuery('.preview_' + fid);
-  if ($previewElement.length !== 0) {
-    //$previewElement.remove();
-    $previewElement.fadeOut(500, function() {
-      $previewElement.remove();
-    });
-  }
-  var request = jQuery.post('/tpps-preview-file', {
-    fid: fid,
-    rows: num_rows
-  });
-  request.done(function (data) {
-    jQuery('#fid_' + fid).before(data);
-  });
-}
-
-var detail_pages = {
-  "trees": 0,
-  "phenotype": 0,
-  "genotype": 0,
-  "environment": 0,
-  "submission": 0,
-};
-
-function detailsTab() {
-  var clicked_tab = jQuery(this)[0];
-  var path = clicked_tab.pathname;
-  var detail_type = clicked_tab.hash.substr(1);
-  var page = detail_pages[detail_type];
-
-  if (clicked_tab.hash.match(/#(.*):(.*)/) !== null) {
-    detail_type = clicked_tab.hash.match(/#(.*):(.*)/)[1];
-    page = clicked_tab.hash.match(/#(.*):(.*)/)[2];
-    detail_pages[detail_type] = page;
-  }
-  else {
-    if (jQuery('#' + detail_type)[0].innerHTML !== "") {
-      // If we aren't loading a new page and we already have data for this tab,
-      // then we don't need to change any of the HTML.
-      return;
+    if (clicked_tab.hash.match(/#(.*):(.*)/) !== null) {
+      detail_type = clicked_tab.hash.match(/#(.*):(.*)/)[1];
+      page = clicked_tab.hash.match(/#(.*):(.*)/)[2];
+      detail_pages[detail_type] = page;
     }
-  }
-  jQuery('#' + detail_type)[0].innerHTML = Drupal.t('Querying database for '
-    + '@detail_type information...', {'@detail_type': detail_type})
-    + '<div id="query_timer"></div>';
-
-  // create a timer
-  var query_timer_current = 0;
-  var query_timer = setInterval(function() {
-    query_timer_current = query_timer_current + 1;
-    if(query_timer_current > 5) {
-      jQuery('#query_timer')
-        .html(Drupal.t('Querying time: @time seconds.',
-          {'@time': query_timer_current})
-          + '<br /><strong>' + Drupal.t('Thank you for your patience, '
-          + 'first time pulls can take up to a minute to '
-          + 'complete depending on the size of our dataset but gets faster '
-          + 'after the first page load.') + '</strong>'
-        );
+    else {
+      if (jQuery('#' + detail_type)[0].innerHTML !== "") {
+        // If we aren't loading a new page and we already have data for this tab,
+        // then we don't need to change any of the HTML.
+        return;
+      }
     }
-  }, 1000);
+    jQuery('#' + detail_type)[0].innerHTML = Drupal.t('Querying database for '
+      + '@detail_type information...', {'@detail_type': detail_type})
+      + '<div id="query_timer"></div>';
 
-  // OLD version from Peter
-  // var request = jQuery.post(path + '/' + detail_type, {
-  //   page: page
-  // });
+    // create a timer
+    var query_timer_current = 0;
+    var query_timer = setInterval(function() {
+      query_timer_current = query_timer_current + 1;
+      if(query_timer_current > 5) {
+        jQuery('#query_timer')
+          .html(Drupal.t('Querying time: @time seconds.',
+            {'@time': query_timer_current})
+            + '<br /><strong>' + Drupal.t('Thank you for your patience, '
+            + 'first time pulls can take up to a minute to '
+            + 'complete depending on the size of our dataset but gets faster '
+            + 'after the first page load.') + '</strong>'
+          );
+      }
+    }, 1000);
 
-  // New version from Rish with XHR status
-  var request = jQuery.ajax({
-      xhr: function() {
-        var xhr = new window.XMLHttpRequest();
+    // Get tab content.
+    // @todo Minor. Add caching for ajax requests.
+    // See Drupal.settings.tpps.cacheAjaxResponses
+    let path_parts = path.match(/[^\/]+/g);
+    var request = jQuery.ajax({
+        xhr: function() {
+          var xhr = new window.XMLHttpRequest();
 
-        // Upload progress
-        xhr.upload.addEventListener("progress", function(evt){
+          // Upload progress
+          xhr.upload.addEventListener("progress", function(evt){
+              if (evt.lengthComputable) {
+                  var percentComplete = evt.loaded / evt.total;
+                  //Do something with upload progress
+                  console.log(percentComplete);
+              }
+        }, false);
+
+        // Download progress
+        xhr.addEventListener("progress", function(evt){
+            try {
+              clearInterval(query_timer);
+            } catch (err) {}
+            dog(evt, featureName);
+            jQuery('#' + detail_type)[0].innerHTML = "Loading "
+              + detail_type + " information... " + Math.ceil(evt.loaded / 100) + ' KB';
             if (evt.lengthComputable) {
                 var percentComplete = evt.loaded / evt.total;
-                //Do something with upload progress
+                // Do something with download progress
                 console.log(percentComplete);
+                //jQuery('#' + detail_type)[0].innerHTML = "Loading "
+                //+ detail_type + " information... "
+                //+ Math.ceil(percentComplete * 100) + ' %';
             }
-      }, false);
+        }, false);
+        return xhr;
+      },
+      type: 'POST',
+      url: '/ajax/tpps/get_' + detail_type + '_details_tab',
+      data: {
+        accession: path_parts[2],
+        page: page,
+      }
+    });
 
-      // Download progress
-      xhr.addEventListener("progress", function(evt){
-          try {
-            clearInterval(query_timer);
-          } catch (err) {}
-          console.log(evt);
-          jQuery('#' + detail_type)[0].innerHTML = "Loading "
-            + detail_type + " information... " + Math.ceil(evt.loaded / 100) + ' KB';
-          if (evt.lengthComputable) {
-              var percentComplete = evt.loaded / evt.total;
-              // Do something with download progress
-              console.log(percentComplete);
-              //jQuery('#' + detail_type)[0].innerHTML = "Loading " + detail_type + " information... " + Math.ceil(percentComplete * 100) + ' %';
-          }
-      }, false);
-
-      return xhr;
-    },
-    type: 'POST',
-    url: path + '/' + detail_type,
-    data: {
-      page: page
-    }
-  });
-
-  request.done(function (data) {
-    jQuery('#' + detail_type)[0].innerHTML = data;
-    var details_pagers = jQuery('#' + detail_type + ' > div > ul');
-    if (details_pagers.length > 0) {
-      var pages = jQuery('#' + detail_type + ' > div > ul > li > a');
-      jQuery.each(pages, function() {
-        var page = 0;
-        if (this.search.match(/\?page=(.*)/) !== null) {
-          page = this.search.match(/\?page=(.*)/)[1];
+    request.done(function (data) {
+      if (typeof (data) == 'undefined' || data.success != true) {
+        jQuery('#' + detail_type)[0].innerHTML = data.errors;
+        dog(data.errors, featureName);
+        return;
+      }
+      else {
+        jQuery('#' + detail_type)[0].innerHTML = data.content;
+        var details_pagers = jQuery('#' + detail_type + ' > div > ul');
+        if (details_pagers.length > 0) {
+          var pages = jQuery('#' + detail_type + ' > div > ul > li > a');
+          jQuery.each(pages, function() {
+            var page = 0;
+            if (this.search.match(/\?page=(.*)/) !== null) {
+              page = this.search.match(/\?page=(.*)/)[1];
+            }
+            if (detail_type != 'submission') {
+              this.href = '#' + detail_type + ':' + page;
+            }
+            else {
+              var path = window.location.pathname;
+              this.href = this.href + '/' + path.substring(path.lastIndexOf('/') + 1);
+            }
+            jQuery(this).click(detailsTab);
+          });
         }
-        if (detail_type != 'submission') {
-          this.href = '#' + detail_type + ':' + page;
-        }
-        else {
-          var path = window.location.pathname;
-          this.href = this.href + '/' + path.substring(path.lastIndexOf('/') + 1);
-        }
-        jQuery(this).click(detailsTab);
-      });
-    }
-  });
-}
-
-function initDetailPages() {
-  var details_pages = jQuery('#tpps-details-table > div > ul > li > a');
-  if (details_pages.length > 0) {
-    jQuery.each(details_pages, function() {
-      var page = 0;
-        if (this.search.match(/\?page=(.*)/) !== null) {
-          page = this.search.match(/\?page=(.*)/)[1];
-        }
-      this.href = '#top:' + page;
-      jQuery(this).click(detailSearch);
+      }
     });
   }
-}
 
-function detailSearch() {
-  var path = '/tpps/details/top';
-  var page = 0;
-  if (this.hash != null && this.hash.match(/#.*:(.*)/) != null) {
-    page = this.hash.match(/#.*:(.*)/)[1];
+  /**
+   * initDetailPages.
+   */
+  function initDetailPages() {
+    let details_pages = jQuery('#tpps-details-table > div > ul > li > a');
+    if (details_pages.length > 0) {
+      jQuery.each(details_pages, function() {
+        let page = 0;
+          if (this.search.match(/\?page=(.*)/) !== null) {
+            page = this.search.match(/\?page=(.*)/)[1];
+          }
+        this.href = '#top:' + page;
+        jQuery(this).click(detailSearch);
+      });
+    }
   }
 
-  jQuery('#tpps-details-table')[0].innerHTML = 'Loading...';
-  var request = jQuery.post(path, {
-    type: jQuery('select').filter(function() { return this.id.match(/edit-details-type/); })[0].value,
-    value: jQuery('input').filter(function() { return this.id.match(/edit-details-value/); })[0].value,
-    op: jQuery('select').filter(function() { return this.id.match(/edit-details-op/); })[0].value,
-    page: page
-  });
+  function detailSearch() {
+    var path = '/tpps/details/top';
+    let page = 0;
+    if (this.hash != null && this.hash.match(/#.*:(.*)/) != null) {
+      page = this.hash.match(/#.*:(.*)/)[1];
+    }
 
-  request.done(function (data) {
-    jQuery('#tpps-details-table')[0].innerHTML = data;
-    initDetailPages();
-  });
-}
+    jQuery('#tpps-details-table')[0].innerHTML = 'Loading...';
+    var request = jQuery.post(path, {
+      type: jQuery('select').filter(function() { return this.id.match(/edit-details-type/); })[0].value,
+      value: jQuery('input').filter(function() { return this.id.match(/edit-details-value/); })[0].value,
+      op: jQuery('select').filter(function() { return this.id.match(/edit-details-op/); })[0].value,
+      page: page
+    });
 
-function detailTagSearch() {
-  var path = '/tpps/details/top';
-  var page = 0;
-  if (this.hash != null && this.hash.match(/#.*:(.*)/) != null) {
-    page = this.hash.match(/#.*:(.*)/)[1];
+    request.done(function (data) {
+      jQuery('#tpps-details-table')[0].innerHTML = data;
+      initDetailPages();
+    });
   }
 
-  jQuery('#tpps-details-table')[0].innerHTML = 'Loading...';
-  jQuery('select').filter(function() { return this.id.match(/edit-details-type/); })[0].value = 'tags';
-  jQuery('input').filter(function() { return this.id.match(/edit-details-value/); })[0].value = jQuery(this).text();
-  jQuery('select').filter(function() { return this.id.match(/edit-details-op/); })[0].value = '=';
-  var request = jQuery.post(path, {
-    type: 'tags',
-    value: jQuery(this).text(),
-    op: '=',
-    page: page
-  });
+  function detailTagSearch() {
+    var path = '/tpps/details/top';
+    var page = 0;
+    if (this.hash != null && this.hash.match(/#.*:(.*)/) != null) {
+      page = this.hash.match(/#.*:(.*)/)[1];
+    }
 
-  request.done(function (data) {
-    jQuery('#tpps-details-table')[0].innerHTML = data;
-    initDetailPages();
-  });
-}
+    jQuery('#tpps-details-table')[0].innerHTML = 'Loading...';
+    jQuery('select').filter(function() { return this.id.match(/edit-details-type/); })[0].value = 'tags';
+    jQuery('input').filter(function() { return this.id.match(/edit-details-value/); })[0].value = jQuery(this).text();
+    jQuery('select').filter(function() { return this.id.match(/edit-details-op/); })[0].value = '=';
+    var request = jQuery.post(path, {
+      type: 'tags',
+      value: jQuery(this).text(),
+      op: '=',
+      page: page
+    });
 
-/* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
-/* [VS] */
-(function ($, Drupal) {
+    request.done(function (data) {
+      jQuery('#tpps-details-table')[0].innerHTML = data;
+      initDetailPages();
+    });
+  }
+
+  /**
+   * Get's file content for preview.
+   *
+   * @param object $element
+   *   DOM element of clicked button which has File Id in DOM element id.
+   * @param int num_rows
+   *   Number of rows to be shown. 0 means all rows.
+   */
+  function previewFile(element, num_rows = 3) {
+    $(element).prop('disabled', true);
+    let fid;
+    if (element.id.match(/fid_(.*)/) === null) {
+      return;
+    }
+    fid = element.id.match(/fid_(.*)/)[1];
+    let $previewElement = jQuery('.preview_' + fid);
+    if ($previewElement.length !== 0) {
+      //$previewElement.remove();
+      $previewElement.fadeOut(500, function() {
+        $previewElement.remove();
+      });
+    }
+
+    // Show status of the loading message.
+    $(element).before('<div class="file-preview-status-message">'
+      + Drupal.t('Loading...') + '</div>');
+
+    // Note: there is no need to cache AJAX-request results to allow refresh
+    // file's preview.
+    var request = jQuery.post('/tpps-preview-file', {
+      fid: fid,
+      rows: num_rows
+    });
+    request.done(function (data) {
+      $(element).before(data).prop('disabled', false)
+        // Remove status of the loading message.
+        .parent().find('.file-preview-status-message').remove();
+    });
+  }
+
+
+
+  /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
   // Create namespaces.
   Drupal.tpps = Drupal.tpps || {};
   // @TODO Minor. Rename 'doi' to 'publication_doi'.

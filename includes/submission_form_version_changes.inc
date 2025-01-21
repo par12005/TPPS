@@ -83,7 +83,13 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       'vcf_file-location',
       'snps-assay',
       'assay-design',
+      // SNP Association and columns.
       'snps-association',
+      'snps-association-columns',
+      'snps-association-no-header',
+      'snps-association-empty',
+      'snps-association-groups',
+
       'snps-association-tool',
       'snps-association-type',
       'snps-pop-struct',

@@ -99,19 +99,22 @@ function tpps_ols_url($types, array $args = array()) {
     $url .= "$types/";
   }
   else {
+    // @TODO Replace with: $url .= implode('/', $types) . '/';
     foreach ($types as $type) {
       $url .= "$type/";
     }
   }
 
+  // @TODO Replace with: $url .= url($url, ['query' => $args]);
   if (!empty($args)) {
     $url .= "?" . implode('&', $args);
   }
 
+  // @TODO Use tpps_log().
   print_r('OLS URL:' . $url . "\n");
   try {
-    if(function_exists('tpps_job_logger_write')) {
-      tpps_job_logger_write('[INFO] -- ' . 'OLS URL:' . $url);
+    if (function_exists('tpps_job_logger_write')) {
+      tpps_job_logger_write('[INFO] -- OLS URL:' . $url);
     }
   }
   catch (Exception $ex) {
@@ -209,15 +212,14 @@ function tpps_load_cv($info) {
  *   The resulting cvterm object, or FALSE on failure.
  */
 function tpps_load_cvterm($term, array $options = array(), $version = NULL, $refresh_cache = FALSE) {
-  // [VS]
   $check_cache = variable_get('tpps_load_cvterm_' . md5($term), NULL);
+
   if ($refresh_cache == TRUE) {
     $check_cache = NULL;
   }
   if (isset($_GET['refresh_cache']) && $_GET['refresh_cache'] == 'true') {
     $check_cache = NULL;
   }
-  // [/VS]
   if ($check_cache == NULL) {
     $cvt_v = variable_get('tpps_cvterms_version', '1_1');
     $get_cvt = 'tpps_get_cvterms_v' . ($version ?? $cvt_v);
@@ -300,9 +302,15 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL, $ref
     }
 
     if (empty($result)) {
+      $exception_message = t('FATAL - after extensive searching, cvterm '
+        . '@term could not be found. This will cause insertion errors '
+        . 'later on so it needs to be fixed'
+      );
+      $log_message = '[WARNING] Failed to load cvterm: @term';
+      $variables = ['@term' => $term];
       if (!empty($options['job'])) {
-        $options['job']->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);
-        throw new Exception('FATAL - after extensive searching, cvterm ' . $term . ' could not be found. This will cause insertion errors later on so it needs to be fixed');
+        $options['job']->logMessage($log_message, $variables, TRIPAL_WARNING);
+        throw new Exception($exception_message);
       }
       else {
         $trace = debug_backtrace()[1];
@@ -314,14 +322,12 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL, $ref
             }
           }
           if (!empty($job)) {
-            $job->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);
+            $job->logMessage($log_message, $variables, TRIPAL_WARNING);
           }
         }
-        throw new Exception('FATAL - after extensive searching, cvterm ' . $term . ' could not be found. This will cause insertion errors later on so it needs to be fixed');
+        throw new Exception($exception_message);
       }
     }
-
-
     variable_set('tpps_load_cvterm_' . md5($term), serialize($result));
   }
   else {
@@ -331,7 +337,7 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL, $ref
 }
 
 /**
- * Returns nothing, this is an administration function
+ * Returns nothing, this is an administration function.
  *
  * To speed up the process cvterms and even the cv (ontologies)
  * are cached using various methods. This will refresh the cache
