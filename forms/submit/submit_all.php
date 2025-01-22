@@ -2485,285 +2485,292 @@ function tpps_generate_species_codes_array_from_shared_state(array $shared_state
  */
 function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $shared_state, $regenerate_all = TRUE, TripalJob $job = NULL) {
 
-  $project_id = $shared_state['ids']['project_id'];
-  $accession = $form_state['accession'];
+  $transaction = db_transaction();
+  try {
+    $project_id = $shared_state['ids']['project_id'];
+    $accession = $form_state['accession'];
 
-  tpps_initialize_job_logger($accession, $job);
+    tpps_initialize_job_logger($accession, $job);
 
-  $dest_folder = tpps_realpath('public://tpps_vcf_flat_files');
+    $dest_folder = tpps_realpath('public://tpps_vcf_flat_files');
 
-  // print_r($form_state);
-  // Generate species codes which is needed later on
-  $organism_number = $shared_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
-  tpps_log("Organism Number: $organism_number\n");
-  tpps_log("Shared state Organism IDS:\n" . print_r($shared_state['ids']['organism_ids'], true));
-  tpps_log("Form State Organism IDS:\n" . print_r($form_state['ids']['organism_ids'], true));
+    // print_r($form_state);
+    // Generate species codes which is needed later on
+    $organism_number = $shared_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
+    tpps_log("Organism Number: $organism_number\n");
+    tpps_log("Shared state Organism IDS:\n" . print_r($shared_state['ids']['organism_ids'], true));
+    tpps_log("Form State Organism IDS:\n" . print_r($form_state['ids']['organism_ids'], true));
 
-  $species_codes = tpps_generate_species_codes_array_from_shared_state($shared_state);
-  tpps_log("Species code\n " . print_r($species_codes, true));
-  // throw new Exception('debug');
+    $species_codes = tpps_generate_species_codes_array_from_shared_state($shared_state);
+    tpps_log("Species code\n " . print_r($species_codes, true));
+    // throw new Exception('debug');
 
-  // Run genotype_vcf_to_flat_file per organism_index for the original study
-  // @TODO Re-enable this
-  for ($i = 1; $i <= $organism_number; $i++) {
-    $snps_flat_file_location = $dest_folder . '/' . $accession . '-' . $i . '-snps.csv';
-    tpps_log("Checking if file exists: $snps_flat_file_location\n");
-    // If file does not exist, we need to generate this
-    if (!file_exists($snps_flat_file_location) || $regenerate_all == true) {
-      tpps_log("Generating: $snps_flat_file_location\n");
-      tpps_genotypes_to_flat_file($form_state, $shared_state, $species_codes, $i);
-      tpps_log("Done.");
-    }
-  }
-
-  // GOAL: Look for similar studies that contain similar variant_ids
-  global $study_accessions_with_potential_overlaps;
-  $study_accessions_with_potential_overlaps = [];
-  $accession_results = chado_query("select distinct accession from
-    (select accession, unnest(markers) as marker from chado.studies_with_markers)x
-    where marker in
-    (select unnest(markers) as marker from chado.studies_with_markers where accession = '" . $accession . "');");
-  foreach ($accession_results as $row) {
-    if ($row->accession != strtoupper($accession)) {
-      $study_accessions_with_potential_overlaps[] = $row->accession;
-    }
-  }
-  // print_r($study_accessions_with_potential_overlaps);
-
-
-
-  // Go through each additional study and run genotypes to flat file.
-  foreach ($study_accessions_with_potential_overlaps as $study_accession) {
-    $submission = new Submission($study_accession);
-    $study_state = $submission->sharedState;
-
-    $study_organism_number = $study_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
-    tpps_log("Study organism number for $study_accession is $study_organism_number\n");
-    // Check if each study has overlap files
-    for($i = 1; $i <= $study_organism_number; $i++) {
-      $snps_flat_file_location = $dest_folder . '/' . $study_accession . '-' . $i . '-snps.csv';
+    // Run genotype_vcf_to_flat_file per organism_index for the original study
+    // @TODO Re-enable this
+    for ($i = 1; $i <= $organism_number; $i++) {
+      $snps_flat_file_location = $dest_folder . '/' . $accession . '-' . $i . '-snps.csv';
       tpps_log("Checking if file exists: $snps_flat_file_location\n");
+      // If file does not exist, we need to generate this
       if (!file_exists($snps_flat_file_location) || $regenerate_all == true) {
-        // GOAL: We need to generate flat files for this study
-        // Step 1: Get species_codes for this study
-
-        // New code by Rish to get the species code array
-        $study_species_codes = tpps_generate_species_codes_array_from_shared_state($shared_state);
-
-        // DEPRECATED 8/12/2024 due to Vlad's breaking changes code
-        //$study_species_codes = array();
-        // for ($j = 1; $j <= $organism_number; $j++) {
-        //   $study_species_codes[$study_state['ids']['organism_ids'][$j]] = current(chado_select_record('organismprop', array('value'), array(
-        //     'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id,
-        //     'organism_id' => $study_state['ids']['organism_ids'][$j],
-        //   ), array(
-        //     'limit' => 1,
-        //   )))->value;
-        // }
-
-        // Generate the flat files and necessary DB inserts for features, genotypes etc
-        tpps_log("Running tpps_genotypes_to_flat_file $study_accession $i\n");
-        tpps_genotypes_to_flat_file($study_state, $shared_state, $study_species_codes, $i);
+        tpps_log("Generating: $snps_flat_file_location\n");
+        tpps_genotypes_to_flat_file($form_state, $shared_state, $species_codes, $i);
         tpps_log("Done.");
       }
-      else {
-        // Flat file exists so we can perform comparison operations to check between original study
-        // and this particular study
+    }
+
+    // GOAL: Look for similar studies that contain similar variant_ids
+    global $study_accessions_with_potential_overlaps;
+    $study_accessions_with_potential_overlaps = [];
+    $accession_results = chado_query("select distinct accession from
+      (select accession, unnest(markers) as marker from chado.studies_with_markers)x
+      where marker in
+      (select unnest(markers) as marker from chado.studies_with_markers where accession = '" . $accession . "');");
+    foreach ($accession_results as $row) {
+      if ($row->accession != strtoupper($accession)) {
+        $study_accessions_with_potential_overlaps[] = $row->accession;
       }
     }
-  }
-
-  // @TODO after running tests
-  // exit;
-
-  // Go through all studies and generate sorted list of the csv files
-  $accession_results = chado_query("select distinct accession from
-    (select accession, unnest(markers) as marker from chado.studies_with_markers)x
-    where marker in
-    (select unnest(markers) as marker from chado.studies_with_markers where accession = '" . $accession . "');");
-  foreach ($accession_results as $row) {
-    $study_accession = $row->accession;
-    $submission = new Submission($study_accession);
-    $study_state = $submission->sharedState;
-    $study_organism_number = $study_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
-    for ($i = 1; $i <= $study_organism_number; $i++) {
-      $snps_flat_file_location = $dest_folder . '/' . $study_accession . '-' . $i . '-snps.csv';
-      if (!is_file($snps_flat_file_location) || $regenerate_all == true) {
-        $snps_sorted = $dest_folder . '/' . $study_accession . '-' . $i . '-snps-sorted.csv';
-        $time_start = time();
-        exec("cat $snps_flat_file_location | sort > $snps_sorted");
-        $time_end = time();
-        $time_elapsed = $time_end - $time_start;
-        tpps_log("[$time_elapsed s] File generated: $snps_sorted\n");
-      }
-      else {
-
-      }
-      tpps_log("[SORTED LIST]: ". $snps_flat_file_location . "\n");
-    }
-  }
-
-  $all_studies_array = [];
-  $accession_results = chado_query("select distinct accession from
-  (select accession, unnest(markers) as marker from chado.studies_with_markers)x
-  where marker in
-  (select unnest(markers) as marker from chado.studies_with_markers where accession = '" . $accession . "');");
-  foreach ($accession_results as $row) {
-    $all_studies_array[] = $row->accession;
-  }
-  tpps_log("All Studies Array:\n" . print_r($all_studies_array, true));
-
-  // // Code modified from https://r.je/php-find-every-combination
+    // print_r($study_accessions_with_potential_overlaps);
 
 
-  // $words = array('red', 'blue', 'green');
-  $all_combinations = [];
-  $combination = [];
-  $num = count($all_studies_array);
-  // The total number of possible combinations.
-  $total = pow(2, $num);
-  // Loop through each possible combination.
-  for ($i = 0; $i < $total; $i++) {
-    // For each combination check if each bit is set.
-    for ($j = 0; $j < $num; $j++) {
-      // Is bit $j set in $i?
-      if (pow(2, $j) & $i) {
-        // echo $all_studies_array[$j] . ' ';
-        $combination[] = $all_studies_array[$j];
-      }
-    }
-    $all_combinations[] = json_decode(json_encode($combination));
-    $combination = [];
-    // echo '<br />';
-  }
 
-  // Remove every combo that isn't 2.
-  $count_combinations = count($all_combinations);
-  $unique_pairs = [];
-  for ($i = 0; $i < $count_combinations; $i++) {
-    if (count($all_combinations[$i]) == 2) {
-      $unique_pairs[] = $all_combinations[$i];
-    }
-  }
-  // print_r($unique_pairs);
-  // return;
+    // Go through each additional study and run genotypes to flat file.
+    foreach ($study_accessions_with_potential_overlaps as $study_accession) {
+      $submission = new Submission($study_accession);
+      $study_state = $submission->sharedState;
 
-  // Go through each study other than the original and get repeats
-  foreach ($unique_pairs as $pair) {
-    $snps_flat_file_location_1 = $dest_folder . '/' . $pair[0] . '-1-snps-sorted.csv';
-    $snps_flat_file_location_2 = $dest_folder . '/' . $pair[1] . '-1-snps-sorted.csv';
-    $repeats_location = $dest_folder . '/' . $pair[0] . "-" . $pair[1] . "-repeats.csv";
-    // unlink($repeats_location);
-    $cmd = "comm $snps_flat_file_location_1 $snps_flat_file_location_2 | awk -F'\\t' '{print $3}' | sed '/^$/d' > $repeats_location";
-    // echo "CMD: $cmd\n";
-    if (!is_file($repeats_location) || $regenerate_all == true) {
-      exec($cmd);
-      // echo "Repeats Location: $repeats_location\n";
-    }
-    else {
+      $study_organism_number = $study_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
+      tpps_log("Study organism number for $study_accession is $study_organism_number\n");
+      // Check if each study has overlap files
+      for($i = 1; $i <= $study_organism_number; $i++) {
+        $snps_flat_file_location = $dest_folder . '/' . $study_accession . '-' . $i . '-snps.csv';
+        tpps_log("Checking if file exists: $snps_flat_file_location\n");
+        if (!file_exists($snps_flat_file_location) || $regenerate_all == true) {
+          // GOAL: We need to generate flat files for this study
+          // Step 1: Get species_codes for this study
 
-    }
+          // New code by Rish to get the species code array
+          $study_species_codes = tpps_generate_species_codes_array_from_shared_state($shared_state);
 
-    tpps_log("[Repeats Location]: $repeats_location\n");
-  }
+          // DEPRECATED 8/12/2024 due to Vlad's breaking changes code
+          //$study_species_codes = array();
+          // for ($j = 1; $j <= $organism_number; $j++) {
+          //   $study_species_codes[$study_state['ids']['organism_ids'][$j]] = current(chado_select_record('organismprop', array('value'), array(
+          //     'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id,
+          //     'organism_id' => $study_state['ids']['organism_ids'][$j],
+          //   ), array(
+          //     'limit' => 1,
+          //   )))->value;
+          // }
 
-  // Remove repeats from corresponding studies.
-  foreach ($unique_pairs as $pair) {
-    $snps_flat_file_location_1 = $dest_folder . '/' . $pair[0] . '-1-snps-sorted.csv';
-    $snps_flat_file_location_2 = $dest_folder . '/' . $pair[1] . '-1-snps-sorted.csv';
-    $repeats_location = $dest_folder . '/' . $pair[0] . "-" . $pair[1] . "-repeats.csv";
-
-    $repeats_removed_location_1 = $dest_folder . '/' . $pair[0] . '-1-snps-repeats-removed.csv';
-    $repeats_removed_location_2 = $dest_folder . '/' . $pair[1] . '-1-snps-repeats-removed.csv';
-
-    if (!is_file($repeats_removed_location_1) || $regenerate_all == TRUE) {
-      // exec("grep -v -x -f $repeats_location $snps_flat_file_location_1 > $repeats_removed_location_1");
-      exec("awk 'NR==FNR{a[$0]=1;next}!a[$0]' $repeats_location $snps_flat_file_location_1 > $repeats_removed_location_1");
-    }
-    tpps_log("[Repeats removed]: $repeats_removed_location_1\n");
-
-    if (!is_file($repeats_removed_location_2) || $regenerate_all == TRUE) {
-      // exec("grep -v -x -f $repeats_location $snps_flat_file_location_2 > $repeats_removed_location_2");
-      exec("awk 'NR==FNR{a[$0]=1;next}!a[$0]' $repeats_location $snps_flat_file_location_2 > $repeats_removed_location_2");
-    }
-    tpps_log("[Repeats removed]: $repeats_removed_location_2\n");
-  }
-
-  // Distinct repeats_removed.
-  foreach ($unique_pairs as $pair) {
-    $repeats_removed_location_1 = $dest_folder . '/' . $pair[0] . '-1-snps-repeats-removed.csv';
-    $repeats_removed_location_2 = $dest_folder . '/' . $pair[1] . '-1-snps-repeats-removed.csv';
-
-    $distinct_repeats_removed_location_1 = $dest_folder . '/' . $pair[0] . '-1-snps-repeats-removed-distinct-snps.csv';
-    $distinct_repeats_removed_location_2 = $dest_folder . '/' . $pair[1] . '-1-snps-repeats-removed-distinct-snps.csv';
-
-    // unlink($distinct_repeats_removed_location_1);
-    // unlink($distinct_repeats_removed_location_2);
-
-    if (!is_file($distinct_repeats_removed_location_1) || $regenerate_all == true) {
-      exec("awk -F',' '{print $2}' $repeats_removed_location_1 | sort | uniq > $distinct_repeats_removed_location_1");
-    }
-    tpps_log("[Distinct repeats removed snps]: $distinct_repeats_removed_location_1\n");
-
-    if (!is_file($distinct_repeats_removed_location_2) || $regenerate_all == true) {
-      exec("awk -F',' '{print $2}' $repeats_removed_location_2 | sort | uniq > $distinct_repeats_removed_location_2");
-    }
-    tpps_log("[Distinct repeats removed snps]: $distinct_repeats_removed_location_2\n");
-  }
-
-  // Check for repeats between distinct_snps
-  foreach ($unique_pairs as $pair) {
-    $distinct_repeats_removed_location_1 = $dest_folder . '/' . $pair[0] . '-1-snps-repeats-removed-distinct-snps.csv';
-    $distinct_repeats_removed_location_2 = $dest_folder . '/' . $pair[1] . '-1-snps-repeats-removed-distinct-snps.csv';
-
-    $overlapping_snps_location = $dest_folder . '/' . $pair[0] . '-' . $pair[1] . '-1-snps-overlapping.txt';
-    if (!is_file($overlapping_snps_location) || $regenerate_all == true) {
-      exec("comm $distinct_repeats_removed_location_1 $distinct_repeats_removed_location_2 | awk -F'\\t' '{print $3}' | sed '/^$/d' > $overlapping_snps_location");
-    }
-    tpps_log("[OVERLAPPING SNPS LOCATION]: $overlapping_snps_location\n");
-  }
-
-  // Now we need to add this data to the database.
-  foreach ($unique_pairs as $pair) {
-    $overlapping_snps_location = $dest_folder . '/' . $pair[0] . '-' . $pair[1] . '-1-snps-overlapping.txt';
-    // Try to do this efficiently.
-    $snps = [];
-    $handle = fopen($overlapping_snps_location, "r");
-    if ($handle) {
-      while (($line = fgets($handle)) !== FALSE) {
-        // Process the line read.
-        if (trim($line) != '' || trim($line) == ' ') {
-          $snps[] = "'" . trim($line) . "'";
+          // Generate the flat files and necessary DB inserts for features, genotypes etc
+          tpps_log("Running tpps_genotypes_to_flat_file $study_accession $i\n");
+          tpps_genotypes_to_flat_file($study_state, $shared_state, $study_species_codes, $i);
+          tpps_log("Done.");
+        }
+        else {
+          // Flat file exists so we can perform comparison operations to check between original study
+          // and this particular study
         }
       }
     }
-    fclose($handle);
-    $snps_count = count($snps);
-    tpps_log("SNPs count $snps_count between " . $pair[0] . " and " . $pair[1] . "\n");
-    // print_r($snps);
-    // print_r(implode(',', $snps));
 
-    if ($snps_count > 0) {
-      // Check if this data exists, if it doesn't insert, else update.
-      $results = chado_query("SELECT count(*) as c1 FROM chado.studies_marker_overlaps
-        WHERE '" . $pair[0] . "'= ANY(accession)
-        AND '" . $pair[1] . "'= ANY(accession)");
-      $count = $results->fetchObject()->c1;
-      // Row exists, delete it before inserting new row.
-      if ($count == 0) {
-        chado_query("DELETE FROM chado.studies_marker_overlaps
-        WHERE '" . $pair[0] . "'= ANY(accession)
-        AND '" . $pair[1] . "'= ANY(accession)");
+    // @TODO after running tests
+    // exit;
+
+    // Go through all studies and generate sorted list of the csv files
+    $accession_results = chado_query("select distinct accession from
+      (select accession, unnest(markers) as marker from chado.studies_with_markers)x
+      where marker in
+      (select unnest(markers) as marker from chado.studies_with_markers where accession = '" . $accession . "');");
+    foreach ($accession_results as $row) {
+      $study_accession = $row->accession;
+      $submission = new Submission($study_accession);
+      $study_state = $submission->sharedState;
+      $study_organism_number = $study_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
+      for ($i = 1; $i <= $study_organism_number; $i++) {
+        $snps_flat_file_location = $dest_folder . '/' . $study_accession . '-' . $i . '-snps.csv';
+        if (!is_file($snps_flat_file_location) || $regenerate_all == true) {
+          $snps_sorted = $dest_folder . '/' . $study_accession . '-' . $i . '-snps-sorted.csv';
+          $time_start = time();
+          exec("cat $snps_flat_file_location | sort > $snps_sorted");
+          $time_end = time();
+          $time_elapsed = $time_end - $time_start;
+          tpps_log("[$time_elapsed s] File generated: $snps_sorted\n");
+        }
+        else {
+
+        }
+        tpps_log("[SORTED LIST]: ". $snps_flat_file_location . "\n");
       }
-      chado_query('INSERT INTO chado.studies_marker_overlaps (accession,overlap) VALUES (' .
-        'ARRAY[\'' . $pair[0] . '\',\'' . $pair[1] . '\'], ARRAY[' . implode(',', $snps) . ']' .
-      ')');
     }
-    else {
-      tpps_log("No SNPs overlaps found between " . $pair[0] . " and " . $pair[1] . "\n");
+
+    $all_studies_array = [];
+    $accession_results = chado_query("select distinct accession from
+    (select accession, unnest(markers) as marker from chado.studies_with_markers)x
+    where marker in
+    (select unnest(markers) as marker from chado.studies_with_markers where accession = '" . $accession . "');");
+    foreach ($accession_results as $row) {
+      $all_studies_array[] = $row->accession;
     }
+    tpps_log("All Studies Array:\n" . print_r($all_studies_array, true));
+
+    // // Code modified from https://r.je/php-find-every-combination
+
+
+    // $words = array('red', 'blue', 'green');
+    $all_combinations = [];
+    $combination = [];
+    $num = count($all_studies_array);
+    // The total number of possible combinations.
+    $total = pow(2, $num);
+    // Loop through each possible combination.
+    for ($i = 0; $i < $total; $i++) {
+      // For each combination check if each bit is set.
+      for ($j = 0; $j < $num; $j++) {
+        // Is bit $j set in $i?
+        if (pow(2, $j) & $i) {
+          // echo $all_studies_array[$j] . ' ';
+          $combination[] = $all_studies_array[$j];
+        }
+      }
+      $all_combinations[] = json_decode(json_encode($combination));
+      $combination = [];
+      // echo '<br />';
+    }
+
+    // Remove every combo that isn't 2.
+    $count_combinations = count($all_combinations);
+    $unique_pairs = [];
+    for ($i = 0; $i < $count_combinations; $i++) {
+      if (count($all_combinations[$i]) == 2) {
+        $unique_pairs[] = $all_combinations[$i];
+      }
+    }
+    // print_r($unique_pairs);
+    // return;
+
+    // Go through each study other than the original and get repeats
+    foreach ($unique_pairs as $pair) {
+      $snps_flat_file_location_1 = $dest_folder . '/' . $pair[0] . '-1-snps-sorted.csv';
+      $snps_flat_file_location_2 = $dest_folder . '/' . $pair[1] . '-1-snps-sorted.csv';
+      $repeats_location = $dest_folder . '/' . $pair[0] . "-" . $pair[1] . "-repeats.csv";
+      // unlink($repeats_location);
+      $cmd = "comm $snps_flat_file_location_1 $snps_flat_file_location_2 | awk -F'\\t' '{print $3}' | sed '/^$/d' > $repeats_location";
+      // echo "CMD: $cmd\n";
+      if (!is_file($repeats_location) || $regenerate_all == true) {
+        exec($cmd);
+        // echo "Repeats Location: $repeats_location\n";
+      }
+      else {
+
+      }
+
+      tpps_log("[Repeats Location]: $repeats_location\n");
+    }
+
+    // Remove repeats from corresponding studies.
+    foreach ($unique_pairs as $pair) {
+      $snps_flat_file_location_1 = $dest_folder . '/' . $pair[0] . '-1-snps-sorted.csv';
+      $snps_flat_file_location_2 = $dest_folder . '/' . $pair[1] . '-1-snps-sorted.csv';
+      $repeats_location = $dest_folder . '/' . $pair[0] . "-" . $pair[1] . "-repeats.csv";
+
+      $repeats_removed_location_1 = $dest_folder . '/' . $pair[0] . '-1-snps-repeats-removed.csv';
+      $repeats_removed_location_2 = $dest_folder . '/' . $pair[1] . '-1-snps-repeats-removed.csv';
+
+      if (!is_file($repeats_removed_location_1) || $regenerate_all == TRUE) {
+        // exec("grep -v -x -f $repeats_location $snps_flat_file_location_1 > $repeats_removed_location_1");
+        exec("awk 'NR==FNR{a[$0]=1;next}!a[$0]' $repeats_location $snps_flat_file_location_1 > $repeats_removed_location_1");
+      }
+      tpps_log("[Repeats removed]: $repeats_removed_location_1\n");
+
+      if (!is_file($repeats_removed_location_2) || $regenerate_all == TRUE) {
+        // exec("grep -v -x -f $repeats_location $snps_flat_file_location_2 > $repeats_removed_location_2");
+        exec("awk 'NR==FNR{a[$0]=1;next}!a[$0]' $repeats_location $snps_flat_file_location_2 > $repeats_removed_location_2");
+      }
+      tpps_log("[Repeats removed]: $repeats_removed_location_2\n");
+    }
+
+    // Distinct repeats_removed.
+    foreach ($unique_pairs as $pair) {
+      $repeats_removed_location_1 = $dest_folder . '/' . $pair[0] . '-1-snps-repeats-removed.csv';
+      $repeats_removed_location_2 = $dest_folder . '/' . $pair[1] . '-1-snps-repeats-removed.csv';
+
+      $distinct_repeats_removed_location_1 = $dest_folder . '/' . $pair[0] . '-1-snps-repeats-removed-distinct-snps.csv';
+      $distinct_repeats_removed_location_2 = $dest_folder . '/' . $pair[1] . '-1-snps-repeats-removed-distinct-snps.csv';
+
+      // unlink($distinct_repeats_removed_location_1);
+      // unlink($distinct_repeats_removed_location_2);
+
+      if (!is_file($distinct_repeats_removed_location_1) || $regenerate_all == true) {
+        exec("awk -F',' '{print $2}' $repeats_removed_location_1 | sort | uniq > $distinct_repeats_removed_location_1");
+      }
+      tpps_log("[Distinct repeats removed snps]: $distinct_repeats_removed_location_1\n");
+
+      if (!is_file($distinct_repeats_removed_location_2) || $regenerate_all == true) {
+        exec("awk -F',' '{print $2}' $repeats_removed_location_2 | sort | uniq > $distinct_repeats_removed_location_2");
+      }
+      tpps_log("[Distinct repeats removed snps]: $distinct_repeats_removed_location_2\n");
+    }
+
+    // Check for repeats between distinct_snps
+    foreach ($unique_pairs as $pair) {
+      $distinct_repeats_removed_location_1 = $dest_folder . '/' . $pair[0] . '-1-snps-repeats-removed-distinct-snps.csv';
+      $distinct_repeats_removed_location_2 = $dest_folder . '/' . $pair[1] . '-1-snps-repeats-removed-distinct-snps.csv';
+
+      $overlapping_snps_location = $dest_folder . '/' . $pair[0] . '-' . $pair[1] . '-1-snps-overlapping.txt';
+      if (!is_file($overlapping_snps_location) || $regenerate_all == true) {
+        exec("comm $distinct_repeats_removed_location_1 $distinct_repeats_removed_location_2 | awk -F'\\t' '{print $3}' | sed '/^$/d' > $overlapping_snps_location");
+      }
+      tpps_log("[OVERLAPPING SNPS LOCATION]: $overlapping_snps_location\n");
+    }
+
+    // Now we need to add this data to the database.
+    foreach ($unique_pairs as $pair) {
+      $overlapping_snps_location = $dest_folder . '/' . $pair[0] . '-' . $pair[1] . '-1-snps-overlapping.txt';
+      // Try to do this efficiently.
+      $snps = [];
+      $handle = fopen($overlapping_snps_location, "r");
+      if ($handle) {
+        while (($line = fgets($handle)) !== FALSE) {
+          // Process the line read.
+          if (trim($line) != '' || trim($line) == ' ') {
+            $snps[] = "'" . trim($line) . "'";
+          }
+        }
+      }
+      fclose($handle);
+      $snps_count = count($snps);
+      tpps_log("SNPs count $snps_count between " . $pair[0] . " and " . $pair[1] . "\n");
+      // print_r($snps);
+      // print_r(implode(',', $snps));
+
+      if ($snps_count > 0) {
+        // Check if this data exists, if it doesn't insert, else update.
+        $results = chado_query("SELECT count(*) as c1 FROM chado.studies_marker_overlaps
+          WHERE '" . $pair[0] . "'= ANY(accession)
+          AND '" . $pair[1] . "'= ANY(accession)");
+        $count = $results->fetchObject()->c1;
+        // Row exists, delete it before inserting new row.
+        if ($count == 0) {
+          chado_query("DELETE FROM chado.studies_marker_overlaps
+          WHERE '" . $pair[0] . "'= ANY(accession)
+          AND '" . $pair[1] . "'= ANY(accession)");
+        }
+        chado_query('INSERT INTO chado.studies_marker_overlaps (accession,overlap) VALUES (' .
+          'ARRAY[\'' . $pair[0] . '\',\'' . $pair[1] . '\'], ARRAY[' . implode(',', $snps) . ']' .
+        ')');
+      }
+      else {
+        tpps_log("No SNPs overlaps found between " . $pair[0] . " and " . $pair[1] . "\n");
+      }
+    }
+    echo "ALL COMPLETED!\n";
   }
-  echo "ALL COMPLETED!\n";
+  catch (\Exception $e) {
+    $transaction->rollback();
+    throw $e;
+  }
 }
 
 /**
