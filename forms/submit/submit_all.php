@@ -45,6 +45,7 @@ function tpps_initialize_job_logger($accession, TripalJob $job = NULL) {
   $tpps_job_logger['log_file_path'] = $log_path . $accession . '_'
     . $tpps_job_logger['job_object']->getJobID() . '.txt';
   $tpps_job_logger['log_file_handle'] = fopen($tpps_job_logger['log_file_path'], "w+");
+  tpps_log('Completed log path: @path', ['@path' => $log_path], TRIPAL_INFO);
 }
 
 /**
