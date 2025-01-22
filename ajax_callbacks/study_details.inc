@@ -30,6 +30,9 @@ function tpps_ajax_get_species_details_tab(array $data) {
   if (!tpps_access('access tpps details')) {
     return ['errors' => [t('Access denied')]];
   }
+  if (empty($data['accession'])) {
+    return ['errors' => [t('Empty study accession.')]];
+  }
   $submission = new Submission($data['accession']);
 
   $query = db_select('chado.organism', 'o');
@@ -80,23 +83,15 @@ function tpps_ajax_get_species_details_tab(array $data) {
     ];
   }
 
-  $vars = array(
-    'header' => array(
-      'Order',
-      'Family',
-      'Species',
-      'Common Name',
-    ),
+  $vars = [
+    'header' => [t('Order'), t('Family'), t('Species'), t('Common Name')],
     'rows' => $rows,
-    'attributes' => array(
-      'class' => array('view'),
-      'id' => 'tpps_table_display',
-    ),
+    'attributes' => ['class' => ['view'], 'id' => 'tpps_table_display'],
     'caption' => '',
     'colgroups' => NULL,
     'sticky' => FALSE,
-    'empty' => '',
-  );
+    'empty' => t('No data'),
+  ];
   return [
     'success' => TRUE,
     'content' => theme('table', $vars),
@@ -118,19 +113,27 @@ function tpps_ajax_get_species_details_tab(array $data) {
  */
 function tpps_ajax_get_study_details_tab(array $data) {
   if (!tpps_access('access tpps details')) {
-    return ['errors' => [t('Access denied')]];
+    return ['errors' => [t('Access denied.')]];
   }
+  if (empty($data['accession'])) {
+    return ['errors' => [t('Empty study accession.')]];
+  }
+  // @TODO Cache $rows. Processing takes 53 msec >> 2msec.
   $submission = new Submission($data['accession']);
   $state = $submission->sharedState;
-
   $rows = [];
   $species = [];
-  for ($i = 1; $i <= $state['stats']['species_count']; $i++) {
-    $id = $state['ids']['organism_ids'][$i];
-    $species_name = $state['saved_values'][TPPS_PAGE_1]['organism'][$i]['name'];
-    $species[] = tpps_entity_link($id, $species_name, 'Organism');
-  }
   $files = [];
+
+  for ($i = 1; $i <= $submission->getOrganismNumber(); $i++) {
+    if (!empty($id = $state['ids']['organism_ids'][$i])) {
+      $species[] = tpps_entity_link($id, $submission->getOrganismName($i), 'Organism');
+    }
+    // Add "Local VCF" (which hasn't file id).
+    $files[] = $submission->getLocalVcf($i);
+  }
+  // Note: Remove empty elements after processing local VCF files.
+  $files = array_filter($files);
   $study_file_ids = tpps_details_get_study_file_ids($submission->sharedState);
   $params = ['attributes' => ['target' => '_blank']];
   foreach ($study_file_ids as $fid) {
@@ -144,49 +147,50 @@ function tpps_ajax_get_study_details_tab(array $data) {
     }
   }
   $page2_values = $state['saved_values'][TPPS_PAGE_2]['study_type'] ?? NULL;
-
   $pub_link = $state['title'];
   $pub_id = db_select('chado.project_pub', 'p')
-    ->fields('p', array('pub_id'))
+    ->fields('p', ['pub_id'])
     ->condition('project_id', $state['ids']['project_id'])
     ->execute()->fetchObject()->pub_id;
   if (!empty($pub_id)) {
-    $bundle = tripal_load_bundle_entity(array('label' => 'Publication'));
-    $pub_id = chado_get_record_entity_by_bundle($bundle, $pub_id);
-    $pub_link = "<a href='$base_url/Publication/$pub_id'>$pub_link</a>";
+    try {
+      $bundle = tripal_load_bundle_entity(['label' => 'Publication']);
+      $pub_id = chado_get_record_entity_by_bundle($bundle, $pub_id);
+      $pub_link = l($pub_link, "$base_url/Publication/$pub_id");
+    }
+    catch (Exception $e) {
+      return ['errors' => [$e->getMessage()]];
+    }
   }
-  $rows[] = array('Accession', $state['accession']);
-  $rows[] = array('Title', $pub_link);
-  $rows[] = array('Authors', implode(', ', $state['authors']));
-  $rows[] = array('Species', implode('<br>', $species));
-  $rows[] = array('Data Type', $page2_values['data_type']);
+  $rows[] = [t('Accession'), $state['accession']];
+  $rows[] = [t('Title'), $pub_link];
+  $rows[] = [t('Authors'), implode(', ', $state['authors'])];
+  $rows[] = [t('Species'), implode('<br>', $species)];
+  $rows[] = [t('Data Type'), $page2_values['data_type']];
   module_load_include('inc', 'tpps', 'includes/form');
   $rows[] = [
     'Study Type',
     tpps_form_get_study_type($page2_values['study_type']),
   ];
-  $rows[] = ['File Downloads', implode('<br>', $files)];
-  $rows[] = array('Population Size', $state['stats']['tree_count']);
+  $rows[] = [t('File Downloads'), implode('<br>', $files)];
+  $rows[] = [t('Population Size'), $state['stats']['tree_count']];
   if (!empty($state['stats']['phenotype_count'])) {
-    $rows[] = array('Phenotype Count', $state['stats']['phenotype_count']);
+    $rows[] = [t('Phenotype Count'), $state['stats']['phenotype_count']];
   }
   if (!empty($state['stats']['unique_phenotypes'])) {
-    $rows[] = array('Unique Phenotypes', $state['stats']['unique_phenotypes']);
+    $rows[] = [t('Unique Phenotypes'), $state['stats']['unique_phenotypes']];
   }
   // @todo genotype counts.
   // $rows[] = array('Genotype Count', $state['stats']['genotype_count']);
-  $vars = array(
-    'header' => array(),
+  $vars = [
+    'header' => [],
     'rows' => $rows,
-    'attributes' => array(
-      'class' => array('view'),
-      'id' => 'tpps_table_display',
-    ),
+    'attributes' => ['class' => ['view'], 'id' => 'tpps_table_display'],
     'caption' => '',
     'colgroups' => NULL,
     'sticky' => FALSE,
     'empty' => '',
-  );
+  ];
   return [
     'success' => TRUE,
     'content' => theme('table', $vars),
@@ -212,6 +216,9 @@ function tpps_ajax_get_trees_details_tab(array $data) {
   if (!tpps_access('access tpps details')) {
     return ['errors' => [t('Access denied')]];
   }
+  if (empty($data['accession'])) {
+    return ['errors' => [t('Empty study accession.')]];
+  }
   $submission = new Submission($data['accession']);
   $path = current_path();
   $args = explode('/', $path);
@@ -223,7 +230,7 @@ function tpps_ajax_get_trees_details_tab(array $data) {
     return [
       'errors' => [
         t('The plant information for this study has not been properly updated. '
-        . 'Please contact your site administrator.')
+        . 'Please contact your site administrator.'),
       ],
     ];
   }
@@ -235,15 +242,13 @@ function tpps_ajax_get_trees_details_tab(array $data) {
   foreach ($chunks[$page] as $name => $info) {
     $id = $info['organism_id'];
     $form_number = array_search($id, $share_state['ids']['organism_ids']);
-    $species_name = $submission->sharedState['saved_values'][TPPS_PAGE_1]
-      ['organism'][$form_number]['name'];
 
     $tree_id = tpps_entity_link($info['stock_id'], $name, 'Stock');
 
     $row = [
       strtoupper($args[2]) . '-' . strip_tags($tree_id),
       tpps_entity_link($info['stock_id'], $name, 'Stock'),
-      tpps_entity_link($id, $species_name, 'Organism'),
+      tpps_entity_link($id, $submission->getOrganismName($form_number), 'Organism'),
     ];
     $row[] = $info['lat'];
     $row[] = $info['lng'];
@@ -290,6 +295,9 @@ function tpps_ajax_get_trees_details_tab(array $data) {
 function tpps_ajax_get_phenotype_details_tab(array $data) {
   if (!tpps_access('access tpps details')) {
     return ['errors' => [t('Access denied')]];
+  }
+  if (empty($data['accession'])) {
+    return ['errors' => [t('Empty study accession.')]];
   }
   $submission = new Submission($data['accession']);
   $page = $data['page'] ?? 0;
@@ -369,9 +377,13 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
   if (!tpps_access('access tpps details')) {
     return ['errors' => [t('Access denied')]];
   }
+  if (empty($data['accession'])) {
+    return ['errors' => [t('Empty study accession.')]];
+  }
   $submission = new Submission($data['accession']);
-
-  $project_id = $submission->getProjectId();
+  if (empty($project_id = $submission->getProjectId())) {
+    return ['errors' => [t("Study wasn't yet processed.")]];
+  }
   $page = $data['page'] ?? 0;
   $rows = array();
   $per_page = 20;
@@ -515,6 +527,9 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
 function tpps_ajax_get_mass_spectrometry_details_tab(array $data) {
   if (!tpps_access('access tpps details')) {
     return ['errors' => [t('Access denied')]];
+  }
+  if (empty($data['accession'])) {
+    return ['errors' => [t('Empty study accession.')]];
   }
   $submission = new Submission($data['accession']);
 
