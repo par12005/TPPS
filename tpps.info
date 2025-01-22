@@ -10,8 +10,13 @@ dependencies[] = jquery_update
 dependencies[] = tripal_eutils
 files[] = src/Submission.class.inc
 files[] = src/Organism.class.inc
+files[] = src/FileField.class.inc
+
+; Phenotype File Fields.
 files[] = src/PhenotypeManual.class.inc
 files[] = src/PhenotypeMeta.class.inc
 files[] = src/PhenotypeData.class.inc
-files[] = src/SnpAssociation.class.inc
-files[] = src/FileField.class.inc
+
+; Genotype File Fields.
+files[] = src/genotype/SnpAssociation.class.inc
+files[] = src/genotype/AssayDesign.class.inc

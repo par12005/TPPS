@@ -13,7 +13,10 @@
  */
 class SnpAssociation {
 
-  // Data types for 'SNP Association' field columns.
+  // Name of the form field.
+  const FIELD_NAME = 'snps-association';
+
+  // Data types for field columns.
   const DATA_TYPE_SNP_ID = 1;
   const DATA_TYPE_SCAFFOLD = 2;
   const DATA_TYPE_POSITION = 3;
@@ -64,6 +67,8 @@ class SnpAssociation {
    */
   public static function build($id, array &$form, array $form_state) {
     $page4_values = $form_state['saved_values']['4'];
+
+    // @TODO Implement.
   }
 
   /**
@@ -81,7 +86,7 @@ class SnpAssociation {
     $snps_fieldset = 'SNPs';
     $snps = &$genotype[$snps_fieldset] ?? NULL;
     $snps_assay = $snps['snps-assay'] ?? 0;
-    $fid = $snps['snps-association'] ?? 0;
+    $fid = $snps[self::FIELD_NAME] ?? 0;
     $file_type = $snps['file-type'] ?? NULL;
     $id = "organism-$org_num";
 
@@ -115,7 +120,7 @@ class SnpAssociation {
     }
 
     // Note: File id stored in $form (!) but not stored in $form_state.
-    $file_id = $form[$id]['genotype'][$snps_fieldset]['snps-association'];
+    $file_id = $form[$id]['genotype'][$snps_fieldset][self::FIELD_NAME];
     $groups = tpps_file_validate_columns($form_state, $required_groups, $file_id);
 
     if (form_get_errors()) {
@@ -124,7 +129,8 @@ class SnpAssociation {
 
     // Check that SNP IDs match Genotype Assay.
     $snps_id_col = $groups['SNP ID'][self::DATA_TYPE_SNP_ID];
-    $assoc_no_header = $snps['snps-association-no-header'] ?? FALSE;
+    // For search purpose: 'snps-association-no-header'.
+    $assoc_no_header = $snps[self::FIELD_NAME . '-no-header'] ?? FALSE;
 
     $assay_snps = tpps_file_headers($snps_assay);
     unset($assay_snps[key($assay_snps)]);
@@ -132,7 +138,7 @@ class SnpAssociation {
     $missing_snps = array_diff($assoc_snps, $assay_snps);
 
     if (!empty($missing_snps)) {
-      form_set_error("$id][genotype][$snps_fieldset][snps-association",
+      form_set_error("$id][genotype][$snps_fieldset][" . self::FIELD_NAME,
         t("SNP Association File: We detected SNP IDs that were not in "
         . "your Genotype Assay. Please either remove these SNPs from "
         . "your Association file, or add them to your Genotype Assay. "
@@ -162,7 +168,7 @@ class SnpAssociation {
 
     $missing_phenotypes = array_diff($association_phenotypes, $phenotype_meta_names);
     if (!empty($missing_phenotypes)) {
-      form_set_error("$id][genotype][$snps_fieldset][snps-association",
+      form_set_error("$id][genotype][$snps_fieldset][" . self::FIELD_NAME,
         t("SNP Association File: We detected Associated Traits that were "
         . "not specified in the Phenotype Metadata Section. Please "
         . "either remove these Traits from your Association file, "
@@ -184,7 +190,7 @@ class SnpAssociation {
       ) {
         continue;
       }
-      form_set_error("$id][genotype][$snps_fieldset][snps-association",
+      form_set_error("$id][genotype][$snps_fieldset][" . self::FIELD_NAME,
         t('SNP Association File: We detected SNP positions that do '
           . 'not match the required format: @position.'
           . '<br />The correct format is: "start:stop" or integer.',
@@ -199,7 +205,8 @@ class SnpAssociation {
     $options = [
       'associations_groups' => $groups,
       'id' => $id,
-      'column_list' => $snps['snps-association-columns'],
+      // For seach purpose: 'snps-association-columns'.
+      'column_list' => $snps[self::FIELD_NAME . '-columns'],
     ];
     tpps_file_iterator($fid, 'SnpAssociation::validateRow', $options);
 
@@ -308,7 +315,7 @@ class SnpAssociation {
    *   'id' - string e.g., 'organism-1'.
    */
   public static function validateRow($row, array &$options = []) {
-    $name = $options['id'] . '][genotype][snps-association';
+    $name = $options['id'] . '][genotype][' . self::FIELD_NAME;
     self::getNamedRow($row, $options);
     $associations = $options['associations'];
     $column_list = $options['column_list'];
@@ -433,7 +440,7 @@ class SnpAssociation {
    */
   public static function getFileId($organism_index, array $shared_state) {
     return $shared_state['saved_values'][TPPS_PAGE_4]["organism-$organism_index"]
-      ['genotype']['files']['snps-association'] ?? NULL;
+      ['genotype']['files'][self::FIELD_NAME] ?? NULL;
   }
 
   /**

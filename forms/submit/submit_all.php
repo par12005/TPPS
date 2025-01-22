@@ -12,9 +12,12 @@
 // Global variables.
 $tpps_job_logger = NULL;
 $tpps_job = NULL;
-module_load_include('inc', 'tpps', 'src/SnpAssociation.class');
+// Phenotype File Fields.
 module_load_include('inc', 'tpps', 'src/PhenotypeMeta.class');
 module_load_include('inc', 'tpps', 'src/PhenotypeData.class');
+// Genotype File Fields.
+module_load_include('inc', 'tpps', 'src/genotype/AssayDesign.class');
+module_load_include('inc', 'tpps', 'src/genotype/SnpAssociation.class');
 
 /**
  * Initialized the job logger which handles writing to job logs

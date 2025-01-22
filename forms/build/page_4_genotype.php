@@ -341,7 +341,6 @@ function tpps_genotype_subform(array $form_bus) {
   // Assay Design File.
   $title = t('Assay Design File');
   $file_field_name = 'assay-design';
-  $column_options = tpps_form_get_file_field_columns($file_field_name);
   // Add file upload field.
   // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
   tpps_form_build_file_field([
@@ -381,7 +380,10 @@ function tpps_genotype_subform(array $form_bus) {
           ]
         ) ?? 'NA',
       ],
-      'columns-options' => ['#type' => 'hidden', '#value' => $column_options],
+      'columns-options' => [
+        '#type' => 'hidden',
+        '#value' => AssayDesign::getColumnOptions(),
+      ],
       'no-header' => [],
     ],
   ]);

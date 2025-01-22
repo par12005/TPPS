@@ -515,56 +515,6 @@ function tpps_form_add_report(array &$form, array $meta) {
 }
 
 /**
- * Gets list of data types of columns for file fields.
- *
- * Set tpps_form_build_file_field();
- *
- * @param string $field_name
- *   Field name.
- *
- * @return array
- *   Returns list of data types for specified field.
- *   Indexes are very important and used for validation and processing.
- *
- * @todo Combine with FileField::metaData property.
- */
-function tpps_form_get_file_field_columns($field_name = '') {
-  switch ($field_name) {
-    case 'assay-design':
-      // List of data types to be used in the dropdown list from Meghan.
-      // https://plantcompgenomics.slack.com/archives/C05R396U4QK/p1730737064312679?thread_ts=1730430961.236099&cid=C05R396U4QK
-      return [
-        0 => t('N/A'),
-        1 => t('SNP ID'),
-        2 => t('Scaffold'),
-        3 => t('Position'),
-        4 => t('Flank sequence'),
-      ];
-
-    case 'snps-association':
-      return [
-        0 => t('N/A'),
-        1 => t('SNP ID'),
-        2 => t('Scaffold'),
-        3 => t('Position'),
-        4 => t('Allele'),
-        5 => t('Associated Trait'),
-        6 => t('Confidence Value'),
-        7 => t('Gene ID'),
-        8 => t('Annotation'),
-      ];
-
-    default:
-      watchdog('tpps',
-        '@function: Requested non-existing field @field_name.',
-        ['@function' => __FUNCTION__, '@field_name' => $field_name],
-        WATCHDOG_ERROR
-      );
-      return [];
-  }
-}
-
-/**
  * Adds File Upload field to form.
  *
  * WARNING: Currently could be used only at Page 4.
