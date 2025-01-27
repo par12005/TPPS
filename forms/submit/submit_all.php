@@ -4797,28 +4797,29 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           // Used to save the first genotype in each row of the VCF (used for genotype_call table).
           $first_genotypes = [];
           $count_columns = count($vcf_line);
-          for ($j = 9; $j < $count_columns; $j++) {
 
+          // 1/27/2024
+          // Check if marker type is indel
+          // split ref by comma (based on Emily's demo), go through each split value
+          $ref_comma_parts = explode(',', $ref); // eg G,GTAC
+          foreach ($ref_comma_parts as $ref_comma_part) {
+            $ref_comma_part = trim($ref_comma_part);
+            // Check length of comma_part
+            $len = strlen($ref_comma_part);
+            // If len is more than 1, use this value to calculate the fmax position
+            if($len > 1) {
+              $marker_type = 'INDEL';
+              break;
+            }
+          }
+
+          for ($j = 9; $j < $count_columns; $j++) {
             $j_column_data = $vcf_line[$j];
             // @TODO We need to cater for extra metadata.
             // eg. 1/1:0,98:98:99:3055,289,0 <-- the data after the : is metadata
             $j_read = explode(':',$j_column_data)[0]; // gets the 1/1 part
 
             $genotype_combination = tpps_submit_vcf_render_genotype_combination($j_read, $ref, $alt); // eg AG (removed the : part of code on 5/31/2023)
-
-            // Check if marker type is indel
-            // split ref by comma (based on Emily's demo), go through each split value
-            $ref_comma_parts = explode(',', $ref); // eg G,GTAC
-            foreach ($ref_comma_parts as $ref_comma_part) {
-              $ref_comma_part = trim($ref_comma_part);
-              // Check length of comma_part
-              $len = strlen($ref_comma_part);
-              // If len is more than 1, use this value to calculate the fmax position
-              if($len > 1) {
-                $marker_type = 'INDEL';
-                break;
-              }
-            }
 
             $detected_genotypes[$marker_type . '-' . $marker_name . '-' . $genotype_combination] = [
               'marker_name' => $marker_name,
