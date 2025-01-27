@@ -198,6 +198,68 @@ function tpps_ajax_get_study_details_tab(array $data) {
 }
 
 /**
+ * Gets content of the 'Environmental' tab of Study Details page.
+ *
+ * @param array $data
+ *   POST data.
+ *   Required keys are:
+ *   'accession' - string.
+ *     Required. Study accession. E.g., 'TGDR1090'.
+ *   'page' - int. Optional. TPPS Form page number.
+ *
+ * @return string
+ *   The HTML table of study information of the submission.
+ */
+function tpps_ajax_get_environmental_details_tab(array $data) {
+  if (!tpps_access('access tpps details')) {
+    return ['errors' => [t('Access denied.')]];
+  }
+  if (empty($data['accession'])) {
+    return ['errors' => [t('Empty study accession.')]];
+  }
+  // @TODO Cache $rows. Processing takes 53 msec >> 2msec.
+  $submission = new Submission($data['accession']);
+  $state = $submission->sharedState;
+  $rows = [];
+  $species = [];
+  $files = [];
+
+  for ($i = 1; $i <= $submission->getOrganismNumber(); $i++) {
+    if (!empty($layers = $state['saved_values'][TPPS_PAGE_4]["organism-$i"]['environment']['env_layers'])) {
+      foreach ($layers as $layer_name => $layer) {
+        $rows[] = ['Environmental Layer', $layer_name];
+      }
+    }
+
+  }
+
+
+  module_load_include('inc', 'tpps', 'includes/form');
+  // $rows[] = [
+  //   'Study Type',
+  //   tpps_form_get_study_type($page2_values['study_type']),
+  // ];
+  // $rows[] = [t('File Downloads'), implode('<br>', $files)];
+  // $rows[] = [t('Population Size'), $state['stats']['tree_count']];
+
+  // @todo genotype counts.
+  // $rows[] = array('Genotype Count', $state['stats']['genotype_count']);
+  $vars = [
+    'header' => [],
+    'rows' => $rows,
+    'attributes' => ['class' => ['view'], 'id' => 'tpps_table_display'],
+    'caption' => '',
+    'colgroups' => NULL,
+    'sticky' => FALSE,
+    'empty' => '',
+  ];
+  return [
+    'success' => TRUE,
+    'content' => theme('table', $vars),
+  ];
+}
+
+/**
  * Gets content of the 'Trees' tab of Study Details page.
  *
  * Creates the table of individual plant details for a submission.

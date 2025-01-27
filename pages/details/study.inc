@@ -191,6 +191,9 @@ function tpps_details_tab_list($submission) {
   if ($submission->hasGenotypeData()) {
     $tabs_list['genotype'] = 'Genotypes';
   }
+  if ($submission->hasEnvironmentalData()) {
+    $tabs_list['environmental'] = 'Environmental';
+  }
   if ($submission->hasMassSpectrometryData()) {
     $tabs_list['mass_spectrometry'] = 'Mass Spectrometry';
   }
