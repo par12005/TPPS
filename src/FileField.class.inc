@@ -386,7 +386,7 @@ class FileField {
    *
    * @return string
    *   Returns $this->parents separated with ']['.
-   *   E.g., "organism-1[genotype][SNPs][snps-association][empty".
+   *   E.g., "organism-1][genotype][SNPs][snps-association][empty".
    */
   public function getFormSetErrorName() {
     if ($this->parents) {
@@ -511,7 +511,7 @@ class FileField {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   /**
-   * Checks if field required using provided conditions and stores result.
+   * Sets property $isRequired using provided condition.
    *
    * @param bool $condition
    *   Conditions when field is required.
@@ -519,7 +519,7 @@ class FileField {
    * @return object
    *   Returns current object to allow method chaining.
    */
-  public function isRequired($condition = '') {
+  public function setRequired($condition = '') {
     $this->isRequired = (bool) $condition;
     return $this;
   }
@@ -1145,8 +1145,7 @@ dpm($required_groups_flat);
 
     }
 
-
-    dpm(print_r($this->columns, 1));
+dpm(print_r($this->columns, 1));
 
     // @todo Return result of validation or rename method.
     $result = TRUE;

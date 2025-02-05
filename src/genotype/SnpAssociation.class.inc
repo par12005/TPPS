@@ -394,6 +394,7 @@ class SnpAssociation {
       form_set_error(self::getFormErrorName($organism_index), $error_message);
       break;
     }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     if (form_get_errors()) {
       return;
     }

@@ -860,12 +860,13 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // SNPs Population Structure file.
   tpps_file_field([$id, 'genotype', $snps_fieldset, 'snps-pop-struct'])
-    ->isRequired(
+    ->setRequired(
       (
         $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
         || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
       )
       && ($snps['snps-assay'] ?? 0)
+      && ($snps['snps-association'] ?? 0)
       && $snps['upload_snp_population'] == 'Yes'
     )
     ->setFormState($form_state)
@@ -875,12 +876,13 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // SNPs Kinship File.
   tpps_file_field([$id, 'genotype', $snps_fieldset, 'snps-kinship'])
-    ->isRequired(
+    ->setRequired(
       (
         $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
         || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
       )
       && ($snps['snps-assay'] ?? 0)
+      && ($snps['snps-association'] ?? 0)
       && $snps['upload_snp_kinship'] == 'Yes'
     )
     ->setFormState($form_state)
@@ -890,14 +892,14 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Assay Design File.
   tpps_file_field([$id, 'genotype', $snps_fieldset, 'assay-design'])
-    ->isRequired(
+    ->setRequired(
       $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
       || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
+
     )
     ->setFormState($form_state)
     ->setOrganismNumber($org_num)
     ->validate();
-
 }
 
 /**
