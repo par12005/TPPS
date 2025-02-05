@@ -11,7 +11,7 @@
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class FileField {
+class FileField___________________removeMe {
 
   /**
    * Machine name of the field.
