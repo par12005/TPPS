@@ -16,7 +16,8 @@ abstract class FileField {
   // Name of the form field.
   const FIELD_NAME = '';
   // Name of the parent fieldset on form (!) not shared form state.
-  // self::FORM_PARENT_FIELDSET.
+  // Use in classes: self::FORM_PARENT_FIELDSET.
+  // Use here: static::FORM_PARENT_FIELDSET.
   const FORM_PARENT_FIELDSET = '';
   // Name of the parent element in shared state array.
   // Note: Differs if field was relocated. See versions in function
@@ -44,7 +45,7 @@ abstract class FileField {
    *   Ordinal number of the organism at page.
    * @param array $parents
    *   Optional. Path to field (including field name) from
-   *   $form['organism-' . $organism_index][self::DATA_TYPE].
+   *   $form['organism-' . $organism_index][static::DATA_TYPE].
    *   When empty path to the current field will be used.
    *
    * @return string
@@ -53,10 +54,10 @@ abstract class FileField {
    */
   public static function getFormErrorName($organism_index, array $parents = []) {
     if (empty($parents)) {
-      $parents = [self::FORM_PARENT_FIELDSET, self::FIELD_NAME];
+      $parents = [static::FORM_PARENT_FIELDSET, static::FIELD_NAME];
     }
     $parents = array_merge(
-      ['organism-' . $organism_index, self::DATA_TYPE],
+      ['organism-' . $organism_index, static::DATA_TYPE],
       $parents
     );
     return implode('][', $parents);
@@ -71,7 +72,7 @@ abstract class FileField {
    *   Ordinal number of the organism at page.
    * @param array $parents
    *   Optional. Path to field (including field name) from
-   *   $form['organism-' . $organism_index][self::DATA_TYPE].
+   *   $form['organism-' . $organism_index][static::DATA_TYPE].
    *   When empty path to the current field will be used.
    *
    * @return string
@@ -79,9 +80,9 @@ abstract class FileField {
    */
   public static function getDomName($organism_index, array $parents = []) {
     if (empty($parents)) {
-      $parents = [self::FORM_PARENT_FIELDSET, self::FIELD_NAME];
+      $parents = [static::FORM_PARENT_FIELDSET, static::FIELD_NAME];
     }
-    $parents = array_merge([self::DATA_TYPE], $parents);
+    $parents = array_merge([static::DATA_TYPE], $parents);
     return 'organism-' . $organism_index . '[' . implode('][', $parents) . ']';
   }
 
@@ -92,7 +93,7 @@ abstract class FileField {
    *   Ordinal number of the organism at page.
    * @param array $parents
    *   Optional. Path to field (including field name) from
-   *   $form['organism-' . $organism_index][self::DATA_TYPE].
+   *   $form['organism-' . $organism_index][static::DATA_TYPE].
    *   When empty path to the current field will be used.
    *
    * @return string
@@ -117,11 +118,11 @@ abstract class FileField {
    */
   public static function getFileId($organism_index, array $state) {
     $element = $state['saved_values'][TPPS_PAGE_4]
-      ['organism-' . $organism_index][self::DATA_TYPE] ?? NULL;
-    $id = $element[self::SHARED_STATE_PARENT_FIELDSET][self::FIELD_NAME]
+      ['organism-' . $organism_index][static::DATA_TYPE] ?? NULL;
+    $id = $element[static::SHARED_STATE_PARENT_FIELDSET][static::FIELD_NAME]
       // Used for validation when shared_state not yet created and $form_state
       // is used instead and field was relocated.
-      ?? $element[self::FORM_PARENT_FIELDSET][self::FIELD_NAME]
+      ?? $element[static::FORM_PARENT_FIELDSET][static::FIELD_NAME]
       ?? NULL;
     return $id;
   }
