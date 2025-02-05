@@ -249,13 +249,17 @@ class SnpAssociation {
     $snps_assay = $snps['snps-assay'] ?? 0;
     $fid = $snps[self::FIELD_NAME] ?? 0;
     $file_type = $snps['file-type'] ?? NULL;
+    $genotyping_type = $snps['genotyping-type'] ?? NULL;
     $id = "organism-$organism_index";
 
+    // Skip validation.
     if (
-      // Do not validate if there are any validation errors already found.
       form_get_errors()
-      // Only for 'SNP Assay file and Assay design file'.
-      || $file_type != TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
+      || !(
+        $file_type != TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
+        && $genotyping_type != TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
+      )
+      || empty($snps['snps-assay'])
       // No file uploaded.
       || empty($fid)
     ) {
@@ -263,7 +267,12 @@ class SnpAssociation {
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Check if field is required.
+    // Check if field is required.  Conditions:
+    // (
+    //   $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
+    //   || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
+    // )
+    // && ($snps['snps-assay'] ?? 0)
     if (
       self::isEmptyValue($organism_index, $form_state)
       // Requirement conditions:
@@ -754,7 +763,14 @@ class SnpAssociation {
   /**
    * Gets name of the field for form_set_error().
    *
-   * Note: form_set_error() has no training ']'.
+   * WARNING: no trailing ']' but has first ']'.
+   *
+   * Difference:
+   * getFormErrorName(): "organism-1][genotype][SNPs][snps-association".
+   *                                ^                                 ^
+   * getDomName(): "organism-1[genotype][SNPs][snps-association]".
+   *                         ^                                 ^
+   * See https://api.drupal.org/api/drupal/includes%21form.inc/function/form_set_error/7.x
    *
    * @param int $organism_index
    *   Ordinal number of the organism at page.

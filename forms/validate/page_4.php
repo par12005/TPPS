@@ -413,9 +413,6 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
   // File fields:
   $vcf = $snps['vcf'] ?? 0;
   $snps_assay = $snps['snps-assay'] ?? 0;
-  $assay_design = $snps['assay-design'] ?? 0;
-  $assoc_file = $snps['snps-association'] ?? 0;
-
   $page3 = $form_state['saved_values'][TPPS_PAGE_3];
 
   // [VS]
@@ -799,63 +796,9 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
       // Preserve file if it is valid.
       tpps_preserve_valid_file($form_state, $snps_assay, $org_num, "Genotype_SNPs_Assay");
 
-      SnpAssociation::validate($org_num, $form, $form_state);
-
-      if (!form_get_errors()) {
-        if (
-          $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
-          && ($snps['snps-association'] ?? 0)
-        ) {
-          // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-          // SNPs Population Structure file.
-          if (
-            $snps['upload_snp_population'] == 'Yes'
-            && !tpps_is_required_field_empty($form_state,
-              [$id, 'genotype', $snps_fieldset, 'snps-pop-struct']
-            )
-          ) {
-            // Preserve file if it is valid.
-            tpps_preserve_valid_file(
-              $form_state,
-              $snps['snps-pop-struct'],
-              $org_num,
-              'SNPs_Population_Structure'
-            );
-          }
-          // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-          // SNPs Kinship File.
-          if ($snps['upload_snp_kinship'] == 'Yes'
-            && !tpps_is_required_field_empty(
-              $form_state, [$id, 'genotype', $snps_fieldset, 'snps-kinship'])
-          ) {
-            // Preserve file if it is valid.
-            tpps_preserve_valid_file(
-              $form_state,
-              $snps['snps-kinship'],
-              $org_num,
-              'SNPs_Kinship'
-            );
-          }
-        }
-      }
     }
   }
-
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // SNP Association File.
-  tpps_file_field([$id, 'genotype', $snps_fieldset, 'snps-association'])
-    ->isRequired(
-      (
-        $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
-        || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
-      )
-      && ($snps['snps-assay'] ?? 0)
-    )
-    ->setFormState($form_state)
-    ->setOrganismNumber($org_num)
-    // File field with columns.
-    ->validate();
+  SnpAssociation::validate($org_num, $form, $form_state);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // SNPs Population Structure file.
