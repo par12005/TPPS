@@ -14,6 +14,8 @@ define('TPPS_PAGE_1', 1);
 define('TPPS_PAGE_2', 2);
 define('TPPS_PAGE_3', 3);
 define('TPPS_PAGE_4', 4);
+define('TPPS_YES', 'Yes');
+define('TPPS_NO', 'No');
 define('RESET_CACHE', TRUE);
 
 define("TPPS_TEMP_XLSX", "temporary://tpps_xlsx");

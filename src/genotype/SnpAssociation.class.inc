@@ -15,6 +15,18 @@ class SnpAssociation {
 
   // Name of the form field.
   const FIELD_NAME = 'snps-association';
+  // Name of the parent fieldset on form (!) not shared form state.
+  // self::FORM_PARENT_FIELDSET.
+  const FORM_PARENT_FIELDSET = 'SNPs';
+  // Name of the parent element in shared state array.
+  // Note: Differs if field was relocated. See versions in function
+  // tpps_submission_form_version_changes().
+  const SHARED_STATE_PARENT_FIELDSET = 'files';
+  // Human readable field name (not localized).
+  const FIELD_TITLE = 'SNP Association File';
+  // Type of the data.
+  // Could be 'phenotype', 'genotype' or 'environmental'.
+  const DATA_TYPE = 'genotype';
 
   // Data types for field columns.
   const DATA_TYPE_SNP_ID = 1;
@@ -28,7 +40,7 @@ class SnpAssociation {
   const DATA_TYPE_YEAR = 9;
 
   // CV if of the 'PATO'.
-  // @todo Get it dynamically.
+  // @todo Minor. Get it dynamically.
   const CV_ID_PATO = 105;
 
   /**
@@ -56,42 +68,193 @@ class SnpAssociation {
   }
 
   /**
-   * Builds form fields for Phenotype Data file.
+   * Builds file field.
    *
-   * @param int $id
-   *   Organism Id.
+   * @param int $organism_index
+   *   Ordinal organism number at page.
    * @param array $form
    *   Drupal Form API Array.
    * @param array $form_state
    *   Drupal Form API State Array.
    */
-  public static function build($id, array &$form, array $form_state) {
-    $page4_values = $form_state['saved_values']['4'];
+  public static function build($organism_index, array &$form, array $form_state) {
+    if (!tpps_is_genotype_data_type($form_state)) {
+      return;
+    }
+    $organism_name = 'organism-' . $organism_index;
+    // @todo Minor. Rename $fields to $subform.
+    $fields = &$form[$organism_name][self::DATA_TYPE];
 
-    // @TODO Implement.
+    $fields[self::FORM_PARENT_FIELDSET]['upload_snp_association'] = [
+      '#type' => 'select',
+      '#title' => t('Would you like to upload a SNP association file?'),
+      '#options' => [
+        0 => t('- Select -'),
+        TPPS_YES => t('Yes'),
+        TPPS_NO => t('No'),
+      ],
+      '#default_value' => tpps_get_ajax_value($form_state, [
+        $organism_name,
+        self::DATA_TYPE,
+        self::FORM_PARENT_FIELDSET,
+        'upload_snp_association',
+      ]),
+    ];
+    // SNP Association File.
+    $file_field_name = 'snps-association';
+    $title = t('SNP Association File');
+    // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
+    // @todo Move to SnpAssociation::build() method.
+    tpps_form_build_file_field([
+      'form' => &$form,
+      'form_state' => $form_state,
+      'parents' => [$organism_name, self::DATA_TYPE, self::FORM_PARENT_FIELDSET],
+      'field_name' => $file_field_name,
+      'title' => $title,
+      'organism_name' => $organism_name,
+      'type' => self::DATA_TYPE,
+      'description' => t('Please upload a spreadsheet file containing '
+        . 'SNPs Association data. When your file is uploaded, you will '
+        . 'be shown a table with your column header names, several '
+        . 'drop-downs, and the first few rows of your file. You will be '
+        . 'asked to define the data type for each column, using the '
+        . 'drop-downs provided to you. If a column data type does not '
+        . 'fit any of the options in the drop-down menu, you may set that '
+        . 'drop-down menu to "N/A". Your file must contain columns with '
+        . 'the SNP ID, Scaffold, Position (formatted like "start:stop"), '
+        . 'Allele (formatted like "major:minor"), Associated Trait Name '
+        . '(must match a phenotype from the above section), and '
+        . 'Confidence Value. Optionally, you can also specify a Gene ID '
+        . '(which should match the gene reference) and '
+        . 'a SNP Annotation (non synonymous, coding, etc).'),
+      '#tree' => TRUE,
+      'optional' => TRUE,
+      'states' => [
+        'visible' => [
+          self::getStateName($organism_index,
+            [self::FORM_PARENT_FIELDSET, 'upload_snp_association']
+          ) => ['value' => TPPS_YES],
+        ],
+      ],
+      'extra_elements' => [
+        'empty' => [
+          '#default_value' => tpps_array_get_value($form_state,
+            [
+              'saved_values',
+              TPPS_PAGE_4,
+              $organism_name,
+              self::DATA_TYPE,
+              self::FORM_PARENT_FIELDSET,
+              $file_field_name,
+              'empty',
+            ]) ?? 'NA',
+        ],
+        'columns' => [
+          '#description' => t('Please define which columns hold the '
+            . 'required data: SNP ID, Scaffold, Position, Allele, '
+            . 'Associated Trait, Confidence Value.'),
+        ],
+        'columns-options' => [
+          '#type' => 'hidden',
+          '#value' => SnpAssociation::getColumnOptions(),
+        ],
+        'no-header' => [],
+      ],
+    ]);
+    tpps_add_css_js('page_4_snp_association', $form);
+    // Send Option Id of the 'Year' data type to browser to enable/disable this
+    // option when Phenotype Data file has/hasn't 'Year' column.
+    $form['#attached']['js'][] = [
+      'type' => 'setting',
+      'data' => [
+        'tpps' => [
+          'snpAssociation' => ['dataTypeYear' => SnpAssociation::DATA_TYPE_YEAR],
+          'phenotypeData' => ['dataTypeYear' => PhenotypeData::DATA_TYPE_YEAR],
+        ],
+      ],
+      'scope' => 'footer',
+    ];
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
+    // This field must be optional to not block submission but later will be
+    // moved to new page5.
+    $field_name = 'snps-association-type';
+    $fields[self::FORM_PARENT_FIELDSET][$field_name] = [
+      '#type' => 'select',
+      '#title' => t('Confidence Value Type: *'),
+      '#options' => [
+        0 => t('- Select -'),
+        'P value' => t('P value'),
+        'Genomic Inflation Factor (GIF)' => t('Genomic Inflation Factor (GIF)'),
+        'P-adjusted (FDR) / Q value' => t('P-adjusted (FDR) / Q value'),
+        'P-adjusted (FWE)' => t('P-adjusted (FWE)'),
+        'P-adjusted (Bonferroni)' => t('P-adjusted (Bonferroni)'),
+      ],
+      '#states' => [
+        'visible' => [
+          self::getStateName($organism_index,
+            [self::FORM_PARENT_FIELDSET, 'upload_snp_association']
+          ) => ['value' => TPPS_YES],
+          self::getStateName($organism_index,
+            ['does_study_include_snp_data']
+          ) => ['value' => 'yes'],
+        ],
+      ],
+    ];
+
+    // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
+    // Field is optional.
+    $field_name = 'snps-association-tool';
+    $fields[self::FORM_PARENT_FIELDSET][$field_name] = [
+      '#type' => 'select',
+      '#title' => t('Association Analysis Tool: *'),
+      '#options' => [
+        0 => t('- Select -'),
+        'GEMMA' => t('GEMMA'),
+        'EMMAX' => t('EMMAX'),
+        'Plink' => t('Plink'),
+        'Tassel' => t('Tassel'),
+        'Sambada' => t('Sambada'),
+        'Bayenv' => t('Bayenv'),
+        'BayeScan' => t('BayeScan'),
+        'LFMM' => t('LFMM'),
+      ],
+      '#states' => [
+        'visible' => [
+          self::getStateName($organism_index,
+            [self::FORM_PARENT_FIELDSET, 'upload_snp_association']
+          ) => ['value' => TPPS_YES],
+          self::getStateName($organism_index,
+            ['does_study_include_snp_data']
+          ) => ['value' => 'yes'],
+        ],
+      ],
+    ];
   }
 
   /**
    * Validates file field.
    *
-   * @param int $org_num
+   * @param int $organism_index
    *   Ordinal organism number on page.
    * @param array $form
    *   Drupal Form API array.
    * @param array $form_state
    *   Drupal Form API State array.
    */
-  public static function validate($org_num, array &$form, array &$form_state) {
-    $genotype = &$form_state['values']["organism-$org_num"]['genotype'] ?? NULL;
-    $snps_fieldset = 'SNPs';
-    $snps = &$genotype[$snps_fieldset] ?? NULL;
+  public static function validate($organism_index, array &$form, array &$form_state) {
+    $genotype = &$form_state['values']["organism-$organism_index"]['genotype'] ?? NULL;
+    $snps = &$genotype[self::FORM_PARENT_FIELDSET] ?? NULL;
     $snps_assay = $snps['snps-assay'] ?? 0;
     $fid = $snps[self::FIELD_NAME] ?? 0;
     $file_type = $snps['file-type'] ?? NULL;
-    $id = "organism-$org_num";
+    $id = "organism-$organism_index";
 
     if (
+      // Do not validate if there are any validation errors already found.
       form_get_errors()
+      // Only for 'SNP Assay file and Assay design file'.
       || $file_type != TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
       // No file uploaded.
       || empty($fid)
@@ -99,6 +262,25 @@ class SnpAssociation {
       return;
     }
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Check if field is required.
+    if (
+      self::isEmptyValue($organism_index, $form_state)
+      // Requirement conditions:
+      && drupal_array_get_nested_value($snps, ['upload_snp_association']) == TPPS_YES
+    ) {
+      // Field is required but empty. Show error.
+      $error_message = t('"@field_title" for organism @organism_index: '
+        . 'field is required.',
+        [
+          '@field_title' => self::FIELD_TITLE,
+          '@organism_index' => $organism_index,
+        ]
+      );
+      form_set_error(self::getFormErrorName($organism_index), $error_message);
+      return;
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // @todo Minor. Implement ability to run this code when study was already
     // submitted (on processing step).
     $required_groups = [
@@ -115,12 +297,12 @@ class SnpAssociation {
       // 9 => 'Year'.
     ];
 
-    if (PhenotypeData::isDataTypeSet($form_state, $org_num, PhenotypeData::DATA_TYPE_YEAR)) {
+    if (PhenotypeData::isDataTypeSet($form_state, $organism_index, PhenotypeData::DATA_TYPE_YEAR)) {
       $required_groups['Year'] = ['year' => [self::DATA_TYPE_YEAR]];
     }
 
     // Note: File id stored in $form (!) but not stored in $form_state.
-    $file_id = $form[$id]['genotype'][$snps_fieldset][self::FIELD_NAME];
+    $file_id = $form[$id]['genotype'][self::FORM_PARENT_FIELDSET][self::FIELD_NAME];
     $groups = tpps_file_validate_columns($form_state, $required_groups, $file_id);
 
     if (form_get_errors()) {
@@ -138,12 +320,18 @@ class SnpAssociation {
     $missing_snps = array_diff($assoc_snps, $assay_snps);
 
     if (!empty($missing_snps)) {
-      form_set_error("$id][genotype][$snps_fieldset][" . self::FIELD_NAME,
-        t("SNP Association File: We detected SNP IDs that were not in "
-        . "your Genotype Assay. Please either remove these SNPs from "
-        . "your Association file, or add them to your Genotype Assay. "
-        . "The SNP Identifiers we found were: @list",
-        ['@list' => implode(', ', $missing_snps)]));
+      $error_message = t('"@field_title" for organism @organism_index: '
+        . 'We detected SNP IDs that were not in your Genotype Assay. '
+        . 'Please either remove these SNPs from your Association file, '
+        . 'or add them to your Genotype Assay. '
+        . '<br />The SNP Identifiers we found were: @list',
+        [
+          '@field_title' => self::FIELD_TITLE,
+          '@organism_index' => $organism_index,
+          '@list' => implode(', ', $missing_snps),
+        ]
+      );
+      form_set_error(self::getFormErrorName($organism_index), $error_message);
     }
 
     // Check that Phenotype names match phenotype metadata section.
@@ -157,7 +345,7 @@ class SnpAssociation {
     $phenotype_number = $phenotype['phenotypes-meta']['number'];
 
     $phenotype_meta_names = [];
-    $phenotype_name_col = PhenotypeData::getPhenotypeNameColumn($org_num, $form_state);
+    $phenotype_name_col = PhenotypeData::getPhenotypeNameColumn($organism_index, $form_state);
     if (isset($phenotype_name_col)) {
       $phenotype_meta_names = tpps_parse_file_column($phenotype_meta, $phenotype_name_col);
     }
@@ -168,14 +356,18 @@ class SnpAssociation {
 
     $missing_phenotypes = array_diff($association_phenotypes, $phenotype_meta_names);
     if (!empty($missing_phenotypes)) {
-      form_set_error("$id][genotype][$snps_fieldset][" . self::FIELD_NAME,
-        t("SNP Association File: We detected Associated Traits that were "
-        . "not specified in the Phenotype Metadata Section. Please "
-        . "either remove these Traits from your Association file, "
-        . "or add them to your Phenotype Metadata section. The Trait "
-        . "names we foud were: @list",
-        ['@list' => implode(', ', $missing_phenotypes)])
+      $error_message = t('"@field_title" for organism @organism_index: '
+        . 'We detected Associated Traits that were not specified in the '
+        . 'Phenotype Metadata Section. Please either remove these Traits '
+        . 'from your Association file, or add them to your Phenotype '
+        . 'Metadata section. <br />The Trait names we foud were: @list',
+        [
+          '@field_title' => self::FIELD_TITLE,
+          '@organism_index' => $organism_index,
+          '@list' => implode(', ', $missing_phenotypes),
+        ]
       );
+      form_set_error(self::getFormErrorName($organism_index), $error_message);
     }
 
     // Check that position values are correctly formatted.
@@ -190,13 +382,16 @@ class SnpAssociation {
       ) {
         continue;
       }
-      form_set_error("$id][genotype][$snps_fieldset][" . self::FIELD_NAME,
-        t('SNP Association File: We detected SNP positions that do '
-          . 'not match the required format: @position.'
-          . '<br />The correct format is: "start:stop" or integer.',
-          ['@position' => $position]
-        )
+      $error_message = t('"@field_title" for organism @organism_index: '
+        . 'We detected SNP positions that do not match the required format: '
+        . '@position. <br />The correct format is: "start:stop" or integer.',
+        [
+          '@field_title' => self::FIELD_TITLE,
+          '@organism_index' => $organism_index,
+          '@position' => $position,
+        ]
       );
+      form_set_error(self::getFormErrorName($organism_index), $error_message);
       break;
     }
     if (form_get_errors()) {
@@ -211,7 +406,7 @@ class SnpAssociation {
     tpps_file_iterator($fid, 'SnpAssociation::validateRow', $options);
 
     // Preserve file if it is valid.
-    tpps_preserve_valid_file($form_state, $fid, $org_num, "SNPs_Association");
+    tpps_preserve_valid_file($form_state, $fid, $organism_index, "SNPs_Association");
   }
 
   /**
@@ -377,11 +572,12 @@ class SnpAssociation {
    * @param array $options
    *   Data for processing.
    *
-   * @return array
+   * @return mixed
    *   Returns associated array where keys are column name and values are
    *   values from the $row. Note: $options['associations'] also updated.
+   *   If there is no data types set for columns NULL will be returned.
    */
-  public static function getNamedRow($row, array &$options = []) {
+  public static function getNamedRow(array $row, array &$options = []) {
     $groups = $options['associations_groups'];
     if (empty($groups)) {
       return;
@@ -437,10 +633,50 @@ class SnpAssociation {
    *   Ordinal organism number on page.
    * @param array $shared_state
    *   Submission's Shared State.
+   *
+   * @return mixed
+   *   Returns File Id or NULL.
    */
   public static function getFileId($organism_index, array $shared_state) {
-    return $shared_state['saved_values'][TPPS_PAGE_4]["organism-$organism_index"]
-      ['genotype']['files'][self::FIELD_NAME] ?? NULL;
+    $genotype = $shared_state['saved_values'][TPPS_PAGE_4]
+      ['organism-' . $organism_index]['genotype'] ?? NULL;
+    return $genotype[self::SHARED_STATE_PARENT_FIELDSET][self::FIELD_NAME]
+      // Used for validation when shared_state not yet created and $form_state
+      // is used instead and field was relocated.
+      ?? $genotype[self::FORM_PARENT_FIELDSET][self::FIELD_NAME]
+      ?? NULL;
+  }
+
+  /**
+   * Gets value of the field.
+   *
+   * Note: for file fields value is a File Id.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number on page.
+   * @param array $shared_state
+   *   Submission's Shared State.
+   *
+   * @return mixed
+   *   Returns field's value or NULL.
+   */
+  public static function getValue($organism_index, array $shared_state) {
+    return self::getFileId($organism_index, $shared_state);
+  }
+
+  /**
+   * Checks if field's value is empty.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number on page.
+   * @param array $shared_state
+   *   Submission's Shared State.
+   *
+   * @return bool
+   *   Returns TRUE if field's value is empty and FALSE otherwise.
+   */
+  public static function isEmptyValue($organism_index, array $shared_state) {
+    return empty(self::getValue($organism_index, $shared_state));
   }
 
   /**
@@ -512,6 +748,74 @@ class SnpAssociation {
       // the same attribute ids and years the $organism_index could be removed.
       $options['snp_association_year'][$trait][$organism_index] = $year_value;
     }
+  }
+
+  /**
+   * Gets name of the field for form_set_error().
+   *
+   * Note: form_set_error() has no training ']'.
+   *
+   * @param int $organism_index
+   *   Ordinal number of the organism at page.
+   * @param array $parents
+   *   Optional. Path to field (including field name) from
+   *   $form['organism-' . $organism_index][self::DATA_TYPE].
+   *   When empty path to the current field will be used.
+   *
+   * @return string
+   *   Returns field name in correct format for form_set_error().
+   *   E.g., "organism-1][genotype][SNPs][snps-association][empty".
+   */
+  public static function getFormErrorName($organism_index, array $parents = []) {
+    if (empty($parents)) {
+      $parents = [self::FORM_PARENT_FIELDSET, self::FIELD_NAME];
+    }
+    $parents = array_merge(
+      ['organism-' . $organism_index, self::DATA_TYPE],
+      $parents
+    );
+    return implode('][', $parents);
+  }
+
+  /**
+   * Gets DOM name of the field.
+   *
+   * Note: could be used for Drupal Form State API.
+   *
+   * @param int $organism_index
+   *   Ordinal number of the organism at page.
+   * @param array $parents
+   *   Optional. Path to field (including field name) from
+   *   $form['organism-' . $organism_index][self::DATA_TYPE].
+   *   When empty path to the current field will be used.
+   *
+   * @return string
+   *   Returns field name. E.g., 'organism-1[genotype][SNPs][assay-design]'.
+   */
+  public static function getDomName($organism_index, array $parents = []) {
+    if (empty($parents)) {
+      $parents = [self::FORM_PARENT_FIELDSET, self::FIELD_NAME];
+    }
+    $parents = array_merge([self::DATA_TYPE], $parents);
+    return 'organism-' . $organism_index . '[' . implode('][', $parents) . ']';
+  }
+
+  /**
+   * Gets name of the field for Drupal Form State API.
+   *
+   * @param int $organism_index
+   *   Ordinal number of the organism at page.
+   * @param array $parents
+   *   Optional. Path to field (including field name) from
+   *   $form['organism-' . $organism_index][self::DATA_TYPE].
+   *   When empty path to the current field will be used.
+   *
+   * @return string
+   *   Returns field name.
+   */
+  public static function getStateName($organism_index, array $parents = []) {
+    return ':input[name="'
+      . self::getDomName($organism_index, $parents) . '"]';
   }
 
 }

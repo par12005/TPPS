@@ -417,8 +417,8 @@ function tpps_genotype_subform(array $form_bus) {
       '#title' => t('Would you like to upload a SNP association file?'),
       '#options' => [
         0 => t('- Select -'),
-        'Yes' => t('Yes'),
-        'No' => t('No'),
+        TPPS_YES => t('Yes'),
+        TPPS_NO => t('No'),
       ],
       '#default_value' => tpps_get_ajax_value(
         $form_state,
