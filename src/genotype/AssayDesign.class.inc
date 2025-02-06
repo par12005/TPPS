@@ -12,6 +12,7 @@
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
 class AssayDesign extends FileField {
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Common settings.
   //
@@ -152,15 +153,37 @@ class AssayDesign extends FileField {
         ],
       ],
     ];
+    dpm($fields[self::FORM_PARENT_FIELDSET]['assay-citation']['#states']);
   }
 
-  public static function validate() {
-  //tpps_file_field([$id, 'genotype', $snps_fieldset, 'assay-design'])
-  //  ->setRequired(
-  //    $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
-  //    || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
-  //  )
+  /**
+   * Validates file field.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number on page.
+   * @param array $form
+   *   Drupal Form API array.
+   * @param array $form_state
+   *   Drupal Form API State array.
+   */
+  public static function validate($organism_index, array &$form, array &$form_state) {
+    $genotype = &$form_state['values']["organism-$organism_index"]['genotype'] ?? NULL;
+    $snps = &$genotype[self::FORM_PARENT_FIELDSET] ?? NULL;
+    $snps_assay = $snps['snps-assay'] ?? 0;
+    $fid = $snps[self::FIELD_NAME] ?? 0;
+    $file_type = $snps['file-type'] ?? NULL;
+    $genotyping_type = $snps['genotyping-type'] ?? NULL;
+    $id = 'organism-' . $organism_index;
 
+    if (form_get_errors()) {
+      // Do not validate if any errors already found.
+      return;
+    }
+    self::validateRequired($organism_index, $form_state, (
+      // Requirement conditions:
+      $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
+      || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
+    ));
   }
 
 }

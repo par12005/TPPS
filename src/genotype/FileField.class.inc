@@ -13,6 +13,9 @@
  */
 abstract class FileField {
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Common settings.
+  //
   // Name of the form field.
   const FIELD_NAME = '';
   // Name of the parent fieldset on form (!) not shared form state.
@@ -161,6 +164,38 @@ abstract class FileField {
    */
   public static function isEmptyValue($organism_index, array $state) {
     return empty(self::getValue($organism_index, $state));
+  }
+
+  /**
+   * Checks if required field is not empty.
+   *
+   * Note: If field passed validtion TRUE will be returned and form_get_error()
+   * will return empty result (if there wasn't any error message added before).
+   *
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   * @param array $form_state
+   *   Drupal Form State arra.
+   * @param mixed $condition
+   *   Condition when field is required.
+   *
+   * @return bool
+   *   Returns TRUE if validation passed and FALSE otherwise.
+   */
+  public static function validateRequired($organism_index, array $form_state, $condition = FALSE) {
+    if ($condition && self::isEmptyValue($organism_index, $form_state)) {
+      // Field is required but empty. Show error.
+      $params = [
+        '@field_title' => static::FIELD_TITLE,
+        '@organism_index' => $organism_index,
+      ];
+      $error_message = t('"@field_title" for organism @organism_index: '
+        . 'field is required.', $params
+      );
+      form_set_error(self::getFormErrorName($organism_index), $error_message);
+      return FALSE;
+    }
+    return TRUE;
   }
 
 }

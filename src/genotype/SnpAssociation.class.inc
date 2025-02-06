@@ -261,45 +261,22 @@ class SnpAssociation extends FileField {
     $fid = $snps[self::FIELD_NAME] ?? 0;
     $file_type = $snps['file-type'] ?? NULL;
     $genotyping_type = $snps['genotyping-type'] ?? NULL;
-    $id = "organism-$organism_index";
+    $id = 'organism-' . $organism_index;
 
-    // Skip validation.
-    if (
-      form_get_errors()
-      || !(
-        $file_type != TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
-        && $genotyping_type != TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
-      )
-      || empty($snps['snps-assay'])
-      // No file uploaded.
-      || empty($fid)
-    ) {
+    if (form_get_errors()) {
+      // Do not validate if any errors already found.
       return;
     }
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Check if field is required.  Conditions:
-    // (
-    //   $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
-    //   || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
-    // )
-    // && ($snps['snps-assay'] ?? 0)
-    if (
-      self::isEmptyValue($organism_index, $form_state)
+    self::validateRequired($organism_index, $form_state, (
       // Requirement conditions:
+      (
+        $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
+        || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
+      )
+      && !empty($snps['snps-assay'])
       && drupal_array_get_nested_value($snps, ['upload_snp_association']) == TPPS_YES
-    ) {
-      // Field is required but empty. Show error.
-      $error_message = t('"@field_title" for organism @organism_index: '
-        . 'field is required.',
-        [
-          '@field_title' => self::FIELD_TITLE,
-          '@organism_index' => $organism_index,
-        ]
-      );
-      form_set_error(self::getFormErrorName($organism_index), $error_message);
-      return;
-    }
+    ));
+
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // @todo Minor. Implement ability to run this code when study was already
     // submitted (on processing step).
