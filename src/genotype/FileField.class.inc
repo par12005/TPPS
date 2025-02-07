@@ -16,20 +16,25 @@ abstract class FileField {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Common settings.
   //
+  // File field title.
+  // Example: 'SNP Assay'.
+  const TITLE = '';
   // Name of the form field.
+  // Example: 'snps-assay'.
   const FIELD_NAME = '';
   // Name of the parent fieldset on form (!) not shared form state.
   // Use in classes: self::FORM_PARENT_FIELDSET.
   // Use here: static::FORM_PARENT_FIELDSET.
+  // Example: 'SNPs'.
   const FORM_PARENT_FIELDSET = '';
   // Name of the parent element in shared state array.
   // Note: Differs if field was relocated. See versions in function
   // tpps_submission_form_version_changes().
+  // Example: 'files'.
   const SHARED_STATE_PARENT_FIELDSET = '';
-  // Human readable field name in english (not localized).
-  const FIELD_TITLE = '';
   // Type of the data.
   // Could be 'phenotype', 'genotype' or 'environmental'.
+  // Example: 'genotype'.
   const DATA_TYPE = '';
 
   /**

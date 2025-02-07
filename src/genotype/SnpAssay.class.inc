@@ -1,0 +1,97 @@
+<?php
+
+/**
+ * @file
+ * Contains 'SnpAssay' class.
+ */
+
+/**
+ * Manages 'Assay Design' file field.
+ *
+ * @package tpps
+ * @author Vlad Savitsky <vlad.savitsky@gmail.com>
+ */
+class SnpAssay extends FileField {
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Unique common settings.
+  //
+  const TITLE = 'SNP Assay';
+  // Name of the form field.
+  // WARNING: Extra 's'!
+  const FIELD_NAME = 'snps-assay';
+  // Name of the parent fieldset on form (!) not shared form state.
+  // self::FORM_PARENT_FIELDSET.
+  const FORM_PARENT_FIELDSET = 'SNPs';
+  // Name of the parent element in shared state array.
+  // Note: Differs if field was relocated. See versions in function
+  // tpps_submission_form_version_changes().
+  const SHARED_STATE_PARENT_FIELDSET = 'files';
+  // Type of the data.
+  // Could be 'phenotype', 'genotype' or 'environmental'.
+  const DATA_TYPE = 'genotype';
+
+  /**
+   * Builds file field.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number at page.
+   * @param array $form
+   *   Drupal Form API Array.
+   * @param array $form_state
+   *   Drupal Form API State Array.
+   */
+  public static function build($organism_index, array &$form, array $form_state) {
+    $organism_name = 'organism-' . $organism_index;
+    // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
+    tpps_form_build_file_field([
+      'form' => &$form,
+      'form_state' => $form_state,
+      'parents' => [$organism_name, self::DATA_TYPE, self::FORM_PARENT_FIELDSET],
+      'field_name' => self::FIELD_NAME,
+      'title' => t(self::getFieldTitle()),
+      'organism_name' => $organism_name,
+      'type' => self::DATA_TYPE,
+
+      // According to Meghan's mockup.
+      // 'allow_file_reuse' => TRUE,
+      'description' => t('Please provide a spreadsheet with columns '
+        . 'for the Plant ID of genotypes used in this study'
+        . '<br />The format of this file is very important! '
+        . '<br />The first column of your file should contain plant '
+        . 'identifiers which match the plant identifiers you provided '
+        . 'in your plant accession file, and all of the remaining '
+        . 'columns should contain SNP data.'),
+      'use_fid' => TRUE,
+      'states' => [
+        'visible' => [
+          [
+            self::getStateName($organism_index,
+              [self::FORM_PARENT_FIELDSET, 'genotyping-type']
+            ) => ['value' => TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY],
+          ],
+          'or',
+          [
+            self::getStateName($organism_index,
+              [self::FORM_PARENT_FIELDSET, 'file-type']
+            ) => ['value' => TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE],
+          ],
+        ],
+      ],
+    ]);
+  }
+
+  /**
+   * Validates file field.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number on page.
+   * @param array $form
+   *   Drupal Form API array.
+   * @param array $form_state
+   *   Drupal Form API State array.
+   */
+  public static function validate($organism_index, array &$form, array &$form_state) {
+  }
+
+}

@@ -119,10 +119,11 @@ class SnpAssociation extends FileField {
       'form' => &$form,
       'form_state' => $form_state,
       'parents' => [$organism_name, self::DATA_TYPE, self::FORM_PARENT_FIELDSET],
-      'field_name' => $file_field_name,
+      'field_name' => self::FIELD_NAME,
       'title' => t(self::getFieldTitle()),
       'organism_name' => $organism_name,
       'type' => self::DATA_TYPE,
+
       'description' => t('Please upload a spreadsheet file containing '
         . 'SNPs Association data. When your file is uploaded, you will '
         . 'be shown a table with your column header names, several '
@@ -254,13 +255,13 @@ class SnpAssociation extends FileField {
    *   Drupal Form API State array.
    */
   public static function validate($organism_index, array &$form, array &$form_state) {
-    $genotype = &$form_state['values']["organism-$organism_index"]['genotype'] ?? NULL;
+    $genotype = &$form_state['values']["organism-$organism_index"][self::DATA_TYPE] ?? NULL;
     $snps = &$genotype[self::FORM_PARENT_FIELDSET] ?? NULL;
     $snps_assay = $snps['snps-assay'] ?? 0;
     $file_type = $snps['file-type'] ?? NULL;
     $genotyping_type = $snps['genotyping-type'] ?? NULL;
 
-    $fid = self::getFileId($organism_index, $form_state),
+    $fid = self::getFileId($organism_index, $form_state);
     $id = 'organism-' . $organism_index;
 
     if (form_get_errors()) {

@@ -125,7 +125,7 @@ class AssayDesign extends FileField {
         ],
         'columns-options' => [
           '#type' => 'hidden',
-          '#value' => AssayDesign::getColumnOptions(),
+          '#value' => self::getColumnOptions(),
         ],
         'no-header' => [],
       ],
