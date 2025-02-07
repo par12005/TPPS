@@ -167,13 +167,11 @@ class AssayDesign extends FileField {
    *   Drupal Form API State array.
    */
   public static function validate($organism_index, array &$form, array &$form_state) {
-    $genotype = &$form_state['values']["organism-$organism_index"]['genotype'] ?? NULL;
+    $genotype = &$form_state['values']['organism-' . $organism_index][self::DATA_TYPE] ?? NULL;
     $snps = &$genotype[self::FORM_PARENT_FIELDSET] ?? NULL;
-    $snps_assay = $snps['snps-assay'] ?? 0;
-    $fid = $snps[self::FIELD_NAME] ?? 0;
+    // Fields.
     $file_type = $snps['file-type'] ?? NULL;
     $genotyping_type = $snps['genotyping-type'] ?? NULL;
-    $id = 'organism-' . $organism_index;
 
     if (form_get_errors()) {
       // Do not validate if any errors already found.

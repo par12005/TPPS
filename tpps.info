@@ -21,3 +21,5 @@ files[] = src/PhenotypeData.class.inc
 ; Genotype File Fields.
 files[] = src/genotype/SnpAssociation.class.inc
 files[] = src/genotype/AssayDesign.class.inc
+files[] = src/genotype/SnpsKinship.class.inc
+files[] = src/genotype/SnpsPopulationStructure.class.inc
