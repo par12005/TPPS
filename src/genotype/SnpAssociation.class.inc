@@ -21,6 +21,7 @@ class SnpAssociation extends FileField {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Common settings.
   //
+  const TITLE = 'SNPs Association';
   // Name of the form field.
   const FIELD_NAME = 'snps-association';
   // Name of the parent fieldset on form (!) not shared form state.
@@ -30,8 +31,6 @@ class SnpAssociation extends FileField {
   // Note: Differs if field was relocated. See versions in function
   // tpps_submission_form_version_changes().
   const SHARED_STATE_PARENT_FIELDSET = 'files';
-  // Human readable field name (not localized).
-  const FIELD_TITLE = 'SNP Association File';
   // Type of the data.
   // Could be 'phenotype', 'genotype' or 'environmental'.
   const DATA_TYPE = 'genotype';
@@ -121,7 +120,7 @@ class SnpAssociation extends FileField {
       'form_state' => $form_state,
       'parents' => [$organism_name, self::DATA_TYPE, self::FORM_PARENT_FIELDSET],
       'field_name' => $file_field_name,
-      'title' => t(self::FIELD_TITLE),
+      'title' => t(self::getFieldTitle()),
       'organism_name' => $organism_name,
       'type' => self::DATA_TYPE,
       'description' => t('Please upload a spreadsheet file containing '
@@ -258,9 +257,10 @@ class SnpAssociation extends FileField {
     $genotype = &$form_state['values']["organism-$organism_index"]['genotype'] ?? NULL;
     $snps = &$genotype[self::FORM_PARENT_FIELDSET] ?? NULL;
     $snps_assay = $snps['snps-assay'] ?? 0;
-    $fid = $snps[self::FIELD_NAME] ?? 0;
     $file_type = $snps['file-type'] ?? NULL;
     $genotyping_type = $snps['genotyping-type'] ?? NULL;
+
+    $fid = self::getFileId($organism_index, $form_state),
     $id = 'organism-' . $organism_index;
 
     if (form_get_errors()) {
@@ -323,7 +323,7 @@ class SnpAssociation extends FileField {
         . 'or add them to your Genotype Assay. '
         . '<br />The SNP Identifiers we found were: @list',
         [
-          '@field_title' => self::FIELD_TITLE,
+          '@field_title' => t(self::getFieldTitle()),
           '@organism_index' => $organism_index,
           '@list' => implode(', ', $missing_snps),
         ]
@@ -359,7 +359,7 @@ class SnpAssociation extends FileField {
         . 'from your Association file, or add them to your Phenotype '
         . 'Metadata section. <br />The Trait names we foud were: @list',
         [
-          '@field_title' => self::FIELD_TITLE,
+          '@field_title' => t(self::getFieldTitle()),
           '@organism_index' => $organism_index,
           '@list' => implode(', ', $missing_phenotypes),
         ]
@@ -383,7 +383,7 @@ class SnpAssociation extends FileField {
         . 'We detected SNP positions that do not match the required format: '
         . '@position. <br />The correct format is: "start:stop" or integer.',
         [
-          '@field_title' => self::FIELD_TITLE,
+          '@field_title' => t(self::getFieldTitle()),
           '@organism_index' => $organism_index,
           '@position' => $position,
         ]
@@ -403,8 +403,7 @@ class SnpAssociation extends FileField {
     ];
     tpps_file_iterator($fid, 'SnpAssociation::validateRow', $options);
 
-    // Preserve file if it is valid.
-    tpps_preserve_valid_file($form_state, $fid, $organism_index, "SNPs_Association");
+    self::preserveValidFile($organism_index, $form_state);
   }
 
   /**

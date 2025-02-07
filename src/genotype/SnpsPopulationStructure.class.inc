@@ -16,6 +16,7 @@ class SnpsPopulationStructure extends FileField {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Common settings.
   //
+  const TITLE = 'SNPs Population Structure';
   // Name of the form field.
   const FIELD_NAME = 'snps-pop-struct';
   // Name of the parent fieldset on form (!) not shared form state.
@@ -25,8 +26,6 @@ class SnpsPopulationStructure extends FileField {
   // Note: Differs if field was relocated. See versions in function
   // tpps_submission_form_version_changes().
   const SHARED_STATE_PARENT_FIELDSET = 'files';
-  // Human readable field name (not localized).
-  const FIELD_TITLE = 'SNPs Population Structure file';
   // Type of the data.
   // Could be 'phenotype', 'genotype' or 'environmental'.
   const DATA_TYPE = 'genotype';
@@ -62,6 +61,7 @@ class SnpsPopulationStructure extends FileField {
       && ($snps['snps-association'] ?? 0)
       && $snps['upload_snp_population'] == TPPS_YES
     ));
+    self::preserveValidFile($organism_index, $form_state);
   }
 
 }

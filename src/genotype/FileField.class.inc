@@ -198,4 +198,55 @@ abstract class FileField {
     return TRUE;
   }
 
+  /**
+   * Gets human readable field name (not localized).
+   *
+   * @return string
+   *   Returns title for form field.
+   */
+  public static function getFieldTitle() {
+    return static::TITLE . ' File';
+  }
+
+  /**
+   * Gets prefix used for file when stored in $form_state['file_info'] list.
+   *
+   * E.g., 'Genotype_Assay_Design'.
+   *
+   * @return string
+   *   Returns prefix.
+   */
+  public static function getFilePrefix() {
+    return ucfirst(static::DATA_TYPE) . '_' . str_replace(' ', '_', static::TITLE);
+  }
+
+  /**
+   * Preserves file if it is valid.
+   *
+   * 1. Registers file usage (when no one uses this file it could be removed
+   *    but if usage is > 0 then file is protected).
+   * 2. File will be added to the list of files in shared state array called
+   *    'file_info' (and probably could be used for pipeline processing).
+   *
+   * @param int $organism_index
+   *   Ordinal organism number on page.
+   * @param array $form_state
+   *   Drupal Form API State array.
+   *
+   * @return bool
+   *   Returns TRUE in case of success and FALSE otherwise.
+   */
+  public static function preserveValidFile($organism_index, array &$form_state) {
+    if (form_get_errors()) {
+      return FALSE;
+    }
+    tpps_preserve_valid_file(
+      $form_state,
+      self::getFileId($organism_index, $form_state),
+      $organism_index,
+      self::getFilePrefix()
+    );
+    return TRUE;
+  }
+
 }

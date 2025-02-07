@@ -371,7 +371,9 @@ function tpps_form_state_info(array &$new, array &$old) {
  */
 function tpps_preserve_valid_file(array &$form_state, $fid, $org_num = NULL, $prefix = NULL) {
   if (!form_get_errors() && $file = tpps_file_load($fid)) {
+
     file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+
     if (!empty($org_num) and !empty($prefix)) {
       $species = implode('_', explode(' ',
         $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']

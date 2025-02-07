@@ -14,8 +14,9 @@
 class AssayDesign extends FileField {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Common settings.
+  // Unique common settings.
   //
+  const TITLE = 'Assay Design';
   // Name of the form field.
   const FIELD_NAME = 'assay-design';
   // Name of the parent fieldset on form (!) not shared form state.
@@ -25,11 +26,10 @@ class AssayDesign extends FileField {
   // Note: Differs if field was relocated. See versions in function
   // tpps_submission_form_version_changes().
   const SHARED_STATE_PARENT_FIELDSET = 'files';
-  // Human readable field name (not localized).
-  const FIELD_TITLE = 'Assay Design File';
   // Type of the data.
   // Could be 'phenotype', 'genotype' or 'environmental'.
   const DATA_TYPE = 'genotype';
+
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Custom settings.
@@ -85,7 +85,7 @@ class AssayDesign extends FileField {
       'form_state' => $form_state,
       'parents' => [$organism_name, self::DATA_TYPE, self::FORM_PARENT_FIELDSET],
       'field_name' => $file_field_name,
-      'title' => t(self::FIELD_TITLE),
+      'title' => t(self::getFieldTitle()),
       'organism_name' => $organism_name,
       'type' => self::DATA_TYPE,
       'optional' => TRUE,
@@ -153,7 +153,6 @@ class AssayDesign extends FileField {
         ],
       ],
     ];
-    dpm($fields[self::FORM_PARENT_FIELDSET]['assay-citation']['#states']);
   }
 
   /**
@@ -182,6 +181,7 @@ class AssayDesign extends FileField {
       $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
       || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
     ));
+    self::preserveValidFile($organism_index, $form_state);
   }
 
 }
