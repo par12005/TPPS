@@ -191,10 +191,10 @@ abstract class FileField {
     if ($condition && self::isEmptyValue($organism_index, $form_state)) {
       // Field is required but empty. Show error.
       $params = [
-        '@field_title' => static::FIELD_TITLE,
+        '@field_title' => self::getFieldTitle(),
         '@organism_index' => $organism_index,
       ];
-      $error_message = t('"@field_title" for organism @organism_index: '
+      $error_message = t('Organism #@organism_index / "<strong>@field_title</strong>": '
         . 'field is required.', $params
       );
       form_set_error(self::getFormErrorName($organism_index), $error_message);
@@ -222,7 +222,13 @@ abstract class FileField {
    *   Returns prefix.
    */
   public static function getFilePrefix() {
-    return ucfirst(static::DATA_TYPE) . '_' . str_replace(' ', '_', static::TITLE);
+    if (static::FIELD_NAME == 'snps-assay') {
+      // Note: field's title is 'SNP Assay' but prefix has extra 's' after 'SNP'.
+      return 'Genotype_SNPs_Assay';
+    }
+    else {
+      return ucfirst(static::DATA_TYPE) . '_' . str_replace(' ', '_', static::TITLE);
+    }
   }
 
   /**
@@ -253,5 +259,93 @@ abstract class FileField {
     );
     return TRUE;
   }
+
+  /**
+   * Checks if all trees from accession file are present.
+   *
+   * When validation failes error message was created.
+   *   To check if validation failed: if (form_get_errors()) { // Falied }.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number at page.
+   * @param array $form_state
+   *   Drupal Form API State Array.
+   */
+  public static function validateTrees($organism_index, array &$form_state) {
+    if (form_get_errors()) {
+      return;
+    }
+    if (empty($fid = self::getFileId($organism_index, $form_state))) {
+      return;
+    }
+
+    $headers = tpps_file_headers($fid);
+    $page3_values = $form_state['saved_values'][TPPS_PAGE_3];
+
+    // Note: Form element 'existing_trees' is a checkbox with title:
+    // 'These plants may have been studied in the past'.
+    // 'If this box is checked, TPPS will try to find plants with matching
+    // ids around the same location as the ones you are providing. If it finds
+    // them successfully, it will mark them as the same plant in the database.
+    if (empty($page3_values['existing_trees'])) {
+      $species_index = 'species-1';
+      if (empty($page3_values['tree-accession']['check'])) {
+        $species_index = 'species-' . $organism_index;
+      }
+      $species_fieldset = page3_values['tree-accession'][$species_index];
+      if (empty($species_fieldset['file'])) {
+        // @TODO Show error message.
+        return;
+      }
+      $missing_trees = tpps_compare_files(
+        $fid,
+        // Accession File id.
+        $species_fieldset['file'],
+        key($headers),
+        // Get column which holds Tree Ids.
+        $species_fieldset['file-groups']['Tree Id']['1'],
+        self::getNoHeaderValue($organism_index, $form_state),
+        // Note: Accession file uses non-standard ['file-no-header'] field name
+        // instead of nested ['file']['no-header'].
+        $species_fieldset['file-no-header']
+      );
+      if (!empty($missing_trees)) {
+        $error_message = t('Organism #@oidx / "<strong>@field_title</strong>":'
+          . 'We detected Plant Identifiers that were not in your Plant '
+          . 'Accession file. Please either remove these plants from your '
+          . 'Genotype file, or add them to your Plant Accession file. '
+          . 'The Plant Identifiers we found were: @tree_id_str',
+          [
+            '@field_title' => t(self::getFieldTitle()),
+            '@oidx' => $organism_index,
+            '@tree_id_str' => implode(', ', $missing_trees),
+          ]
+        );
+        form_set_error(self::getFormErrorName($organism_index), $error_message);
+      }
+    }
+  }
+
+  /**
+   * Gets value of the 'No header' sub-field.
+   *
+   * 'No header' is a dropdown menu with 'Yes/No' options:
+   *   0 => 'Yes',
+   *   1 => 'No'.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number at page.
+   * @param array $form_state
+   *   Drupal Form API State Array.
+   *
+   * @return int
+   *   Returns '0' when 'Yes' was selected and '1' when 'No' was selected.
+   */
+  public static function getNoHeaderValue($organism_index, array &$form_state) {
+    // Example: organism-1[genotype][SNPs][snps-association][no-header].
+    return $form_state['values']['organism-' . $organism_index][static::DATA_TYPE]
+      [static::FORM_PARENT_FIELDSET][static::FIELD_NAME]['no-header'] ?? FALSE;
+  }
+
 
 }

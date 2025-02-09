@@ -318,14 +318,14 @@ class SnpAssociation extends FileField {
     $missing_snps = array_diff($assoc_snps, $assay_snps);
 
     if (!empty($missing_snps)) {
-      $error_message = t('"@field_title" for organism @organism_index: '
+      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>":'
         . 'We detected SNP IDs that were not in your Genotype Assay. '
         . 'Please either remove these SNPs from your Association file, '
         . 'or add them to your Genotype Assay. '
         . '<br />The SNP Identifiers we found were: @list',
         [
           '@field_title' => t(self::getFieldTitle()),
-          '@organism_index' => $organism_index,
+          '@oidx' => $organism_index,
           '@list' => implode(', ', $missing_snps),
         ]
       );
@@ -354,14 +354,14 @@ class SnpAssociation extends FileField {
 
     $missing_phenotypes = array_diff($association_phenotypes, $phenotype_meta_names);
     if (!empty($missing_phenotypes)) {
-      $error_message = t('"@field_title" for organism @organism_index: '
+      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>":'
         . 'We detected Associated Traits that were not specified in the '
         . 'Phenotype Metadata Section. Please either remove these Traits '
         . 'from your Association file, or add them to your Phenotype '
         . 'Metadata section. <br />The Trait names we foud were: @list',
         [
           '@field_title' => t(self::getFieldTitle()),
-          '@organism_index' => $organism_index,
+          '@oidx' => $organism_index,
           '@list' => implode(', ', $missing_phenotypes),
         ]
       );
@@ -380,12 +380,12 @@ class SnpAssociation extends FileField {
       ) {
         continue;
       }
-      $error_message = t('"@field_title" for organism @organism_index: '
+      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>":'
         . 'We detected SNP positions that do not match the required format: '
         . '@position. <br />The correct format is: "start:stop" or integer.',
         [
           '@field_title' => t(self::getFieldTitle()),
-          '@organism_index' => $organism_index,
+          '@oidx' => $organism_index,
           '@position' => $position,
         ]
       );

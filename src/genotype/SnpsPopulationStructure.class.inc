@@ -47,10 +47,6 @@ class SnpsPopulationStructure extends FileField {
     $file_type = $snps['file-type'] ?? NULL;
     $genotyping_type = $snps['genotyping-type'] ?? NULL;
 
-    if (form_get_errors()) {
-      // Do not validate if any errors already found.
-      return;
-    }
     self::validateRequired($organism_index, $form_state, (
       // Requirement conditions:
       (

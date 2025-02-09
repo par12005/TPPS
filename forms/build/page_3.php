@@ -34,11 +34,14 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     tpps_study_location($form, $form_state);
   }
 
-  $form['existing_trees'] = array(
+  $form['existing_trees'] = [
     '#type' => 'checkbox',
     '#title' => t('These plants may have been studied in the past'),
-    '#description' => t('If this box is checked, TPPS will try to find plants with matching ids around the same location as the ones you are providing. If it finds them successfully, it will mark them as the same plant in the database.'),
-  );
+    '#description' => t('If this box is checked, TPPS will try to find '
+      . 'plants with matching ids around the same location as the ones '
+      . 'you are providing. If it finds them successfully, it will mark '
+      . 'them as the same plant in the database.'),
+  ];
 
   $form['tree-accession'] = array(
     '#type' => 'fieldset',

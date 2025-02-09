@@ -728,75 +728,7 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
     }
   }
 
-
-  if (
-    $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
-    || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
-  ) {
-    if (!$snps_assay) {
-      tpps_form_error_required($form_state,
-        [$id, 'genotype', $snps_fieldset, 'snps-assay']
-      );
-    }
-    else {
-      $headers = tpps_file_headers($snps_assay);
-      $id_col_name = key($headers);
-      while (($k = array_search(NULL, $headers))) {
-        $message = t('Following header column is Null which needs to be fixed. '
-          . '%data', ['%data' => $k]);
-        drupal_set_message($message, 'error');
-        unset($headers[$k]);
-      }
-      $num_columns = tpps_file_width($snps_assay) - 1;
-      $num_unique_columns = count(array_unique($headers)) - 1;
-      if ($num_unique_columns != $num_columns) {
-        $duplicates = array_diff_assoc($headers, array_unique($headers));
-        if (!empty($duplicates)) {
-          drupal_set_message(
-            t('Following header values are duplicate in provided snp file. %data',
-            array('%data' => implode(',', $duplicates))),
-          'error'
-          );
-        }
-        form_set_error("$id][genotype][$snps_fieldset][snps-assay",
-          t("SNPs Assay file: some columns in the file you provided are "
-            . "missing or have duplicate header values. Please either enter "
-            . "valid header values for those columns or remove those columns, "
-            . "then reupload your file."
-          )
-        );
-      }
-
-      // #86782z4xu Skip this check if we reuse files from existing study.
-      // @todo Minor. Maybe better to get new list of trees and use it in
-      // all other checks to be sure we have the same list in other files.
-      if (!form_get_errors() && empty($page3['existing_trees'])) {
-        $acc_no_header = $page3['tree-accession'][$species_index]['file-no-header'];
-        $missing_trees = tpps_compare_files(
-          $snps_assay,
-          $tree_accession_file,
-          $id_col_name,
-          $id_col_accession_name,
-          FALSE,
-          $acc_no_header
-        );
-        if ($missing_trees !== []) {
-          form_set_error("$id][genotype][$snps_fieldset][snps-assay",
-            t(
-              "SNPs Assay file: We detected Plant Identifiers that were "
-              . "not in your Plant Accession file. Please either remove these "
-              . "plants from your Genotype file, or add them to your "
-              . "Plant Accession file. "
-              . "The Plant Identifiers we found were: @tree_id_str",
-              ['@tree_id_str' => implode(', ', $missing_trees)]
-            )
-          );
-        }
-      }
-      // Preserve file if it is valid.
-      tpps_preserve_valid_file($form_state, $snps_assay, $org_num, "Genotype_SNPs_Assay");
-    }
-  }
+  SnpAssay::validate($org_num, $form, $form_state);
   SnpAssociation::validate($org_num, $form, $form_state);
   SnpsPopulationStructure::validate($org_num, $form, $form_state);
   SnpsKinship::validate($org_num, $form, $form_state);
@@ -1060,6 +992,7 @@ function tpps_validate_ssr(array &$form_state, $org_num, $field_name) {
     }
     // Check missing trees.
     if (!form_get_errors()) {
+      // @TODO Reuse SnpAssay::validateTrees();
       $missing_trees = tpps_compare_files(
         $genotype[$ssrs_fieldset][$field_name],
         $tree_accession_file,
@@ -1197,8 +1130,9 @@ function tpps_validate_genotype_other(array &$genotype, $org_num, array $form, a
   }
 
   if (!form_get_errors()) {
+    // @TODO Reuse SnpAssay::validateTrees();
     $acc_no_header = $page3_values['tree-accession'][$species_index]['file-no-header'];
-    $other_no_header = $genotype[$other_fieldset]['other-no-header'] ?? FALSE;
+    $other_no_header = $genotype[$other_fieldset]['other']['no-header'] ?? FALSE;
     $missing_trees = tpps_compare_files(
       $other_file,
       $tree_accession_file,

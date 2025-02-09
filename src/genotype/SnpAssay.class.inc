@@ -6,7 +6,7 @@
  */
 
 /**
- * Manages 'Assay Design' file field.
+ * Manages 'SnpAssay Design' file field.
  *
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
@@ -92,6 +92,55 @@ class SnpAssay extends FileField {
    *   Drupal Form API State array.
    */
   public static function validate($organism_index, array &$form, array &$form_state) {
+    $genotype = &$form_state['values']['organism-' . $organism_index][self::DATA_TYPE] ?? NULL;
+    $snps = &$genotype[self::FORM_PARENT_FIELDSET] ?? NULL;
+    // Fields.
+    $file_type = $snps['file-type'] ?? NULL;
+    $genotyping_type = $snps['genotyping-type'] ?? NULL;
+    $fid = self::getFileId($organism_index, $form_state);
+
+    self::validateRequired($organism_index, $form_state, (
+      // Requirement conditions:
+      (
+        $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
+        || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
+      )
+    ));
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Validate columns.
+    $headers = tpps_file_headers($fid);
+    while (($k = array_search(NULL, $headers))) {
+      $message = t('Following header column is Null which needs to be fixed. '
+        . '@data', ['@data' => $k]);
+      drupal_set_message($message, 'error');
+      unset($headers[$k]);
+    }
+    $num_columns = tpps_file_width($fid) - 1;
+    $num_unique_columns = count(array_unique($headers)) - 1;
+    if ($num_unique_columns != $num_columns) {
+      $duplicates = array_diff_assoc($headers, array_unique($headers));
+      if (!empty($duplicates)) {
+        drupal_set_message(
+          t('Following header values are duplicate in provided snp file. @data',
+            ['@data' => implode(',', $duplicates)]
+          ), 'error'
+        );
+      }
+      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>":'
+        . 'Some columns in the file you provided are missing or have duplicate '
+        . 'header values. Please either enter valid header values for those '
+        . 'columns or remove those columns, then reupload your file.',
+        [
+          '@field_title' => t(self::getFieldTitle()),
+          '@oidx' => $organism_index,
+        ]
+      );
+      form_set_error(self::getFormErrorName($organism_index), $error_message);
+    }
+
+    self::validateTrees($organism_index, $form_state);
+    self::preserveValidFile($organism_index, $form_state);
   }
 
 }
