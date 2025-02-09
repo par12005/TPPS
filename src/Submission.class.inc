@@ -1843,6 +1843,25 @@ class Submission {
     return FALSE;
   }
 
+    /**
+   * Checks if study has Mass Environmental data.
+   *
+   * @return bool
+   *   Returns TRUE when study has phenotype data and FALSE otherwise.
+   */
+  public function hasEnvironmentalData() {
+    $this->getState();
+    for ($i = 1; $i <= $this->getOrganismNumber(); $i++) {
+      if (
+        !empty($this->state['saved_values'][TPPS_PAGE_4]
+        ["organism-$i"]['environment'])
+      ) {
+        return TRUE;
+      }
+    }
+    return FALSE;
+  }
+
   /**
    * Checks if study has Mass Spectrometry data.
    *
