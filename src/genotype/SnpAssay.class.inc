@@ -97,7 +97,8 @@ class SnpAssay extends FileField {
     // Fields.
     $file_type = $snps['file-type'] ?? NULL;
     $genotyping_type = $snps['genotyping-type'] ?? NULL;
-    $fid = self::getFileId($organism_index, $form_state);
+    // @TODO Update and re-use self::getFileId().
+    $fid = $snps[self::FIELD_NAME];
 
     self::validateRequired($organism_index, $form_state, (
       // Requirement conditions:

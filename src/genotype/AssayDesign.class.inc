@@ -88,7 +88,7 @@ class AssayDesign extends FileField {
       'title' => t(self::getFieldTitle()),
       'organism_name' => $organism_name,
       'type' => self::DATA_TYPE,
-      
+
       'optional' => TRUE,
       'states' => [
         'visible' => [
@@ -172,16 +172,18 @@ class AssayDesign extends FileField {
     // Fields.
     $file_type = $snps['file-type'] ?? NULL;
     $genotyping_type = $snps['genotyping-type'] ?? NULL;
+    $fid = $snps[self::FIELD_NAME];
 
-    if (form_get_errors()) {
-      // Do not validate if any errors already found.
-      return;
-    }
     self::validateRequired($organism_index, $form_state, (
       // Requirement conditions:
       $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
       || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
     ));
+
+
+// @todo Move validation code from /form/validation.
+
+
     self::preserveValidFile($organism_index, $form_state);
   }
 
