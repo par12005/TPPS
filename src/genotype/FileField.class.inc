@@ -125,14 +125,7 @@ abstract class FileField {
    *   Returns File Id or NULL.
    */
   public static function getFileId($organism_index, array $state) {
-    $element = $state['saved_values'][TPPS_PAGE_4]
-      ['organism-' . $organism_index][static::DATA_TYPE] ?? NULL;
-    $id = $element[static::SHARED_STATE_PARENT_FIELDSET][static::FIELD_NAME]
-      // Used for validation when shared_state not yet created and $form_state
-      // is used instead and field was relocated.
-      ?? $element[static::FORM_PARENT_FIELDSET][static::FIELD_NAME]
-      ?? NULL;
-    return $id;
+    return self::getValue($organism_index, $state);
   }
 
   /**
@@ -151,7 +144,14 @@ abstract class FileField {
    *   Returns field's value or NULL.
    */
   public static function getValue($organism_index, array $state) {
-    return self::getFileId($organism_index, $state);
+    $element = $state['saved_values'][TPPS_PAGE_4]
+      ['organism-' . $organism_index][static::DATA_TYPE] ?? NULL;
+    $value = $element[static::SHARED_STATE_PARENT_FIELDSET][static::FIELD_NAME]
+      // Used for validation when shared_state not yet created and $form_state
+      // is used instead and field was relocated.
+      ?? $element[static::FORM_PARENT_FIELDSET][static::FIELD_NAME]
+      ?? NULL;
+    return $value;
   }
 
   /**
@@ -188,7 +188,17 @@ abstract class FileField {
    *   Returns TRUE if validation passed and FALSE otherwise.
    */
   public static function validateRequired($organism_index, array $form_state, $condition = FALSE) {
-    if ($condition && self::isEmptyValue($organism_index, $form_state)) {
+    // Get field's value.
+    // WARNING: Method 'isEmptyValue()' couldn't be used because it uses
+    //          'saved_values' element of $form_state but for validation
+    //          'values' element must be used.
+    //          Also parent fieldset differs from used in shared state.
+    // @todo Combine with getFileId() method. Probably we need to compare
+    // current step and data in 'values' sub-element.
+    $element = $form_state['values']['organism-' . $organism_index][static::DATA_TYPE] ?? NULL;
+    $value = $element[static::FORM_PARENT_FIELDSET][static::FIELD_NAME] ?? NULL;
+
+    if ($condition && empty($value)) {
       // Field is required but empty. Show error.
       $params = [
         '@field_title' => self::getFieldTitle(),

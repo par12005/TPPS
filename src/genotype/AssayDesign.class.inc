@@ -88,6 +88,7 @@ class AssayDesign extends FileField {
       'title' => t(self::getFieldTitle()),
       'organism_name' => $organism_name,
       'type' => self::DATA_TYPE,
+      
       'optional' => TRUE,
       'states' => [
         'visible' => [

@@ -106,9 +106,11 @@ class SnpAssay extends FileField {
         || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
       )
     ));
-
+    if (form_get_errors()) {
+      return;
+    }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Validate columns.
+    // Find duplicates.
     $headers = tpps_file_headers($fid);
     while (($k = array_search(NULL, $headers))) {
       $message = t('Following header column is Null which needs to be fixed. '
