@@ -3,6 +3,11 @@
 /**
  * @file
  * Contains 'FileField' class.
+ *
+ * Validation / Build:
+ *   getFileId() == getValue().
+ * Processing / AJAX / Build:
+ *   getSavedFileId() == getSavedValue().
  */
 
 /**
@@ -111,27 +116,32 @@ abstract class FileField {
     return ':input[name="' . self::getDomName($organism_index, $parents) . '"]';
   }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Value for processing.
+
   /**
-   * Gets File Id.
+   * Gets File Id stored in $state['saved_values'].
+   *
+   * To get value for validation use 'getFileId()' method.
    *
    * @param int $organism_index
    *   Ordinal organism number on page.
    * @param array $state
    *   Drupal Form API State array.
-   *   validate() works with $form_state.
    *   process() works with $shared_state.
+   *   Both $shared_state and $form_state could be passed.
    *
    * @return mixed
    *   Returns File Id or NULL.
    */
-  public static function getFileId($organism_index, array $state) {
-    return self::getValue($organism_index, $state);
+  public static function getSavedFileId($organism_index, array $state) {
+    return self::getSavedValue($organism_index, $state);
   }
 
   /**
-   * Gets value of the field.
+   * Gets value of the field stored in 'saved_values'.
    *
-   * Note: for file fields value is a File Id.
+   * To get value for validation use 'getValue()' method.
    *
    * @param int $organism_index
    *   Ordinal organism number on page.
@@ -143,7 +153,7 @@ abstract class FileField {
    * @return mixed
    *   Returns field's value or NULL.
    */
-  public static function getValue($organism_index, array $state) {
+  public static function getSavedValue($organism_index, array $state) {
     $element = $state['saved_values'][TPPS_PAGE_4]
       ['organism-' . $organism_index][static::DATA_TYPE] ?? NULL;
     $value = $element[static::SHARED_STATE_PARENT_FIELDSET][static::FIELD_NAME]
@@ -154,22 +164,53 @@ abstract class FileField {
     return $value;
   }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Value for validation.
+
   /**
-   * Checks if field's value is empty.
+   * Gets File Id for validation stored under $form_state['input'].
+   *
+   * To get value for processing use 'getSavedFileId()' method.
    *
    * @param int $organism_index
    *   Ordinal organism number on page.
-   * @param array $state
+   * @param array $form_state
    *   Drupal Form API State array.
    *   validate() works with $form_state.
    *   process() works with $shared_state.
    *
-   * @return bool
-   *   Returns TRUE if field's value is empty and FALSE otherwise.
+   * @return mixed
+   *   Returns File Id or NULL.
    */
-  public static function isEmptyValue($organism_index, array $state) {
-    return empty(self::getValue($organism_index, $state));
+  public static function getFileId($organism_index, array $form_state) {
+    return self::getValue($organism_index, $form_state);
   }
+
+  /**
+   * Gets value of the field for validation stored in $form_state['input'].
+   *
+   * Note: $form_state['input'] holds values of the currently submitted form
+   * and should be used for validation instead of values stored under
+   * $form_state['saved_values'] which holds values already passed validation.
+   *
+   * To get value for processing use 'getSavedValue()' method.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number on page.
+   * @param array $form_state
+   *   Drupal Form API State array.
+   *   validate() works with $form_state.
+   *   process() works with $shared_state.
+   *
+   * @return mixed
+   *   Returns field's value or NULL.
+   */
+  public static function getValue($organism_index, array $form_state) {
+    $element = $form_state['input']['organism-' . $organism_index][static::DATA_TYPE] ?? NULL;
+    return $element[static::FORM_PARENT_FIELDSET][static::FIELD_NAME] ?? NULL;
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   /**
    * Checks if required field is not empty.
@@ -188,17 +229,7 @@ abstract class FileField {
    *   Returns TRUE if validation passed and FALSE otherwise.
    */
   public static function validateRequired($organism_index, array $form_state, $condition = FALSE) {
-    // Get field's value.
-    // WARNING: Method 'isEmptyValue()' couldn't be used because it uses
-    //          'saved_values' element of $form_state but for validation
-    //          'values' element must be used.
-    //          Also parent fieldset differs from used in shared state.
-    // @todo Combine with getFileId() method. Probably we need to compare
-    // current step and data in 'values' sub-element.
-    $element = $form_state['values']['organism-' . $organism_index][static::DATA_TYPE] ?? NULL;
-    $value = $element[static::FORM_PARENT_FIELDSET][static::FIELD_NAME] ?? NULL;
-
-    if ($condition && empty($value)) {
+    if ($condition && empty(self::getValue($organism_index, $form_state))) {
       // Field is required but empty. Show error.
       $params = [
         '@field_title' => self::getFieldTitle(),

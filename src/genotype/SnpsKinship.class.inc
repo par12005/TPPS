@@ -46,9 +46,7 @@ class SnpsKinship extends FileField {
     // Fields.
     $file_type = $snps['file-type'] ?? NULL;
     $genotyping_type = $snps['genotyping-type'] ?? NULL;
-
-    // @TODO Update and re-use self::getFileId().
-    $fid = $snps[self::FIELD_NAME];
+    $fid = self::getFileId($organism_index, $form_state);
 
     self::validateRequired($organism_index, $form_state, (
       // Requirement conditions:

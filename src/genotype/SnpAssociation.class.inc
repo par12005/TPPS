@@ -261,8 +261,7 @@ class SnpAssociation extends FileField {
     $file_type = $snps['file-type'] ?? NULL;
     $genotyping_type = $snps['genotyping-type'] ?? NULL;
 
-    // @TODO Update and re-use self::getFileId().
-    $fid = $snps[self::FIELD_NAME];
+    $fid = self::getFileId($organism_index, $form_state);
     $id = 'organism-' . $organism_index;
 
     if (form_get_errors()) {
@@ -637,7 +636,7 @@ class SnpAssociation extends FileField {
    *   WARNING: 'genotype_id' is required to store 'year' column on file.
    */
   public static function process($organism_index, array $shared_state, array &$options = []) {
-    if (empty($fid = self::getFileId($organism_index, $shared_state))) {
+    if (empty($fid = self::getSavedFileId($organism_index, $shared_state))) {
       return;
     }
 
