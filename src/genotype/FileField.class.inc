@@ -206,8 +206,14 @@ abstract class FileField {
    *   Returns field's value or NULL.
    */
   public static function getValue($organism_index, array $form_state) {
-    $element = $form_state['input']['organism-' . $organism_index][static::DATA_TYPE] ?? NULL;
-    return $element[static::FORM_PARENT_FIELDSET][static::FIELD_NAME] ?? NULL;
+    return drupal_array_get_nested_value($form_state, [
+      'input',
+      'organism-' . $organism_index,
+      static::DATA_TYPE,
+      static::FORM_PARENT_FIELDSET,
+      static::FIELD_NAME,
+      'fid',
+    ]);
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
