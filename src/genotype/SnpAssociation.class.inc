@@ -92,10 +92,9 @@ class SnpAssociation extends FileField {
       return;
     }
     $organism_name = 'organism-' . $organism_index;
-    // @todo Minor. Rename $fields to $subform.
-    $fields = &$form[$organism_name][self::DATA_TYPE];
+    $sub_form = &$form[$organism_name][self::DATA_TYPE];
 
-    $fields[self::FORM_PARENT_FIELDSET]['upload_snp_association'] = [
+    $sub_form[self::FORM_PARENT_FIELDSET]['upload_snp_association'] = [
       '#type' => 'select',
       '#title' => t('Would you like to upload a SNP association file?'),
       '#options' => [
@@ -191,7 +190,7 @@ class SnpAssociation extends FileField {
     // This field must be optional to not block submission but later will be
     // moved to new page5.
     $field_name = 'snps-association-type';
-    $fields[self::FORM_PARENT_FIELDSET][$field_name] = [
+    $sub_form[self::FORM_PARENT_FIELDSET][$field_name] = [
       '#type' => 'select',
       '#title' => t('Confidence Value Type: *'),
       '#options' => [
@@ -217,7 +216,7 @@ class SnpAssociation extends FileField {
     // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
     // Field is optional.
     $field_name = 'snps-association-tool';
-    $fields[self::FORM_PARENT_FIELDSET][$field_name] = [
+    $sub_form[self::FORM_PARENT_FIELDSET][$field_name] = [
       '#type' => 'select',
       '#title' => t('Association Analysis Tool: *'),
       '#options' => [

@@ -77,11 +77,10 @@ class SnpsKinship extends FileField {
       return;
     }
     $organism_name = 'organism-' . $organism_index;
-    // @todo Minor. Rename $fields to $subform.
-    $fields = &$form[$organism_name][self::DATA_TYPE];
+    $sub_form = &$form[$organism_name][self::DATA_TYPE];
     // Would you like to upload a SNPs Kinship File?
     // Relocated in v2. ['genotype', 'files'] -> ['genotype', 'SNPs'].
-    $fields[self::FORM_PARENT_FIELDSET]['upload_snp_kinship'] = [
+    $sub_form[self::FORM_PARENT_FIELDSET]['upload_snp_kinship'] = [
       '#type' => 'select',
       '#title' => t('Would you like to upload a SNPs Kinship File?'),
       '#options' => [

@@ -43,6 +43,8 @@ class SnpAssay extends FileField {
    */
   public static function build($organism_index, array &$form, array $form_state) {
     $organism_name = 'organism-' . $organism_index;
+    $sub_form = &$form[$organism_name][self::DATA_TYPE];
+
     // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
     tpps_form_build_file_field([
       'form' => &$form,

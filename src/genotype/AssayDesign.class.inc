@@ -73,18 +73,15 @@ class AssayDesign extends FileField {
       return;
     }
     $organism_name = 'organism-' . $organism_index;
-    // @todo Minor. Rename $fields to $subform.
-    $fields = &$form[$organism_name][self::DATA_TYPE];
+    $sub_form = &$form[$organism_name][self::DATA_TYPE];
 
-    $title = t('Assay Design File');
-    $file_field_name = 'assay-design';
     // Add file upload field.
     // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
     tpps_form_build_file_field([
       'form' => &$form,
       'form_state' => $form_state,
       'parents' => [$organism_name, self::DATA_TYPE, self::FORM_PARENT_FIELDSET],
-      'field_name' => $file_field_name,
+      'field_name' => self::FIELD_NAME,
       'title' => t(self::getFieldTitle()),
       'organism_name' => $organism_name,
       'type' => self::DATA_TYPE,
@@ -114,7 +111,7 @@ class AssayDesign extends FileField {
               $organism_name,
               self::DATA_TYPE,
               self::FORM_PARENT_FIELDSET,
-              $file_field_name,
+              self::FIELD_NAME,
               'empty',
             ]
           ) ?? 'NA',
@@ -133,11 +130,11 @@ class AssayDesign extends FileField {
     ]);
 
     // Field was relocated (v.2). ['files'] -> ['SNPs'].
-    $fields[self::FORM_PARENT_FIELDSET]['assay-citation'] = [
+    $sub_form[self::FORM_PARENT_FIELDSET]['assay-citation'] = [
       '#type' => 'textfield',
       '#title' => t('Assay Design Citation (Optional):'),
       '#description' => t('If your assay design file is from a different '
-      . 'paper, please include the citation for that paper here.'),
+        . 'paper, please include the citation for that paper here.'),
       '#states' => [
         'visible' => [
           [
