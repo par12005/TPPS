@@ -238,12 +238,12 @@ abstract class FileField {
   public static function validateRequired($organism_index, array $form_state, $condition = FALSE) {
     if ($condition && empty(self::getValue($organism_index, $form_state))) {
       // Field is required but empty. Show error.
-      $params = [
-        '@field_title' => self::getFieldTitle(),
-        '@organism_index' => $organism_index,
-      ];
-      $error_message = t('Organism #@organism_index / "<strong>@field_title</strong>": '
-        . 'field is required.', $params
+      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+        . 'field is required.',
+        [
+          '@field_title' => self::getFieldTitle(),
+          '@oidx' => $organism_index,
+        ]
       );
       form_set_error(self::getFormErrorName($organism_index), $error_message);
     }
@@ -412,6 +412,57 @@ abstract class FileField {
 
     return TRUE;
 
+  }
+
+  /**
+   * Gets form element using list of parent elements.
+   *
+   * WARNING: Could be used ONLY for validation because uses currently
+   * submitted form stored in $form_state['complete form'] element.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number at page.
+   * @param array $form
+   *   Drupal Form API Array.
+   * @param array $parents
+   *   List of parent elements including desired element in the end.
+   *   When empty then list of parents will be built automatically using
+   *   field's properties.
+   *
+   * @return mixed
+   *   Returns form element or NULL if it wasn't found.
+   */
+  public static function getFormElement($organism_index, array &$form_state, array $parents = []) {
+    if (empty($form_state['complete form'])) {
+      $message = t("Form wasn't found under \$form_state['complete form'].");
+      throw new Exception($message);
+    }
+    $element = NULL;
+    $is_key_exist = NULL;
+    if (empty($parents)) {
+      // Build parents for current file field.
+      $parents = [
+        'organism-' . $organism_index,
+        static::DATA_TYPE,
+        static::FORM_PARENT_FIELDSET,
+        static::FIELD_NAME,
+      ];
+    }
+    $element = drupal_array_get_nested_value(
+      $form_state['complete form'],
+      $parents,
+      $is_key_exist
+    );
+    if (!$is_key_exist) {
+      throw new Exception(t("Form element wasn't found for field @field_name. "
+        . "Field parents: @field_parents.",
+        [
+          '@field_name' => static::FIELD_NAME,
+          '@field_parents' => implode(', ', $parents),
+        ]
+      ));
+    }
+    return $element;
   }
 
 }
