@@ -108,8 +108,9 @@ class SnpAssay extends FileField {
         || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
       )
     ));
+    // Do NOT allow empty field validation.
     if (form_get_errors()) {
-      return;
+      return FALSE;
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Find duplicates.

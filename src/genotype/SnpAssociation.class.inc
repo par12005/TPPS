@@ -276,6 +276,10 @@ class SnpAssociation extends FileField {
       && !empty($snps['snps-assay'])
       && drupal_array_get_nested_value($snps, ['upload_snp_association']) == TPPS_YES
     ));
+    // Do NOT allow empty field validation.
+    if (form_get_errors()) {
+      return FALSE;
+    }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // @todo Minor. Implement ability to run this code when study was already

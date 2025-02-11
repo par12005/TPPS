@@ -121,10 +121,7 @@ class FileField___________________removeMe {
 
     ],
     'genotype' => [
-      'snps-kinship' => ['prefix' => 'SNPs_Kinship'],
-      'snps-pop-struct' => ['prefix' => 'SNPs_Population_Structure'],
       'assay-design' => [
-        'prefix' => 'Genotype_Assay_Design',
         'required_groups' => [
           // Name => key => <id in the option's list>.
           'case 1' => [
@@ -139,7 +136,6 @@ class FileField___________________removeMe {
         ],
       ],
     ],
-    'environmental_layers' => [],
   ];
 
   /**

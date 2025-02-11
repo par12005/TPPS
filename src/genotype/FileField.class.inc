@@ -221,8 +221,12 @@ abstract class FileField {
   /**
    * Checks if required field is not empty.
    *
-   * Note: If field passed validtion TRUE will be returned and form_get_error()
-   * will return empty result (if there wasn't any error message added before).
+   * Optional fields do NOT need this check.
+   * For required fields use form_get_error() to check if validation passed:
+   *   self::validateRequired($organism_index, $form_state, $condition);
+   *   if (form_get_errors()) {
+   *     return;
+   *   }
    *
    * @param int $organism_index
    *   Ordinal number of organism at page.
@@ -230,9 +234,6 @@ abstract class FileField {
    *   Drupal Form State arra.
    * @param mixed $condition
    *   Condition when field is required.
-   *
-   * @return bool
-   *   Returns TRUE if validation passed and FALSE otherwise.
    */
   public static function validateRequired($organism_index, array $form_state, $condition = FALSE) {
     if ($condition && empty(self::getValue($organism_index, $form_state))) {
@@ -245,9 +246,7 @@ abstract class FileField {
         . 'field is required.', $params
       );
       form_set_error(self::getFormErrorName($organism_index), $error_message);
-      return FALSE;
     }
-    return TRUE;
   }
 
   /**
@@ -274,6 +273,7 @@ abstract class FileField {
       return 'Genotype_SNPs_Assay';
     }
     else {
+      // Example: 'Genotype_Assay_Design'.
       return ucfirst(static::DATA_TYPE) . '_' . str_replace(' ', '_', static::TITLE);
     }
   }
@@ -295,12 +295,13 @@ abstract class FileField {
    *   Returns TRUE in case of success and FALSE otherwise.
    */
   public static function preserveValidFile($organism_index, array &$form_state) {
-    if (form_get_errors()) {
+    $fid = self::getFileId($organism_index, $form_state);
+    if (empty($fid) || form_get_errors()) {
       return FALSE;
     }
     tpps_preserve_valid_file(
       $form_state,
-      self::getFileId($organism_index, $form_state),
+      $fid,
       $organism_index,
       self::getFilePrefix()
     );

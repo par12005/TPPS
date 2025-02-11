@@ -169,13 +169,29 @@ class AssayDesign extends FileField {
     // Fields.
     $file_type = $snps['file-type'] ?? NULL;
     $genotyping_type = $snps['genotyping-type'] ?? NULL;
-    $fid = $snps[self::FIELD_NAME];
+    $fid = self::getFileId($organism_index, $form_state);
 
-    self::validateRequired($organism_index, $form_state, (
-      // Requirement conditions:
-      $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
-      || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
-    ));
+    // @TODO Check if field really required.
+    if (variable_get('tpps_assay_design_is_required', TRUE)) {
+      self::validateRequired($organism_index, $form_state, (
+        // Requirement conditions:
+        $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
+        || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
+      ));
+      // Do NOT allow empty field validation.
+      if (form_get_errors()) {
+        return FALSE;
+      }
+    }
+    // Check for optional (and required) fields.
+    // Empty required field must create error messages and break validation
+    // before but to be sure and to allow switch to optional field using UI
+    // settings page (or variable) use for both (optional and required) fields.
+    if (empty($fid)) {
+      return;
+    }
+
+
 
 
 // @todo Move validation code from /form/validation.
