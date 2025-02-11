@@ -422,6 +422,10 @@ class FileField___________________removeMe {
    *   Returns list of form field parents.
    */
   public function getParents() {
+
+
+// @TODO Store for later use.
+
     if (empty($this->parents) && !$this->isformElementEmpty) {
       // Not sure this code should be used here. Require extra testing.
       if (0) {
@@ -587,6 +591,8 @@ class FileField___________________removeMe {
    *
    * @return int
    *   Ordinal number of organism currently processing.
+   *
+   * @TODO Remove it!
    */
   public function getOrganismNumber() {
     if (empty($this->organismNumber)) {
@@ -636,109 +642,6 @@ dpm('Validate: ' . $this->name);
 // @TODO Remove debug code.
 //dpm('Validate columns');
 
-          if ($this->name == 'assay-design') {
-            $error_name = $this->getFormSetErrorName();
-            $snps = $this->getFormParent();
-
-            // @TODO Check if value is correct.
-            // $assoc_file = $this->getValue();
-            $assoc_file = $snps['snps-association'] ?? 0;
-            $snps_assay = $snps['snps-assay'] ?? 0;
-
-
-
-            $this->validateColumns($silent_mode = TRUE);
-
-
-            if (!form_get_errors()) {
-              // Check that SNP IDs match Genotype Assay.
-              $snps_id_col = $this->columns['SNP ID'][1];
-              $assoc_no_header = $snps[$this->name . '-no-header'] ?? FALSE;
-
-              $assay_snps = tpps_file_headers($snps_assay);
-              unset($assay_snps[key($assay_snps)]);
-              $assoc_snps = tpps_parse_file_column($assoc_file, $snps_id_col, $assoc_no_header);
-              $missing_snps = array_diff($assoc_snps, $assay_snps);
-
-              if ($missing_snps !== []) {
-                form_set_error($error_name, t('@title: We detected SNP IDs '
-                    . 'that were not in your Genotype Assay. Please either '
-                    . 'remove these SNPs from your Association file, or add '
-                    . 'them to your Genotype Assay. The SNP Identifiers we '
-                    . 'found were: @snps_id_list.',
-                    [
-                      '@snps_id_list' => implode(', ', array_unique($missing_snps)),
-                      '@title' => $this->getTitle(),
-                    ]
-                  )
-                );
-              }
-
-              // Check that Phenotype names match phenotype metadata section.
-              $association_phenotypes = tpps_parse_file_column(
-                $assoc_file,
-                $this->columns['Associated Trait'][5],
-                $assoc_no_header
-              );
-
-              $phenotype = $this->formState['values'][$this->getOrganismNumber()]['phenotype'];
-              $phenotype_meta = $phenotype['metadata'];
-              $phenotype_number = $phenotype['phenotypes-meta']['number'];
-
-              $phenotype_meta_names = [];
-              $phenotype_name_col = $phenotype['metadata-groups']['Phenotype Id']['1'] ?? NULL;
-              if (isset($phenotype_name_col)) {
-                $phenotype_meta_names = tpps_parse_file_column(
-                  $phenotype_meta,
-                  $phenotype_name_col
-                );
-              }
-
-              for ($i = 1; $i <= $phenotype_number; $i++) {
-                $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
-              }
-
-              $missing_phenotypes = array_diff(
-                $association_phenotypes,
-                $phenotype_meta_names
-              );
-              if ($missing_phenotypes !== []) {
-                form_set_error($error_name, t('@title: We detected '
-                  . 'Associated Traits that were not specified in the '
-                  . 'Phenotype Metadata Section. Please either remove '
-                  . 'these Traits from your Association file, or add them '
-                  . 'to your Phenotype Metadata section. '
-                  . 'The Trait names we foud were: @phenotype_names',
-                    [
-                      '@phenotype_names' => implode(', ',
-                        array_unique($missing_phenotypes)),
-                      '@title' => $this->getTitle(),
-                    ]
-                  )
-                );
-              }
-
-              // Check that position values are correctly formatted.
-              $positions = tpps_parse_file_column(
-                $assoc_file,
-                $this->columns['Position'][3],
-                $assoc_no_header
-              );
-              foreach ($positions as $position) {
-                if (!preg_match('/^(\d+):(\d+)$/', $position)) {
-                  form_set_error($error_name, t('@title: We detected SNP '
-                      . 'positions that do not match the required format. '
-                      . 'The correct format is: "start:stop".',
-                      ['@title' => $this->getTitle()]
-                    )
-                  );
-                  break;
-                }
-              }
-            }
-
-            // End of the 'snps-association' field.
-          }
         }
         // Preserve file if it is valid.
         tpps_preserve_valid_file(
@@ -778,6 +681,8 @@ dpm('Validate: ' . $this->name);
     }
     $is_key_exists = NULL;
     // Currently submitted values.
+    //
+    // WARNING: 'input' has different structure from 'saved_values'.
     $element = drupal_array_get_nested_value($array['input'], $parents, $is_key_exists);
     if ($is_key_exists === FALSE) {
       // If element wasn't found try to search previously submitted steps/pages.

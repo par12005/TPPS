@@ -178,7 +178,7 @@ class AssayDesign extends FileField {
         $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
         || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
       ));
-      // Do NOT allow empty field validation.
+      // Do NOT allow further validation.
       if (form_get_errors()) {
         return FALSE;
       }
@@ -191,13 +191,352 @@ class AssayDesign extends FileField {
       return;
     }
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Check required data types for columns.
+    // Note: Usually fields has a single group of required columns
+    // but Assay Design has 2 of them.
+    if (self::hasColumns($organism_index, $form_state)) {
+      $error_name = self::getFormErrorName($organism_index);
+
+      $assoc_file = $snps['snps-association'] ?? 0;
+      $snps_assay = $snps['snps-assay'] ?? 0;
 
 
+// @todo Update.
+      $columns = self::validateColumns($silent_mode = TRUE);
+      if (form_get_errors()) {
+        return;
+      }
 
-// @todo Move validation code from /form/validation.
+        // Check that SNP IDs match Genotype Assay.
+        $snps_id_col = $columns['SNP ID'][1];
+        $assoc_no_header = $snps[$this->name . '-no-header'] ?? FALSE;
 
+        $assay_snps = tpps_file_headers($snps_assay);
+        unset($assay_snps[key($assay_snps)]);
+        $assoc_snps = tpps_parse_file_column($assoc_file, $snps_id_col, $assoc_no_header);
+        $missing_snps = array_diff($assoc_snps, $assay_snps);
 
+        if (!empty($missing_snps)) {
+          $error_message = t('Organism #@oidx / "<strong>@field_title</strong>":'
+            . 'We detected SNP IDs that were not in your Genotype Assay. '
+            . 'Please either remove these SNPs from your Association file, or '
+            . 'add them to your Genotype Assay. The SNP Identifiers we '
+            . 'found were: @snps_id_list.',
+            [
+              '@field_title' => t(self::getFieldTitle()),
+              '@oidx' => $organism_index,
+              '@snps_id_list' => implode(', ', array_unique($missing_snps)),
+            ]
+          );
+          form_set_error(self::getFormErrorName($organism_index), $error_message);
+        }
+
+        // Check that Phenotype names match phenotype metadata section.
+        $association_phenotypes = tpps_parse_file_column(
+          $assoc_file,
+          $columns['Associated Trait'][5],
+          $assoc_no_header
+        );
+
+        $phenotype = $form_state['values'][$organism_index]['phenotype'];
+        $phenotype_meta = $phenotype['metadata'];
+        $phenotype_number = $phenotype['phenotypes-meta']['number'];
+
+        $phenotype_meta_names = [];
+        $phenotype_name_col = $phenotype['metadata-groups']['Phenotype Id']['1'] ?? NULL;
+        if (isset($phenotype_name_col)) {
+          $phenotype_meta_names = tpps_parse_file_column(
+            $phenotype_meta,
+            $phenotype_name_col
+          );
+        }
+
+        for ($i = 1; $i <= $phenotype_number; $i++) {
+          $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
+        }
+
+        $missing_phenotypes = array_diff(
+          $association_phenotypes,
+          $phenotype_meta_names
+        );
+        if (!empty($missing_phenotypes)) {
+          $error_message = t('Organism #@oidx / "<strong>@field_title</strong>":'
+            . 'We detected Associated Traits that were not specified in the '
+            . 'Phenotype Metadata Section. Please either remove  these Traits '
+            . 'from your Association file, or add them to your Phenotype '
+            . 'Metadata section. The Trait names we foud were: @phenotype_names',
+            [
+              '@field_title' => t(self::getFieldTitle()),
+              '@oidx' => $organism_index,
+              '@phenotype_names' => implode(', ', array_unique($missing_phenotypes)),
+            ]
+          );
+          form_set_error(self::getFormErrorName($organism_index), $error_message);
+        }
+
+        // Check that position values are correctly formatted.
+        $positions = tpps_parse_file_column(
+          $assoc_file,
+          $columns['Position'][3],
+          $assoc_no_header
+        );
+        foreach ($positions as $position) {
+          if (!preg_match('/^(\d+):(\d+)$/', $position)) {
+            $error_message = t('Organism #@oidx / "<strong>@field_title</strong>":'
+              . 'We detected SNP positions that do not match the required format. '
+              . 'The correct format is: "start:stop".',
+              [
+                '@field_title' => t(self::getFieldTitle()),
+                '@oidx' => $organism_index,
+              ]
+            );
+            form_set_error(self::getFormErrorName($organism_index), $error_message);
+            break;
+          }
+        }
+    }
+    // Do NOT allow further validation.
+    if (form_get_errors()) {
+      return FALSE;
+    }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     self::preserveValidFile($organism_index, $form_state);
+  }
+
+
+
+  // @TODO Move to class 'FileField'.
+  //
+  /**
+   * This function validates that the file contains all of the required groups.
+   *
+   * Based on code from function tpps_file_validate_columns().
+   *
+   * A "required group" is a column type that must be present within the file for
+   * the file to be considered valid. For instance, a required group for a plant
+   * accession file would be the "Location" group. The required groups array
+   * should satisfy the structure:
+   *  array(
+   *    '<group name>' => array(
+   *      '<type>' => array(<column option index>[, <column option index>...])[,
+   *      '<type>' => array(<column option index>[, <column option index>...])...]
+   *    )[,
+   *    '<group name>' => array(
+   *      '<type>' => array(<column option index>[, <column option index>...])[,
+   *      '<type>' => array(<column option index>[, <column option index>...])...]
+   *    )...]
+   *  )
+   * where <group name> is the name of the required group, <type> is the name of
+   * the set of options that could satisfy the required group, and each of the
+   * <column option index>s is a key within the file element['column-options']
+   * field.
+   *
+   * @param bool $silent_mode
+   *   Default is FALSE.
+   *   When FALSE and silent mode is disabled then form_set_error() will be called
+   *   which means error message on page will appear and form validation fails.
+   *   When TRUE and silent mode is enabled then no error message will be shown
+   *   and form will be left valid. This could be useful when not all columns are
+   *   required and multiple groups or columns must be checked.
+   *   For example:
+   *   case 1: Required columns: A, B, C;
+   *   case 2: Required columns: A, D, E, F.
+   *
+   * @return array
+   *   The groups and the column option types that the file was valid for.
+   *   Example:
+   *   [
+   *     // <Name> => [
+   *     //   <id in the option's list> => <column index>,
+   *     //   '#type' => <key>
+   *     // ],
+   *     'SNP ID' => [1 => 'B', '#type' => 'id'],
+   *     'Scaffold' => [
+   *       '#type' => [], // < ---- Not found!
+   *     ],
+   *     'Position' => [3 => 'D', '#type' => 'position'],
+   *     'Allele' => [4 => 'E', '#type' => 'allele'],
+   *     'Associated Trait' => [5 => 'F', '#type' => 'trait'],
+   *     'Confidence Value' => [6 => 'G', '#type' => 'confidence'],
+   *   ];
+   *
+   *
+   * @todo Remove arguments.
+   * 2. Make silent mode default (TRUE).
+   * 3. Return boolean value.
+   * @todo replace tpps_file_validate_columns().
+   */
+  public static function validateColumns($silent_mode = FALSE) {
+
+    $required_groups = self::getRequiredColumns();
+
+
+
+
+
+// @TODO Return columns instead of storing into $this->columns.
+
+// @TODO Update below.
+
+
+    $file_element = $this->getFormElement();
+    $error_prompt = $this->getTitle();
+    // Check if file has zero length (empty).
+    if (!($file_element['#file']->filesize ?? NULL)) {
+      form_set_error(
+        // We highlight an empty value field because file field not visible
+        // when file was uploaded.
+        //$file_element['#name'] . '[empty]',
+        // There is no 'empty' element for file fields.
+        $file_element['#name'],
+        $error_prompt . ': File is empty.'
+      );
+      // No need to validate empty file.
+      return [];
+    }
+
+dpm($file_element['#name'], 'file field #name');
+dpm($this->getFormSetErrorName());
+dpm($this->getDomElementName());
+
+    $cols = $file_element['#value']['columns'] ?? NULL;
+    $parents = $file_element['#parents'];
+    $new_end_columns = end($parents) . "-columns";
+    $new_end_no_header = end($parents) . "-no-header";
+    $new_end_empty = end($parents) . "-empty";
+    $group_path = array_pop($parents) . "-groups";
+    $values = drupal_array_get_nested_value($this->formState['values'], $parents);
+    // Initialize form column values in form state.
+    $values[$new_end_columns] = [];
+    // Hold onto the location of the columns in form state.
+    $state_column_values = &$values[$new_end_columns];
+    $values[$new_end_no_header] = $file_element['#value']['no-header'] ?? NULL;
+    $values[$new_end_empty] = $file_element['#value']['empty'] ?? NULL;
+
+    $this->columns = [];
+
+    foreach ($required_groups as $case) {
+      $required_groups_flat = [];
+      foreach ($case as $group => $combinations) {
+        $this->columns[$group] = [];
+        $required_groups_flat[$group] = [];
+        foreach ($combinations as $name => $combination) {
+          $required_groups_flat[$group] = array_merge(
+            $required_groups_flat[$group],
+            $combination
+          );
+        }
+      }
+
+dpm($required_groups_flat);
+
+      if ($cols) {
+        // Note: $cols will be empty when user just added file (not clicked 'Upload'
+        // button and submitted form (clicked 'Next' button).
+        // Probably columns could be detected automatically because they are shown
+        // at page and so we could use default values here.
+        // @TODO Get default set of columns.
+        foreach ($cols as $name => $type) {
+          $state_column_values[$name] = $type;
+          foreach ($required_groups_flat as $group => $types) {
+            if (in_array($type, $types)) {
+              if (!isset($this->columns[$group][$type])) {
+                $this->columns[$group][$type] = [$name];
+              }
+              else {
+                $this->columns[$group][$type][] = $name;
+              }
+              break;
+            }
+          }
+        }
+      }
+
+      foreach ($case as $group => $combinations) {
+        $group_valid = FALSE;
+        $this->columns[$group]['#type'] = [];
+        foreach ($combinations as $name => $combination) {
+          $combination_valid = TRUE;
+          foreach ($combination as $type) {
+            if (!isset($groups[$group][$type])) {
+              $combination_valid = FALSE;
+              break;
+            }
+          }
+          if ($combination_valid) {
+            $this->columns[$group]['#type'][] = $name;
+            $group_valid = TRUE;
+          }
+        }
+
+        if (!$group_valid && !$silent_mode) {
+          form_set_error(
+            $file_element['#name'] . "[columns][$group",
+            t('@field_name: Please specify a column or columns that hold @group.',
+              [
+                '@field_name' => $error_prompt,
+                '@group' => $group,
+              ]
+            )
+          );
+        }
+      }
+
+      // Replaces list of column names with a single value when was found only one. Instead of this:
+      // [
+      //   'Flank sequence' => [
+      //     '4' => ['0' => 'B'],
+      //     '#type' => ['0' => 'sequence'],
+      //   ]
+      // ];
+      // we will get this:
+      // [
+      //   'Flank sequence' => ['4' => 'B', '#type' => 'sequence'],
+      // ];
+      foreach ($this->columns as $key => $group) {
+        foreach ($group as $opt_num => $col_names) {
+          if (count($col_names) == 1) {
+            $this->columns[$key][$opt_num] = $col_names[0];
+          }
+        }
+      }
+
+      $values[$group_path] = $this->columns;
+      drupal_array_set_nested_value($this->formState['values'], $parents, $values);
+
+      // @todo Check if original $form_state array was updated.
+
+    }
+
+dpm(print_r($this->columns, 1));
+
+    // @todo Return result of validation or rename method.
+    $result = TRUE;
+
+    return $result;
+  }
+
+  /**
+   * Gets required columns.
+   *
+   * @return array
+   *   Returns list of groups of the required columns.
+   */
+  public static function getRequiredColumns() {
+    return [
+      // Name => key => <id in the option's list>.
+      'case 1' => [
+        'SNP ID' => ['id' => [1]],
+        'Scaffold' => ['scaffold' => [2]],
+        'Position' => ['position' => [3]],
+      ],
+      'case 2' => [
+        'SNP ID' => ['id' => [1]],
+        'Flank sequence' => ['sequence' => [4]],
+      ],
+    ];
   }
 
 }

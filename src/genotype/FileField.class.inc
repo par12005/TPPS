@@ -395,5 +395,23 @@ abstract class FileField {
       [static::FORM_PARENT_FIELDSET][static::FIELD_NAME]['no-header'] ?? FALSE;
   }
 
+  /**
+   * Checks if field has columns (ability to set column's data type).
+   *
+   * @param int $organism_index
+   *   Ordinal organism number at page.
+   * @param array $form_state
+   *   Drupal Form API State Array.
+   *
+   * @return bool
+   *   Returns TRUE if field has columns and FALSE otherwise.
+   */
+  public static function hasColumns($organism_index, array &$form_state) {
+
+// @TODO Implement real check.
+
+    return TRUE;
+
+  }
 
 }
