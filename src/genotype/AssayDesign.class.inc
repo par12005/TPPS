@@ -203,7 +203,7 @@ class AssayDesign extends FileField {
 
 
 // @todo Update.
-      $columns = self::validateColumns($silent_mode = TRUE);
+      $columns = self::validateColumns($organism_index, $form_state, $silent_mode = TRUE);
       if (form_get_errors()) {
         return;
       }
@@ -306,8 +306,6 @@ class AssayDesign extends FileField {
   }
 
 
-
-  // @TODO Move to class 'FileField'.
   //
   /**
    * This function validates that the file contains all of the required groups.
@@ -333,6 +331,10 @@ class AssayDesign extends FileField {
    * <column option index>s is a key within the file element['column-options']
    * field.
    *
+   * @param int $organism_index
+   *   Ordinal organism number at page.
+   * @param array $form_state
+   *   Drupal Form API State Array.
    * @param bool $silent_mode
    *   Default is FALSE.
    *   When FALSE and silent mode is disabled then form_set_error() will be called
@@ -362,44 +364,30 @@ class AssayDesign extends FileField {
    *     'Confidence Value' => [6 => 'G', '#type' => 'confidence'],
    *   ];
    *
-   *
-   * @todo Remove arguments.
-   * 2. Make silent mode default (TRUE).
-   * 3. Return boolean value.
-   * @todo replace tpps_file_validate_columns().
+   * @TODO Move to class 'FileField'.
+   * @todo Minor. Replace tpps_file_validate_columns() with this code to allow
+   * multiple groups of required columns.
    */
-  public static function validateColumns($silent_mode = FALSE) {
-
+  public static function validateColumns($organism_index, array &$form_state, $silent_mode = FALSE) {
     $required_groups = self::getRequiredColumns();
-
-
-
-
-
-// @TODO Return columns instead of storing into $this->columns.
-
-// @TODO Update below.
-
-
-    $file_element = $this->getFormElement();
-    $error_prompt = $this->getTitle();
+    $file_element = self::getFormElement($organism_index, $form_state);
     // Check if file has zero length (empty).
     if (!($file_element['#file']->filesize ?? NULL)) {
-      form_set_error(
-        // We highlight an empty value field because file field not visible
-        // when file was uploaded.
-        //$file_element['#name'] . '[empty]',
-        // There is no 'empty' element for file fields.
-        $file_element['#name'],
-        $error_prompt . ': File is empty.'
+      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+        . ': File is empty.'
+        [
+          '@field_title' => self::getFieldTitle(),
+          '@oidx' => $organism_index,
+        ]
       );
+      // We highlight an empty value field because file field not visible
+      // when file was uploaded.
+      // $file_element['#name'] . '[empty]',
+      // There is no 'empty' element for file fields.
+      form_set_error($file_element['#name'], $error_message);
       // No need to validate empty file.
       return [];
     }
-
-dpm($file_element['#name'], 'file field #name');
-dpm($this->getFormSetErrorName());
-dpm($this->getDomElementName());
 
     $cols = $file_element['#value']['columns'] ?? NULL;
     $parents = $file_element['#parents'];
@@ -407,7 +395,7 @@ dpm($this->getDomElementName());
     $new_end_no_header = end($parents) . "-no-header";
     $new_end_empty = end($parents) . "-empty";
     $group_path = array_pop($parents) . "-groups";
-    $values = drupal_array_get_nested_value($this->formState['values'], $parents);
+    $values = drupal_array_get_nested_value($form_state['values'], $parents);
     // Initialize form column values in form state.
     $values[$new_end_columns] = [];
     // Hold onto the location of the columns in form state.
@@ -415,12 +403,13 @@ dpm($this->getDomElementName());
     $values[$new_end_no_header] = $file_element['#value']['no-header'] ?? NULL;
     $values[$new_end_empty] = $file_element['#value']['empty'] ?? NULL;
 
-    $this->columns = [];
+
+    $columns = [];
 
     foreach ($required_groups as $case) {
       $required_groups_flat = [];
       foreach ($case as $group => $combinations) {
-        $this->columns[$group] = [];
+        $columns[$group] = [];
         $required_groups_flat[$group] = [];
         foreach ($combinations as $name => $combination) {
           $required_groups_flat[$group] = array_merge(
@@ -430,7 +419,7 @@ dpm($this->getDomElementName());
         }
       }
 
-dpm($required_groups_flat);
+//dpm($required_groups_flat);
 
       if ($cols) {
         // Note: $cols will be empty when user just added file (not clicked 'Upload'
@@ -442,11 +431,11 @@ dpm($required_groups_flat);
           $state_column_values[$name] = $type;
           foreach ($required_groups_flat as $group => $types) {
             if (in_array($type, $types)) {
-              if (!isset($this->columns[$group][$type])) {
-                $this->columns[$group][$type] = [$name];
+              if (!isset($columns[$group][$type])) {
+                $columns[$group][$type] = [$name];
               }
               else {
-                $this->columns[$group][$type][] = $name;
+                $columns[$group][$type][] = $name;
               }
               break;
             }
@@ -456,7 +445,7 @@ dpm($required_groups_flat);
 
       foreach ($case as $group => $combinations) {
         $group_valid = FALSE;
-        $this->columns[$group]['#type'] = [];
+        $columns[$group]['#type'] = [];
         foreach ($combinations as $name => $combination) {
           $combination_valid = TRUE;
           foreach ($combination as $type) {
@@ -466,21 +455,21 @@ dpm($required_groups_flat);
             }
           }
           if ($combination_valid) {
-            $this->columns[$group]['#type'][] = $name;
+            $columns[$group]['#type'][] = $name;
             $group_valid = TRUE;
           }
         }
 
         if (!$group_valid && !$silent_mode) {
-          form_set_error(
-            $file_element['#name'] . "[columns][$group",
-            t('@field_name: Please specify a column or columns that hold @group.',
-              [
-                '@field_name' => $error_prompt,
-                '@group' => $group,
-              ]
-            )
+          $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+            . 'Please specify a column or columns that hold @group.',
+            [
+              '@field_title' => self::getFieldTitle(),
+              '@oidx' => $organism_index,
+              '@group' => $group,
+            ]
           );
+          form_set_error($file_element['#name'] . "[columns][$group", $error_message);
         }
       }
 
@@ -495,27 +484,22 @@ dpm($required_groups_flat);
       // [
       //   'Flank sequence' => ['4' => 'B', '#type' => 'sequence'],
       // ];
-      foreach ($this->columns as $key => $group) {
+      foreach ($columns as $key => $group) {
         foreach ($group as $opt_num => $col_names) {
           if (count($col_names) == 1) {
-            $this->columns[$key][$opt_num] = $col_names[0];
+            $columns[$key][$opt_num] = $col_names[0];
           }
         }
       }
 
-      $values[$group_path] = $this->columns;
-      drupal_array_set_nested_value($this->formState['values'], $parents, $values);
+      $values[$group_path] = $columns;
+      drupal_array_set_nested_value($form_state['values'], $parents, $values);
 
-      // @todo Check if original $form_state array was updated.
+// @todo Check if original $form_state array was updated.
 
     }
-
-dpm(print_r($this->columns, 1));
-
-    // @todo Return result of validation or rename method.
-    $result = TRUE;
-
-    return $result;
+//dpm(print_r($columns, 1));
+    return $columns;
   }
 
   /**
