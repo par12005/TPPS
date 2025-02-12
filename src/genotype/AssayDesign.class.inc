@@ -59,6 +59,27 @@ class AssayDesign extends FileField {
   }
 
   /**
+   * Gets required columns.
+   *
+   * @return array
+   *   Returns list of groups of the required columns.
+   */
+  public static function getRequiredColumns() {
+    return [
+      // Name => key => <id in the option's list>.
+      'case 1' => [
+        'SNP ID' => ['id' => [1]],
+        'Scaffold' => ['scaffold' => [2]],
+        'Position' => ['position' => [3]],
+      ],
+      'case 2' => [
+        'SNP ID' => ['id' => [1]],
+        'Flank sequence' => ['sequence' => [4]],
+      ],
+    ];
+  }
+
+  /**
    * Builds file field.
    *
    * @param int $organism_index
@@ -196,10 +217,31 @@ class AssayDesign extends FileField {
     // Note: Usually fields has a single group of required columns
     // but Assay Design has 2 of them.
     if (self::hasColumns($organism_index, $form_state)) {
+
       $error_name = self::getFormErrorName($organism_index);
 
-      $assoc_file = $snps['snps-association'] ?? 0;
-      $snps_assay = $snps['snps-assay'] ?? 0;
+      if (empty($assoc_file = $snps['snps-association'])) {
+        // @todo Minor. Highlight 'SNP Association' file.
+        $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+          . 'Requires "SNP Association" file.',
+          [
+            '@field_title' => t(self::getFieldTitle()),
+            '@oidx' => $organism_index,
+          ]
+        );
+        form_set_error(self::getFormErrorName($organism_index), $error_message);
+      }
+      if (empty($snps_assay = $snps['snps-assay'])) {
+        // @todo Minor. Highlight 'SNP Assay' file.
+        $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+          . 'Requires "SNP Assay" file.',
+          [
+            '@field_title' => t(self::getFieldTitle()),
+            '@oidx' => $organism_index,
+          ]
+        );
+        form_set_error(self::getFormErrorName($organism_index), $error_message);
+      }
 
 
 // @todo Update.
@@ -210,7 +252,7 @@ class AssayDesign extends FileField {
 
         // Check that SNP IDs match Genotype Assay.
         $snps_id_col = $columns['SNP ID'][1];
-        $assoc_no_header = $snps[$this->name . '-no-header'] ?? FALSE;
+        $assoc_no_header = $snps[self::FIELD_NAME . '-no-header'] ?? FALSE;
 
         $assay_snps = tpps_file_headers($snps_assay);
         unset($assay_snps[key($assay_snps)]);
@@ -218,7 +260,7 @@ class AssayDesign extends FileField {
         $missing_snps = array_diff($assoc_snps, $assay_snps);
 
         if (!empty($missing_snps)) {
-          $error_message = t('Organism #@oidx / "<strong>@field_title</strong>":'
+          $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
             . 'We detected SNP IDs that were not in your Genotype Assay. '
             . 'Please either remove these SNPs from your Association file, or '
             . 'add them to your Genotype Assay. The SNP Identifiers we '
@@ -261,7 +303,7 @@ class AssayDesign extends FileField {
           $phenotype_meta_names
         );
         if (!empty($missing_phenotypes)) {
-          $error_message = t('Organism #@oidx / "<strong>@field_title</strong>":'
+          $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
             . 'We detected Associated Traits that were not specified in the '
             . 'Phenotype Metadata Section. Please either remove  these Traits '
             . 'from your Association file, or add them to your Phenotype '
@@ -283,7 +325,7 @@ class AssayDesign extends FileField {
         );
         foreach ($positions as $position) {
           if (!preg_match('/^(\d+):(\d+)$/', $position)) {
-            $error_message = t('Organism #@oidx / "<strong>@field_title</strong>":'
+            $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
               . 'We detected SNP positions that do not match the required format. '
               . 'The correct format is: "start:stop".',
               [
@@ -305,26 +347,5 @@ class AssayDesign extends FileField {
     self::preserveValidFile($organism_index, $form_state);
   }
 
-
-  /**
-   * Gets required columns.
-   *
-   * @return array
-   *   Returns list of groups of the required columns.
-   */
-  public static function getRequiredColumns() {
-    return [
-      // Name => key => <id in the option's list>.
-      'case 1' => [
-        'SNP ID' => ['id' => [1]],
-        'Scaffold' => ['scaffold' => [2]],
-        'Position' => ['position' => [3]],
-      ],
-      'case 2' => [
-        'SNP ID' => ['id' => [1]],
-        'Flank sequence' => ['sequence' => [4]],
-      ],
-    ];
-  }
 
 }

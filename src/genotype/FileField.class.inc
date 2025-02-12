@@ -43,6 +43,24 @@ abstract class FileField {
   const DATA_TYPE = '';
 
   /**
+   * Gets lit of required columns for validation.
+   *
+   * Note:
+   * File class must overwrite this method of column validation is required.
+   *
+   * @return array
+   *   Returns list of groups of required columns.
+   *   See AssayDesign::getRequiredColumns() for the structure example.
+   */
+  public static function getRequiredColumns() {
+    $message = t("Class '@class' must implement method 'getRequiredColumns'.",
+      ['@class' => get_called_class()]
+    );
+    throw new Exception($message);
+    return [];
+  }
+
+  /**
    * Gets name of the field for form_set_error().
    *
    * WARNING: no trailing ']' but has first ']'.
@@ -340,7 +358,7 @@ abstract class FileField {
       if (empty($page3_values['tree-accession']['check'])) {
         $species_index = 'species-' . $organism_index;
       }
-      $species_fieldset = page3_values['tree-accession'][$species_index];
+      $species_fieldset = $page3_values['tree-accession'][$species_index];
       if (empty($species_fieldset['file'])) {
         // @TODO Show error message.
         return;
@@ -526,12 +544,13 @@ abstract class FileField {
    * multiple groups of required columns.
    */
   public static function validateColumns($organism_index, array &$form_state, $silent_mode = FALSE) {
-    $required_groups = self::getRequiredColumns();
+    // @Todo check if class has method 'getRequiredColumns'.
+    $required_groups = static::getRequiredColumns();
     $file_element = self::getFormElement($organism_index, $form_state);
     // Check if file has zero length (empty).
     if (!($file_element['#file']->filesize ?? NULL)) {
       $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
-        . ': File is empty.'
+        . 'File is empty.',
         [
           '@field_title' => self::getFieldTitle(),
           '@oidx' => $organism_index,

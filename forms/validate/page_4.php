@@ -730,9 +730,10 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
 
   SnpAssay::validate($org_num, $form, $form_state);
   SnpAssociation::validate($org_num, $form, $form_state);
+  // AssayDesign file requires 'SNP Association' and 'SNP Assay' files.
+  AssayDesign::validate($org_num, $form, $form_state);
   SnpsPopulationStructure::validate($org_num, $form, $form_state);
   SnpsKinship::validate($org_num, $form, $form_state);
-  AssayDesign::validate($org_num, $form, $form_state);
 }
 
 /**
