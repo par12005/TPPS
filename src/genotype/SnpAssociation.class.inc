@@ -321,7 +321,7 @@ class SnpAssociation extends FileField {
     $missing_snps = array_diff($assoc_snps, $assay_snps);
 
     if (!empty($missing_snps)) {
-      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>":'
+      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
         . 'We detected SNP IDs that were not in your Genotype Assay. '
         . 'Please either remove these SNPs from your Association file, '
         . 'or add them to your Genotype Assay. '
@@ -357,7 +357,7 @@ class SnpAssociation extends FileField {
 
     $missing_phenotypes = array_diff($association_phenotypes, $phenotype_meta_names);
     if (!empty($missing_phenotypes)) {
-      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>":'
+      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
         . 'We detected Associated Traits that were not specified in the '
         . 'Phenotype Metadata Section. Please either remove these Traits '
         . 'from your Association file, or add them to your Phenotype '
@@ -383,7 +383,7 @@ class SnpAssociation extends FileField {
       ) {
         continue;
       }
-      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>":'
+      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
         . 'We detected SNP positions that do not match the required format: '
         . '@position. <br />The correct format is: "start:stop" or integer.',
         [
@@ -511,7 +511,6 @@ class SnpAssociation extends FileField {
    *   'id' - string e.g., 'organism-1'.
    */
   public static function validateRow($row, array &$options = []) {
-    $name = $options['id'] . '][genotype][' . self::FIELD_NAME;
     self::getNamedRow($row, $options);
     $associations = $options['associations'];
     $column_list = $options['column_list'];
@@ -544,9 +543,15 @@ class SnpAssociation extends FileField {
             continue;
           }
           else {
-            $params['@column_title'] = t($column_title);
-            form_set_error($name, t('@field_title: Empty "@column_title" '
-              . 'column is not allowed.<br />Row: @list.', $params));
+            $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+              . 'Empty "@column_title" column is not allowed.',
+              [
+                '@field_title' => t(self::getFieldTitle()),
+                '@oidx' => $organism_index,
+                '@column_title' => t($column_title),
+              ]
+            );
+            form_set_error(self::getFormErrorName($organism_index), $error_message);
           }
         }
       }

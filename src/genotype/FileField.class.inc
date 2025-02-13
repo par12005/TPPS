@@ -649,17 +649,11 @@ abstract class FileField {
         }
       }
 
-      // Replaces list of column names with a single value when was found only one. Instead of this:
-      // [
-      //   'Flank sequence' => [
-      //     '4' => ['0' => 'B'],
-      //     '#type' => ['0' => 'sequence'],
-      //   ]
-      // ];
+      // Replaces list of column names with a single value when was found only one.
+      // Instead of this:
+      //   ['Flank sequence' => ['4' => ['0' => 'B'], '#type' => ['0' => 'sequence']]];
       // we will get this:
-      // [
-      //   'Flank sequence' => ['4' => 'B', '#type' => 'sequence'],
-      // ];
+      //   ['Flank sequence' => ['4' => 'B', '#type' => 'sequence']];
       foreach ($columns as $key => $group) {
         foreach ($group as $opt_num => $col_names) {
           if (count($col_names) == 1) {
@@ -674,7 +668,6 @@ abstract class FileField {
 // @todo Check if original $form_state array was updated.
 
     }
-//dpm(print_r($columns, 1));
     return $columns;
   }
 
