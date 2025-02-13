@@ -192,17 +192,17 @@ class AssayDesign extends FileField {
     $genotyping_type = $snps['genotyping-type'] ?? NULL;
     $fid = self::getFileId($organism_index, $form_state);
 
-    // @TODO Check if field really required.
-    if (variable_get('tpps_assay_design_is_required', TRUE)) {
-      self::validateRequired($organism_index, $form_state, (
-        // Requirement conditions:
+    self::validateRequired($organism_index, $form_state, (
+      // Requirement conditions:
+      (
         $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
         || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
-      ));
-      // Do NOT allow further validation.
-      if (form_get_errors()) {
-        return FALSE;
-      }
+      )
+      && !empty($snps['snps-assay'])
+    ));
+    // Do NOT allow further validation.
+    if (form_get_errors()) {
+      return FALSE;
     }
     // Check for optional (and required) fields.
     // Empty required field must create error messages and break validation
@@ -244,11 +244,18 @@ class AssayDesign extends FileField {
       }
 
 
-// @todo Update.
-      $columns = self::validateColumns($organism_index, $form_state, $silent_mode = TRUE);
+      // @todo Update.
+      // @todo There are 2 modes: validate and just get columns for processing.
+      $columns = self::validateColumns($organism_index, $form_state, $silent_mode = FALSE);
+
+//dpm($columns, 'columns');
+
+
       if (form_get_errors()) {
         return;
       }
+
+
 
         // Check that SNP IDs match Genotype Assay.
         $snps_id_col = $columns['SNP ID'][1];
@@ -323,21 +330,32 @@ class AssayDesign extends FileField {
           $columns['Position'][3],
           $assoc_no_header
         );
-        foreach ($positions as $position) {
-          if (!preg_match('/^(\d+):(\d+)$/', $position)) {
-            $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
-              . 'We detected SNP positions that do not match the required format. '
-              . 'The correct format is: "start:stop".',
-              [
-                '@field_title' => t(self::getFieldTitle()),
-                '@oidx' => $organism_index,
-              ]
-            );
-            form_set_error(self::getFormErrorName($organism_index), $error_message);
-            break;
-          }
-        }
+
+
+
+    foreach ($positions as $position) {
+      if (
+        // Numeric (integer).
+        is_numeric($position)
+        // Format: 'start:stop'.
+        || preg_match('/^(\d+):(\d+)$/', $position)
+      ) {
+        continue;
+      }
+      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+        . 'We detected SNP positions that do '
+        . 'not match the required format: @position.'
+        . '<br />The correct format is: "start:stop" or integer.',
+        [
+          '@field_title' => t(self::getFieldTitle()),
+          '@oidx' => $organism_index,
+          '@position' => $position,
+        ]
+      );
+      form_set_error(self::getFormErrorName($organism_index), $error_message);
+      break;
     }
+
     // Do NOT allow further validation.
     if (form_get_errors()) {
       return FALSE;
