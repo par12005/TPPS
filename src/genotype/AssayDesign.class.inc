@@ -202,12 +202,29 @@ class AssayDesign extends FileField {
         $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
         || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
       )
+      // Actually only this rule must be used:
       && !empty($snps['snps-assay'])
     ));
     // Do NOT allow further validation.
     if (form_get_errors()) {
       return FALSE;
     }
+
+    if (empty($snps['snps-association'])) {
+      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+        . 'File "SNP Association" is required.',
+        [
+          '@field_title' => t(self::getFieldTitle()),
+          '@oidx' => $organism_index,
+        ]
+      );
+      form_set_error(self::getFormErrorName($organism_index), $error_message);
+    }
+    // Do NOT allow further validation.
+    if (form_get_errors()) {
+      return FALSE;
+    }
+
     // Check for optional (and required) fields.
     // Empty required field must create error messages and break validation
     // before but to be sure and to allow switch to optional field using UI
