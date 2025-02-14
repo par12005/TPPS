@@ -503,7 +503,7 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
     return [];
   }
 
-  $cols = $file_element['#value']['columns'] ?? NULL;
+  $selected_columns = $file_element['#value']['columns'] ?? NULL;
   $parents = $file_element['#parents'];
   $new_end_columns = end($parents) . "-columns";
   $new_end_no_header = end($parents) . "-no-header";
@@ -532,13 +532,13 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
     }
   }
 
-  if ($cols) {
-    // Note: $cols will be empty when user just added file (not clicked 'Upload'
+  if ($selected_columns) {
+    // Note: $selected_columns will be empty when user just added file (not clicked 'Upload'
     // button and submitted form (clicked 'Next' button).
     // Probably columns could be detected automatically because they are shown
     // at page and so we could use default values here.
     // @TODO Get default set of columns.
-    foreach ($cols as $name => $type) {
+    foreach ($selected_columns as $name => $type) {
       $state_column_values[$name] = $type;
       foreach ($required_groups_flat as $group => $types) {
         if (in_array($type, $types)) {

@@ -61,6 +61,10 @@ class AssayDesign extends FileField {
   /**
    * Gets required columns.
    *
+   * Valid only sets of columns:
+   *   1. SNP ID, scaffold, position.
+   *   2. SNP ID, Flank sequence.
+   *
    * @return array
    *   Returns list of groups of the required columns.
    */

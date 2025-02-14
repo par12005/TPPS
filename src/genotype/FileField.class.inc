@@ -565,12 +565,22 @@ abstract class FileField {
       return [];
     }
 
-    $cols = $file_element['#value']['columns'] ?? NULL;
+    //Example of structure:
+    //  $selected_columns => ['A' => '1', 'B' => '4',];
+    $selected_columns = $file_element['#value']['columns'] ?? NULL;
+
+//dpm(var_export($selected_columns, 1), 'selected_columns');
+
     $parents = $file_element['#parents'];
-    $new_end_columns = end($parents) . "-columns";
-    $new_end_no_header = end($parents) . "-no-header";
-    $new_end_empty = end($parents) . "-empty";
-    $group_path = array_pop($parents) . "-groups";
+    $new_end_columns = static::FIELD_NAME . "-columns";
+    $new_end_no_header = static::FIELD_NAME . "-no-header";
+    $new_end_empty = static::FIELD_NAME . "-empty";
+    $group_path = static::FIELD_NAME . "-groups";
+
+   // Remove last element from list of parents.
+    array_pop($parents);
+    // Note: all column related meta-data will be added to to upper element
+    // (beside file field value). So to get value just add suffix to the path.
     $values = drupal_array_get_nested_value($form_state['values'], $parents);
     // Initialize form column values in form state.
     $values[$new_end_columns] = [];
@@ -595,15 +605,15 @@ abstract class FileField {
         }
       }
 
-//dpm($required_groups_flat);
+//dpm(var_export($required_groups_flat, 1), 'required_groups_flat: ' . $case_name);
 
-      if ($cols) {
-        // Note: $cols will be empty when user just added file (not clicked 'Upload'
+      if (!empty($selected_columns)) {
+        // Note: $selected_columns will be empty when user just added file (not clicked 'Upload'
         // button and submitted form (clicked 'Next' button).
         // Probably columns could be detected automatically because they are shown
         // at page and so we could use default values here.
         // @TODO Get default set of columns.
-        foreach ($cols as $name => $type) {
+        foreach ($selected_columns as $name => $type) {
           $state_column_values[$name] = $type;
           foreach ($required_groups_flat as $group => $types) {
             if (in_array($type, $types)) {
@@ -638,7 +648,7 @@ abstract class FileField {
 
         if (!$group_valid && !$silent_mode) {
           $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
-            . 'Please specify a column or columns that hold @group.',
+            . 'Please specify a column that hold @group.',
             [
               '@field_title' => self::getFieldTitle(),
               '@oidx' => $organism_index,
