@@ -41,7 +41,6 @@ class TppsArray {
    */
   public static function compareValues(array $array1, array $array2) {
     // @TODO ? What if type of items are different? String and integer.
-    // @TODO Should duplicate items be removed?
     if (count($array1) != count($array2)) {
       return FALSE;
     }
@@ -54,7 +53,7 @@ class TppsArray {
     $values2 = array_values($array2);
     sort($values1);
     sort($values2);
-    return (bool) ($required_keys === $selected_id_list);
+    return (bool) ($values1 === $values2);
   }
 
   /**
