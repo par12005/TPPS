@@ -12,7 +12,7 @@ dependencies[] = tripal_eutils
 ; Common Classes.
 files[] = src/Submission.class.inc
 files[] = src/Organism.class.inc
-files[] = src/genotype/FileField.class.inc
+files[] = src/FileField.class.inc
 
 ; Phenotype File Fields.
 files[] = src/PhenotypeManual.class.inc
