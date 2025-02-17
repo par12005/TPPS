@@ -161,6 +161,48 @@ class TppsArray {
     return $output;
   }
 
-
+  /**
+   * Applys given list of changes to the array.
+   *
+   * @param array $change_list
+   *   List of changes. Format is:
+   *   <action> => [ <action's data>]
+   *   Where <action> could be 'unset' or 'move'. Example:
+   *   $change_list = [
+   *     'unset' => [
+   *       'build_info',
+   *       'temporary',
+   *       'programmed',
+   *     ],
+   *   ];
+   *   Note: no version numbers here.
+   * @param mixed $result
+   *   Array which must be changed.
+   *
+   * @TODO Minor. Return TRUE if all actions applied with success.
+   */
+  public static function applyChanges(array $change_list, &$result) {
+    foreach ($change_list as $action => $action_data) {
+      // Note: $action_data is a list of all actions (not single action).
+      $function = 'tpps_array_' . $action;
+      $params = ['@function_name' => $function, '@action' => $action];
+      if (!function_exists($function)) {
+        $message = "Function @function_name wan't found.";
+        tpps_message($message, $params, 'error');
+        continue;
+      }
+      if (empty($action_data)) {
+        $message = 'No data for array action "@action".'
+          . '<br />Function name: @function_name.';
+        tpps_message($message, $params, 'error');
+        continue;
+      }
+      // Call an action-function.
+      // 1. tpps_array_unset();
+      // 2. tpps_array_move().
+      // Note: $action_data also couldn't be empty here.
+      call_user_func_array($function, [&$result, $action_data]);
+    }
+  }
 
 }

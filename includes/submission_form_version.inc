@@ -404,7 +404,7 @@ function tpps_submission_form_version_migrate(array $form_state, $version, array
   if (empty($change_list)) {
     return FALSE;
   }
-  tpps_array_apply_changes($change_list, $result);
+  TppsArray::applyChanges($change_list, $result);
 
   if ($direction == 'upgrade') {
     $result['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] = $version;
