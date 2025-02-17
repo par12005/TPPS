@@ -1112,7 +1112,7 @@ class Submission {
     }
 
     module_load_include('inc', 'tpps', 'includes/array');
-    tpps_array_apply_changes($change_list, $this->sharedState);
+    TppsArray::applyChanges($change_list, $this->sharedState);
     return $this;
   }
 

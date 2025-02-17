@@ -128,7 +128,7 @@ class AssayDesign extends FileField {
       ],
       'extra_elements' => [
         'empty' => [
-          '#default_value' => tpps_array_get_value($form_state,
+          '#default_value' => TppsArray::getValue($form_state,
             [
               'saved_values',
               TPPS_PAGE_4,
