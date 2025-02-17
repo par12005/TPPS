@@ -57,4 +57,24 @@ class TppsArray {
     return (bool) ($required_keys === $selected_id_list);
   }
 
+  /**
+   * Replaces $old with $new in array's values and keys.
+   *
+   * @param array $array
+   *   Array to be updated.
+   * @param mixed $old
+   *   Old token.
+   * @param mixed $new
+   *   New token.
+   *
+   * @return array
+   *   Returns updated array.
+   */
+  public static function replace(array $array, $old, $new) {
+    // Source: tpps_change_tgdr_number();
+    $state_json = json_encode($array);
+    $state_json = str_replace($old, $new, $state_json);
+    return json_decode($state_json, TRUE);
+  }
+
 }

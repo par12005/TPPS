@@ -122,10 +122,10 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
 
   // Update the TGDR with the new_accession.
   module_load_include('inc', 'tpps', 'includes/array');
-  $submission->state = tpps_array_replace(
+  $submission->state = TppsArray::replace(
     $submission->state, $old_accession, $new_accession
   );
-  $submission->sharedState = tpps_array_replace(
+  $submission->sharedState = TppsArray::replace(
     $submission->sharedState, $old_accession, $new_accession
   );
 

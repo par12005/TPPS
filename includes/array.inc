@@ -9,26 +9,6 @@
  */
 
 /**
- * Replaces $old with $new in array's values and keys.
- *
- * @param array $array
- *   Array to be updated.
- * @param mixed $old
- *   Old token.
- * @param mixed $new
- *   New token.
- *
- * @return array
- *   Returns updated array.
- */
-function tpps_array_replace(array $array, $old, $new) {
-  // Source: tpps_change_tgdr_number();
-  $state_json = json_encode($array);
-  $state_json = str_replace($old, $new, $state_json);
-  return json_decode($state_json, TRUE);
-}
-
-/**
  * Parses huge array to show a well-formatted dump.
  *
  * Good for huge arrays. For small use dpm() or similar.

@@ -70,15 +70,14 @@ class AssayDesign extends FileField {
    */
   public static function getRequiredColumns() {
     return [
-      // Name => key => <id in the option's list>.
       'case 1' => [
-        'SNP ID' => ['id' => [1]],
-        'Scaffold' => ['scaffold' => [2]],
-        'Position' => ['position' => [3]],
+        self::DATA_TYPE_SNP_ID,
+        self::DATA_TYPE_SCAFFOLD,
+        self::DATA_TYPE_POSITION,
       ],
       'case 2' => [
-        'SNP ID' => ['id' => [1]],
-        'Flank sequence' => ['sequence' => [4]],
+        self::DATA_TYPE_SNP_ID,
+        self::DATA_TYPE_FLANK_SEQUENCE,
       ],
     ];
   }
@@ -265,116 +264,114 @@ class AssayDesign extends FileField {
       }
 
 
-      // @todo Update.
       // @todo There are 2 modes: validate and just get columns for processing.
       $columns = self::validateColumns($organism_index, $form_state, $silent_mode = FALSE);
-
-//dpm($columns, 'columns');
-
-
-      if (form_get_errors()) {
+      if (form_get_errors() || empty($columns)) {
         return;
       }
 
 
+// @todo Update.
 
-        // Check that SNP IDs match Genotype Assay.
-        $snps_id_col = $columns['SNP ID'][1];
-        $assoc_no_header = $snps[self::FIELD_NAME . '-no-header'] ?? FALSE;
+      // @TODO Compare 3 files. SNP Id must match.
+      // Check that SNP IDs match Genotype Assay.
+      $snps_id_col = $columns['SNP ID'][1];
+      $assoc_no_header = $snps[self::FIELD_NAME . '-no-header'] ?? FALSE;
 
-        $assay_snps = tpps_file_headers($snps_assay);
-        unset($assay_snps[key($assay_snps)]);
-        $assoc_snps = tpps_parse_file_column($assoc_file, $snps_id_col, $assoc_no_header);
-        $missing_snps = array_diff($assoc_snps, $assay_snps);
+      $assay_snps = tpps_file_headers($snps_assay);
+      unset($assay_snps[key($assay_snps)]);
+      $assoc_snps = tpps_parse_file_column($assoc_file, $snps_id_col, $assoc_no_header);
+      $missing_snps = array_diff($assoc_snps, $assay_snps);
 
-        if (!empty($missing_snps)) {
-          $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
-            . 'We detected SNP IDs that were not in your Genotype Assay. '
-            . 'Please either remove these SNPs from your Association file, or '
-            . 'add them to your Genotype Assay. The SNP Identifiers we '
-            . 'found were: @snps_id_list.',
-            [
-              '@field_title' => t(self::getFieldTitle()),
-              '@oidx' => $organism_index,
-              '@snps_id_list' => implode(', ', array_unique($missing_snps)),
-            ]
-          );
-          form_set_error(self::getFormErrorName($organism_index), $error_message);
-        }
-
-        // Check that Phenotype names match phenotype metadata section.
-        $association_phenotypes = tpps_parse_file_column(
-          $assoc_file,
-          $columns['Associated Trait'][5],
-          $assoc_no_header
+      if (!empty($missing_snps)) {
+        $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+          . 'We detected SNP IDs that were not in your Genotype Assay. '
+          . 'Please either remove these SNPs from your Association file, or '
+          . 'add them to your Genotype Assay. The SNP Identifiers we '
+          . 'found were: @snps_id_list.',
+          [
+            '@field_title' => t(self::getFieldTitle()),
+            '@oidx' => $organism_index,
+            '@snps_id_list' => implode(', ', array_unique($missing_snps)),
+          ]
         );
-
-        $phenotype = $form_state['values'][$organism_index]['phenotype'];
-        $phenotype_meta = $phenotype['metadata'];
-        $phenotype_number = $phenotype['phenotypes-meta']['number'];
-
-        $phenotype_meta_names = [];
-        $phenotype_name_col = $phenotype['metadata-groups']['Phenotype Id']['1'] ?? NULL;
-        if (isset($phenotype_name_col)) {
-          $phenotype_meta_names = tpps_parse_file_column(
-            $phenotype_meta,
-            $phenotype_name_col
-          );
-        }
-
-        for ($i = 1; $i <= $phenotype_number; $i++) {
-          $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
-        }
-
-        $missing_phenotypes = array_diff(
-          $association_phenotypes,
-          $phenotype_meta_names
-        );
-        if (!empty($missing_phenotypes)) {
-          $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
-            . 'We detected Associated Traits that were not specified in the '
-            . 'Phenotype Metadata Section. Please either remove  these Traits '
-            . 'from your Association file, or add them to your Phenotype '
-            . 'Metadata section. The Trait names we foud were: @phenotype_names',
-            [
-              '@field_title' => t(self::getFieldTitle()),
-              '@oidx' => $organism_index,
-              '@phenotype_names' => implode(', ', array_unique($missing_phenotypes)),
-            ]
-          );
-          form_set_error(self::getFormErrorName($organism_index), $error_message);
-        }
-
-        // Check that position values are correctly formatted.
-        $positions = tpps_parse_file_column(
-          $assoc_file,
-          $columns['Position'][3],
-          $assoc_no_header
-        );
-
-
-
-    foreach ($positions as $position) {
-      if (
-        // Numeric (integer).
-        is_numeric($position)
-        // Format: 'start:stop'.
-        || preg_match('/^(\d+):(\d+)$/', $position)
-      ) {
-        continue;
+        form_set_error(self::getFormErrorName($organism_index), $error_message);
       }
-      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
-        . 'We detected SNP positions that do '
-        . 'not match the required format: @position.'
-        . '<br />The correct format is: "start:stop" or integer.',
-        [
-          '@field_title' => t(self::getFieldTitle()),
-          '@oidx' => $organism_index,
-          '@position' => $position,
-        ]
+
+      // Check that Phenotype names match phenotype metadata section.
+      $association_phenotypes = tpps_parse_file_column(
+        $assoc_file,
+        $columns['Associated Trait'][5],
+        $assoc_no_header
       );
-      form_set_error(self::getFormErrorName($organism_index), $error_message);
-      break;
+
+      $phenotype = $form_state['values'][$organism_index]['phenotype'];
+      $phenotype_meta = $phenotype['metadata'];
+      $phenotype_number = $phenotype['phenotypes-meta']['number'];
+
+      $phenotype_meta_names = [];
+      $phenotype_name_col = $phenotype['metadata-groups']['Phenotype Id']['1'] ?? NULL;
+      if (isset($phenotype_name_col)) {
+        $phenotype_meta_names = tpps_parse_file_column(
+          $phenotype_meta,
+          $phenotype_name_col
+        );
+      }
+
+      for ($i = 1; $i <= $phenotype_number; $i++) {
+        $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
+      }
+
+      $missing_phenotypes = array_diff(
+        $association_phenotypes,
+        $phenotype_meta_names
+      );
+      if (!empty($missing_phenotypes)) {
+        $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+          . 'We detected Associated Traits that were not specified in the '
+          . 'Phenotype Metadata Section. Please either remove  these Traits '
+          . 'from your Association file, or add them to your Phenotype '
+          . 'Metadata section. The Trait names we foud were: @phenotype_names',
+          [
+            '@field_title' => t(self::getFieldTitle()),
+            '@oidx' => $organism_index,
+            '@phenotype_names' => implode(', ', array_unique($missing_phenotypes)),
+          ]
+        );
+        form_set_error(self::getFormErrorName($organism_index), $error_message);
+      }
+
+      // Check that position values are correctly formatted.
+      $positions = tpps_parse_file_column(
+        $assoc_file,
+        $columns['Position'][3],
+        $assoc_no_header
+      );
+
+
+
+      foreach ($positions as $position) {
+        if (
+          // Numeric (integer).
+          is_numeric($position)
+          // Format: 'start:stop'.
+          || preg_match('/^(\d+):(\d+)$/', $position)
+        ) {
+          continue;
+        }
+        $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+          . 'We detected SNP positions that do '
+          . 'not match the required format: @position.'
+          . '<br />The correct format is: "start:stop" or integer.',
+          [
+            '@field_title' => t(self::getFieldTitle()),
+            '@oidx' => $organism_index,
+            '@position' => $position,
+          ]
+        );
+        form_set_error(self::getFormErrorName($organism_index), $error_message);
+        break;
+      }
     }
 
     // Do NOT allow further validation.
@@ -385,6 +382,5 @@ class AssayDesign extends FileField {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     self::preserveValidFile($organism_index, $form_state);
   }
-
 
 }
