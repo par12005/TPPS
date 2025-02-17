@@ -19,7 +19,7 @@
 class TppsArray {
 
   /**
-   * Compare 1st level of values of 2 arrays.
+   * Checks if values of two arrays are equal.
    *
    * WARNING: Can't be used for multidimentional arrays. Only simple lists!
    *
@@ -27,33 +27,40 @@ class TppsArray {
    * 1. Values could be in random order.
    * 2. Order of arrays doesn't matter.
    * 3. Duplicate items won't be removed.
+   * 4. Two empty arrays are equal.
    *
    * @param array $array1
-   *   tppsArray #1 to compare.
+   *   Array #1.
    * @param array $array2
-   *   tppsArray #2 to compare.
+   *   Array #2.
    *
    * @return bool
-   *   Returns TRUE if both arrays are empty.
-   *   Returns TRUE if $array2 has all the values of the $array1 and length
-   *   of the arrays are the same.
+   *   Returns TRUE when arrays are equal and FALSE otherwise.
+   */
+  public static function isEqual(array $array1, array $array2) {
+    return (bool) (count(array_diff($array1, $array2)) == 0);
+  }
+
+  /**
+   * Checks if the Array #2 includes all values of the Array #2.
+   *
+   * WARNING: Can't be used for multidimentional arrays. Only simple lists!
+   *
+   * @param array $array1
+   *   Array #1.
+   * @param array $array2
+   *   Array #2.
+   *
+   * @return bool
+   *   Returns TRUE when Array #2 includes all values of the Array #1.
    *   Returns FALSE otherwise.
    */
-  public static function compareValues(array $array1, array $array2) {
-    // @TODO ? What if type of items are different? String and integer.
-    if (count($array1) != count($array2)) {
-      return FALSE;
-    }
-    if (empty($array1) && empty($array2)) {
-      // @TODO ? Is this correct behavior?
-      return TRUE;
-    }
-    // Exclude keys from processing.
-    $values1 = array_values($array1);
-    $values2 = array_values($array2);
-    sort($values1);
-    sort($values2);
-    return (bool) ($values1 === $values2);
+  public static function contains(array $array1, array $array2) {
+    // Items which both arrays has.
+    $intersection = array_intersect($array1, $array2);
+    // If Array #1 and $intersections are the same then Array #2 includes
+    // all values of the Array #1.
+    return static::isEqual($intersection, $array1);
   }
 
   /**
@@ -390,6 +397,53 @@ class TppsArray {
    */
   public static function setValue(array &$array, array $parents, $value = NULL) {
     drupal_array_set_nested_value($array, $parents, $value);
+  }
+
+  /**
+   * Prints array using theme_item_list().
+   *
+   * @param array $array
+   *   Array to be printed.
+   *
+   * @return string
+   *   Returns rendered HTML-list.
+   */
+  public static function printList(array $array) {
+    $output = [];
+    foreach ($array as $key => $value) {
+      $output[check_plain($key)] = static::preparePrintListItem($key, $value);
+    }
+    return theme('item_list', ['items' => $output]);
+  }
+
+  /**
+   * Helper to build items for 'print' method.
+   *
+   * Using separate method allows to use recursion.
+   *
+   * @param mixed $key
+   *   Array item key.
+   * @param mixed $value
+   *   Array item value.
+   *
+   * @return array
+   *   Returns array with items ready for theme_item_list().
+   */
+  public static function preparePrintListItem($key, $value) {
+    if (is_array($value)) {
+      $output = [];
+      foreach ($value as $sub_key => $sub_value) {
+        $sub_key = check_plain($sub_key);
+        if (is_array($sub_value)) {
+          $output[$sub_key] = static::buildItem($sub_key, $sub_value);
+        }
+        else {
+          $output[$sub_key] = check_plain($sub_value);
+        }
+      }
+      return ['data' => check_plain($key), 'children' => $output];
+    }
+    return check_plain($value);
   }
 
 }

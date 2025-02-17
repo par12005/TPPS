@@ -544,8 +544,17 @@ abstract class FileField {
    * multiple groups of required columns.
    */
   public static function validateColumns($organism_index, array &$form_state, $silent_mode = FALSE) {
-    // @Todo check if class has method 'getRequiredColumns'.
-    $required_groups = static::getRequiredColumns();
+    $debug_mode = FALSE;
+
+    if (!method_exists(static::class, 'getRequiredColumns')) {
+      // It's not an error if columns not used for this file field.
+      // Watchdog could be used for notices.
+      return [];
+    }
+    $required_cases = static::getRequiredColumns();
+    if ($debug_mode) {
+      dpm(print_r($required_cases, 1), 'required_cases');
+    }
     $file_element = self::getFormElement($organism_index, $form_state);
     // Check if file has zero length (empty).
     if (!($file_element['#file']->filesize ?? NULL)) {
@@ -603,23 +612,67 @@ abstract class FileField {
     $values[$new_end_empty] = $file_element['#value']['empty'] ?? NULL;
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-
     $columns = [];
-    foreach ($required_groups as $case_name => $case_data) {
-      if (tppsArray::compareValues($case_data, $selected_columns)) {
-        dpm('Yes');
+    foreach ($required_cases as $case_name => $case_data) {
+
+      // Since file can contain extra columns we can't check if lists are equal
+      // but must check if $selected_columns list includes all required columns.
+      if (tppsArray::contains($case_data, $selected_columns)) {
+        // Values are equal.
+        $columns = $case_data;
+        break;
       }
-      else {
-        dpm('No');
+    }
+    // Report about falied validation of the equired groups of the data types.
+    if (empty($columns)) {
+      foreach ($required_cases as $case_name => $case_data) {
+        $required_print_list[] = implode(', ', static::getDataType($case_data)) . '.';
       }
+      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+        . "Not all required data types for columns wasn't set."
+        . "<br />Selected data types are: <strong>!selected_columns</strong>"
+        . "<br />Independent groups of the required data types are: <strong>!required_cases</strong>",
+        [
+          '@field_title' => t(self::getFieldTitle()),
+          '@oidx' => $organism_index,
+          '!selected_columns' => implode(', ', static::getDataType($selected_columns)),
+          '!required_cases' => theme('item_list', ['items' => $required_print_list]),
+        ]
+      );
+      form_set_error(self::getFormErrorName($organism_index), $error_message);
     }
 
 
 
-
-dpm(print_r($columns, 1), 'columns: ' . $case_name);
+    if ($debug_mode) {
+      dpm(print_r($columns, 1), 'columns: ' . $case_name);
+    }
     // See tpps_file_validate_columns().
-    return $columns;
+    return array_flip($selected_columns);
+  }
+
+  /**
+   * Gets list of column data types.
+   *
+   * @param mixed $id_list
+   *   Data Type Id or list of ids.
+   *
+   * @return mixed
+   *   Returns list of all localized data types.
+   */
+  public static function getDataType($id_list = NULL) {
+    $list = static::getColumnOptions();
+    $output = $list;
+    if (!is_null($id_list)) {
+      $output = [];
+      if (!is_array($id_list)) {
+        $id_list = [$id_list];
+      }
+      foreach ($id_list as $id) {
+        $output[$id] = $list[$id] ?? NULL;
+      }
+    }
+    return $output;
   }
 
 }
