@@ -97,8 +97,7 @@ if (!is_live_site() || variable_get('tpps_debug_mode', FALSE)) {
   error_reporting(E_ALL);
 }
 
-module_load_include('inc', 'tpps', 'includes/array');
-require_once 'includes/display.inc';
+module_load_include('inc', 'tpps', 'includes/display');
 require_once 'includes/chado_utils.inc';
 require_once 'includes/init_project.inc';
 require_once 'includes/standard_coord.inc';
