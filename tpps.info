@@ -9,10 +9,11 @@ dependencies[] = ultimate_cron
 dependencies[] = jquery_update
 dependencies[] = tripal_eutils
 
+; Common Classes.
 files[] = src/Submission.class.inc
 files[] = src/Organism.class.inc
-
 files[] = src/genotype/FileField.class.inc
+
 ; Phenotype File Fields.
 files[] = src/PhenotypeManual.class.inc
 files[] = src/PhenotypeMeta.class.inc
@@ -24,3 +25,6 @@ files[] = src/genotype/SnpAssay.class.inc
 files[] = src/genotype/SnpAssociation.class.inc
 files[] = src/genotype/SnpsKinship.class.inc
 files[] = src/genotype/SnpsPopulationStructure.class.inc
+
+; Misc.
+files[] = src/misc/TppsArray.class.inc

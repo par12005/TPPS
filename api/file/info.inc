@@ -3,6 +3,8 @@
 /**
  * @file
  * API Callback. Return's file info in JSON format.
+ *
+ * URL: 'api/file/%file/info';
  */
 
 /**

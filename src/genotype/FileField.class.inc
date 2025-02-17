@@ -568,16 +568,29 @@ abstract class FileField {
     //Example of structure:
     //  $selected_columns => ['A' => '1', 'B' => '4',];
     $selected_columns = $file_element['#value']['columns'] ?? NULL;
+    if (empty($selected_columns)) {
+      // Note: $selected_columns will be empty when user just added file (not clicked 'Upload'
+      // button and submitted form (clicked 'Next' button).
+      // Probably columns could be detected automatically because they are shown
+      // at page and so we could use default values here.
+      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+        . "Data types for columns wasn't specified.",
+        [
+          '@field_title' => t(self::getFieldTitle()),
+          '@oidx' => $organism_index,
+        ]
+      );
+      form_set_error(self::getFormErrorName($organism_index), $error_message);
+    }
 
-//dpm(var_export($selected_columns, 1), 'selected_columns');
-
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Get some useful values.
     $parents = $file_element['#parents'];
     $new_end_columns = static::FIELD_NAME . "-columns";
     $new_end_no_header = static::FIELD_NAME . "-no-header";
     $new_end_empty = static::FIELD_NAME . "-empty";
     $group_path = static::FIELD_NAME . "-groups";
-
-   // Remove last element from list of parents.
+    // Remove last element from list of parents.
     array_pop($parents);
     // Note: all column related meta-data will be added to to upper element
     // (beside file field value). So to get value just add suffix to the path.
@@ -588,96 +601,24 @@ abstract class FileField {
     $state_column_values = &$values[$new_end_columns];
     $values[$new_end_no_header] = $file_element['#value']['no-header'] ?? NULL;
     $values[$new_end_empty] = $file_element['#value']['empty'] ?? NULL;
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 
     $columns = [];
-
-    foreach ($required_groups as $case) {
-      $required_groups_flat = [];
-      foreach ($case as $group => $combinations) {
-        $columns[$group] = [];
-        $required_groups_flat[$group] = [];
-        foreach ($combinations as $name => $combination) {
-          $required_groups_flat[$group] = array_merge(
-            $required_groups_flat[$group],
-            $combination
-          );
-        }
+    foreach ($required_groups as $case_name => $case_data) {
+      if (tppsArray::compareValues($case_data, $selected_columns)) {
+        dpm('Yes');
       }
-
-//dpm(var_export($required_groups_flat, 1), 'required_groups_flat: ' . $case_name);
-
-      if (!empty($selected_columns)) {
-        // Note: $selected_columns will be empty when user just added file (not clicked 'Upload'
-        // button and submitted form (clicked 'Next' button).
-        // Probably columns could be detected automatically because they are shown
-        // at page and so we could use default values here.
-        // @TODO Get default set of columns.
-        foreach ($selected_columns as $name => $type) {
-          $state_column_values[$name] = $type;
-          foreach ($required_groups_flat as $group => $types) {
-            if (in_array($type, $types)) {
-              if (!isset($columns[$group][$type])) {
-                $columns[$group][$type] = [$name];
-              }
-              else {
-                $columns[$group][$type][] = $name;
-              }
-              break;
-            }
-          }
-        }
+      else {
+        dpm('No');
       }
-
-      foreach ($case as $group => $combinations) {
-        $group_valid = FALSE;
-        $columns[$group]['#type'] = [];
-        foreach ($combinations as $name => $combination) {
-          $combination_valid = TRUE;
-          foreach ($combination as $type) {
-            if (!isset($groups[$group][$type])) {
-              $combination_valid = FALSE;
-              break;
-            }
-          }
-          if ($combination_valid) {
-            $columns[$group]['#type'][] = $name;
-            $group_valid = TRUE;
-          }
-        }
-
-        if (!$group_valid && !$silent_mode) {
-          $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
-            . 'Please specify a column that hold @group.',
-            [
-              '@field_title' => self::getFieldTitle(),
-              '@oidx' => $organism_index,
-              '@group' => $group,
-            ]
-          );
-          form_set_error($file_element['#name'] . "[columns][$group", $error_message);
-        }
-      }
-
-      // Replaces list of column names with a single value when was found only one.
-      // Instead of this:
-      //   ['Flank sequence' => ['4' => ['0' => 'B'], '#type' => ['0' => 'sequence']]];
-      // we will get this:
-      //   ['Flank sequence' => ['4' => 'B', '#type' => 'sequence']];
-      foreach ($columns as $key => $group) {
-        foreach ($group as $opt_num => $col_names) {
-          if (count($col_names) == 1) {
-            $columns[$key][$opt_num] = $col_names[0];
-          }
-        }
-      }
-
-      $values[$group_path] = $columns;
-      drupal_array_set_nested_value($form_state['values'], $parents, $values);
-
-// @todo Check if original $form_state array was updated.
-
     }
+
+
+
+
+dpm(print_r($columns, 1), 'columns: ' . $case_name);
+    // See tpps_file_validate_columns().
     return $columns;
   }
 
