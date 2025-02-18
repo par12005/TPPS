@@ -34,6 +34,8 @@ class SnpAssociation extends FileField {
   // Type of the data.
   // Could be 'phenotype', 'genotype' or 'environmental'.
   const DATA_TYPE = 'genotype';
+  // Form step where field is used.
+  const FORM_STEP = 4;
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Custom settings.

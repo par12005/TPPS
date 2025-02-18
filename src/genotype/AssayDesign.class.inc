@@ -29,6 +29,8 @@ class AssayDesign extends FileField {
   // Type of the data.
   // Could be 'phenotype', 'genotype' or 'environmental'.
   const DATA_TYPE = 'genotype';
+  // Form step where field is used.
+  const FORM_STEP = 4;
 
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -280,20 +282,25 @@ class AssayDesign extends FileField {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Check if number and names of SNPs are the same in current file and in
       // 'SNPs Assay' file.
+      $target_form_element = self::getFormElement($organism_index, $form_state,
+        [
+          'organism-' . $organism_index,
+          SnpAssay::DATA_TYPE,
+          SnpAssay::FORM_PARENT_FIELDSET,
+          SnpAssay::FIELD_NAME,
+        ]
+      );
       $match_result = self::matchColumnValues([
         'organism_index' => $organism_index,
         'form_state' => $form_state,
-        'target_parents' => [],
-
+        // Do not include 'input' or 'saved_values'.
+        'target_form_element' => $target_form_element,
         'no_header' => $snps[self::FIELD_NAME . '-no-header'] ?? FALSE,
-        // Target file to compare with.
-        'target_fid' => $snps['snps-assay'],
         // Use header/1st line of the target file.
-        'is_header' => TRUE,
+        'use_target_header' => TRUE,
         'column_letter' => $columns[self::DATA_TYPE_SNP_ID],
       ]);
       if (!$match_result) {
-        dpm('not match');
         // Validation failed if values not match.
         return;
       }

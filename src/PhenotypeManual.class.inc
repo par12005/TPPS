@@ -17,6 +17,10 @@
  */
 class PhenotypeManual {
 
+
+  // Form step where field is used.
+  const FORM_STEP = 4;
+
   /**
    * Creates set of fields for single phenotype.
    *

@@ -676,60 +676,81 @@ abstract class FileField {
   }
 
 
-  //$match_result = self::matchColumnValues([
-  //  'organism_index' => $organism_index,
-  //  'fid' => $fid,
-  //  'target_fid' => $snps['snps-assay'],
-  //  'no_header' => $snps[self::FIELD_NAME . '-no-header'] ?? FALSE,
-  //  'is_header' => TRUE,
-  //  'column_letter' => $columns[self::DATA_TYPE_SNP_ID],
-  //]);
+  /**
+   * Matches values in column with values in header/columns in other file.
+   *
+   * @param array $data
+   *   Metadata for processing. Required keys are:
+   *   'organism_index',
+   *   'form_state',
+   *   'target_form_element'
+   *   'no_header'
+   *   'use_target_header' bool
+   *   'column_letter'
+   *
+   * @return bool
+   *   Returns TRUE if values matches and FALSE otherwise.
+   */
   public static function matchColumnValues(array $data) {
     $debug_mode = FALSE;
-    $fid = self::getFileId($data['organism_index'], $data['form_state']);
-    if ($data['is_header']) {
 
-      $item_list = tpps_parse_file_column(
-        $fid,
-        // Column's letter.
-        $data['column_letter'],
-        $data['no_header']
-      );
+    // Target File.
+    $target_title = trim(str_replace(': *', '', $data['target_form_element']['#title']));
+    $target_fid = TppsArray::getValue(
+      $data['form_state'],
+      // Use 'input' instead of 'saved_values' to get latest value.
+      array_merge(['input'], $data['target_form_element']['#parents'], ['fid'])
+    );
 
-      // Target file.
-      $target_item_list = tpps_file_headers($data['target_fid']);
+    if ($data['use_target_header']) {
+      // Match with values in header.
+      $target_item_list = tpps_file_headers($target_fid);
       unset($target_item_list[key($target_item_list)]);
       if ($debug_mode) {
         dpm($item_list, 'Original file items');
         dpm($target_item_list, 'Target file items');
       }
-
-      $missing_items = array_diff(
-        $target_item_list,
-        $item_list
-      );
-      if (!empty($missing_items)) {
-        $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
-          . 'We detected items that were not in your @target_field_title file. '
-          . 'Please either remove these items from your @field_title file, or '
-          . 'add them to your @target_field_title file. '
-          . '<br />The missing items we found were: <strong>@list</strong>.',
-          [
-            '@field_title' => t(static::getFieldTitle()),
-            '@target_field_title' => 'Target File Title',
-            '@oidx' => $data['organism_index'],
-            '@list' => implode(', ', array_unique($missing_items)),
-          ]
-        );
-        form_set_error(
-          self::getFormErrorName($data['organism_index']),
-          $error_message
-        );
-      }
     }
     else {
-
+      // Match with values in column.
+      // @TODO Implement getting column (by letter).
+      // Use tpps_file_iterator()
     }
+
+    // Original file.
+    $item_list = tpps_parse_file_column(
+      self::getFileId($data['organism_index'], $data['form_state']),
+      // Column's letter.
+      $data['column_letter'],
+      $data['no_header']
+    );
+
+    // Validation.
+    $missing_items = array_diff(
+      $target_item_list,
+      $item_list
+    );
+    // Report an error.
+    if (!empty($missing_items)) {
+      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+        . 'We detected items that were not in your "<strong>@field_title</strong>" file. '
+        . 'Please either remove these items from your "<strong>@target_field_title</strong>" file, or '
+        . 'add them to your "<strong>@field_title</strong>" file. '
+        . '<br />The missing items we found were: <strong>@list</strong>.',
+        [
+          '@field_title' => t(static::getFieldTitle()),
+          '@target_field_title' => $target_title,
+          '@oidx' => $data['organism_index'],
+          '@list' => implode(', ', array_unique($missing_items)),
+        ]
+      );
+      form_set_error(
+        self::getFormErrorName($data['organism_index']),
+        $error_message
+      );
+      return FALSE;
+    }
+    return TRUE;
   }
 
 }

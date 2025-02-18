@@ -22,6 +22,9 @@
  */
 class PhenotypeData {
 
+  // Form step where field is used.
+  const FORM_STEP = 4;
+
   // WARNING: For format = 0.
   // @todo Maybe use fuction which returns correct value by $format.
   const DATA_TYPE_PHENOTYPE_DATA = 0;
