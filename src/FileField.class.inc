@@ -675,4 +675,61 @@ abstract class FileField {
     return $output;
   }
 
+
+  //$match_result = self::matchColumnValues([
+  //  'organism_index' => $organism_index,
+  //  'fid' => $fid,
+  //  'target_fid' => $snps['snps-assay'],
+  //  'no_header' => $snps[self::FIELD_NAME . '-no-header'] ?? FALSE,
+  //  'is_header' => TRUE,
+  //  'column_letter' => $columns[self::DATA_TYPE_SNP_ID],
+  //]);
+  public static function matchColumnValues(array $data) {
+    $debug_mode = FALSE;
+    $fid = self::getFileId($data['organism_index'], $data['form_state']);
+    if ($data['is_header']) {
+
+      $item_list = tpps_parse_file_column(
+        $fid,
+        // Column's letter.
+        $data['column_letter'],
+        $data['no_header']
+      );
+
+      // Target file.
+      $target_item_list = tpps_file_headers($data['target_fid']);
+      unset($target_item_list[key($target_item_list)]);
+      if ($debug_mode) {
+        dpm($item_list, 'Original file items');
+        dpm($target_item_list, 'Target file items');
+      }
+
+      $missing_items = array_diff(
+        $target_item_list,
+        $item_list
+      );
+      if (!empty($missing_items)) {
+        $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+          . 'We detected items that were not in your @target_field_title file. '
+          . 'Please either remove these items from your @field_title file, or '
+          . 'add them to your @target_field_title file. '
+          . '<br />The missing items we found were: <strong>@list</strong>.',
+          [
+            '@field_title' => t(static::getFieldTitle()),
+            '@target_field_title' => 'Target File Title',
+            '@oidx' => $data['organism_index'],
+            '@list' => implode(', ', array_unique($missing_items)),
+          ]
+        );
+        form_set_error(
+          self::getFormErrorName($data['organism_index']),
+          $error_message
+        );
+      }
+    }
+    else {
+
+    }
+  }
+
 }

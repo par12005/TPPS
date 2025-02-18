@@ -280,37 +280,27 @@ class AssayDesign extends FileField {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Check if number and names of SNPs are the same in current file and in
       // 'SNPs Assay' file.
-      $assoc_no_header = $snps[self::FIELD_NAME . '-no-header'] ?? FALSE;
+      $match_result = self::matchColumnValues([
+        'organism_index' => $organism_index,
+        'form_state' => $form_state,
+        'target_parents' => [],
 
-      $snps_assay_file_snps = tpps_file_headers($snps_assay);
-      unset($snps_assay_file_snps[key($snps_assay_file_snps)]);
-
-      $assay_design_snp_list = tpps_parse_file_column(
-        $fid,
-        // Column's letter.
-        $columns[self::DATA_TYPE_SNP_ID],
-        $snps[self::FIELD_NAME . '-no-header'] ?? FALSE
-      );
-      if ($debug_mode) {
-        dpm($assay_design_snp_list, 'assay_design');
-        dpm($snps_assay_file_snps, 'SNP Assay');
+        'no_header' => $snps[self::FIELD_NAME . '-no-header'] ?? FALSE,
+        // Target file to compare with.
+        'target_fid' => $snps['snps-assay'],
+        // Use header/1st line of the target file.
+        'is_header' => TRUE,
+        'column_letter' => $columns[self::DATA_TYPE_SNP_ID],
+      ]);
+      if (!$match_result) {
+        dpm('not match');
+        // Validation failed if values not match.
+        return;
       }
-      $missing_snps = array_diff($snps_assay_file_snps, $assay_design_snp_list);
 
-      if (!empty($missing_snps)) {
-        $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
-          . 'We detected SNP IDs that were not in your Genotype Assay. '
-          . 'Please either remove these SNPs from your Association file, or '
-          . 'add them to your Genotype Assay. The SNP Identifiers we '
-          . 'found were: @snps_id_list.',
-          [
-            '@field_title' => t(self::getFieldTitle()),
-            '@oidx' => $organism_index,
-            '@snps_id_list' => implode(', ', array_unique($missing_snps)),
-          ]
-        );
-        form_set_error(self::getFormErrorName($organism_index), $error_message);
-      }
+
+
+
 
 // @todo Update.
       if (0) {
