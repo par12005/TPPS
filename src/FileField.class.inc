@@ -424,7 +424,7 @@ abstract class FileField {
         static::FIELD_NAME,
         'no-header',
       ],
-      // @todo Probably it's useless step and could be removed.
+      // @todo MInor. Probably it's useless step and could be removed.
       'values' => [
         'values',
         'organism-' . $organism_index,
@@ -486,11 +486,8 @@ abstract class FileField {
    *   Returns TRUE if field has columns and FALSE otherwise.
    */
   public static function hasColumns($organism_index, array &$form_state) {
-
-// @TODO Implement real check.
-
-    return TRUE;
-
+    $form_element = self::getFormElement($organism_index, $form_state);
+    return !empty($form_element['columns']);
   }
 
   /**
@@ -501,8 +498,8 @@ abstract class FileField {
    *
    * @param int $organism_index
    *   Ordinal organism number at page.
-   * @param array $form
-   *   Drupal Form API Array.
+   * @param array $form_state
+   *   Drupal Form API State Array.
    * @param array $parents
    *   List of parent elements including desired element in the end.
    *   When empty then list of parents will be built automatically using
