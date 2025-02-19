@@ -714,18 +714,22 @@ abstract class FileField {
   /**
    * Gets list of user selected data types for columns.
    *
+   * Note:
+   * User selection is stored in format: ['A' => '1', 'B' => '4'];
+   * But returned value uses array_flip().
+   *
    * @param int $organism_index
    *   Ordinal organism number at page.
    * @param array $form_state
    *   Drupal Form API State Array.
    *
    * @return array
-   *   Returns list of column's data types selected by user.
-   *    Format: ['A' => '1', 'B' => '4'];
+   *   Returns list of column's data types selected by user in flipped format.
+   *   E.g., ['1' => 'A', '4' => 'B'].
    */
   public static function getSelectedColumns($organism_index, array &$form_state) {
     $file_element = self::getFormElement($organism_index, $form_state);
-    return $file_element['#value']['columns'] ?? [];
+    return array_flip($file_element['#value']['columns'] ?? []);
   }
 
   /**
@@ -836,6 +840,29 @@ abstract class FileField {
       return FALSE;
     }
     return TRUE;
+  }
+
+  /**
+   * Gets Class Name.
+   *
+   * Since 5.5 you can use class keyword for the class name resolution,
+   * which would be a lot faster than making function calls.
+   * Also works with interfaces.
+   *
+   * C extends B extends A
+   *
+   * static::class  // MyNamespace\ClassC when run in A
+   * self::class    // MyNamespace\ClassA when run in A
+   * parent::class  // MyNamespace\ClassB when run in C
+   * MyClass::class // MyNamespace\MyClass
+   *
+   * See https://stackoverflow.com/questions/506705
+   *
+   * @return string
+   *   Returns class name when called from static method.
+   */
+  public static function getClassName() {
+    return static::class;
   }
 
 }

@@ -267,53 +267,33 @@ class AssayDesign extends FileField {
         form_set_error(self::getFormErrorName($organism_index), $error_message);
       }
 
-
-      // @todo There are 2 modes: validate and just get columns for processing.
-      $columns = self::validateColumns($organism_index, $form_state, $silent_mode = FALSE);
-      if (form_get_errors() || empty($columns)) {
+      self::validateColumns($organism_index, $form_state, $silent_mode = FALSE);
+      if (form_get_errors()) {
         return;
       }
 
-      // Note: $columns => ['1' => 'A', '4' => 'B'];
-
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Match SNP Ids in current file and 'SNPs Assay' file (header).
-      $target_form_element = self::getFormElement($organism_index, $form_state,
-        [
-          'organism-' . $organism_index,
-          SnpAssay::DATA_TYPE,
-          SnpAssay::FORM_PARENT_FIELDSET,
-          SnpAssay::FIELD_NAME,
-        ]
-      );
       $match_result = self::matchColumnValues([
         'organism_index' => $organism_index,
         'form_state' => $form_state,
         // Current file.
-        'no_header' => self::getSubFieldValue($organism_index, $form_state, 'no-header'),
+        'no_header' => self::getSubFieldValue(
+          $organism_index,
+          $form_state,
+          'no-header'
+        ),
         'column_letter' => $columns[self::DATA_TYPE_SNP_ID],
         // Target file.
         'target_column_letter' => NULL,
-        'target_form_element' => $target_form_element,
+        'target_form_element' => SnpAssay::getFormElement($organism_index, $form_state),
         'target_no_header' => NULL,
       ]);
       if (form_get_errors() ||  !$match_result) {
         return;
       }
-
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Match SNP Ids in current file and 'SNP Association' file (column).
-
-// @todo Get column letter.
-      $data_type_id = SnpAssociation::DATA_TYPE_SNP_ID;
-// @TODO Get columns selected by user.
-      //$selected_columns = SnpAssociation::getSelectedColumns($organism_index, $form_state);
-      //
-dpm(
-  self::getSubFieldValue($organism_index, $form_state, 'columns'), '1'
-);
-
-      $target_column_letter = 'A';
       $match_result = self::matchColumnValues([
         'organism_index' => $organism_index,
         'form_state' => $form_state,
@@ -321,9 +301,19 @@ dpm(
         'no_header' => $snps[self::FIELD_NAME . '-no-header'] ?? FALSE,
         'column_letter' => $columns[self::DATA_TYPE_SNP_ID],
         // Target file.
-        'target_form_element' => SnpAssociation::getFormElement($organism_index, $form_state),
-        'target_column_letter' => $target_column_letter,
-        'target_no_header' => SnpAssociation::getSubFieldValue($organism_index, $form_state, 'no-header'),
+        'target_form_element' => SnpAssociation::getFormElement(
+          $organism_index,
+          $form_state
+        ),
+        'target_column_letter' => SnpAssociation::getSelectedColumns(
+          $organism_index,
+          $form_state
+        )[SnpAssociation::DATA_TYPE_SNP_ID],
+        'target_no_header' => SnpAssociation::getSubFieldValue(
+          $organism_index,
+          $form_state,
+          'no-header'
+        ),
       ]);
       if (form_get_errors() ||  !$match_result) {
         return;
