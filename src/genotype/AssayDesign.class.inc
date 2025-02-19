@@ -190,8 +190,6 @@ class AssayDesign extends FileField {
    *   Drupal Form API State array.
    */
   public static function validate($organism_index, array &$form, array &$form_state) {
-    $debug_mode = FALSE;
-
     $genotype = &$form_state['values']['organism-' . $organism_index][self::DATA_TYPE] ?? NULL;
     $snps = &$genotype[self::FORM_PARENT_FIELDSET] ?? NULL;
     // Fields.

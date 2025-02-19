@@ -606,17 +606,12 @@ abstract class FileField {
    * multiple groups of required columns.
    */
   public static function validateColumns($organism_index, array &$form_state, $silent_mode = FALSE) {
-    $debug_mode = FALSE;
-
     if (!method_exists(static::class, 'getRequiredColumns')) {
       // It's not an error if columns not used for this file field.
       // Watchdog could be used for notices.
       return [];
     }
     $required_cases = static::getRequiredColumns();
-    if ($debug_mode) {
-      dpm(print_r($required_cases, 1), 'required_cases');
-    }
     $file_element = self::getFormElement($organism_index, $form_state);
     // Check if file has zero length (empty).
     if (empty($file_element['#file']->filesize)) {
@@ -636,9 +631,11 @@ abstract class FileField {
       return [];
     }
 
-    //Example of structure:
-    //  $selected_columns => ['A' => '1', 'B' => '4',];
+    // Example of structure: ['A' => '1', 'B' => '4',];
+    // Note: there is no sense to use FileField::getSelectedColumns() here
+    // because it uses different structure of output array.
     $selected_columns = $file_element['#value']['columns'] ?? NULL;
+
     if (empty($selected_columns)) {
       // Note: $selected_columns will be empty when user just added file (not clicked 'Upload'
       // button and submitted form (clicked 'Next' button).
@@ -704,10 +701,8 @@ abstract class FileField {
       form_set_error(self::getFormErrorName($organism_index), $error_message);
     }
 
-    if ($debug_mode) {
-      dpm(print_r($columns, 1), 'columns: ' . $case_name);
-    }
     // See tpps_file_validate_columns().
+    // Format: ['1' => 'A', '4' => 'B'].
     return array_flip($selected_columns);
   }
 
@@ -776,9 +771,6 @@ abstract class FileField {
    *   Returns TRUE if values matches and FALSE otherwise.
    */
   public static function matchColumnValues(array $data) {
-    $debug_mode = FALSE;
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Current file.
     $item_list = tpps_parse_file_column(
       self::getFileId($data['organism_index'], $data['form_state']),
@@ -786,8 +778,6 @@ abstract class FileField {
       $data['column_letter'],
       $data['no_header']
     );
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Target File.
     $target_title = trim(str_replace(': *', '', $data['target_form_element']['#title']));
     $target_fid = TppsArray::getValue(
@@ -807,10 +797,6 @@ abstract class FileField {
         $data['target_column_letter'],
         $data['target_no_header'] ?? FALSE
       );
-    }
-    if ($debug_mode) {
-      dpm($item_list, 'Original file items');
-      dpm($target_item_list, 'Target file items');
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
