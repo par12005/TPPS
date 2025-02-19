@@ -362,7 +362,7 @@ abstract class FileField {
         key($headers),
         // Get column which holds Tree Ids.
         $species_fieldset['file-groups']['Tree Id']['1'],
-        self::getNoHeaderValue($organism_index, $form_state),
+        self::getSubFieldValue($organism_index, $form_state, 'no-header'),
         // Note: Accession file uses non-standard ['file-no-header'] field name
         // instead of nested ['file']['no-header'].
         $species_fieldset['file-no-header']
@@ -394,7 +394,11 @@ abstract class FileField {
    *   Testing:
    *   $s = new Submission('TGDR1033');
    *   $organism_index = 1;
-   *   dpm(SnpAssociation::getNoHeaderValue($organism_index, $s->getState()));
+   *   dpm(SnpAssociation::getSubFieldValue(
+   *     $organism_index,
+   *     $s->getState(),
+   *     'no-header'
+   *   ));
    *
    * See FileField::getValue() and TppsArray::getValue().
    *
@@ -402,6 +406,9 @@ abstract class FileField {
    *   Ordinal organism number at page.
    * @param array $form_state
    *   Drupal Form API State Array.
+   * @param string $name
+   *   Sub-field machine name. Possible values are:
+   *   'no-header', 'columns', 'empty'.
    *
    * @return mixed
    *   Returns '0' when 'Yes' was selected and '1' when 'No' was selected.
@@ -410,7 +417,7 @@ abstract class FileField {
    * @todo Minor. Detect validation/processing and if $form_state contains
    * State or Shared State.
    */
-  public static function getNoHeaderValue($organism_index, array &$form_state) {
+  public static function getSubFieldValue($organism_index, array &$form_state, $name) {
     $value = $key_exists = NULL;
     $parent_list = [
       // For validation.
@@ -422,7 +429,7 @@ abstract class FileField {
         static::DATA_TYPE,
         static::FORM_PARENT_FIELDSET,
         static::FIELD_NAME,
-        'no-header',
+        $name,
       ],
       // @todo MInor. Probably it's useless step and could be removed.
       'values' => [
@@ -431,7 +438,7 @@ abstract class FileField {
         static::DATA_TYPE,
         static::FORM_PARENT_FIELDSET,
         static::FIELD_NAME,
-        'no-header',
+        $name,
       ],
       // Processing.
       // Use 'saved_values'
@@ -442,7 +449,7 @@ abstract class FileField {
         'organism-' . $organism_index,
         static::DATA_TYPE,
         static::FORM_PARENT_FIELDSET,
-        static::FIELD_NAME . '-no-header',
+        static::FIELD_NAME . '-' . $name,
       ],
       'shared_state_saved_values' => [
         'saved_values',
@@ -451,7 +458,7 @@ abstract class FileField {
         static::DATA_TYPE,
         // Parent fieldset could be different for Shared state.
         static::SHARED_STATE_PARENT_FIELDSET,
-        static::FIELD_NAME . '-no-header',
+        static::FIELD_NAME . '-' . $name,
       ],
     ];
     foreach ($parent_list as $name => $parents) {
@@ -463,10 +470,11 @@ abstract class FileField {
     // Nothing was found.
     if ($key_exists === FALSE) {
       // It's not an error and there is no sence to throw an exception.
-      watchdog('tpps', 'Organism #@oidx / @field_title: No header value was NOT found.',
+      watchdog('tpps', 'Organism #@oidx / @field_title: Value was NOT found for @sub_field.',
         [
           '@field_title' => self::getFieldTitle(),
           '@oidx' => $organism_index,
+          '@sub_field' => $name,
         ],
         WATCHDOG_WARNING
       );

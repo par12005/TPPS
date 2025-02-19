@@ -311,20 +311,20 @@ class AssayDesign extends FileField {
         ]
       );
 
-      dpm(
-        SnpAssay::getNoHeaderValue($organism_index, $form_state),
-        'phenotype meta'
-      );
+dpm(
+  SnpAssay::getSubFieldValue($organism_index, $form_state, 'no-header'),
+  'phenotype meta'
+);
 
 
 // @todo Get column letter.
       $data_type_id = SnpAssociation::DATA_TYPE_SNP_ID;
-      dpm(
-        self::getNoHeaderValue($organism_index, $form_state), '1'
-      );
-      dpm(
-        $snps[self::FIELD_NAME . '-no-header'] ?? 'x', 2
-      );
+dpm(
+  self::getSubFieldValue($organism_index, $form_state, 'no-header'), '1'
+);
+dpm(
+  $snps[self::FIELD_NAME . '-no-header'] ?? 'x', 2
+);
 
       $target_column_letter = 'A';
       $match_result = self::matchColumnValues([
