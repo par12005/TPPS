@@ -521,23 +521,19 @@ abstract class FileField {
       $message = t("Form wasn't found under \$form_state['complete form'].");
       throw new Exception($message);
     }
-    $element = NULL;
-    $is_key_exist = NULL;
+    $element = $key_exists = NULL;
     if (empty($parents)) {
       // Build parents for current file field.
       $parents = [
+        'complete form',
         'organism-' . $organism_index,
         static::DATA_TYPE,
         static::FORM_PARENT_FIELDSET,
         static::FIELD_NAME,
       ];
     }
-    $element = drupal_array_get_nested_value(
-      $form_state['complete form'],
-      $parents,
-      $is_key_exist
-    );
-    if (!$is_key_exist) {
+    $element = drupal_array_get_nested_value($form_state, $parents, $key_exists);
+    if ($key_exists === FALSE) {
       throw new Exception(t("Form element wasn't found for field @field_name. "
         . "Field parents: @field_parents.",
         [
@@ -623,7 +619,7 @@ abstract class FileField {
     }
     $file_element = self::getFormElement($organism_index, $form_state);
     // Check if file has zero length (empty).
-    if (!($file_element['#file']->filesize ?? NULL)) {
+    if (empty($file_element['#file']->filesize)) {
       $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
         . 'File is empty.',
         [
@@ -708,13 +704,28 @@ abstract class FileField {
       form_set_error(self::getFormErrorName($organism_index), $error_message);
     }
 
-
-
     if ($debug_mode) {
       dpm(print_r($columns, 1), 'columns: ' . $case_name);
     }
     // See tpps_file_validate_columns().
     return array_flip($selected_columns);
+  }
+
+  /**
+   * Gets list of user selected data types for columns.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number at page.
+   * @param array $form_state
+   *   Drupal Form API State Array.
+   *
+   * @return array
+   *   Returns list of column's data types selected by user.
+   *    Format: ['A' => '1', 'B' => '4'];
+   */
+  public static function getSelectedColumns($organism_index, array &$form_state) {
+    $file_element = self::getFormElement($organism_index, $form_state);
+    return $file_element['#value']['columns'] ?? [];
   }
 
   /**

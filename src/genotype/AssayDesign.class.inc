@@ -190,7 +190,8 @@ class AssayDesign extends FileField {
    *   Drupal Form API State array.
    */
   public static function validate($organism_index, array &$form, array &$form_state) {
-    $debug_mode = 0;
+    $debug_mode = FALSE;
+
     $genotype = &$form_state['values']['organism-' . $organism_index][self::DATA_TYPE] ?? NULL;
     $snps = &$genotype[self::FORM_PARENT_FIELDSET] ?? NULL;
     // Fields.
@@ -289,7 +290,7 @@ class AssayDesign extends FileField {
         'organism_index' => $organism_index,
         'form_state' => $form_state,
         // Current file.
-        'no_header' => $snps[self::FIELD_NAME . '-no-header'] ?? FALSE,
+        'no_header' => self::getSubFieldValue($organism_index, $form_state, 'no-header'),
         'column_letter' => $columns[self::DATA_TYPE_SNP_ID],
         // Target file.
         'target_column_letter' => NULL,
@@ -302,28 +303,14 @@ class AssayDesign extends FileField {
 
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Match SNP Ids in current file and 'SNP Association' file (column).
-      $target_form_element = self::getFormElement($organism_index, $form_state,
-        [
-          'organism-' . $organism_index,
-          SnpAssociation::DATA_TYPE,
-          SnpAssociation::FORM_PARENT_FIELDSET,
-          SnpAssociation::FIELD_NAME,
-        ]
-      );
-
-dpm(
-  SnpAssay::getSubFieldValue($organism_index, $form_state, 'no-header'),
-  'phenotype meta'
-);
-
 
 // @todo Get column letter.
       $data_type_id = SnpAssociation::DATA_TYPE_SNP_ID;
+// @TODO Get columns selected by user.
+      //$selected_columns = SnpAssociation::getSelectedColumns($organism_index, $form_state);
+      //
 dpm(
-  self::getSubFieldValue($organism_index, $form_state, 'no-header'), '1'
-);
-dpm(
-  $snps[self::FIELD_NAME . '-no-header'] ?? 'x', 2
+  self::getSubFieldValue($organism_index, $form_state, 'columns'), '1'
 );
 
       $target_column_letter = 'A';
@@ -334,9 +321,9 @@ dpm(
         'no_header' => $snps[self::FIELD_NAME . '-no-header'] ?? FALSE,
         'column_letter' => $columns[self::DATA_TYPE_SNP_ID],
         // Target file.
-        'target_form_element' => $target_form_element,
+        'target_form_element' => SnpAssociation::getFormElement($organism_index, $form_state),
         'target_column_letter' => $target_column_letter,
-        'target_no_header' => $snps[SnpAssociation::FIELD_NAME . '-no-header'] ?? FALSE,
+        'target_no_header' => SnpAssociation::getSubFieldValue($organism_index, $form_state, 'no-header'),
       ]);
       if (form_get_errors() ||  !$match_result) {
         return;
