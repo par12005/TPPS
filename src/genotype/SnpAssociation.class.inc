@@ -153,7 +153,7 @@ class SnpAssociation extends FileField {
           '#default_value' => TppsArray::getValue($form_state,
             [
               'saved_values',
-              TPPS_PAGE_4,
+              self::FORM_STEP,
               $organism_name,
               self::DATA_TYPE,
               self::FORM_PARENT_FIELDSET,
@@ -646,7 +646,7 @@ class SnpAssociation extends FileField {
    *   WARNING: 'genotype_id' is required to store 'year' column on file.
    */
   public static function process($organism_index, array $shared_state, array &$options = []) {
-    if (empty($fid = self::getSavedFileId($organism_index, $shared_state))) {
+    if (empty($fid = self::getFileId($organism_index, $shared_state))) {
       return;
     }
 

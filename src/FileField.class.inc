@@ -3,11 +3,6 @@
 /**
  * @file
  * Contains 'FileField' class.
- *
- * Validation / Build:
- *   getFileId() == getValue().
- * Processing / AJAX / Build:
- *   getSavedFileId() == getSavedValue().
  */
 
 /**
@@ -41,7 +36,8 @@ abstract class FileField {
   // Could be 'phenotype', 'genotype' or 'environmental'.
   // Example: 'genotype'.
   const DATA_TYPE = '';
-
+  // Form step where field is used.
+  const FORM_STEP = '';
   /**
    * Gets lit of required columns for validation.
    *
@@ -134,61 +130,11 @@ abstract class FileField {
     return ':input[name="' . self::getDomName($organism_index, $parents) . '"]';
   }
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Value for processing.
-
-  /**
-   * Gets File Id stored in $state['saved_values'].
-   *
-   * To get value for validation use 'getFileId()' method.
-   *
-   * @param int $organism_index
-   *   Ordinal organism number on page.
-   * @param array $state
-   *   Drupal Form API State array.
-   *   process() works with $shared_state.
-   *   Both $shared_state and $form_state could be passed.
-   *
-   * @return mixed
-   *   Returns File Id or NULL.
-   */
-  public static function getSavedFileId($organism_index, array $state) {
-    return self::getSavedValue($organism_index, $state);
-  }
-
-  /**
-   * Gets value of the field stored in 'saved_values'.
-   *
-   * To get value for validation use 'getValue()' method.
-   *
-   * @param int $organism_index
-   *   Ordinal organism number on page.
-   * @param array $state
-   *   Drupal Form API State array.
-   *   validate() works with $form_state.
-   *   process() works with $shared_state.
-   *
-   * @return mixed
-   *   Returns field's value or NULL.
-   */
-  public static function getSavedValue($organism_index, array $state) {
-    $element = $state['saved_values'][TPPS_PAGE_4]
-      ['organism-' . $organism_index][static::DATA_TYPE] ?? NULL;
-    $value = $element[static::SHARED_STATE_PARENT_FIELDSET][static::FIELD_NAME]
-      // Used for validation when shared_state not yet created and $form_state
-      // is used instead and field was relocated.
-      ?? $element[static::FORM_PARENT_FIELDSET][static::FIELD_NAME]
-      ?? NULL;
-    return $value;
-  }
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Value for validation.
-
   /**
    * Gets File Id for validation stored under $form_state['input'].
    *
-   * To get value for processing use 'getSavedFileId()' method.
+   * Note: First tries to get value for validation ('input' sub-element),
+   * then for processing ('saved_values') using State and Shared State.
    *
    * @param int $organism_index
    *   Ordinal organism number on page.
@@ -211,8 +157,6 @@ abstract class FileField {
    * and should be used for validation instead of values stored under
    * $form_state['saved_values'] which holds values already passed validation.
    *
-   * To get value for processing use 'getSavedValue()' method.
-   *
    * @param int $organism_index
    *   Ordinal organism number on page.
    * @param array $form_state
@@ -222,16 +166,64 @@ abstract class FileField {
    *
    * @return mixed
    *   Returns field's value or NULL.
+   *
+   * @todo Minor. Detect validation/processing and if $form_state contains
+   * State or Shared State.
    */
   public static function getValue($organism_index, array $form_state) {
-    return drupal_array_get_nested_value($form_state, [
-      'input',
-      'organism-' . $organism_index,
-      static::DATA_TYPE,
-      static::FORM_PARENT_FIELDSET,
-      static::FIELD_NAME,
-      'fid',
-    ]);
+    // For validation.
+    $value = $key_exists = NULL;
+    $parent_list = [
+      // For validation.
+      // Note: 'saved_values' doesn't have value until validation passed. Why?
+      // Because 'no-header' is a part of complex file field.
+      'input' => [
+        'input',
+        'organism-' . $organism_index,
+        static::DATA_TYPE,
+        static::FORM_PARENT_FIELDSET,
+        static::FIELD_NAME,
+        'fid',
+      ],
+      // Get value under 'saved_values'.
+      // Submission State.
+      'state_saved_values' => [
+        'saved_values',
+        static::FORM_STEP,
+        'organism-' . $organism_index,
+        static::DATA_TYPE,
+        static::FORM_PARENT_FIELDSET,
+        static::FIELD_NAME,
+      ],
+      'shared_state_saved_values' => [
+        'saved_values',
+        static::FORM_STEP,
+        'organism-' . $organism_index,
+        static::DATA_TYPE,
+        // Parent fieldset could be different for Shared state.
+        static::SHARED_STATE_PARENT_FIELDSET,
+        static::FIELD_NAME,
+      ],
+    ];
+    foreach ($parent_list as $name => $parents) {
+      $value = TppsArray::getValue($form_state, $parents, $key_exists);
+      if ($key_exists !== FALSE) {
+        break;
+      }
+    }
+
+    // Nothing was found.
+    // It's not an error and there is no sence to throw an exception.
+    if ($key_exists === FALSE) {
+      watchdog('tpps', 'Organism #@oidx / @field_title: Value not found.',
+        [
+          '@field_title' => self::getFieldTitle(),
+          '@oidx' => $organism_index,
+        ],
+        WATCHDOG_WARNING
+      );
+    }
+    return $value;
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -399,18 +391,87 @@ abstract class FileField {
    *   0 => 'Yes',
    *   1 => 'No'.
    *
+   *   Testing:
+   *   $s = new Submission('TGDR1033');
+   *   $organism_index = 1;
+   *   dpm(SnpAssociation::getNoHeaderValue($organism_index, $s->getState()));
+   *
+   * See FileField::getValue() and TppsArray::getValue().
+   *
    * @param int $organism_index
    *   Ordinal organism number at page.
    * @param array $form_state
    *   Drupal Form API State Array.
    *
-   * @return int
+   * @return mixed
    *   Returns '0' when 'Yes' was selected and '1' when 'No' was selected.
+   *   Returns NULL when value wasn't found.
+   *
+   * @todo Minor. Detect validation/processing and if $form_state contains
+   * State or Shared State.
    */
   public static function getNoHeaderValue($organism_index, array &$form_state) {
-    // Example: organism-1[genotype][SNPs][snps-association][no-header].
-    return $form_state['values']['organism-' . $organism_index][static::DATA_TYPE]
-      [static::FORM_PARENT_FIELDSET][static::FIELD_NAME]['no-header'] ?? FALSE;
+    $value = $key_exists = NULL;
+    $parent_list = [
+      // For validation.
+      // Note: 'saved_values' doesn't have value until validation passed. Why?
+      // Because 'no-header' is a part of complex file field.
+      'input' => [
+        'input',
+        'organism-' . $organism_index,
+        static::DATA_TYPE,
+        static::FORM_PARENT_FIELDSET,
+        static::FIELD_NAME,
+        'no-header',
+      ],
+      // @todo Probably it's useless step and could be removed.
+      'values' => [
+        'values',
+        'organism-' . $organism_index,
+        static::DATA_TYPE,
+        static::FORM_PARENT_FIELDSET,
+        static::FIELD_NAME,
+        'no-header',
+      ],
+      // Processing.
+      // Use 'saved_values'
+      // Note: structure differs from 'input'.
+      $parents = [
+        'saved_values',
+        static::FORM_STEP,
+        'organism-' . $organism_index,
+        static::DATA_TYPE,
+        static::FORM_PARENT_FIELDSET,
+        static::FIELD_NAME . '-no-header',
+      ],
+      'shared_state_saved_values' => [
+        'saved_values',
+        static::FORM_STEP,
+        'organism-' . $organism_index,
+        static::DATA_TYPE,
+        // Parent fieldset could be different for Shared state.
+        static::SHARED_STATE_PARENT_FIELDSET,
+        static::FIELD_NAME . '-no-header',
+      ],
+    ];
+    foreach ($parent_list as $name => $parents) {
+      $value = TppsArray::getValue($form_state, $parents, $key_exists);
+      if ($key_exists !== FALSE) {
+        break;
+      }
+    }
+    // Nothing was found.
+    if ($key_exists === FALSE) {
+      // It's not an error and there is no sence to throw an exception.
+      watchdog('tpps', 'Organism #@oidx / @field_title: No header value was NOT found.',
+        [
+          '@field_title' => self::getFieldTitle(),
+          '@oidx' => $organism_index,
+        ],
+        WATCHDOG_WARNING
+      );
+    }
+    return $value;
   }
 
   /**
@@ -675,7 +736,6 @@ abstract class FileField {
     return $output;
   }
 
-
   /**
    * Matches values in column with values in header/columns in other file.
    *
@@ -685,8 +745,12 @@ abstract class FileField {
    *   'form_state',
    *   'target_form_element'
    *   'no_header'
+   *      Value of 'No header' checkbox of the current file.
    *   'use_target_header' bool
-   *   'column_letter'
+   *     When TRUE then header of the target file will be used.
+   *     When FALSE then column (not yet implemented).
+   *   'column_letter' string
+   *     Letter of the column starting form A to match in current file.
    *
    * @return bool
    *   Returns TRUE if values matches and FALSE otherwise.
@@ -694,30 +758,8 @@ abstract class FileField {
   public static function matchColumnValues(array $data) {
     $debug_mode = FALSE;
 
-    // Target File.
-    $target_title = trim(str_replace(': *', '', $data['target_form_element']['#title']));
-    $target_fid = TppsArray::getValue(
-      $data['form_state'],
-      // Use 'input' instead of 'saved_values' to get latest value.
-      array_merge(['input'], $data['target_form_element']['#parents'], ['fid'])
-    );
-
-    if ($data['use_target_header']) {
-      // Match with values in header.
-      $target_item_list = tpps_file_headers($target_fid);
-      unset($target_item_list[key($target_item_list)]);
-      if ($debug_mode) {
-        dpm($item_list, 'Original file items');
-        dpm($target_item_list, 'Target file items');
-      }
-    }
-    else {
-      // Match with values in column.
-      // @TODO Implement getting column (by letter).
-      // Use tpps_file_iterator()
-    }
-
-    // Original file.
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Current file.
     $item_list = tpps_parse_file_column(
       self::getFileId($data['organism_index'], $data['form_state']),
       // Column's letter.
@@ -725,7 +767,34 @@ abstract class FileField {
       $data['no_header']
     );
 
-    // Validation.
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Target File.
+    $target_title = trim(str_replace(': *', '', $data['target_form_element']['#title']));
+    $target_fid = TppsArray::getValue(
+      $data['form_state'],
+      // Use 'input' instead of 'saved_values' to get latest value.
+      array_merge(['input'], $data['target_form_element']['#parents'], ['fid'])
+    );
+    if (empty($data['target_column_letter'])) {
+      // Match with values in header.
+      $target_item_list = tpps_file_headers($target_fid);
+      unset($target_item_list[key($target_item_list)]);
+    }
+    else {
+      // Match with values in column.
+      $target_item_list = tpps_parse_file_column(
+        $target_fid,
+        $data['target_column_letter'],
+        $data['target_no_header'] ?? FALSE
+      );
+    }
+    if ($debug_mode) {
+      dpm($item_list, 'Original file items');
+      dpm($target_item_list, 'Target file items');
+    }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Match.
     $missing_items = array_diff(
       $target_item_list,
       $item_list

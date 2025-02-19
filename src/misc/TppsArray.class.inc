@@ -363,13 +363,15 @@ class TppsArray {
    * @param array $parents
    *   List of the element's parents (including element name).
    *   When empty array then original $array will be returned.
+   * @param mixed $key_exists
+   *   If given, an already defined variable that is altered by reference.
    *
    * @return mixed
    *   Returns the reference (!) to the value of the element of the array.
    *   Returns $default if element wasn't found in given array but not reference.
    *   Returns $array when $parents is an empty array.
    */
-  public static function &getValue(array &$array, array $parents = []) {
+  public static function &getValue(array &$array, array $parents = [], &$key_exists = NULL) {
     $value = &drupal_array_get_nested_value($array, $parents, $key_exists);
     if ($key_exists) {
       return $value;

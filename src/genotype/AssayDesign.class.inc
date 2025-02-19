@@ -133,7 +133,7 @@ class AssayDesign extends FileField {
           '#default_value' => TppsArray::getValue($form_state,
             [
               'saved_values',
-              TPPS_PAGE_4,
+              self::FORM_STEP,
               $organism_name,
               self::DATA_TYPE,
               self::FORM_PARENT_FIELDSET,
@@ -275,13 +275,8 @@ class AssayDesign extends FileField {
 
       // Note: $columns => ['1' => 'A', '4' => 'B'];
 
-
-      // @TODO Compare 3 files. SNP Id must match.
-      // Check that SNP IDs match Genotype Assay.
-      //
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Check if number and names of SNPs are the same in current file and in
-      // 'SNPs Assay' file.
+      // Match SNP Ids in current file and 'SNPs Assay' file (header).
       $target_form_element = self::getFormElement($organism_index, $form_state,
         [
           'organism-' . $organism_index,
@@ -293,110 +288,60 @@ class AssayDesign extends FileField {
       $match_result = self::matchColumnValues([
         'organism_index' => $organism_index,
         'form_state' => $form_state,
-        // Do not include 'input' or 'saved_values'.
-        'target_form_element' => $target_form_element,
+        // Current file.
         'no_header' => $snps[self::FIELD_NAME . '-no-header'] ?? FALSE,
-        // Use header/1st line of the target file.
-        'use_target_header' => TRUE,
         'column_letter' => $columns[self::DATA_TYPE_SNP_ID],
+        // Target file.
+        'target_column_letter' => NULL,
+        'target_form_element' => $target_form_element,
+        'target_no_header' => NULL,
       ]);
-      if (!$match_result) {
-        // Validation failed if values not match.
+      if (form_get_errors() ||  !$match_result) {
         return;
       }
 
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Match SNP Ids in current file and 'SNP Association' file (column).
+      $target_form_element = self::getFormElement($organism_index, $form_state,
+        [
+          'organism-' . $organism_index,
+          SnpAssociation::DATA_TYPE,
+          SnpAssociation::FORM_PARENT_FIELDSET,
+          SnpAssociation::FIELD_NAME,
+        ]
+      );
+
+      dpm(
+        SnpAssay::getNoHeaderValue($organism_index, $form_state),
+        'phenotype meta'
+      );
 
 
+// @todo Get column letter.
+      $data_type_id = SnpAssociation::DATA_TYPE_SNP_ID;
+      dpm(
+        self::getNoHeaderValue($organism_index, $form_state), '1'
+      );
+      dpm(
+        $snps[self::FIELD_NAME . '-no-header'] ?? 'x', 2
+      );
 
-
-// @todo Update.
-      if (0) {
-
-// @Todo review and remove.
-
-        // Check that Phenotype names match phenotype metadata section.
-        $association_phenotypes = tpps_parse_file_column(
-          $assoc_file,
-          $columns['Associated Trait'][5],
-          $snps[self::FIELD_NAME . '-no-header'] ?? FALSE
-        );
-
-        $phenotype = $form_state['values'][$organism_index]['phenotype'];
-        $phenotype_meta = $phenotype['metadata'];
-        $phenotype_number = $phenotype['phenotypes-meta']['number'];
-
-        $phenotype_meta_names = [];
-        $phenotype_name_col = $phenotype['metadata-groups']['Phenotype Id']['1'] ?? NULL;
-        if (isset($phenotype_name_col)) {
-          $phenotype_meta_names = tpps_parse_file_column(
-            $phenotype_meta,
-            $phenotype_name_col
-          );
-        }
-
-        for ($i = 1; $i <= $phenotype_number; $i++) {
-          $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
-        }
-
-        $missing_phenotypes = array_diff(
-          $association_phenotypes,
-          $phenotype_meta_names
-        );
-        if (!empty($missing_phenotypes)) {
-          $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
-            . 'We detected Associated Traits that were not specified in the '
-            . 'Phenotype Metadata Section. Please either remove  these Traits '
-            . 'from your Association file, or add them to your Phenotype '
-            . 'Metadata section. The Trait names we foud were: @phenotype_names',
-            [
-              '@field_title' => t(self::getFieldTitle()),
-              '@oidx' => $organism_index,
-              '@phenotype_names' => implode(', ', array_unique($missing_phenotypes)),
-            ]
-          );
-          form_set_error(self::getFormErrorName($organism_index), $error_message);
-        }
-
-        // Check that position values are correctly formatted.
-        $positions = tpps_parse_file_column(
-          $assoc_file,
-          $columns['Position'][3],
-          $assoc_no_header
-        );
-
-
-
-        foreach ($positions as $position) {
-          if (
-            // Numeric (integer).
-            is_numeric($position)
-            // Format: 'start:stop'.
-            || preg_match('/^(\d+):(\d+)$/', $position)
-          ) {
-            continue;
-          }
-          $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
-            . 'We detected SNP positions that do '
-            . 'not match the required format: @position.'
-            . '<br />The correct format is: "start:stop" or integer.',
-            [
-              '@field_title' => t(self::getFieldTitle()),
-              '@oidx' => $organism_index,
-              '@position' => $position,
-            ]
-          );
-          form_set_error(self::getFormErrorName($organism_index), $error_message);
-          break;
-        }
+      $target_column_letter = 'A';
+      $match_result = self::matchColumnValues([
+        'organism_index' => $organism_index,
+        'form_state' => $form_state,
+        // Curent file.
+        'no_header' => $snps[self::FIELD_NAME . '-no-header'] ?? FALSE,
+        'column_letter' => $columns[self::DATA_TYPE_SNP_ID],
+        // Target file.
+        'target_form_element' => $target_form_element,
+        'target_column_letter' => $target_column_letter,
+        'target_no_header' => $snps[SnpAssociation::FIELD_NAME . '-no-header'] ?? FALSE,
+      ]);
+      if (form_get_errors() ||  !$match_result) {
+        return;
       }
     }
-
-    // Do NOT allow further validation.
-    if (form_get_errors()) {
-      return FALSE;
-    }
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     self::preserveValidFile($organism_index, $form_state);
   }
 
