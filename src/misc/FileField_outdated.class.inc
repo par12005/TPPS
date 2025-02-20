@@ -120,22 +120,6 @@ class FileField___________________removeMe {
       'file' => ['prefix' => 'Phenotype_Data'],
 
     ],
-    'genotype' => [
-      'assay-design' => [
-        'required_groups' => [
-          // Name => key => <id in the option's list>.
-          'case 1' => [
-            'SNP ID' => ['id' => [1]],
-            'Scaffold' => ['scaffold' => [2]],
-            'Position' => ['position' => [3]],
-          ],
-          'case 2' => [
-            'SNP ID' => ['id' => [1]],
-            'Flank sequence' => ['sequence' => [4]],
-          ],
-        ],
-      ],
-    ],
   ];
 
   /**

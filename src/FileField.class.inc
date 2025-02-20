@@ -573,16 +573,6 @@ abstract class FileField {
    *   Ordinal organism number at page.
    * @param array $form_state
    *   Drupal Form API State Array.
-   * @param bool $silent_mode
-   *   Default is FALSE.
-   *   When FALSE and silent mode is disabled then form_set_error() will be called
-   *   which means error message on page will appear and form validation fails.
-   *   When TRUE and silent mode is enabled then no error message will be shown
-   *   and form will be left valid. This could be useful when not all columns are
-   *   required and multiple groups or columns must be checked.
-   *   For example:
-   *   case 1: Required columns: A, B, C;
-   *   case 2: Required columns: A, D, E, F.
    *
    * @return array
    *   The groups and the column option types that the file was valid for.
@@ -605,7 +595,7 @@ abstract class FileField {
    * @todo Minor. Replace tpps_file_validate_columns() with this code to allow
    * multiple groups of required columns.
    */
-  public static function validateColumns($organism_index, array &$form_state, $silent_mode = FALSE) {
+  public static function validateColumns($organism_index, array &$form_state) {
     if (!method_exists(static::class, 'getRequiredColumns')) {
       // It's not an error if columns not used for this file field.
       // Watchdog could be used for notices.
@@ -676,12 +666,13 @@ abstract class FileField {
 
       // Since file can contain extra columns we can't check if lists are equal
       // but must check if $selected_columns list includes all required columns.
-      if (tppsArray::contains($case_data, $selected_columns)) {
+      if (TppsArray::contains($case_data, $selected_columns)) {
         // Values are equal.
         $columns = $case_data;
         break;
       }
     }
+
     // Report about falied validation of the equired groups of the data types.
     if (empty($columns)) {
       foreach ($required_cases as $case_name => $case_data) {
@@ -712,6 +703,11 @@ abstract class FileField {
    * Note:
    * User selection is stored in format: ['A' => '1', 'B' => '4'];
    * But returned value uses array_flip().
+   *
+   * Note:
+   * Result could have extra (not required) columns because it uses user's
+   * selection. Be sure to call validateColumns() first.
+
    *
    * @param int $organism_index
    *   Ordinal organism number at page.

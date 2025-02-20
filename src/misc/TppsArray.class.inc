@@ -38,7 +38,10 @@ class TppsArray {
    *   Returns TRUE when arrays are equal and FALSE otherwise.
    */
   public static function isEqual(array $array1, array $array2) {
-    return (bool) (count(array_diff($array1, $array2)) == 0);
+    return (
+      empty(array_diff($array1, $array2))
+      && empty(array_diff($array2, $array1))
+    );
   }
 
   /**
@@ -60,7 +63,7 @@ class TppsArray {
     $intersection = array_intersect($array1, $array2);
     // If Array #1 and $intersections are the same then Array #2 includes
     // all values of the Array #1.
-    return static::isEqual($intersection, $array1);
+    return self::isEqual($intersection, $array1);
   }
 
   /**

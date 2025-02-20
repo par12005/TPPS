@@ -197,6 +197,8 @@ class AssayDesign extends FileField {
     $genotyping_type = $snps['genotyping-type'] ?? NULL;
     $fid = self::getFileId($organism_index, $form_state);
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Check if field is required.
     self::validateRequired($organism_index, $form_state, (
       // Requirement conditions:
       (
@@ -211,6 +213,8 @@ class AssayDesign extends FileField {
       return FALSE;
     }
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Check if other required files was uploaded.
     if (empty($snps['snps-association'])) {
       $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
         . 'File "SNP Association" is required.',
@@ -226,22 +230,12 @@ class AssayDesign extends FileField {
       return FALSE;
     }
 
-    // Check for optional (and required) fields.
-    // Empty required field must create error messages and break validation
-    // before but to be sure and to allow switch to optional field using UI
-    // settings page (or variable) use for both (optional and required) fields.
-    if (empty($fid)) {
-      return;
-    }
-
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Check required data types for columns.
-    // Note: Usually fields has a single group of required columns
-    // but Assay Design has 2 of them.
+    // Check if required data types for columns was set.
+    // Note: Assay Design has two (not one) groups of required columns.
     if (self::hasColumns($organism_index, $form_state)) {
 
       $error_name = self::getFormErrorName($organism_index);
-
       if (empty($assoc_file = $snps['snps-association'])) {
         // @todo Minor. Highlight 'SNP Association' file.
         $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
@@ -264,15 +258,14 @@ class AssayDesign extends FileField {
         );
         form_set_error(self::getFormErrorName($organism_index), $error_message);
       }
-
-      self::validateColumns($organism_index, $form_state, $silent_mode = FALSE);
+      self::validateColumns($organism_index, $form_state);
       if (form_get_errors()) {
         return;
       }
 
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Match SNP Ids in current file and 'SNPs Assay' file (header).
-      $match_result = self::matchColumnValues([
+      self::matchColumnValues([
         'organism_index' => $organism_index,
         'form_state' => $form_state,
         // Current file.
@@ -281,23 +274,29 @@ class AssayDesign extends FileField {
           $form_state,
           'no-header'
         ),
-        'column_letter' => $columns[self::DATA_TYPE_SNP_ID],
+        'column_letter' => self::getSelectedColumns(
+          $organism_index,
+          $form_state
+        )[self::DATA_TYPE_SNP_ID],
         // Target file.
         'target_column_letter' => NULL,
         'target_form_element' => SnpAssay::getFormElement($organism_index, $form_state),
         'target_no_header' => NULL,
       ]);
-      if (form_get_errors() ||  !$match_result) {
+      if (form_get_errors()) {
         return;
       }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Match SNP Ids in current file and 'SNP Association' file (column).
-      $match_result = self::matchColumnValues([
+      self::matchColumnValues([
         'organism_index' => $organism_index,
         'form_state' => $form_state,
         // Curent file.
         'no_header' => $snps[self::FIELD_NAME . '-no-header'] ?? FALSE,
-        'column_letter' => $columns[self::DATA_TYPE_SNP_ID],
+        'column_letter' => self::getSelectedColumns(
+          $organism_index,
+          $form_state
+        )[self::DATA_TYPE_SNP_ID],
         // Target file.
         'target_form_element' => SnpAssociation::getFormElement(
           $organism_index,
@@ -313,7 +312,7 @@ class AssayDesign extends FileField {
           'no-header'
         ),
       ]);
-      if (form_get_errors() ||  !$match_result) {
+      if (form_get_errors()) {
         return;
       }
     }
