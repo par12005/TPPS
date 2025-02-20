@@ -115,7 +115,6 @@ class SnpAssociation extends FileField {
     $file_field_name = 'snps-association';
     $title = t('SNP Association File');
     // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
-    // @todo Move to SnpAssociation::build() method.
     tpps_form_build_file_field([
       'form' => &$form,
       'form_state' => $form_state,
@@ -322,11 +321,12 @@ class SnpAssociation extends FileField {
     $assoc_snps = tpps_parse_file_column($fid, $snps_id_col, $assoc_no_header);
     $missing_snps = array_diff($assoc_snps, $assay_snps);
 
+    // @TODO Re-use FileField::matchColumnValues().
     if (!empty($missing_snps)) {
       $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
-        . 'We detected SNP IDs that were not in your Genotype Assay. '
+        . 'We detected SNP IDs that were not in your SNP Assay. '
         . 'Please either remove these SNPs from your Association file, '
-        . 'or add them to your Genotype Assay. '
+        . 'or add them to your SNP Assay. '
         . '<br />The SNP Identifiers we found were: @list',
         [
           '@field_title' => t(self::getFieldTitle()),

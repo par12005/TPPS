@@ -1133,7 +1133,8 @@ function tpps_validate_genotype_other(array &$genotype, $org_num, array $form, a
   if (!form_get_errors()) {
     // @TODO Reuse SnpAssay::validateTrees();
     $acc_no_header = $page3_values['tree-accession'][$species_index]['file-no-header'];
-    $other_no_header = $genotype[$other_fieldset]['other']['no-header'] ?? FALSE;
+    // @TODO Minor. Use Other::getSubFieldValue(..., 'no-header').
+    $other_no_header = $genotype[$other_fieldset]['other-no-header'] ?? FALSE;
     $missing_trees = tpps_compare_files(
       $other_file,
       $tree_accession_file,

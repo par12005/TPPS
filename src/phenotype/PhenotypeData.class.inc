@@ -26,7 +26,7 @@ class PhenotypeData {
   const FORM_STEP = 4;
 
   // WARNING: For format = 0.
-  // @todo Maybe use fuction which returns correct value by $format.
+  // @todo Minor. Maybe use fuction which returns correct value by $format.
   const DATA_TYPE_PHENOTYPE_DATA = 0;
   const DATA_TYPE_PLANT_IDENTIFIER = 1;
   const DATA_TYPE_TIMEPOINT = 2;

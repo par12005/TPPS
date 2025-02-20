@@ -82,7 +82,6 @@ class SnpsPopulationStructure extends FileField {
       return;
     }
     $organism_name = 'organism-' . $organism_index;
-    // @todo Minor. Rename $sub_form to $subform.
     $sub_form = &$form[$organism_name][self::DATA_TYPE];
 
     // Would you like to upload a SNPs Population Structure file?
