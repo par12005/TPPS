@@ -2242,9 +2242,8 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
       if ($pop_struct_fid = ($genotype['files']['snps-pop-struct'] ?? NULL)) {
         tpps_add_project_file($shared_state, $pop_struct_fid);
       }
-      if ($kinship_fid = ($genotype['files']['snps-kinship'] ?? NULL)) {
-        tpps_add_project_file($shared_state, $kinship_fid);
-      }
+      SnpsPopulationStructure::process($organism_index, $shared_state, $options);
+      SnpsKinship::process($organism_index, $shared_state, $options);
     }
     // DROP INDEXES FROM GENOTYPE_CALL TABLE.
     // tpps_drop_genotype_call_indexes($job);

@@ -127,4 +127,21 @@ class SnpsKinship extends FileField {
     ]);
   }
 
+  /**
+   * Processes a file.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number on page.
+   * @param array $shared_state
+   *   Submission's Shared State.
+   * @param array $options
+   *   Options for processing. Could be used to return processing results.
+   */
+  public static function process($organism_index, array $shared_state, array &$options = []) {
+    tpps_add_project_file(
+      $shared_state,
+      self::getFileId($organism_index, $shared_state)
+    );
+  }
+
 }
