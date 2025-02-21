@@ -319,4 +319,118 @@ class AssayDesign extends FileField {
     self::preserveValidFile($organism_index, $form_state);
   }
 
+  /**
+   * Processes a file.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number on page.
+   * @param array $shared_state
+   *   Submission's Shared State.
+   * @param array $options
+   *   Options for processing. Could be used to return processing results.
+   */
+  public static function process($organism_index, array $shared_state, array &$options = []) {
+    // This if statement caters for the Genotype Assay Design file
+    // (which holds extra data like positions etc)
+    // This is usually also accompanied with the Genotype SNP Assay
+    // (which holds the snps)
+    // We want to insert location data into the database
+    // if both are found and the marker-type is snp
+    // The previous step took care of the SNPs insertion via the Genotype
+    // SNP Assay (not to be confused with genotype SNP assay design file)
+    if (empty($fid = self::getFileId($organism_index, $shared_state))) {
+      return;
+    }
+    tpps_add_project_file($shared_state, $fid);
+
+    $genotype = TppsArray($shared_state, [
+      'saved_values',
+      self::FORM_STEP,
+      'organism-' . $organism_index,
+      self::DATA_TYPE
+    ]);
+
+    // Setup the options array which the tpps_file_iterator custom function
+    // will be able to access necessary details.
+    $options['type'] = 'snp';
+
+    print_r("\n");
+    $options['marker'] = 'SNP';
+    $options['type_cvterm'] = tpps_load_cvterm('snp')->cvterm_id;
+    $options['ref-genome'] = $genotype['ref-genome'];
+    $ref_genome = $genotype['ref-genome'];
+    echo "Ref-genome: $ref_genome\n";
+    // Lookup analysis id from reference genome and add it to options array.
+    $options['analysis_id'] = tpps_get_analysis_id_from_ref_genome($ref_genome);
+    tpps_log("ANALYSIS ID: " . $options['analysis_id'], [], TRIPAL_DEBUG);
+
+    // We must have an analysis_id to tie back to the srcfeature.
+    if ($options['analysis_id'] != NULL) {
+      // Initialize new records with featureloc array to store records.
+      $options['records']['featureloc'] = [];
+      $options['records']['featureprop'] = [];
+
+      $options['headers'] = tpps_file_headers($fid);
+      tpps_log(
+        "HEADERS:\n@headers\n",
+        ['@headers' => print_r($options['headers'], 1)],
+        TRIPAL_DEBUG
+      );
+
+      // Find the marker name header.
+      $options['file_columns'] = [];
+      foreach ($options['headers'] as $column => $column_name) {
+        $column_name = strtolower(trim($column_name));
+        tpps_log("Spreadsheet column name:" . $column_name . " column: $column",
+          [], TRIPAL_DEBUG);
+        switch ($column_name) {
+          case 'chr':
+            $options['file_columns']['chr'] = $column;
+            break;
+
+          case 'forward sequence':
+            $options['file_columns']['forward_sequence'] = $column;
+            break;
+
+          case 'reverse sequence':
+            $options['file_columns']['reverse_sequence'] = $column;
+            break;
+
+          case 'snp':
+            $options['file_columns']['snp'] = $column;
+            break;
+        }
+        if (strpos($column_name, 'position') !== FALSE) {
+          $options['file_columns']['position'] = $column;
+        }
+        elseif (strpos($column_name, 'marker name') !== FALSE) {
+          $options['file_columns']['marker_name'] = $column;
+        }
+        tpps_log(print_r($options['file_columns'], 1), [], TRIPAL_DEBUG);
+      }
+
+      // We want to process this Genotype SNP Assay Design file before
+      // we add it as a project file.
+      tpps_log('Processing genotype_snp_assay_design file data...', [], TRIPAL_INFO);
+      tpps_file_iterator($fid, 'tpps_process_genotype_snp_assay_design', $options);
+      tpps_log('Done.', [], TRIPAL_INFO);
+
+      tpps_log('Inserting genotype_snp_assay_design_spreadsheet data into '
+        . 'database using insert_multi...', [], TRIPAL_INFO);
+      tpps_log('Done.', [], TRIPAL_INFO);
+      // Reset options[records] with empty records arrays.
+      $options['records'] = [
+        'feature' => [],
+        'genotype' => [],
+        'genotype_call' => [],
+        'stock_genotype' => [],
+      ];
+    }
+    else {
+      tpps_log('Analysis ID could not be found, skipping assay design file processing.',
+        [], TRIPAL_ERROR
+      );
+    }
+  }
+
 }

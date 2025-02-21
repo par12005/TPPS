@@ -138,10 +138,10 @@ class SnpsKinship extends FileField {
    *   Options for processing. Could be used to return processing results.
    */
   public static function process($organism_index, array $shared_state, array &$options = []) {
-    tpps_add_project_file(
-      $shared_state,
-      self::getFileId($organism_index, $shared_state)
-    );
+    if (empty($fid = self::getFileId($organism_index, $shared_state))) {
+      return;
+    }
+    tpps_add_project_file($shared_state, $fid);
   }
 
 }
