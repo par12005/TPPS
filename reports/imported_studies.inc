@@ -128,11 +128,11 @@ function tpps_admin_imported_studies_report() {
   $version_tags = '<br /><strong>' . t('Version') . '</strong>';
   $output .= theme('table', [
     'header' => [
-      t('Original <br /><strong>Accession</strong>'),
-      t('Imported<br /><strong>Accession</strong>'),
+      t('Remote <br /><strong>Accession</strong>'),
+      t('Local <br /><strong>Accession</strong>'),
       t('Submission<br /><strong>Status</strong>'),
       t('Tripal Job<br /><strong>Status</strong>'),
-      t('Original') . $version_tags,
+      t('Remote') . $version_tags,
       t('Submitted') . $version_tags,
       t('UID'),
       t('Import Date'),

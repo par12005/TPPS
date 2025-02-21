@@ -775,6 +775,8 @@ function tpps_add_project_file(array &$state, &$fid) {
     }
   }
   elseif (!empty($state['revised_files'][$fid])) {
+    // @TODO Review and remove this code cause when $fid is empty this code
+    // will never loads file object.
     // Note: $fid is a reference and will be used in a caller function.
     $fid = $state['revised_files'][$fid];
     if ($file = tpps_file_load($fid)) {

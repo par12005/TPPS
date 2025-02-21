@@ -258,17 +258,20 @@ class Submission {
    *   Submision::setState or $submission->state = $state.
    * @param mixed $value
    *   Value to be set.
-   * @param bool $force
-   *   When TRUE then sharedState will be updated even if sub-element not exists.
+   * @param bool $update_shared_state
    *   Default is FALSE.
+   *   When TRUE then sharedState will be updated.
+   *   Note that value under $sharedState will always be updated when value
+   *   was  found under $state.
    */
-  public function set(array $parents, $value, $force = FALSE) {
+  public function set(array $parents, $value, $update_shared_state = FALSE) {
     drupal_array_set_nested_value($this->state, $parents, $value);
     // Update sharedState only if this value was there before.
     $key_exists = FALSE;
     drupal_array_get_nested_value($this->sharedState, $parents, $key_exists);
-    // @TODO Shared State could have different $parents.
-    if ($key_exists || $force) {
+    // @TODO Implement correct $parents for shared_state.
+    // Shared State could have different $parents cause field was relocated.
+    if ($key_exists || $update_shared_state) {
       drupal_array_set_nested_value($this->sharedState, $parents, $value);
     }
     return $this;
