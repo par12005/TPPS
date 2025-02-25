@@ -2027,14 +2027,4 @@ class Submission {
     return TRUE;
   }
 
-  /**
-   * Gets TPPS Form version.
-   *
-   * @return int
-   *   Returns version number. Default is 1.
-   */
-  public function getFormVersion() {
-    return $this->state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1;
-  }
-
 }

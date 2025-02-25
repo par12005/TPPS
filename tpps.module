@@ -390,6 +390,7 @@ function tpps_menu() {
     'file' => 'admin/pages.php',
   ];
 
+  // % is an accession. E.g., 'TGDRxxxx'.
   $items['tpps/doi/%'] = [
     'title' => 'TPPS DOI',
     'page callback' => 'tpps_manage_doi',
