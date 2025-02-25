@@ -11,7 +11,7 @@
  * @param string $project_id
  *   The project_id of the submission which has existing plants.
  */
-function tpps_matching_trees($project_id) {
+function tpps_matching_trees($project_id, $do_relationship_insert = true) {
   $eps = variable_get('tpps_gps_epsilon', .001);
 
   $lat_id = tpps_load_cvterm('gps_latitude')->cvterm_id;
@@ -23,7 +23,10 @@ function tpps_matching_trees($project_id) {
   $query_trees_1->addField('s', 'stock_id', 'stock_id');
   $query_trees_1->addField('s', 'type_id', 'type_id');
   $query_trees_1->addField('s', 'organism_id', 'organism_id');
-  $query_trees_1->addExpression('substring(s.uniquename, 9)', 'uniquename');
+  // RISH: 2/20/2025 - Make this string more relaxed by removing possible characters
+  // $query_trees_1->addExpression('substring(s.uniquename, 9)', 'uniquename');
+  // RISH: 2/20/2025 - Updated to be more relaxed by removing possible characters like underscore, dash and spaces + lowercase
+  $query_trees_1->addExpression("translate(lower(substring(s.uniquename, 9)),'_- ','')", 'uniquename');
   $query_trees_1->addExpression('cast(lat.value as float)', 'lat');
   $query_trees_1->addExpression('cast(lng.value as float)', 'lng');
 
@@ -40,12 +43,16 @@ function tpps_matching_trees($project_id) {
 
   $results = $query->execute();
 
-  while (($record = $results->fetchObject())) {
-    tpps_chado_insert_record('stock_relationship', array(
-      'subject_id' => $record->stock_id1,
-      'object_id' => $record->stock_id2,
-      'type_id' => tpps_load_cvterm('synonymous')->cvterm_id,
-      //'type_id' => '2206',
-    ));
+  if ($do_relationship_insert) {
+    while (($record = $results->fetchObject())) {
+      tpps_chado_insert_record('stock_relationship', array(
+        'subject_id' => $record->stock_id1,
+        'object_id' => $record->stock_id2,
+        'type_id' => tpps_load_cvterm('synonymous')->cvterm_id,
+        //'type_id' => '2206',
+      ));
+    }
   }
+
+  return $results;
 }
