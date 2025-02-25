@@ -162,6 +162,8 @@ function tpps_doi_metadata($id, $metadata) {
  *   The form_state of the TPPS Submission form.
  */
 function tpps_doi_upload_files($id, array &$state) {
+  $debug_mode = 0;
+
   $files = [];
   for ($i = 1; $i <= $state['stats']['species_count']; $i++) {
     $files[] = $state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['file'];
@@ -195,9 +197,9 @@ function tpps_doi_upload_files($id, array &$state) {
       // @TODO Could we skip all this extra checks and just collect files?
       // @TODO Ask curation team what to do with this.
       // WARNING: Submission State (not Shared State, v.1).
-      $file_type = $genotype[$snps_fieldset]['file-type'] ?? NULL;
       $snps_fieldset = 'SNPs';
       $ssrs_fieldset = 'ssrs_cpssrs';
+      $file_type = $genotype[$snps_fieldset]['file-type'] ?? NULL;
       if ($genotype['does_study_include_snp_data'] == 'yes') {
         if ($file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE) {
           $files[] = $genotype[$snps_fieldset]['snps-assay'] ?? NULL;
@@ -219,10 +221,16 @@ function tpps_doi_upload_files($id, array &$state) {
   }
   $files = array_filter($files);
 
+  if (!empty($debug_mode)) {
+    dpm(print_r($files, 1));
+    dpm(print_r($genotype, 1));
+    return;
+  }
+
   $token = variable_get('tpps_zenodo_api_key', NULL);
   $upload_file_count = 0;
   foreach ($files as $fid) {
-    if ($fid != '' && $file = tpps_file_load($fid) && $file->filesize < TPPS_20GB) {
+    if (!empty($file = tpps_file_load($fid)) && $file->filesize < TPPS_20GB) {
       if (!is_object($file)) {
         continue;
       }
