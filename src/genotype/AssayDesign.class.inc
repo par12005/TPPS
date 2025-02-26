@@ -343,7 +343,7 @@ class AssayDesign extends FileField {
     }
     tpps_add_project_file($shared_state, $fid);
 
-    $genotype = TppsArray($shared_state, [
+    $genotype = TppsArray::getValue($shared_state, [
       'saved_values',
       self::FORM_STEP,
       'organism-' . $organism_index,
