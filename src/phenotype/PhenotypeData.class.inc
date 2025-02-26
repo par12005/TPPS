@@ -581,9 +581,10 @@ class PhenotypeData {
    *   Returns TRUE if data type was set and FALSE otherwise.
    */
   public static function isDataTypeSet(array $form_state, $org_num, $data_type_id) {
-    $selected_columns = $form_state['input']["organism-$org_num"]['phenotype']
-      ['file']['columns'];
-    return in_array($data_type_id, $selected_columns);
+    $selected_columns = TppsArray::getValue($form_state,
+      ['input', "organism-$org_num", 'phenotype', 'file', 'columns']
+    );
+    return !empty($selected_columns) && in_array($data_type_id, $selected_columns);
   }
 
   /**
