@@ -847,4 +847,57 @@ abstract class FileField {
     return static::class;
   }
 
+  /**
+   * Matches study's type to given type.
+   *
+   * Note: it checks data type set on Step 2 (not actually added
+   * phenotype file because they could not yet be loaded).
+   * See Submission::hasGenotypeData() which checks phenotype files
+   * loadede on Step 4.
+   *
+   * @param array $form_state
+   *   Drupal Form API State array.
+   * @param string $type
+   *   Study type. Case independent.
+   *   Possible values are: 'Phenotype', 'Genotype' and 'Environment'.
+   *
+   * @return bool
+   *   Returns TRUE when study has given $type and FALSE otherwise.
+   *
+   * @todo Implement custom method for 'Environment' but this value
+   * could be changed in future according to mockup in Figma.
+   */
+  public static function matchStudyDataType(array $form_state, $type) {
+    $study_type = strtolower(TppsArray::getValue($form_state,
+      ['saved_values', TPPS_PAGE_2, 'data_type']
+    ));
+    return (bool) (strpos($study_type, strtolower($type)) !== FALSE);
+  }
+
+  /**
+   * Checks if study data type contains 'Phenotype'.
+   *
+   * @param array $form_state
+   *   Drupal Form API State array.
+   *
+   * @return bool
+   *   Returns TRUE for phenotype study and FALSE otherwise.
+   */
+  public static function isPhenotypeStudy(array $form_state) {
+    return self::matchStudyDataType($form_state, 'Phenotype');
+  }
+
+  /**
+   * Checks if study data type contains 'Genotype'.
+   *
+   * @param array $form_state
+   *   Drupal Form API State array.
+   *
+   * @return bool
+   *   Returns TRUE for genotypestudy and FALSE otherwise.
+   */
+  public static function isGenotypeStudy(array $form_state) {
+    return self::matchStudyDataType($form_state, 'Genotype');
+  }
+
 }
