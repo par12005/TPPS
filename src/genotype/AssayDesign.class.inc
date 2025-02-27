@@ -45,6 +45,9 @@ class AssayDesign extends FileField {
   /**
    * Gets list of column data types.
    *
+   * Note:
+   * To get name by key: (static::getColumnOptions()[$data_type_key] ?? NULL).
+   *
    * @return array
    *   Returns list of options with column data types.
    */
@@ -258,6 +261,8 @@ class AssayDesign extends FileField {
         );
         form_set_error(self::getFormErrorName($organism_index), $error_message);
       }
+
+      // Validate column data types.
       self::validateColumns($organism_index, $form_state);
       if (form_get_errors()) {
         return;

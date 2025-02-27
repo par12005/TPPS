@@ -295,18 +295,31 @@ class SnpAssociation extends FileField {
       // Optional.
       // 7 => 'Gene ID',
       // 8 => 'Annotation',
-      // Conditional. Required when Phenotype data file has 'Year'column.
+      // Conditional. Required when Phenotype data file exists and has 'Year'column.
       // 9 => 'Year'.
     ];
 
-    if (PhenotypeData::isDataTypeSet($form_state, $organism_index, PhenotypeData::DATA_TYPE_YEAR)) {
+    if (
+      self::isPhenotypeStudy($form_state)
+      && PhenotypeData::isDataTypeSet($form_state, $organism_index, PhenotypeData::DATA_TYPE_YEAR)
+    ) {
       $required_groups['Year'] = ['year' => [self::DATA_TYPE_YEAR]];
     }
+    // @TODO Minor. We exclude 'Year' column data type when it's not
+    // a Phenotypestudy or column 'Year' is missing in Phenotype Data file.
+    // But also we could show warning message and ask user to upload
+    // SNP Association file without 'Year' column.
 
     // Note: File id stored in $form (!) but not stored in $form_state.
     $file_id = $form[$id]['genotype'][self::FORM_PARENT_FIELDSET][self::FIELD_NAME];
     $groups = tpps_file_validate_columns($form_state, $required_groups, $file_id);
 
+    if (form_get_errors()) {
+      return;
+    }
+
+    // Do not allow the same data type for multiple columns.
+    self::allowColumnDataTypeUseOnce($organism_index, $groups);
     if (form_get_errors()) {
       return;
     }
@@ -343,34 +356,42 @@ class SnpAssociation extends FileField {
       $fid, $trait_id_col, $assoc_no_header
     );
 
-    $phenotype = $form_state['values'][$id]['phenotype'];
-    $phenotype_meta = $phenotype['metadata'];
-    $phenotype_number = $phenotype['phenotypes-meta']['number'];
+    if (self::isPhenotypeStudy($form_state)) {
+      $phenotype = $form_state['values'][$id]['phenotype'];
+      $phenotype_metadata_fid = $phenotype['metadata'];
+      $phenotype_number = $phenotype['phenotypes-meta']['number'];
 
-    $phenotype_meta_names = [];
-    $phenotype_name_col = PhenotypeData::getPhenotypeNameColumn($organism_index, $form_state);
-    if (isset($phenotype_name_col)) {
-      $phenotype_meta_names = tpps_parse_file_column($phenotype_meta, $phenotype_name_col);
-    }
-
-    for ($i = 1; $i <= $phenotype_number; $i++) {
-      $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
-    }
-
-    $missing_phenotypes = array_diff($association_phenotypes, $phenotype_meta_names);
-    if (!empty($missing_phenotypes)) {
-      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
-        . 'We detected Associated Traits that were not specified in the '
-        . 'Phenotype Metadata Section. Please either remove these Traits '
-        . 'from your Association file, or add them to your Phenotype '
-        . 'Metadata section. <br />The Trait names we foud were: @list',
-        [
-          '@field_title' => t(self::getFieldTitle()),
-          '@oidx' => $organism_index,
-          '@list' => implode(', ', $missing_phenotypes),
-        ]
+      $phenotype_meta_names = [];
+      $phenotype_name_col = PhenotypeData::getPhenotypeNameColumn(
+        $organism_index,
+        $form_state
       );
-      form_set_error(self::getFormErrorName($organism_index), $error_message);
+      if (isset($phenotype_name_col)) {
+        $phenotype_meta_names = tpps_parse_file_column(
+          $phenotype_metadata_fid,
+          $phenotype_name_col
+        );
+      }
+
+      for ($i = 1; $i <= $phenotype_number; $i++) {
+        $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
+      }
+
+      $missing_phenotypes = array_diff($association_phenotypes, $phenotype_meta_names);
+      if (!empty($missing_phenotypes)) {
+        $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+          . 'We detected Associated Traits that were not specified in the '
+          . 'Phenotype Metadata Section. Please either remove these Traits '
+          . 'from your Association file, or add them to your Phenotype '
+          . 'Metadata section. <br />The Trait names we foud were: @list',
+          [
+            '@field_title' => t(self::getFieldTitle()),
+            '@oidx' => $organism_index,
+            '@list' => implode(', ', $missing_phenotypes),
+          ]
+        );
+        form_set_error(self::getFormErrorName($organism_index), $error_message);
+      }
     }
 
     // Check that position values are correctly formatted.

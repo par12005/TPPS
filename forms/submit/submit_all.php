@@ -2272,6 +2272,8 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // 'SSRs' and 'cpSSR' fields.
+  // WARNING:
+  // SSR and cpSSR files could have the same data type for multiple columns.
   foreach (['ssrs', 'ssrs_extra'] as $ssr_field_name) {
     if (!empty($ssr_fid = $genotype['files'][$ssr_field_name])) {
       $options['type'] = 'ssrs';
@@ -3114,7 +3116,7 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
           );
         }
         // If not a header line, perform processings
-        
+
         if ($vcf_line[0] != '#'
           && stripos($vcf_line, '.vcf') === FALSE
           && trim($vcf_line) != ""
@@ -4431,8 +4433,8 @@ function tpps_vcf_per_sample_column($file_location, $column_index) {
     // if($file_progress_line_count % 10000 == 0 && $file_progress_line_count != 0) {
     //   echo '[INFO] [VCF PROCESSING STATUS] ' . $file_progress_line_count . " lines done\n";
     // }
-    if ($vcf_line[0] != '#' 
-      && $vcf_line[0] != '"' 
+    if ($vcf_line[0] != '#'
+      && $vcf_line[0] != '"'
       && stripos($vcf_line,'.vcf') === FALSE
       && trim($vcf_line) != ""
       && str_replace("\0", "", $vcf_line) != ""
@@ -4716,8 +4718,8 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           echo '[INFO] [VCF PROCESSING STATUS] ' . $file_progress_line_count . " lines done\n";
         }
         echo substr($vcf_line,0,1) . "\n";
-        if ($vcf_line[0] != '#' 
-          && $vcf_line[0] != '"' 
+        if ($vcf_line[0] != '#'
+          && $vcf_line[0] != '"'
           && stripos($vcf_line,'.vcf') === FALSE
           && trim($vcf_line) != ""
           && str_replace("\0", "", $vcf_line) != ""
@@ -4843,10 +4845,10 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           $time_end_feature_find = microtime(true);
           echo("Feature find time: " . floatval($time_end_feature_find - $time_start_feature_find) . " ms\n");
 
-        
+
           // If marker does not exist, insert it into the feature table
           if ($feature_check_count <= 0) {
-            
+
             try {
               $time_start_feature_insert = microtime(true);
               $results = chado_insert_record('feature', [
@@ -4863,7 +4865,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             }
 
           }
-          
+
 
 
           // get the marker_id <- feature_id column value
@@ -5068,8 +5070,8 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
                   WHERE plant_id = '$tree_id'
                   AND NOT CAST('$variant_name' AS varchar) = ANY(marker_ids)
                 ");
-                
-                
+
+
               }
               else {
                 // this call should be ignored because it's a ./.
@@ -5092,7 +5094,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
               $tree_id = $tree_ids[$j-9];
               $genotype_call = $vcf_line[$j];
               if (trim($genotype_call) != './.') {
-                $plants_array[] = $tree_id; 
+                $plants_array[] = $tree_id;
               }
             }
             $mem_end = memory_get_usage();
@@ -5116,7 +5118,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             tpps_log($lmsg);
             $plants_array = []; // empty memory as quickly as possible
           }
-          
+
           // Rish 12/08/2022: So we have multiple genotypes created
           // So I adjusted some of this code into a for statement
           // since the genotype_desc seems important and so I modified
@@ -5135,7 +5137,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             $lmsg = "FOR LOOP START - EACH UNIQUE GENOTYPE CALLS - IGNORED\n";
             echo($lmsg);
             tpps_log($lmsg);
-            
+
             $time_start_unique_genotypes = microtime(true);
             foreach ($detected_genotypes as $genotype_name => $genotype_info_array) { // eg SNP-scaffold_pos_-POTR-AG
               $time_start_unique_genotype = microtime(true);
@@ -5439,17 +5441,17 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             if(!isset($line_process_cumulative_time)) {
               $line_process_cumulative_time = 0;
             }
-            
+
             $lmsg = "FOR LOOP END - EACH UNIQUE GENOTYPE CALLS - IGNORED\n";
             echo($lmsg);
             tpps_log($lmsg);
-            
+
             $line_process_cumulative_time += $line_process_elapsed_time;
             echo("\nGenotype call records to insert (LINE:$file_progress_line_count): " . count($records['genotype_call']));
           }
-          
+
           echo("Cumulative PHP proctime: " . $line_process_cumulative_time . " ms\n");
-          
+
           // echo("\nrecord group threshold: $record_group ");
 
           $lmsg = "WHILE LOOP END - ENTIRE ROW EXCLUDING BULK INSERT\n";
