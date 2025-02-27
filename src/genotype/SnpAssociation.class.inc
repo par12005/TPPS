@@ -592,28 +592,30 @@ class SnpAssociation extends FileField {
     }
 
     $id = $row[($groups['SNP ID'][self::DATA_TYPE_SNP_ID] ?? NULL)] ?? NULL;
-    $position = $row[$groups['Position'][3]];
-    $trait = $row[$groups['Associated Trait'][5]];
-
-    $confidence = $row[$groups['Confidence Value'][6]];
+    $position = $row[$groups['Position'][static::DATA_TYPE_POSITION]];
+    $trait = $row[$groups['Associated Trait'][static::DATA_TYPE_ASSOCIATED_TRAIT]];
+    $confidence = $row[$groups['Confidence Value'][static::DATA_TYPE_CONFIDENCE_VALUE]];
     $associations = &$options['associations'];
+
     $associations[$id] = [
       // Required.
       'id' => $id,
-      'scaffold' => $row[$groups['Scaffold'][2]],
+      'scaffold' => $row[$groups['Scaffold'][static::DATA_TYPE_SCAFFOLD]],
       'start' => $position,
       'stop' => $position,
-      'allele' => $row[$groups['Allele'][4]],
+      'allele' => $row[$groups['Allele'][static::DATA_TYPE_ALLELE]],
       'trait' => $trait,
       'confidence' => $confidence,
       // Extra.
       //'trait_attr' => $options['phenotype_meta'][strtolower($trait)]['attr_id'],
       //'trait_obs' => $options['phenotype_meta'][strtolower($trait)]['struct_id'] ?? NULL,
       // Optional.
-      'gene_id' => $row[($groups['Gene ID'][self::DATA_TYPE_GENE_ID] ?? NULL)] ?? NULL,
-      'annotation' => $row[($groups['Annotation'][self::DATA_TYPE_ANNOTATION] ?? NULL)] ?? NULL,
+      'gene_id' => $row[($groups['Gene ID'][static::DATA_TYPE_GENE_ID] ?? NULL)] ?? NULL,
+      'annotation' => $row[($groups['Annotation'][static::DATA_TYPE_ANNOTATION] ?? NULL)] ?? NULL,
       // Conditional.
-      'year' => $row[$groups['Year'][9]] ?? NULL,
+      // 'Year' column will be missing when no Phenotype Data file
+      // or it doesn't have 'Year' column.
+      'year' => $row[($groups['Year'][static::DATA_TYPE_YEAR] ?? NULL)] ?? NULL,
     ];
 
     // Process 'start:stop' format of the 'Position' column.
