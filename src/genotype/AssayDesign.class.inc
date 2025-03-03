@@ -321,6 +321,9 @@ class AssayDesign extends FileField {
         return;
       }
     }
+
+    // Create new '-columns', '-no-header' and '-empty' fields in 'saved_values'.
+    self::storeSubFields($organism_index, $form_state);
     self::preserveValidFile($organism_index, $form_state);
   }
 
@@ -376,11 +379,7 @@ class AssayDesign extends FileField {
       $options['records']['featureprop'] = [];
 
       $options['headers'] = tpps_file_headers($fid);
-      tpps_log(
-        "HEADERS:\n@headers\n",
-        ['@headers' => print_r($options['headers'], 1)],
-        TRIPAL_DEBUG
-      );
+      tpps_log($options['headers'], 'HEADERS');
 
       // Find the marker name header.
       $options['file_columns'] = [];

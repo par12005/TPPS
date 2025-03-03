@@ -82,7 +82,12 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       'local_vcf',
       'vcf_file-location',
       'snps-assay',
+      // Assay Design and subfields.
       'assay-design',
+      //'assay-design-columns',
+      //'assay-design-no-header',
+      //'assay-design-empty',
+      //'assay-design-groups',
       // SNP Association and columns.
       'snps-association',
       'snps-association-columns',
