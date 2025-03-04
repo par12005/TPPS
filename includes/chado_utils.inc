@@ -128,7 +128,7 @@ function tpps_chado_insert_record($table, $records, array $options = array()) {
  * and also copy for genotype_call data. It is an attempt to understand
  * the differences in speed using COPY vs INSERTS where applicable.
  */
-function tpps_chado_insert_hybrid(array $record_groups, array $options = array()) {
+function tpps_chado_insert_hybrid(array $record_groups, array $options = array(), $enable_copy = false) {
   // NEED TO BE A SUPERUSER;
   // ALTER USER drupal WITH SUPERUSER;
 
@@ -146,213 +146,216 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
     }
   }
 
-  // DEBUG CODE - Leave this debug code to determine if record_groups per table is getting populated correctly
-  // foreach ($record_groups as $table => $records) {
-  //   echo "Table $table record_count found in hybrid process: " . count($record_groups[$table]) . "\n";
-  // }
-  // throw new Exception('DEBUG');
-
-  // This flag will basically store a csv file and use the command line copy
-  // This doesn't work for us since we use transactions
-  // and an external process doesn't get to see the transaction inserts etc.
-  $use_external_copy = false;
-
-  $table = 'genotype_call';
-  $records = $record_groups['genotype_call'];
-
-  // These variables are set within the Drupal admin panel /admin/config/content/tpps
-  $tpps_db_csv_directory = variable_get('tpps_db_csv_directory', '/tmp/tpps/');
-  $tpps_db_directory_user = variable_get('tpps_db_directory_user', 'postgres');
-
-  // Attempt to make directory if it does not exist
-  @mkdir($tpps_db_csv_directory, 0755, true);
-  // Try to set the tpps_db_csv_directory to have the db_directory_user permission
-  @chown($tpps_db_csv_directory, $tpps_db_directory_user);
-
-  $file_location = $tpps_db_csv_directory . time() . '-copy-table.csv';
-  $csv_file = fopen($file_location, 'w+');
-
-  print_r('TABLE:' . $table . "\n");
-
-  // print_r("Records:\n");
-  // print_r($records);
-  // print_r("\n");
-  $line_index = -1; // SET LINE INDEX
-  $copy_cmd = '';
-  $csv_data_array = []; // RESET THE CSV DATA ARRAY
-  $found_field_names = false;
-  $copy_cmd = 'copy chado.' . $table . ' (';
-  // Assume this is CHADO since the name of the function also has chado in it
-  foreach ($records as $unique_field_name_value  => $row) {
-    $row_contains_empty_values = false;
-    // print_r("row:\n");
-    // print_r($row);
-    // print_r("\n");
-    // KEEP TRACK OF LINE INDEX PER TABLE FILE
-    $line_index = $line_index + 1;
-    $row_data = '';
-    $unique_field_name = '';
-    // Depending on the table, we set the unique_field_name (eg uniquename column)
-    if ($found_field_names == FALSE) {
-      $unique_field_name = '';
-      switch ($table) {
-        case 'feature':
-          $unique_field_name = 'uniquename';
-          break;
-        case 'genotype':
-          $unique_field_name = 'uniquename';
-          break;
-        case 'genotype_call':
-          break;
-        case 'genotypeprop':
-          break;
-        case 'stock_genotype':
-          break;
-      }
-      if ($unique_field_name != '') {
-        $copy_cmd .= $unique_field_name . ',';
-      }
-    }
-
-    // IF UNIQUE FIELD NAME WAS FOUND, INCLUDE THE VALUE FOR THIS UNIQUE FIELD NAME (SOME TABLES DON'T NEED THIS)
-    // ADD THIS TO THE ROW DATA LINE
-    if ($unique_field_name != '') {
-      // $row_data .= $unique_field_name_value . ',';
-      $row[$unique_field_name] = $unique_field_name_value;
-    }
-
-    foreach ($row as $field_name => $value) {
-      // GENERATE THE COPY COMMAND IF field_names found is FALSE
-      if ($found_field_names == FALSE) {
-        $copy_cmd .= $field_name . ',';
-      }
-
-      // Check if a value is empty, COPY command will likely fail due to table constraints
-      if (!isset($value) || $value == '' || $value == null) {
-        $row_contains_empty_values = true;
-      }
-
-      // GENERATE THE ROW DATA LINE USING THIS VALUE
-      // if (!$use_external_copy) {
-      //   $row_data .= $value . ',';
-      // }
-    }
-
-    // FINISH UP GENERATING THE COPY COMMAND IF field_names found is FALSE
-    if ($found_field_names == FALSE) {
-      $copy_cmd = rtrim($copy_cmd, ',');
-      $copy_cmd .= ')';
-      // $copy_cmd .= ' FROM STDIN WITH CSV';
-      $found_field_names = TRUE;
-    }
-
-    if($row_contains_empty_values == false) {
-      fputcsv($csv_file, $row);
-    }
-    else {
-      echo "Could not add row to COPY because it was missing a value\n";
-      print_r($row);
-    }
-
-    if ($use_external_copy) {
-
-    }
-    else {
-      // GENERAL ERROR 4
-      // If this is the first line, we need to run the actual COPY statement first
-      // if($line_index == 0) {
-      //   chado_query($copy_cmd . " FROM STDIN (Delimiter ',')");
-      //   echo "COPYCMD: $copy_cmd\n";
-      // }
-      // // Then always do the line with the data.
-      // $row_data = rtrim($row_data, ',');
-      // $row_data = rtrim($row_data);
-      // $row_data .= "\n";
-      // echo "ROW_DATA: $row_data\n";
-      // chado_query($row_data);
-    }
-
-    // CLEAN UP ROW_DATA ENDING COMMA
-    // $row_data = rtrim($row_data, ',');
-
-
-    // ADD THIS ROW TO THE CSV_DATA_ARRAY
-    // $csv_data_array[] = $row_data . "\n";
-
-    // SINCE RECORD ADDED (DEBUG)
-    // print_r('DEBUG1:' . $copy_cmd . "\n");
-    // print_r('ROW DATA:' . $row_data . "\n");
+  // Rish: 3/3/2025 enable_copy is set to default false in favour of new method that does not need the genotype_call table
+  if ($enable_copy == true) {
+    // DEBUG CODE - Leave this debug code to determine if record_groups per table is getting populated correctly
+    // foreach ($record_groups as $table => $records) {
+    //   echo "Table $table record_count found in hybrid process: " . count($record_groups[$table]) . "\n";
+    // }
     // throw new Exception('DEBUG');
 
-  }
+    // This flag will basically store a csv file and use the command line copy
+    // This doesn't work for us since we use transactions
+    // and an external process doesn't get to see the transaction inserts etc.
+    $use_external_copy = false;
 
-  fclose($csv_file);
-  do {
-    if (file_exists($file_location)) {
-        echo "The CSV file was found: " . date("d-m-Y h:i:s") . ". Continuing the import process...\n";
-        break;
+    $table = 'genotype_call';
+    $records = $record_groups['genotype_call'];
+
+    // These variables are set within the Drupal admin panel /admin/config/content/tpps
+    $tpps_db_csv_directory = variable_get('tpps_db_csv_directory', '/tmp/tpps/');
+    $tpps_db_directory_user = variable_get('tpps_db_directory_user', 'postgres');
+
+    // Attempt to make directory if it does not exist
+    @mkdir($tpps_db_csv_directory, 0755, true);
+    // Try to set the tpps_db_csv_directory to have the db_directory_user permission
+    @chown($tpps_db_csv_directory, $tpps_db_directory_user);
+
+    $file_location = $tpps_db_csv_directory . time() . '-copy-table.csv';
+    $csv_file = fopen($file_location, 'w+');
+
+    print_r('TABLE:' . $table . "\n");
+
+    // print_r("Records:\n");
+    // print_r($records);
+    // print_r("\n");
+    $line_index = -1; // SET LINE INDEX
+    $copy_cmd = '';
+    $csv_data_array = []; // RESET THE CSV DATA ARRAY
+    $found_field_names = false;
+    $copy_cmd = 'copy chado.' . $table . ' (';
+    // Assume this is CHADO since the name of the function also has chado in it
+    foreach ($records as $unique_field_name_value  => $row) {
+      $row_contains_empty_values = false;
+      // print_r("row:\n");
+      // print_r($row);
+      // print_r("\n");
+      // KEEP TRACK OF LINE INDEX PER TABLE FILE
+      $line_index = $line_index + 1;
+      $row_data = '';
+      $unique_field_name = '';
+      // Depending on the table, we set the unique_field_name (eg uniquename column)
+      if ($found_field_names == FALSE) {
+        $unique_field_name = '';
+        switch ($table) {
+          case 'feature':
+            $unique_field_name = 'uniquename';
+            break;
+          case 'genotype':
+            $unique_field_name = 'uniquename';
+            break;
+          case 'genotype_call':
+            break;
+          case 'genotypeprop':
+            break;
+          case 'stock_genotype':
+            break;
+        }
+        if ($unique_field_name != '') {
+          $copy_cmd .= $unique_field_name . ',';
+        }
+      }
+
+      // IF UNIQUE FIELD NAME WAS FOUND, INCLUDE THE VALUE FOR THIS UNIQUE FIELD NAME (SOME TABLES DON'T NEED THIS)
+      // ADD THIS TO THE ROW DATA LINE
+      if ($unique_field_name != '') {
+        // $row_data .= $unique_field_name_value . ',';
+        $row[$unique_field_name] = $unique_field_name_value;
+      }
+
+      foreach ($row as $field_name => $value) {
+        // GENERATE THE COPY COMMAND IF field_names found is FALSE
+        if ($found_field_names == FALSE) {
+          $copy_cmd .= $field_name . ',';
+        }
+
+        // Check if a value is empty, COPY command will likely fail due to table constraints
+        if (!isset($value) || $value == '' || $value == null) {
+          $row_contains_empty_values = true;
+        }
+
+        // GENERATE THE ROW DATA LINE USING THIS VALUE
+        // if (!$use_external_copy) {
+        //   $row_data .= $value . ',';
+        // }
+      }
+
+      // FINISH UP GENERATING THE COPY COMMAND IF field_names found is FALSE
+      if ($found_field_names == FALSE) {
+        $copy_cmd = rtrim($copy_cmd, ',');
+        $copy_cmd .= ')';
+        // $copy_cmd .= ' FROM STDIN WITH CSV';
+        $found_field_names = TRUE;
+      }
+
+      if($row_contains_empty_values == false) {
+        fputcsv($csv_file, $row);
+      }
+      else {
+        echo "Could not add row to COPY because it was missing a value\n";
+        print_r($row);
+      }
+
+      if ($use_external_copy) {
+
+      }
+      else {
+        // GENERAL ERROR 4
+        // If this is the first line, we need to run the actual COPY statement first
+        // if($line_index == 0) {
+        //   chado_query($copy_cmd . " FROM STDIN (Delimiter ',')");
+        //   echo "COPYCMD: $copy_cmd\n";
+        // }
+        // // Then always do the line with the data.
+        // $row_data = rtrim($row_data, ',');
+        // $row_data = rtrim($row_data);
+        // $row_data .= "\n";
+        // echo "ROW_DATA: $row_data\n";
+        // chado_query($row_data);
+      }
+
+      // CLEAN UP ROW_DATA ENDING COMMA
+      // $row_data = rtrim($row_data, ',');
+
+
+      // ADD THIS ROW TO THE CSV_DATA_ARRAY
+      // $csv_data_array[] = $row_data . "\n";
+
+      // SINCE RECORD ADDED (DEBUG)
+      // print_r('DEBUG1:' . $copy_cmd . "\n");
+      // print_r('ROW DATA:' . $row_data . "\n");
+      // throw new Exception('DEBUG');
+
     }
-    else {
-      echo "Waiting for CSV file to get written to the filesystem\n";
+
+    fclose($csv_file);
+    do {
+      if (file_exists($file_location)) {
+          echo "The CSV file was found: " . date("d-m-Y h:i:s") . ". Continuing the import process...\n";
+          break;
+      }
+      else {
+        echo "Waiting for CSV file to get written to the filesystem\n";
+      }
+      sleep(100);
+    } while(true);
+
+    // We could do this earlier but it would be harder to understand the logic
+    // We need to count the records (genotype_call records) to ensure there
+    // is at least one record since the field names are generated from the first record
+    // and the copy command would only be run if it at least one record exists
+    $records_count = count($records);
+    if ($records_count > 0) {
+      if ($use_external_copy) {
+        // throw new Exception('Test CSV write');
+
+        // WRITE A TEMP FILE
+        // print_r($csv_data_array);
+        // file_put_contents($file_location, $csv_data_array);
+
+        $connection_string = `drush sql-connect`;
+        $connection_string = trim($connection_string);
+        // REMOVE THE PGPASSFILE STRING SINCE THERE SEEMS TO BE A BUG WITH THIS
+        $connection_string_parts = explode('psql ', $connection_string);
+        $connection_string = 'psql ' . $connection_string_parts[1];
+
+        // GET THE DB PASSWORD
+        $db_password_output = `drush status --show-passwords --fields=db-password`;
+        $db_password_output = explode("\n", $db_password_output);
+        $db_password_output = $db_password_output[0]; // just get line
+        $db_password_output = explode(":",$db_password_output);
+        $pg_pass = trim($db_password_output[1]);
+
+
+        // NOW WE NEED TO SET THE PSQL PASSWORD USING export PGPASSWORD='password';
+        $connection_string = "export PGPASSWORD=$pg_pass;\n" . $connection_string;
+        echo "Connection_string: $connection_string \n";
+
+        $command = $connection_string . ' -c "\\' . $copy_cmd . ' FROM STDIN WITH CSV " < ' . $file_location;
+        $result = `$command`;
+      }
+      else {
+        // This ends the copy insert data lines
+        // chado_query("\\.\n");
+
+        echo "COPY $file_location DATA:\n";
+        // echo file_get_contents($file_location);
+        // echo "\n";
+
+        $sql = $copy_cmd . " FROM  '" . $file_location . "' WITH DELIMITER AS ','";
+        echo $sql . "\n";
+        chado_query($sql);
+      }
+
+
+      // CONVERT CSV DATA ARRAY TO A STRING
+      // $csv_data_array[] = "\\.\n";
+      // $csv_data_array = implode("\n", $csv_data_array); // turns it into a string
+      // chado_query($copy_cmd . " FROM STDIN DELIMITER ',';" . $csv_data_array, []);
+      echo "COPY completed for chado.$table with $records_count records\n";
+      // echo "CSV File location: $file_location\n";
+      unlink($file_location);
     }
-    sleep(100);
-  } while(true);
-
-  // We could do this earlier but it would be harder to understand the logic
-  // We need to count the records (genotype_call records) to ensure there
-  // is at least one record since the field names are generated from the first record
-  // and the copy command would only be run if it at least one record exists
-  $records_count = count($records);
-  if ($records_count > 0) {
-    if ($use_external_copy) {
-      // throw new Exception('Test CSV write');
-
-      // WRITE A TEMP FILE
-      // print_r($csv_data_array);
-      // file_put_contents($file_location, $csv_data_array);
-
-      $connection_string = `drush sql-connect`;
-      $connection_string = trim($connection_string);
-      // REMOVE THE PGPASSFILE STRING SINCE THERE SEEMS TO BE A BUG WITH THIS
-      $connection_string_parts = explode('psql ', $connection_string);
-      $connection_string = 'psql ' . $connection_string_parts[1];
-
-      // GET THE DB PASSWORD
-      $db_password_output = `drush status --show-passwords --fields=db-password`;
-      $db_password_output = explode("\n", $db_password_output);
-      $db_password_output = $db_password_output[0]; // just get line
-      $db_password_output = explode(":",$db_password_output);
-      $pg_pass = trim($db_password_output[1]);
-
-
-      // NOW WE NEED TO SET THE PSQL PASSWORD USING export PGPASSWORD='password';
-      $connection_string = "export PGPASSWORD=$pg_pass;\n" . $connection_string;
-      echo "Connection_string: $connection_string \n";
-
-      $command = $connection_string . ' -c "\\' . $copy_cmd . ' FROM STDIN WITH CSV " < ' . $file_location;
-      $result = `$command`;
-    }
-    else {
-      // This ends the copy insert data lines
-      // chado_query("\\.\n");
-
-      echo "COPY $file_location DATA:\n";
-      // echo file_get_contents($file_location);
-      // echo "\n";
-
-      $sql = $copy_cmd . " FROM  '" . $file_location . "' WITH DELIMITER AS ','";
-      echo $sql . "\n";
-      chado_query($sql);
-    }
-
-
-    // CONVERT CSV DATA ARRAY TO A STRING
-    // $csv_data_array[] = "\\.\n";
-    // $csv_data_array = implode("\n", $csv_data_array); // turns it into a string
-    // chado_query($copy_cmd . " FROM STDIN DELIMITER ',';" . $csv_data_array, []);
-    echo "COPY completed for chado.$table with $records_count records\n";
-    // echo "CSV File location: $file_location\n";
-    unlink($file_location);
   }
 
   // ALL RECORDS FOR THIS TABLE ITERATED, SAVE THE CSV_DATA_ARRAY

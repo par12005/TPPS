@@ -4551,6 +4551,238 @@ function tpps_vcf_per_sample_column($file_location, $column_index) {
   }
 }
 
+// RISH: This is memory intensive (2x the size of the VCF file)
+function tpps_genotype_vcf_processing_batch_all_features_insert($current_id, $seq_var_cvterm, $analysis_id, &$features_variant_data, &$src_feature_data) {
+  // STEP 1: OVERALL GOAL: We now go through each variant and insert it into the db
+  $lmsg = "Inserting all features in db using bulk insert\n";
+  echo($lmsg);
+  tpps_log($lmsg);
+
+  $sql = 'INSERT INTO chado.feature (name, organism_id, uniquename, type_id) VALUES ';
+  $variant_index = 0;
+  foreach ($features_variant_data as $variant_name => $feature_data) {
+    if ($variant_index != 0) {
+      $sql .= ',';
+    }
+    $sql .= "('$variant_name', $current_id, '$variant_name', $seq_var_cvterm)";
+    $variant_index = $variant_index + 1;
+  }
+  $sql .= ' ON CONFLICT (organism_id, uniquename, type_id) DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
+  $results_feature_inserts = db_query($sql);
+  $lmsg = "Inserting all features in db using bulk insert - DONE\n";
+  echo($lmsg);
+  tpps_log($lmsg);
+
+  // Get all feature_ids that were inserted and add them to the features_variant_data array
+  foreach ($results_feature_inserts as $feature_inserts_row) {
+    $features_variant_data[$feature_inserts_row->uniquename]['feature_id'] = $feature_inserts_row->feature_id;
+  }
+
+  // STEP 2: OVERALL GOAL: We now go through each src_feature and the corresponding marker
+
+  // GET src_feature_ids for analysis
+  if ($analysis_id != NULL) {
+    $results = db_query("SELECT f.feature_id as feature_id, f.name as feature_name
+      FROM chado.feature f
+      JOIN chado.analysisfeature af ON f.feature_id = af.feature_id 
+      JOIN chado.analysis a ON af.analysis_id = a.analysis_id 
+      WHERE a.analysis_id = :analysis_id
+    ", [
+      ':analysis_id' => $analysis_id
+    ]);
+    foreach ($results as $fa_row) {
+      $src_feature_data[$fa_row->feature_name]['src_feature_id'] = $fa_row->feature_id;
+    }
+  }
+
+  
+  // $src_feature_ids_count = count(array_keys($src_feature_data));
+  // $lmsg = "SRCFeatures count: " . $src_feature_ids_count . "\n";
+  // echo($lmsg);
+  // tpps_log($lmsg);
+  
+
+  $lmsg = "Inserting all featurelocs in db using bulk insert\n";
+  echo($lmsg);
+  tpps_log($lmsg);
+
+  $sql = 'INSERT INTO chado.featureloc (feature_id, srcfeature_id, fmin, fmax) VALUES ';
+  $src_features_index = 0;
+  foreach ($src_feature_data as $src_feature_name => $src_feature_info) {
+    // we need this for the insert
+    $src_feature_id = $src_feature_info['src_feature_id'];
+    
+    $variant_list = $src_feature_info['variant_list'];
+    if (!empty($variant_list)) {
+      foreach ($variant_list as $variant_name) {
+        // Use the variant name to get all the other data we need - like feature_id, fmin, fmax
+        $variant_id = $features_variant_data[$variant_name]['feature_id'];
+        $fmin = $features_variant_data[$variant_name]['fmin'];
+        $fmax = $features_variant_data[$variant_name]['fmax'];
+
+        if (empty($variant_id)) {
+          $lmsg = "Could not find variant connection for $src_feature_name ($src_feature_id) - not connecting with featureloc\n";
+          echo($lmsg);
+          tpps_log($lmsg);
+        }
+        else {
+          // Insert into featureloc
+          // $results = chado_insert_record('featureloc', [
+          //   'feature_id' => $variant_id,
+          //   'srcfeature_id' => $src_feature_id,
+          //   'fmin' => $fmin,
+          //   'fmax' => $fmax,
+          // ]);
+          if ($src_features_index != 0) {
+            $sql .= ',';
+          }
+          $sql .= "($variant_id, $src_feature_id, $fmin, $fmax)";
+          $src_features_index = $src_features_index + 1;
+        }
+      }
+    }
+  }
+  $sql .= " ON CONFLICT (feature_id, locgroup, rank) DO UPDATE SET fmin=EXCLUDED.fmin";
+  db_query($sql);
+  $lmsg = "Inserting all featurelocs in db using bulk insert - DONE\n";
+  echo($lmsg);
+  tpps_log($lmsg);
+  $lmsg = "Featurelocs: $src_features_index\n";
+  echo($lmsg);
+  tpps_log($lmsg);
+}
+
+// RISH: This is much less memory intensive and should not fail due to memory issues on most decent size machines
+function tpps_genotype_vcf_processing_batch_some_features_insert($current_id, $seq_var_cvterm, $analysis_id, &$features_variant_data, &$src_feature_data, $last_set = false) {
+  $record_features_group = 5000;
+  $features_count = count($features_variant_data);
+  $lmsg = "Features count in features_variant_data array: $features_count\n";
+  echo($lmsg);
+  tpps_log($lmsg);
+  if (($features_count >= $record_features_group) or $last_set == true) {
+    // STEP 1: OVERALL GOAL: We now go through each variant and insert it into the db
+    $lmsg = "Inserting some features in db using bulk some insert\n";
+    echo($lmsg);
+    tpps_log($lmsg);
+
+    $sql = 'INSERT INTO chado.feature (name, organism_id, uniquename, type_id) VALUES ';
+    $variant_index = 0;
+    foreach ($features_variant_data as $variant_name => $feature_data) {
+      if ($variant_index != 0) {
+        $sql .= ',';
+      }
+      $sql .= "('$variant_name', $current_id, '$variant_name', $seq_var_cvterm)";
+      $variant_index = $variant_index + 1;
+    }
+    $sql .= ' ON CONFLICT (organism_id, uniquename, type_id) DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
+    $results_feature_inserts = db_query($sql);
+    $lmsg = "Inserting some features in db using bulk some insert - DONE (count: $variant_index)\n";
+    echo($lmsg);
+    tpps_log($lmsg);
+
+    // Get all feature_ids that were inserted and add them to the features_variant_data array
+    foreach ($results_feature_inserts as $feature_inserts_row) {
+      $features_variant_data[$feature_inserts_row->uniquename]['feature_id'] = $feature_inserts_row->feature_id;
+    }
+
+    // STEP 2: Overall goal to add featurelocs
+    $lmsg = "Inserting some featurelocs in db using bulk some insert\n";
+    echo($lmsg);
+    tpps_log($lmsg);
+
+    $featureloc_index = 0;
+    $sql = 'INSERT INTO chado.featureloc (feature_id, srcfeature_id, fmin, fmax) VALUES ';
+    foreach ($features_variant_data as $variant_name => $feature_data) {
+      $src_feature_id = $feature_data['src_feature_id'];
+      // If a src feature exists, we can create a featureloc record
+      if ($src_feature_id != NULL) {
+        $variant_id = $feature_data['feature_id'];
+        $fmin = $feature_data['fmin'];
+        $fmax = $feature_data['fmax'];
+        if ($featureloc_index != 0) {
+          $sql .= ',';
+        }
+        $sql .= "($variant_id, $src_feature_id, $fmin, $fmax)";
+        $featureloc_index = $featureloc_index + 1;
+      }
+    }
+    $sql .= " ON CONFLICT (feature_id, locgroup, rank) DO UPDATE SET fmin=EXCLUDED.fmin";
+    db_query($sql);
+    $lmsg = "Inserting some featurelocs in db using bulk some insert - DONE (count: $featureloc_index)\n";
+    echo($lmsg);
+    tpps_log($lmsg);
+
+
+    /*
+    // STEP 2: OVERALL GOAL: We now go through each src_feature and the corresponding marker
+
+    // $src_feature_ids_count = count(array_keys($src_feature_data));
+    // $lmsg = "SRCFeatures count: " . $src_feature_ids_count . "\n";
+    // echo($lmsg);
+    // tpps_log($lmsg);
+
+    $lmsg = "Inserting some featurelocs in db using bulk some insert\n";
+    echo($lmsg);
+    tpps_log($lmsg);
+
+    $sql = 'INSERT INTO chado.featureloc (feature_id, srcfeature_id, fmin, fmax) VALUES ';
+    $src_features_index = 0;
+    foreach ($src_feature_data as $src_feature_name => $src_feature_info) {
+      // we need this for the insert
+      $src_feature_id = $src_feature_info['src_feature_id'];
+      
+      $variant_list = $src_feature_info['variant_list'];
+      if (!empty($variant_list)) {
+        foreach ($variant_list as $variant_name) {
+          // Use the variant name to get all the other data we need - like feature_id, fmin, fmax
+          $variant_id = $features_variant_data[$variant_name]['feature_id'];
+          $fmin = $features_variant_data[$variant_name]['fmin'];
+          $fmax = $features_variant_data[$variant_name]['fmax'];
+
+          if (empty($variant_id)) {
+            $lmsg = "Could not find variant connection for $src_feature_name ($src_feature_id) - not connecting with featureloc\n";
+            echo($lmsg);
+            tpps_log($lmsg);
+          }
+          else {
+            // Insert into featureloc
+            // $results = chado_insert_record('featureloc', [
+            //   'feature_id' => $variant_id,
+            //   'srcfeature_id' => $src_feature_id,
+            //   'fmin' => $fmin,
+            //   'fmax' => $fmax,
+            // ]);
+            if ($src_features_index != 0) {
+              $sql .= ',';
+            }
+            $sql .= "($variant_id, $src_feature_id, $fmin, $fmax)";
+            $src_features_index = $src_features_index + 1;
+          }
+        }
+        // Remove these variants from src_feature_data
+        $src_feature_data[$src_feature_name]['variant_list'] = [];
+      }
+      
+
+    }
+    $sql .= " ON CONFLICT (feature_id, locgroup, rank) DO UPDATE SET fmin=EXCLUDED.fmin";
+    db_query($sql);
+    $lmsg = "Inserting some featurelocs in db using bulk some insert - DONE\n";
+    echo($lmsg);
+    tpps_log($lmsg);
+    $lmsg = "Featurelocs some: $src_features_index\n";
+    echo($lmsg);
+    tpps_log($lmsg);
+    */
+
+    $lmsg = "Clearing variables to save on memory\n";
+    echo($lmsg);
+    tpps_log($lmsg);
+    $features_variant_data = [];
+    // unset($features_variant_data);
+  }
+}
+
 /**
  * Tpps genotype_vcf_processing.
  *
@@ -4776,9 +5008,6 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
         // }
 
         $analysis_id = tpps_get_analysis_id_from_ref_genome($ref_genome);
-
-        // Once an analysis_id was found, try to get srcfeature_id
-
       }
       else {
         $error_line = [
@@ -4791,11 +5020,42 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
       tpps_log("Analysis ID Found: $analysis_id\n");
       print_r("Analysis ID Found: $analysis_id\n");
+
+
+
       // throw new Exception("DEBUG");
 
       tpps_log("Processing Genotype VCF file", [], TRIPAL_INFO);
       $file_progress_line_count = 0;
       $record_count = 0;
+      
+
+      $src_feature_data = []; // keeps track of scaffold_id connection with variant_name
+      if ($analysis_id != NULL) {
+        // Once an analysis_id was found, try to get srcfeature_ids
+        // RISH 3/3/2024: GET src_feature_ids for analysis
+
+        $results_srcfeatureids = db_query("SELECT f.feature_id as feature_id, f.name as feature_name
+          FROM chado.feature f
+          JOIN chado.analysisfeature af ON f.feature_id = af.feature_id 
+          JOIN chado.analysis a ON af.analysis_id = a.analysis_id 
+          WHERE a.analysis_id = :analysis_id
+        ", [
+          ':analysis_id' => $analysis_id
+        ]);
+        foreach ($results_srcfeatureids as $fa_row) {
+          $src_feature_data[$fa_row->feature_name]['src_feature_id'] = $fa_row->feature_id;
+        }
+        unset ($results_srcfeatureids); // clear memory
+        $src_feature_ids_count = count(array_keys($src_feature_data));
+        $lmsg = "SRCFeatures count: " . $src_feature_ids_count . "\n";
+        echo($lmsg);
+        tpps_log($lmsg);
+      }
+
+      $mode_features_and_analysis_checks_and_inserts = false;
+      $while_mem_start = memory_get_usage();
+      $features_variant_data = []; // keeps track of variant_name connection to src_feature_name + featureloc
       while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
         $file_progress_line_count++;
         if($file_progress_line_count % 10000 == 0 && $file_progress_line_count != 0) {
@@ -4808,6 +5068,9 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           && trim($vcf_line) != ""
           && str_replace("\0", "", $vcf_line) != ""
         ) {
+          if ($features_variant_data == NULL) {
+            $features_variant_data = []; // keeps track of variant_name connection to src_feature_name + featureloc
+          }
           $lmsg = "WHILE LOOP START - ENTIRE ROW EXCLUDING BULK INSERT\n";
           echo($lmsg);
           tpps_log($lmsg);
@@ -4831,7 +5094,6 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           $info = &$vcf_line[7];
           $marker_type = 'SNP';
 
-          $cache_srcfeatures = []; // stores key = name of source feature, value is the feature_id
 
           if (empty($variant_name) or $variant_name == '.') {
             // $variant_name = "{$scaffold_id}{$position}$ref:$alt";
@@ -4875,6 +5137,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           $time_end_indel_check = microtime(true);
           // echo("INDEL CHECK TIME: " . floatval($time_end_indel_check - $time_start_indel_check) . " ms\n");
 
+          /*
           $time_start_unique_genotypes_find = microtime(true);
           $lmsg = "FOR LOOP START - Detecting unique genotype calls per row - left to right\n";
           echo($lmsg);
@@ -4907,6 +5170,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           tpps_log($lmsg);
           $time_end_unique_genotypes_find = microtime(true);
           // echo("Unique genotypes find time: " . floatval($time_end_unique_genotypes_find - $time_start_unique_genotypes_find) . " ms\n");
+          */
 
           // PETER'S CODE
           // $records['feature'][$marker_name] = array(
@@ -4916,197 +5180,236 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           // );
 
 
-          $lmsg = "FEATURES AND ANALYSIS CHECKS - START\n";
-          echo($lmsg);
-          tpps_log($lmsg);
+          //$features_markers_names = [];
+          // $features_markers_names[$marker_name] = true;
 
-          // Check to see if marker exists in the feature's table
-          $time_start_feature_find = microtime(true);
-          $feature_check_results = chado_query('SELECT count(*) as c1 FROM chado.feature WHERE uniquename = :marker_name',[
-            ':marker_name' => $marker_name
-          ]);
-          $feature_check_count = $feature_check_results->fetchObject()->c1;
-          $time_end_feature_find = microtime(true);
-          echo("Feature find time: " . floatval($time_end_feature_find - $time_start_feature_find) . " ms\n");
-
-        
-          // If marker does not exist, insert it into the feature table
-          if ($feature_check_count <= 0) {
-            
-            try {
-              $time_start_feature_insert = microtime(true);
-              $results = chado_insert_record('feature', [
-                'name' => $marker_name,
-                'organism_id' => $current_id,
-                'uniquename' => $marker_name,
-                'type_id' => $seq_var_cvterm,
-              ]);
-              $time_end_feature_insert = microtime(true);
-              // echo("Feature insert time: " . floatval($time_end_feature_insert - $time_start_feature_insert) . " ms\n");
-            }
-            catch (Exception $ex) {
-
-            }
-
-          }
           
+          if ($mode_features_and_analysis_checks_and_inserts == true) {
+            $lmsg = "FEATURES AND ANALYSIS CHECKS - START\n";
+            echo($lmsg);
+            tpps_log($lmsg);
 
+            // Check to see if marker exists in the feature's table
+            $time_start_feature_find = microtime(true);
+            $feature_check_results = chado_query('SELECT count(*) as c1 FROM chado.feature WHERE uniquename = :marker_name',[
+              ':marker_name' => $marker_name
+            ]);
+            $feature_check_count = $feature_check_results->fetchObject()->c1;
+            $time_end_feature_find = microtime(true);
+            echo("Feature find time: " . floatval($time_end_feature_find - $time_start_feature_find) . " ms\n");
 
-          // get the marker_id <- feature_id column value
-          $results = chado_query('SELECT feature_id FROM chado.feature WHERE uniquename = :uniquename', [
-            ':uniquename' => $marker_name
-          ]);
-          $row_object = $results->fetchObject();
-          $marker_id = $row_object->feature_id;
+          
+            // If marker does not exist, insert it into the feature table
+            if ($feature_check_count <= 0) {
+              
+              try {
+                $time_start_feature_insert = microtime(true);
+                $results = chado_insert_record('feature', [
+                  'name' => $marker_name,
+                  'organism_id' => $current_id,
+                  'uniquename' => $marker_name,
+                  'type_id' => $seq_var_cvterm,
+                ]);
+                $time_end_feature_insert = microtime(true);
+                // echo("Feature insert time: " . floatval($time_end_feature_insert - $time_start_feature_insert) . " ms\n");
+              }
+              catch (Exception $ex) {
 
-          // PETER'S CODE
-          // $records['feature'][$variant_name] = array(
-          //   'organism_id' => $current_id,
-          //   'uniquename' => $variant_name,
-          //   'type_id' => $seq_var_cvterm,
-          // );
-
-          // Check if variant_id already exists in the feature's table
-          $feature_check_results = chado_query('SELECT count(*) as c1 FROM chado.feature WHERE uniquename = :variant_name',[
-            ':variant_name' => $variant_name
-          ]);
-          $feature_check_count = $feature_check_results->fetchObject()->c1;
-          // If variant does not exist, add it to the feature table
-          $feature_exists = NULL;
-          if ($feature_check_count <= 0) {
-            $feature_exists = false; // remember that it didn't exist at first (this is used further down to add featureloc)
-            // Rish code to test a single insert and get the id
-            try {
-              $results = chado_insert_record('feature', [
-                'name' => $variant_name,
-                'organism_id' => $current_id,
-                'uniquename' => $variant_name,
-                'type_id' => $seq_var_cvterm,
-              ]);
-            }
-            catch (Exception $ex) {
+              }
 
             }
-          }
-          else {
-            $feature_exists = true; // remember it already exists (this is used further down to block featureloc)
-          }
+            
 
-          // get the feature_id
-          $results = chado_query('SELECT feature_id FROM chado.feature WHERE uniquename = :uniquename', [
-            ':uniquename' => $variant_name
-          ]);
-          $row_object = $results->fetchObject();
-          $variant_id = $row_object->feature_id;
 
-          // // Lookup whether marker is already inserted into the features table.
-          // $result = chado_query(
-          //   "SELECT * FROM chado.feature WHERE uniquename = :marker_name",
-          //   // Column 3 of VCF.
-          //   [':marker_name' => $variant_name]
-          // );
+            // get the marker_id <- feature_id column value
+            $results = chado_query('SELECT feature_id FROM chado.feature WHERE uniquename = :uniquename', [
+              ':uniquename' => $marker_name
+            ]);
+            $row_object = $results->fetchObject();
+            $marker_id = $row_object->feature_id;
 
-          if ($feature_exists) {
-            tpps_log("Feature (variant): $variant_name exists already, featureloc will not be added.");
-          }
-          else {
-            tpps_log("Feature (variant): $variant_name not found so it was created.");
-          }
+            // PETER'S CODE
+            // $records['feature'][$variant_name] = array(
+            //   'organism_id' => $current_id,
+            //   'uniquename' => $variant_name,
+            //   'type_id' => $seq_var_cvterm,
+            // );
 
-          if ($feature_exists != true) {
-            // SOME CODE FOR THIS IS OUTSIDE OF THE PER LINE PROCESSING ABOVE (OUTSIDE FOR LOOP)
-            // 3/27/2023: Chromosome number and position (store this in featureloc table)
-            // feature_id from marker or variant created
-            // srcfeature_id for the genome / assembly used for reference (some sort of query - complicated)
-            // store where marker starts on chromosome etc.
-            $srcfeature_id = NULL;
-            if (isset($analysis_id)) {
-              // Get the srcfeature_id
-              tpps_log('Scaffold ID (srcfeature_id search): ' . $scaffold_id);
+            // Check if variant_id already exists in the feature's table
+            $feature_check_results = chado_query('SELECT count(*) as c1 FROM chado.feature WHERE uniquename = :variant_name',[
+              ':variant_name' => $variant_name
+            ]);
+            $feature_check_count = $feature_check_results->fetchObject()->c1;
+            // If variant does not exist, add it to the feature table
+            $feature_exists = NULL;
+            if ($feature_check_count <= 0) {
+              $feature_exists = false; // remember that it didn't exist at first (this is used further down to add featureloc)
+              // Rish code to test a single insert and get the id
+              try {
+                $results = chado_insert_record('feature', [
+                  'name' => $variant_name,
+                  'organism_id' => $current_id,
+                  'uniquename' => $variant_name,
+                  'type_id' => $seq_var_cvterm,
+                ]);
+              }
+              catch (Exception $ex) {
 
-              // the scaffold_id is not an integer value, proceed as normal lookup
-              $srcfeature_results = chado_query('select feature.feature_id from chado.feature
-                join chado.analysisfeature on feature.feature_id = analysisfeature.feature_id
-                where feature.name = :scaffold_id and analysisfeature.analysis_id = :analysis_id',
-                [
-                  ':scaffold_id' => $scaffold_id,
-                  ':analysis_id' => $analysis_id
-                ]
-              );
-
-              foreach ($srcfeature_results as $row) {
-                $srcfeature_id = $row->feature_id;
               }
             }
+            else {
+              $feature_exists = true; // remember it already exists (this is used further down to block featureloc)
+            }
 
-            if ($srcfeature_id) {
-              tpps_log("SRC Feature: $srcfeature_id found.");
+            // get the feature_id
+            $results = chado_query('SELECT feature_id FROM chado.feature WHERE uniquename = :uniquename', [
+              ':uniquename' => $variant_name
+            ]);
+            $row_object = $results->fetchObject();
+            $variant_id = $row_object->feature_id;
+
+            // // Lookup whether marker is already inserted into the features table.
+            // $result = chado_query(
+            //   "SELECT * FROM chado.feature WHERE uniquename = :marker_name",
+            //   // Column 3 of VCF.
+            //   [':marker_name' => $variant_name]
+            // );
+
+            if ($feature_exists) {
+              tpps_log("Feature (variant): $variant_name exists already, featureloc will not be added.");
             }
             else {
-              tpps_log("SRC Feature not found.");
+              tpps_log("Feature (variant): $variant_name not found so it was created.");
             }
 
-            // If reference genome found (analysis_id) but no srcfeature found
-            if (isset($analysis_id) && !isset($srcfeature_id)) {
-              tpps_log($analysis_id);
-              tpps_log($srcfeature_id);
+            if ($feature_exists != true) {
+              // SOME CODE FOR THIS IS OUTSIDE OF THE PER LINE PROCESSING ABOVE (OUTSIDE FOR LOOP)
+              // 3/27/2023: Chromosome number and position (store this in featureloc table)
+              // feature_id from marker or variant created
+              // srcfeature_id for the genome / assembly used for reference (some sort of query - complicated)
+              // store where marker starts on chromosome etc.
+              $srcfeature_id = NULL;
+              if (isset($analysis_id)) {
+                // Get the srcfeature_id
+                tpps_log('Scaffold ID (srcfeature_id search): ' . $scaffold_id);
 
-              throw new Exception("Genotype VCF processing found reference "
-                . "genome but no srcfeature could be found. "
-                . "This action was recommended by Database Administrator."
-              );
-            }
+                // the scaffold_id is not an integer value, proceed as normal lookup
+                $srcfeature_results = chado_query('select feature.feature_id from chado.feature
+                  join chado.analysisfeature on feature.feature_id = analysisfeature.feature_id
+                  where feature.name = :scaffold_id and analysisfeature.analysis_id = :analysis_id',
+                  [
+                    ':scaffold_id' => $scaffold_id,
+                    ':analysis_id' => $analysis_id
+                  ]
+                );
 
-            // if srcfeature_id was found, then we have enough info to add featureloc data
-            if (isset($srcfeature_id)) {
-              $fmax = $position;
-
-              // Check to see whether feature is an indel ($ref is non-singular value)
-              // split ref by comma (based on Emily's demo), go through each split value
-              $ref_comma_parts = explode(',', $ref); // eg G,GTAC
-              foreach ($ref_comma_parts as $ref_comma_part) {
-                $ref_comma_part = trim($ref_comma_part);
-                // Check length of comma_part
-                $len = strlen($ref_comma_part);
-                // If len is more than 1, use this value to calculate the fmax position
-                if($len > 1) {
-                  $fmax = intval($position) + ($len - 1);
-                  break;
+                foreach ($srcfeature_results as $row) {
+                  $srcfeature_id = $row->feature_id;
                 }
               }
 
-              $featureloc_values = [
-                'feature_id' => $variant_id,
-                'srcfeature_id' => $srcfeature_id,
-                'fmin' => $position,
-                'fmax' => $fmax // ALPHA code above now caters for INDELS
-              ];
-
-              // Since we haven't catered for deletion of these featureloc records
-              // there may already exist, we have to make sure the record doesn't already exist
-              $featureloc_results = chado_query('SELECT count(*) as c1 FROM chado.featureloc
-                WHERE feature_id = :feature_id AND srcfeature_id = :srcfeature_id;', [
-                  ':feature_id' => $variant_id,
-                  ':srcfeature_id' => $srcfeature_id
-                ]
-              );
-              $featureloc_count = 0;
-              foreach ($featureloc_results as $row) {
-                $featureloc_count = $row->c1;
+              if ($srcfeature_id) {
+                tpps_log("SRC Feature: $srcfeature_id found.");
               }
-              // This means no featureloc exists, so insert it
-              if ($featureloc_count == 0) {
-                // This will add it to the multiinsert record system for insertion
-                // The marker_name doesn't mean much here because it is only used a key
-                $records['featureloc'][$variant_name] = $featureloc_values;
-                echo "Featureloc for $variant_name will be created\n";
+              else {
+                tpps_log("SRC Feature not found.");
+              }
+
+              // If reference genome found (analysis_id) but no srcfeature found
+              if (isset($analysis_id) && !isset($srcfeature_id)) {
+                tpps_log($analysis_id);
+                tpps_log($srcfeature_id);
+
+                throw new Exception("Genotype VCF processing found reference "
+                  . "genome but no srcfeature could be found. "
+                  . "This action was recommended by Database Administrator."
+                );
+              }
+
+              // if srcfeature_id was found, then we have enough info to add featureloc data
+              if (isset($srcfeature_id)) {
+                $fmax = $position;
+
+                // Check to see whether feature is an indel ($ref is non-singular value)
+                // split ref by comma (based on Emily's demo), go through each split value
+                $ref_comma_parts = explode(',', $ref); // eg G,GTAC
+                foreach ($ref_comma_parts as $ref_comma_part) {
+                  $ref_comma_part = trim($ref_comma_part);
+                  // Check length of comma_part
+                  $len = strlen($ref_comma_part);
+                  // If len is more than 1, use this value to calculate the fmax position
+                  if($len > 1) {
+                    $fmax = intval($position) + ($len - 1);
+                    break;
+                  }
+                }
+
+                $featureloc_values = [
+                  'feature_id' => $variant_id,
+                  'srcfeature_id' => $srcfeature_id,
+                  'fmin' => $position,
+                  'fmax' => $fmax // ALPHA code above now caters for INDELS
+                ];
+
+                // Since we haven't catered for deletion of these featureloc records
+                // there may already exist, we have to make sure the record doesn't already exist
+                $featureloc_results = chado_query('SELECT count(*) as c1 FROM chado.featureloc
+                  WHERE feature_id = :feature_id AND srcfeature_id = :srcfeature_id;', [
+                    ':feature_id' => $variant_id,
+                    ':srcfeature_id' => $srcfeature_id
+                  ]
+                );
+                $featureloc_count = 0;
+                foreach ($featureloc_results as $row) {
+                  $featureloc_count = $row->c1;
+                }
+                // This means no featureloc exists, so insert it
+                if ($featureloc_count == 0) {
+                  // This will add it to the multiinsert record system for insertion
+                  // The marker_name doesn't mean much here because it is only used a key
+                  $records['featureloc'][$variant_name] = $featureloc_values;
+                  echo "Featureloc for $variant_name will be created\n";
+                }
               }
             }
-          }
 
-          $lmsg = "FEATURES AND ANALYSIS CHECKS - END\n";
-          echo($lmsg);
-          tpps_log($lmsg);
+            $lmsg = "FEATURES AND ANALYSIS CHECKS - END\n";
+            echo($lmsg);
+            tpps_log($lmsg);
+          }
+          else {
+            // Keep track of positions to connect back with src_feature_name and variant_name
+            $fmax = $position;
+            // Check to see whether feature is an indel ($ref is non-singular value)
+            // split ref by comma (based on Emily's demo), go through each split value
+            $ref_comma_parts = explode(',', $ref); // eg G,GTAC
+            foreach ($ref_comma_parts as $ref_comma_part) {
+              $ref_comma_part = trim($ref_comma_part);
+              // Check length of comma_part
+              $len = strlen($ref_comma_part);
+              // If len is more than 1, use this value to calculate the fmax position
+              if($len > 1) {
+                $fmax = intval($position) + ($len - 1);
+                break;
+              }
+            }
+
+            if (!empty($scaffold_id)) {
+              if (empty($src_feature_data[$scaffold_id])) {
+                $src_feature_data[$scaffold_id] = [
+                  'variant_list' => []
+                ];
+              }
+              $src_feature_data[$scaffold_id]['variant_list'][] = $variant_name;
+              
+              $features_variant_data[$variant_name] = [
+                'src_feature_name' => $scaffold_id,
+                'src_feature_id' => $src_feature_data[$scaffold_id]['src_feature_id'],
+                'fmin' => $position,
+                'fmax' => $fmax,
+              ];
+            }
+          }
           // throw New Exception('DEBUG');
 
 
@@ -5593,6 +5896,12 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
             // throw new Exception('DEBUG GENOTYPE_CALL TIME');
           }
+
+
+          $mode_features_and_analysis_checks_inserts_bulk_some = true;
+          if ($mode_features_and_analysis_checks_inserts_bulk_some == true) {
+            tpps_genotype_vcf_processing_batch_some_features_insert($current_id, $seq_var_cvterm, $analysis_id, $features_variant_data, $src_feature_data, false);
+          }
         }
         elseif (preg_match('/##FORMAT=/', $vcf_line)) {
           $format .= substr($vcf_line, 9, -1);
@@ -5610,6 +5919,12 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           $msg = "";
         }
       }
+      $while_mem_end = memory_get_usage();
+
+      $msg = "Memory usage for while loop is " . ($while_mem_end - $while_mem_start) .  " bytes\n";
+      echo $msg;
+      tpps_log($msg);
+
       // Insert the last set of values.
       if ($insert_mode == 'multi') {
         $lmsg = "BULK INSERT GROUP - MULTI MODE - START (LAST SET)\n";
@@ -5632,11 +5947,29 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
         tpps_log($lmsg);
       }
 
+      // This will finish off all features and chromosome inserts if inserts_bulk_some is used
+      if ($mode_features_and_analysis_checks_inserts_bulk_some == true) {
+        tpps_genotype_vcf_processing_batch_some_features_insert($current_id, $seq_var_cvterm, $analysis_id, $features_variant_data, $src_feature_data, true);
+      }
+
+      
+      $mode_features_and_analysis_checks_inserts_bulk_all = false;
+      if ($mode_features_and_analysis_checks_inserts_bulk_all == true) {
+        tpps_genotype_vcf_processing_batch_all_features_insert($current_id, $seq_var_cvterm, $analysis_id, $features_variant_data, $src_feature_data);
+      }
+
       // Recreate the indexes.
       // tpps_create_genotype_call_indexes();
       tpps_log('Done.', [], TRIPAL_INFO);
+      unset($sql);
       unset($records);
       $genotype_count = 0;
+
+      $vcf_memory_end = memory_get_usage();
+      $lmsg = "Memory usage at end of vcf run - " . ($vcf_memory_end - $while_mem_start) . " (Total currently in use: $vcf_memory_end bytes) DONE\n";
+      echo($lmsg);
+      tpps_log($lmsg);
+      
     }
   }
 }
