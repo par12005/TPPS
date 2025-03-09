@@ -1010,4 +1010,35 @@ abstract class FileField {
     drupal_array_set_nested_value($form_state['values'], $parents, $values);
   }
 
+  /**
+   * Checks if file was already processed.
+   *
+   * Allows to avoid calling ::process() method more then once because it's
+   * hard to figure out what could cause this exception:
+   * 'duplicate key value violates nique constraint
+   * "tpps_project_file_managed_tpps_project_file_managed_c1_key"'.
+   *
+   * DB table 'tpps_project_file_managed' has unique index for 'project_id'
+   * and 'fid' columns so we could check if file was already processed by
+   * checking if record exists.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number at page.
+   * @param array $shared_state
+   *   Drupal Form API State Array.
+   *
+   * @return bool
+   *   Returns TRUE when file already was processed and record in DB table
+   *   'tpps_project_file_managed' exists and FALSE otherwise.
+   */
+  public static function wasProcessed($organism_index, array $shared_state) {
+    $project_id = TppsArray::getValue($shared_state, ['ids', 'project_id']);
+    $result = db_select('tpps_project_file_managed', 't')
+      ->fields('t', ['project_id'])
+      ->condition('project_id', $project_id)
+      ->condition('fid', self::getFileId($organism_index, $shared_state))
+      ->range(0, 1)->execute()->fetchField();
+    return (bool) !empty($result);
+  }
+
 }

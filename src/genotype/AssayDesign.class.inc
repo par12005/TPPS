@@ -338,6 +338,20 @@ class AssayDesign extends FileField {
    *   Options for processing. Could be used to return processing results.
    */
   public static function process($organism_index, array $shared_state, array &$options = []) {
+
+    // Check if file was already processed.
+    if (self::wasProcessed($organism_index, $shared_state)) {
+      $message = '"@file_title" file was already processed.';
+      tpps_log($message, ['@file_title' => static::TITLE], TRIPAL_DEBUG);
+      return;
+    }
+
+// @TODO Set to 0.
+
+    $debug_mode = TRUE;
+    if ($debug_mode) {
+      tpps_log_header('Started Assay Design file procesing');
+    }
     // This if statement caters for the Genotype Assay Design file
     // (which holds extra data like positions etc)
     // This is usually also accompanied with the Genotype SNP Assay
