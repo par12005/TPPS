@@ -115,9 +115,9 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
       tpps_genotype_initial_checks($submission->sharedState, $i, $job);
     }
 
-    tpps_log('Clearing any previous data for this study from the database...', [], TRIPAL_INFO);
+    tpps_log_header('Clearing any previous data for this study from the database');
     tpps_submission_clear_db($accession);
-    tpps_log('Database cleared', [], TRIPAL_INFO);
+    tpps_log_header('Database cleared', [], TRIPAL_INFO);
 
 
     tpps_submission_clear_default_tags($accession);
