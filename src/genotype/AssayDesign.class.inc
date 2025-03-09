@@ -339,16 +339,13 @@ class AssayDesign extends FileField {
    */
   public static function process($organism_index, array $shared_state, array &$options = []) {
 
+    $debug_mode = FALSE;
     // Check if file was already processed.
     if (self::wasProcessed($organism_index, $shared_state)) {
       $message = '"@file_title" file was already processed.';
       tpps_log($message, ['@file_title' => static::TITLE], TRIPAL_DEBUG);
       return;
     }
-
-// @TODO Set to 0.
-
-    $debug_mode = TRUE;
     if ($debug_mode) {
       tpps_log_header('Started Assay Design file procesing');
     }
@@ -374,80 +371,80 @@ class AssayDesign extends FileField {
 
     // Setup the options array which the tpps_file_iterator custom function
     // will be able to access necessary details.
+    $options['organism_index'] = $organism_index;
     $options['type'] = 'snp';
-
-    print_r("\n");
     $options['marker'] = 'SNP';
     $options['type_cvterm'] = tpps_load_cvterm('snp')->cvterm_id;
     $options['ref-genome'] = $genotype['ref-genome'];
     $ref_genome = $genotype['ref-genome'];
-    echo "Ref-genome: $ref_genome\n";
+    tpps_log($ref_genome, 'Ref-genome');
     // Lookup analysis id from reference genome and add it to options array.
-    $options['analysis_id'] = tpps_get_analysis_id_from_ref_genome($ref_genome);
-    tpps_log("ANALYSIS ID: " . $options['analysis_id'], [], TRIPAL_DEBUG);
-
-    // We must have an analysis_id to tie back to the srcfeature.
-    if ($options['analysis_id'] != NULL) {
-      // Initialize new records with featureloc array to store records.
-      $options['records']['featureloc'] = [];
-      $options['records']['featureprop'] = [];
-
-      $options['headers'] = tpps_file_headers($fid);
-      tpps_log($options['headers'], 'HEADERS');
-
-      // Find the marker name header.
-      $options['file_columns'] = [];
-      foreach ($options['headers'] as $column => $column_name) {
-        $column_name = strtolower(trim($column_name));
-        tpps_log("Spreadsheet column name:" . $column_name . " column: $column",
-          [], TRIPAL_DEBUG);
-        switch ($column_name) {
-          case 'chr':
-            $options['file_columns']['chr'] = $column;
-            break;
-
-          case 'forward sequence':
-            $options['file_columns']['forward_sequence'] = $column;
-            break;
-
-          case 'reverse sequence':
-            $options['file_columns']['reverse_sequence'] = $column;
-            break;
-
-          case 'snp':
-            $options['file_columns']['snp'] = $column;
-            break;
-        }
-        if (strpos($column_name, 'position') !== FALSE) {
-          $options['file_columns']['position'] = $column;
-        }
-        elseif (strpos($column_name, 'marker name') !== FALSE) {
-          $options['file_columns']['marker_name'] = $column;
-        }
-        tpps_log(print_r($options['file_columns'], 1), [], TRIPAL_DEBUG);
-      }
-
-      // We want to process this Genotype SNP Assay Design file before
-      // we add it as a project file.
-      tpps_log('Processing genotype_snp_assay_design file data...', [], TRIPAL_INFO);
-      tpps_file_iterator($fid, 'AssayDesign::processRow', $options);
-      tpps_log('Done.', [], TRIPAL_INFO);
-
-      tpps_log('Inserting genotype_snp_assay_design_spreadsheet data into '
-        . 'database using insert_multi...', [], TRIPAL_INFO);
-      tpps_log('Done.', [], TRIPAL_INFO);
-      // Reset options[records] with empty records arrays.
-      $options['records'] = [
-        'feature' => [],
-        'genotype' => [],
-        'genotype_call' => [],
-        'stock_genotype' => [],
-      ];
+    if (!empty($ref_genome)) {
+      $options['analysis_id'] = db_select('chado.tpps_ref_assembly_view', 't')
+        ->fields('t', ['analysis_id'])
+        ->condition('name', $ref_genome)
+        ->range(0, 1)
+        ->execute()
+        ->fetchField();
+      tpps_log($options['analysis_id'], 'Analysis Id');
     }
-    else {
+    // analysis id is required  to tie back to the srcfeature.
+    if (empty($options['analysis_id'])) {
       tpps_log('Analysis ID could not be found, skipping assay design file processing.',
         [], TRIPAL_ERROR
       );
+      return;
+    }
+
+    // WARNING: new simple format of the selected columns are in use.
+    $selected_columns = TppsArray::getValue($shared_state, [
+      'saved_values',
+      static::FORM_STEP,
+      'organism-' . $organism_index,
+      static::DATA_TYPE,
+      static::FORM_PARENT_FIELDSET,
+      // For searching purposes: 'assay-design-columns'
+      static::FIELD_NAME . '-columns'
+    ]);
+
+    // Initialize new records with featureloc array to store records.
+    $options['records']['featureloc'] = [];
+    $options['records']['featureprop'] = [];
+    $options['headers'] = tpps_file_headers($fid);
+
+    if ($debug_mode) {
+      tpps_log_line();
+      tpps_log($selected_columns, 'selected_columns');
+      //tpps_log($required_columns, 'required_columns');
+      //tpps_log($options['headers'], 'header');
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    $options['selected_columns'] = $selected_columns;
+    // Extra items which uses
+    // 'reverse sequence': $options['file_columns']['reverse_sequence'];
+    // 'snp': $options['file_columns']['snp'];
+
+    // We want to process this file before we add it as a project file.
+    tpps_log('Processing "Assay Design" file data...');
+    tpps_file_iterator($fid, 'AssayDesign::processRow', $options);
+    tpps_log('Done.');
+
+    tpps_log('Inserting "Assay Design" data into database using insert_multi...');
+
+
+// @TODO Insert data. Was no code here.
+
+
+    tpps_log('Done.');
+    // Reset options[records] with empty records arrays.
+    //$options['records'] = [
+    //  'feature' => [],
+    //  'genotype' => [],
+    //  'genotype_call' => [],
+    //  'stock_genotype' => [],
+    //];
+    if ($debug_mode) {
+      tpps_log_header('Ended Assay Design file procesing');
     }
   }
 
@@ -460,6 +457,13 @@ class AssayDesign extends FileField {
    *
    * @param mixed $row
    *   The item yielded by the TPPS file generator.
+   *   Keys are column letters and value is a cell value. Example of structure:
+   *   [
+   *     [A] => SNP ID
+   *     [B] => Scaffold
+   *     [C] => Position
+   *     [D] => Flank sequence
+   *   ].
    * @param array $options
    *   Additional options set when calling tpps_file_iterator().
    */
@@ -469,36 +473,32 @@ class AssayDesign extends FileField {
     // If the scaffold is only the number then append scaffold_ to it (TGDR665).
     $use_scaffold_prefix = FALSE;
 
-    $line_rows = $row;
     // Needed to lookup source features.
     $analysis_id = $options['analysis_id'];
     $headers = &$options['headers'];
     $records = &$options['records'];
-    $columns = $options['file_columns'];
     $organism_index = $options['organism_index'];
     $seq_var_cvterm = $options['seq_var_cvterm'];
-    if ($debug_mode) {
-      tpps_log($columns, 'File columns');
-      tpps_log($line_rows, 'Data in row');
-    }
 
-    $chr_name = $line_rows[$columns['chr']];
+    // Got get format: keys are data type keys and values are column letters.
+    $columns = array_flip($options['selected_columns']);
+    if ($debug_mode) {
+      tpps_log($columns, static::TITLE . " file selected column's data types");
+    }
+    $chr_name = $row[$columns[self::DATA_TYPE_SCAFFOLD]];
 
     if ($use_scaffold_prefix) {
       if (is_numeric($chr_name)) {
         $chr_name = "scaffold_" . $chr_name;
       }
+      // @TODO Minor. It's safe just to run str_replace() without extra checks.
       // If TGDR665, replace 'chr' with 'scaffold_'.
-      // @TODO It's safe enough just to run str_replace() without extra checks.
       if (substr($chr_name, 0, 3) == 'chr') {
         $chr_name = str_replace('chr', 'scaffold_', $chr_name);
       }
     }
 
-    $marker_name_raw = $line_rows[$columns['marker_name']];
-    $position = intval($line_rows[$columns['position']]);
-    // We could force 'SNP' here.
-    $marker_type = $options['marker_type'];
+    $position = intval($row[$columns[self::DATA_TYPE_POSITION]]);
 
     // RISH NOTES: This addition uses the organism_id based on the
     // organism order of the fourth page (we likely have to pass the
@@ -513,54 +513,44 @@ class AssayDesign extends FileField {
     foreach ($species_codes as $organism_id_tmp => $species_code_tmp) {
       $count_tmp = $count_tmp + 1;
       // Check if count_tmp matches $organism_index.
-      if ($count_tmp == $organism_index) {
+      if ($count_tmp == $options['organism_index']) {
         $species_code = $species_code_tmp;
         $organism_id = $organism_id_tmp;
         break;
       }
     }
 
-    $srcfeature_id = NULL;
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get the srcfeature_id.
-    $srcfeature_results = chado_query('
-      SELECT feature.feature_id
-      FROM chado.feature
-      JOIN chado.analysisfeature ON feature.feature_id = analysisfeature.feature_id
-      WHERE feature.name = :chr_name
-        AND analysisfeature.analysis_id = :analysis_id',
-      [
-        ':chr_name' => $chr_name,
-        ':analysis_id' => $analysis_id
-      ]
-    );
+    $query = db_select('chado.feature', 'cf')
+      ->fields('cf', ['feature_id'])
+      ->condition('cf.name', $chr_name);
+    $query->join('chado.analysisfeature', 'caf', 'cf.feature_id = caf.feature_id');
+    $query->condition('caf.analysis_id', $analysis_id);
+    $srcfeature_id = $query->range(0, 1)->execute()->fetchField();
 
-    foreach ($srcfeature_results as $row) {
-      $srcfeature_id = $row->feature_id;
-    }
-
-    if ($srcfeature_id == NULL) {
-      tpps_log("srcfeature_id for @name could not be found - we can't add featureloc data.",
-        ['@name' => $chr_name], TRIPAL_ERROR);
+    if (empty($srcfeature_id)) {
+      tpps_log("srcfeature_id for '@name' could not be found - we can't add "
+        . "featureloc data.", ['@name' => $chr_name], TRIPAL_ERROR
+      );
       return;
     }
-
-    tpps_log('srcfeature_id for @name: @id.',
+    tpps_log('srcfeature_id for "@name": @id.',
       ['@name' => $chr_name, '@id' => $srcfeature_id]
     );
 
-    $marker_name = $marker_name_raw . $marker_type;
+    $marker_name = $row[$columns[self::DATA_TYPE_SNP_ID]] . $options['marker_type'];
 
     // We need to find the current marker_name in the feature table.
-    // @TODO Replace with db_insert() which is much faster and allows to get
-    // last inserted id.
-    $sql = "SELECT * FROM chado.feature WHERE uniquename = :uniquename";
-    $results = chado_query($sql, [':uniquename' => $marker_name]);
-    $feature_id = NULL;
-    foreach ($results as $feature) {
-      $feature_id = $feature->feature_id;
-    }
+    // @TODO Ask if we could safely insert without extra checks.
+    $feature_id = db_select('chado.feature', 'cf')
+      ->fields('cf', ['feature_id'])
+      ->condition('uniquename', $marker_name)
+      ->range(0, 1)
+      ->execute()
+      ->fetchField();
 
-    if ($feature_id == NULL) {
+    if (empty($feature_id)) {
       // We should add the marker (marker_name).
       chado_insert_record('feature', [
         'name' => $marker_name,
@@ -569,123 +559,109 @@ class AssayDesign extends FileField {
         'type_id' => $seq_var_cvterm,
       ]);
       // Recheck for the feature_id.
-      $sql = "SELECT * FROM chado.feature WHERE uniquename = :uniquename";
-      $results = chado_query($sql, [':uniquename' => $marker_name]);
-      foreach ($results as $feature) {
-        $feature_id = $feature->feature_id;
-      }
+      // @TODO Replace with db_insert() which is much faster and allows
+      // to get last inserted id.
+      $feature_id = db_select('chado.feature', 'cf')
+        ->fields('cf', ['feature_id'])
+        ->condition('uniquename', $marker_name)
+        ->range(0, 1)
+        ->execute()
+        ->fetchField();
     }
 
-    if ($feature_id == NULL) {
-      tpps_log('Marker name @marker_name feature_id could not be found.',
-        ['@marker_name' => $marker_name],
+    if (empty($feature_id)) {
+      tpps_log("Marker name '@marker_name' wasn't found in table "
+        . "'chado.feature' after insert.", ['@marker_name' => $marker_name],
         TRIPAL_ERROR
       );
       return;
     }
-    tpps_log("Marker name $marker_name has feature_id: $feature_id");
+    tpps_log("Marker '$marker_name' has feature_id: '$feature_id'.");
 
     // Before we add a new featureloc record, check to make sure one
     // does not already exist in the featureloc table since we don't
     // currently delete previous featurelocs on study reloads.
-    $featureloc_results = chado_query('
-      SELECT count(*) as c1
-      FROM chado.featureloc
-      WHERE feature_id = :feature_id
-        AND srcfeature_id = :srcfeature_id;',
-      [
-        ':feature_id' => $feature_id,
-        ':srcfeature_id' => $srcfeature_id
-      ]
-    );
-    $featureloc_count = 0;
-    foreach ($featureloc_results as $row) {
-      $featureloc_count = $row->c1;
-    }
+    $featureloc_id = db_select('chado.featureloc', 'cfl')
+      ->fields('cfl', 'featureloc_id')
+      ->condition('feature_id', $feature_id)
+      ->condition('srcfeature_id', $srcfeature_id)
+      ->range(0, 1)->execute()->fetchField();
+
     // This means no featureloc exists, so insert it.
-    if ($featureloc_count == 0) {
-      // Check for indels (longer than 1 reads)
-      $snp = trim($line_rows[$columns['snp']]);
-      $snp_possible_reads = explode('/', $snp);
-      // Default for non-indels.
-      $read_length = 0;
-      foreach ($snp_possible_reads as $read) {
-        $tmp_read_length = strlen($read);
-        // Only for indels, we need a read_length of more than 0.
-        if ($tmp_read_length > 1) {
-          if ($tmp_read_length > $read_length) {
-            $read_length = $tmp_read_length;
+    if (empty($featureloc_id)) {
+      // @TODO Update. There is no 'snp' column data type.
+      if (!empty($row[$columns['snp']])) {
+        // Check for indels (longer than 1 reads)
+        $snp = trim($row[$columns['snp']]);
+        $snp_possible_reads = explode('/', $snp);
+        // Default for non-indels.
+        $read_length = 0;
+        foreach ($snp_possible_reads as $read) {
+          $tmp_read_length = strlen($read);
+          // Only for indels, we need a read_length of more than 0.
+          if ($tmp_read_length > 1) {
+            if ($tmp_read_length > $read_length) {
+              $read_length = $tmp_read_length;
+            }
           }
         }
-      }
 
-      // TODO: if read_length is more than 1, it is an indel, change marker type.
-      // Also check code in tpps_process_genotype_sheet to check this or else
-      // these 2 things will cause a submit failure - after conference (6/15/2023)
-      $records['featureloc'][$marker_name] = [
-        'fmin' => $position,
-        'fmax' => ($position + $read_length),
-        'srcfeature_id' => $srcfeature_id,
-        'feature_id' => $feature_id,
-      ];
-      print_r($records['featureloc'][$marker_name]);
+        // TODO: if read_length is more than 1, it is an indel, change marker type.
+        // Also check code in tpps_process_genotype_sheet to check this or else
+        // these 2 things will cause a submit failure - after conference (6/15/2023)
+        $records['featureloc'][$marker_name] = [
+          'fmin' => $position,
+          'fmax' => ($position + $read_length),
+          'srcfeature_id' => $srcfeature_id,
+          'feature_id' => $feature_id,
+        ];
+        print_r($records['featureloc'][$marker_name]);
+      }
     }
     else {
       tpps_log('[GOOD ALTERNATIVE] Featureloc record already exists, no need to add.');
     }
-
-    // Check if forward sequence information has been added.
-    $forward_sequence_cvterm_id = NULL;
-    // Get cvterm_id (assuming it exists)
-    $results = chado_query("SELECT * FROM chado.cvterm
-      WHERE name = 'five_prime_flanking_region' LIMIT 1;", []);
-    foreach ($results as $row) {
-      $forward_sequence_cvterm_id = $row->cvterm_id;
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Add only when column is not empty and exists.
+    if (!empty($row[$columns[self::DATA_TYPE_FLANK_SEQUENCE]])) {
+      $forward_sequence_cvterm_id = tpps_load_cvterm('five_prime_flanking_region')->cvterm_id;
+      // Check if record already exists.
+      $featureprop_id = db_select('chado.featureprop', 'cfp')
+        ->fields('cfp', 'featureprop_id')
+        ->condition('feature_id', $feature_id)
+        ->condition('type_id', $forward_sequence_cvterm_id)
+        ->range(0, 1)->execute()->fetchField();
+      // If record not found.
+      if (empty($featureprop_id)) {
+        // Add to record to featureprop table.
+        $records['featureprop'][$feature_id . $forward_sequence_cvterm_id] = [
+          'feature_id' => $feature_id,
+          'type_id' => $forward_sequence_cvterm_id,
+          'value' => $row[$columns[self::DATA_TYPE_FLANK_SEQUENCE]],
+        ];
+      }
     }
-
-    // Check if record already exists.
-    $sql = "SELECT count(*) as c1 FROM chado.featureprop
-      WHERE feature_id = :feature_id AND type_id = :type_id;";
-    $results = chado_query($sql, [
-      ':feature_id' => $feature_id,
-      ':type_id' => $forward_sequence_cvterm_id,
-    ]);
-    $count = $results->fetchObject()->c1;
-    // If record not found.
-    if ($count == 0) {
-      // Add to record to featureprop table.
-      $records['featureprop'][$feature_id . $forward_sequence_cvterm_id] = [
-        'feature_id' => $feature_id,
-        'type_id' => $forward_sequence_cvterm_id,
-        'value' => $line_rows[$columns['forward_sequence']],
-      ];
-    }
-
-    // Check if reverse sequence information has been added.
-    $reverse_sequence_cvterm_id = NULL;
-    // Get cvterm_id (assuming it exists)
-    $results = chado_query("SELECT * FROM chado.cvterm
-      WHERE name = 'three_prime_flanking_region' LIMIT 1;", []);
-    foreach ($results as $row) {
-      $reverse_sequence_cvterm_id = $row->cvterm_id;
-    }
-
-    // Check if record already exists.
-    $sql = "SELECT count(*) as c1 FROM chado.featureprop
-      WHERE feature_id = :feature_id AND type_id = :type_id;";
-    $results = chado_query($sql, [
-      ':feature_id' => $feature_id,
-      ':type_id' => $reverse_sequence_cvterm_id,
-    ]);
-    $count = $results->fetchObject()->c1;
-    // If record not found.
-    if ($count == 0) {
-      // Add record to featureprop table.
-      $records['featureprop'][$feature_id . $reverse_sequence_cvterm_id] = [
-        'feature_id' => $feature_id,
-        'type_id' => $reverse_sequence_cvterm_id,
-        'value' => $line_rows[$columns['reverse_sequence']],
-      ];
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Add only when column is not empty and exists.
+    // @TODO Minor. Update 'reverse_sequence' with actual column data type.
+    if (!empty($row[$columns['reverse_sequence']])) {
+      // Check if reverse sequence information has been added.
+      $reverse_sequence_cvterm_id = tpps_load_cvterm('three_prime_flanking_region')->cvterm_id;
+      // Check if record already exists.
+      $featureprop_id = db_select('chado.featureprop', 'cfp')
+        ->fields('cfp', 'featureprop_id')
+        ->condition('feature_id', $feature_id)
+        ->condition('type_id', $forward_sequence_cvterm_id)
+        ->range(0, 1)->execute()->fetchField();
+      // If record not found.
+      if (empty($featureprop_id)) {
+        // Add record to featureprop table.
+        $records['featureprop'][$feature_id . $reverse_sequence_cvterm_id] = [
+          'feature_id' => $feature_id,
+          'type_id' => $reverse_sequence_cvterm_id,
+          'value' => $row[$columns['reverse_sequence']],
+        ];
+      }
     }
   }
 

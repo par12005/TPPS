@@ -673,10 +673,10 @@ class SnpAssociation extends FileField {
       return;
     }
 
-    tpps_log('Processing "SNP Association" file data...', [], TRIPAL_INFO);
+    tpps_log('Started: Processing "SNP Association" file data.');
     // Note: Full class name must be used (not 'self').
     tpps_file_iterator($fid, 'SnpAssociation::processRow', $options);
-    tpps_log('Done.', [], TRIPAL_INFO);
+    tpps_log('Done: Processing "SNP Association" file data.');
   }
 
   /**
