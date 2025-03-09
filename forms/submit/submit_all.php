@@ -2245,11 +2245,10 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
     // DROP INDEXES FROM GENOTYPE_CALL TABLE.
     // tpps_drop_genotype_call_indexes($job);
     tpps_log('Processing SNP genotype_spreadsheet file data...', [], TRIPAL_INFO);
-    echo "trace 1\n";
-    echo "Species codes:\n";
-    print_r($options['species_codes']);
-    echo "Tree Info:\n";
-    print_r($options['tree_info']);
+    tpps_log_header("Trace 1");
+    tpps_log($options['species_codes'], "Species codes");
+    tpps_log($options['tree_info'], "Tree Info");
+
     $options['shared_state'] = $shared_state;
     tpps_file_iterator($snp_fid, 'tpps_process_genotype_spreadsheet', $options);
     tpps_log('Done.', [], TRIPAL_INFO);
@@ -6604,10 +6603,8 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
       continue;
     }
     $genotype_count++;
-    echo "Stock ID: $stock_id, Current ID: $current_id, Genotype_count: $genotype_count\n";
-
-
-    echo "Header before alterations:" . $headers[$key] . "\n";
+    tpps_log("Stock ID: $stock_id, Current ID: $current_id, Genotype_count: $genotype_count");
+    tpps_log("Header before alterations: " . $headers[$key]);
 
     $header_length = strlen($headers[$key]);
     // Cater for Diploids [Rish: 8/3/2023].
@@ -6619,7 +6616,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
       $options['diploid_val'] = $val;
       // Save this header for use in a later iteration when _B gets called.
       // This reason for this is we want _A and _B values recorded.
-      echo "Diploid first header reset to: " . $headers[$key] . "\n";
+      tpps_log("Diploid first header reset to: " . $headers[$key]);
       // This will skip processing iteration by ONE iteration if _A (SSR diploid detected).
       continue;
     }
@@ -6634,7 +6631,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
       // Reset to these new values for insertion into the database later on.
       $headers[$key] = $options['diploid_header'];
       $val = $options['diploid_val'];
-      echo "Diploid val: $val\n";
+      tpps_log($val, "Diploid val");
     }
     // End of cater for diploids.
 
@@ -6661,7 +6658,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
       $options['polyploid_val'] = $val;
       // Save this header for use in a later iteration when _B gets called
       // This reason for this is we want _A and _B values recorded
-      echo "Polyploid first header reset to: " . $headers[$key] . "\n";
+      tpps_log("Polyploid first header reset to: " . $headers[$key]);
       // This will skip processing iteration by ONE iteration if _1 (SSR diploid detected)
       continue;
     }
@@ -6702,7 +6699,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
       }
     }
     // End of catering for polyploids
-    echo "Processing the insert\n";
+    tpps_log("Processing the insert");
 
     if ($type == 'ssrs' and !empty($options['empty']) and $val == $options['empty']) {
       continue;
@@ -7175,7 +7172,7 @@ function tpps_generate_all_genotype_materialized_views() {
   );
   foreach ($results as $row) {
     $current_count = $current_count + 1;
-    echo "Processing genotype materialized view: $current_count of $total\n";
+    tpps_log("Processing genotype materialized view: $current_count of $total");
     // Get the Submission Shared State.
     $submission = new Submission($row->accession);
     $project_id = $submission->state['ids']['project_id'] ?? NULL;
@@ -8062,29 +8059,26 @@ function tpps_genotype_initial_checks($form_state, $i, $job) {
   $page4_values = $form_state['saved_values'][TPPS_PAGE_4];
   $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
   if (!isset($genotype)) {
-    $str = "[INITIAL CHECK] Genotype data could not be found for this study.";
-    tpps_job_logger_write($str);
-    $job->logMessage($str);
+    tpps_log("[INITIAL CHECK] Genotype data could not be found for this study.");
     return;
   }
 
-  // Look up location information for SNP Assay and VCF files
+  // Look up location information for SNP Assay and VCF files.
   $vcf_location = tpps_vcf_location($form_state, $i); // returns array['status','location'];
   $snps_assay_location = tpps_snps_assay_location($form_state, $i); // returns array['status', 'location'];
 
-
-  // SNP Markers assessment
+  // SNP Markers assessment.
   $snps_assay_markers = NULL;
   if ($snps_assay_location['status'] == 'exists') {
     $memstart = memory_get_usage();
     $snps_assay_markers = tpps_genotype_get_snps_assay_markers($snps_assay_location['fid']);
     $snps_assay_markers['memusage'] = memory_get_usage() - $memstart;
-    $str = "[INITIAL CHECK] SNPs Assay Markers (unique count): " . $snps_assay_markers['unique_count'];
-    tpps_job_logger_write($str);
-    $job->logMessage($str);
-    $str = "[INITIAL CHECK] SNPs Assay Markers (memusage): " . $snps_assay_markers['memusage'];
-    tpps_job_logger_write($str);
-    $job->logMessage($str);
+    tpps_log("[INITIAL CHECK] SNPs Assay Markers (unique count): @count.",
+      ['@count' => $snps_assay_markers['unique_count']], TRIPAL_DEBUG
+    );
+    tpps_log("[INITIAL CHECK] SNPs Assay Markers (memusage): @mem_usage.",
+      ['@mem_usage' => $snps_assay_markers['memusage']], TRIPAL_DEBUG
+    );
   }
 
   $vcf_markers = NULL;
@@ -8093,18 +8087,15 @@ function tpps_genotype_initial_checks($form_state, $i, $job) {
     $memstart = memory_get_usage();
     $vcf_markers = tpps_genotype_get_vcf_markers($vcf_location['location']);
     $vcf_markers['memusage'] = memory_get_usage() - $memstart;
-    $str = "[INITIAL CHECK] VCF Markers (unique count): " . $vcf_markers['unique_count'];
-    tpps_job_logger_write($str);
-    $job->logMessage($str);
-    $str = "[INITIAL CHECK] VCF Markers (memusage): " . $vcf_markers['memusage'];
-    tpps_job_logger_write($str);
-    $job->logMessage($str);
+    tpps_log("[INITIAL CHECK] VCF Markers (unique count): " . $vcf_markers['unique_count']);
+    tpps_log("[INITIAL CHECK] VCF Markers (memusage): " . $vcf_markers['memusage']);
   }
 
-
-
-  // If both a VCF file and a SNPS assay file exists
-  if($vcf_location['status'] == 'exists' and $snps_assay_location['status'] == 'exists') {
+  // If both a VCF file and a SNPS assay file exists.
+  if (
+    $vcf_location['status'] == 'exists'
+    && $snps_assay_location['status'] == 'exists'
+  ) {
     // [RISH] 8/28/2023 - TODO - check if they (markers) match or not
     // because we changed logic of how this is done, we may not need this check
     // since we are interested in a design file and snps assay file check instead
@@ -8440,6 +8431,28 @@ function tpps_log($message, $variables = [], $severity = TRIPAL_INFO) {
     catch (Error $err) {
     }
   }
+}
+
+/**
+ * Adds visible messages to separated sections in log messages.
+ *
+ * @param mixed $message
+ *   Header text.
+ */
+function tpps_log_header($message) {
+  tpps_log_line();
+  tpps_log($message);
+  tpps_log_line();
+}
+
+/**
+ * Prints out line in logs.
+ *
+ * Note: This line could be used as a separator between sections.
+ */
+function tpps_log_line($char = '-') {
+  $string_length = 80;
+  tpps_log("\n" . str_repeat($char, $string_length) . "\n");
 }
 
 /**
