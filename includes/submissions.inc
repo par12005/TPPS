@@ -817,6 +817,8 @@ function tpps_submission_clear_db($accession) {
   chado_query("DELETE FROM chado.phenotype WHERE phenotype_id IN (SELECT phenotype_id FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql))");
   tpps_log("DELETE chado.genotype_reads_per_plant values for accession $accession...");
   chado_query("DELETE FROM chado.genotype_reads_per_plant WHERE study_accession = '" . strtoupper($accession) . "';");
+  tpps_log("DELETE chado.plants_per_marker values for accession $accession...");
+  chado_query("DELETE FROM chado.plants_per_marker WHERE study_accession = '" . strtoupper($accession) . "';");
   tpps_log("DELETE chado.genotype_call values for project...");
   chado_query("DELETE FROM chado.genotype_call WHERE project_id = $project_id");
   tpps_log("DELETE chado.stock_genotype values for project...");
