@@ -2253,9 +2253,10 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
     tpps_file_iterator($snp_fid, 'tpps_process_genotype_spreadsheet', $options);
     tpps_log('Done.', [], TRIPAL_INFO);
 
-    tpps_log('Inserting SNP genotype_spreadsheet data into database using insert_multi...', [], TRIPAL_INFO);
+    tpps_log('Inserting SNP genotype_spreadsheet data into database using insert_multi...');
     tpps_chado_insert_multi($options['records'], $multi_insert_options);
-    tpps_log('Inserting SNP genotype_spreadsheet data into database using insert_hybrid...', [], TRIPAL_INFO);
+
+    tpps_log('Inserting SNP genotype_spreadsheet data into database using insert_hybrid...');
     tpps_chado_insert_hybrid($options['records2'], $multi_insert_options);
     tpps_log('Done.', [], TRIPAL_INFO);
 
