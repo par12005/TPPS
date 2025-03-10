@@ -25,7 +25,7 @@ function easy_report(array $meta) {
   }
   // Pager and sorting.
   $report_query = $query->extend('PagerDefault')
-    ->limit(($items_per_page ? $items_per_page : 25))
+    ->limit(($meta['items_per_page'] ?? 25))
     ->extend('TableSort')
     ->orderByHeader($header);
   $data = $report_query->execute()->fetchAll();
