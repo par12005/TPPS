@@ -4707,10 +4707,12 @@ function tpps_genotype_vcf_processing_batch_some_features_insert($current_id, $s
       }
     }
     $sql .= " ON CONFLICT (feature_id, locgroup, rank) DO UPDATE SET fmin=EXCLUDED.fmin";
-    db_query($sql);
-    $lmsg = "Inserting some featurelocs in db using bulk some insert - DONE (count: $featureloc_index)\n";
-    echo($lmsg);
-    tpps_log($lmsg);
+    if ($featureloc_index > 0) {
+      db_query($sql);
+      $lmsg = "Inserting some featurelocs in db using bulk some insert - DONE (count: $featureloc_index)\n";
+      echo($lmsg);
+      tpps_log($lmsg);
+    }
 
 
     /*
