@@ -28,6 +28,8 @@
 
 
 // Implemented: Create, Update
+// @TODO Implmenent: Deposition actions. Like: publish
+//
 //
 // @TODO Implement other Deposition operations: delete, list and etc.
 
@@ -41,6 +43,23 @@ class ZenodoDeposit {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Zenodo API Actions.
+
+  /**
+   * Publish a deposition.
+   *
+   * Note, once a deposition is published, you can no longer delete it.
+   * https://developers.zenodo.org/?shell#publish
+   *
+   * @param int $deposit_id
+   *   The identifier for the Deposition.
+   *
+   * @return mixed
+   *   Returns API response.
+   */
+  public static function publish($deposit_id) {
+    $response = RestAPI::post(static::getUrl("$deposit_id/actions/publish"));
+    return RestAPI::decodeJSON($response);
+  }
 
   /**
    * Lists all depositions for the currently authenticated user.
@@ -261,35 +280,6 @@ class ZenodoDeposit {
     return $upload;
   }
 
-
-
-  /**
-   * Publishes a completed Zenodo Deposition. Returns the Deposition object.
-   *
-   * @param int $id
-   *   The identifier for the Deposition.
-   *
-   * @return object
-   *   The updated Deposition object.
-   */
-  public static function tpps_doi_publish($id) {
-    $ch = curl_init(static::getUrl("$id/actions/publish"));
-    // This is the new API
-    $prefix = variable_get('tpps_zenodo_prefix', '');
-    $token = variable_get('tpps_zenodo_api_key', NULL);
-    // dpm($token);
-    // $ch = curl_init('https://zenodo.org/api/deposit/depositions/'. $id . '/actions/publish');
-    // $headers = array();
-    // $headers[] = 'access_token: ' . $token;
-    // curl_setopt($ch, CURLOPT_HTTPHEADER,$headers);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, '');
-
-    $out = json_decode(curl_exec($ch));
-    curl_close($ch);
-    return $out;
-  }
 
   /**
    * Loads and returns the Deposition object for an existing Zenodo Deposition.
