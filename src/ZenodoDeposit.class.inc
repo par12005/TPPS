@@ -25,11 +25,7 @@
  * https://zenodo.org/api/
  */
 
-
-
-// Implemented: Create, Update
-// @TODO Implmenent: Deposition actions. Like: publish
-//
+// @TODO Implement ability to change host.
 //
 // @TODO Implement other Deposition operations: delete, list and etc.
 
@@ -40,6 +36,11 @@
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
 class ZenodoDeposit {
+
+  // Host name.
+  // See: https://developers.zenodo.org/?shell#testing.
+  const LIVE_HOST = 'zenodo.org';
+  const DEBUG_HOST = 'sandbox.zenodo.org';
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // API scope: deposit:actions.
@@ -257,15 +258,17 @@ class ZenodoDeposit {
    */
   public static function getUrl($endpoint = '') {
     return url(
-      'https://zenodo.org/api/deposit/depositions' . ($endpoint ?? "/$endpoint"),
+      self::LIVE_HOST . '/api/deposit/depositions' . ($endpoint ?? "/$endpoint"),
       [
         // Note: access token must be a part of URL.
         'query' => ['access_token' => variable_get('tpps_zenodo_api_key')],
         'absolute' => TRUE,
+        'https' => TRUE,
       ]
     );
   }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 
 // @TODO Review below.
