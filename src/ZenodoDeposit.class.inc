@@ -42,13 +42,14 @@
 class ZenodoDeposit {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Zenodo API Actions.
+  // API scope: deposit:actions.
 
   /**
    * Publish a deposition.
    *
+   * Scope (permissions): deposit:actions.
    * Note, once a deposition is published, you can no longer delete it.
-   * https://developers.zenodo.org/?shell#publish
+   * https://developers.zenodo.org/?shell#publish.
    *
    * @param int $deposit_id
    *   The identifier for the Deposition.
@@ -57,12 +58,95 @@ class ZenodoDeposit {
    *   Returns API response.
    */
   public static function publish($deposit_id) {
-    $response = RestAPI::post(static::getUrl("$deposit_id/actions/publish"));
+    $action = 'publish';
+    $url = self::getUrl($deposit_id . '/actions/' . $action);
+    $response = RestAPI::post($url);
     return RestAPI::decodeJSON($response);
   }
 
   /**
+   * Unlock already submitted deposition for editing.
+   *
+   * Scope (permissions): deposit:actions.
+   * See: https://developers.zenodo.org/?shell#edit.
+   *
+   * @param int $deposit_id
+   *   The identifier for the Deposition.
+   *
+   * @return mixed
+   *   Returns API response.
+   */
+  public static function edit($deposit_id) {
+    $action = 'edit';
+    $url = self::getUrl($deposit_id . '/actions/' . $action);
+    $response = RestAPI::post($url);
+    return RestAPI::decodeJSON($response);
+  }
+
+  /**
+   * Discard changes in the current editing session.
+   *
+   * Scope (permissions): deposit:actions.
+   * See: https://developers.zenodo.org/?shell#discard.
+   *
+   * @param int $deposit_id
+   *   The identifier for the Deposition.
+   *
+   * @return mixed
+   *   Returns API response.
+   */
+  public static function discard($deposit_id) {
+    $action = 'discard';
+    $url = self::getUrl($deposit_id . '/actions/' . $action);
+    $response = RestAPI::post($url);
+    return RestAPI::decodeJSON($response);
+  }
+
+  /**
+   * Create a new version of a deposition.
+   *
+   * Scope (permissions): deposit:actions.
+   *
+   * See: https://developers.zenodo.org/?shell#new-version.
+   *
+   * This action will create a new deposit, which will be a snapshot of the
+   * current resouce, inheriting the metadata as well as snapshot of files.
+   * The new version deposit will have a state similar to a new, unpublished
+   * deposit, most importantly its files will be modifiable as for a new deposit.
+   *
+   * Only one unpublished new version deposit can be available at any moment,
+   * i.e.: calling new version action multiple times will have no effect,
+   * as long as the resulting new version deposit from the first call is not
+   * published or deleted.
+   *
+   * NOTES:
+   * - The response body of this action is NOT the new version deposit,
+   *   but the original resource. The new version deposition can be accessed
+   *   through the "latest_draft" under "links" in the response body.
+   * - The id used to create this new version has to be the id of the latest
+   *   version. It is not possible to use the global id that references all
+   *   the versions.
+   *
+   * @param int $deposit_id
+   *   The identifier for the Deposition.
+   *
+   * @return mixed
+   *   Returns API response.
+   */
+  public static function newVersion($deposit_id) {
+    $action = 'newversion';
+    $url = self::getUrl($deposit_id . '/actions/' . $action);
+    $response = RestAPI::post($url);
+    return RestAPI::decodeJSON($response);
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // API scope: deposit:write.
+
+  /**
    * Lists all depositions for the currently authenticated user.
+   *
+   * Scope (permissions): deposit:write.
    *
    * @param array $query
    *   Filter query. See https://developers.zenodo.org/?python#list.
@@ -79,6 +163,8 @@ class ZenodoDeposit {
   /**
    * Retrieves a single deposition resource.
    *
+   * Scope (permissions): deposit:write.
+   *
    * @param int $deposit_id
    *   Deposit Id.
    *
@@ -93,6 +179,8 @@ class ZenodoDeposit {
 
   /**
    * Deletes deposition resource.
+   *
+   * Scope (permissions): deposit:write.
    *
    * Note, only unpublished depositions may be deleted.
    * See https://developers.zenodo.org/?python#delete.
@@ -118,6 +206,8 @@ class ZenodoDeposit {
   /**
    * Creates a blank Zenodo DOI Deposit. Returns the Zenodo id number.
    *
+   * Scope (permissions): deposit:write.
+   *
    * @return int
    *   The Zenodo Deposition Id number.
    */
@@ -129,6 +219,8 @@ class ZenodoDeposit {
 
   /**
    * Updates an existing deposition.
+   *
+   * Scope (permissions): deposit:write.
    *
    * @param int $id
    *   The Deposition Id.
