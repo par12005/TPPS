@@ -155,4 +155,26 @@ class RestAPI {
     return $result;
   }
 
+  /**
+   * Decode JSON and handles invalid JSON.
+   *
+   * Idea: https://stackoverflow.com/a/44448921/1041470.
+   * See: https://www.php.net/manual/en/class.jsonexception.php.
+   * https://stackoverflow.com/questions/31578927.
+   *
+   * @param string $json
+   *   JSON string.
+   *
+   * @return array
+   *   Returns decoded data.
+   */
+  public static function decodeJSON($json) {
+    $data = json_decode((string) $json, TRUE);
+    if (JSON_ERROR_NONE !== json_last_error()) {
+      $message = 'Unable to parse response body into JSON: ' . json_last_error();
+      throw new RuntimeException($message);
+    }
+    return $data === NULL ? [] : $data;
+  }
+
 }
