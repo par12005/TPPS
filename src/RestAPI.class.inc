@@ -24,14 +24,21 @@ class RestAPI {
    *
    * @param string $url
    *   API Endpoint URL.
-   * @param array $data
-   *   Data for request.
+   * @param mixed $data
+   *   Data for request. Could be string or JSON-string.
+   * @param array $header
+   *   HTTP-headers.
    *
    * @return mixed
    *   Returns API response.
    */
-  public static function post($url, array $data = '') {
-    return self::doRequest('POST', $url, $data);
+  public static function post($url, $data = '', array $header = []) {
+    if (empty($header)) {
+      $header = [
+        'Content-Type: application/json',
+      ];
+    }
+    return self::doRequest('POST', $url, $data, $header);
   }
 
   /**
@@ -60,12 +67,19 @@ class RestAPI {
    *   API Endpoint URL.
    * @param array $data
    *   Data for request.
+   * @param array $header
+   *   HTTP-headers.
    *
    * @return mixed
    *   Returns API response.
    */
-  public static function put($url, array $data = '') {
-    return self::doRequest('PUT', $url, $data);
+  public static function put($url, array $data = '', array $header = []) {
+    if (empty($header)) {
+      $header = [
+        'Content-Type: application/json',
+      ];
+    }
+    return self::doRequest('PUT', $url, $data, $header);
   }
 
   /**
@@ -92,19 +106,24 @@ class RestAPI {
    *   HTTP method. Possible values are: 'POST', 'GET', 'PUT', 'DELETE'.
    * @param string $url
    *   API Endpoint URL.
-   * @param array $data
-   *   Data. Required for POST-requests.
+   * @param mixed $data
+   *   Data. Required for POST-requests (payload).
+   *   Could be a string or JSON-string.
+   * @param array $header
+   *   HTTP-headers. Required for POST-requests.
    *
    * @return mixed
    *   Returns API response.
    *
    * @todo Convert to private or protected.
    */
-  public static function doRequest($method, $url, array $data = '') {
+  public static function doRequest($method, $url, $data = '', array $header = []) {
     $curl = curl_init();
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
     switch (strtoupper($method)) {
       case "POST":
         curl_setopt($curl, CURLOPT_POST, 1);
+        // Custom:
         if ($data) {
           curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
         }
@@ -119,22 +138,19 @@ class RestAPI {
 
       default:
         if ($data) {
-          $url = sprintf("%s?%s", $url, http_build_query($data));
+          $url = url($url, [
+            'query' => $data,
+            'https' => TRUE,
+            'external' => TRUE,
+          ]);
         }
     }
     // OPTIONS:
     curl_setopt($curl, CURLOPT_URL, $url);
-    curl_setopt($curl, CURLOPT_HTTPHEADER, array(
-       'APIKEY: 111111111111111111111',
-       'Content-Type: application/json',
-    ));
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
     // EXECUTE:
     $result = curl_exec($curl);
-    if (!$result) {
-      die("Connection Failure");
-    }
     curl_close($curl);
     return $result;
   }
