@@ -30,7 +30,8 @@ function tpps_manage_doi($accession) {
   if (!empty($token)) {
     if (empty($submission->state['zenodo_id']) || isset($_GET['force'])) {
       $submission->state['zenodo_id'] = ZenodoDeposit::getId($accession);
-      $doi_object = tpps_doi_publish($submission->state['zenodo_id']);
+      //$doi_object = tpps_doi_publish($submission->state['zenodo_id']);
+      $doi_object = ZenodoDeposit::publish($submission->state['zenodo_id']);
       $submission->save();
       $output .= "<h4>DOI successfully published!</h4>";
     }
