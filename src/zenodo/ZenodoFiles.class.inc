@@ -15,9 +15,43 @@
  */
 class ZenodoFiles extends Zenodo {
 
+  // Prefix of the API URL.
+  const BASE_PATH = '/api/deposit/depositions';
+
   // Limit of the single file published using Zenodo service.
   // 20Gb.
   const FILE_SIZE_LIMIT = 20000000000;
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Custom methods.
+
+  /**
+   * Generates URL for Zenodo API Endpoints.
+   *
+   * @param string $endpoint
+   *   Part of the URL after 'https://zenodo.org/api/deposit/depositions'.
+   *
+   * @return string
+   *   Returns absolute URL with access token.
+   */
+  public static function getUrl($endpoint = '') {
+    $host = self::LIVE_HOST;
+    if (variable_get('tpps_zenodo_debug_mode')) {
+      $host = self::DEBUG_HOST;
+    }
+    return url(
+      $host . '/api/deposit/depositions' . ($endpoint ?? "/$endpoint"),
+      [
+        // Note: access token could be sent in headers.
+        'query' => ['access_token' => variable_get('tpps_zenodo_api_key')],
+        'absolute' => TRUE,
+        'https' => TRUE,
+      ]
+    );
+  }
+
+
+
 
   /**
    * Adds files to a Zenodo Deposition from the state of a TPPS Submission form.
