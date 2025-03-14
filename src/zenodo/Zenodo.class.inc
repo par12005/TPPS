@@ -180,7 +180,7 @@ class Zenodo {
   public static function buildUrl(array $data) {
     // Add host name.
     $path = self::LIVE_HOST;
-    if (variable_get('tpps_zenodo_debug_mode')) {
+    if (variable_get('tpps_zenodo_debug_mode', FALSE)) {
       $path = self::DEBUG_HOST;
     }
     // Add base path and endpoint.
