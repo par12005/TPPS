@@ -162,8 +162,6 @@ function tpps_doi_metadata($id, $metadata) {
  *   The form_state of the TPPS Submission form.
  */
 function tpps_doi_upload_files($id, array &$state) {
-  $debug_mode = 0;
-
   $files = [];
   for ($i = 1; $i <= $state['stats']['species_count']; $i++) {
     $files[] = $state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['file'];
@@ -220,13 +218,6 @@ function tpps_doi_upload_files($id, array &$state) {
     }
   }
   $files = array_filter($files);
-
-  if (!empty($debug_mode)) {
-    dpm(print_r($files, 1));
-    dpm(print_r($genotype, 1));
-    return;
-  }
-
   $token = variable_get('tpps_zenodo_api_key', NULL);
   $upload_file_count = 0;
   foreach ($files as $fid) {

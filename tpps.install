@@ -121,8 +121,10 @@ function tpps_install() {
   variable_set('tpps_submitall_log_tripal_show_function', FALSE);
   variable_set('tpps_submitall_log_tripal_show_linenumber', FALSE);
   variable_set('tpps_submitall_log_tripal_time_format', 'Y/m/d H:i:s O');
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Zenodo Settings.
+  variable_set('tpps_zenodo_debug_mode', FALSE);
+  variable_set('tpps_zenodo_api_key', '');
+  variable_set('tpps_zenodo_new_implementation', TRUE);
   // Misc Settings.
   variable_set('tpps_theme_fix_pager', FALSE);
   variable_set('tpps_js_debug_mode', ['quickDebugMode' => 'quickDebugMode']);
@@ -132,7 +134,6 @@ function tpps_install() {
   variable_set('tpps_validation_regex_organism_name',
  '/^[^\s]+\s[^\s]+(\s[^\s]+)*$/');
   variable_set('tpps_validation_regex_single_space', '/^[^\s]*\s[^\s]*$/');
-
   // Google Maps.
   variable_set('tpps_google_map_id', '');
   variable_set('tpps_maps_api_key', '');
@@ -508,7 +509,10 @@ function tpps_uninstall() {
   variable_del('tpps_submitall_log_tripal_show_time');
   variable_del('tpps_submitall_log_tripal_show_caller_function');
   variable_del('tpps_submitall_log_tripal_time_format');
-
+  // Zenodo Settings.
+  variable_del('tpps_zenodo_debug_mode');
+  variable_del('tpps_zenodo_api_key');
+  variable_del('tpps_zenodo_new_implementation');
   // Misc Settings.
   variable_del('tpps_theme_fix_pager');
   variable_del('tpps_js_debug_mode');
@@ -2445,4 +2449,13 @@ function tpps_update_7126() {
 function tpps_update_7127() {
   variable_set('tpps_ncbi_api_delay', 300);
   variable_set('tpps_ncbi_api_max_attempt_number', 5);
+}
+
+/**
+ * Zenodo API Settings.
+ */
+function tpps_update_7128() {
+  variable_del('tpps_zenodo_prefix');
+  variable_set('tpps_zenodo_debug_mode', FALSE);
+  variable_set('tpps_zenodo_new_implementation', FALSE);
 }
