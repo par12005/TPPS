@@ -29,11 +29,17 @@ function tpps_manage_doi($accession) {
   $token = variable_get('tpps_zenodo_api_key', NULL);
   if (!empty($token)) {
     if (empty($submission->state['zenodo_id']) || isset($_GET['force'])) {
-      $submission->state['zenodo_id'] = ZenodoDeposit::getId($accession);
-      //$doi_object = tpps_doi_publish($submission->state['zenodo_id']);
-      $doi_object = ZenodoDeposit::publish([
-        'deposit_id' => $submission->state['zenodo_id']
-      ]);
+
+      if (!variable_get('tpps_zenodo_new_implementation')) {
+        $submission->state['zenodo_id'] = tpps_generate_doi($accession)->id;
+        $doi_object = tpps_doi_publish($submission->state['zenodo_id']);
+      }
+      else {
+        $submission->state['zenodo_id'] = ZenodoDeposit::getId($accession);
+        $doi_object = ZenodoDeposit::publish([
+          'deposit_id' => $submission->state['zenodo_id']
+        ]);
+      }
       $submission->save();
       $output .= "<h4>DOI successfully published!</h4>";
     }
@@ -42,7 +48,7 @@ function tpps_manage_doi($accession) {
     }
   }
 
-  dpm($doi_object);
+  //dpm($doi_object);
   if (
     empty($token)
     || empty($doi_object)
