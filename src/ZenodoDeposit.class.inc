@@ -25,22 +25,13 @@
  * https://zenodo.org/api/
  */
 
-// @TODO Implement ability to change host.
-//
-// @TODO Implement other Deposition operations: delete, list and etc.
-
 /**
  * Manages requests to Zenodo API.
  *
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class ZenodoDeposit {
-
-  // Host name.
-  // See: https://developers.zenodo.org/?shell#testing.
-  const LIVE_HOST = 'zenodo.org';
-  const DEBUG_HOST = 'sandbox.zenodo.org';
+class ZenodoDeposit extends Zenodo {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // API scope: deposit:actions.
@@ -142,133 +133,13 @@ class ZenodoDeposit {
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // API scope: deposit:write.
-
-  /**
-   * Lists all depositions for the currently authenticated user.
-   *
-   * Scope (permissions): deposit:write.
-   *
-   * @param array $query
-   *   Filter query. See https://developers.zenodo.org/?python#list.
-   *
-   * @return array
-   *   Returns array of deposition resources.
-   *   See https://developers.zenodo.org/?python#representation
-   */
-  public static function list(array $query = []) {
-    $response = RestAPI::get(static::getUrl(), $query);
-    return RestAPI::decodeJSON($response);
-  }
-
-  /**
-   * Retrieves a single deposition resource.
-   *
-   * Scope (permissions): deposit:write.
-   *
-   * @param int $deposit_id
-   *   Deposit Id.
-   *
-   * @return array
-   *   Returns array of deposition resources.
-   *   See https://developers.zenodo.org/?python#representation
-   */
-  public static function retrieve($deposit_id) {
-    $response = RestAPI::get(static::getUrl($deposit_id));
-    return RestAPI::decodeJSON($response);
-  }
-
-  /**
-   * Deletes deposition resource.
-   *
-   * Scope (permissions): deposit:write.
-   *
-   * Note, only unpublished depositions may be deleted.
-   * See https://developers.zenodo.org/?python#delete.
-   *
-   * @param int $deposit_id
-   *   Deposit Id.
-   *
-   * @return mixed
-   *   Returns API response.
-   *
-   * @todo Add response validation:
-   * Success Response:
-   *   Code: 201 Created
-   *   Body: Empty.
-   * Error Response:
-   *   404 Not found: Deposition does not exist.
-   *   403 Forbidden: Deleting an already published deposition.
-   */
-  public static function delete($deposit_id) {
-    return RestAPI::delete(static::getUrl($deposit_id));
-  }
-
-  /**
-   * Creates a blank Zenodo DOI Deposit. Returns the Zenodo id number.
-   *
-   * Scope (permissions): deposit:write.
-   *
-   * @return int
-   *   The Zenodo Deposition Id number.
-   */
-  public static function create() {
-    $response = RestAPI::post(static::getUrl(), '{}');
-    $data = RestAPI::decodeJSON($response);
-    return $data->id;
-  }
-
-  /**
-   * Updates an existing deposition.
-   *
-   * Scope (permissions): deposit:write.
-   *
-   * @param int $id
-   *   The Deposition Id.
-   * @param object $metadata
-   *   The metadata object describing the deposition.
-   *
-   * @return object
-   *   The updated Deposition object.
-   */
-  public static function update($id, $metadata) {
-    $data = new stdClass();
-    $data->metadata = $metadata;
-    $data_json = json_encode($data);
-    $header = [
-      'Content-Type: application/json',
-      // Seems length is optional.
-      'Content-Length: ' . strlen($data_json),
-    ];
-    $response = RestAPI::put(self::getUrl($id), $data_json, $header);
-    return RestAPI::decodeJSON($response);
-  }
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Custom methods.
 
-  /**
-   * Generates URL for Zenodo API Endpoints.
-   *
-   * @param string $endpoint
-   *   Part of the URL after 'https://zenodo.org/api/deposit/depositions'.
-   *
-   * @return string
-   *   Returns absolute URL with access token.
-   */
-  public static function getUrl($endpoint = '') {
-    return url(
-      self::LIVE_HOST . '/api/deposit/depositions' . ($endpoint ?? "/$endpoint"),
-      [
-        // Note: access token must be a part of URL.
-        'query' => ['access_token' => variable_get('tpps_zenodo_api_key')],
-        'absolute' => TRUE,
-        'https' => TRUE,
-      ]
-    );
-  }
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+
+
+
 
 
 // @TODO Review below.
