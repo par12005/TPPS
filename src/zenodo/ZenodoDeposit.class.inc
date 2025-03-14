@@ -33,6 +33,9 @@
  */
 class ZenodoDeposit extends Zenodo {
 
+  // Prefix of the API URL.
+  const BASE_PATH = '/api/deposit/depositions';
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // API scope: deposit:actions.
 
@@ -43,15 +46,16 @@ class ZenodoDeposit extends Zenodo {
    * Note, once a deposition is published, you can no longer delete it.
    * https://developers.zenodo.org/?shell#publish.
    *
-   * @param int $deposit_id
-   *   The identifier for the Deposition.
+   * @param array $data
+   *   Data for request. Required keys are: 'deposit_id'.
    *
    * @return mixed
    *   Returns API response.
    */
-  public static function publish($deposit_id) {
+  public static function publish(array $data) {
     $action = 'publish';
-    $url = self::getUrl($deposit_id . '/actions/' . $action);
+    self::validateRequiired(['deposit_id'], $data);
+    $url = self::getUrl($data['deposit_id'] . '/actions/' . $action);
     $response = RestAPI::post($url);
     return RestAPI::decodeJSON($response);
   }
@@ -70,6 +74,7 @@ class ZenodoDeposit extends Zenodo {
    */
   public static function edit($deposit_id) {
     $action = 'edit';
+    self::validateRequiired(['deposit_id'], $data);
     $url = self::getUrl($deposit_id . '/actions/' . $action);
     $response = RestAPI::post($url);
     return RestAPI::decodeJSON($response);

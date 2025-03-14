@@ -55,15 +55,18 @@ class Zenodo {
    *
    * Scope (permissions): deposit:write.
    *
-   * @param array $query
+   * @param array $data
+   *   Data for request. Required keys are: 'query'.
    *   Filter query. See https://developers.zenodo.org/?python#list.
    *
    * @return array
    *   Returns array of deposition resources.
    *   See https://developers.zenodo.org/?python#representation
    */
-  public static function list(array $query = []) {
-    $response = RestAPI::get(static::getUrl(), $query);
+  public static function list(array $data) {
+    static::validateRequiired(['query'], $data);
+    $url = static::buildUrl($data);
+    $response = RestAPI::get($url, $data['query']);
     return RestAPI::decodeJSON($response);
   }
 
@@ -72,15 +75,17 @@ class Zenodo {
    *
    * Scope (permissions): deposit:write.
    *
-   * @param int $deposit_id
-   *   Deposit Id.
+   * @param array $data
+   *   Data for request. Required keys are: 'deposit_id'.
    *
    * @return array
    *   Returns array of deposition resources.
    *   See https://developers.zenodo.org/?python#representation
    */
-  public static function retrieve($deposit_id) {
-    $response = RestAPI::get(static::getUrl($deposit_id));
+  public static function retrieve(array $data) {
+    static::validateRequiired(['deposit_id'], $data);
+    $url = static::buildUrl($data);
+    $response = RestAPI::get($url);
     return RestAPI::decodeJSON($response);
   }
 
@@ -92,8 +97,8 @@ class Zenodo {
    * Note, only unpublished depositions may be deleted.
    * See https://developers.zenodo.org/?python#delete.
    *
-   * @param int $deposit_id
-   *   Deposit Id.
+   * @param array $data
+   *   Data for request. Required keys are: 'deposit_id'.
    *
    * @return mixed
    *   Returns API response.
@@ -106,8 +111,10 @@ class Zenodo {
    *   404 Not found: Deposition does not exist.
    *   403 Forbidden: Deleting an already published deposition.
    */
-  public static function delete($deposit_id) {
-    return RestAPI::delete(static::getUrl($deposit_id));
+  public static function delete(array $data) {
+    static::validateRequiired(['deposit_id'], $data);
+    $url = static::buildUrl($data);
+    return RestAPI::delete($url);
   }
 
   /**
@@ -119,7 +126,9 @@ class Zenodo {
    *   The Zenodo Deposition Id number.
    */
   public static function create() {
-    $response = RestAPI::post(static::getUrl(), '{}');
+    $data = [];
+    $url = static::buildUrl($data);
+    $response = RestAPI::post($url, '{}');
     $data = RestAPI::decodeJSON($response);
     return $data->id;
   }
@@ -129,24 +138,25 @@ class Zenodo {
    *
    * Scope (permissions): deposit:write.
    *
-   * @param int $id
-   *   The Deposition Id.
-   * @param object $metadata
-   *   The metadata object describing the deposition.
+   * @param array $data
+   *   Data for request. Required keys are: 'deposit_id', 'metadata'.
    *
    * @return object
    *   The updated Deposition object.
    */
-  public static function update($id, $metadata) {
+  public static function update(array $data) {
+    static::validateRequiired(['deposit_id', 'metadata'], $data);
+    $url = static::buildUrl($data);
+    // Prepare payload.
     $data = new stdClass();
-    $data->metadata = $metadata;
+    $data->metadata = $data['metadata'];
     $data_json = json_encode($data);
     $header = [
       'Content-Type: application/json',
       // Seems length is optional.
       'Content-Length: ' . strlen($data_json),
     ];
-    $response = RestAPI::put(self::getUrl($id), $data_json, $header);
+    $response = RestAPI::put($url, $data_json, $header);
     return RestAPI::decodeJSON($response);
   }
 
@@ -154,28 +164,108 @@ class Zenodo {
   // Custom methods.
 
   /**
-   * Generates URL for Zenodo API Endpoints.
+   * Builds Endpoint URL for Zenodo API based on class and action.
    *
-   * @param string $endpoint
+   * Generated URL will be in $data['url'].
+   *
+   * @param array $data
+   *   Data for requiest.
+   *   URL will be build using necessary items from $data based on class name.
    *   Part of the URL after 'https://zenodo.org/api/deposit/depositions'.
    *
-   * @return string
-   *   Returns absolute URL with access token.
+   * @return mixed
+   *   Returns FALSE in case of errors.
+   *   Returns generated absolute path to Zenodo API Endpoint.
    */
-  public static function getUrl($endpoint = '') {
-    $host = self::LIVE_HOST;
+  public static function buildUrl(array $data) {
+    // Add host name.
+    $path = self::LIVE_HOST;
     if (variable_get('tpps_zenodo_debug_mode')) {
-      $host = self::DEBUG_HOST;
+      $path = self::DEBUG_HOST;
     }
-    return url(
-      $host . '/api/deposit/depositions' . ($endpoint ?? "/$endpoint"),
-      [
-        // Note: access token could be sent in headers.
-        'query' => ['access_token' => variable_get('tpps_zenodo_api_key')],
-        'absolute' => TRUE,
-        'https' => TRUE,
-      ]
-    );
+    // Add base path and endpoint.
+    switch (static::getClassName()) {
+      case 'ZenodoDeposit':
+        // Example: /api/deposit/depositions/:id.
+        $path .= static::BASE_PATH
+          . ($data['deposit_id'] ?? '/' . $data['deposit_id']);
+        break;
+
+      case 'ZenodoFiles':
+        // Example: /api/deposit/depositions/:id/files/:file_id.
+        $path .= static::BASE_PATH
+          . ($data['deposit_id'] ?? '/' . $data['deposit_id'])
+          . '/files'
+          . ($data['file_id'] ?? '/' . $data['file_id']);
+        break;
+
+      case 'ZenodoRecords':
+        // Example: /api/records/:id.
+        $path .= static::BASE_PATH
+          . ($data['deposit_id'] ?? '/' . $data['deposit_id']);
+        break;
+    }
+    if (empty($path)) {
+      return FALSE;
+    }
+    // Build absolute URL with access token.
+    $data['url'] = url($path, [
+      // Note: access token could be sent in headers.
+      'query' => ['access_token' => variable_get('tpps_zenodo_api_key')],
+      'absolute' => TRUE,
+      'https' => TRUE,
+    ]);
+    return $data['url'];
+  }
+
+  /**
+   * Checks if all required items to make API requiest was set.
+   *
+   * Throw an exception when some items are missing.
+   *
+   * @param array $required_items
+   *   List of required keys in the $data.
+   * @param array $data
+   *   Data prepared for API requiest.
+   */
+  public static function validateRequiired(array $required_items, array $data) {
+    $missing_items = [];
+    foreach ($required_items as $name) {
+      if (!isset($data[$name])) {
+        $missing_items[] = $name;
+      }
+    }
+    if (!empty($missing_items)) {
+      // Since it's required items we throw an exception.
+      $message = t(
+        'Some data is missing to call Zenodo API endpoint: @list.',
+        ['@list' => implode(', ', $missing_items)]
+      );
+      throw new Exception($message);
+    }
+  }
+
+  /**
+   * Gets Class Name.
+   *
+   * Since 5.5 you can use class keyword for the class name resolution,
+   * which would be a lot faster than making function calls.
+   * Also works with interfaces.
+   *
+   * C extends B extends A
+   *
+   * static::class  // MyNamespace\ClassC when run in A
+   * self::class    // MyNamespace\ClassA when run in A
+   * parent::class  // MyNamespace\ClassB when run in C
+   * MyClass::class // MyNamespace\MyClass
+   *
+   * See https://stackoverflow.com/questions/506705
+   *
+   * @return string
+   *   Returns class name when called from static method.
+   */
+  public static function getClassName() {
+    return static::class;
   }
 
 }
