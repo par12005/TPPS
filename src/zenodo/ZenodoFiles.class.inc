@@ -130,11 +130,11 @@ class ZenodoFiles extends Zenodo {
           ),
           'token' => variable_get('tpps_zenodo_api_key'),
         ];
-        $out = RestAPI::post($
-          static::getUrl("$deposit_id/files"),
+        $out = RestAPI::post(
+          static::getUrl($deposit_id . '/files'),
           $data,
           $header
-        )
+        );
         $upload_file_count++;
       }
     }

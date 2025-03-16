@@ -31,11 +31,11 @@ function tpps_manage_doi($accession) {
     if (empty($submission->state['zenodo_id']) || isset($_GET['force'])) {
 
       if (!variable_get('tpps_zenodo_new_implementation')) {
-        $submission->state['zenodo_id'] = tpps_generate_doi($accession)->id;
+        $submission->set(['zenodo_id'], tpps_generate_doi($accession)->id);
         $doi_object = tpps_doi_publish($submission->state['zenodo_id']);
       }
       else {
-        $submission->state['zenodo_id'] = ZenodoDeposit::getId($accession);
+        $submission->set(['zenodo_id'], ZenodoDeposit::getId($accession));
         $doi_object = ZenodoDeposit::publish([
           'deposit_id' => $submission->state['zenodo_id']
         ]);
