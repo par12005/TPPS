@@ -2602,6 +2602,14 @@ function tpps_report_get_list() {
       'page callback' => 'tpps_new_organisms_report',
       'admin_panel' => TRUE,
     ],
+    // Zenodo API.
+    'zenodo_submissions' => [
+      'url' => 'zenodo-submissions',
+      'title' => variable_get('tpps_report_zenodo_submissions_title', 'Zenodo Submissions'),
+      'description' => t('List of Studies which has Zenodo Depositions.'),
+      'page callback' => 'tpps_admin_zenodo_submissions_report',
+      'admin_panel' => TRUE,
+    ],
   ];
 }
 

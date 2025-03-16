@@ -45,6 +45,7 @@ function tpps_reports_settings_form(array $form, array &$form_state) {
   // 'tpps_report_variable_list_title',
   // 'tpps_report_organism_list_title',
   // 'tpps_report_new_organisms_title',
+  // 'tpps_report_zenodo_submissions_title',
   // and etc.
   foreach (tpps_report_get_list() as $name => $report) {
     $title = variable_get('tpps_report_' . $name . '_title',
