@@ -1940,8 +1940,9 @@ class Submission {
    * @param int $organism_index
    *   Ordinal number of the organism at page.
    *
-   * @return bool
-   *   Returns path to the local VCF file or NULL if study has no local VCF file.
+   * @return mixed
+   *   Returns path to the local VCF file.
+   *   Returns NULL if study has no local VCF file.
    */
   public function getLocalVcf($organism_index = 1) {
     if (!$this->hasLocalVcf($organism_index)) {
