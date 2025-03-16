@@ -3,48 +3,38 @@
 /**
  * @file
  * Contains 'ZenodoFiles' class.
+ *
+ * API: https://developers.zenodo.org/#deposition-files
  */
 
+// @TODO Implement actions:
+// GET: list, Retrieve.
+// POST: create.
+// PUT: sort, update.
+// DELETE: delete.
+// See curl options: https://medium.com/@skhans/using-curl-api-calls-with-php-746d0f8b5edd
+
 /**
- * Zenodo API for Deposition Files.
- *
- * See: https://developers.zenodo.org/#deposition-files.
- *
- * Inherits CRUD actions for files from parent 'Zenodo' class:
- *   create()
- *   delete(array $data)
- *   list(array $data)
- *   retrieve(array $data)
- *   update(array $data)
+ * Manages requests to Zenodo API.
  *
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class ZenodoFiles extends Zenodo {
-
-  // Prefix of the API URL.
-  const BASE_PATH = '/api/deposit/depositions';
+class ZenodoFiles {
 
   // Limit of the single file published using Zenodo service.
   // 20Gb.
   const FILE_SIZE_LIMIT = 20000000000;
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Custom methods.
-
-
-
   /**
    * Adds files to a Zenodo Deposition from the state of a TPPS Submission form.
-   *
-   * Former: tpps_doi_upload_files().
    *
    * @param int $deposit_id
    *   Zenodo Deposit Id.
    * @param array $state
    *   The form_state of the TPPS Submission form.
    */
-  public static function uploadAll($deposit_id, array &$state) {
+  public static function upload($deposit_id, array &$state) {
     $debug_mode = 0;
 
     $files = [];
@@ -110,6 +100,7 @@ class ZenodoFiles extends Zenodo {
       return;
     }
 
+    $token = variable_get('tpps_zenodo_api_key', NULL);
     $upload_file_count = 0;
     foreach ($files as $fid) {
       if (
@@ -122,13 +113,10 @@ class ZenodoFiles extends Zenodo {
         dpm('Uploading file:');
         dpm('FID:' . $fid);
         dpm($file);
+        $path = tpps_realpath($file->uri);
         $data = [
-          'file' => curl_file_create(
-            tpps_realpath($file->uri),
-            $file->filemime,
-            $file->filename
-          ),
-          'token' => variable_get('tpps_zenodo_api_key'),
+          'file' => curl_file_create($path, $file->filemime, $file->filename),
+          'token' => $token
         ];
         $out = RestAPI::post($
           static::getUrl("$deposit_id/files"),

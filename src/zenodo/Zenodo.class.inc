@@ -27,10 +27,20 @@
  * Classes which extends this class:
  * - ZenodoDeposit (publish, newversion, edit and etc.)
  * - ZenodoFiles (default actions with files).
+ *
+ * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+ * How to use:
+ * if (!variable_get('tpps_zenodo_new_implementation')) {
+ *   // Old implementation (functions).
+ * }
+ * else {
+ *   // New implementation (classes).
+ * }
  */
 
-// @todo Implement ability to send access token in the headers so it will never
-// appears in any server's logs.
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// @todo Minor. Implement ability to send access token in the headers so it
+// will never appears in any server's logs.
 
 /**
  * Zenodo API common actions (like CRUD).

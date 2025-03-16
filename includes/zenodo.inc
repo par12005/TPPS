@@ -89,8 +89,12 @@ function tpps_generate_doi($accession) {
   // dpm('Metadata');
   // dpm($metadata);
 
-
-  $has_uploads = tpps_doi_upload_files($id, $state);
+  if (!variable_get('tpps_zenodo_new_implementation')) {
+    $has_uploads = tpps_doi_upload_files($id, $state);
+  }
+  else {
+    $has_uploads = ZenodoFiles::uploadAll($id, $state);
+  }
   if ($has_uploads == FALSE) {
     echo "This study does not have any uploads so zenodo will never publish this study. Please update the study with at least one file.<br />";
     // Apparently a study submission must have at least one meta data file
