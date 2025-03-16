@@ -2827,6 +2827,26 @@ function tpps_menu_add_api(array &$items = []) {
     'type' => MENU_CALLBACK,
     'delivery callback' => 'drupal_json_output',
   ];
+  $items['api/submission/%tpps_submission/zenodo/deposit'] = [
+    'title' => 'Zenodo Deposition',
+    'description' => 'Zenodo Deposition in JSON format',
+    'page callback' => 'tpps_api_submission_zenodo_deposit',
+    'page arguments' => [2],
+    'access callback' => 'tpps_api_access',
+    'file' => 'api/submission/zenodo_deposit.inc',
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  ];
+  $items['api/submission/%tpps_submission/zenodo/files'] = [
+    'title' => 'Zenodo Deposition Files',
+    'description' => 'Zenodo Deposition Files in JSON format',
+    'page callback' => 'tpps_api_submission_zenodo_files',
+    'page arguments' => [2],
+    'access callback' => 'tpps_api_access',
+    'file' => 'api/submission/zenodo_files.inc',
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Menu items from function tpps_api_paths().
