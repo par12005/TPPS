@@ -78,7 +78,7 @@ class Zenodo {
    *   See https://developers.zenodo.org/?python#representation
    */
   public static function list(array $data) {
-    static::validateRequiired(['query'], $data);
+    static::validateRequired(['query'], $data);
     $url = static::buildUrl($data);
     $response = RestAPI::get($url, $data['query']);
     return RestAPI::decodeJSON($response);
@@ -97,7 +97,7 @@ class Zenodo {
    *   See https://developers.zenodo.org/?python#representation
    */
   public static function retrieve(array $data) {
-    static::validateRequiired(['deposit_id'], $data);
+    static::validateRequired(['deposit_id'], $data);
     $url = static::buildUrl($data);
     $response = RestAPI::get($url);
     return RestAPI::decodeJSON($response);
@@ -126,7 +126,7 @@ class Zenodo {
    *   403 Forbidden: Deleting an already published deposition.
    */
   public static function delete(array $data) {
-    static::validateRequiired(['deposit_id'], $data);
+    static::validateRequired(['deposit_id'], $data);
     $url = static::buildUrl($data);
     return RestAPI::delete($url);
   }
@@ -164,7 +164,7 @@ class Zenodo {
    *   The updated Deposition object.
    */
   public static function update(array $data) {
-    static::validateRequiired(['deposit_id', 'metadata'], $data);
+    static::validateRequired(['deposit_id', 'metadata'], $data);
     $url = static::buildUrl($data);
     // Prepare payload.
     $data = new stdClass();
@@ -247,7 +247,7 @@ class Zenodo {
    * @param array $data
    *   Data prepared for API requiest.
    */
-  public static function validateRequiired(array $required_items, array $data) {
+  public static function validateRequired(array $required_items, array $data) {
     $missing_items = [];
     foreach ($required_items as $name) {
       if (!isset($data[$name])) {
@@ -257,8 +257,14 @@ class Zenodo {
     if (!empty($missing_items)) {
       // Since it's required items we throw an exception.
       $message = t(
-        'Some data is missing to call Zenodo API endpoint: @list.',
-        ['@list' => implode(', ', $missing_items)]
+        '@class::@caller_method() is missing data: @list.',
+        [
+          '@list' => implode(', ', $missing_items),
+          '@class' => static::getClassName(),
+          '@caller_method' => debug_backtrace(
+            !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 2
+          )[1]['function'],
+        ]
       );
       throw new Exception($message);
     }
