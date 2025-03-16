@@ -78,9 +78,8 @@ class Zenodo {
    *   See https://developers.zenodo.org/?python#representation
    */
   public static function list(array $data) {
-    static::validateRequired(['query'], $data);
     $url = static::buildUrl($data);
-    $response = RestAPI::get($url, $data['query']);
+    $response = RestAPI::get($url, $data);
     return RestAPI::decodeJSON($response);
   }
 
@@ -198,30 +197,30 @@ class Zenodo {
    */
   public static function buildUrl(array $data) {
     // Add host name.
-    $path = self::LIVE_HOST;
+    $protocol = 'https://';
+    $path = $protocol . static::LIVE_HOST;
     if (variable_get('tpps_zenodo_debug_mode', FALSE)) {
-      $path = self::DEBUG_HOST;
+      $path = $protocol . static::DEBUG_HOST;
     }
     // Add base path and endpoint.
     switch (static::getClassName()) {
       case 'ZenodoDeposit':
         // Example: /api/deposit/depositions/:id.
         $path .= static::BASE_PATH
-          . ($data['deposit_id'] ?? '/' . $data['deposit_id']);
+          . ($data['deposit_id'] ? '/' . $data['deposit_id'] : '');
         break;
 
       case 'ZenodoFiles':
         // Example: /api/deposit/depositions/:id/files/:file_id.
         $path .= static::BASE_PATH
-          . ($data['deposit_id'] ?? '/' . $data['deposit_id'])
-          . '/files'
-          . ($data['file_id'] ?? '/' . $data['file_id']);
+          . ($data['deposit_id'] ? '/' . $data['deposit_id'] : '')
+          . '/files' . ($data['file_id'] ? '/' . $data['file_id'] : '');
         break;
 
       case 'ZenodoRecords':
         // Example: /api/records/:id.
         $path .= static::BASE_PATH
-          . ($data['deposit_id'] ?? '/' . $data['deposit_id']);
+          . ($data['deposit_id'] ? '/' . $data['deposit_id'] : '');
         break;
     }
     if (empty($path)) {
@@ -231,8 +230,7 @@ class Zenodo {
     $data['url'] = url($path, [
       // Note: access token could be sent in headers.
       'query' => ['access_token' => variable_get('tpps_zenodo_api_key')],
-      'absolute' => TRUE,
-      'https' => TRUE,
+      'external' => TRUE,
     ]);
     return $data['url'];
   }
