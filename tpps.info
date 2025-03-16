@@ -18,6 +18,7 @@ files[] = src/RestAPI.class.inc
 files[] = src/zenodo/Zenodo.class.inc
 files[] = src/zenodo/ZenodoDeposit.class.inc
 files[] = src/zenodo/ZenodoFiles.class.inc
+files[] = src/zenodo/ZenodoRecords.class.inc
 
 files[] = src/PhenotypeManual.class.inc
 files[] = src/PhenotypeMeta.class.inc

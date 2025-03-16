@@ -61,7 +61,11 @@ class Zenodo {
   // API scope: deposit:write.
 
   /**
-   * Lists all depositions for the currently authenticated user.
+   * Lists all depositions/deposition files/records.
+   *
+   * Deposition: Lists all depositions for the currently authenticated user.
+   * Files: List all deposition files for a given deposition.
+   * Records: List all open access records.
    *
    * Scope (permissions): deposit:write.
    *
@@ -100,7 +104,7 @@ class Zenodo {
   }
 
   /**
-   * Deletes deposition resource.
+   * Deletes deposition/files resource.
    *
    * Scope (permissions): deposit:write.
    *
@@ -128,7 +132,7 @@ class Zenodo {
   }
 
   /**
-   * Creates a blank Zenodo DOI Deposit. Returns the Zenodo id number.
+   * Creates a blank Zenodo DOI Deposit/Files.
    *
    * Scope (permissions): deposit:write.
    *
@@ -144,7 +148,12 @@ class Zenodo {
   }
 
   /**
-   * Updates an existing deposition.
+   * Updates an existing deposition/deposition file resource.
+   *
+   * Deposition file:
+   * Currently the only use is renaming an already uploaded file.
+   * If you one to replace the actual file, please delete the file
+   * and upload a new file.
    *
    * Scope (permissions): deposit:write.
    *
