@@ -17,9 +17,7 @@ function tpps_admin_doi_duplicates_report($reset = FALSE) {
   $cache_key = $cid;
   if ($reset || empty($cache) || empty($cache->data[$cache_key])) {
     // Get new data.
-
-    // Get data.
-    // @TODO Cache it.
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $data = [];
     $submission_list = tpps_load_submission_multiple();
     foreach ($submission_list as $accession => $submission) {
@@ -39,7 +37,8 @@ function tpps_admin_doi_duplicates_report($reset = FALSE) {
       if (count($list) >= 2) {
         foreach ($list as $item) {
           $accession_list[] = l(implode(' / ', $item), 'api/submission/'
-            . $item['accession'] . '/view/shared_state/saved_values/1/doi'
+            . $item['accession'] . '/view/shared_state/saved_values/'
+            . TPPS_PAGE_1 . '/doi'
           );
         }
         $rows[] = [

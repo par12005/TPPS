@@ -33,9 +33,10 @@ Main steps to add new report:
 4. Add metadata to ```tpps_report_get_list()```.
 5. Add ability to change report title at 'admin/config/tpps/reports'.
    See function ```tpps_reports_settings_form()```.
-6. Add commented new title variable name to ```tpps_admin_panel_get_reports()```.
-7. Use ```hook_update_N()``` to set value of the variable which holds report's title.
-8. Clear cache.
+6. Add commented new title variable name to ```tpps_reports_settings_form()```.
+7. Register report and it's URL in ```tpps_admin_panel_get_reports()```.
+8. Use ```hook_update_N()``` to set value of the variable which holds report's title.
+9. Clear cache.
 
 Example of the item in function ```tpps_report_get_list()```:
 ```
