@@ -32,7 +32,7 @@ class RestAPI {
    * @return mixed
    *   Returns API response.
    */
-  public static function post($url, $data = '', array $header = []) {
+  public static function post($url, $data = [], array $header = []) {
     if (empty($header)) {
       $header = [
         'Content-Type: application/json',
@@ -54,7 +54,7 @@ class RestAPI {
    * @return mixed
    *   Returns API response.
    */
-  public static function get($url, array $data = '') {
+  public static function get($url, array $data = []) {
     return self::doRequest('GET', $url, $data);
   }
 
@@ -73,7 +73,7 @@ class RestAPI {
    * @return mixed
    *   Returns API response.
    */
-  public static function put($url, array $data = '', array $header = []) {
+  public static function put($url, array $data = [], array $header = []) {
     if (empty($header)) {
       $header = [
         'Content-Type: application/json',
@@ -95,7 +95,7 @@ class RestAPI {
    * @return mixed
    *   Returns API response.
    */
-  public static function delete($url, array $data = '') {
+  public static function delete($url, array $data = []) {
     return self::doRequest('DELETE', $url, $data);
   }
 
@@ -117,9 +117,14 @@ class RestAPI {
    *
    * @todo Convert to private or protected.
    */
-  public static function doRequest($method, $url, $data = '', array $header = []) {
+  public static function doRequest($method, $url, $data = [], array $header = []) {
+    $debug_mode = FALSE;
+    if ($debug_mode) {
+      dpm($url); return;
+    }
+
     $curl = curl_init();
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+    curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
     switch (strtoupper($method)) {
       case "POST":
         curl_setopt($curl, CURLOPT_POST, 1);
