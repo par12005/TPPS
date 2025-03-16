@@ -47,15 +47,15 @@ class ZenodoDeposit extends Zenodo {
    * https://developers.zenodo.org/?shell#publish.
    *
    * @param array $data
-   *   Data for request. Required keys are: 'deposit_id'.
+   *   Data for requiest. Required keys are:
+   *   'deposit_id' - int. Zenodo Deposition Id.
    *
    * @return mixed
    *   Returns API response.
    */
   public static function publish(array $data) {
-    $action = 'publish';
-    self::validateRequiired(['deposit_id'], $data);
-    $url = self::getUrl($data['deposit_id'] . '/actions/' . $action);
+    $data['action'] = 'publish';
+    $url = static::buildActionUrl($data);
     $response = RestAPI::post($url);
     return RestAPI::decodeJSON($response);
   }
@@ -66,16 +66,16 @@ class ZenodoDeposit extends Zenodo {
    * Scope (permissions): deposit:actions.
    * See: https://developers.zenodo.org/?shell#edit.
    *
-   * @param int $deposit_id
-   *   The identifier for the Deposition.
+   * @param array $data
+   *   Data for requiest. Required keys are:
+   *   'deposit_id' - int. Zenodo Deposition Id.
    *
    * @return mixed
    *   Returns API response.
    */
-  public static function edit($deposit_id) {
-    $action = 'edit';
-    self::validateRequiired(['deposit_id'], $data);
-    $url = self::getUrl($deposit_id . '/actions/' . $action);
+  public static function edit(array $data) {
+    $data['action'] = 'edit';
+    $url = static::buildActionUrl($data);
     $response = RestAPI::post($url);
     return RestAPI::decodeJSON($response);
   }
@@ -86,15 +86,16 @@ class ZenodoDeposit extends Zenodo {
    * Scope (permissions): deposit:actions.
    * See: https://developers.zenodo.org/?shell#discard.
    *
-   * @param int $deposit_id
-   *   The identifier for the Deposition.
+   * @param array $data
+   *   Data for requiest. Required keys are:
+   *   'deposit_id' - int. Zenodo Deposition Id.
    *
    * @return mixed
    *   Returns API response.
    */
-  public static function discard($deposit_id) {
-    $action = 'discard';
-    $url = self::getUrl($deposit_id . '/actions/' . $action);
+  public static function discard(array $data) {
+    $data['action'] = 'discard';
+    $url = static::buildActionUrl($data);
     $response = RestAPI::post($url);
     return RestAPI::decodeJSON($response);
   }
@@ -124,17 +125,34 @@ class ZenodoDeposit extends Zenodo {
    *   version. It is not possible to use the global id that references all
    *   the versions.
    *
-   * @param int $deposit_id
-   *   The identifier for the Deposition.
+   * @param array $data
+   *   Data for requiest. Required keys are:
+   *   'deposit_id' - int. Zenodo Deposition Id.
    *
    * @return mixed
    *   Returns API response.
    */
-  public static function newVersion($deposit_id) {
-    $action = 'newversion';
-    $url = self::getUrl($deposit_id . '/actions/' . $action);
+  public static function newVersion(array $data) {
+    $data['action'] = 'newversion';
+    $url = static::buildActionUrl($data);
     $response = RestAPI::post($url);
     return RestAPI::decodeJSON($response);
+  }
+
+  /**
+   * Builds API Endpoint for Action-commands.
+   *
+   * @param array $data
+   *   Data for requiest. Required keys are:
+   *   'deposit_id' - int. Zenodo Deposition Id.
+   *   'action' - string. Name of the action.
+   *
+   * @return string
+   *   Returns absolute URL for Zenodo API Endpoint.
+   */
+  public static function buildActionUrl(array $data) {
+    self::validateRequired(['deposit_id'], $data);
+    return static::buildUrl($data) . '/actions/' . $data['action'];
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -166,7 +184,7 @@ class ZenodoDeposit extends Zenodo {
 // @todo Store relation of the publication id and $accession and re-use it.
 
 
-    $response = self::generateDOI($accession)
+    $response = self::generateDOI($accession);
     return (int) $response->id;
   }
 
@@ -262,7 +280,7 @@ class ZenodoDeposit extends Zenodo {
    *   The loaded Deposition object.
    */
   public static function tpps_doi_load($id) {
-    $ch = curl_init(static::getUrl($id));
+    $ch = curl_init(static::buildUrl($id));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 
     $out = json_decode(curl_exec($ch));
