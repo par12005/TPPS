@@ -238,7 +238,7 @@ class ZenodoDeposit extends Zenodo {
     // dpm($metadata);
 
 
-    $has_uploads = ZenodoFiles::upload($id, $state);
+    $has_uploads = ZenodoFiles::uploadAll($id, $state);
     if ($has_uploads == FALSE) {
       echo "This study does not have any uploads so zenodo will never publish this study. Please update the study with at least one file.<br />";
       // Apparently a study submission must have at least one meta data file
