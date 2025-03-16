@@ -62,6 +62,7 @@ function tpps_install() {
   variable_set('tpps_report_organism_list_title', 'Organism List');
   variable_set('tpps_report_doi_duplicates_title', 'DOI Duplicates');
   variable_set('tpps_report_new_organisms_title', 'New Organisms');
+  variable_set('tpps_report_zenodo_submissions_title', 'Zenodo Submissions');
   // Submission Tools.
   variable_set('tpps_submission_secret_key', '');
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -456,6 +457,7 @@ function tpps_uninstall() {
   variable_del('tpps_report_organism_list_title');
   variable_del('tpps_report_doi_duplicates_title');
   variable_del('tpps_report_new_organisms_title');
+  variable_del('tpps_report_zenodo_submissions_title');
   // Submission Tools.
   variable_del('tpps_submission_secret_key');
   // Form. Main settings.
@@ -2458,4 +2460,5 @@ function tpps_update_7128() {
   variable_del('tpps_zenodo_prefix');
   variable_set('tpps_zenodo_debug_mode', FALSE);
   variable_set('tpps_zenodo_new_implementation', FALSE);
+  variable_set('tpps_report_zenodo_submissions_title', 'Zenodo Submissions');
 }
