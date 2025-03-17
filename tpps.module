@@ -2785,6 +2785,20 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'file' => 'pages/submission/vcf/local/rename.inc',
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Zenodo API actions.
+  $items['tpps/submission/%/zenodo'] = [
+    'title callback' => 'tpps_submission_title',
+    // 2nd - submission accession. E.g. 'TGDR1234'.
+    // 4th - group name (without 'zenodo' prefix).
+    // 5th - Zenodo API action name.
+    'title arguments' => [2, 4, 5],
+    'description' => 'Zenodo API Actions',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_zenodo_form', 2],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'pages/submission/zenodo.inc',
+  ];
 }
 
 /**
