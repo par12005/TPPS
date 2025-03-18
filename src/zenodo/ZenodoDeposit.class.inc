@@ -156,14 +156,129 @@ class ZenodoDeposit extends Zenodo {
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Custom methods.
+  // Different representations of the Zenodo Deposition Entity.
+
+  /**
+   * Prints single Deposition as a HTML-list.
+   *
+   * @param array $deposition
+   *   Zenodo Deposition Enitiy.
+   * @param string $format
+   *   Output format. Possible values are: 'table' and 'list' (default).
+   *
+   * @return string
+   *   Returns rendered HTML representation of the Deposition Entity.
+   */
+  public static function printDeposition(array $deposition, $format = 'list') {
+    $output = '';
+    $deposit_id = $deposition['id'];
+    $doi = $deposition['metadata']['prereserve_doi']['doi'] ?? '';
+    if (empty($doi) || empty($deposit_id)) {
+      return '';
+    }
+    $title = t('Zenodo Deposition #@deposit_id @doi',
+      [
+        '@deposit_id' => $deposit_id,
+        '@doi' => (empty($doi) ? '' : '( ' . $doi . ' )'),
+      ]
+    );
+    $output .= '<h3>' . $title . '</h3>';
+    switch ($format) {
+      case 'dump':
+        $dump = tpps_array_dump($deposition);
+        foreach ($dump as $item) {
+          $output .= '<h4>' . $item['title'] . '</h4>' . $item['data'];
+        }
+        break;
+
+      case 'table':
+      case 'table_row':
+        // Returns single row of the table.
+        $row = [];
+        $array_item_list = ['metadata', 'links', 'files'];
+        // Items from 'metadata'.
+        $doi = $deposition['metadata']['prereserve_doi']['doi'] ?? '';
+        $row['doi'] = empty($doi) ? '' : l($doi,
+          'admin/reports/tpps/zenodo-depositions/' . $deposition['id']
+        );
+        foreach ($deposition as $key => $value) {
+          if (in_array($key, $array_item_list)) {
+            continue;
+          }
+          switch ($key) {
+
+            case 'id':
+              $value = l($value, 'admin/reports/tpps/zenodo-depositions/' . $value);
+              break;
+
+            case 'created':
+            case 'modified':
+              $value = str_replace('T', ' ', $value);
+              break;
+
+            default:
+              $value = (string) $value;
+              break;
+          }
+          $row[$key] = $value;
+        }
+        if ($format == 'table') {
+          $output = theme('table', [
+            'header' => array_keys($row),
+            'rows' => [$row],
+          ]);
+        }
+        else {
+          $output = $row;
+        }
+
+        break;
+
+      case 'list':
+      default:
+        $output .= tpps_array_print_list($deposition);
+        break;
+    }
+    return $output;
+  }
+
+  /**
+   * Prints out multiple Zenodo Depositions using HTML-list.
+   *
+   * @param array $list
+   *   List of the Zenodo Depositions.
+   *   See ZenodoDeposit::list().
+   * @param string $format
+   *   Output format. Possible values are: 'table' and 'list' (default).
+   *
+   * @return string
+   *   Returns rendered HTML-list of all depositions.
+   */
+  public static function printDepositionList(array $list, $format = 'list') {
+    $output = '';
+    $rows = [];
+    foreach ($list as $deposition) {
+      if ($format == 'table') {
+        $rows[] = static::printDeposition($deposition, 'table_row');
+      }
+      else {
+        $output .= static::printDeposition($deposition, $format);
+      }
+    }
+    if ($format == 'table') {
+      $output .= theme('table', [
+        'header' => array_keys($rows[0]),
+        'rows' => $rows,
+      ]);
+    }
+    return $output;
+  }
 
 
 
 
 
-
-
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 // @TODO Review below.
 
@@ -303,5 +418,7 @@ class ZenodoDeposit extends Zenodo {
     $last = implode(' ', array_slice($parts, 1));
     return "$last, $first";
   }
+
+  //
 
 }

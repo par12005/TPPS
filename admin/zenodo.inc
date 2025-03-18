@@ -32,7 +32,7 @@ function tpps_zenodo_settings_form(array $form, array &$form_state) {
   ];
   $form['api']['tpps_zenodo_debug_mode'] = [
     '#type' => 'checkbox',
-    '#title' => t('Enable Debug Mode'),
+    '#title' => t('Use Zenodo Sandbox server '),
     '#default_value' => variable_get('tpps_zenodo_debug_mode'),
     '#description' => t('When enabled then special URL will be used for '
       . 'Zenodo API requests (sandbox.zenodo.org). <br />This sandbox is '

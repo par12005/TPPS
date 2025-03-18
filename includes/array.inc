@@ -344,3 +344,30 @@ function &tpps_array_get_value(array &$array, array $parents = []) {
 function tpps_array_set_value(array &$array, array $parents, $value = NULL) {
   drupal_array_set_nested_value($array, $parents, $value);
 }
+
+/**
+ * Dumps array using item list.
+ *
+ * Note: uses recursion.
+ *
+ * @param array $list
+ *   Array with data.
+ *
+ * @return string
+ *   Returns rendered HTML list.
+ *
+ *   @todo move to includes/array.inc.
+ */
+function tpps_array_print_list(array $list = []) {
+  $items = [];
+  foreach ($list as $key => $value) {
+    if (is_array($value)) {
+      $value = tpps_array_print_list($value);
+    }
+    else {
+      $value = check_plain($value);
+    }
+    $items[] = '<strong>' . check_plain($key) . ':</strong> ' . $value;
+  }
+  return theme('item_list', ['items' => $items]);
+}
