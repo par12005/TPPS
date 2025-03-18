@@ -207,20 +207,21 @@ class Zenodo {
       case 'ZenodoDeposit':
         // Example: /api/deposit/depositions/:id.
         $path .= static::BASE_PATH
-          . ($data['deposit_id'] ? '/' . $data['deposit_id'] : '');
+          . (empty($data['deposit_id']) ? '' : '/' . $data['deposit_id']);
         break;
 
       case 'ZenodoFiles':
         // Example: /api/deposit/depositions/:id/files/:file_id.
         $path .= static::BASE_PATH
-          . ($data['deposit_id'] ? '/' . $data['deposit_id'] : '')
-          . '/files' . ($data['file_id'] ? '/' . $data['file_id'] : '');
+          . (empty($data['deposit_id']) ? '' : '/' . $data['deposit_id'])
+          . '/files'
+          . (empty($data['file_id']) ? '': '/' . $data['file_id']);
         break;
 
       case 'ZenodoRecords':
         // Example: /api/records/:id.
         $path .= static::BASE_PATH
-          . ($data['deposit_id'] ? '/' . $data['deposit_id'] : '');
+          . (empty($data['deposit_id']) ? '' : '/' . $data['deposit_id']);
         break;
     }
     if (empty($path)) {
