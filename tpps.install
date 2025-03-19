@@ -62,7 +62,7 @@ function tpps_install() {
   variable_set('tpps_report_organism_list_title', 'Organism List');
   variable_set('tpps_report_doi_duplicates_title', 'DOI Duplicates');
   variable_set('tpps_report_new_organisms_title', 'New Organisms');
-  variable_set('tpps_report_zenodo_submissions_title', 'Zenodo Submissions');
+  variable_set('tpps_report_zenodo_submissions_title', 'Submissions with Zenodo Depositions');
   variable_set('tpps_report_zenodo_depositions_title', 'Zenodo Depositions');
   // Submission Tools.
   variable_set('tpps_submission_secret_key', '');

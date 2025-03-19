@@ -2605,7 +2605,7 @@ function tpps_report_get_list() {
     // Report: Submissions which linked to Zenodo Depositions.
     'zenodo_submissions' => [
       'url' => 'zenodo-submissions',
-      'title' => variable_get('tpps_report_zenodo_submissions_title', 'Zenodo Submissions'),
+      'title' => variable_get('tpps_report_zenodo_submissions_title', 'Submissions which has Zenodo Depositions'),
       'description' => t('List of Studies which has Zenodo Depositions.'),
       'page callback' => 'tpps_admin_zenodo_submissions_report',
       'admin_panel' => TRUE,

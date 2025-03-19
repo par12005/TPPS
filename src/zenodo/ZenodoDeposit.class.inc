@@ -155,6 +155,16 @@ class ZenodoDeposit extends Zenodo {
     return static::buildUrl($data) . '/actions/' . $data['action'];
   }
 
+  /**
+   * Checks if Zenodo Sandbox is in use.
+   *
+   * @return bool
+   *   Returns TRUE when Zenodo Sandbox server is currenlty in use.
+   */
+  public static function isSandboxServer() {
+    return (bool) variable_get('tpps_zenodo_debug_mode');
+  }
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Different representations of the Zenodo Deposition Entity.
 
@@ -171,6 +181,9 @@ class ZenodoDeposit extends Zenodo {
    */
   public static function printDeposition(array $deposition, $format = 'list') {
     $output = '';
+    if (!ZenodoDeposit::isDeposition($deposition)) {
+      return $output;
+    }
     $deposit_id = $deposition['id'];
     $doi = $deposition['metadata']['prereserve_doi']['doi'] ?? '';
     if (empty($doi) || empty($deposit_id)) {
@@ -272,6 +285,41 @@ class ZenodoDeposit extends Zenodo {
       ]);
     }
     return $output;
+  }
+
+  /**
+   * Checks if response contains single Deposition.
+   *
+   * @param array $response
+   *   Zenodo API response.
+   *
+   * @return bool
+   *   Returns TRUE if response has Deposition entity.
+   *   Returns FALSE and shows error message on page if Deposition not found.
+   */
+  public static function isDeposition(array $response) {
+    if (empty($response['id']) && empty($response['metadata'])) {
+      if (!empty($response['status']) && !empty($response['message'])) {
+        drupal_set_message(t('Depostion not found. '
+          . '<br />Response: <strong>@code - @message</strong>'
+          . '<br />Check if correct Zenodo server was used. '
+          . 'Current sever: <strong>@server</strong>.'
+          . '<br />To change server use !settings_page_link.',
+          [
+            '@code' => $response['status'],
+            '@message' => $response['message'],
+            '@server' => ZenodoDeposit::isSandboxServer() ? 'Sandbox' : 'LIVE',
+            '!settings_page_link' => l(t('Zenodo Settings page'),
+            'admin/config/tpps/zenodo'),
+          ])
+        );
+      }
+      else {
+        drupal_set_message(print_r($response, 1));
+      }
+      return FALSE;
+    }
+    return TRUE;
   }
 
 
