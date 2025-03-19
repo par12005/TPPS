@@ -37,7 +37,7 @@ function tpps_admin_zenodo_submissions_report($reset = FALSE) {
           l($deposit_id, 'api/submission/' . $accession . '/zenodo/deposit')
         ),
         'deposition_files' => (empty($publication_doi) ? '-' : l(
-          t('Deposition Files'), 'api/submission/' . $accession . '/zenodo/files'
+          t('View Files'), 'api/submission/' . $accession . '/zenodo/files'
         )),
         'publication_doi' => $publication_doi,
         'accession' => l(
