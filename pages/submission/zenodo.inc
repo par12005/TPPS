@@ -25,7 +25,17 @@ function tpps_submission_zenodo_form(array $form, array $form_state, $accession 
   }
 
   $submission = new Submission($accession);
-  $data['deposit_id'] = $submission->get(['zenodo_id']);
+  $deposit_id = $submission->get(['zenodo_id']);
+  if (empty($deposit_id)) {
+    if (
+      ($group_name == 'deposition' && !in_array($action, ['create', 'list']))
+      || ($group_name == 'deposition_files')
+    ) {
+      drupal_set_message(t('Submission has no Zenodo Deposit Id.'), 'error');
+      drupal_goto($path . '/' . $accession);
+    }
+  }
+  $data['deposit_id'] = $deposit_id;
 
   switch ($group_name) {
     case 'deposition':
@@ -49,30 +59,8 @@ function tpps_submission_zenodo_form(array $form, array $form_state, $accession 
 
   // Get response.
   $response = call_user_func($method_name, $data);
-  $form['zenodo_api_method'] = [
-    '#title' => t('Method'),
-    '#type' => 'textfield',
-    '#default_value' => $method_name . '()',
-    '#disabled' => TRUE,
-  ];
-  $form['zenodo_api_url'] = [
-    '#title' => t('Endpoint URL'),
-    '#type' => 'textfield',
-    '#default_value' => call_user_func($class . '::buildUrl', $data),
-    '#disabled' => TRUE,
-  ];
-  $form['zenodo_api_args'] = [
-    '#title' => t('Request Data'),
-    '#type' => 'textarea',
-    '#value' => var_export($data, 1),
-    '#disabled' => TRUE,
-  ];
   $form['zenodo_api_response'] = [
-    '#title' => t('Zenodo API Response'),
-    '#type' => 'textarea',
-    '#value' => var_export($response, 1),
-    '#rows' => 20,
-    '#disabled' => TRUE,
+    '#markup' => ZenodoDeposit::printDeposition($response),
   ];
 
   tpps_submission_list_add_buttons($form, FALSE);

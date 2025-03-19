@@ -40,7 +40,7 @@ function tpps_submission_list_form(array $form, array &$form_state = [], $access
     [
       'title' => 'Zenodo Deposition',
       'button_list' => [
-        'create', 'update', 'retrieve', 'delete', 'list',
+        'create', 'update', 'retrieve', 'delete',
       ],
     ],
     [
