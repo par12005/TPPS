@@ -2038,4 +2038,51 @@ class Submission {
     return $this->state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1;
   }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Zenodo Deposition.
+  //
+  // Note: Special methods used to encapsulate Zenodo Data in TPPS Submission
+  // and have ability to change/rename it in single place.
+
+  /**
+   * Sets Zenodo Deposit Id.
+   *
+   * @param int $deposit_id
+   *   Zenodo Deposition Id.
+   * @param bool $save_on_change
+   *   Default is TRUE which means TPPS Submission object will be saved to
+   *   database immidietly if Deposit Id changes.
+   *   Set to FALSE if you need to make other changes to TPPS Submission and
+   *   save it later manually.
+   */
+  public function setZenodoDepositId($deposit_id, $save_on_change = TRUE) {
+    if (!empty($deposit_id) && $this->state['zenodo_id'] != $deposit_id) {
+      // Deposit Id was changed.
+      $this->state['zenodo_id'] = $deposit_id;
+      if ($save_on_change) {
+        $this->save();
+      }
+    }
+  }
+
+  /**
+   * Gets Zenodo Deposit Id.
+   *
+   * @return mixed
+   *   Returns Zenodo Deposit Id or NULL if it wasn't set.
+   */
+  public function getZenodoDepositId() {
+    return $this->state['zenodo_id'] ?? NULL;
+  }
+
+  /**
+   * Checks if Submission has Zenodo Deposit Id.
+   *
+   * @return bool
+   *   Returns TRUE if Submission has Zenodo Deposit Id and FALSE otherwise.
+   */
+  public function hasZenodoDepositId() {
+    return !empty($this->getZenodoDepositId());
+  }
+
 }
