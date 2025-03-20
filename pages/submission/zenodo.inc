@@ -25,7 +25,8 @@ function tpps_submission_zenodo_form(array $form, array $form_state, $accession 
   }
 
   $submission = new Submission($accession);
-  $deposit_id = $submission->get(['zenodo_id']);
+  $deposit_id = $submission->getZenodoDepositId();
+
   if (empty($deposit_id)) {
     if (
       ($group_name == 'deposition' && !in_array($action, ['create', 'list']))

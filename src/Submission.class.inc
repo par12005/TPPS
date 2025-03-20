@@ -170,6 +170,12 @@ class Submission {
    */
   protected $status = '';
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Class constants.
+
+  // Name of the key in $state used to store Zenodo Deposit Id.
+  const ZENODO_DEPOSIT_ID_KEY = 'zenodo_id';
+
   /**
    * Class constructor.
    *
@@ -2047,6 +2053,8 @@ class Submission {
   /**
    * Sets Zenodo Deposit Id.
    *
+   * To clear stored id: $submission->setZenodoDepositId();
+   *
    * @param int $deposit_id
    *   Zenodo Deposition Id.
    * @param bool $save_on_change
@@ -2055,10 +2063,10 @@ class Submission {
    *   Set to FALSE if you need to make other changes to TPPS Submission and
    *   save it later manually.
    */
-  public function setZenodoDepositId($deposit_id, $save_on_change = TRUE) {
-    if (!empty($deposit_id) && $this->state['zenodo_id'] != $deposit_id) {
+  public function setZenodoDepositId($deposit_id = NULL, $save_on_change = TRUE) {
+    if ($this->state[self::ZENODO_DEPOSIT_ID_KEY] != $deposit_id) {
       // Deposit Id was changed.
-      $this->state['zenodo_id'] = $deposit_id;
+      $this->state[self::ZENODO_DEPOSIT_ID_KEY] = $deposit_id;
       if ($save_on_change) {
         $this->save();
       }
@@ -2072,7 +2080,9 @@ class Submission {
    *   Returns Zenodo Deposit Id or NULL if it wasn't set.
    */
   public function getZenodoDepositId() {
-    return $this->state['zenodo_id'] ?? NULL;
+    return $this->state[
+      self::ZENODO_DEPOSIT_ID_KEY
+    ] ?? NULL;
   }
 
   /**
