@@ -358,7 +358,8 @@ class ZenodoDeposit extends Zenodo {
     $page1_values = $state['saved_values'][TPPS_PAGE_1] ?? NULL;
     $page2_values = $state['saved_values'][TPPS_PAGE_2] ?? NULL;
 
-    $id = self::create();
+    $response = self::create();
+    $id = $response['id'];
     if ($debug_mode) {
       dpm('Zenodo ID created using ZenodoDeposit::create(): ' . $id);
     }
