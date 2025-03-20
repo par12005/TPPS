@@ -29,62 +29,27 @@ function tpps_submission_list_form(array $form, array &$form_state = [], $access
     '#required' => TRUE,
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // @TODO Minor. Check if Submission has Zenodo Deposit Id and show/hide buttons.
   $action_list = [
-    [
-      'title' => 'Submission Actions',
-      'button_list' => [
-        'create', 'view', 'export', 'import', 'compare', 'purge',
-      ],
-    ],
-    [
-      'title' => 'Zenodo Deposition',
-      'button_list' => [
-        'create', 'update', 'retrieve', 'delete',
-      ],
-    ],
-    [
-      'title' => 'Zenodo Deposition Actions',
-      'button_list' => [
-        'publish', 'newversion', 'discard', 'edit',
-      ],
-    ],
-    // @todo Requires file id which requires extra request to get them.
-    [
-      'title' => 'Zenodo Deposition Files',
-      'button_list' => [
-        'create', 'update', 'retrieve', 'delete', 'list',
-      ],
-    ],
+    'create', 'view', 'export', 'import', 'compare', 'purge', 'zenodo',
   ];
   foreach ($action_list as $action) {
-    $group_name = str_replace(' ', '_', strtolower($action['title']));
-    $form[$group_name] = [
-      '#type' => 'fieldset',
-      '#title' => t($action['title']),
-      '#tree' => TRUE,
+    $form[$action] = [
+      '#type' => 'submit',
+      '#value' => $action,
     ];
-    foreach ($action['button_list'] as $key) {
-      $form[$group_name][$key] = [
-        '#type' => 'submit',
-        '#name' => $group_name . '_' . $key,
-        '#value' => t(ucfirst($key)),
-      ];
-      // Hide buttons when 'new' accession selected.
-      if ($key != 'import') {
-        $state = '!value';
-        if ($key == 'create'  && $action['title'] == 'Submission Actions') {
-          $state = 'value';
-        }
-        $form[$group_name][$key]['#states'] = [
-          'visible' => [
-            ':input[name="tpps_submission_accession"]' => [$state => 'new'],
-          ],
-        ];
+    // Hide buttons when 'new' accession selected.
+    if ($action != 'import') {
+      $state = '!value';
+      if ($action == 'create') {
+        $state = 'value';
       }
+      $form[$action]['#states'] = [
+        'visible' => [
+          ':input[name="tpps_submission_accession"]' => [$state => 'new'],
+        ],
+      ];
     }
   }
-
   tpps_form_autofocus($form, ['tpps_submission_accession']);
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
@@ -103,8 +68,8 @@ function tpps_submission_list_form_validate(array $form, array &$form_state) {
     );
   }
   // Check action and group.
-  list($group_name, $action) = $form_state['triggering_element']['#array_parents'] ?? [];
-  if (empty($action) || empty($group_name)) {
+  $action = $form_state['triggering_element']['#value'] ?? NULL;
+  if (empty($action)) {
     form_set_error('non-existing_form_element', t('Empty action.'));
   }
 }
@@ -114,31 +79,16 @@ function tpps_submission_list_form_validate(array $form, array &$form_state) {
  */
 function tpps_submission_list_form_submit(array $form, array &$form_state) {
   $accession = $form_state['values']['tpps_submission_accession'] ?? '';
-  list($group_name, $action) = $form_state['triggering_element']['#array_parents'];
-  switch ($group_name) {
-    case 'submission_actions':
-      $path = 'tpps/submission';
-      if ($accession == 'new' && $action == 'create') {
-        drupal_goto('tppsc');
-      }
-      else {
-        $path .= ($accession && $action) ? '/' . $accession . '/' . $action : '';
-        drupal_goto($path);
-      }
-      break;
+  $action = $form_state['triggering_element']['#value'] ?? NULL;
+  $path = 'tpps/submission';
+  if ($accession == 'new' && $action == 'create') {
+    drupal_goto('tppsc');
+  }
+  else {
+    $path .= ($accession && $action) ? '/' . $accession . '/' . $action : '';
 
-    case 'zenodo_deposition':
-    case 'zenodo_deposition_actions':
-    case 'zenodo_deposition_files':
-      $path = implode('/', [
-        'tpps/submission',
-        $accession,
-        'zenodo',
-        str_replace('zenodo_', '', $group_name),
-        $action
-      ]);
-      drupal_goto($path);
-      break;
+    dpm($path, 'path');
+    drupal_goto($path);
   }
 }
 

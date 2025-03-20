@@ -127,7 +127,16 @@ class Zenodo {
   public static function delete(array $data) {
     static::validateRequired(['deposit_id'], $data);
     $url = static::buildUrl($data);
-    return RestAPI::delete($url);
+    $response = RestAPI::delete($url);
+
+    // @TODO Clear cache only in case of success.
+    // Clear cached report.
+    cache_clear_all(
+      'tpps_admin_zenodo_submissions_report',
+      (TPPS_CACHE_BIN ?? 'cache')
+    );
+    // @TODO Validate response. Check status.
+    return ($response ? RestAPI::decodeJSON($response) : '');
   }
 
   /**
@@ -142,8 +151,14 @@ class Zenodo {
     $data = [];
     $url = static::buildUrl($data);
     $response = RestAPI::post($url, '{}');
-    $data = RestAPI::decodeJSON($response);
-    return $data->id;
+
+    // @TODO Clear cache only in case of success.
+    // Clear cached report.
+    cache_clear_all(
+      'tpps_admin_zenodo_submissions_report',
+      (TPPS_CACHE_BIN ?? 'cache')
+    );
+    return ($response ? RestAPI::decodeJSON($response) : '');
   }
 
   /**
