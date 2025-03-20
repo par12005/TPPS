@@ -99,7 +99,7 @@ class Zenodo {
     static::validateRequired(['deposit_id'], $data);
     $url = static::buildUrl($data);
     $response = RestAPI::get($url);
-    return RestAPI::decodeJSON($response);
+    return ($response ? RestAPI::decodeJSON($response) : $response);
   }
 
   /**
@@ -151,13 +151,13 @@ class Zenodo {
     $data = [];
     $url = static::buildUrl($data);
     $response = RestAPI::post($url, '{}');
-
-    // @TODO Clear cache only in case of success.
-    // Clear cached report.
-    cache_clear_all(
-      'tpps_admin_zenodo_submissions_report',
-      (TPPS_CACHE_BIN ?? 'cache')
-    );
+    if (!empty($response['id'])) {
+      // Clear cache only in case of success.
+      cache_clear_all(
+        'tpps_admin_zenodo_submissions_report',
+        (TPPS_CACHE_BIN ?? 'cache')
+      );
+    }
     return ($response ? RestAPI::decodeJSON($response) : '');
   }
 

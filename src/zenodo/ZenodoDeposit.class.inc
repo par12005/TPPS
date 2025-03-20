@@ -329,6 +329,26 @@ class ZenodoDeposit extends Zenodo {
     return TRUE;
   }
 
+  /**
+   * Formats an author name for Zenodo metadata fields.
+   *
+   * Former: tpps_doi_format_name($name).
+   *
+   * @param string $name
+   *   The name to format.
+   *
+   * @return string
+   *   The formatted name.
+   */
+  public static function formatAuthorName($name) {
+    $parts = explode(' ', $name);
+    $first = $parts[0];
+    $last = implode(' ', array_slice($parts, 1));
+    return "$last, $first";
+  }
+
+
+
 
 
 
@@ -365,7 +385,7 @@ class ZenodoDeposit extends Zenodo {
     }
     $creators = array(
       (object) array(
-        'name' => tpps_doi_format_name($state['saved_values'][TPPS_PAGE_1]['primaryAuthor']),
+        'name' => static::formatAuthorName($state['saved_values'][TPPS_PAGE_1]['primaryAuthor']),
         // [VS] Organization field was removed so I just left 'affiliation' with
         // empty value because I'm not sure if this field is required.
         'affiliation' => NULL,
@@ -375,7 +395,7 @@ class ZenodoDeposit extends Zenodo {
     $secondary_author_number = $page1_values['publication']['secondaryAuthors']['number'];
     for ($i = 1; $i <= $secondary_author_number; $i++) {
       $creators[] = (object) [
-        'name' => tpps_doi_format_name($page1_values['publication']['secondaryAuthors'][$i]),
+        'name' => static::formatAuthorName($page1_values['publication']['secondaryAuthors'][$i]),
       ];
     }
 
@@ -418,23 +438,5 @@ class ZenodoDeposit extends Zenodo {
 
     return $upload;
   }
-
-  /**
-   * Formats an author name for Zenodo metadata fields.
-   *
-   * @param string $name
-   *   The name to format.
-   *
-   * @return string
-   *   The formatted name.
-   */
-  public static function tpps_doi_format_name($name) {
-    $parts = explode(' ', $name);
-    $first = $parts[0];
-    $last = implode(' ', array_slice($parts, 1));
-    return "$last, $first";
-  }
-
-  //
 
 }
