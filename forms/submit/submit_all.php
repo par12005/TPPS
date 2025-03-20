@@ -2129,10 +2129,16 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
     }
   }
   elseif ($genotype['ref-genome'] != 'none') {
-    tpps_chado_insert_record('projectprop', array(
+    // tpps_chado_insert_record('projectprop', array(
+    //   'project_id' => $project_id,
+    //   'type_id' => tpps_load_cvterm('reference_genome')->cvterm_id,
+    //   'value' => $genotype['ref-genome'],
+    // ));
+
+    $analysis_id = tpps_get_analysis_id_from_ref_genome($genotype['ref-genome']);
+    tpps_chado_insert_record('project_analysis', array(
       'project_id' => $project_id,
-      'type_id' => tpps_load_cvterm('reference_genome')->cvterm_id,
-      'value' => $genotype['ref-genome'],
+      'analysis_id' => $analysis_id,
     ));
   }
 
