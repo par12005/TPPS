@@ -28,23 +28,33 @@ function tpps_manage_doi($accession) {
 
   $token = variable_get('tpps_zenodo_api_key', NULL);
   if (!empty($token)) {
-    if (empty($submission->state['zenodo_id']) || isset($_GET['force'])) {
-
+    $deposit_id = $submission->getZenodoDepositId();
+    if (empty($deposit_id) || isset($_GET['force'])) {
+      // No Zenodo Deposit Id found. Let's create new one.
       if (!variable_get('tpps_zenodo_new_implementation')) {
-        $submission->set(['zenodo_id'], tpps_generate_doi($accession)->id);
-        $doi_object = tpps_doi_publish($submission->state['zenodo_id']);
+        $deposit_id = tpps_generate_doi($accession)->id;
+        $submission->setZenodoDepositId($deposit_id);
+        $doi_object = tpps_doi_publish($deposit_id);
       }
       else {
-        $submission->set(['zenodo_id'], ZenodoDeposit::getId($accession));
-        $doi_object = ZenodoDeposit::publish([
-          'deposit_id' => $submission->state['zenodo_id']
-        ]);
+        // @todo Seems ZenodoDeposit::create() does the same. Doublecheck.
+        $response = ZenodoDeposit::generateDOI($accession);
+        // @todo Validate response.
+        $deposit_id = (int) $response->id;
+        $submission->setZenodoDepositId($deposit_id);
+        $doi_object = ZenodoDeposit::publish(['deposit_id' => $deposit_id]);
       }
       $submission->save();
       $output .= "<h4>DOI successfully published!</h4>";
     }
     else {
-      $doi_object = tpps_doi_load($form_state['zenodo_id']);
+      // Zenodo Deposit Id was found in the TPPS Submission.
+      if (!variable_get('tpps_zenodo_new_implementation')) {
+        $doi_object = tpps_doi_load($deposit_id);
+      }
+      else {
+        $doi_object = ZenodoDepoit::retrieve($deposit_id);
+      }
     }
   }
 

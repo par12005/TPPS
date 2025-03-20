@@ -180,6 +180,12 @@ class ZenodoDeposit extends Zenodo {
    *   Returns rendered HTML representation of the Deposition Entity.
    */
   public static function printDeposition(array $deposition, $format = 'list') {
+    $debug_mode = FALSE;
+    if ($debug_mode) {
+      $function = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'];
+      dpm($function);
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $output = '';
     if (!ZenodoDeposit::isDeposition($deposition)) {
       return $output;
@@ -195,6 +201,7 @@ class ZenodoDeposit extends Zenodo {
         '@doi' => (empty($doi) ? '' : '( ' . $doi . ' )'),
       ]
     );
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $output .= '<h3>' . $title . '</h3>';
     switch ($format) {
       case 'dump':
@@ -330,27 +337,6 @@ class ZenodoDeposit extends Zenodo {
 
 // @TODO Review below.
 
-
-  /**
-   * Gets publication Id.
-   *
-   * @param string $accession
-   *   Study accession. Format: 'TGDRxxxx'.
-   *
-   * @return int
-   *   Returns Zenodo Publication Id. Example format: 15011388.
-   *
-   * @todo Seems ZenodoDeposit::create() does the same. Doublecheck.
-   */
-  public static function getId($accession) {
-
-// @todo Store relation of the publication id and $accession and re-use it.
-
-
-    $response = self::generateDOI($accession);
-    return (int) $response->id;
-  }
-
   /**
    * Creates a Zenodo DOI and loads metadata from a TPPS Submission accession.
    *
@@ -430,25 +416,6 @@ class ZenodoDeposit extends Zenodo {
     // dpm($upload);
 
     return $upload;
-  }
-
-
-  /**
-   * Loads and returns the Deposition object for an existing Zenodo Deposition.
-   *
-   * @param int $id
-   *   The identifier for the Deposition.
-   *
-   * @return object
-   *   The loaded Deposition object.
-   */
-  public static function tpps_doi_load($id) {
-    $ch = curl_init(static::buildUrl($id));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-
-    $out = json_decode(curl_exec($ch));
-    curl_close($ch);
-    return $out;
   }
 
   /**
