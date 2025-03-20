@@ -29,14 +29,22 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
 
   // Get Zenodo Depositon.
   if ($deposit_id) {
+    $form[$deposit_id] = [
+      '#type' => 'fieldset',
+      '#title' => t('Zenodo Deposit Id: @id', ['@id' => $deposit_id]),
+    ];
     $data['deposit_id'] = $deposit_id;
     $response = ZenodoDeposit::retrieve($data);
-    $form['deposition'] = [
-      '#markup' => is_array($response) ? ZenodoDeposit::printDeposition($response) : $response,
-    ];
+    if (!empty($response)) {
+      $output = $response;
+      if (is_array($response)) {
+        $output = ZenodoDeposit::printDeposition($response);
+      }
+    }
+    $form[$deposit_id]['dump'] = ['#markup' => $output ?? t('Empty')];
   }
   else {
-    $form['deposition'] = [
+    $form['message'] = [
       '#markup' => t("Submission doesn't have Zenodo Deposition"),
     ];
   }
@@ -107,15 +115,7 @@ function tpps_submission_zenodo_form_validate(array $form, array &$form_state) {
       t('Empty accession. Please choose from the list below.')
     );
   }
-
-// @TOdO Validate clicked button.
-
-
-  //// Check action and group.
-  //list($group_name, $action) = $form_state['triggering_element']['#array_parents'] ?? [];
-  //if (empty($action) || empty($group_name)) {
-  //  form_set_error('non-existing_form_element', t('Empty action.'));
-  //}
+  // @TOdO Validate clicked button.
 }
 
 /**
@@ -124,9 +124,6 @@ function tpps_submission_zenodo_form_validate(array $form, array &$form_state) {
 function tpps_submission_zenodo_form_submit(array &$form, array &$form_state) {
   $accession = $form_state['values']['accession'] ?? '';
   list($group_name, $action) = $form_state['triggering_element']['#array_parents'];
-
-  //dpm($group_name, $action);
-
   $submission = new Submission($accession);
   $deposit_id = $submission->getZenodoDepositId();
 
@@ -172,7 +169,6 @@ function tpps_submission_zenodo_form_submit(array &$form, array &$form_state) {
     // Remove Deposit Id from the TPPS Submission.
     $submission->setZenodoDepositId(NULL);
   }
-
   $form['response'] = [
     '#type' => 'fieldset',
     '#title' => t('Response'),
@@ -180,6 +176,5 @@ function tpps_submission_zenodo_form_submit(array &$form, array &$form_state) {
   $form['response']['data'] = [
     '#markup' => is_array($response) ? ZenodoDeposit::printDeposition($response) : $response,
   ];
-
   $form_state['rebuild'] = TRUE;
 }

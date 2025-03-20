@@ -177,9 +177,15 @@ class RestAPI {
    *   Returns decoded data.
    */
   public static function decodeJSON($json) {
+    $debug_mode = FALSE;
+    if ($debug_mode) {
+      dpm(print_r(debug_backtrace(
+        !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3
+      ), TRUE));
+    }
     $data = json_decode((string) $json, TRUE);
     if (JSON_ERROR_NONE !== json_last_error()) {
-      $message = 'Unable to parse response body into JSON: ' . json_last_error();
+      $message = 'Unable to parse response body into JSON. ' . json_last_error();
       throw new RuntimeException($message);
     }
     return $data === NULL ? [] : $data;
