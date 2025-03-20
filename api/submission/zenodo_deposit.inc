@@ -12,7 +12,7 @@
  *   TPPS Submission object.
  */
 function tpps_api_submission_zenodo_deposit($submission) {
-  if (empty($deposit_id = $submission->get(['zenodo_id']))) {
+  if (empty($deposit_id = $submission->getZenodoDepositId())) {
     return ['error' => 'Submission has no Zenodo Deposition.'];
   }
 

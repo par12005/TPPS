@@ -23,7 +23,8 @@ function tpps_admin_zenodo_submissions_report($reset = FALSE) {
     $i = 0;
     $submission_list = tpps_load_submission_multiple();
     foreach ($submission_list as $accession => $submission) {
-      if (empty($deposit_id = $submission->get(['zenodo_id']))) {
+      $deposit_id = $submission->getZenodoDepositId();
+      if (empty($deposit_id)) {
         continue;
       }
       $publication_doi = $submission->get(

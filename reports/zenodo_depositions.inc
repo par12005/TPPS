@@ -36,8 +36,7 @@ function tpps_admin_zenodo_depositions_report() {
     if (strpos('TGDR', $entity) !== FALSE) {
       // Accession number.
       $submission = new Submission($entity);
-      $deposit_id = $submission->get(['zenodo_id']);
-
+      $deposit_id = $submission->getZenodoDepositId();
     }
     elseif (strpos('zenodo', arg(5)) !== FALSE) {
       // This is Deposit Id.
