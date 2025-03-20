@@ -120,13 +120,15 @@ class RestAPI {
   public static function doRequest($method, $url, $data = [], array $header = []) {
     $debug_mode = FALSE;
     if ($debug_mode) {
-      dpm($url); return;
+      dpm($url);
+      return;
     }
 
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
-    switch (strtoupper($method)) {
-      case "POST":
+    $method = strtoupper($method);
+    switch ($method) {
+      case 'POST':
         curl_setopt($curl, CURLOPT_POST, 1);
         // Custom:
         if ($data) {
@@ -134,8 +136,9 @@ class RestAPI {
         }
         break;
 
-      case "PUT":
-        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "PUT");
+      case 'DELETE':
+      case 'PUT':
+        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
         if ($data) {
           curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
         }
