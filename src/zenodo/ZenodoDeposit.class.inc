@@ -23,6 +23,8 @@
  *
  * You can have a sneak peek at the APIs in test from our root endpoint:
  * https://zenodo.org/api/
+ *
+ * @todo Minor. Implement alter-hooks for ZenodoDeposit Actions.
  */
 
 /**
@@ -44,7 +46,7 @@ class ZenodoDeposit extends Zenodo {
    *
    * Scope (permissions): deposit:actions.
    * Note, once a deposition is published, you can no longer delete it.
-   * https://developers.zenodo.org/?shell#publish.
+   * See: https://developers.zenodo.org/?shell#publish.
    *
    * @param array $data
    *   Data for requiest. Required keys are:
@@ -57,7 +59,10 @@ class ZenodoDeposit extends Zenodo {
     $data['action'] = 'publish';
     $url = static::buildActionUrl($data);
     $response = RestAPI::post($url);
-    return RestAPI::decodeJSON($response);
+
+    $response = ($response ? RestAPI::decodeJSON($response) : '');
+    module_invoke_all(static::class . '_published', $data, $response);
+    return $response;
   }
 
   /**
@@ -77,7 +82,10 @@ class ZenodoDeposit extends Zenodo {
     $data['action'] = 'edit';
     $url = static::buildActionUrl($data);
     $response = RestAPI::post($url);
-    return RestAPI::decodeJSON($response);
+
+    $response = ($response ? RestAPI::decodeJSON($response) : '');
+    module_invoke_all(static::class . '_edited', $data, $response);
+    return $response;
   }
 
   /**
@@ -97,7 +105,10 @@ class ZenodoDeposit extends Zenodo {
     $data['action'] = 'discard';
     $url = static::buildActionUrl($data);
     $response = RestAPI::post($url);
-    return RestAPI::decodeJSON($response);
+
+    $response = ($response ? RestAPI::decodeJSON($response) : '');
+    module_invoke_all(static::class . '_discarded', $data, $response);
+    return $response;
   }
 
   /**
@@ -136,7 +147,10 @@ class ZenodoDeposit extends Zenodo {
     $data['action'] = 'newversion';
     $url = static::buildActionUrl($data);
     $response = RestAPI::post($url);
-    return RestAPI::decodeJSON($response);
+
+    $response = ($response ? RestAPI::decodeJSON($response) : '');
+    module_invoke_all(static::class . '_new_version_created', $data, $response);
+    return $response;
   }
 
   /**
