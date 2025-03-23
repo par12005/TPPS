@@ -36,6 +36,15 @@
  * else {
  *   // New implementation (classes).
  * }
+ *
+ * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+ * Dependencies:
+ *
+ * - 'RestAPI' class.
+ * - Drupal variables:
+ *   - 'tpps_zenodo_api_key',
+ *   - 'tpps_zenodo_debug_mode',
+ * - Drupal hooks system. See /tpps.api.inc file.
  */
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -78,9 +87,14 @@ class Zenodo {
    *   See https://developers.zenodo.org/?python#representation
    */
   public static function list(array $data) {
+    // Call all implementations of hooks:
+    // - hook_zenodo_deposit_list_alter(),
+    // - hook_zenodo_files_list_alter().
+    drupal_alter(static::class . '_' . __FUNCTION__, $data);
     $url = static::buildUrl($data);
     $response = RestAPI::get($url, $data);
-    return RestAPI::decodeJSON($response);
+    $response = ($response ? RestAPI::decodeJSON($response) : $response);
+    return $response;
   }
 
   /**
@@ -97,9 +111,15 @@ class Zenodo {
    */
   public static function retrieve(array $data) {
     static::validateRequired(['deposit_id'], $data);
+    // Call all implementations of hooks:
+    // - hook_zenodo_deposit_retrieve_alter(),
+    // - hook_zenodo_files_retrieve_alter().
+    drupal_alter(static::class . '_' . __FUNCTION__, $data);
     $url = static::buildUrl($data);
     $response = RestAPI::get($url);
-    return ($response ? RestAPI::decodeJSON($response) : $response);
+    $response = ($response ? RestAPI::decodeJSON($response) : $response);
+    module_invoke_all(static::class . '_retrieved', $data, $response);
+    return $response;
   }
 
   /**
@@ -126,17 +146,17 @@ class Zenodo {
    */
   public static function delete(array $data) {
     static::validateRequired(['deposit_id'], $data);
+    // Call all implementations of hooks:
+    // - hook_zenodo_deposit_delete_alter(),
+    // - hook_zenodo_files_delete_alter().
+    drupal_alter(static::class . '_' . __FUNCTION__, $data);
     $url = static::buildUrl($data);
     $response = RestAPI::delete($url);
 
-    // @TODO Clear cache only in case of success.
-    // Clear cached report.
-    cache_clear_all(
-      'tpps_admin_zenodo_submissions_report',
-      (TPPS_CACHE_BIN ?? 'cache')
-    );
-    // @TODO Validate response. Check status.
-    return ($response ? RestAPI::decodeJSON($response) : '');
+// @TODO Validate response. Check status and call hook only in case of sucess.
+    $response = ($response ? RestAPI::decodeJSON($response) : '');
+    module_invoke_all(static::class . '_deleted', $data, $response);
+    return $response;
   }
 
   /**
@@ -149,16 +169,19 @@ class Zenodo {
    */
   public static function create() {
     $data = [];
+    // Call all implementations of hooks:
+    // - hook_zenodo_deposit_create_alter(),
+    // - hook_zenodo_files_create_alter().
+    drupal_alter(static::class . '_' . __FUNCTION__, $data);
     $url = static::buildUrl($data);
     $response = RestAPI::post($url, '{}');
     if (!empty($response['id'])) {
-      // Clear cache only in case of success.
-      cache_clear_all(
-        'tpps_admin_zenodo_submissions_report',
-        (TPPS_CACHE_BIN ?? 'cache')
-      );
+      // Calling all modules implementing 'hook_name':
+      module_invoke_all('zenodo_deposition_created', $response['id']);
     }
-    return ($response ? RestAPI::decodeJSON($response) : '');
+    $response = ($response ? RestAPI::decodeJSON($response) : '');
+    module_invoke_all(static::class . '_created', $data, $response);
+    return $response;
   }
 
   /**
@@ -179,6 +202,10 @@ class Zenodo {
    */
   public static function update(array $data) {
     static::validateRequired(['deposit_id', 'metadata'], $data);
+    // Call all implementations of hooks:
+    // - hook_zenodo_deposit_update_alter(),
+    // - hook_zenodo_files_update_alter().
+    drupal_alter(static::class . '_' . __FUNCTION__, $data);
     $url = static::buildUrl($data);
     // Prepare payload.
     $data = new stdClass();
@@ -190,7 +217,9 @@ class Zenodo {
       'Content-Length: ' . strlen($data_json),
     ];
     $response = RestAPI::put($url, $data_json, $header);
-    return RestAPI::decodeJSON($response);
+    $response = ($response ? RestAPI::decodeJSON($response) : '');
+    module_invoke_all(static::class . '_updated', $data, $response);
+    return $response;
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -230,7 +259,7 @@ class Zenodo {
         $path .= static::BASE_PATH
           . (empty($data['deposit_id']) ? '' : '/' . $data['deposit_id'])
           . '/files'
-          . (empty($data['file_id']) ? '': '/' . $data['file_id']);
+          . (empty($data['file_id']) ? '' : '/' . $data['file_id']);
         break;
 
       case 'ZenodoRecords':
@@ -269,6 +298,9 @@ class Zenodo {
       }
     }
     if (!empty($missing_items)) {
+
+// @TODO Add hook and move exception there.
+
       // Since it's required items we throw an exception.
       $message = t(
         '@class::@caller_method() is missing data: @list.',
