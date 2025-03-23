@@ -3,6 +3,18 @@
 /**
  * @file
  * This file contains miscellaneous API functions and Drupal hooks.
+ *
+ * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+ * Hooks for Zenodo API events:
+ * - 'ZenodoDeposit' class: 
+ *   - created, updated, deleted, retrieved.
+ *   - edited, published, new_version_created, discarded.
+ * - 'ZenodoFiles' class: 
+ *   - created, updated, deleted, retrieved.
+ * Alter-hooks:
+ * - 'ZenodoDeposit' class: create, update, delete, retrieve.
+ * - 'ZenodoFiles' class:   create, update, delete, retrieve.
+ *
  */
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -162,12 +174,12 @@ function hook_zenodo_deposit_update_alter(array &$data) {
  *
  * Note: Called before API Endpoint URL will be generated.
  *
- * @param array $query
+ * @param array $data
  *   Data for request. Required keys are: 'query'.
  *   See https://developers.zenodo.org/?python#list.
  */
-function hook_zenodo_deposit_list_alter(array &$query) {
-  dpm($query);
+function hook_zenodo_deposit_list_alter(array &$data) {
+  dpm($data);
 }
 
 /**
@@ -251,4 +263,63 @@ function hook_zenodo_files_list_alter(array &$query) {
  */
 function hook_zenodo_files_retrieve_alter(array &$data) {
   dpm($data['deposit_id']);
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// Zenodo Depostion Actions: edited, published, new_version_created, discarded.
+
+/**
+ * Implements hook 'zenodo_deposit_edited'.
+ *
+ * See: https://developers.zenodo.org/?shell#edit.
+ *
+ * @param array $data
+ *   Request Data. Required keys are: 'deposit_id'.
+ * @param array $response
+ *   API Response.
+ */
+function hook_zenodo_deposit_edited(array $data, array $response) {
+  tpps_admin_zenodo_submissions_report_clear_cache();
+}
+
+/**
+ * Implements hook 'zenodo_deposit_discarded'.
+ *
+ * See: https://developers.zenodo.org/?shell#discard.
+ *
+ * @param array $data
+ *   Request Data. Required keys are: 'deposit_id'.
+ * @param array $response
+ *   API Response.
+ */
+function hook_zenodo_deposit_discarded(array $data, array $response) {
+  tpps_admin_zenodo_submissions_report_clear_cache();
+}
+
+/**
+ * Implements hook 'zenodo_deposit_new_version_created'.
+ *
+ * See: https://developers.zenodo.org/?shell#new-version.
+ *
+ * @param array $data
+ *   Request Data. Required keys are: 'deposit_id'.
+ * @param array $response
+ *   API Response.
+ */
+function hook_zenodo_deposit_new_version_created(array $data, array $response) {
+  tpps_admin_zenodo_submissions_report_clear_cache();
+}
+
+/**
+ * Implements hook 'zenodo_deposit_published'.
+ *
+ * See: https://developers.zenodo.org/?shell#publish.
+ *
+ * @param array $data
+ *   Request Data. Required keys are: 'deposit_id'.
+ * @param array $response
+ *   API Response.
+ */
+function hook_zenodo_deposit_published(array $data, array $response) {
+  tpps_admin_zenodo_submissions_report_clear_cache();
 }
