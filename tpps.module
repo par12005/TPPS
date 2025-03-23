@@ -3245,3 +3245,37 @@ function theme_study_accession(array $variables) {
       . '<span class="tpps-study-accession-number">' . $number . '</span>';
   }
 }
+
+/**
+ * Implements hook 'zenodo_deposition_deleted'.
+ *
+ * @param array $data
+ *   Request Data. Required keys are: 'deposit_id'.
+ * @param array $response
+ *   API Response.
+ */
+function tpps_zenodo_deposition_deleted(array $data, array $response) {
+  tpps_admin_zenodo_submissions_report_clear_cache();
+}
+
+/**
+ * Implements hook 'zenodo_deposition_created'.
+ *
+ * @param array $data
+ *   Request Data. Required keys are: 'deposit_id'.
+ * @param array $response
+ *   API Response.
+ */
+function tpps_zenodo_deposition_created(array $data, array $response) {
+  tpps_admin_zenodo_submissions_report_clear_cache();
+}
+
+/**
+ * Clear cached data for 'Submissions with Zenodo Depositions' report.
+ */
+function tpps_admin_zenodo_submissions_report_clear_cache() {
+  cache_clear_all(
+    'tpps_admin_zenodo_submissions_report',
+    (TPPS_CACHE_BIN ?? 'cache')
+  );
+}
