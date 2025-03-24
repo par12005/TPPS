@@ -216,8 +216,10 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     // with new data so now we are going to update db record.
     $submission->sharedState['loaded'] = time();
     $submission->save(TPPS_SUBMISSION_STATUS_APPROVED);
-    tpps_log('Complete!', [], TRIPAL_INFO);
 
+    throw new Exception("DEBUG");
+
+    tpps_log('Complete!', [], TRIPAL_INFO);
     fclose($tpps_job_logger['log_file_handle']);
 
   }
@@ -4681,7 +4683,9 @@ function tpps_genotype_vcf_processing_batch_some_features_insert($current_id, $s
       $variant_index = $variant_index + 1;
     }
     $sql .= ' ON CONFLICT (organism_id, uniquename, type_id) DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
-    $results_feature_inserts = db_query($sql);
+    if ($variant_index > 0) {
+      $results_feature_inserts = db_query($sql);
+    }
     $lmsg = "Inserting some features in db using bulk some insert - DONE (count: $variant_index)\n";
     echo($lmsg);
     tpps_log($lmsg);
