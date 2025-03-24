@@ -21,7 +21,6 @@
  *   The appropriate output.
  */
 function tpps_details_main($accession = NULL) {
-  global $base_url;
   global $user;
 
   // @TODO This should never happen because Drupal Menu system won't allow
@@ -30,11 +29,11 @@ function tpps_details_main($accession = NULL) {
     drupal_goto('tpps/details');
   }
 
-  $output = l(t('Return to TPPS Details'), $base_url . '/tpps/details');
+  $output = l(t('Return to TPPS Details'), '/tpps/details');
   $submission = new Submission($accession);
   if ($submission->doesExist()) {
     if (isset($submission->state['study_view_role'])) {
-      // If more than 0, then a view role was set by curation team
+      // If more than 0, then a view role was set by curation team.
       if ($submission->state['study_view_role'] > 0) {
         if (
           !in_array(user_roles($true)[$submission->state['study_view_role']], $user->roles)
@@ -83,15 +82,18 @@ function tpps_details_main($accession = NULL) {
     $output .= tpps_get_markercluster_code();
     tpps_add_css_js('main');
 
-    if (!empty($pub_link = ($submission->state['title'] ?? NULL))) {
+    $pub_link = $submission->get(
+      ['saved_values', TPPS_PAGE_1, 'publication', 'title']
+    );
+    if (!empty($pub_link)) {
       $pub_id = db_select('chado.project_pub', 'p')
-        ->fields('p', array('pub_id'))
-        ->condition('project_id', $submission->state['ids']['project_id'])
+        ->fields('p', ['pub_id'])
+        ->condition('project_id', $submission->get(['ids', 'project_id']))
         ->execute()->fetchObject()->pub_id ?? NULL;
       if (!empty($pub_id)) {
-        $bundle = tripal_load_bundle_entity(array('label' => 'Publication'));
+        $bundle = tripal_load_bundle_entity(['label' => 'Publication']);
         $pub_id = chado_get_record_entity_by_bundle($bundle, $pub_id);
-        $pub_link = "<a href='$base_url/Publication/$pub_id'>$pub_link</a>";
+        $pub_link = l($pub_link, 'Publication/' . $pub_id);
       }
       $output .= "<h2>$pub_link</h2>";
     }
@@ -152,9 +154,7 @@ function tpps_details_main($accession = NULL) {
 
   if (function_exists('tpps_details_byaccession_page')) {
     $output .= @tpps_details_byaccession_page()['raw_markup']['#markup'];
-    // [VS].
     tpps_add_css_js('main');
-    // [/VS].
   }
   return $output;
 }
@@ -166,7 +166,7 @@ function tpps_details_main($accession = NULL) {
  * Note that all links in content will be replaced with current path and
  * fragment so update /js/tpps.js if you don't want that. Search 'submission'.
  *
- * @param array $submission
+ * @param object $submission
  *   Study Submission object.
  *
  * @return string
