@@ -61,7 +61,7 @@ class ZenodoDeposit extends Zenodo {
     $response = RestAPI::post($url);
 
     $response = ($response ? RestAPI::decodeJSON($response) : '');
-    module_invoke_all(static::class . '_published', $data, $response);
+    module_invoke_all(static::getHookName('published'), $data, $response);
     return $response;
   }
 
@@ -84,7 +84,7 @@ class ZenodoDeposit extends Zenodo {
     $response = RestAPI::post($url);
 
     $response = ($response ? RestAPI::decodeJSON($response) : '');
-    module_invoke_all(static::class . '_edited', $data, $response);
+    module_invoke_all(static::getHookName('edited'), $data, $response);
     return $response;
   }
 
@@ -107,7 +107,7 @@ class ZenodoDeposit extends Zenodo {
     $response = RestAPI::post($url);
 
     $response = ($response ? RestAPI::decodeJSON($response) : '');
-    module_invoke_all(static::class . '_discarded', $data, $response);
+    module_invoke_all(static::getHookName('discarded'), $data, $response);
     return $response;
   }
 
@@ -149,7 +149,7 @@ class ZenodoDeposit extends Zenodo {
     $response = RestAPI::post($url);
 
     $response = ($response ? RestAPI::decodeJSON($response) : '');
-    module_invoke_all(static::class . '_new_version_created', $data, $response);
+    module_invoke_all(static::getHookName('new_version_created'), $data, $response);
     return $response;
   }
 
@@ -336,7 +336,7 @@ class ZenodoDeposit extends Zenodo {
         );
       }
       else {
-        drupal_set_message(print_r($response, 1));
+        drupal_set_message(t('Zenodo Depostion not found.'));
       }
       return FALSE;
     }
@@ -373,6 +373,8 @@ class ZenodoDeposit extends Zenodo {
 
   /**
    * Creates a Zenodo DOI and loads metadata from a TPPS Submission accession.
+   *
+   * Former: tpps_generate_doi().
    *
    * @param string $accession
    *   The accession number of the TPPS Submission.
