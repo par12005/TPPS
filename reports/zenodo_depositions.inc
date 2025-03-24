@@ -48,7 +48,10 @@ function tpps_admin_zenodo_depositions_report() {
       // Deposit Id.
       $deposit_id = $entity;
     }
-    if (!empty($deposit_id)) {
+    if (empty($deposit_id)) {
+      drupal_set_message(t('Empty Zenodo Deposit Id'), 'error');
+    }
+    else {
       $response = ZenodoDeposit::retrieve(['deposit_id' => $deposit_id]);
       return ZenodoDeposit::printDeposition($response, 'list');
     }

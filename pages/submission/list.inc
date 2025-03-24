@@ -86,8 +86,6 @@ function tpps_submission_list_form_submit(array $form, array &$form_state) {
   }
   else {
     $path .= ($accession && $action) ? '/' . $accession . '/' . $action : '';
-
-    dpm($path, 'path');
     drupal_goto($path);
   }
 }

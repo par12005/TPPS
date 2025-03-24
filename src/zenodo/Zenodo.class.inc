@@ -90,7 +90,7 @@ class Zenodo {
     // Call all implementations of hooks:
     // - hook_zenodo_deposit_list_alter(),
     // - hook_zenodo_files_list_alter().
-    drupal_alter(static::class . '_' . __FUNCTION__, $data);
+    drupal_alter(static::getHookName(__FUNCTION__), $data);
     $url = static::buildUrl($data);
     $response = RestAPI::get($url, $data);
     $response = ($response ? RestAPI::decodeJSON($response) : $response);
@@ -111,14 +111,16 @@ class Zenodo {
    */
   public static function retrieve(array $data) {
     static::validateRequired(['deposit_id'], $data);
+
     // Call all implementations of hooks:
     // - hook_zenodo_deposit_retrieve_alter(),
     // - hook_zenodo_files_retrieve_alter().
-    drupal_alter(static::class . '_' . __FUNCTION__, $data);
+    drupal_alter(static::getHookName(__FUNCTION__), $data);
     $url = static::buildUrl($data);
+
     $response = RestAPI::get($url);
     $response = ($response ? RestAPI::decodeJSON($response) : $response);
-    module_invoke_all(static::class . '_retrieved', $data, $response);
+    module_invoke_all(static::getHookName('retrieved'), $data, $response);
     return $response;
   }
 
@@ -149,14 +151,17 @@ class Zenodo {
     // Call all implementations of hooks:
     // - hook_zenodo_deposit_delete_alter(),
     // - hook_zenodo_files_delete_alter().
-    drupal_alter(static::class . '_' . __FUNCTION__, $data);
+    drupal_alter(static::getHookName(__FUNCTION__), $data);
     $url = static::buildUrl($data);
     $response = RestAPI::delete($url);
-
-// @TODO Validate response. Check status and call hook only in case of sucess.
-    $response = ($response ? RestAPI::decodeJSON($response) : '');
-    module_invoke_all(static::class . '_deleted', $data, $response);
-    return $response;
+    if (empty($response)) {
+      // Deposition was removed. $response is empty string.
+      module_invoke_all(static::getHookName('deleted'), $data, $response);
+      return [];
+    }
+    else {
+      return RestAPI::decodeJSON($response);
+    }
   }
 
   /**
@@ -164,23 +169,34 @@ class Zenodo {
    *
    * Scope (permissions): deposit:write.
    *
+   * @param array $data
+   *   Data for request.
+   *   When $data['accession'] is not set then empty Zenodo Deposition will
+   *   be created. When it's not empty and has TPPS Submission accession
+   *   (e.g., 'TGDRxxxx) then $data will be populated with study's data.
+   *
    * @return int
    *   The Zenodo Deposition Id number.
    */
-  public static function create() {
-    $data = [];
+  public static function create(array $data = []) {
     // Call all implementations of hooks:
     // - hook_zenodo_deposit_create_alter(),
     // - hook_zenodo_files_create_alter().
-    drupal_alter(static::class . '_' . __FUNCTION__, $data);
-    $url = static::buildUrl($data);
-    $response = RestAPI::post($url, '{}');
-    if (!empty($response['id'])) {
-      // Calling all modules implementing 'hook_name':
-      module_invoke_all('zenodo_deposition_created', $response['id']);
+    drupal_alter(static::getHookName(__FUNCTION__), $data);
+
+    if (!empty($data['accession'])) {
+      $accession = $data['accession'] ?? NULL;
+      unset($data['accession']);
     }
+    $url = static::buildUrl($data);
+
+    $response = RestAPI::post($url, $data);
+
     $response = ($response ? RestAPI::decodeJSON($response) : '');
-    module_invoke_all(static::class . '_created', $data, $response);
+    if (!empty($accession)) {
+      $data['accession'] = $accession;
+    }
+    module_invoke_all(static::getHookName('created'), $data, $response);
     return $response;
   }
 
@@ -205,7 +221,7 @@ class Zenodo {
     // Call all implementations of hooks:
     // - hook_zenodo_deposit_update_alter(),
     // - hook_zenodo_files_update_alter().
-    drupal_alter(static::class . '_' . __FUNCTION__, $data);
+    drupal_alter(static::getHookName(__FUNCTION__), $data);
     $url = static::buildUrl($data);
     // Prepare payload.
     $data = new stdClass();
@@ -218,7 +234,7 @@ class Zenodo {
     ];
     $response = RestAPI::put($url, $data_json, $header);
     $response = ($response ? RestAPI::decodeJSON($response) : '');
-    module_invoke_all(static::class . '_updated', $data, $response);
+    module_invoke_all(static::getHookName('updated'), $data, $response);
     return $response;
   }
 
@@ -227,8 +243,6 @@ class Zenodo {
 
   /**
    * Builds Endpoint URL for Zenodo API based on class and action.
-   *
-   * Generated URL will be in $data['url'].
    *
    * @param array $data
    *   Data for requiest.
@@ -272,12 +286,11 @@ class Zenodo {
       return FALSE;
     }
     // Build absolute URL with access token.
-    $data['url'] = url($path, [
+    return url($path, [
       // Note: access token could be sent in headers.
       'query' => ['access_token' => variable_get('tpps_zenodo_api_key')],
       'external' => TRUE,
     ]);
-    return $data['url'];
   }
 
   /**
@@ -337,6 +350,34 @@ class Zenodo {
    */
   public static function getClassName() {
     return static::class;
+  }
+
+  /**
+   * Generate Drupal hook name based on class name.
+   *
+   * @param string $action
+   *   Method name.
+   *
+   * @return string
+   *   Returns name of the hook (without module name prefix).
+   */
+  public static function getHookName($action) {
+    $module = 'tpps_';
+    switch (static::getClassName()) {
+      case 'ZenodoFiles':
+        $prefix = 'zenodo_files_';
+        break;
+
+      case 'ZenodoRecords':
+        $prefix = 'zenodo_records_';
+        break;
+
+      case 'ZenodoDeposit':
+      default:
+        $prefix = 'zenodo_deposit_';
+        break;
+    }
+    return $prefix . $action;
   }
 
 }
