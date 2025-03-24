@@ -217,7 +217,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     $submission->sharedState['loaded'] = time();
     $submission->save(TPPS_SUBMISSION_STATUS_APPROVED);
 
-    throw new Exception("DEBUG");
+    // throw new Exception("DEBUG");
 
     tpps_log('Complete!', [], TRIPAL_INFO);
     fclose($tpps_job_logger['log_file_handle']);
@@ -2138,10 +2138,12 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
     // ));
 
     $analysis_id = tpps_get_analysis_id_from_ref_genome($genotype['ref-genome']);
-    tpps_chado_insert_record('project_analysis', array(
-      'project_id' => $project_id,
-      'analysis_id' => $analysis_id,
-    ));
+    if ($analysis_id != NULL) {
+      tpps_chado_insert_record('project_analysis', array(
+        'project_id' => $project_id,
+        'analysis_id' => $analysis_id,
+      ));
+    }
   }
 
   if (!empty($genotype['files']['snps-assay'])) {
@@ -8580,10 +8582,10 @@ function tpps_get_analysis_id_from_ref_genome($ref_genome) {
 
     }
     else {
-      return NULL;
       echo "A reference genome could not be found in the TPPS page 4 form.\n";
       echo "Without this, we cannot find the analysis_id and thus the srcfeature_id.\n";
       echo "Featureloc data will not be recorded\n";
+      return NULL;
     }
 
 }
