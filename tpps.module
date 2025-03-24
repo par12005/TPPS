@@ -3246,15 +3246,18 @@ function theme_study_accession(array $variables) {
   }
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// Zenodo Hooks.
+
 /**
  * Implements hook 'zenodo_deposition_deleted'.
  *
  * @param array $data
  *   Request Data. Required keys are: 'deposit_id'.
- * @param array $response
+ * @param mixed $response
  *   API Response.
  */
-function tpps_zenodo_deposition_deleted(array $data, array $response) {
+function tpps_zenodo_deposit_deleted(array $data, $response) {
   tpps_admin_zenodo_submissions_report_clear_cache();
 }
 
@@ -3266,8 +3269,19 @@ function tpps_zenodo_deposition_deleted(array $data, array $response) {
  * @param array $response
  *   API Response.
  */
-function tpps_zenodo_deposition_created(array $data, array $response) {
+function tpps_zenodo_deposit_created(array $data, array $response) {
+  // Clear caches.
   tpps_admin_zenodo_submissions_report_clear_cache();
+  // Store Zenodo Deposit Id into TPPS Submission.
+  if (!empty($data['accession']) && !empty($response['id'])) {
+    $submission = new Submission($data['accession']);
+    if ($submission->doesNotExist()) {
+      return;
+    }
+    if (isset($response['id'])) {
+      $submission->setZenodoDepositId($response['id'], $save_on_change = TRUE);
+    }
+  }
 }
 
 /**
@@ -3278,4 +3292,88 @@ function tpps_admin_zenodo_submissions_report_clear_cache() {
     'tpps_admin_zenodo_submissions_report',
     (TPPS_CACHE_BIN ?? 'cache')
   );
+}
+
+// @TODO Update.
+function tpps_zenodo_deposit_update_alter(array &$data = []) {
+  //tpps_zenodo_deposit_create_alter($data);
+}
+
+/**
+ * Perform alterations before requiest in ZenodoDeposit::create().
+ *
+ * Note: Called before API Endpoint URL will be generated.
+ * Former: tpps_generate_doi().
+ *
+ * @param array $data
+ *   Data for Zenodo API request. Could be empty.
+ */
+function tpps_zenodo_deposit_create_alter(array &$data = []) {
+  $debug_mode = FALSE;
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Validation.
+  if (empty($data) || empty($data['accession'])) {
+    return;
+  }
+  $accession = $data['accession'];
+  $submission = new Submission($accession);
+  if ($submission->doesNotExist()) {
+    return;
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Populate $data with actual data from the $submission.
+  $page1_values = $submission->get(['saved_values', TPPS_PAGE_1]);
+  $page2_values = $submission->get(['saved_values', TPPS_PAGE_2]);
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Authors.
+  // WARNING: Using objects is required.
+  $primary_author = $page1_values['publication']['primaryAuthor'];
+  $creator_list = [
+    (object) ['name' => ZenodoDeposit::formatAuthorName($primary_author)]
+  ];
+  $secondary_authors = $page1_values['publication']['secondaryAuthors'];
+  for ($i = 1; $i <= $secondary_authors['number']; $i++) {
+    $creator_list[] = (object) [
+      'name' => ZenodoDeposit::formatAuthorName($secondary_authors[$i]),
+    ];
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Keywords.
+  $keyword_list = [];
+  for ($i = 1; $i <= $page1_values['organism']['number']; $i++) {
+    $keyword_list[] = $page1_values['organism'][$i]['name'];
+  }
+  module_load_include('inc', 'tpps', 'includes/form');
+  $keyword_list[] = tpps_form_get_study_type($page2_values['study_type']);
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Metadata.
+  // See required fields: https://developers.zenodo.org/#representation
+  $data['metadata'] = (object) [
+    'publication_date' => date('Y-m-d'),
+    'title' => $page1_values['publication']['title'],
+    'upload_type' => 'dataset',
+    'description' => $page1_values['publication']['abstract'],
+    'creators' => $creator_list,
+    // 'access_right' => 'embargoed', //TODO: collect embargo date from user.
+    'keywords' => $keyword_list,
+    'notes' => $submission->get(['saved_values', 'summarypage', 'comments']),
+    'related_identifiers' => [
+      (object) [
+        'relation' => 'isAlternateIdentifier',
+        'identifier' => url(
+          '/tpps/details/' . $submission->accession, ['absolute' => TRUE]
+        ),
+      ],
+    ],
+    'access_right' => 'open',
+    'license' => 'cc-zero',
+  ];
+
+  // @TODO Review.
+  //$has_uploads = ZenodoFiles::uploadAll($id, $state);
+  //if ($has_uploads == FALSE) {
+  //  echo "This study does not have any uploads so zenodo will never publish this study. Please update the study with at least one file.<br />";
+  //  // Apparently a study submission must have at least one meta data file
+  //}
+
 }

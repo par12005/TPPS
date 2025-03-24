@@ -122,6 +122,7 @@ function tpps_submission_zenodo_form_validate(array $form, array &$form_state) {
  * Form submitter for 'tpps_submission_list_form' form.
  */
 function tpps_submission_zenodo_form_submit(array &$form, array &$form_state) {
+  $data = [];
   $accession = $form_state['values']['accession'] ?? '';
   list($group_name, $action) = $form_state['triggering_element']['#array_parents'];
   $submission = new Submission($accession);
@@ -136,7 +137,9 @@ function tpps_submission_zenodo_form_submit(array &$form, array &$form_state) {
       drupal_goto($path . '/' . $accession);
     }
   }
-  $data['deposit_id'] = $deposit_id;
+  else {
+    $data['deposit_id'] = $deposit_id;
+  }
 
   switch ($group_name) {
     case 'zenodo_deposition':
@@ -156,6 +159,10 @@ function tpps_submission_zenodo_form_submit(array &$form, array &$form_state) {
       ['@name' => $method_name]), 'error'
     );
     drupal_goto($path . '/' . $accession . '/zenodo');
+  }
+
+  if ($action == 'create') {
+    $data['accession'] = $accession;
   }
 
   // Get response.

@@ -118,21 +118,18 @@ class RestAPI {
    * @todo Convert to private or protected.
    */
   public static function doRequest($method, $url, $data = [], array $header = []) {
-    $debug_mode = FALSE;
-    if ($debug_mode) {
-      dpm($url);
-      return;
-    }
-
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
     $method = strtoupper($method);
+
     switch ($method) {
       case 'POST':
         curl_setopt($curl, CURLOPT_POST, 1);
         // Custom:
         if ($data) {
-          curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+          //$json = json_encode($data, JSON_FORCE_OBJECT);
+          $json = json_encode($data);
+          curl_setopt($curl, CURLOPT_POSTFIELDS, $json);
         }
         break;
 

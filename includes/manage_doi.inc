@@ -33,18 +33,18 @@ function tpps_manage_doi($accession) {
       // No Zenodo Deposit Id found. Let's create new one.
       if (!variable_get('tpps_zenodo_new_implementation')) {
         $deposit_id = tpps_generate_doi($accession)->id;
-        $submission->setZenodoDepositId($deposit_id);
+        $submission->setZenodoDepositId($deposit_id, $save_on_change = TRUE);
         $doi_object = tpps_doi_publish($deposit_id);
       }
       else {
         // @todo Seems ZenodoDeposit::create() does the same. Doublecheck.
-        $response = ZenodoDeposit::generateDOI($accession);
-        // @todo Validate response.
-        $deposit_id = (int) $response->id;
-        $submission->setZenodoDepositId($deposit_id);
-        $doi_object = ZenodoDeposit::publish(['deposit_id' => $deposit_id]);
+        $response = ZenodoDeposit::create(['accession' => $accession]);
+        // @TODO To use value from $submission we need to reload it.
+        // $deposit_id = $submission->getZenodoDepositId();
+        if (!empty($deposit_id = ($response['id'] ?? NULL))) {
+          $doi_object = ZenodoDeposit::publish(['deposit_id' => $deposit_id]);
+        }
       }
-      $submission->save();
       $output .= "<h4>DOI successfully published!</h4>";
     }
     else {
