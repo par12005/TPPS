@@ -5111,7 +5111,8 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
           if (empty($variant_name) or $variant_name == '.') {
             // $variant_name = "{$scaffold_id}{$position}$ref:$alt";
-            $variant_name = $scaffold_id . '_' . $position . 'SNP';
+            $variant_name = $scaffold_id . '_' . $position . 'SNP'; // this line technically never happens because of the next line which is a continue
+            continue; // 3/25/2025 - Meghan and Emily suggested we skip this line and move to the next line
           }
           // $marker_name = $variant_name . $marker; // Original by Peter
           // Emily updated suggestion on Tuesday August 9th 2022
