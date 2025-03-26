@@ -38,6 +38,15 @@ class ZenodoDeposit extends Zenodo {
   // Prefix of the API URL.
   const BASE_PATH = '/api/deposit/depositions';
 
+  // Zenodo Depositon States.
+  // Seems it's for not yet submitted depositions ('submitted' == FALSE).
+  // See https://developers.zenodo.org/#representation
+  const STATE_INPRPOGRESS = 'inprogress';
+  const STATE_DONE = 'done';
+  const STATE_ERROR = 'error';
+  // State 'unsubmitted' wan't listed in docs but new depositions has it.
+  const STATE_UNSUBMITTED = 'unsubmitted';
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // API scope: deposit:actions.
 
