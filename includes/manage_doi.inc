@@ -37,11 +37,21 @@ function tpps_manage_doi($accession) {
         $doi_object = tpps_doi_publish($deposit_id);
       }
       else {
-        // @todo Seems ZenodoDeposit::create() does the same. Doublecheck.
         $response = ZenodoDeposit::create(['accession' => $accession]);
-        // @TODO To use value from $submission we need to reload it.
-        // $deposit_id = $submission->getZenodoDepositId();
+
+// @TODO Update.
+        // @TODO Add files. From: tpps_generate_doi().
+        //$has_uploads = ZenodoFiles::uploadAll($id, $state);
+        //if ($has_uploads == FALSE) {
+        //  echo "This study does not have any uploads so zenodo will never publish this study. Please update the study with at least one file.<br />";
+        //  // Apparently a study submission must have at least one meta data file
+        //}
+
         if (!empty($deposit_id = ($response['id'] ?? NULL))) {
+          // $response['id'] contains Zenodo Deposit Id which stored in DB
+          // (in tpps_submission table) but not yet updated in memory. To avoid
+          // reloading whole Submission object - update it without saving to DB.
+          $submission->setZenodoDepositId($deposit_id, $save_on_change = FALSE);
           $doi_object = ZenodoDeposit::publish(['deposit_id' => $deposit_id]);
         }
       }

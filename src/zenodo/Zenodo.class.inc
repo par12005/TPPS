@@ -128,9 +128,11 @@ class Zenodo {
    * Deletes deposition/files resource.
    *
    * Scope (permissions): deposit:write.
-   *
-   * Note, only unpublished depositions may be deleted.
    * See https://developers.zenodo.org/?python#delete.
+   *
+   * Note:
+   * 1. Since operation used for both (Deposits and Files) we use Drupal hooks.
+   * 2. Only unpublished depositions may be deleted.
    *
    * @param array $data
    *   Data for request. Required keys are: 'deposit_id'.
@@ -147,21 +149,24 @@ class Zenodo {
    *   403 Forbidden: Deleting an already published deposition.
    */
   public static function delete(array $data) {
-    static::validateRequired(['deposit_id'], $data);
     // Call all implementations of hooks:
     // - hook_zenodo_deposit_delete_alter(),
     // - hook_zenodo_files_delete_alter().
     drupal_alter(static::getHookName(__FUNCTION__), $data);
+    static::validateRequired(['deposit_id'], $data);
+    // Hide Submission accession.
+    $accession = $data['accession'] ?? NULL;
+    unset($data['accession']);
     $url = static::buildUrl($data);
+
     $response = RestAPI::delete($url);
-    if (empty($response)) {
-      // Deposition was removed. $response is empty string.
-      module_invoke_all(static::getHookName('deleted'), $data, $response);
-      return [];
-    }
-    else {
-      return RestAPI::decodeJSON($response);
-    }
+    $response = $response ? RestAPI::decodeJSON($response) : [];
+
+    // Restore Submission accession.
+    $data['accession'] = $accession;
+
+    // Note: When Deposit not found we stil need to remove it's id from Submission.
+    module_invoke_all(static::getHookName('deleted'), $data, $response);
   }
 
   /**
@@ -175,27 +180,28 @@ class Zenodo {
    *   be created. When it's not empty and has TPPS Submission accession
    *   (e.g., 'TGDRxxxx) then $data will be populated with study's data.
    *
-   * @return int
-   *   The Zenodo Deposition Id number.
+   * @return array
+   *   Returns Zenodo Deposition data or empty array.
    */
   public static function create(array $data = []) {
+    dpm($data, 1);
     // Call all implementations of hooks:
     // - hook_zenodo_deposit_create_alter(),
     // - hook_zenodo_files_create_alter().
     drupal_alter(static::getHookName(__FUNCTION__), $data);
 
-    if (!empty($data['accession'])) {
-      $accession = $data['accession'] ?? NULL;
-      unset($data['accession']);
-    }
+    dpm($data, 2);
+    // Hide Submission accession.
+    $accession = $data['accession'] ?? NULL;
+    unset($data['accession']);
+
     $url = static::buildUrl($data);
 
     $response = RestAPI::post($url, $data);
+    $response = $response ? RestAPI::decodeJSON($response) : [];
 
-    $response = ($response ? RestAPI::decodeJSON($response) : '');
-    if (!empty($accession)) {
-      $data['accession'] = $accession;
-    }
+    // Restore Submission accession.
+    $data['accession'] = $accession;
     module_invoke_all(static::getHookName('created'), $data, $response);
     return $response;
   }
@@ -213,27 +219,30 @@ class Zenodo {
    * @param array $data
    *   Data for request. Required keys are: 'deposit_id', 'metadata'.
    *
-   * @return object
-   *   The updated Deposition object.
+   * @return array
+   *   Returns Zenodo Deposition data or empty array.
    */
   public static function update(array $data) {
-    static::validateRequired(['deposit_id', 'metadata'], $data);
+    static::validateRequired(['deposit_id'], $data);
     // Call all implementations of hooks:
     // - hook_zenodo_deposit_update_alter(),
     // - hook_zenodo_files_update_alter().
     drupal_alter(static::getHookName(__FUNCTION__), $data);
+    static::validateRequired(['metadata'], $data);
+
+    // Hide Submission accession.
+    $accession = $data['accession'] ?? NULL;
+    unset($data['accession']);
+
     $url = static::buildUrl($data);
-    // Prepare payload.
-    $data = new stdClass();
-    $data->metadata = $data['metadata'];
-    $data_json = json_encode($data);
-    $header = [
-      'Content-Type: application/json',
-      // Seems length is optional.
-      'Content-Length: ' . strlen($data_json),
-    ];
-    $response = RestAPI::put($url, $data_json, $header);
-    $response = ($response ? RestAPI::decodeJSON($response) : '');
+
+    $response = RestAPI::put($url, $data);
+    $response = $response ? RestAPI::decodeJSON($response) : [];
+
+    // Restore Submission accession.
+    if (!empty($accession)) {
+      $data['accession'] = $accession;
+    }
     module_invoke_all(static::getHookName('updated'), $data, $response);
     return $response;
   }
