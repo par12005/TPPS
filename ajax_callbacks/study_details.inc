@@ -306,7 +306,8 @@ function tpps_ajax_get_trees_details_tab(array $data) {
     $form_number = array_search($id, $submission->sharedState['ids']['organism_ids']);
     $tree_id = tpps_entity_link($info['stock_id'], $name, 'Stock');
     $row = [
-      strtoupper($args[2]) . '-' . strip_tags($tree_id),
+      // strtoupper($args[2]) . '-' . strip_tags($tree_id), // RISH: the $args[2] shows the ajax page part of the url 'get_trees_details_tab' which is not what we want
+      strtoupper($data['accession'] . '-' . strip_tags($tree_id)),
       tpps_entity_link($info['stock_id'], $name, 'Stock'),
       tpps_entity_link($id, $submission->getOrganismName($form_number), 'Organism'),
     ];
