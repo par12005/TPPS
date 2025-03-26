@@ -137,7 +137,10 @@ class RestAPI {
       case 'PUT':
         curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
         if ($data) {
-          curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+          // Having 'deposit_id' cause validation errors.
+          unset($data['deposit_id']);
+          $json = json_encode($data);
+          curl_setopt($curl, CURLOPT_POSTFIELDS, $json);
         }
         break;
 

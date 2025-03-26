@@ -321,7 +321,7 @@ class ZenodoDeposit extends Zenodo {
   public static function isDeposition(array $response) {
     if (empty($response['id']) && empty($response['metadata'])) {
       if (!empty($response['status']) && !empty($response['message'])) {
-        drupal_set_message(t('Depostion not found. '
+        drupal_set_message(t('ZenodoDeposit Resource validation failed. '
           . '<br />Response: <strong>@code - @message</strong>'
           . '<br />Check if correct Zenodo server was used. '
           . 'Current sever: <strong>@server</strong>.'
