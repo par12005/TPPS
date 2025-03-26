@@ -124,7 +124,7 @@ form.tppsc-form       fieldset.form-wrapper {
   /* Dark grey */
   border-left: 3px solid #6b706b;
   margin: 20px 0 0 20px !important;
-  padding: 0 20px;
+  padding: 0 20px !important;
 }
 form.tpps-submission  fieldset.form-wrapper legend,
 form.tpps-admin-panel fieldset.form-wrapper legend,
@@ -255,7 +255,7 @@ form.tppsc-form       .form-button:focus {
 html.js form fieldset.form-wrapper {
   /* Fix fieldset jump on collapse */
   margin-top: 20px !important;
-  padding: 10px !important;
+  /*padding: 10px !important;*/
 }
 /* Fix arrows at the left */
 form fieldset legend span.fieldset-legend {
