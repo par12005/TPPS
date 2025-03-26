@@ -303,10 +303,8 @@ function tpps_ajax_get_trees_details_tab(array $data) {
 
   foreach ($chunks[$page] as $name => $info) {
     $id = $info['organism_id'];
-    $form_number = array_search($id, $share_state['ids']['organism_ids']);
-
+    $form_number = array_search($id, $submission->sharedState['ids']['organism_ids']);
     $tree_id = tpps_entity_link($info['stock_id'], $name, 'Stock');
-
     $row = [
       strtoupper($args[2]) . '-' . strip_tags($tree_id),
       tpps_entity_link($info['stock_id'], $name, 'Stock'),
