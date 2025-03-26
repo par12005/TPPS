@@ -2034,18 +2034,6 @@ class Submission {
     return TRUE;
   }
 
-<<<<<<< HEAD
-=======
-  /**
-   * Gets TPPS Form version.
-   *
-   * @return int
-   *   Returns version number. Default is 1.
-   */
-  public function getFormVersion() {
-    return $this->state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1;
-  }
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Zenodo Deposition.
   //
@@ -2097,5 +2085,4 @@ class Submission {
     return !empty($this->getZenodoDepositId());
   }
 
->>>>>>> 507bc54a (Implemented Zenodo related methods in 'Submission' class.)
 }
