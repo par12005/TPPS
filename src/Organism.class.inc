@@ -448,10 +448,7 @@ class Organism {
    */
   public function doesExist() {
     $this->load();
-    return (bool) (
-      !empty($this->name)
-      && !empty($this->id)
-    );
+    return (bool) (!empty($this->name) && !empty($this->id));
   }
 
   /**

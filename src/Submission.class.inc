@@ -2054,9 +2054,9 @@ class Submission {
    *   save it later manually.
    */
   public function setZenodoDepositId($deposit_id = NULL, $save_on_change = TRUE) {
-    if ($this->state[self::ZENODO_DEPOSIT_ID_KEY] != $deposit_id) {
+    if ($this->get([self::ZENODO_DEPOSIT_ID_KEY]) != $deposit_id) {
       // Deposit Id was changed.
-      $this->state[self::ZENODO_DEPOSIT_ID_KEY] = $deposit_id;
+      $this->set([self::ZENODO_DEPOSIT_ID_KEY], $deposit_id);
       if ($save_on_change) {
         $this->save();
       }
@@ -2083,6 +2083,62 @@ class Submission {
    */
   public function hasZenodoDepositId() {
     return !empty($this->getZenodoDepositId());
+  }
+
+  /**
+   * Generates ZenodoDeposit Metadata
+   *
+   * See required fields: https://developers.zenodo.org/#representation
+   *
+   * @return array
+   *   Returns Zenodo Deposit Metadata.
+   */
+  public function buildZenodoDepositMetadata() {
+    $page1_values = $this->get(['saved_values', TPPS_PAGE_1]);
+    $page2_values = $this->get(['saved_values', TPPS_PAGE_2]);
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Authors.
+    // WARNING: Using objects is required.
+    $primary_author = $page1_values['publication']['primaryAuthor'];
+    $creator_list = [
+      (object) ['name' => ZenodoDeposit::formatAuthorName($primary_author)]
+    ];
+    $secondary_authors = $page1_values['publication']['secondaryAuthors'];
+    for ($i = 1; $i <= $secondary_authors['number']; $i++) {
+      $creator_list[] = (object) [
+        'name' => ZenodoDeposit::formatAuthorName($secondary_authors[$i]),
+      ];
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Keywords.
+    $keyword_list = [];
+    for ($i = 1; $i <= $page1_values['organism']['number']; $i++) {
+      $keyword_list[] = $page1_values['organism'][$i]['name'];
+    }
+    module_load_include('inc', 'tpps', 'includes/form');
+    $keyword_list[] = tpps_form_get_study_type($page2_values['study_type']);
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Metadata.
+    $metadata = (object) [
+      'publication_date' => date('Y-m-d'),
+      'title' => $page1_values['publication']['title'],
+      'upload_type' => 'dataset',
+      'description' => $page1_values['publication']['abstract'],
+      'creators' => $creator_list,
+      'keywords' => $keyword_list,
+      'notes' => $this->get(['saved_values', 'summarypage', 'comments']),
+      'related_identifiers' => [
+        (object) [
+          'relation' => 'isAlternateIdentifier',
+          'identifier' => url(
+            '/tpps/details/' . $this->accession, ['absolute' => TRUE]
+          ),
+        ],
+      ],
+      'access_right' => 'open',
+      'license' => 'cc-zero',
+    ];
+    return $metadata;
   }
 
 }
