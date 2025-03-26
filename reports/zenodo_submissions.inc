@@ -34,19 +34,19 @@ function tpps_admin_zenodo_submissions_report($reset = FALSE) {
       ) ?? $submission->sharedState['saved_values'][TPPS_PAGE_1]['doi'] ?? '';
       $rows[] = [
         'number' => ++$i,
-        'deposit_id' => (empty($publication_doi) ? $deposit_id :
-          l($deposit_id, 'api/submission/' . $accession . '/zenodo/deposit')
-        ),
-        'deposition_files' => (empty($publication_doi) ? '-' : l(
-          t('View Files'), 'api/submission/' . $accession . '/zenodo/files'
-        )),
-        'publication_doi' => $publication_doi,
         'accession' => l(
           $accession,
           'api/submission/' . $accession . '/view/state'
         ),
         'project_id' => $submission->get(['ids', 'project_id']),
         'status' => $submission->status ?? NULL,
+        'deposit_id' => (empty($publication_doi) ? $deposit_id :
+          l($deposit_id, 'api/submission/' . $accession . '/zenodo/deposit')
+        ),
+        'publication_doi' => $publication_doi,
+        'deposition_files' => (empty($publication_doi) ? '-' : l(
+          t('View Files'), 'api/submission/' . $accession . '/zenodo/files'
+        )),
       ];
     }
     // Reverse order of elements.
@@ -63,12 +63,12 @@ function tpps_admin_zenodo_submissions_report($reset = FALSE) {
   $name = 'zenodo_submissions';
   $header = [
     '#',
-    t('Zenodo Deposit Id'),
-    t('Deposition Files'),
-    t('Publication DOI'),
     t('Accession'),
     t('Project Id'),
     t('Status'),
+    t('Zenodo Deposit Id'),
+    t('Publication DOI'),
+    t('Deposition Files'),
   ];
   return tpps_report_show_table([
     'report_name' => $name,
