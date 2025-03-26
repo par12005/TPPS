@@ -68,6 +68,10 @@ class ZenodoDeposit extends Zenodo {
     $data['payload'] = $data['payload'] ?? [];
     $data['action'] = 'publish';
 
+    // Call all implementations of hooks:
+    // - hook_zenodo_deposit_publish_alter(),
+    drupal_alter(static::getHookName(__FUNCTION__), $data);
+
     $data['url'] = static::buildActionUrl($data);
     $data['response'] = RestAPI::post($data['url'], $data['payload']);
     $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
@@ -92,6 +96,10 @@ class ZenodoDeposit extends Zenodo {
   public static function edit(array $data) {
     $data['action'] = 'edit';
 
+    // Call all implementations of hooks:
+    // - hook_zenodo_deposit_edit_alter(),
+    drupal_alter(static::getHookName(__FUNCTION__), $data);
+
     $data['url'] = static::buildActionUrl($data);
     $data['response'] = RestAPI::post($data['url']);
     $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
@@ -115,9 +123,13 @@ class ZenodoDeposit extends Zenodo {
    */
   public static function discard(array $data) {
     $data['action'] = 'discard';
+    $data['payload'] = $data['payload'] ?? [];
+    // Call all implementations of hooks:
+    // - hook_zenodo_deposit_discard_alter(),
+    drupal_alter(static::getHookName(__FUNCTION__), $data);
 
     $data['url'] = static::buildActionUrl($data);
-    $data['response'] = RestAPI::post($data['url']);
+    $data['response'] = RestAPI::post($data['url'], $data['payload']);
     $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
 
     module_invoke_all(static::getHookName('discarded'), $data);
@@ -158,6 +170,10 @@ class ZenodoDeposit extends Zenodo {
    */
   public static function newVersion(array $data) {
     $data['action'] = 'newversion';
+
+    // Call all implementations of hooks:
+    // - hook_zenodo_deposit_new_version_alter(),
+    drupal_alter(static::getHookName('new_version'), $data);
 
     $data['url'] = static::buildActionUrl($data);
     $data['response'] = RestAPI::post($data['url']);
