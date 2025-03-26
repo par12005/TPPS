@@ -87,14 +87,17 @@ class Zenodo {
    *   See https://developers.zenodo.org/?python#representation
    */
   public static function list(array $data) {
+    $data['payload'] = $data['payload'] ?? [];
     // Call all implementations of hooks:
     // - hook_zenodo_deposit_list_alter(),
     // - hook_zenodo_files_list_alter().
     drupal_alter(static::getHookName(__FUNCTION__), $data);
-    $url = static::buildUrl($data);
-    $response = RestAPI::get($url, $data);
-    $response = ($response ? RestAPI::decodeJSON($response) : $response);
-    return $response;
+
+    $data['url'] = static::buildUrl($data);
+    $data['response'] = RestAPI::get($data['url'], $data['payload']);
+    $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
+
+    return $data['response'];
   }
 
   /**
@@ -110,18 +113,20 @@ class Zenodo {
    *   See https://developers.zenodo.org/?python#representation
    */
   public static function retrieve(array $data) {
+    $data['payload'] = $data['payload'] ?? [];
     static::validateRequired(['deposit_id'], $data);
 
     // Call all implementations of hooks:
     // - hook_zenodo_deposit_retrieve_alter(),
     // - hook_zenodo_files_retrieve_alter().
     drupal_alter(static::getHookName(__FUNCTION__), $data);
-    $url = static::buildUrl($data);
 
-    $response = RestAPI::get($url);
-    $response = ($response ? RestAPI::decodeJSON($response) : $response);
-    module_invoke_all(static::getHookName('retrieved'), $data, $response);
-    return $response;
+    $data['url'] = static::buildUrl($data);
+    $data['response'] = RestAPI::get($data['url'], $data['payload']);
+    $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
+
+    module_invoke_all(static::getHookName('retrieved'), $data);
+    return $data['response'];
   }
 
   /**
@@ -154,19 +159,13 @@ class Zenodo {
     // - hook_zenodo_files_delete_alter().
     drupal_alter(static::getHookName(__FUNCTION__), $data);
     static::validateRequired(['deposit_id'], $data);
-    // Hide Submission accession.
-    $accession = $data['accession'] ?? NULL;
-    unset($data['accession']);
-    $url = static::buildUrl($data);
 
-    $response = RestAPI::delete($url);
-    $response = $response ? RestAPI::decodeJSON($response) : [];
-
-    // Restore Submission accession.
-    $data['accession'] = $accession;
+    $data['url'] = static::buildUrl($data);
+    $data['response'] = RestAPI::delete($data['url']);
+    $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
 
     // Note: When Deposit not found we stil need to remove it's id from Submission.
-    module_invoke_all(static::getHookName('deleted'), $data, $response);
+    module_invoke_all(static::getHookName('deleted'), $data);
   }
 
   /**
@@ -184,26 +183,18 @@ class Zenodo {
    *   Returns Zenodo Deposition data or empty array.
    */
   public static function create(array $data = []) {
-    dpm($data, 1);
+    $data['payload'] = $data['payload'] ?? [];
     // Call all implementations of hooks:
     // - hook_zenodo_deposit_create_alter(),
     // - hook_zenodo_files_create_alter().
     drupal_alter(static::getHookName(__FUNCTION__), $data);
 
-    dpm($data, 2);
-    // Hide Submission accession.
-    $accession = $data['accession'] ?? NULL;
-    unset($data['accession']);
+    $data['url'] = static::buildUrl($data);
+    $data['response'] = RestAPI::post($data['url'], $data['payload']);
+    $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
 
-    $url = static::buildUrl($data);
-
-    $response = RestAPI::post($url, $data);
-    $response = $response ? RestAPI::decodeJSON($response) : [];
-
-    // Restore Submission accession.
-    $data['accession'] = $accession;
-    module_invoke_all(static::getHookName('created'), $data, $response);
-    return $response;
+    module_invoke_all(static::getHookName('created'), $data);
+    return $data['response'];
   }
 
   /**
@@ -223,28 +214,20 @@ class Zenodo {
    *   Returns Zenodo Deposition data or empty array.
    */
   public static function update(array $data) {
+    $data['payload'] = $data['payload'] ?? [];
     static::validateRequired(['deposit_id'], $data);
     // Call all implementations of hooks:
     // - hook_zenodo_deposit_update_alter(),
     // - hook_zenodo_files_update_alter().
     drupal_alter(static::getHookName(__FUNCTION__), $data);
-    static::validateRequired(['metadata'], $data);
+    static::validateRequired(['metadata'], $data['payload']);
 
-    // Hide Submission accession.
-    $accession = $data['accession'] ?? NULL;
-    unset($data['accession']);
+    $data['url'] = static::buildUrl($data);
+    $data['response'] = RestAPI::put($data['url'], $data['payload']);
+    $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
 
-    $url = static::buildUrl($data);
-
-    $response = RestAPI::put($url, $data);
-    $response = $response ? RestAPI::decodeJSON($response) : [];
-
-    // Restore Submission accession.
-    if (!empty($accession)) {
-      $data['accession'] = $accession;
-    }
-    module_invoke_all(static::getHookName('updated'), $data, $response);
-    return $response;
+    module_invoke_all(static::getHookName('updated'), $data);
+    return $data['response'];
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

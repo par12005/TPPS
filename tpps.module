@@ -3253,12 +3253,13 @@ function theme_study_accession(array $variables) {
  * Implements hook 'zenodo_deposition_deleted'.
  *
  * @param array $data
- *   Request Data. Required keys are: 'deposit_id'.
- * @param array $response
- *   API Response.
- *   On successful removement $response must be empty.
+ *   Request Data. Keys are:
+ *   - 'deposit_id' int Required. Zenodo Deposit Id.
+ *   - 'accession' string Required. TPPS Submission accession.
+ *   - 'url' string Required. Zenodo API Endpoint URL.
+ *   - 'response' mixed Required. Zenodo API Response. Empty on success.
  */
-function tpps_zenodo_deposit_deleted(array $data, array $response) {
+function tpps_zenodo_deposit_deleted(array $data) {
   drupal_set_message(t('Zenodo Deposit was deleted.'));
   // Clear cache.
   if (empty($response)) {
@@ -3271,9 +3272,8 @@ function tpps_zenodo_deposit_deleted(array $data, array $response) {
   // having it blocks creation of the new Deposit.
   if (!empty($data['accession'])) {
     $submission = new Submission($data['accession']);
-    //if ($submission->doesExist()) {
-      $submission->setZenodoDepositId(NULL, $save_on_change = TRUE);
-    //}
+    $save_on_change = TRUE;
+    $submission->setZenodoDepositId(NULL, $save_on_change);
   }
 }
 
@@ -3281,19 +3281,23 @@ function tpps_zenodo_deposit_deleted(array $data, array $response) {
  * Implements hook 'zenodo_deposition_created'.
  *
  * @param array $data
- *   Request Data. Required keys are: 'deposit_id'.
- * @param array $response
- *   API Response.
+ *   Request Data. Keys are:
+ *   - 'deposit_id' int Required. Zenodo Deposit Id.
+ *   - 'accession' string Required. TPPS Submission accession.
+ *   - 'url' string Required. Zenodo API Endpoint URL.
+ *   - 'payload' array Required. Request payload.
+ *   - 'response' mixed Required. Zenodo API Response.
  */
-function tpps_zenodo_deposit_created(array $data, array $response) {
+function tpps_zenodo_deposit_created(array $data) {
   drupal_set_message(t('Zenodo Deposit was created.'));
   // Clear cache.
   tpps_admin_zenodo_submissions_report_clear_cache();
   // Store Zenodo Deposit Id into TPPS Submission.
-  if (!empty($data['accession']) && !empty($response['id'])) {
+  if (!empty($data['accession']) && !empty($data['response']['id'])) {
     $submission = new Submission($data['accession']);
     if ($submission->doesExist()) {
-      $submission->setZenodoDepositId($response['id'], $save_on_change = TRUE);
+      $save_on_change = TRUE;
+      $submission->setZenodoDepositId($data['response']['id'], $save_on_change);
     }
   }
 }
@@ -3302,11 +3306,14 @@ function tpps_zenodo_deposit_created(array $data, array $response) {
  * Implements hook 'zenodo_deposition_updated'.
  *
  * @param array $data
- *   Request Data. Required keys are: 'deposit_id'.
- * @param array $response
- *   API Response.
+ *   Request Data. Keys are:
+ *   - 'deposit_id' int Required. Zenodo Deposit Id.
+ *   - 'accession' string Required. TPPS Submission accession.
+ *   - 'url' string Required. Zenodo API Endpoint URL.
+ *   - 'payload' array Required. Request payload.
+ *   - 'response' mixed Required. Zenodo API Response.
  */
-function tpps_zenodo_deposit_updated(array $data, array $response) {
+function tpps_zenodo_deposit_updated(array $data) {
   drupal_set_message(t('Zenodo Deposit was updated.'));
 }
 
@@ -3338,7 +3345,7 @@ function tpps_zenodo_deposit_update_alter(array &$data = []) {
   // Populate $data with actual data from the $submission.
   $submission = new Submission($data['accession']);
   if ($submission->doesExist()) {
-    $data['metadata'] = $submission->buildZenodoDepositMetadata();
+    $data['payload']['metadata'] = $submission->buildZenodoDepositMetadata();
   }
 }
 
@@ -3360,6 +3367,6 @@ function tpps_zenodo_deposit_create_alter(array &$data = []) {
   // Populate $data with actual data from the $submission.
   $submission = new Submission($data['accession']);
   if ($submission->doesExist()) {
-    $data['metadata'] = $submission->buildZenodoDepositMetadata();
+    $data['payload']['metadata'] = $submission->buildZenodoDepositMetadata();
   }
 }
