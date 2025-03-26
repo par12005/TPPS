@@ -2096,9 +2096,9 @@ class Submission {
   }
 
   /**
-   * Generates ZenodoDeposit Metadata
+   * Generates Zenodo Deposition Metadata.
    *
-   * See required fields: https://developers.zenodo.org/#representation
+   * See required fields: https://developers.zenodo.org/#representation.
    *
    * @return array
    *   Returns Zenodo Deposit Metadata.
