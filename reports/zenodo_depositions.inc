@@ -28,7 +28,20 @@ function tpps_admin_zenodo_depositions_report() {
       ['@host_type' => (variable_get('tpps_zenodo_debug_mode') ? 'Sandbox' : 'Live')]
     ), 'warning');
     $response = ZenodoDeposit::list([]);
-    return ZenodoDeposit::printDepositionList($response, 'table');
+    if (empty($response)) {
+      drupal_set_message(t('Empty Zenodo API response.'), 'error');
+      return '';
+    }
+    elseif (!empty($response['status'])) {
+      drupal_set_message(t('Zenodo API Response: @code - @message', [
+        '@code' => $response['status'],
+        '@message' => $response['message'],
+      ]), 'error');
+      return '';
+    }
+    else {
+      return ZenodoDeposit::printDepositionList($response, 'table');
+    }
   }
   else {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -53,7 +66,20 @@ function tpps_admin_zenodo_depositions_report() {
     }
     else {
       $response = ZenodoDeposit::retrieve(['deposit_id' => $deposit_id]);
-      return ZenodoDeposit::printDeposition($response, 'list');
+      if (empty($response)) {
+        drupal_set_message(t('Empty Zenodo API response.'), 'error');
+        return '';
+      }
+      elseif (!empty($response['status'])) {
+        drupal_set_message(t('Zenodo API Response: @code - @message', [
+          '@code' => $response['status'],
+          '@message' => $response['message'],
+        ]), 'error');
+        return '';
+      }
+      else {
+        return ZenodoDeposit::printDeposition($response, 'table');
+      }
     }
   }
 }
