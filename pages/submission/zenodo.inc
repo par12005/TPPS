@@ -34,11 +34,11 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
       '#title' => t('Zenodo Deposit Id: @id', ['@id' => $deposit_id]),
     ];
     $data['deposit_id'] = $deposit_id;
-    $response = ZenodoDeposit::retrieve($data);
-    if (!empty($response)) {
-      $output = $response;
-      if (is_array($response)) {
-        $output = ZenodoDeposit::printDeposition($response);
+    $deposition = ZenodoDeposit::retrieve($data);
+    if (!empty($deposition)) {
+      $output = $deposition;
+      if (is_array($deposition)) {
+        $output = ZenodoDeposit::printDeposition($deposition);
       }
     }
     $form[$deposit_id]['dump'] = ['#markup' => $output ?? t('Empty')];
@@ -85,8 +85,12 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
       // Show only 'Create' button if there is no Zenodo Deposition and
       // don't show 'Create' Button when Depositon exists.
       if (
+        // Show 'Create' when there is no depostion found for this Submission.
         (!$deposit_id && !($key == 'create' && $group_name == 'zenodo_deposition'))
+        // Hide 'Create' for existing depositions.
         || ($deposit_id && ($key == 'create' && $group_name == 'zenodo_deposition'))
+        // Hide 'Edit' button for not yet submitted Depositions.
+        || ($deposit_id && $key == 'edit' && empty($deposition['submitted']))
       ) {
         continue;
       }
