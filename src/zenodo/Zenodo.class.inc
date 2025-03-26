@@ -113,7 +113,6 @@ class Zenodo {
    *   See https://developers.zenodo.org/?python#representation
    */
   public static function retrieve(array $data) {
-    $data['payload'] = $data['payload'] ?? [];
     static::validateRequired(['deposit_id'], $data);
 
     // Call all implementations of hooks:
@@ -122,7 +121,7 @@ class Zenodo {
     drupal_alter(static::getHookName(__FUNCTION__), $data);
 
     $data['url'] = static::buildUrl($data);
-    $data['response'] = RestAPI::get($data['url'], $data['payload']);
+    $data['response'] = RestAPI::get($data['url']);
     $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
 
     module_invoke_all(static::getHookName('retrieved'), $data);
