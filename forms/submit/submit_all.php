@@ -217,7 +217,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     $submission->sharedState['loaded'] = time();
     $submission->save(TPPS_SUBMISSION_STATUS_APPROVED);
 
-    // throw new Exception("DEBUG");
+    throw new Exception("DEBUG");
 
     tpps_log('Complete!', [], TRIPAL_INFO);
     fclose($tpps_job_logger['log_file_handle']);
