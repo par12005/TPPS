@@ -56,13 +56,15 @@ class ZenodoDeposit extends Zenodo {
    *   Returns API response.
    */
   public static function publish(array $data) {
+    $data['payload'] = $data['payload'] ?? [];
     $data['action'] = 'publish';
-    $url = static::buildActionUrl($data);
-    $response = RestAPI::post($url);
 
-    $response = ($response ? RestAPI::decodeJSON($response) : '');
-    module_invoke_all(static::getHookName('published'), $data, $response);
-    return $response;
+    $data['url'] = static::buildActionUrl($data);
+    $data['response'] = RestAPI::post($data['url'], $data['payload']);
+    $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
+
+    module_invoke_all(static::getHookName('published'), $data);
+    return $data['response'];
   }
 
   /**
@@ -80,12 +82,13 @@ class ZenodoDeposit extends Zenodo {
    */
   public static function edit(array $data) {
     $data['action'] = 'edit';
-    $url = static::buildActionUrl($data);
-    $response = RestAPI::post($url);
 
-    $response = ($response ? RestAPI::decodeJSON($response) : '');
+    $data['url'] = static::buildActionUrl($data);
+    $data['response'] = RestAPI::post($data['url']);
+    $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
+
     module_invoke_all(static::getHookName('edited'), $data, $response);
-    return $response;
+    return $data['response'];
   }
 
   /**
@@ -103,12 +106,13 @@ class ZenodoDeposit extends Zenodo {
    */
   public static function discard(array $data) {
     $data['action'] = 'discard';
-    $url = static::buildActionUrl($data);
-    $response = RestAPI::post($url);
 
-    $response = ($response ? RestAPI::decodeJSON($response) : '');
-    module_invoke_all(static::getHookName('discarded'), $data, $response);
-    return $response;
+    $data['url'] = static::buildActionUrl($data);
+    $data['response'] = RestAPI::post($data['url']);
+    $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
+
+    module_invoke_all(static::getHookName('discarded'), $data);
+    return $data['response'];
   }
 
   /**
@@ -145,12 +149,13 @@ class ZenodoDeposit extends Zenodo {
    */
   public static function newVersion(array $data) {
     $data['action'] = 'newversion';
-    $url = static::buildActionUrl($data);
-    $response = RestAPI::post($url);
 
-    $response = ($response ? RestAPI::decodeJSON($response) : '');
-    module_invoke_all(static::getHookName('new_version_created'), $data, $response);
-    return $response;
+    $data['url'] = static::buildActionUrl($data);
+    $data['response'] = RestAPI::post($data['url']);
+    $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
+
+    module_invoke_all(static::getHookName('new_version_created'), $data);
+    return $data['response'];
   }
 
   /**
@@ -194,12 +199,6 @@ class ZenodoDeposit extends Zenodo {
    *   Returns rendered HTML representation of the Deposition Entity.
    */
   public static function printDeposition(array $deposition, $format = 'list') {
-    $debug_mode = FALSE;
-    if ($debug_mode) {
-      $function = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'];
-      dpm($function);
-    }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $output = '';
     if (!ZenodoDeposit::isDeposition($deposition)) {
       return $output;
