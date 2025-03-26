@@ -3251,13 +3251,6 @@ function theme_study_accession(array $variables) {
 
 /**
  * Implements hook 'zenodo_deposition_deleted'.
- *
- * @param array $data
- *   Request Data. Keys are:
- *   - 'deposit_id' int Required. Zenodo Deposit Id.
- *   - 'accession' string Required. TPPS Submission accession.
- *   - 'url' string Required. Zenodo API Endpoint URL.
- *   - 'response' mixed Required. Zenodo API Response. Empty on success.
  */
 function tpps_zenodo_deposit_deleted(array $data) {
   drupal_set_message(t('Zenodo Deposit was deleted.'));
@@ -3279,14 +3272,6 @@ function tpps_zenodo_deposit_deleted(array $data) {
 
 /**
  * Implements hook 'zenodo_deposition_created'.
- *
- * @param array $data
- *   Request Data. Keys are:
- *   - 'deposit_id' int Required. Zenodo Deposit Id.
- *   - 'accession' string Required. TPPS Submission accession.
- *   - 'url' string Required. Zenodo API Endpoint URL.
- *   - 'payload' array Required. Request payload.
- *   - 'response' mixed Required. Zenodo API Response.
  */
 function tpps_zenodo_deposit_created(array $data) {
   drupal_set_message(t('Zenodo Deposit was created.'));
