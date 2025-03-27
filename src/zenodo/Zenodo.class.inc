@@ -64,7 +64,7 @@ class Zenodo {
   // Host name.
   // See: https://developers.zenodo.org/?shell#testing.
   const LIVE_HOST = 'zenodo.org';
-  const DEBUG_HOST = 'sandbox.zenodo.org';
+  const SANDBOX_HOST = 'sandbox.zenodo.org';
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // API scope: deposit:write.
@@ -248,7 +248,7 @@ class Zenodo {
     $protocol = 'https://';
     // Add host name.
     if (variable_get('tpps_zenodo_debug_mode', FALSE)) {
-      $path = $protocol . static::DEBUG_HOST;
+      $path = $protocol . static::getHost();
       $access_token = variable_get('tpps_zenodo_access_token_sandbox');
     }
     else {
@@ -374,6 +374,54 @@ class Zenodo {
         break;
     }
     return $prefix . $action;
+  }
+
+  /**
+   * Sets Zenodo host name and statically cache it.
+   *
+   * Allows to have different host even during single per page request.
+   * This method is needed because we use static methods instead of instance
+   * of class with own properties.
+   *
+   * @param string $host
+   *   Posible values: 'live' and any non-null value.
+   *   When value is 'live' then static variable 'tpps_zenodo_host'
+   *   will have name of the Zenodo Live server.
+   *   Any other value will populate it with name of Zenodo Sandbox server.
+   */
+  public static function setHost($host = NULL) {
+    if (empty($host)) {
+      return;
+    }
+    $zenodo_host = &drupal_static('tpps_zenodo_host');
+    $zenodo_host = (strtolower($host) == 'live')
+      ? static::LIVE_HOST : static::SANDBOX_HOST;
+  }
+
+  /**
+   * Gets Zenodo host name.
+   *
+   * Allows to have different host name even during single per page request
+   * because uses statically cached value which could be changed during even
+   * the same page request multiple times (for example to show depostions on
+   * both Live and Sandbox server at the same page).
+   * To use Live host: ZenodoDeposit::setHost('live');
+   * To use Sandbox host: ZenodoDeposit::setHost('sandbox');
+   *
+   * If host name wasn't set then global site settings will be used.
+   * To reset or force usage of the global settings:
+   * ZenodoDeposit::getHost($reset = TRUE);
+   *
+   * @return string
+   *   Returns Zenodo host name.
+   */
+  public static function getHost($reset = FALSE) {
+    $zenodo_host = &drupal_static('tpps_zenodo_host');
+    if ($reset || empty($zenodo_host)) {
+      $zenodo_host = (variable_get('tpps_zenodo_debug_mode', FALSE))
+        ? static::SANDBOX_HOST : static::LIVE_HOST;
+    }
+    return $zenodo_host;
   }
 
 }

@@ -845,6 +845,11 @@ function tpps_ssr_valid_ploidy($ploidy, $num_columns, $num_unique_columns, $org_
   elseif ($field_name == 'ssrs_extra') {
     $title = 'cpSSRs Genotype Spreadsheet';
   }
+  $message = t("@title: There is either an invalid number of columns in your "
+    . "file, or some of your columns are missing values. "
+    . "Please review and reupload your file.",
+    ['@title' => $title]
+  );
   switch ($ploidy) {
     case 'Haploid':
       if ($num_unique_columns != $num_columns) {
@@ -863,34 +868,19 @@ function tpps_ssr_valid_ploidy($ploidy, $num_columns, $num_unique_columns, $org_
         $num_unique_columns != $num_columns
         and $num_columns / $num_unique_columns !== 2
       ) {
-        form_set_error("$id][genotype][$ssrs_fieldset][$field_name",
-          t("@title: There is either an invalid number of columns in your file, "
-          . "or some of your columns are missing values. "
-          . "Please review and reupload your file.",
-          ['@title' => $title]
-        ));
+        form_set_error("$id][genotype][$ssrs_fieldset][$field_name", $message);
       }
       elseif (
         $num_unique_columns == $num_columns
         and $num_columns % 2 !== 0
       ) {
-        form_set_error("$id][genotype][$ssrs_fieldset][$field_name",
-          t("@title: There is either an invalid number of columns in your file, "
-          . "or some of your columns are missing values. "
-          . "Please review and reupload your file.",
-          ['@title' => $title]
-        ));
+        form_set_error("$id][genotype][$ssrs_fieldset][$field_name", $message);
       }
       break;
 
     case 'Polyploid':
       if ($num_columns % $num_unique_columns !== 0) {
-        form_set_error("$id][genotype][$ssrs_fieldset][$field_name",
-          t("@title: There is either an invalid number of columns in your file, "
-          . "or some of your columns are missing values. "
-          . "Please review and reupload your file.",
-          ['@title' => $title]
-        ));
+        form_set_error("$id][genotype][$ssrs_fieldset][$field_name", $message);
       }
       break;
 
