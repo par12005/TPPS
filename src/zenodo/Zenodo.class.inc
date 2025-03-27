@@ -245,11 +245,16 @@ class Zenodo {
    *   Returns generated absolute path to Zenodo API Endpoint.
    */
   public static function buildUrl(array $data) {
-    // Add host name.
     $protocol = 'https://';
-    $path = $protocol . static::LIVE_HOST;
+    // Add host name.
     if (variable_get('tpps_zenodo_debug_mode', FALSE)) {
       $path = $protocol . static::DEBUG_HOST;
+      $access_token = variable_get('tpps_zenodo_access_token_sandbox');
+    }
+    else {
+      // Live.
+      $path = $protocol . static::LIVE_HOST;
+      $access_token = variable_get('tpps_zenodo_access_token_live');
     }
     // Add base path and endpoint.
     switch (static::getClassName()) {
@@ -279,7 +284,7 @@ class Zenodo {
     // Build absolute URL with access token.
     return url($path, [
       // Note: access token could be sent in headers.
-      'query' => ['access_token' => variable_get('tpps_zenodo_api_key')],
+      'query' => ['access_token' => $access_token],
       'external' => TRUE,
     ]);
   }
