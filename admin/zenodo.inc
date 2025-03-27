@@ -25,11 +25,7 @@ function tpps_zenodo_settings_form(array $form, array &$form_state) {
     '#type' => 'fieldset',
     '#title' => t('Zenodo API Settings'),
   ];
-  $form['api']['tpps_zenodo_api_key'] = [
-    '#type' => 'textfield',
-    '#title' => t('Zenodo API Key'),
-    '#default_value' => variable_get('tpps_zenodo_api_key'),
-  ];
+
   $form['api']['tpps_zenodo_debug_mode'] = [
     '#type' => 'checkbox',
     '#title' => t('Use Zenodo Sandbox server '),
@@ -39,6 +35,24 @@ function tpps_zenodo_settings_form(array $form, array &$form_state) {
       . 'for testing and development purposes. <br/> Read more: !link.',
       ['!link' => l(t('"Testing" on developers.zenodo.org.'), $doc_url)]
     ),
+  ];
+
+  $form['api']['tokens'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Access Tokens'),
+    '#collapsed' => TRUE,
+    '#collapsible' => TRUE,
+  ];
+  // @TODO Minor. Make API tokens required.
+  $form['api']['tokens']['tpps_zenodo_access_token_live'] = [
+    '#type' => 'textfield',
+    '#title' => t('Live'),
+    '#default_value' => variable_get('tpps_zenodo_access_token_live'),
+  ];
+  $form['api']['tokens']['tpps_zenodo_access_token_sandbox'] = [
+    '#type' => 'textfield',
+    '#title' => t('Sandbox'),
+    '#default_value' => variable_get('tpps_zenodo_access_token_sandbox'),
   ];
   $form['api']['tpps_zenodo_new_implementation'] = [
     '#type' => 'checkbox',
