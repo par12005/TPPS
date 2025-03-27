@@ -125,7 +125,8 @@ function tpps_install() {
   variable_set('tpps_submitall_log_tripal_time_format', 'Y/m/d H:i:s O');
   // Zenodo Settings.
   variable_set('tpps_zenodo_debug_mode', FALSE);
-  variable_set('tpps_zenodo_api_key', '');
+  variable_set('tpps_zenodo_access_token_live', '');
+  variable_set('tpps_zenodo_access_token_sandbox', '');
   variable_set('tpps_zenodo_new_implementation', TRUE);
   // Misc Settings.
   variable_set('tpps_theme_fix_pager', FALSE);
@@ -515,7 +516,8 @@ function tpps_uninstall() {
   variable_del('tpps_submitall_log_tripal_time_format');
   // Zenodo Settings.
   variable_del('tpps_zenodo_debug_mode');
-  variable_del('tpps_zenodo_api_key');
+  variable_del('tpps_zenodo_access_token_live');
+  variable_del('tpps_zenodo_access_token_sandbox');
   variable_del('tpps_zenodo_new_implementation');
   // Misc Settings.
   variable_del('tpps_theme_fix_pager');
@@ -2464,4 +2466,15 @@ function tpps_update_7128() {
   variable_set('tpps_zenodo_new_implementation', FALSE);
   variable_set('tpps_report_zenodo_submissions_title', 'Zenodo Submissions');
   variable_set('tpps_report_zenodo_depositions_title', 'Zenodo Depositions');
+  variable_set('tpps_zenodo_access_token_sandbox', '');
+  // Rename variable.
+  if (
+    !is_null(variable_get('tpps_zenodo_sandbox_key', NULL))
+    && is_null(variable_set('tpps_zenodo_access_token_live', NULL)
+  ) {
+    variable_set('tpps_zenodo_access_token_live',
+      variable_get('tpps_zenodo_sandbox_key')
+    );
+  }
+  variable_del('tpps_zenodo_sandbox_key');
 }
