@@ -206,7 +206,8 @@ class ZenodoDeposit extends Zenodo {
    *   Returns TRUE when Zenodo Sandbox server is currenlty in use.
    */
   public static function isSandboxServer() {
-    return (bool) variable_get('tpps_zenodo_debug_mode');
+    $zenodo_host = &drupal_static('tpps_zenodo_host');
+    return (bool) ($zenodo_host == static::SANDBOX_HOST);
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
