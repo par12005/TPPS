@@ -7315,10 +7315,16 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
     // Check if vcf was not processed, then make sure to
     // add records for genotype and genotype call.
     // If however VCF is processed, we don't need to add these records.
-    if ($vcf_processing_completed == true && $type == 'snp') {
-      //skip performing genotype and genotype_call inserts
-    }
-    else {
+
+
+    // RISH: 3/27/2025 - Removed to implement new naming code
+    // if ($vcf_processing_completed == true && $type == 'snp') {
+    //   //skip performing genotype and genotype_call inserts
+    // }
+    // else {
+
+    $process_genotype_assay_new_naming = true;
+    if ($process_genotype_assay_new_naming) {
       // [RISH] 07/06/2023 - REMOVED SO WE CAN INSERT TO GET ID
       // $records['genotype'][$genotype_name] = array(
       //   'name' => $genotype_name,
@@ -7326,12 +7332,24 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
       //   'description' => $val,
       //   'type_id' => $type_cvterm,
       // );
+
+      // [RISH] 3/27/2025 - Change the naming based on Meghan Myles' advice
+      // tpps_safe_chado_insert_record('genotype', [
+      //   'name' => $genotype_name_without_call,
+      //   'uniquename' => $genotype_name,
+      //   'description' => $val,
+      //   'type_id' => $type_cvterm,
+      // ]);
+
+      // [RISH] 3/27/2025 - New genotype naming based on Meghan Myles' advice
       tpps_safe_chado_insert_record('genotype', [
-        'name' => $genotype_name_without_call,
-        'uniquename' => $genotype_name,
+        'name' => $variant_name . '-' . $val,
+        'uniquename' => $variant_name . '-' . $val,
         'description' => $val,
         'type_id' => $type_cvterm,
       ]);
+
+
       // @TODO Use data returned by chado_insert_record() to get genotype_id.
       // https://tripal.readthedocs.io/en/latest/dev_guide/chado.html
       // On success this function returns the inserted record with the new primary
@@ -7383,34 +7401,36 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
       // We need plant name, study, marker_name
       // $options['tree_id'], $options['study_accession'], $marker_name
       // Check if a record already exists, if not, create initial record
-      $per_plant_results = chado_query('
-      SELECT COUNT(*) as c1 FROM chado.genotype_reads_per_plant
-      WHERE tree_acc = :tree_id AND study_accession = :study_accession
-      ', [
-      ':tree_id' => $tree_id,
-      ':study_accession' => $study_accession
-      ]);
-      $per_plant_records_count = $per_plant_results->fetchObject()->c1;
-      if ($per_plant_records_count == 0) {
-        // CREATE AN EMPTY RECORD IN TABLE
-        chado_query("
-          INSERT INTO chado.genotype_reads_per_plant
-          (tree_acc, study_accession, marker_array, read_array)
-          VALUES
-          ('$tree_id', '$study_accession', ARRAY[]::text[], ARRAY[]::text[])
-        ");
-      }
-      // So now we have a record in the table for the plant, so append the new value
-      chado_query("
-        UPDATE chado.genotype_reads_per_plant
-        set marker_array = array_append(marker_array, '$variant_name')
-        WHERE tree_acc = '$tree_id' AND study_accession = '$study_accession'
-      ");
-      chado_query("
-        UPDATE chado.genotype_reads_per_plant
-        set read_array = array_append(read_array, '$val')
-        WHERE tree_acc = '$tree_id' AND study_accession = '$study_accession'
-      ");
+
+      // RISH: 3/27/2025 - We don't use genotype_reads_per_plant anymore
+      // $per_plant_results = chado_query('
+      // SELECT COUNT(*) as c1 FROM chado.genotype_reads_per_plant
+      // WHERE tree_acc = :tree_id AND study_accession = :study_accession
+      // ', [
+      // ':tree_id' => $tree_id,
+      // ':study_accession' => $study_accession
+      // ]);
+      // $per_plant_records_count = $per_plant_results->fetchObject()->c1;
+      // if ($per_plant_records_count == 0) {
+      //   // CREATE AN EMPTY RECORD IN TABLE
+      //   chado_query("
+      //     INSERT INTO chado.genotype_reads_per_plant
+      //     (tree_acc, study_accession, marker_array, read_array)
+      //     VALUES
+      //     ('$tree_id', '$study_accession', ARRAY[]::text[], ARRAY[]::text[])
+      //   ");
+      // }
+      // // So now we have a record in the table for the plant, so append the new value
+      // chado_query("
+      //   UPDATE chado.genotype_reads_per_plant
+      //   set marker_array = array_append(marker_array, '$variant_name')
+      //   WHERE tree_acc = '$tree_id' AND study_accession = '$study_accession'
+      // ");
+      // chado_query("
+      //   UPDATE chado.genotype_reads_per_plant
+      //   set read_array = array_append(read_array, '$val')
+      //   WHERE tree_acc = '$tree_id' AND study_accession = '$study_accession'
+      // ");
 
       // $records['stock_genotype']["$stock_id-$genotype_name"] = array(
       //   'stock_id' => $stock_id,
