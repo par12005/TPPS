@@ -8732,18 +8732,41 @@ function tpps_genotype_initial_checks($form_state, $i, $job) {
   }
 
   $vcf_markers = NULL;
+  $str = "[INITIAL CHECK] Performing genotype initial checks";
+  tpps_job_logger_write($str);
+  $job->logMessage($str);
   print_r($vcf_location);
   if ($vcf_location['status'] == 'exists') {
-    $memstart = memory_get_usage();
-    $vcf_markers = tpps_genotype_get_vcf_markers($vcf_location['location']);
-    $vcf_markers['memusage'] = memory_get_usage() - $memstart;
-    $str = "[INITIAL CHECK] VCF Markers (unique count): " . $vcf_markers['unique_count'];
-    tpps_job_logger_write($str);
-    $job->logMessage($str);
-    $str = "[INITIAL CHECK] VCF Markers (memusage): " . $vcf_markers['memusage'];
-    tpps_job_logger_write($str);
-    $job->logMessage($str);
+    // $memstart = memory_get_usage();
+    // $vcf_markers = tpps_genotype_get_vcf_markers($vcf_location['location']);
+    // $vcf_markers['memusage'] = memory_get_usage() - $memstart;
+    // $str = "[INITIAL CHECK] VCF Markers (unique count): " . $vcf_markers['unique_count'];
+    // tpps_job_logger_write($str);
+    // $job->logMessage($str);
+    // $str = "[INITIAL CHECK] VCF Markers (memusage): " . $vcf_markers['memusage'];
+    // tpps_job_logger_write($str);
+    // $job->logMessage($str);
+    $output_lines = [];
+    // RISH: 3/27/2025 - One liner processing command provided by Meghan Myles
+    exec("bcftools query -f '%CHROM\t%POS\n' " . $vcf_location['location'] . " | sort | uniq -d", $output_lines);
+    if (count($output_lines) > 0) {
+      $str = "[INITIAL CHECK] VCF Markers contains markers for which marker positions are duplicated";
+      tpps_job_logger_write($str);
+      $job->logMessage($str);
+      throw new Exception($str);
+    }
+
+    $output_lines = [];
+    // RISH: 3/27/2025 - One liner processing command provided by Meghan Myles
+    exec("bcftools query -f '%ID\n' " . $vcf_location['location'] . " | sort | uniq -d", $output_lines);
+    if (count($output_lines) > 0) {
+      $str = "[INITIAL CHECK] VCF Markers contains duplication markers";
+      tpps_job_logger_write($str);
+      $job->logMessage($str);
+      throw new Exception($str);
+    }
   }
+  // throw new Exception("DEBIG INITIAL CHECKS");
 
 
 
