@@ -447,8 +447,11 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
   }
   $page = $data['page'] ?? 0;
   $rows = array();
-  $per_page = 20;
+  $per_page = 5;
   $start = $page * $per_page;
+
+  $_GET['page'] = $page;
+  
 
   // // Set total check = false to begin with
   // $total_check = false;
@@ -495,16 +498,9 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
   // VERSION 2 - RISH - better but far from perfect - can get as slow a 1 minute per query
   // $query_results = chado_query('SELECT COUNT(*) as c1 FROM chado.genotypes_' . $project_id);
 
-  // @NEW -RISH using Emily's redesign that uses index_id. Fast response in ms.
-  $query_results = chado_query('select max(index_id) as c1 FROM chado.genotypes_' . $project_id, []);
 
-  $total = 0;
-  foreach ($query_results as $row) {
-    $total = $row->c1;
-  }
 
-  $_GET['page'] = $page;
-  pager_default_initialize($total, $per_page);
+ 
 
   // Removed by Rish in favour of materialized views per project_id / study 3/24/2023
   // $query = db_select('chado.genotype', 'g');
@@ -526,50 +522,116 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
   // VERSION 2 - RISH - Faster but still linearly slower
   // $query = chado_query("SELECT * FROM chado.genotypes_" . $project_id . " OFFSET $start LIMIT $per_page");
 
-  // @NEW - RISH using Emily's index_id to paginate the page columns
-  $query = chado_query("select * from chado.genotypes_" . $project_id .
-    " where index_id > " . $start .
-    " order by index_id asc
-    limit " . $per_page . ";",[]);
+  $view_version = 3;
+  if ($view_version == 3) {
+    // @NEW -RISH using Emily's redesign that uses index_id. Fast response in ms.
+    $query_results = chado_query('select max(index_id) as c1 FROM chado.genotypes_' . $project_id, []);
 
-  $cvterm_list = [];
-  while (($result = $query->fetchObject())) {
-    // preg_match('/^TGDR...-(.*)$/', $result->s_uniquename, $matches);
-    preg_match('/^TGDR.{1,4}-(.*)$/', $result->s_uniquename, $matches);
-    $tree = $matches[1];
-    if (empty($cvterm_list[$result->name])) {
-      $cvterm_list[$result->name] = [
-        'type' => chado_get_cvterm(['cvterm_id' => $result->type_id])->name ?? '',
+    $total = 0;
+    foreach ($query_results as $row) {
+      $total = $row->c1;
+    }
+    pager_default_initialize($total, $per_page);
+    // VERSION 3 - RISH using Emily's index_id to paginate the page columns
+    $query = chado_query("select * from chado.genotypes_" . $project_id .
+      " where index_id > " . $start .
+      " order by index_id asc
+      limit " . $per_page . ";",[]);
+
+    $cvterm_list = [];
+    while (($result = $query->fetchObject())) {
+      // preg_match('/^TGDR...-(.*)$/', $result->s_uniquename, $matches);
+      preg_match('/^TGDR.{1,4}-(.*)$/', $result->s_uniquename, $matches);
+      $tree = $matches[1];
+      if (empty($cvterm_list[$result->name])) {
+        $cvterm_list[$result->name] = [
+          'type' => chado_get_cvterm(['cvterm_id' => $result->type_id])->name ?? '',
+        ];
+      }
+      $rows[] = [
+        tpps_entity_link($result->stock_id, $tree, 'Stock'),
+        // tpps_entity_link($result->genotype_id, $result->uniquename, 'Genotype'),
+        $result->name,
+        $result->description,
+        $cvterm_list[$result->name]['type'],
       ];
     }
-    $rows[] = [
-      tpps_entity_link($result->stock_id, $tree, 'Stock'),
-      // tpps_entity_link($result->genotype_id, $result->uniquename, 'Genotype'),
-      $result->name,
-      $result->description,
-      $cvterm_list[$result->name]['type'],
+    $table = theme('table', [
+      'header' => [
+        t('Plant'),
+        t('Name'),
+        t('Description'),
+        t('Marker Type'),
+      ],
+      'rows' => $rows,
+      'attributes' => ['class' => ['view'], 'id' => 'tpps_table_display'],
+      'caption' => '',
+      'colgroups' => NULL,
+      'sticky' => FALSE,
+      'empty' => '',
+    ]);
+    $pager = theme('pager', ['quantity', $total]);
+    return [
+      'success' => TRUE,
+      'content' => $pager . $table,
+      'dir' => dirname(__FILE__),
     ];
   }
+  else if ($view_version == 4) {
+    // VERSION 4 - RISH + MEGHAN'S SH SCRIPT (3/30/2025)
+    require_once(dirname(__FILE__) . '/../forms/submit/submit_all.php');
 
-  $table = theme('table', [
-    'header' => [
-      t('Plant'),
-      t('Name'),
-      t('Description'),
-      t('Marker Type'),
-    ],
-    'rows' => $rows,
-    'attributes' => ['class' => ['view'], 'id' => 'tpps_table_display'],
-    'caption' => '',
-    'colgroups' => NULL,
-    'sticky' => FALSE,
-    'empty' => '',
-  ]);
-  $pager = theme('pager', ['quantity', $total]);
-  return [
-    'success' => TRUE,
-    'content' => $pager . $table,
-  ];
+    // VERSION 4 - Step 1 - Get all VCF file locations (based on per organism from the sharedState)
+    $shared_state = $submission->getSharedState();
+    $page1_values = $submission->sharedState['saved_values'][TPPS_PAGE_1];
+    $organism_number = $page1_values['organism']['number'];
+    $vcf_location_details = [];
+    for ($i = 1; $i <= $organism_number; $i++) {
+      $vcf_location_details[] = tpps_vcf_location($shared_state, $i);
+    }
+
+    $rows = [];
+    // $vcf_location = "/core/labs/Wegrzyn/meghan_work/query_VCF_for_genotypes/Geraldes_2013.v2.vcf";
+    $vcf_location = $vcf_location_details[0]['location'];
+    $output_lines = [];
+
+    // Get total reads
+    $plants_count = exec('bcftools query -l "' . $vcf_location . '" | wc -l');
+    $markers_count = exec('bcftools view -H "' . $vcf_location . '" | wc -l');
+    $total = $plants_count * $markers_count;
+    pager_default_initialize($total, $per_page);
+
+
+    // Get the genotype calls from the VCF file for the specified page
+    exec("/bin/bash " . dirname(__FILE__) . '/../tools/vcfscripts/query_VCF_for_genotype_calls.sh ' . ($page+1) . ' "' . $vcf_location . '"', $output_lines);
+    foreach ($output_lines as $line) {
+      $line_parts = explode(" ", $line);
+      $rows[] = [$line_parts[0], $line_parts[1], $line_parts[2]];
+    }
+  
+    $table = theme('table', [
+      'header' => [
+        t('Plant'),
+        t('Name'),
+        t('Description'),
+        // t('Marker Type'),
+      ],
+      'rows' => $rows,
+      'attributes' => ['class' => ['view'], 'id' => 'tpps_table_display'],
+      'caption' => '',
+      'colgroups' => NULL,
+      'sticky' => FALSE,
+      'empty' => '',
+    ]);
+    $pager = theme('pager', ['quantity', $total]);
+    return [
+      'success' => TRUE,
+      'content' => $pager . $table,
+      'vcf_location_details' => $vcf_location_details,
+      'total' => $total,
+      'cmd' => 'bcftools query -l "' . $vcf_location . '" | wc -l'
+    ];
+  }
 }
 
 /**
