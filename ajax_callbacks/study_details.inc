@@ -523,6 +523,24 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
   // $query = chado_query("SELECT * FROM chado.genotypes_" . $project_id . " OFFSET $start LIMIT $per_page");
 
   $view_version = 3;
+
+  // Check if VCF exists (this is a dependency for version 4)
+  // Get all VCF file locations (based on per organism from the sharedState)
+  require_once(dirname(__FILE__) . '/../forms/submit/submit_all.php');
+  $shared_state = $submission->getSharedState();
+  $page1_values = $submission->sharedState['saved_values'][TPPS_PAGE_1];
+  $organism_number = $page1_values['organism']['number'];
+  $vcf_location_details = [];
+  for ($i = 1; $i <= $organism_number; $i++) {
+    $vcf_details = tpps_vcf_location($shared_state, $i);
+    // print_r($vcf_details);
+    if ($vcf_details['status'] == 'exists') {
+      $view_version = 4;
+    }
+    $vcf_location_details[] = $vcf_details;
+  }
+
+  
   if ($view_version == 3) {
     // @NEW -RISH using Emily's redesign that uses index_id. Fast response in ms.
     $query_results = chado_query('select max(index_id) as c1 FROM chado.genotypes_' . $project_id, []);
@@ -579,17 +597,7 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
   }
   else if ($view_version == 4) {
     // VERSION 4 - RISH + MEGHAN'S SH SCRIPT (3/30/2025)
-    require_once(dirname(__FILE__) . '/../forms/submit/submit_all.php');
-
-    // VERSION 4 - Step 1 - Get all VCF file locations (based on per organism from the sharedState)
-    $shared_state = $submission->getSharedState();
-    $page1_values = $submission->sharedState['saved_values'][TPPS_PAGE_1];
-    $organism_number = $page1_values['organism']['number'];
-    $vcf_location_details = [];
-    for ($i = 1; $i <= $organism_number; $i++) {
-      $vcf_location_details[] = tpps_vcf_location($shared_state, $i);
-    }
-
+    
     $rows = [];
     // $vcf_location = "/core/labs/Wegrzyn/meghan_work/query_VCF_for_genotypes/Geraldes_2013.v2.vcf";
     $vcf_location = $vcf_location_details[0]['location'];
@@ -598,7 +606,7 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
     // Get total reads
     $plants_count = exec('bcftools query -l "' . $vcf_location . '" | wc -l');
     $markers_count = exec('bcftools view -H "' . $vcf_location . '" | wc -l');
-    $total = $plants_count * $markers_count;
+    $total = ceil(($plants_count * $markers_count) / 20);
     pager_default_initialize($total, $per_page);
 
 

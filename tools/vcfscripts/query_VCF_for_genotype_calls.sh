@@ -1,7 +1,7 @@
 #!/bin/bash
 # Original code contribution by Meghan Myles - THANK YOU!
 # Modified by Risharde Ramnath for use with study_details.inc (3/30/2025)
-module load bcftools/1.12
+# module load bcftools/1.12
 
 # VCF file path
 # VCF_FILE="/core/labs/Wegrzyn/meghan_work/query_VCF_for_genotypes/Geraldes_2013.v2.vcf"
