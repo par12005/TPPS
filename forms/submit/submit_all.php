@@ -5115,8 +5115,12 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             continue; // 3/25/2025 - Meghan and Emily suggested we skip this line and move to the next line
           }
           // $marker_name = $variant_name . $marker; // Original by Peter
+
           // Emily updated suggestion on Tuesday August 9th 2022
-          $marker_name = $scaffold_id . '_' . $position . '-' . $species_code;
+          // $marker_name = $scaffold_id . '_' . $position . '-' . $species_code;
+
+          // (3/31/2025) Emily and Gabe suggested we remove the species code from the marker_name 
+          $marker_name = $scaffold_id . '_' . $position;
 
           // $description = "$ref:$alt"; // Replaced with genotype_combination within $detected_genotypes array (5/31/2023)
 
@@ -5222,7 +5226,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
                 $results = chado_insert_record('feature', [
                   'name' => $marker_name,
                   'organism_id' => $current_id,
-                  'uniquename' => $marker_name,
+                  'uniquename' => $marker_name . '-' . $species_code,
                   'type_id' => $seq_var_cvterm,
                 ]);
                 $time_end_feature_insert = microtime(true);
@@ -5264,7 +5268,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
                 $results = chado_insert_record('feature', [
                   'name' => $variant_name,
                   'organism_id' => $current_id,
-                  'uniquename' => $variant_name,
+                  'uniquename' => $variant_name . '-' . $species_code,
                   'type_id' => $seq_var_cvterm,
                 ]);
               }
