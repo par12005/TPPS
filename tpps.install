@@ -2470,10 +2470,10 @@ function tpps_update_7128() {
   // Rename variable.
   if (
     !is_null(variable_get('tpps_zenodo_sandbox_key', NULL))
-    && is_null(variable_set('tpps_zenodo_access_token_live', NULL)
+    && is_null(variable_set('tpps_zenodo_access_token_live', NULL))
   ) {
     variable_set('tpps_zenodo_access_token_live',
-      variable_get('tpps_zenodo_sandbox_key')
+      variable_get('tpps_zenodo_sandbox_key', '')
     );
   }
   variable_del('tpps_zenodo_sandbox_key');

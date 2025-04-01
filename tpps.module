@@ -2802,18 +2802,29 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'page arguments' => ['tpps_submission_zenodo_form', 2],
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
-    'file' => 'pages/submission/zenodo/main.inc',
+    'file' => 'pages/submission/zenodo/view.inc',
   ];
   $items['tpps/submission/%/zenodo/files'] = [
     'title callback' => 'tpps_submission_title',
     // 2nd - submission accession. E.g. 'TGDR1234'.
     'title arguments' => [2],
-    'description' => 'Zenodo Files Page',
+    'description' => 'Zenodo File List',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_zenodo_files_form', 2],
+    'page arguments' => ['tpps_submission_zenodo_files_list_form', 2],
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
-    'file' => 'pages/submission/zenodo/files.inc',
+    'file' => 'pages/submission/zenodo/files/list.inc',
+  ];
+  $items['tpps/submission/%/zenodo/files/%'] = [
+    'title callback' => 'tpps_submission_title',
+    // 2nd - submission accession. E.g. 'TGDR1234'.
+    'title arguments' => [2, 5],
+    'description' => 'Zenodo Single File Page',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_zenodo_files_single_form', 2],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'pages/submission/zenodo/files/single.inc',
   ];
 }
 
@@ -3365,4 +3376,7 @@ function tpps_zenodo_deposit_create_alter(array &$data = []) {
   if ($submission->doesExist()) {
     $data['payload']['metadata'] = $submission->buildZenodoDepositMetadata();
   }
+}
+
+function tpps_zenodo_files_create_alter(array &$data = []) {
 }
