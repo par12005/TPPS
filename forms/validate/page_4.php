@@ -1080,16 +1080,11 @@ function tpps_validate_ssr(array &$form_state, $org_num, $field_name) {
   $species_index = empty($page3['tree-accession']['check']) ? 'species-1' : "species-$org_num";
   $tree_accession_file = $page3['tree-accession'][$species_index]['file'];
   $id_col_accession_name = $page3['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
-
-  $ploidy_field_name = 'ploidy';
-  if ($field_name == 'ssrs') {
-    $prefix = 'Genotype_SSR_Spreadsheet';
-  }
-  elseif ($field_name == 'ssrs_extra') {
-    $prefix = 'Genotype_SSR_Additional_Spreadsheet';
-  }
-
   $ssrs_fieldset = 'ssrs_cpssrs';
+  $ploidy_field_name = 'ploidy';
+
+  // Validate.
+  // @TODO Minor. Simplify condition. Use form_get_errors() after each check.
   $condition = (
     !tpps_is_required_field_empty($form_state,
       [$id, 'genotype', $ssrs_fieldset, $ploidy_field_name]
@@ -1098,67 +1093,80 @@ function tpps_validate_ssr(array &$form_state, $org_num, $field_name) {
       [$id, 'genotype', $ssrs_fieldset, $field_name]
     )
   );
-  if ($condition) {
-    // Required fields are not empty.
-    $headers = tpps_file_headers($genotype[$ssrs_fieldset][$field_name]);
-    $id_col_name = key($headers);
-    while (($k = array_search(NULL, $headers))) {
-      unset($headers[$k]);
-    }
-
-    if (isset($genotype[$ssrs_fieldset][$ploidy_field_name])) {
-      tpps_ssr_valid_ploidy(
-        $genotype[$ssrs_fieldset][$ploidy_field_name],
-        // Number of columns.
-        (tpps_file_width($genotype[$ssrs_fieldset][$field_name]) - 1),
-        // Number of unique columns.
-        (count(array_unique($headers)) - 1),
-        $org_num,
-        $field_name
-      );
-    }
-    // Check missing trees.
-    if (!form_get_errors()) {
-      $missing_trees = tpps_compare_files(
-        $genotype[$ssrs_fieldset][$field_name],
-        $tree_accession_file,
-        $id_col_name,
-        $id_col_accession_name,
-        FALSE,
-        $page3['tree-accession'][$species_index]['file-no-header']
-      );
-
-      if ($missing_trees !== []) {
-        $tree_id_str = implode(', ', $missing_trees);
-        form_set_error("$id][genotype][$ssrs_fieldset][$field_name", t(
-          "SSRs/cpSSRs Genotype Spreadsheet: "
-          . "We detected Plant Identifiers that were not in your "
-          . "Plant Accession file. Please either remove these plants from "
-          . "your Genotype file, or add them to your Plant Accession file. "
-          . "The Plant Identifiers we found were: @tree_id_str",
-          ['@tree_id_str' => $tree_id_str]
-        ));
-      }
-    }
-    if (!form_get_errors()) {
-      $options = [
-        'empty' => $genotype[$ssrs_fieldset][$field_name . '-empty'] ?? NULL,
-        'org_num' => $org_num,
-      ];
-      tpps_file_iterator(
-        $genotype[$ssrs_fieldset][$field_name],
-        'tpps_ssr_valid_values',
-        $options
-      );
-      // Preserve file if it is valid.
-      tpps_preserve_valid_file(
-        $form_state,
-        $genotype[$ssrs_fieldset][$field_name],
-        $org_num,
-        $prefix
-      );
-    }
+  if (!$condition) {
+    return;
   }
+
+  if ($field_name == 'ssrs') {
+    $prefix = 'Genotype_SSR_Spreadsheet';
+    $ploidy_field_value = $genotype[$ssrs_fieldset][$ploidy_field_name] ?? NULL;
+  }
+  elseif ($field_name == 'ssrs_extra') {
+    $prefix = 'Genotype_SSR_Additional_Spreadsheet';
+    $ploidy_field_value = 'Haploid';
+  }
+
+  // Required fields are not empty.
+  $headers = tpps_file_headers($genotype[$ssrs_fieldset][$field_name]);
+  $id_col_name = key($headers);
+  while (($k = array_search(NULL, $headers))) {
+    unset($headers[$k]);
+  }
+
+  if ($ploidy_field_value) {
+    tpps_ssr_valid_ploidy(
+      $ploidy_field_value,
+      // Number of columns.
+      (tpps_file_width($genotype[$ssrs_fieldset][$field_name]) - 1),
+      // Number of unique columns.
+      (count(array_unique($headers)) - 1),
+      $org_num,
+      $field_name
+    );
+  }
+  // Check missing trees.
+  if (form_get_errors()) {
+    return;
+  }
+  $missing_trees = tpps_compare_files(
+    $genotype[$ssrs_fieldset][$field_name],
+    $tree_accession_file,
+    $id_col_name,
+    $id_col_accession_name,
+    FALSE,
+    $page3['tree-accession'][$species_index]['file-no-header']
+  );
+
+  if ($missing_trees !== []) {
+    $tree_id_str = implode(', ', $missing_trees);
+    form_set_error("$id][genotype][$ssrs_fieldset][$field_name", t(
+      "SSRs/cpSSRs Genotype Spreadsheet: "
+      . "We detected Plant Identifiers that were not in your "
+      . "Plant Accession file. Please either remove these plants from "
+      . "your Genotype file, or add them to your Plant Accession file. "
+      . "The Plant Identifiers we found were: @tree_id_str",
+      ['@tree_id_str' => $tree_id_str]
+    ));
+  }
+  if (form_get_errors()) {
+    return;
+  }
+  $options = [
+    'empty' => $genotype[$ssrs_fieldset][$field_name . '-empty'] ?? NULL,
+    'org_num' => $org_num,
+  ];
+  tpps_file_iterator(
+    $genotype[$ssrs_fieldset][$field_name],
+    'tpps_ssr_valid_values',
+    $options
+  );
+  // Preserve file if it is valid.
+  tpps_preserve_valid_file(
+    $form_state,
+    $genotype[$ssrs_fieldset][$field_name],
+    $org_num,
+    $prefix
+  );
 }
 
 /**

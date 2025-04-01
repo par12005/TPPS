@@ -1094,7 +1094,12 @@ function tpps_submission_get_accession_list(array $conditions = [], $remove_empt
   if (!$is_cache_allowed || $reset || empty($cache) || empty($cache->data[$key])) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $fields = array_diff(
-      array_keys(drupal_get_schema('tpps_submission')['fields']), ['shared_state']
+      array_keys(
+        // Use uncached version of table's schema to avoid errors after
+        // clearing cache and empty list of fields.
+        drupal_get_schema('tpps_submission', $rebuild = TRUE)['fields']
+      ),
+      ['shared_state']
     );
     $query = db_select('tpps_submission', 's')
       ->fields('s', $fields)
