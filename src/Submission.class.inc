@@ -2151,4 +2151,67 @@ class Submission {
     return $metadata;
   }
 
+
+  public function getFileList() {
+    // @todo replace $state.
+    $state = $this->state;
+    $files = [];
+    for ($i = 1; $i <= $state['stats']['species_count']; $i++) {
+      $files[] = $state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['file'];
+      if (empty($state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
+        break;
+      }
+    }
+
+    for ($i = 1; $i <= $state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
+      if (isset($state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype'])) {
+        $phenotype = &$state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype'];
+        if (!empty($phenotype['normal-check'])) {
+          $files[] = $phenotype['file'];
+          if ($phenotype['check']) {
+            $files[] = $phenotype['metadata'];
+          }
+        }
+
+        if (!empty($phenotype['iso-check'])) {
+          $files[] = $phenotype['iso'];
+        }
+      }
+
+      // Genotype.
+      if (isset($state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype'])) {
+        $genotype = &$state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype'];
+        if (in_array($genotype['ref-genome'], ['manual', 'manual2', 'url'])) {
+          $files[] = $genotype['tripal_fasta']['file_upload'] ?? NULL;
+          $files[] = $genotype['tripal_fasta']['file_upload_existing'] ?? NULL;
+        }
+        // @TODO Could we skip all this extra checks and just collect files?
+        // @TODO Ask curation team what to do with this.
+        // WARNING: Submission State (not Shared State, v.1).
+        $snps_fieldset = 'SNPs';
+        $ssrs_fieldset = 'ssrs_cpssrs';
+        $file_type = $genotype[$snps_fieldset]['file-type'] ?? NULL;
+        if (($genotype['does_study_include_snp_data'] ?? NULL) == 'yes') {
+          if ($file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE) {
+            $files[] = $genotype[$snps_fieldset]['snps-assay'] ?? NULL;
+            $files[] = $genotype[$snps_fieldset]['assay-design'] ?? NULL;
+          }
+          elseif ($file_type == TPPS_GENOTYPING_FILE_TYPE_VCF) {
+            $files[] = $genotype[$snps_fieldset]['vcf'] ?? NULL;
+          }
+        }
+        if (($genotype['does_study_include_ssr_cpssr_data'] ?? NULL) == 'yes') {
+          $files[] = $genotype[$ssrs_fieldset]['ssrs'] ?? NULL;
+          // @TODO What about cpssrs?
+          // $files[] = $genotype[$ssrs_fieldset]['cpssrs'] ?? NULL;
+        }
+        if (($genotype['does_study_include_other_genotypic_data'] ?? NULL) == 'yes') {
+          $files[] = $genotype['other']['other'] ?? NULL;
+        }
+      }
+    }
+    $files = array_filter($files);
+    return $files;
+  }
+
 }
