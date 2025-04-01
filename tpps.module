@@ -2802,7 +2802,18 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'page arguments' => ['tpps_submission_zenodo_form', 2],
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
-    'file' => 'pages/submission/zenodo.inc',
+    'file' => 'pages/submission/zenodo/main.inc',
+  ];
+  $items['tpps/submission/%/zenodo/files'] = [
+    'title callback' => 'tpps_submission_title',
+    // 2nd - submission accession. E.g. 'TGDR1234'.
+    'title arguments' => [2],
+    'description' => 'Zenodo Files Page',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_zenodo_files_form', 2],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'pages/submission/zenodo/files.inc',
   ];
 }
 

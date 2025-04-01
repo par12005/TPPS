@@ -100,7 +100,7 @@ function tpps_submission_list_form_submit(array $form, array &$form_state) {
  *   Drupal Form API array.
  */
 function tpps_submission_list_add_buttons(array &$form, $add_action = TRUE) {
-  $form['actions'] = ['#type' => 'container'];
+  $form['actions'] = $form['actions'] ?? ['#type' => 'container'];
   // Back-button.
   $action = 'back';
   $form['actions'][$action] = [
