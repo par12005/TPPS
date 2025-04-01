@@ -13,7 +13,7 @@ module_load_include('inc', 'tpps', 'pages/submission/list');
 /**
  * Menu callback. Shows Zenodo Action buttons.
  */
-function tpps_submission_zenodo_form(array $form, array &$form_state = [], $accession = NULL) {
+function tpps_submission_zenodo_files_form(array $form, array &$form_state = [], $accession = NULL) {
   // Check submission accession.
   $path = 'tpps/submission';
   if (empty($accession)) {
@@ -27,7 +27,7 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
   $form['accession'] = ['#type' => 'hidden', '#value' => $accession];
   $deposit_id = $submission->getZenodoDepositId();
 
-  // Get Zenodo Depositon.
+  // Get Zenodo Deposition.
   if ($deposit_id) {
     $form[$deposit_id] = [
       '#type' => 'fieldset',
@@ -112,7 +112,7 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
 /**
  * Form validator for 'tpps_submission_list_form' form.
  */
-function tpps_submission_zenodo_form_validate(array $form, array &$form_state) {
+function tpps_submission_zenodo_files_form_validate(array $form, array &$form_state) {
   // Check accession.
   if (empty($accession = $form_state['values']['accession'] ?? '')) {
     form_set_error('accession',
@@ -125,7 +125,7 @@ function tpps_submission_zenodo_form_validate(array $form, array &$form_state) {
 /**
  * Form submitter for 'tpps_submission_list_form' form.
  */
-function tpps_submission_zenodo_form_submit(array &$form, array &$form_state) {
+function tpps_submission_zenodo_files_form_submit(array &$form, array &$form_state) {
   $data = [];
   $accession = $form_state['values']['accession'] ?? '';
   $data['accession'] = $accession;
