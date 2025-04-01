@@ -136,6 +136,7 @@ th > div.form-type-select > .ajax-progress {
 #tpps_table_display td,
 .tpps_table td {
   padding: 10px;
+  vertical-align: top;
 }
 #tpps_table_display tbody>tr>td:nth-child(1) {
   min-width: 50px;

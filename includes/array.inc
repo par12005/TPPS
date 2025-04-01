@@ -356,7 +356,7 @@ function tpps_array_set_value(array &$array, array $parents, $value = NULL) {
  * @return string
  *   Returns rendered HTML list.
  *
- *   @todo move to includes/array.inc.
+ *   @todo move to TppsArray class.
  */
 function tpps_array_print_list(array $list = []) {
   $items = [];
