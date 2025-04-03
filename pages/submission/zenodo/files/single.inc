@@ -34,6 +34,102 @@ function tpps_submission_zenodo_files_single_form(array $form, array &$form_stat
     drupal_goto($path . '/' . $accession . '/zenodo/files');
   }
 
+  // Get action (if any).
+  $action = arg(6) ?? NULL;
+
+  if ($action) {
+    if (is_numeric($file_id)) {
+      // $file_id is the Drupal File Id.
+      $file = tpps_file_load($file_id);
+
+      // Create.
+      if ($file && $action == 'create') {
+        // Move to alter-hook.
+        $cFile = new CURLFile(
+          tpps_realpath($file->uri),
+          $file->filemime,
+          $file->filename
+        );
+        $data = [
+          'header' => [
+            'Content-Type: multipart/form-data',
+          ],
+          'deposit_id' => $deposit_id,
+          'payload' => [
+            'name' => check_plain($file->filename),
+            // @TODO Think about: curl_file_create().
+            // If you need to upload a file to a service using cURL, just
+            // append an at symbol (@) to a string containing the file path.
+            'file' => $cFile,
+          ],
+          //'payload' => $cFile,
+        ];
+        ZenodoFiles::create($data);
+        // Validate response and show status message.
+        if (empty($data['response']['id'])) {
+          dpm($data);
+          // Fail.
+          $message = t('Drupal File "@file_id" was NOT added to Deposition '
+            . '"@deposit_id". <br /><strong>Response</strong>: @status - @message.',
+            [
+              '@status' => $data['response']['status'] ?? '',
+              '@message' => $data['response']['messaage'] ?? '',
+              '@file_id' => $file_id,
+              '@deposit_id' => $deposit_id,
+            ]
+          );
+          drupal_set_message($message, 'error');
+          drupal_goto($path . '/' . $accession . '/zenodo/files');
+          // Do not redirect to stay at single Zenodo File page.
+        }
+        else {
+          // Success.
+          // Code: 201 Created
+          // Body: a deposition file resource.
+          $message = t('Drupal file #@file_id was successfully added to '
+            . 'Zenodo Deposition #@deposit_id. '
+            . '<br /><strong>Zenodo File Id</stong>: @zenodo_file_id.',
+            [
+              '@deposit_id' => $deposit_id,
+              '@file_id' => $file_id,
+              '@zenodo_file_id' => $data['response']['id'],
+            ]
+          );
+          drupal_set_message($message, 'status');
+          drupal_goto($path . '/' . $accession . '/zenodo/files/' . $file_id);
+        }
+      }
+    }
+    else {
+      // $file_id is the Zenodo File Id.
+      if ($action == 'delete') {
+        $data = ['deposit_id' => $deposit_id, 'file_id' => $file_id];
+        ZenodoFiles::delete($data);
+        // Validate response and show status message.
+        if (empty($data['response'])) {
+          // Code: 204 No Content.
+          $message = t('Zenodo File "@file_id" was successfully removed '
+            . 'from Zenodo Deposition #@deposit_id.',
+            ['@deposit_id' => $deposit_id, '@file_id' => $file_id]
+          );
+          drupal_set_message($message, 'status');
+        }
+        else {
+          $message = t('Zenodo File "@file_id" was NOT removed. Response: @response.',
+            ['@response' => $data['response'], '@file_id' => $file_id]
+          );
+          drupal_set_message($message, 'error');
+        }
+        // There is nothing to show when Zenodo File was removed and error
+        // message will be shown at Zenodo Files List page.
+        drupal_goto($path . '/' . $accession . '/zenodo/files');
+      }
+    }
+  }
+
+
+
+
 // @TODO Show table of Submission's files and Zenodo files and action buttons.
 
     // Get list of Zenodo Files.

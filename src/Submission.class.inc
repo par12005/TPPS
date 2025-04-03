@@ -2171,7 +2171,10 @@ class Submission {
       // Genotype.
       if (isset($state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype'])) {
         $genotype = &$state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype'];
-        if (in_array($genotype['ref-genome'], ['manual', 'manual2', 'url'])) {
+        if (in_array(
+          ($genotype['ref-genome'] ?? NULL),
+          ['manual', 'manual2', 'url']
+        )) {
           $files[] = $genotype['tripal_fasta']['file_upload'] ?? NULL;
           $files[] = $genotype['tripal_fasta']['file_upload_existing'] ?? NULL;
         }
