@@ -11,10 +11,7 @@ module_load_include('inc', 'tpps', 'pages/submission/list');
  * Menu callback. Shows Zenodo Action buttons.
  */
 function tpps_submission_zenodo_files_list_form(array $form, array &$form_state = [], $accession = NULL) {
-  drupal_set_message(t('Zenodo Host: @host_type',
-    ['@host_type' => (variable_get('tpps_zenodo_debug_mode') ? 'Sandbox' : 'Live')]
-  ), 'warning');
-
+  ZenodoDeposit::printHostStatus();
 
   // Check submission accession.
   $path = 'tpps/submission';
@@ -153,68 +150,4 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
   tpps_add_css_js('theme', $form);
   tpps_submission_list_add_buttons($form, FALSE);
   return $form;
-}
-
-
-// @TODO REview below.
-
-
-/**
- * Form validator for 'tpps_submission_list_form' form.
- */
-function tpps_submission_zenodo_files_list_form_validate(array $form, array &$form_state) {
-  // Check accession.
-  if (empty($accession = $form_state['values']['accession'] ?? '')) {
-    form_set_error('accession',
-      t('Empty accession. Please choose from the list below.')
-    );
-  }
-  // Note: Deposit Id will be validated in form submitter because it requires
-  // fully loaded Submission objec (which takes time).
-  // @TOdO Minor. Check if clicked button is in the list of existing buttons.
-}
-
-/**
- * Form submitter for 'tpps_submission_list_form' form.
- */
-function tpps_submission_zenodo_files_list_form_submit(array &$form, array &$form_state) {
-  $data = [];
-  $accession = $form_state['values']['accession'] ?? '';
-  $data['accession'] = $accession;
-  list($group_name, $action) = $form_state['triggering_element']['#array_parents'];
-  $submission = new Submission($accession);
-  $deposit_id = $submission->getZenodoDepositId();
-
-  if (empty($deposit_id)) {
-    if (
-      ($group_name == 'deposition' && !in_array($action, ['create', 'list']))
-      || ($group_name == 'deposition_files')
-    ) {
-      drupal_set_message(t('Submission has no Zenodo Deposit Id.'), 'error');
-      drupal_goto($path . '/' . $accession);
-    }
-  }
-  else {
-    $data['deposit_id'] = $deposit_id;
-  }
-
-  // Validate $action.
-  $class = 'ZenodoFiles';
-  $method_name = $class . '::' . $action;
-  if (!is_callable($method_name, TRUE)) {
-    drupal_set_message(t('Attempt to call non-existing Zenodo API action: @name.',
-      ['@name' => $method_name]), 'error'
-    );
-    drupal_goto($path . '/' . $accession . '/zenodo/files');
-  }
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Get response.
-  $response = call_user_func($method_name, $data);
-
-  // Output response.
-  $output = $response ? ZenodoDeposit::printDeposition($response) : t('No data');
-  $form['response'] = ['#type' => 'fieldset', '#title' => t('Response')];
-  $form['response']['data'] = ['#markup' => $output];
-  $form_state['rebuild'] = TRUE;
 }

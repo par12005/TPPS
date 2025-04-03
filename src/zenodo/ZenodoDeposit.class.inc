@@ -214,14 +214,43 @@ class ZenodoDeposit extends Zenodo {
   }
 
   /**
-   * Checks if Zenodo Sandbox is in use.
+   * Checks if current (page specific) Zenodo Host is a sandbox-server.
    *
    * @return bool
-   *   Returns TRUE when Zenodo Sandbox server is currenlty in use.
+   *   Returns TRUE when Zenodo Sandbox Host used on current page.
    */
-  public static function isSandboxServer() {
-    $zenodo_host = &drupal_static('tpps_zenodo_host');
-    return (bool) ($zenodo_host == static::SANDBOX_HOST);
+  public static function isSandboxHost() {
+    return (static::getHost() == static::SANDBOX_HOST);
+  }
+
+  /**
+   * Checks if current (page specific) Zenodo Host is a live-server.
+   *
+   * @return bool
+   *   Returns TRUE when Zenodo Live Host used on current page.
+   */
+  public static function isLiveHost() {
+    return (static::getHost() == static::LIVE_HOST);
+  }
+
+  /**
+   * Checks if global (site wide) Zenodo Host is a sandbox-server.
+   *
+   * @return bool
+   *   Returns TRUE when Zenodo Sandbox Host used on current page.
+   */
+  public static function isHostGlobalSandbox() {
+    return (bool) variable_get('tpps_zenodo_debug_mode');
+  }
+
+  /**
+   * Checks if global (site wide) Zenodo Host is a live-server.
+   *
+   * @return bool
+   *   Returns TRUE when Zenodo Live Host used on current page.
+   */
+  public static function isHostGlobalLive() {
+    return !static::isHostGlobalSandbox();
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -363,15 +392,13 @@ class ZenodoDeposit extends Zenodo {
       if (!empty($response['status']) && !empty($response['message'])) {
         drupal_set_message(t('ZenodoDeposit Resource validation failed. '
           . '<br />Response: <strong>@code - @message</strong>'
-          . '<br />Check if correct Zenodo server was used. '
-          . '<br />Zenodo Host: <strong>@host_type</strong> (!change_link).',
+          . '<br />Check if correct Zenodo server was used.',
           [
             '@code' => $response['status'],
             '@message' => $response['message'],
-            '@host_type' => ZenodoDeposit::isSandboxServer() ? 'Sandbox' : 'LIVE',
-            '!change_link' => l(t('Change'), 'admin/config/tpps/zenodo'),
-          ])
-        );
+          ]
+        ));
+        ZenodoDeposit::printHostStatus();
       }
       else {
         drupal_set_message(t('Zenodo Depostion not found.'));
