@@ -348,6 +348,7 @@ function tpps_array_set_value(array &$array, array $parents, $value = NULL) {
 /**
  * Dumps array using item list.
  *
+ * WARNING: Be sure to use check_plain() for data in the $list before call.
  * Note: uses recursion.
  *
  * @param array $list
@@ -365,7 +366,8 @@ function tpps_array_print_list(array $list = []) {
       $value = tpps_array_print_list($value);
     }
     else {
-      $value = check_plain($value);
+      // Using check_plain() blocks HTML Links in the lists.
+      //$value = check_plain($value);
     }
     $items[] = '<strong>' . check_plain($key) . ':</strong> ' . $value;
   }
