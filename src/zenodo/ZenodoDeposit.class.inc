@@ -195,8 +195,22 @@ class ZenodoDeposit extends Zenodo {
    *   Returns absolute URL for Zenodo API Endpoint.
    */
   public static function buildActionUrl(array $data) {
-    self::validateRequired(['deposit_id'], $data);
-    return static::buildUrl($data) . '/actions/' . $data['action'];
+    self::validateRequired(['deposit_id', 'action'], $data);
+    return static::buildUrl($data);
+  }
+
+  /**
+   * Gets list of implemented Zenodo Deposition Actions.
+   *
+   * See https://developers.zenodo.org/?python#deposition-actions for details.
+   *
+   * @return array
+   *   Returns list of actions.
+   */
+  public static function getActionList() {
+    return [
+      'edit', 'publish', 'newversion', 'discard'
+    ];
   }
 
   /**
@@ -241,6 +255,8 @@ class ZenodoDeposit extends Zenodo {
       ]
     );
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    $host = (static::getHost() == self::LIVE_HOST ? 'live' : 'sandbox');
+    $report_path = 'admin/reports/tpps/zenodo-depositions/' . $host . '/';
     $output .= '<h3>' . $title . '</h3>';
     switch ($format) {
       case 'dump':
@@ -257,9 +273,8 @@ class ZenodoDeposit extends Zenodo {
         $array_item_list = ['metadata', 'links', 'files'];
         // Items from 'metadata'.
         $doi = $deposition['metadata']['prereserve_doi']['doi'] ?? '';
-        $row['doi'] = empty($doi) ? '' : l($doi,
-          'admin/reports/tpps/zenodo-depositions/' . $deposition['id']
-        );
+        $row['host'] = strtoupper($host);
+        $row['doi'] = $doi ? l($doi, $report_path . $deposition['id']) : '';
         foreach ($deposition as $key => $value) {
           if (in_array($key, $array_item_list)) {
             continue;
@@ -267,7 +282,7 @@ class ZenodoDeposit extends Zenodo {
           switch ($key) {
 
             case 'id':
-              $value = l($value, 'admin/reports/tpps/zenodo-depositions/' . $value);
+              $value = l($value, $report_path . $value);
               break;
 
             case 'created':
@@ -349,14 +364,12 @@ class ZenodoDeposit extends Zenodo {
         drupal_set_message(t('ZenodoDeposit Resource validation failed. '
           . '<br />Response: <strong>@code - @message</strong>'
           . '<br />Check if correct Zenodo server was used. '
-          . 'Current sever: <strong>@server</strong>.'
-          . '<br />To change server use !settings_page_link.',
+          . '<br />Zenodo Host: <strong>@host_type</strong> (!change_link).',
           [
             '@code' => $response['status'],
             '@message' => $response['message'],
-            '@server' => ZenodoDeposit::isSandboxServer() ? 'Sandbox' : 'LIVE',
-            '!settings_page_link' => l(t('Zenodo Settings page'),
-            'admin/config/tpps/zenodo'),
+            '@host_type' => ZenodoDeposit::isSandboxServer() ? 'Sandbox' : 'LIVE',
+            '!change_link' => l(t('Change'), 'admin/config/tpps/zenodo'),
           ])
         );
       }

@@ -17,33 +17,54 @@
 
 /**
  * Menu callback. Shows list of submissions which has Zenodo Depositions.
+ *
+ * Returns rendered page content.
  */
 function tpps_admin_zenodo_depositions_report() {
-  $entity = arg(4);
+  $host = arg(4);
+  $entity = arg(5);
   $output = '';
   if (empty($entity)) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Show all items.
-    drupal_set_message(t('Zenodo Host: @host_type',
-      ['@host_type' => (variable_get('tpps_zenodo_debug_mode') ? 'Sandbox' : 'Live')]
+    drupal_set_message(t(
+      'Zenodo Host: <strong>@host_type</strong> (!change_link).',
+      [
+        '@host_type' => (variable_get('tpps_zenodo_debug_mode') ? 'Sandbox' : 'Live'),
+        '!change_link' => l(t('Change'), 'admin/config/tpps/zenodo'),
+      ]
     ), 'warning');
-    $response = ZenodoDeposit::list([]);
-    if (empty($response)) {
-      drupal_set_message(t('Empty Zenodo API response.'), 'error');
-      return '';
+    $host_list = ['live', 'sandbox'];
+    if (!empty($host) && in_array($host, $host_list)) {
+      $host_list = [$host];
     }
-    elseif (!empty($response['status'])) {
-      drupal_set_message(t('Zenodo API Response: @code - @message', [
-        '@code' => $response['status'],
-        '@message' => $response['message'],
-      ]), 'error');
-      return '';
+    $output = '';
+    foreach ($host_list as $host) {
+      ZenodoDeposit::setHost($host);
+      $output .= '<h2>Zenodo Host: ' . $host . '</h2>';
+      $response = ZenodoDeposit::list([]);
+      if (empty($response)) {
+        drupal_set_message(t('Empty Zenodo API response.'), 'error');
+        continue;
+      }
+      elseif (!empty($response['status'])) {
+        drupal_set_message(t('Zenodo API Response: @code - @message', [
+          '@code' => $response['status'],
+          '@message' => $response['message'],
+        ]), 'error');
+        continue;
+      }
+      else {
+        $output .= ZenodoDeposit::printDepositionList($response, 'table');
+      }
     }
-    else {
-      return ZenodoDeposit::printDepositionList($response, 'table');
-    }
+    return $output;
   }
   else {
+    drupal_set_message(t('Zenodo Host: <strong>@host</strong>.',
+      ['@host' => $host]), 'warning'
+    );
+    ZenodoDeposit::setHost(($host ?? 'sandbox'));
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Show single entity report.
     if (strpos('TGDR', $entity) !== FALSE) {
