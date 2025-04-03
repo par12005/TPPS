@@ -27,13 +27,7 @@ function tpps_admin_zenodo_depositions_report() {
   if (empty($entity)) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Show all items.
-    drupal_set_message(t(
-      'Zenodo Host: <strong>@host_type</strong> (!change_link).',
-      [
-        '@host_type' => (variable_get('tpps_zenodo_debug_mode') ? 'Sandbox' : 'Live'),
-        '!change_link' => l(t('Change'), 'admin/config/tpps/zenodo'),
-      ]
-    ), 'warning');
+    ZenodoDeposit::printHostStatus();
     $host_list = ['live', 'sandbox'];
     if (!empty($host) && in_array($host, $host_list)) {
       $host_list = [$host];
@@ -61,10 +55,8 @@ function tpps_admin_zenodo_depositions_report() {
     return $output;
   }
   else {
-    drupal_set_message(t('Zenodo Host: <strong>@host</strong>.',
-      ['@host' => $host]), 'warning'
-    );
     ZenodoDeposit::setHost(($host ?? 'sandbox'));
+    ZenodoDeposit::printHostStatus();
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Show single entity report.
     if (strpos('TGDR', $entity) !== FALSE) {

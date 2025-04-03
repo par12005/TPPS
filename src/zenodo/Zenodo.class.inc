@@ -447,4 +447,24 @@ class Zenodo {
     return $zenodo_host;
   }
 
+  /**
+   * Prints out current and global Zenodo hosts status.
+   *
+   * Note: Uses drupal_set_message().
+   */
+  public static function printHostStatus() {
+    $current_host = static::getHost() == self::LIVE_HOST ? 'live' : 'sandbox';
+    $global_host = variable_get('tpps_zenodo_debug_mode') ? 'sandbox' : 'live';
+    drupal_set_message(t('Zenodo Host (global / current): '
+      . '<strong>@global_host</strong> [!change_link] '
+      . '/ <strong>@current_host</strong> (page specific).',
+      [
+        '@current_host' => strtoupper($current_host),
+        '@global_host' => $global_host,
+        '!change_link' => l(t('Change'), 'admin/config/tpps/zenodo'),
+      ]),
+      ($current_host == 'live' ? 'warning' : 'status')
+    );
+  }
+
 }
