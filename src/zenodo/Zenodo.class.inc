@@ -246,22 +246,45 @@ class Zenodo {
    */
   public static function buildUrl(array $data) {
     $protocol = 'https://';
-    // Add host name.
-    if (variable_get('tpps_zenodo_debug_mode', FALSE)) {
-      $path = $protocol . static::getHost();
-      $access_token = variable_get('tpps_zenodo_access_token_sandbox');
+    // Host.
+    $host = static::getHost();
+    $path = $protocol . $host;
+    // Access Token.
+    if ($host == self::LIVE_HOST) {
+      $access_token = variable_get('tpps_zenodo_access_token_live');
     }
     else {
-      // Live.
-      $path = $protocol . static::LIVE_HOST;
-      $access_token = variable_get('tpps_zenodo_access_token_live');
+      $access_token = variable_get('tpps_zenodo_access_token_sandbox');
     }
     // Add base path and endpoint.
     switch (static::getClassName()) {
       case 'ZenodoDeposit':
+        // $data['deposit_id'] is empty for 'list' API action.
         // Example: /api/deposit/depositions/:id.
         $path .= static::BASE_PATH
           . (empty($data['deposit_id']) ? '' : '/' . $data['deposit_id']);
+        $action = $data['action'] ?? NULL;
+        if ($action) {
+          if (in_array($action, ZenodoDeposit::getActionList())) {
+            $path .= '/actions/' . $action;
+          }
+          else {
+            // @TODO Add hook and move exception there.
+            $message = t(
+              '@class::@caller_method() uses unsupported Zenodo Deposition '
+              . 'action: @name. Allowed actions: @list.',
+              [
+                '@name' => $action,
+                '@list' => implode(', ', ZenodoDeposit::getActionList()),
+                '@class' => static::getClassName(),
+                '@caller_method' => debug_backtrace(
+                  !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 2
+                )[1]['function'],
+              ]
+            );
+            throw new Exception($message);
+          }
+        }
         break;
 
       case 'ZenodoFiles':
