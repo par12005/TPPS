@@ -11,6 +11,11 @@ module_load_include('inc', 'tpps', 'pages/submission/list');
  * Menu callback. Shows Zenodo Action buttons.
  */
 function tpps_submission_zenodo_files_list_form(array $form, array &$form_state = [], $accession = NULL) {
+  drupal_set_message(t('Zenodo Host: @host_type',
+    ['@host_type' => (variable_get('tpps_zenodo_debug_mode') ? 'Sandbox' : 'Live')]
+  ), 'warning');
+
+
   // Check submission accession.
   $path = 'tpps/submission';
   if (empty($accession)) {
@@ -33,6 +38,12 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
     t('Submission'),
     t('Zenodo'),
   ];
+  $action_link_params = [
+    'attributes' => [
+      'class' => ['btn', 'form-submit', 'btn-primary'],
+      'style' => 'display: inline-block;',
+    ],
+  ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Zenodo Files.
@@ -47,6 +58,13 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
   if (!empty($response)) {
     foreach ($response as $item) {
       foreach ($item as $key => $value) {
+        $links = '';
+        if ($key == 'links') {
+          foreach ($value as $name => $url) {
+            $links[] = l($name, $url);
+          }
+          $value = implode(', ', $links);
+        }
         $zenodo_file_list[$item['id']][$key] = $value;
       }
     }
@@ -54,38 +72,64 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Submission files.
   foreach ($submission->getFileList() as $fid) {
-    if ($file = tpps_file_load($fid)) {
-      $submission_file = [
-        'fid' => $file->fid,
-        'uid' => $file->uid,
-        'filename' => $file->filename,
-        'uri' => $file->uri,
-        'filemime' => $file->filemime,
-        'filesize' => $file->filesize,
-        'status' => $file->status,
-        'timestamp' => $file->timestamp,
-        'md5' => md5(file_get_contents(tpps_realpath($file->uri))),
-      ];
-      $rows[$fid] = [
-        'submission' => tpps_array_print_list($submission_file),
-        'zenodo' => '',
-      ];
+    $create_url = $path . '/' . $accession . '/zenodo/files/' . $fid . '/create';
+    if (empty($file = tpps_file_load($fid))) {
+      continue;
     }
+    // Make it first.
+    $rows[$fid]['submission'] = '';
+    $rows[$fid]['zenodo'] = '';
+    $submission_file = [
+      'fid' => $file->fid,
+      'uid' => $file->uid,
+      'filename' => $file->filename,
+      'uri' => $file->uri,
+      'filemime' => $file->filemime,
+      'filesize' => $file->filesize,
+      'status' => $file->status,
+      'timestamp' => $file->timestamp,
+      'md5' => md5(file_get_contents(tpps_realpath($file->uri))) ?? '',
+    ];
     // Find relations between Submission and Zenodo files.
     if (!empty($zenodo_file_list)) {
       foreach ($zenodo_file_list as $zenodo_file) {
         if ($zenodo_file['checksum'] != $submission_file['md5']) {
+          // @TODO Add 'Create' button.
           continue;
         }
-        $rows[$fid]['zenodo'] = tpps_array_print_list($zenodo_file);
+        // Note: Filesize will be the same but filenames could differ.
+        unset($zenodo_file['checksum']);
+        unset($submission_file['md5']);
+
+        $delete_url = $path . '/' . $accession . '/zenodo/files/' . $zenodo['id'] . '/delete';
+        $update_url = $path . '/' . $accession . '/zenodo/files/' . $zenodo['id'] . '/update';
+        $rows[$fid]['zenodo'] =
+          l(t('Delete'), $delete_url, $action_link_params)
+          . tpps_array_print_list($zenodo_file);
         unset($zenodo_file_list[$zenodo_file['id']]);
+        // @TODO Add 'Delete' button.
+        // @TODO Minor. Add 'Update' (Rename).
+
       }
     }
+    $update_url = $path . '/' . $accession . '/zenodo/files/' . $fid . '/update';
+    $rows[$fid]['submission'] =
+      (
+        $rows[$fid]['zenodo']
+        ? l(t('Update'), $update_url, $action_link_params)
+        : l(t('Create'), $create_url, $action_link_params)
+      )
+      . tpps_array_print_list($submission_file);
   }
+
+  // Add Zenodo files which not match Submission Files.
   if (!empty($zenodo_file_list)) {
     foreach ($zenodo_file_list as $zenodo_file) {
       $rows[$zenodo_file['id']]['submission'] = '';
-      $rows[$zenodo_file['id']]['zenodo'] = tpps_array_print_list($zenodo_file);
+      $delete_url = $path . '/' . $accession . '/zenodo/files/' . $zenodo['id'] . '/delete';
+      $rows[$zenodo_file['id']]['zenodo'] =
+        l(t('Delete'), $delete_url, $action_link_params)
+        . tpps_array_print_list($zenodo_file);
       unset($zenodo_file_list[$zenodo_file['id']]);
     }
   }
@@ -95,6 +139,7 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
     '#markup' => theme('table', [
       'header' => $header,
       'rows' => $rows,
+      'attributes' => ['class' => ['tpps_table']],
     ]),
   ];
 
@@ -104,6 +149,7 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
 
   // WARNING: This CSS class adds theme and design.
   $form['#attributes']['class'][] = 'tpps-submission';
+  tpps_add_css_js('main', $form);
   tpps_add_css_js('theme', $form);
   tpps_submission_list_add_buttons($form, FALSE);
   return $form;
