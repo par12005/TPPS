@@ -19,23 +19,25 @@
  * Menu callback. Shows list of submissions which has Zenodo Depositions.
  *
  * Returns rendered page content.
+ *
+ * @TODO Cache Zenodo Responses. Should we?
  */
 function tpps_admin_zenodo_depositions_report() {
   $host = arg(4);
   $entity = arg(5);
   $output = '';
+  $path = 'admin/reports/tpps/zenodo-depositions/';
   if (empty($entity)) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Show all items.
+    // All depostions.
     ZenodoDeposit::printHostStatus();
     $host_list = ['live', 'sandbox'];
     if (!empty($host) && in_array($host, $host_list)) {
       $host_list = [$host];
     }
-    $output = '';
     foreach ($host_list as $host) {
       ZenodoDeposit::setHost($host);
-      $output .= '<h2>Zenodo Host: ' . $host . '</h2>';
+      $output .= '<h2>Zenodo Host: ' . l($host, $path . $host) . '</h2>';
       $response = ZenodoDeposit::list([]);
       if (empty($response)) {
         drupal_set_message(t('Empty Zenodo API response.'), 'error');
@@ -52,13 +54,12 @@ function tpps_admin_zenodo_depositions_report() {
         $output .= ZenodoDeposit::printDepositionList($response, 'table');
       }
     }
-    return $output;
   }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   else {
+    // Single deposition.
     ZenodoDeposit::setHost(($host ?? 'sandbox'));
     ZenodoDeposit::printHostStatus();
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Show single entity report.
     if (strpos('TGDR', $entity) !== FALSE) {
       // Accession number.
       $submission = new Submission($entity);
@@ -74,6 +75,7 @@ function tpps_admin_zenodo_depositions_report() {
       // Deposit Id.
       $deposit_id = $entity;
     }
+
     if (empty($deposit_id)) {
       drupal_set_message(t('Empty Zenodo Deposit Id'), 'error');
     }
@@ -81,18 +83,19 @@ function tpps_admin_zenodo_depositions_report() {
       $response = ZenodoDeposit::retrieve(['deposit_id' => $deposit_id]);
       if (empty($response)) {
         drupal_set_message(t('Empty Zenodo API response.'), 'error');
-        return '';
       }
       elseif (!empty($response['status'])) {
         drupal_set_message(t('Zenodo API Response: @code - @message', [
           '@code' => $response['status'],
           '@message' => $response['message'],
         ]), 'error');
-        return '';
       }
       else {
-        return ZenodoDeposit::printDeposition($response, 'table');
+        $output = ZenodoDeposit::printDeposition($response, 'table');
+        // Show also 'files', 'metadata' and 'links' items.
+        $output .= tpps_array_print_list($response);
       }
     }
   }
+  return $output;
 }

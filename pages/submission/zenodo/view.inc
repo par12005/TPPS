@@ -14,6 +14,7 @@ module_load_include('inc', 'tpps', 'pages/submission/list');
  * Menu callback. Shows Zenodo Action buttons.
  */
 function tpps_submission_zenodo_form(array $form, array &$form_state = [], $accession = NULL) {
+  ZenodoDeposit::printHostStatus();
   // Check submission accession.
   $path = 'tpps/submission';
   if (empty($accession)) {
