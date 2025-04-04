@@ -213,46 +213,6 @@ class ZenodoDeposit extends Zenodo {
     ];
   }
 
-  /**
-   * Checks if current (page specific) Zenodo Host is a sandbox-server.
-   *
-   * @return bool
-   *   Returns TRUE when Zenodo Sandbox Host used on current page.
-   */
-  public static function isSandboxHost() {
-    return (static::getHost() == static::SANDBOX_HOST);
-  }
-
-  /**
-   * Checks if current (page specific) Zenodo Host is a live-server.
-   *
-   * @return bool
-   *   Returns TRUE when Zenodo Live Host used on current page.
-   */
-  public static function isLiveHost() {
-    return (static::getHost() == static::LIVE_HOST);
-  }
-
-  /**
-   * Checks if global (site wide) Zenodo Host is a sandbox-server.
-   *
-   * @return bool
-   *   Returns TRUE when Zenodo Sandbox Host used on current page.
-   */
-  public static function isHostGlobalSandbox() {
-    return (bool) variable_get('tpps_zenodo_debug_mode');
-  }
-
-  /**
-   * Checks if global (site wide) Zenodo Host is a live-server.
-   *
-   * @return bool
-   *   Returns TRUE when Zenodo Live Host used on current page.
-   */
-  public static function isHostGlobalLive() {
-    return !static::isHostGlobalSandbox();
-  }
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Different representations of the Zenodo Deposition Entity.
 
@@ -299,16 +259,26 @@ class ZenodoDeposit extends Zenodo {
       case 'table_row':
         // Returns single row of the table.
         $row = [];
-        $array_item_list = ['metadata', 'links', 'files'];
-        // Items from 'metadata'.
-        $doi = $deposition['metadata']['prereserve_doi']['doi'] ?? '';
+        // Items from 'metadata' first.
         $row['host'] = strtoupper($host);
+        $doi = $deposition['metadata']['prereserve_doi']['doi'] ?? '';
         $row['doi'] = $doi ? l($doi, $report_path . $deposition['id']) : '';
+
         foreach ($deposition as $key => $value) {
-          if (in_array($key, $array_item_list)) {
-            continue;
+          $key = check_plain($key);
+          if (!is_array($value)) {
+            $value = check_plain($value);
           }
           switch ($key) {
+            case 'metadata':
+            case 'links':
+              // Do not show huge arrays.
+              $value = NULL;
+              break;
+
+            case 'files':
+              $value = empty($value) ? t('[Empty]') : t('[NOT empty]');
+              break;
 
             case 'id':
               $value = l($value, $report_path . $value);
@@ -320,10 +290,18 @@ class ZenodoDeposit extends Zenodo {
               break;
 
             default:
-              $value = (string) $value;
+              if (is_array($value)) {
+                // @TODO Check_plain.
+                $value = tpps_array_print_list($value);
+              }
+              else {
+                $value = (string) $value;
+              }
               break;
           }
-          $row[$key] = $value;
+          if (!is_null($value)) {
+            $row[$key] = $value;
+          }
         }
         if ($format == 'table') {
           $output = theme('table', [
@@ -334,7 +312,6 @@ class ZenodoDeposit extends Zenodo {
         else {
           $output = $row;
         }
-
         break;
 
       case 'list':
