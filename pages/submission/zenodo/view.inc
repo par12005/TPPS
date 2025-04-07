@@ -35,14 +35,23 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
       '#title' => t('Zenodo Deposit Id: @id', ['@id' => $deposit_id]),
     ];
     $data['deposit_id'] = $deposit_id;
-    $deposition = ZenodoDeposit::retrieve($data);
-    if (!empty($deposition)) {
+    try {
+      $deposition = ZenodoDeposit::retrieve($data);
       $output = $deposition;
       if (is_array($deposition)) {
         $output = ZenodoDeposit::printDeposition($deposition);
       }
+      $form[$deposit_id]['dump'] = ['#markup' => $output];
     }
-    $form[$deposit_id]['dump'] = ['#markup' => $output ?? t('Empty')];
+    catch (Exception $e) {
+      if (in_array($e->getCode(), [403, 404])) {
+        $deposition = NULL;
+        $message = t('Submission has Deposit Id but it was not found. Check Zenodo host.');
+        drupal_set_message($message, 'error');
+        // @TODO Idea: Switch to other host and retrieve deposition again.
+        $form[$deposit_id]['dump'] = ['#markup' => t('No Depostion found.')];
+      }
+    }
   }
   else {
     $form['message'] = [
@@ -52,21 +61,21 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
 
   // Show buttons.
   $form['actions'] = $form['actions'] ?? ['#type' => 'container'];
-  $action_list = [
-    'create', 'update', 'delete',
-    'publish', 'newversion', 'discard', 'edit',
-    'files',
-  ];
+  // Set of buttons when there is no Depostion.
+  $action_list = ['create'];
+  if (!empty($deposition)) {
+    $action_list = [
+      'update', 'delete',
+      'publish', 'newversion', 'discard', 'edit',
+      'files',
+    ];
+  }
   foreach ($action_list as $key) {
     // Show only 'Create' button if there is no Zenodo Deposition and
     // don't show 'Create' Button when Depositon exists.
     if (
-      // Show 'Create' when there is no depostion found for this Submission.
-      (!$deposit_id && $key != 'create')
-      // Hide 'Create' for existing depositions.
-      || ($deposit_id && $key == 'create')
       // Hide 'Edit' button for not yet submitted Depositions.
-      || ($deposit_id && $key == 'edit' && empty($deposition['submitted']))
+      $deposit_id && $key == 'edit' && empty($deposition['submitted'])
     ) {
       continue;
     }
@@ -137,6 +146,11 @@ function tpps_submission_zenodo_form_submit(array &$form, array &$form_state) {
   }
   // Get response.
   $response = call_user_func($method_name, $data);
+
+dpm($response);
+
+
+
   // Output response.
   $output = $response ? ZenodoDeposit::printDeposition($response) : t('No data');
   $form['response'] = ['#type' => 'fieldset', '#title' => t('Response')];
