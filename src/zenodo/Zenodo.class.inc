@@ -95,7 +95,6 @@ class Zenodo {
 
     $data['url'] = static::buildUrl($data);
     $data['response'] = RestAPI::get($data['url'], $data['payload']);
-    $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
 
     return $data['response'];
   }
@@ -122,7 +121,6 @@ class Zenodo {
 
     $data['url'] = static::buildUrl($data);
     $data['response'] = RestAPI::get($data['url']);
-    $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
 
     module_invoke_all(static::getHookName('retrieved'), $data);
     return $data['response'];
@@ -161,7 +159,6 @@ class Zenodo {
 
     $data['url'] = static::buildUrl($data);
     $data['response'] = RestAPI::delete($data['url']);
-    $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
 
     // Note: When Deposit not found we stil need to remove it's id from Submission.
     module_invoke_all(static::getHookName('deleted'), $data);
@@ -192,10 +189,6 @@ class Zenodo {
 
     $data['url'] = static::buildUrl($data);
     $data['response'] = RestAPI::post($data['url'], $data['payload'], $data['header']);
-
-    //dpm($data, __METHOD__);
-
-    $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
 
     module_invoke_all(static::getHookName('created'), $data);
     return $data['response'];
@@ -228,7 +221,6 @@ class Zenodo {
 
     $data['url'] = static::buildUrl($data);
     $data['response'] = RestAPI::put($data['url'], $data['payload']);
-    $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
 
     module_invoke_all(static::getHookName('updated'), $data);
     return $data['response'];

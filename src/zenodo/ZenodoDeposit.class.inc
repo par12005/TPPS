@@ -78,7 +78,6 @@ class ZenodoDeposit extends Zenodo {
 dpm($data, __METHOD__);
 
     $data['response'] = RestAPI::post($data['url'], $data['payload']);
-    $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
 
     module_invoke_all(static::getHookName('published'), $data);
     return $data['response'];
@@ -106,7 +105,6 @@ dpm($data, __METHOD__);
 
     $data['url'] = static::buildActionUrl($data);
     $data['response'] = RestAPI::post($data['url']);
-    $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
 
     module_invoke_all(static::getHookName('edited'), $data, $response);
     return $data['response'];
@@ -134,7 +132,6 @@ dpm($data, __METHOD__);
 
     $data['url'] = static::buildActionUrl($data);
     $data['response'] = RestAPI::post($data['url'], $data['payload']);
-    $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
 
     module_invoke_all(static::getHookName('discarded'), $data);
     return $data['response'];
@@ -181,7 +178,6 @@ dpm($data, __METHOD__);
 
     $data['url'] = static::buildActionUrl($data);
     $data['response'] = RestAPI::post($data['url']);
-    $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
 
     module_invoke_all(static::getHookName('new_version_created'), $data);
     return $data['response'];
