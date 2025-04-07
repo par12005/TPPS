@@ -450,6 +450,19 @@ class Zenodo {
   }
 
   /**
+   * Toggles Zenodo Host.
+   *
+   * @return string
+   *   Returns new host.
+   */
+  public static function toggleHost() {
+    $zenodo_host = &drupal_static('tpps_zenodo_host');
+    $zenodo_host = ($zenodo_host == static::LIVE_HOST)
+      ? static::SANDBOX_HOST : static::LIVE_HOST;
+    return $zenodo_host;
+  }
+
+  /**
    * Prints out current and global Zenodo hosts status.
    *
    * Note: Uses drupal_set_message().
