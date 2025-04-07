@@ -32,15 +32,9 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
     drupal_goto($path . '/' . $accession . '/zenodo');
   }
 
-  try {
-    ZenodoDeposit::validateHost($data);
-  }
-  catch (Exception $e) {
-    $message = $e->getMessage();
-    $message = 'Caught exception: @message';
-    $params = ['@message' => $e->getMessage()];
-    drupal_set_message(t($message, $params), 'error');
-    watchodg('tpps', $message, $params, WATCHDOG_ERROR);
+  if (!ZenodoDeposit::isHostValid($data)) {
+    $message = t('Deposition was created using different Zenodo Host.');
+    drupal_set_message($message, 'error');
     drupal_goto('tpps/submission/' . $accession . '/zenodo');
   }
 

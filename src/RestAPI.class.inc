@@ -134,7 +134,10 @@ class RestAPI {
    * @return mixed
    *   Returns API response.
    *
-   * @todo Convert to private or protected.
+   * @throws \Exception
+   *   Zenodo Deposit was not found.
+   *
+   * @todo Convert to private or protected method if it's possible for static.
    */
   public static function doRequest($method, $url, $data = [], array $header = []) {
     $debug_mode = FALSE;
@@ -183,7 +186,8 @@ class RestAPI {
 
     // Validate HTTP request code.
     $code = $info['http_code'];
-    if ($code == 200) {
+    if ($code >= 200  && $code <= 204) {
+      // https://developers.zenodo.org/?shell#http-status-codes
       return $response;
     }
     else {

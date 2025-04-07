@@ -420,16 +420,16 @@ dpm($data, __METHOD__);
    *   Data for ZenodoDeposit::retrieve() request.
    *   Required key is 'deposit_id'.
    *
-   * @throws \Exception
-   *   Zenodo Deposit was not found.
    */
-  public static function validateHost(array $data) {
-    $response = static::retrieve($data);
-    if ($response['status'] == 403) {
-      // $response['message'] == 'Permission denied.'.
-      // Need to check host.
-      throw new Exception(static::E_NOT_FOUND);
+  public static function isHostValid(array $data) {
+    try {
+      $response = static::retrieve($data);
     }
+    catch (Exception $e) {
+      // In case of any errors assume that host is invalid.
+      return FALSE;
+    }
+    return TRUE;
   }
 
 }

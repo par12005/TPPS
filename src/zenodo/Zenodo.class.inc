@@ -188,7 +188,9 @@ class Zenodo {
     drupal_alter(static::getHookName(__FUNCTION__), $data);
 
     $data['url'] = static::buildUrl($data);
+    dpm($data, 'before');
     $data['response'] = RestAPI::post($data['url'], $data['payload'], $data['header']);
+    dpm($data, 'after');
 
     module_invoke_all(static::getHookName('created'), $data);
     return $data['response'];
