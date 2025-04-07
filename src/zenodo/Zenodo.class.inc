@@ -183,13 +183,18 @@ class Zenodo {
    */
   public static function create(array $data = []) {
     $data['payload'] = $data['payload'] ?? [];
+    $data['header'] = $data['header'] ?? [];
+
     // Call all implementations of hooks:
     // - hook_zenodo_deposit_create_alter(),
     // - hook_zenodo_files_create_alter().
     drupal_alter(static::getHookName(__FUNCTION__), $data);
 
     $data['url'] = static::buildUrl($data);
-    $data['response'] = RestAPI::post($data['url'], $data['payload']);
+    $data['response'] = RestAPI::post($data['url'], $data['payload'], $data['header']);
+
+    //dpm($data, __METHOD__);
+
     $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
 
     module_invoke_all(static::getHookName('created'), $data);
@@ -399,6 +404,9 @@ class Zenodo {
     return $prefix . $action;
   }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Host.
+
   /**
    * Sets Zenodo host name and statically cache it.
    *
@@ -452,19 +460,65 @@ class Zenodo {
    *
    * Note: Uses drupal_set_message().
    */
-  public static function printHostStatus() {
-    $current_host = static::getHost() == self::LIVE_HOST ? 'live' : 'sandbox';
+  public static function printHostStatus($both = FALSE) {
     $global_host = variable_get('tpps_zenodo_debug_mode') ? 'sandbox' : 'live';
-    drupal_set_message(t('Zenodo Host (global / current): '
+    $message = 'Zenodo Host: <strong>@global_host</strong> [!change_link]';
+    $current_host = NULL;
+    if ($both) {
+      // Both: Current and Global Hosts must be shown.
+      $current_host = static::getHost() == self::LIVE_HOST ? 'live' : 'sandbox';
+      $message = 'Zenodo Host (global / current): '
       . '<strong>@global_host</strong> [!change_link] '
-      . '/ <strong>@current_host</strong> (page specific).',
+      . '/ <strong>@current_host</strong> (page specific).';
+    }
+    drupal_set_message(t($message,
       [
-        '@current_host' => strtoupper($current_host),
-        '@global_host' => $global_host,
+        '@current_host' => $current_host,
+        '@global_host' => strtoupper($global_host),
         '!change_link' => l(t('Change'), 'admin/config/tpps/zenodo'),
       ]),
       ($current_host == 'live' ? 'warning' : 'status')
     );
+  }
+
+  /**
+   * Checks if current (page specific) Zenodo Host is a sandbox-server.
+   *
+   * @return bool
+   *   Returns TRUE when Zenodo Sandbox Host used on current page.
+   */
+  public static function isSandboxHost() {
+    return (static::getHost() == static::SANDBOX_HOST);
+  }
+
+  /**
+   * Checks if current (page specific) Zenodo Host is a live-server.
+   *
+   * @return bool
+   *   Returns TRUE when Zenodo Live Host used on current page.
+   */
+  public static function isLiveHost() {
+    return (static::getHost() == static::LIVE_HOST);
+  }
+
+  /**
+   * Checks if global (site wide) Zenodo Host is a sandbox-server.
+   *
+   * @return bool
+   *   Returns TRUE when Zenodo Sandbox Host used on current page.
+   */
+  public static function isHostGlobalSandbox() {
+    return (bool) variable_get('tpps_zenodo_debug_mode');
+  }
+
+  /**
+   * Checks if global (site wide) Zenodo Host is a live-server.
+   *
+   * @return bool
+   *   Returns TRUE when Zenodo Live Host used on current page.
+   */
+  public static function isHostGlobalLive() {
+    return !static::isHostGlobalSandbox();
   }
 
 }

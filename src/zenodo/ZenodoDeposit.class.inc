@@ -47,6 +47,7 @@ class ZenodoDeposit extends Zenodo {
   // State 'unsubmitted' wan't listed in docs but new depositions has it.
   const STATE_UNSUBMITTED = 'unsubmitted';
 
+  const E_NOT_FOUND = 'Zenodo Deposit was not found.';
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // API scope: deposit:actions.
 
@@ -73,6 +74,9 @@ class ZenodoDeposit extends Zenodo {
     drupal_alter(static::getHookName(__FUNCTION__), $data);
 
     $data['url'] = static::buildActionUrl($data);
+
+dpm($data, __METHOD__);
+
     $data['response'] = RestAPI::post($data['url'], $data['payload']);
     $data['response'] = $data['response'] ? RestAPI::decodeJSON($data['response']) : [];
 
@@ -401,6 +405,35 @@ class ZenodoDeposit extends Zenodo {
     $first = $parts[0];
     $last = implode(' ', array_slice($parts, 1));
     return "$last, $first";
+  }
+
+  /**
+   * Validate if Deposit Id belings to current Zenodo Host.
+   *
+   * There is a problem when 'ZenodoFiles' class gets files by Deposit Id
+   * created on other Zenodo Host by other account and having this files at
+   * out pages is confusing.
+   *
+   * Note: Zenodo Files can't validate host because Zenodo allows to get
+   * files data without any access token (files data are public). But only
+   * Deposition data is accessible by owner.
+   *
+   * Note: This method throws an exception.
+   *
+   * @param array $data
+   *   Data for ZenodoDeposit::retrieve() request.
+   *   Required key is 'deposit_id'.
+   *
+   * @throws \Exception
+   *   Zenodo Deposit was not found.
+   */
+  public static function validateHost(array $data) {
+    $response = static::retrieve($data);
+    if ($response['status'] == 403) {
+      // $response['message'] == 'Permission denied.'.
+      // Need to check host.
+      throw new Exception(static::E_NOT_FOUND);
+    }
   }
 
 }
