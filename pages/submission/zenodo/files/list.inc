@@ -2,13 +2,13 @@
 
 /**
  * @file
- * List of Zenodo Depositon Files.
+ * Shows list of all Zenodo Depositon Files.
  */
 
 module_load_include('inc', 'tpps', 'pages/submission/list');
 
 /**
- * Menu callback. Shows Zenodo Action buttons.
+ * Menu callback. Shows list of all Zenodo Depositon Files.
  */
 function tpps_submission_zenodo_files_list_form(array $form, array &$form_state = [], $accession = NULL) {
   ZenodoDeposit::printHostStatus();
@@ -22,14 +22,30 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
   tpps_submission_list_validate_accession($accession);
   $submission = new Submission($accession);
   $form['accession'] = ['#type' => 'hidden', '#value' => $accession];
-  $deposit_id = $submission->getZenodoDepositId();
+  $data = ['deposit_id' => $submission->getZenodoDepositId()];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Validate.
-  if (empty($deposit_id)) {
+  if (empty($data['deposit_id'])) {
     $message = t('Submission has no Zenodo Deposit Id. Create Zenodo Deposition first.');
     drupal_set_message($message, 'error');
     drupal_goto($path . '/' . $accession . '/zenodo');
   }
 
+  try {
+    ZenodoDeposit::validateHost($data);
+  }
+  catch (Exception $e) {
+    $message = $e->getMessage();
+    $message = 'Caught exception: @message';
+    $params = ['@message' => $e->getMessage()];
+    drupal_set_message(t($message, $params), 'error');
+    watchodg('tpps', $message, $params, WATCHDOG_ERROR);
+    drupal_goto('tpps/submission/' . $accession . '/zenodo');
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Build output.
   $rows = $zenodo_file_list = $submission_files = [];
   $header = [
     t('Submission'),
@@ -51,7 +67,7 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
   //  filesize (Float) 12362
   //  checksum (String, 32 characters ) 4bd90201fbb420ae5c149a4af50a224b
   //  links (String, 218 characters ) <a href="https://zenodo.org/api/deposit/deposit...
-  $response = ZenodoFiles::list(['deposit_id' => $deposit_id]);
+  $response = ZenodoFiles::list($data);
   if (!empty($response)) {
     foreach ($response as $item) {
       foreach ($item as $key => $value) {
