@@ -33,10 +33,21 @@ class RestAPI {
    *   Returns API response.
    */
   public static function post($url, $data = [], array $header = []) {
+    $debug_mode = FALSE;
+    // @TODO Minor. Implement more complex check. Regexp?
+    if (in_array('Content-Type: application/json', $header)) {
+      $data = json_encode($data);
+    }
     if (empty($header)) {
       $header = [
         'Content-Type: application/json',
       ];
+      $data = json_encode($data);
+    }
+    if ($debug_mode) {
+      dpm($url, __METHOD__);
+      dpm($data, __METHOD__);
+      dpm($header, __METHOD__);
     }
     return self::doRequest('POST', $url, $data, $header);
   }
@@ -74,10 +85,15 @@ class RestAPI {
    *   Returns API response.
    */
   public static function put($url, array $data = [], array $header = []) {
+    // @TODO Minor. Implement more complex check. Regexp?
+    if (in_array('Content-Type: application/json', $header)) {
+      $data = json_encode($data);
+    }
     if (empty($header)) {
       $header = [
         'Content-Type: application/json',
       ];
+      $data = json_encode($data);
     }
     return self::doRequest('PUT', $url, $data, $header);
   }
@@ -107,8 +123,9 @@ class RestAPI {
    * @param string $url
    *   API Endpoint URL.
    * @param mixed $data
-   *   Data. Required for POST-requests (payload).
-   *   Could be a string or JSON-string.
+   *   Payload. Required for POST-requests (payload).
+   *   Could be an array for GET-requests.
+   *   To send JSON use header: 'Content-Type: application/json'.
    * @param array $header
    *   HTTP-headers. Required for POST-requests.
    *
@@ -118,47 +135,37 @@ class RestAPI {
    * @todo Convert to private or protected.
    */
   public static function doRequest($method, $url, $data = [], array $header = []) {
-    $curl = curl_init();
-    curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
     $method = strtoupper($method);
+    $curl = curl_init();
+    // Why not use CURLOPT_POS: https://stackoverflow.com/a/74812403
+    curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
+    curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
 
-    switch ($method) {
-      case 'POST':
-        curl_setopt($curl, CURLOPT_POST, 1);
-        // Custom:
-        if ($data) {
-          //$json = json_encode($data, JSON_FORCE_OBJECT);
-          $json = json_encode($data);
-          curl_setopt($curl, CURLOPT_POSTFIELDS, $json);
-        }
-        break;
-
-      case 'DELETE':
-      case 'PUT':
-        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
-        if ($data) {
-          // Having 'deposit_id' cause validation errors.
-          unset($data['deposit_id']);
-          $json = json_encode($data);
-          curl_setopt($curl, CURLOPT_POSTFIELDS, $json);
-        }
-        break;
-
-      default:
-        if ($data) {
-          $url = url($url, [
-            'query' => $data,
-            'https' => TRUE,
-            'external' => TRUE,
-          ]);
-        }
+    if ($data) {
+      if (in_array($method, ['POST', 'DELETE', 'PUT'])) {
+        curl_setopt($curl, CURLOPT_SAFE_UPLOAD, TRUE);
+        // Different processing of array and string:
+        // https://stackoverflow.com/questions/5224790
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+      }
+      else {
+        // GET.
+        $url = url($url, [
+          'query' => $data,
+          'https' => TRUE,
+          'external' => TRUE,
+        ]);
+      }
     }
+
     // OPTIONS:
     curl_setopt($curl, CURLOPT_URL, $url);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
     // EXECUTE:
     $result = curl_exec($curl);
+    // @TODO Check $info['http_code'] == 200.
+    $info = curl_getinfo($curl;
     curl_close($curl);
     return $result;
   }
