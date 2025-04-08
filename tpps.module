@@ -3398,10 +3398,10 @@ function tpps_rest_api_request_execution_time($title = '', $execution_time = NUL
   }
   // Limit of request execution time in milliseconds.
   // Longer requests will be logged using watchdog().
-  $max_execution_time = 1000;
+  $max_execution_time = 5000;
 
   // @TODO Use variable and settings for debug mode.
-  $debug_mode = variable_get('tpps_rest_api_debug_mode', TRUE);
+  $debug_mode = variable_get('tpps_rest_api_debug_mode', FALSE);
   $message = '@title execution time: @time msec.';
   $params = [
     '@title' => $title,
