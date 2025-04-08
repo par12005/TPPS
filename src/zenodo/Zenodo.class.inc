@@ -104,6 +104,8 @@ class Zenodo {
    *
    * Scope (permissions): deposit:write.
    *
+   * Used greedy search of the Zenodo Host to find Deposition.
+   *
    * @param array $data
    *   Data for request. Required keys are: 'deposit_id'.
    *
@@ -117,11 +119,28 @@ class Zenodo {
     // Call all implementations of hooks:
     // - hook_zenodo_deposit_retrieve_alter(),
     // - hook_zenodo_files_retrieve_alter().
+    // Note: Hooks must be called only once.
     drupal_alter(static::getHookName(__FUNCTION__), $data);
 
-    $data['url'] = static::buildUrl($data);
-    $data['response'] = RestAPI::get($data['url']);
+    // Use greedy search using both hosts but starting from the global host.
+    // Note: only retrieve() method uses greedy serach.
+    try {
+      $data['host'] = static::getHost();
+      $data['url'] = static::buildUrl($data);
+      $data['response'] = RestAPI::get($data['url']);
+    }
+    catch (Exception $e) {
+      // Timeout to avoid ban for spam-requests.
+      sleep(1);
+      // Check on other host.
+      // If Depostion won't be found exception will be thrown and
+      // caller could catch it.
+      $data['host'] = static::toggleHost();
+      $data['url'] = static::buildUrl($data);
+      $data['response'] = RestAPI::get($data['url']);
+    }
 
+    // Note: Hooks must be called only once.
     module_invoke_all(static::getHookName('retrieved'), $data);
     return $data['response'];
   }
