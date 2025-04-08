@@ -19,6 +19,41 @@
  */
 class RestAPI {
 
+  // The maximum number of seconds to allow cURL functions to execute.
+  // To set in milliseconds use: CURLOPT_TIMEOUT_MS.
+  // https://curl.se/libcurl/c/CURLOPT_TIMEOUT.html.
+  // @todo Minor. Move to site settings.
+  const TIMEOUT = 30;
+
+  /**
+   * Decode JSON and handles invalid JSON.
+   *
+   * Idea: https://stackoverflow.com/a/44448921/1041470.
+   * See: https://www.php.net/manual/en/class.jsonexception.php.
+   * https://stackoverflow.com/questions/31578927.
+   *
+   * @param string $json
+   *   JSON string.
+   *
+   * @return array
+   *   Returns decoded data.
+   */
+  public static function decodeJSON($json) {
+    $debug_mode = FALSE;
+    if ($debug_mode) {
+      dpm(print_r(debug_backtrace(
+        !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3
+      ), TRUE));
+    }
+    $data = json_decode((string) $json, $associative = TRUE);
+    // @TODO Minor. Use JSON_THROW_ON_ERROR (PHP 7.3+) if possible.
+    if (JSON_ERROR_NONE !== json_last_error()) {
+      $message = 'Unable to parse response body into JSON. ' . json_last_error();
+      throw new RuntimeException($message);
+    }
+    return $data === NULL ? [] : $data;
+  }
+
   /**
    * Makes POST-request.
    *
@@ -115,120 +150,6 @@ class RestAPI {
    */
   public static function delete($url, array $data = []) {
     return self::doRequest('DELETE', $url, $data);
-  }
-
-  /**
-   * Performs REST API calls.
-   *
-   * @param string $method
-   *   HTTP method. Possible values are: 'POST', 'GET', 'PUT', 'DELETE'.
-   * @param string $url
-   *   API Endpoint URL.
-   * @param mixed $data
-   *   Payload. Required for POST-requests (payload).
-   *   Could be an array for GET-requests.
-   *   To send JSON use header: 'Content-Type: application/json'.
-   * @param array $header
-   *   HTTP-headers. Required for POST-requests.
-   *
-   * @return mixed
-   *   Returns API response.
-   *
-   * @throws \Exception
-   *   Zenodo Deposit was not found.
-   *
-   * @todo Convert to private or protected method if it's possible for static.
-   */
-  public static function doRequest($method, $url, $data = [], array $header = []) {
-    $debug_mode = FALSE;
-    $method = strtoupper($method);
-    $curl = curl_init();
-    // Why not use CURLOPT_POS: https://stackoverflow.com/a/74812403
-    curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
-    curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
-
-    if ($data) {
-      if (in_array($method, ['POST', 'DELETE', 'PUT'])) {
-        curl_setopt($curl, CURLOPT_SAFE_UPLOAD, TRUE);
-        // Different processing of array and string:
-        // https://stackoverflow.com/questions/5224790
-        curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
-      }
-      else {
-        // GET.
-        $url = url($url, [
-          'query' => $data,
-          'https' => TRUE,
-          'external' => TRUE,
-        ]);
-      }
-    }
-
-    // OPTIONS:
-    curl_setopt($curl, CURLOPT_URL, $url);
-    curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-    // EXECUTE:
-    $response = curl_exec($curl);
-    $info = curl_getinfo($curl);
-    curl_close($curl);
-
-    if ($info['content_type'] == 'application/json') {
-      if (!empty($response)) {
-        // PHP's json_decode() could throw an exception of invalid JSON.
-        // @todo Minor. Use try and catch block.
-        $response = static::decodeJSON($response);
-      }
-      else {
-        $response = NULL;
-      }
-    }
-
-    // Validate HTTP request code.
-    $code = $info['http_code'];
-    if ($code >= 200  && $code <= 204) {
-      // https://developers.zenodo.org/?shell#http-status-codes
-      return $response;
-    }
-    else {
-      if ($debug_mode) {
-        dpm($response, 'Response Body');
-        dpm(print_r(debug_backtrace(
-          !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS
-        ), TRUE));
-      }
-      $message = static::getHttpCodeMessage($code) . '.';
-      throw new Exception('RestAPI HTTP-request status:' . $code . ' (' . $message . ')', $code);
-    }
-  }
-
-  /**
-   * Decode JSON and handles invalid JSON.
-   *
-   * Idea: https://stackoverflow.com/a/44448921/1041470.
-   * See: https://www.php.net/manual/en/class.jsonexception.php.
-   * https://stackoverflow.com/questions/31578927.
-   *
-   * @param string $json
-   *   JSON string.
-   *
-   * @return array
-   *   Returns decoded data.
-   */
-  public static function decodeJSON($json) {
-    $debug_mode = FALSE;
-    if ($debug_mode) {
-      dpm(print_r(debug_backtrace(
-        !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3
-      ), TRUE));
-    }
-    $data = json_decode((string) $json, $associative = TRUE);
-    // @TODO Minor. Use JSON_THROW_ON_ERROR (PHP 7.3+) if possible.
-    if (JSON_ERROR_NONE !== json_last_error()) {
-      $message = 'Unable to parse response body into JSON. ' . json_last_error();
-      throw new RuntimeException($message);
-    }
-    return $data === NULL ? [] : $data;
   }
 
   /**
@@ -344,10 +265,119 @@ class RestAPI {
       510 => 'Not Extended', // RFC 2774
       511 => 'Network Authentication Required', // RFC 6585
     ];
-    if (!empty($code) && !empty($http_code_list[$code])) {
-      return $http_code_list[$code];
+
+    if (!is_null($code)) {
+      if ($code === 0) {
+        return 'Curl timeout reached.';
+      }
+      return $http_code_list[$code] ?? 'Unknown';
     }
     return $http_code_list;
+  }
+
+  /**
+   * Performs REST API calls.
+   *
+   * @param string $method
+   *   HTTP method. Possible values are: 'POST', 'GET', 'PUT', 'DELETE'.
+   * @param string $url
+   *   API Endpoint URL.
+   * @param mixed $data
+   *   Payload. Required for POST-requests (payload).
+   *   Could be an array for GET-requests.
+   *   To send JSON use header: 'Content-Type: application/json'.
+   * @param array $header
+   *   HTTP-headers. Required for POST-requests.
+   *
+   * @return mixed
+   *   Returns API response.
+   *
+   * @throws \Exception
+   *   Zenodo Deposit was not found.
+   *
+   * @todo Convert to private or protected method if it's possible for static.
+   */
+  public static function doRequest($method, $url, $data = [], array $header = []) {
+    $debug_mode = FALSE;
+    // To measure execution time of the request.
+    $execution_time_start = microtime(1);
+    $method = strtoupper($method);
+    $curl = curl_init();
+    // Why not use CURLOPT_POS: https://stackoverflow.com/a/74812403
+    curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
+    curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
+
+    if ($data) {
+      if (in_array($method, ['POST', 'DELETE', 'PUT'])) {
+        curl_setopt($curl, CURLOPT_SAFE_UPLOAD, TRUE);
+        // Different processing of array and string:
+        // https://stackoverflow.com/questions/5224790
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+      }
+      else {
+        // GET.
+        $url = url($url, [
+          'query' => $data,
+          'https' => TRUE,
+          'external' => TRUE,
+        ]);
+      }
+    }
+
+    // OPTIONS:
+    // See http://www.php.net/manual/en/function.curl-setopt.php
+    curl_setopt($curl, CURLOPT_URL, $url);
+    curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+    // The maximum number of seconds for curl operation.
+    curl_setopt($curl, CURLOPT_TIMEOUT, static::TIMEOUT);
+
+    // EXECUTE:
+    $response = curl_exec($curl);
+    $info = curl_getinfo($curl);
+    curl_close($curl);
+    $execution_time = (microtime(1) - $execution_time_start) * 1000;
+
+    // Allow other modules to react on request execution time.
+    if (function_exists('module_invoke_all')) {
+      module_invoke_all(
+        'rest_api_request_execution_time',
+        'RestAPI ' . $method . '-request',
+        $execution_time
+      );
+    }
+
+    if ($info['content_type'] == 'application/json') {
+      if (!empty($response)) {
+        // PHP's json_decode() could throw an exception of invalid JSON.
+        // @todo Minor. Use try and catch block.
+        $response = static::decodeJSON($response);
+      }
+      else {
+        $response = NULL;
+      }
+    }
+    // Validate HTTP request code.
+    $code = $info['http_code'];
+    if ($code == 0 && empty($response)) {
+      throw new Exception('RestAPI HTTP-request reached execution time limit: '
+        . static::TIMEOUT . ' seconds.');
+    }
+
+    if ($code >= 200  && $code <= 204) {
+      // https://developers.zenodo.org/?shell#http-status-codes
+      return $response;
+    }
+    else {
+      if ($debug_mode) {
+        dpm($response, 'Response Body');
+        dpm(print_r(debug_backtrace(
+          !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS
+        ), TRUE));
+      }
+      $message = static::getHttpCodeMessage($code) . '.';
+      throw new Exception('RestAPI HTTP-request status:' . $code . ' (' . $message . ')', $code);
+    }
   }
 
 }

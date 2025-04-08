@@ -412,3 +412,14 @@ function hook_zenodo_deposit_new_version_created(array $data, array $response) {
 function hook_zenodo_deposit_published(array $data, array $response) {
   tpps_admin_zenodo_submissions_report_clear_cache();
 }
+
+/**
+ * Implements hook 'rest_api_request_execution_time'.
+ *
+ * @param string $title
+ *   Message which defines of request.
+ * @param float $execution_time
+ *   Request execution time in msec.
+ */
+function tpps_rest_api_request_execution_time($title = '', $execution_time = NULL) {
+}
