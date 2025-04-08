@@ -3378,5 +3378,39 @@ function tpps_zenodo_deposit_create_alter(array &$data = []) {
   }
 }
 
+/**
+ * Implements hook 'zenodo_files_create_alter'.
+ */
 function tpps_zenodo_files_create_alter(array &$data = []) {
+}
+
+/**
+ * Implements hook 'rest_api_request_execution_time'.
+ *
+ * @param string $title
+ *   Message which defines of request.
+ * @param float $execution_time
+ *   Request execution time in milliseconds.
+ */
+function tpps_rest_api_request_execution_time($title = '', $execution_time = NULL) {
+  if (empty($title) || empty($execution_time)) {
+    return;
+  }
+  // Limit of request execution time in milliseconds.
+  // Longer requests will be logged using watchdog().
+  $max_execution_time = 1000;
+
+  // @TODO Use variable and settings for debug mode.
+  $debug_mode = variable_get('tpps_rest_api_debug_mode', TRUE);
+  $message = '@title execution time: @time msec.';
+  $params = [
+    '@title' => $title,
+    '@time' => $execution_time,
+  ];
+  if ($debug_mode) {
+    drupal_set_message(t($message, $params), 'warning');
+  }
+  if ($execution_time > $max_execution_time) {
+    watchdog('tpps', $message, $params, WATCHDOG_WARNING);
+  }
 }
