@@ -12,6 +12,8 @@ module_load_include('inc', 'tpps', 'pages/submission/list');
 
 /**
  * Menu callback. Shows Zenodo Action buttons.
+ *
+ * Path: /tpps/submission/:accession/zenodo.
  */
 function tpps_submission_zenodo_form(array $form, array &$form_state = [], $accession = NULL) {
   // Check submission accession.
@@ -35,7 +37,9 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
     ];
     $data['deposit_id'] = $deposit_id;
     try {
-      ZenodoDeposit::searchHost($data);
+      if (variable_get('tpps_zenodo_host_greedy_search', FALSE)) {
+        ZenodoDeposit::searchHost($data);
+      }
       $deposition = ZenodoDeposit::retrieve($data);
       $output = $deposition;
       if (is_array($deposition)) {
@@ -63,7 +67,7 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
       // @TODO Idea: Switch to other host and retrieve deposition again.
       $form[$deposit_id]['dump'] = ['#markup' => t('No Depostion found.')];
     }
-    ZenodoDeposit::printHostStatus(TRUE);
+    ZenodoDeposit::printHostStatus();
   }
   else {
     $form['message'] = [
