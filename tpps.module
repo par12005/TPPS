@@ -3414,3 +3414,16 @@ function tpps_rest_api_request_execution_time($title = '', $execution_time = NUL
     watchdog('tpps', $message, $params, WATCHDOG_WARNING);
   }
 }
+
+/**
+ * Implements hook 'zenodo_deposit_host_toggled'.
+ */
+function tpps_zenodo_deposit_host_toggled($new_host) {
+  drupal_set_message(
+    t(
+      'Zenodo Host was temporary (for this page only) changed to "@new_host".',
+      ['@new_host' => $new_host]
+    ),
+    'warning'
+  );
+}
