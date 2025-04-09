@@ -267,13 +267,6 @@ class Zenodo {
     //}
     $host = static::getHost();
     $path = $protocol . $host;
-    // Access Token.
-    if ($host == self::LIVE_HOST) {
-      $access_token = variable_get('tpps_zenodo_access_token_live');
-    }
-    else {
-      $access_token = variable_get('tpps_zenodo_access_token_sandbox');
-    }
     // Add base path and endpoint.
     switch (static::getClassName()) {
       case 'ZenodoDeposit':
@@ -333,11 +326,7 @@ class Zenodo {
       return FALSE;
     }
     // Build absolute URL with access token.
-    return url($path, [
-      // Note: access token could be sent in headers.
-      'query' => ['access_token' => $access_token],
-      'external' => TRUE,
-    ]);
+    return static::addAccessToken($path);
   }
 
   /**
@@ -623,6 +612,30 @@ class Zenodo {
         throw new Exception($e->getMessage(), $e->getCode());
       }
     }
+  }
+
+  /**
+   * Adds Access Token to given URL.
+   *
+   * @param string $url
+   *   URL.
+   *
+   * @return string
+   *   Returns URL which includes Access Token as a GET-parameter.
+   */
+  public static function addAccessToken($url) {
+    $host = static::getHost();
+    // Access Token.
+    if ($host == self::LIVE_HOST) {
+      $access_token = variable_get('tpps_zenodo_access_token_live');
+    }
+    else {
+      $access_token = variable_get('tpps_zenodo_access_token_sandbox');
+    }
+    return url($url, [
+      'query' => ['access_token' => $access_token],
+      //'external' => $external,
+    ]);
   }
 
 }

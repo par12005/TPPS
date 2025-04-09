@@ -47,40 +47,21 @@ function tpps_submission_zenodo_files_single_form(array $form, array &$form_stat
         $data['drupal_file'] = $file;
         $data['deposit_id'] = $deposit_id;
         ZenodoBucket::create($data);
-        //ZenodoFiles::create($data);
 
-        // Validate response and show status message.
-        if (empty($data['response']['id'])) {
-          // Fail.
-          $message = t('Drupal File "@file_id" was NOT added to Deposition '
-            . '"@deposit_id". <br /><strong>Response</strong>: @status - @message.',
-            [
-              '@status' => $data['response']['status'] ?? '',
-              '@message' => $data['response']['messaage'] ?? '',
-              '@file_id' => $file_id,
-              '@deposit_id' => $deposit_id,
-            ]
-          );
-          drupal_set_message($message, 'error');
-          drupal_goto($path . '/' . $accession . '/zenodo/files');
-          // Do not redirect to stay at single Zenodo File page.
-        }
-        else {
-          // Success.
-          // Code: 201 Created
-          // Body: a deposition file resource.
-          $message = t('Drupal file #@file_id was successfully added to '
-            . 'Zenodo Deposition #@deposit_id. '
-            . '<br /><strong>Zenodo File Id</stong>: @zenodo_file_id.',
-            [
-              '@deposit_id' => $deposit_id,
-              '@file_id' => $file_id,
-              '@zenodo_file_id' => $data['response']['id'],
-            ]
-          );
-          drupal_set_message($message, 'status');
-          drupal_goto($path . '/' . $accession . '/zenodo/files/' . $file_id);
-        }
+        // @TODO Validate response and show status message.
+        //
+        // Success.
+        $message = t('Drupal file #@file_id was successfully added to '
+          . 'Zenodo Deposition #@deposit_id.',
+          [
+            '@deposit_id' => $deposit_id,
+            '@file_id' => $file_id,
+          ]
+        );
+        drupal_set_message($message, 'status');
+
+        // @TODO Minor. Redirect to single file page in case of success.
+
       }
     }
     else {
@@ -109,6 +90,9 @@ function tpps_submission_zenodo_files_single_form(array $form, array &$form_stat
       }
     }
   }
+
+  // @TODO Temporary redirect to list-page.
+  drupal_goto($path . '/' . $accession . '/zenodo/files');
 
 
 
