@@ -35,10 +35,8 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
     ];
     $data['deposit_id'] = $deposit_id;
     try {
+      ZenodoDeposit::searchHost($data);
       $deposition = ZenodoDeposit::retrieve($data);
-      // @todo Message about changed host.
-      $message = t('Deposition was found on non-global Zenodo Host.');
-      drupal_set_message($message, 'error');
       $output = $deposition;
       if (is_array($deposition)) {
         $output = ZenodoDeposit::printDeposition($deposition);
@@ -48,7 +46,18 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
     catch (Exception $e) {
       if (in_array($e->getCode(), [403, 404])) {
         $deposition = NULL;
-        $message = t('Submission has Deposit Id but it was not found. Check Zenodo host.');
+        $message = t('Submission has Deposit Id (#@deposit_id) but it was NOT '
+          . 'found on any Zenodo Host. Options: !option_list',
+          [
+            '@deposit_id' => $deposit_id,
+            '!option_list' => theme('item_list', [
+              'items' => [
+                'Create new Deposition to overwrite existing Deposit Id.',
+                'Create and remove to unset Deposit Id.',
+              ]
+            ]),
+          ]
+        );
         drupal_set_message($message, 'error');
       }
       // @TODO Idea: Switch to other host and retrieve deposition again.
@@ -149,10 +158,6 @@ function tpps_submission_zenodo_form_submit(array &$form, array &$form_state) {
   }
   // Get response.
   $response = call_user_func($method_name, $data);
-
-dpm($response);
-
-
 
   // Output response.
   $output = $response ? ZenodoDeposit::printDeposition($response) : t('No data');

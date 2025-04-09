@@ -3416,12 +3416,13 @@ function tpps_rest_api_request_execution_time($title = '', $execution_time = NUL
 }
 
 /**
- * Implements hook 'zenodo_deposit_host_toggled'.
+ * Implements hook 'zenodo_deposit_host_changed'.
  */
-function tpps_zenodo_deposit_host_toggled($new_host) {
+function tpps_zenodo_deposit_host_changed($new_host) {
   drupal_set_message(
     t(
-      'Zenodo Host was temporary (for this page only) changed to "@new_host".',
+      'Zenodo Depostion was found on other Zenodo Host. It was temporary '
+      . '(for this page only) changed to "@new_host".',
       ['@new_host' => $new_host]
     ),
     'warning'
