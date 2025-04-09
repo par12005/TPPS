@@ -188,11 +188,13 @@ class Zenodo {
     $data['payload'] = $data['payload'] ?? [];
     $data['header'] = $data['header'] ?? [];
 
-    // When (by mistake) study has Deposit Id but it wasn't found on any
-    // Zenodo Host we allow to create new Deposition to overwrite existing
-    // Deposit Id value without hacking Submission's record in DB so we must
-    // remove 'deposit_id' to have correct API Endpoint URL.
-    unset($data['deposit_id']);
+    if (static::getClassName() == 'ZenodoDeposit') {
+      // When (by mistake) study has Deposit Id but it wasn't found on any
+      // Zenodo Host we allow to create new Deposition to overwrite existing
+      // Deposit Id value without hacking Submission's record in DB so we must
+      // remove 'deposit_id' to have correct API Endpoint URL.
+      unset($data['deposit_id']);
+    }
 
     // Call all implementations of hooks:
     // - hook_zenodo_deposit_create_alter(),
