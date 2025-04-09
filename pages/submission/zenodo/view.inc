@@ -67,7 +67,10 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
       // @TODO Idea: Switch to other host and retrieve deposition again.
       $form[$deposit_id]['dump'] = ['#markup' => t('No Depostion found.')];
     }
-    ZenodoDeposit::printHostStatus();
+    if (empty($form_state['input'])) {
+      // First time form is shown (not yet submitted).
+      ZenodoDeposit::printHostStatus();
+    }
   }
   else {
     $form['message'] = [
