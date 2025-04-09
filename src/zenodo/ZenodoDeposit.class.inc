@@ -74,12 +74,11 @@ class ZenodoDeposit extends Zenodo {
     drupal_alter(static::getHookName(__FUNCTION__), $data);
 
     $data['url'] = static::buildActionUrl($data);
-
-dpm($data, __METHOD__);
-
     $data['response'] = RestAPI::post($data['url'], $data['payload']);
 
-    module_invoke_all(static::getHookName('published'), $data);
+    if (function_exists('module_invoke_all')) {
+      module_invoke_all(static::getHookName('published'), $data);
+    }
     return $data['response'];
   }
 
@@ -106,7 +105,9 @@ dpm($data, __METHOD__);
     $data['url'] = static::buildActionUrl($data);
     $data['response'] = RestAPI::post($data['url']);
 
-    module_invoke_all(static::getHookName('edited'), $data, $response);
+    if (function_exists('module_invoke_all')) {
+      module_invoke_all(static::getHookName('edited'), $data, $response);
+    }
     return $data['response'];
   }
 
@@ -133,7 +134,9 @@ dpm($data, __METHOD__);
     $data['url'] = static::buildActionUrl($data);
     $data['response'] = RestAPI::post($data['url'], $data['payload']);
 
-    module_invoke_all(static::getHookName('discarded'), $data);
+    if (function_exists('module_invoke_all')) {
+      module_invoke_all(static::getHookName('discarded'), $data);
+    }
     return $data['response'];
   }
 
@@ -179,7 +182,9 @@ dpm($data, __METHOD__);
     $data['url'] = static::buildActionUrl($data);
     $data['response'] = RestAPI::post($data['url']);
 
-    module_invoke_all(static::getHookName('new_version_created'), $data);
+    if (function_exists('module_invoke_all')) {
+      module_invoke_all(static::getHookName('new_version_created'), $data);
+    }
     return $data['response'];
   }
 

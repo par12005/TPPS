@@ -186,15 +186,19 @@ class Zenodo {
     $data['payload'] = $data['payload'] ?? [];
     $data['header'] = $data['header'] ?? [];
 
+    // When (by mistake) study has Deposit Id but it wasn't found on any
+    // Zenodo Host we allow to create new Deposition to overwrite existing
+    // Deposit Id value without hacking Submission's record in DB so we must
+    // remove 'deposit_id' to have correct API Endpoint URL.
+    unset($data['deposit_id']);
+
     // Call all implementations of hooks:
     // - hook_zenodo_deposit_create_alter(),
     // - hook_zenodo_files_create_alter().
     drupal_alter(static::getHookName(__FUNCTION__), $data);
 
     $data['url'] = static::buildUrl($data);
-    dpm($data, 'before');
     $data['response'] = RestAPI::post($data['url'], $data['payload'], $data['header']);
-    dpm($data, 'after');
 
     module_invoke_all(static::getHookName('created'), $data);
     return $data['response'];
@@ -567,7 +571,17 @@ class Zenodo {
       // caller could catch it.
       $data['host'] = static::toggleHost();
       $data['url'] = static::buildUrl($data);
-      $data['response'] = RestAPI::get($data['url']);
+      try {
+        $data['response'] = RestAPI::get($data['url']);
+        if (function_exists('module_invoke_all')) {
+          module_invoke_all(static::getHookName('host_changed'), static::getHost());
+        }
+      }
+      catch (Exception $e) {
+        // Restore original host when nothing found on any host.
+        $data['host'] = static::toggleHost();
+        throw new Exception($e->getMessage(), $e->getCode());
+      }
     }
   }
 
