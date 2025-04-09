@@ -417,6 +417,16 @@ function hook_zenodo_deposit_host_changed($new_host) {
 }
 
 /**
+ * Implements hook 'zenodo_deposit_validation_failed'.
+ *
+ * @param array $response
+ *   Response of the Zenodo API of 'retrieve' requiest.
+ */
+function hook_zenodo_deposit_validation_failed(array $response) {
+  drupal_set_message($reponse);
+}
+
+/**
  * Implements hook 'zenodo_deposit_new_version_created'.
  *
  * See: https://developers.zenodo.org/?shell#new-version.

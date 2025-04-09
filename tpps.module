@@ -3419,6 +3419,7 @@ function tpps_rest_api_request_execution_time($title = '', $execution_time = NUL
  * Implements hook 'zenodo_deposit_host_changed'.
  */
 function tpps_zenodo_deposit_host_changed($new_host) {
+  // @TODO Minor. Add site settings to enable/disble those messages.
   drupal_set_message(
     t(
       'Zenodo Depostion was found on other Zenodo Host. It was temporary '
@@ -3427,4 +3428,24 @@ function tpps_zenodo_deposit_host_changed($new_host) {
     ),
     'warning'
   );
+}
+
+/**
+ * Implements hook 'zenodo_deposit_validation_failed'.
+ */
+function tpps_zenodo_deposit_validation_failed(array $response) {
+  // @TODO Minor. Add site settings to enable/disble those messages.
+  if (!empty($response['status']) && !empty($response['message'])) {
+    drupal_set_message(t('ZenodoDeposit Resource validation failed. '
+      . '<br />Response: <strong>@code - @message</strong>'
+      . '<br />Check if correct Zenodo server was used.',
+      [
+        '@code' => $response['status'],
+        '@message' => $response['message'],
+      ]
+    ));
+  }
+  else {
+    drupal_set_message(t('Zenodo Depostion not found.'));
+  }
 }

@@ -11,7 +11,7 @@ module_load_include('inc', 'tpps', 'pages/submission/list');
  * Menu callback. Shows list of all Zenodo Depositon Files.
  */
 function tpps_submission_zenodo_files_list_form(array $form, array &$form_state = [], $accession = NULL) {
-  ZenodoDeposit::printHostStatus();
+  //ZenodoDeposit::printHostStatus();
 
   // Check submission accession.
   $path = 'tpps/submission';
