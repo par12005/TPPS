@@ -258,6 +258,13 @@ class Zenodo {
   public static function buildUrl(array $data) {
     $protocol = 'https://';
     // Host.
+    //
+    // @TODO Review and test if searchHost could be moved here.
+    //
+    //
+    //if (variable_get('tpps_zenodo_host_greedy_search', FALSE)) {
+    //  $host = ZenodoDeposit::searchHost($data);
+    //}
     $host = static::getHost();
     $path = $protocol . $host;
     // Access Token.
@@ -304,6 +311,16 @@ class Zenodo {
           . (empty($data['deposit_id']) ? '' : '/' . $data['deposit_id'])
           . '/files'
           . (empty($data['file_id']) ? '' : '/' . $data['file_id']);
+        break;
+
+      case 'ZenodoBucket':
+//dpm($data, __METHOD__);
+        static::validateRequired(['deposit_id'], $data);
+        $deposition = ZenodoDeposit::retrieve($data);
+        $path = $deposition['links']['bucket'];
+        if (!empty($data['drupal_file']->filename)) {
+          $path .= '/' . $data['drupal_file']->filename;
+        }
         break;
 
       case 'ZenodoRecords':
@@ -400,6 +417,10 @@ class Zenodo {
 
       case 'ZenodoRecords':
         $prefix = 'zenodo_records_';
+        break;
+
+      case 'ZenodoBucket':
+        $prefix = 'zenodo_bucket_';
         break;
 
       case 'ZenodoDeposit':
