@@ -371,19 +371,10 @@ class ZenodoDeposit extends Zenodo {
    */
   public static function isDeposition(array $response) {
     if (empty($response['id']) && empty($response['metadata'])) {
-      if (!empty($response['status']) && !empty($response['message'])) {
-        drupal_set_message(t('ZenodoDeposit Resource validation failed. '
-          . '<br />Response: <strong>@code - @message</strong>'
-          . '<br />Check if correct Zenodo server was used.',
-          [
-            '@code' => $response['status'],
-            '@message' => $response['message'],
-          ]
-        ));
-        ZenodoDeposit::printHostStatus();
-      }
-      else {
-        drupal_set_message(t('Zenodo Depostion not found.'));
+      if (function_exists('module_invoke_all')) {
+        // For search purpuses:
+        // tpps_zenodo_deposit_validation_failed().
+        module_invoke_all(static::getHookName('validation_failed'), $response);
       }
       return FALSE;
     }
