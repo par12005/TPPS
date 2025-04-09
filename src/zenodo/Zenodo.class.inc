@@ -122,23 +122,8 @@ class Zenodo {
     // Note: Hooks must be called only once.
     drupal_alter(static::getHookName(__FUNCTION__), $data);
 
-    // Use greedy search using both hosts but starting from the global host.
-    // Note: only retrieve() method uses greedy serach.
-    try {
-      $data['host'] = static::getHost();
-      $data['url'] = static::buildUrl($data);
-      $data['response'] = RestAPI::get($data['url']);
-    }
-    catch (Exception $e) {
-      // Timeout to avoid ban for spam-requests.
-      sleep(1);
-      // Check on other host.
-      // If Depostion won't be found exception will be thrown and
-      // caller could catch it.
-      $data['host'] = static::toggleHost();
-      $data['url'] = static::buildUrl($data);
-      $data['response'] = RestAPI::get($data['url']);
-    }
+    $data['url'] = static::buildUrl($data);
+    $data['response'] = RestAPI::get($data['url']);
 
     // Note: Hooks must be called only once.
     module_invoke_all(static::getHookName('retrieved'), $data);
@@ -478,6 +463,9 @@ class Zenodo {
     $zenodo_host = &drupal_static('tpps_zenodo_host');
     $zenodo_host = ($zenodo_host == static::LIVE_HOST)
       ? static::SANDBOX_HOST : static::LIVE_HOST;
+
+    // Hook will get value of the new host.
+    module_invoke_all(static::getHookName('host_toggled'), $zenodo_host);
     return $zenodo_host;
   }
 
@@ -545,6 +533,42 @@ class Zenodo {
    */
   public static function isHostGlobalLive() {
     return !static::isHostGlobalSandbox();
+  }
+
+  /**
+   * Searches for a host where gived Deposit Id exists.
+   *
+   * Note: Live and Sandbox hosts could have those Deposit Id but it searches
+   * for Deposition created using current account (see 'owner' field).
+   *
+   * Temporary switches to host which has given Deposit Id.
+   *
+   * To react on Zenodo Host toggling use Drupal-hook called from the
+   * ZenodoDeposit::toggleHost() method.
+   *
+   * @param mixed $data
+   *   Request data. Required key is 'deposit_id'.
+   *
+   * @throws \Exception
+   *   Deposit Id wasn't found on both hosts.
+   */
+  public static function searchHost($data) {
+    static::validateRequired(['deposit_id'], $data);
+    // Use greedy search using both hosts but starting from the global host.
+    // Note: only retrieve() method uses greedy serach.
+    try {
+      $data['host'] = static::getHost();
+      $data['url'] = static::buildUrl($data);
+      $data['response'] = RestAPI::get($data['url']);
+    }
+    catch (Exception $e) {
+      // Check other host.
+      // If Depostion won't be found exception will be thrown and
+      // caller could catch it.
+      $data['host'] = static::toggleHost();
+      $data['url'] = static::buildUrl($data);
+      $data['response'] = RestAPI::get($data['url']);
+    }
   }
 
 }
