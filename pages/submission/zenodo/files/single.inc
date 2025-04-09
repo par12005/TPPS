@@ -44,30 +44,13 @@ function tpps_submission_zenodo_files_single_form(array $form, array &$form_stat
 
       // Create.
       if ($file && $action == 'create') {
-        // Move to alter-hook.
-        $cFile = new CURLFile(
-          tpps_realpath($file->uri),
-          $file->filemime,
-          $file->filename
-        );
-        $data = [
-          'header' => [
-            'Content-Type: multipart/form-data',
-          ],
-          'deposit_id' => $deposit_id,
-          'payload' => [
-            'name' => check_plain($file->filename),
-            // @TODO Think about: curl_file_create().
-            // If you need to upload a file to a service using cURL, just
-            // append an at symbol (@) to a string containing the file path.
-            'file' => $cFile,
-          ],
-          //'payload' => $cFile,
-        ];
-        ZenodoFiles::create($data);
+        $data['drupal_file'] = $file;
+        $data['deposit_id'] = $deposit_id;
+        ZenodoBucket::create($data);
+        //ZenodoFiles::create($data);
+
         // Validate response and show status message.
         if (empty($data['response']['id'])) {
-          dpm($data);
           // Fail.
           $message = t('Drupal File "@file_id" was NOT added to Deposition '
             . '"@deposit_id". <br /><strong>Response</strong>: @status - @message.',

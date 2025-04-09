@@ -3449,3 +3449,38 @@ function tpps_zenodo_deposit_validation_failed(array $response) {
     drupal_set_message(t('Zenodo Depostion not found.'));
   }
 }
+
+/**
+ * Implements hook 'zenodo_bucket_create_alter'.
+ *
+ * @param array $data
+ *   Context for ZenodoBucket::create().
+ */
+function tpps_zenodo_bucket_create_alter(array &$data) {
+  $file = $data['drupal_file'];
+  if (empty($file)) {
+    return;
+  }
+  // Move to alter-hook.
+  $cFile = new CURLFile(
+    tpps_realpath($file->uri),
+    // $file->filemime,
+    'application/octet-stream',
+    $file->filename
+  );
+
+  $data['header'] = [
+    // For files: 'Content-Type: multipart/form-data',
+    'Content-Type: application/octet-stream',
+    //'Accept: application/json',
+  ];
+  //$data[''payload'] = [
+  //  'name' => check_plain($file->filename),
+  //  // If you need to upload a file to a service using cURL, just
+  //  // append an at symbol (@) to a string containing the file path.
+  //  //'file' => $cFile,
+  //  'file' => '@' . tpps_realpath($file->uri),
+  //  //'file' => file_get_contents(tpps_realpath($file->uri)),
+  //],
+  $data['payload'] = file_get_contents(tpps_realpath($file->uri));
+}

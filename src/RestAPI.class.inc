@@ -113,7 +113,7 @@ class RestAPI {
    *
    * @param string $url
    *   API Endpoint URL.
-   * @param array $data
+   * @param mixed $data
    *   Data for request.
    * @param array $header
    *   HTTP-headers.
@@ -121,7 +121,7 @@ class RestAPI {
    * @return mixed
    *   Returns API response.
    */
-  public static function put($url, array $data = [], array $header = []) {
+  public static function put($url, $data = [], array $header = []) {
     // @TODO Minor. Implement more complex check. Regexp?
     if (in_array('Content-Type: application/json', $header)) {
       $data = json_encode($data);
@@ -363,14 +363,15 @@ class RestAPI {
       throw new Exception('RestAPI HTTP-request reached execution time limit: '
         . static::TIMEOUT . ' seconds.');
     }
-
     if ($code >= 200  && $code <= 204) {
       // https://developers.zenodo.org/?shell#http-status-codes
       return $response;
     }
     else {
       if ($debug_mode) {
-        dpm($response, 'Response Body');
+        dpm($url, 'URL');
+        dpm(print_r($data, 1), 'Payload');
+        dpm(print_r($response, 1), 'Response Body');
         dpm(print_r(debug_backtrace(
           !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS
         ), TRUE));
