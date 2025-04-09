@@ -71,7 +71,7 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
         $links = '';
         if ($key == 'links') {
           foreach ($value as $name => $url) {
-            $links[] = l($name, $url);
+            $links[] = l($name, Zenodo::addAccessToken($url));
           }
           $value = implode(', ', $links);
         }
