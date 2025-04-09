@@ -30,7 +30,7 @@ function tpps_submission_list_form(array $form, array &$form_state = [], $access
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $action_list = [
-    'create', 'view', 'export', 'import', 'compare', 'purge', 'zenodo',
+    'create', 'view', 'export', 'import', 'compare', 'purge', 'zenodo', 'edit',
   ];
   foreach ($action_list as $action) {
     $form[$action] = [
@@ -83,6 +83,9 @@ function tpps_submission_list_form_submit(array $form, array &$form_state) {
   $path = 'tpps/submission';
   if ($accession == 'new' && $action == 'create') {
     drupal_goto('tppsc');
+  }
+  elseif ($action == 'edit' && !empty($accession)) {
+    drupal_goto('tppsc/' . $accession);
   }
   else {
     $path .= ($accession && $action) ? '/' . $accession . '/' . $action : '';
