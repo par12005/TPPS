@@ -3379,12 +3379,6 @@ function tpps_zenodo_deposit_create_alter(array &$data = []) {
 }
 
 /**
- * Implements hook 'zenodo_files_create_alter'.
- */
-function tpps_zenodo_files_create_alter(array &$data = []) {
-}
-
-/**
  * Implements hook 'rest_api_request_execution_time'.
  *
  * @param string $title
@@ -3451,36 +3445,36 @@ function tpps_zenodo_deposit_validation_failed(array $response) {
 }
 
 /**
- * Implements hook 'zenodo_bucket_create_alter'.
+ * Implements hook 'zenodo_files_create_alter'.
  *
  * @param array $data
- *   Context for ZenodoBucket::create().
+ *   Context for ZenodoFiles::create().
  */
-function tpps_zenodo_bucket_create_alter(array &$data) {
+function tpps_zenodo_files_create_alter(array &$data) {
   $file = $data['drupal_file'];
   if (empty($file)) {
     return;
   }
-  // Move to alter-hook.
-  $cFile = new CURLFile(
-    tpps_realpath($file->uri),
-    // $file->filemime,
-    'application/octet-stream',
-    $file->filename
-  );
-
   $data['header'] = [
-    // For files: 'Content-Type: multipart/form-data',
     'Content-Type: application/octet-stream',
-    //'Accept: application/json',
+    'Accept: application/json',
   ];
-  //$data[''payload'] = [
-  //  'name' => check_plain($file->filename),
-  //  // If you need to upload a file to a service using cURL, just
-  //  // append an at symbol (@) to a string containing the file path.
-  //  //'file' => $cFile,
-  //  'file' => '@' . tpps_realpath($file->uri),
-  //  //'file' => file_get_contents(tpps_realpath($file->uri)),
-  //],
   $data['payload'] = file_get_contents(tpps_realpath($file->uri));
+
+  // @TODO Review and remove if it's useless.
+  // $cFile = new CURLFile(
+  //   tpps_realpath($file->uri),
+  //  //$file->filemime,
+  //  'application/octet-stream',
+  //  $file->filename
+  // );
+  // $filepath = tpps_realpath($file->uri);
+  // $fp = '@' . $filepath;
+  // $size = filesize($filepath);
+
+  //  $file = curl_file_create($this->file, 'application/octet-stream', 'EcommProdotti');
+
+  // curl_setopt($curl, CURLOPT_PUT, true);
+  // curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'POST');
+  // curl_setopt($curl, CURLOPT_INFILE, $fp);
 }

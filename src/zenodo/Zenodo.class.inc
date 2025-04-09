@@ -195,14 +195,24 @@ class Zenodo {
       // remove 'deposit_id' to have correct API Endpoint URL.
       unset($data['deposit_id']);
     }
-
+    elseif (static::getClassName() == 'ZenodoFiles') {
+      // Note: ZenodoDeposit class uses 'action' to pass extra actions like
+      // 'edit', 'newversion', 'discard' and etc.
+      $data['use_bucket_api'] = TRUE;
+    }
     // Call all implementations of hooks:
     // - hook_zenodo_deposit_create_alter(),
     // - hook_zenodo_files_create_alter().
     drupal_alter(static::getHookName(__FUNCTION__), $data);
 
     $data['url'] = static::buildUrl($data);
-    $data['response'] = RestAPI::post($data['url'], $data['payload'], $data['header']);
+    if (static::getClassName() == 'ZenodoDeposit') {
+      $data['response'] = RestAPI::post($data['url'], $data['payload'], $data['header']);
+    }
+    elseif (static::getClassName() == 'ZenodoFiles') {
+      // We use New Bucket API which require PUT instead of POST method.
+      $data['response'] = RestAPI::put($data['url'], $data['payload'], $data['header']);
+    }
 
     module_invoke_all(static::getHookName('created'), $data);
     return $data['response'];
@@ -299,20 +309,23 @@ class Zenodo {
         break;
 
       case 'ZenodoFiles':
-        // Example: /api/deposit/depositions/:id/files/:file_id.
-        $path .= static::BASE_PATH
-          . (empty($data['deposit_id']) ? '' : '/' . $data['deposit_id'])
-          . '/files'
-          . (empty($data['file_id']) ? '' : '/' . $data['file_id']);
-        break;
-
-      case 'ZenodoBucket':
-//dpm($data, __METHOD__);
-        static::validateRequired(['deposit_id'], $data);
-        $deposition = ZenodoDeposit::retrieve($data);
-        $path = $deposition['links']['bucket'];
-        if (!empty($data['drupal_file']->filename)) {
-          $path .= '/' . $data['drupal_file']->filename;
+        if (empty($data['use_bucket_api'])) {
+          // Zenodo Files API.
+          // Example: /api/deposit/depositions/:id/files/:file_id.
+          $path .= static::BASE_PATH
+            . (empty($data['deposit_id']) ? '' : '/' . $data['deposit_id'])
+            . '/files'
+            . (empty($data['file_id']) ? '' : '/' . $data['file_id']);
+        }
+        else {
+          // New Zenodo Bucket API.
+          // See https://developers.zenodo.org/?shell#quickstart-upload
+          static::validateRequired(['deposit_id'], $data);
+          $deposition = ZenodoDeposit::retrieve($data);
+          $path = $deposition['links']['bucket'];
+          if (!empty($data['drupal_file']->filename)) {
+            $path .= '/' . $data['drupal_file']->filename;
+          }
         }
         break;
 

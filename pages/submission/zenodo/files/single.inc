@@ -46,7 +46,7 @@ function tpps_submission_zenodo_files_single_form(array $form, array &$form_stat
       if ($file && $action == 'create') {
         $data['drupal_file'] = $file;
         $data['deposit_id'] = $deposit_id;
-        ZenodoBucket::create($data);
+        ZenodoFiles::create($data);
 
         // @TODO Validate response and show status message.
         //
