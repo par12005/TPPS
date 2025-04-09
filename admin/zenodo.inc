@@ -28,12 +28,25 @@ function tpps_zenodo_settings_form(array $form, array &$form_state) {
 
   $form['api']['tpps_zenodo_debug_mode'] = [
     '#type' => 'checkbox',
-    '#title' => t('Use Zenodo Sandbox server '),
+    '#title' => t('Use Zenodo Sandbox Host'),
     '#default_value' => variable_get('tpps_zenodo_debug_mode'),
     '#description' => t('When enabled then special URL will be used for '
       . 'Zenodo API requests (sandbox.zenodo.org). <br />This sandbox is '
       . 'for testing and development purposes. <br/> Read more: !link.',
       ['!link' => l(t('"Testing" on developers.zenodo.org.'), $doc_url)]
+    ),
+  ];
+  $form['api']['tpps_zenodo_host_greedy_search'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Use "greedy" Zenodo Host search'),
+    '#default_value' => variable_get('tpps_zenodo_host_greedy_search'),
+    '#description' => t('When enabled then Deposit Id will be searched on both '
+      . 'Live and Sandbox Hosts. <br />Useful for debugging and development.'
+      . 'But it means at least one extra API-request for each operation which '
+      . "could take 300-5000 milliseconds and if Depostion wan't found on "
+      . "default Host number of extra requests could be bigger. "
+      . "<br />If only one Zenodo Host is used or for production site it's "
+      . 'better to disable this option.'
     ),
   ];
 

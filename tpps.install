@@ -128,6 +128,7 @@ function tpps_install() {
   variable_set('tpps_zenodo_access_token_live', '');
   variable_set('tpps_zenodo_access_token_sandbox', '');
   variable_set('tpps_zenodo_new_implementation', TRUE);
+  variable_set('tpps_zenodo_host_greedy_search', FALSE);
   // Misc Settings.
   variable_set('tpps_theme_fix_pager', FALSE);
   variable_set('tpps_js_debug_mode', ['quickDebugMode' => 'quickDebugMode']);
@@ -519,6 +520,7 @@ function tpps_uninstall() {
   variable_del('tpps_zenodo_access_token_live');
   variable_del('tpps_zenodo_access_token_sandbox');
   variable_del('tpps_zenodo_new_implementation');
+  variable_del('tpps_zenodo_host_greedy_search', FALSE);
   // Misc Settings.
   variable_del('tpps_theme_fix_pager');
   variable_del('tpps_js_debug_mode');
@@ -2467,6 +2469,7 @@ function tpps_update_7128() {
   variable_set('tpps_report_zenodo_submissions_title', 'Zenodo Submissions');
   variable_set('tpps_report_zenodo_depositions_title', 'Zenodo Depositions');
   variable_set('tpps_zenodo_access_token_sandbox', '');
+  variable_set('tpps_zenodo_host_greedy_search', FALSE);
   // Rename variable.
   if (
     !is_null(variable_get('tpps_zenodo_sandbox_key', NULL))
