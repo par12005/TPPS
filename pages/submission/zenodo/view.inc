@@ -108,7 +108,14 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
   // WARNING: This CSS class adds theme and design.
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
-  tpps_submission_list_add_buttons($form, FALSE);
+  // Add back button.
+  $form['actions'] = $form['actions'] ?? ['#type' => 'container'];
+  $action = 'back';
+  $form['actions'][$action] = [
+    '#type' => 'submit',
+    '#name' => $action,
+    '#value' => t(ucfirst($action)),
+  ];
   return $form;
 }
 
@@ -135,6 +142,15 @@ function tpps_submission_zenodo_form_submit(array &$form, array &$form_state) {
   $accession = $form_state['values']['accession'] ?? '';
   $data['accession'] = $accession;
   $action = $form_state['triggering_element']['#name'];
+
+  // 'Back' button.
+  if ($action == 'back') {
+    // For some reasons messages from export/import pages duplicates when 'Back'
+    // button clicked so we simply clear all messages out.
+    drupal_get_messages();
+    drupal_goto('tpps/submission/' . $accession);
+  }
+
   $submission = new Submission($accession);
   $deposit_id = $submission->getZenodoDepositId();
   $path = 'tpps/submission';
@@ -152,6 +168,7 @@ function tpps_submission_zenodo_form_submit(array &$form, array &$form_state) {
   }
   // Files has a subpage.
   if ($action == 'files') {
+    drupal_get_messages();
     drupal_goto($path . '/' . $accession . '/zenodo/files');
   }
   // Validate $action.
