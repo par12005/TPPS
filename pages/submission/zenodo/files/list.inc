@@ -64,7 +64,7 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
   //  filesize (Float) 12362
   //  checksum (String, 32 characters ) 4bd90201fbb420ae5c149a4af50a224b
   //  links (String, 218 characters ) <a href="https://zenodo.org/api/deposit/deposit...
-  $response = ZenodoFiles::list($data);
+  $response = ZenodoFile::list($data);
   if (!empty($response)) {
     foreach ($response as $item) {
       foreach ($item as $key => $value) {

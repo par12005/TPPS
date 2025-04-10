@@ -12,7 +12,7 @@
  * See classes:
  * - /src/zenodo/Zenodo.class.inc.
  * - /src/zenodo/ZenodoDeposit.class.inc.
- * - /src/zenodo/ZenodoFiles.class.inc.
+ * - /src/zenodo/ZenodoFile.class.inc.
  * - /src/zenodo/ZenodoRecords.class.inc.
  */
 

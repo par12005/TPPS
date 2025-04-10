@@ -96,8 +96,8 @@ function tpps_generate_doi($accession) {
 
 // @TODO Update.
 
-    $has_uploads = ZenodoFiles::uploadAll($id, $state);
-    dpm('ZenodoFiles::updateAll() is outdated');
+    $has_uploads = ZenodoFile::uploadAll($id, $state);
+    dpm('ZenodoFile::updateAll() is outdated');
   }
   if ($has_uploads == FALSE) {
     echo "This study does not have any uploads so zenodo will never publish this study. Please update the study with at least one file.<br />";

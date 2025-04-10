@@ -9,11 +9,11 @@
  * - 'ZenodoDeposit' class:
  *   - created, updated, deleted, retrieved.
  *   - edited, published, new_version_created, discarded.
- * - 'ZenodoFiles' class:
+ * - 'ZenodoFile' class:
  *   - created, updated, deleted, retrieved.
  * Alter-hooks:
  * - 'ZenodoDeposit' class: create, update, delete, retrieve.
- * - 'ZenodoFiles' class:   create, update, delete, retrieve.
+ * - 'ZenodoFile' class:   create, update, delete, retrieve.
  */
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -289,7 +289,7 @@ function hook_zenodo_deposit_new_version_alter(array &$data) {
 // Zenodo Deposition File's Actions.
 
 /**
- * Perform alterations before requiest in ZenodoFiles::delete().
+ * Perform alterations before requiest in ZenodoFile::delete().
  *
  * Note: Called before API Endpoint URL will be generated.
  *
@@ -303,7 +303,7 @@ function hook_zenodo_files_delete_alter(array &$data) {
 }
 
 /**
- * Perform alterations before requiest in ZenodoFiles::create().
+ * Perform alterations before requiest in ZenodoFile::create().
  *
  * Note: Called before API Endpoint URL will be generated.
  *
@@ -315,7 +315,7 @@ function hook_zenodo_files_create_alter(array &$data) {
 }
 
 /**
- * Perform alterations before requiest in ZenodoFiles::update().
+ * Perform alterations before requiest in ZenodoFile::update().
  *
  * Note: Called before API Endpoint URL will be generated.
  *
@@ -328,7 +328,7 @@ function hook_zenodo_files_update_alter(array &$data) {
 }
 
 /**
- * Perform alterations before requiest in ZenodoFiles::list().
+ * Perform alterations before requiest in ZenodoFile::list().
  *
  * Note: Called before API Endpoint URL will be generated.
  *
@@ -341,7 +341,7 @@ function hook_zenodo_files_list_alter(array &$query) {
 }
 
 /**
- * Perform alterations before requiest in ZenodoFiles::retrieve().
+ * Perform alterations before requiest in ZenodoFile::retrieve().
  *
  * Note: Called before API Endpoint URL will be generated.
  *

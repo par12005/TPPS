@@ -3448,7 +3448,7 @@ function tpps_zenodo_deposit_validation_failed(array $response) {
  * Implements hook 'zenodo_files_create_alter'.
  *
  * @param array $data
- *   Context for ZenodoFiles::create().
+ *   Context for ZenodoFile::create().
  */
 function tpps_zenodo_files_create_alter(array &$data) {
   $file = $data['drupal_file'];
