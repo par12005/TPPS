@@ -2248,9 +2248,8 @@ class Submission {
    *   Returns list of parents
    *   (from  $form_state['values'] or/and $form_state['saved_values']).
    *
-   * @TODO Add environmental files?
-   * @todo Merget with tpps_details_get_study_file_ids(array $state);
    * @todo Make it private or protected.
+   * @TODO Add environmental files?
    */
   public function getFileParents() {
     $result = [];
