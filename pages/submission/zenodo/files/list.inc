@@ -168,6 +168,32 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('main', $form);
   tpps_add_css_js('theme', $form);
-  tpps_submission_list_add_buttons($form, FALSE);
+
+  // Add back button.
+  $form['actions'] = $form['actions'] ?? ['#type' => 'container'];
+  $action = 'back';
+  $form['actions'][$action] = [
+    '#type' => 'submit',
+    '#name' => $action,
+    '#value' => t(ucfirst($action)),
+  ];
+
   return $form;
+}
+
+/**
+ * Form submitter for 'tpps_submission_list_form' form.
+ */
+function tpps_submission_zenodo_files_list_form_submit(array &$form, array &$form_state) {
+  $accession = $form_state['values']['accession'] ?? '';
+  $action = $form_state['triggering_element']['#name'];
+
+  // 'Back' button.
+  if ($action == 'back') {
+    // For some reasons messages from export/import pages duplicates when 'Back'
+    // button clicked so we simply clear all messages out.
+    drupal_get_messages();
+    drupal_goto('tpps/submission/' . $accession . '/zenodo');
+  }
+  $form_state['#rebuild'] = TRUE;
 }
