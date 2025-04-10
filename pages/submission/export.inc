@@ -39,9 +39,7 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
     drupal_set_message($message, 'warning');
     drupal_goto('tpps/submission');
   }
-
   tpps_submission_export_fixes($submission->state);
-
   // Files.
   $fid_list = tpps_submission_file_get_id_list($submission->state, $form);
   $files = tpps_submission_export_get_files_info($fid_list);
@@ -144,7 +142,7 @@ function tpps_submission_export_file_report(array &$fid_list = [], array &$files
       tpps_form_add_report($form, [
         'files_prepared_for_import' => [
           'title' => t('List of files prepared for import'),
-          'data' => t('<pre>@list</pre>', ['@list' => print_r($files, 1)]),
+          'data' => tpps_array_print_list($files),
         ],
       ]);
     }
