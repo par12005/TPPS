@@ -81,9 +81,11 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Submission files.
-  foreach (array_unique($submission->getFileList()) as $fid) {
+  $missing_files = [];
+  foreach (array_unique($submission->getFileIdList()) as $fid) {
     $create_url = $path . '/' . $accession . '/zenodo/files/' . $fid . '/create';
     if (empty($file = tpps_file_load($fid))) {
+      $missing_files[] = $fid;
       continue;
     }
     // Make it first.
@@ -130,6 +132,16 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
       )
       // Drupal File metadata.
       . tpps_array_print_list($submission_file);
+  }
+
+  // Report about files missing in file system.
+  if ($missing_files) {
+    $message = t('Files listed below was NOT found in file system: <br />@list'
+      . '<br />Probably they was removed by cron because of temporary status.'
+      . '<br />Those files must be re-attached to study again.',
+      ['@list' => implode(', ', $missing_files)]
+    );
+    drupal_set_message($message, 'error');
   }
 
   // Add Zenodo files which not match Submission Files.
