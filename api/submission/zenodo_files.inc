@@ -16,7 +16,7 @@ function tpps_api_submission_zenodo_files($submission) {
     return ['error' => 'Submission has no Zenodo Deposition.'];
   }
   dpm($deposit_id, 'deposit_id');
-  $response = ZenodoFiles::list([
+  $response = ZenodoFile::list([
     'deposit_id' => $deposit_id,
   ]);
   //dpm(print_r($response, 1));

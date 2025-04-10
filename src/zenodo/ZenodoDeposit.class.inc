@@ -402,7 +402,7 @@ class ZenodoDeposit extends Zenodo {
   /**
    * Validate if Deposit Id belings to current Zenodo Host.
    *
-   * There is a problem when 'ZenodoFiles' class gets files by Deposit Id
+   * There is a problem when 'ZenodoFile' class gets files by Deposit Id
    * created on other Zenodo Host by other account and having this files at
    * out pages is confusing.
    *

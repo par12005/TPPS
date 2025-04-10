@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains 'ZenodoFiles' class.
+ * Contains 'ZenodoFile' class.
  */
 
 /**
@@ -20,7 +20,7 @@
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class ZenodoFiles extends Zenodo {
+class ZenodoFile extends Zenodo {
 
   // Prefix of the API URL.
   const BASE_PATH = '/api/deposit/depositions';

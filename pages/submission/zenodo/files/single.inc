@@ -46,7 +46,7 @@ function tpps_submission_zenodo_files_single_form(array $form, array &$form_stat
       if ($file && $action == 'create') {
         $data['drupal_file'] = $file;
         $data['deposit_id'] = $deposit_id;
-        ZenodoFiles::create($data);
+        ZenodoFile::create($data);
 
         // @TODO Validate response and show status message.
         //
@@ -68,7 +68,7 @@ function tpps_submission_zenodo_files_single_form(array $form, array &$form_stat
       // $file_id is the Zenodo File Id.
       if ($action == 'delete') {
         $data = ['deposit_id' => $deposit_id, 'file_id' => $file_id];
-        ZenodoFiles::delete($data);
+        ZenodoFile::delete($data);
         // Validate response and show status message.
         if (empty($data['response'])) {
           // Code: 204 No Content.
@@ -105,7 +105,7 @@ function tpps_submission_zenodo_files_single_form(array $form, array &$form_stat
       '#title' => t('Zenodo Deposit #@id Files', ['@id' => $deposit_id]),
     ];
     $data['deposit_id'] = $deposit_id;
-    $response = ZenodoFiles::list($data);
+    $response = ZenodoFile::list($data);
     if (!empty($response)) {
       $output = $response;
       if (is_array($response)) {
@@ -176,7 +176,7 @@ function tpps_submission_zenodo_files_single_form_submit(array &$form, array &$f
   }
 
   // Validate $action.
-  $class = 'ZenodoFiles';
+  $class = 'ZenodoFile';
   $method_name = $class . '::' . $action;
   if (!is_callable($method_name, TRUE)) {
     drupal_set_message(t('Attempt to call non-existing Zenodo API action: @name.',

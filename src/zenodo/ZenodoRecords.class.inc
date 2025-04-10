@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains 'ZenodoFiles' class.
+ * Contains 'ZenodoRecords' class.
  */
 
 /**
