@@ -304,8 +304,9 @@ function tpps_array_move(array &$array, array $action_data) {
  * specific. It does much more and works with 'values' and 'complete form'
  * elements of given arrays.
  *
- * @param array $array
- *   Array to search.
+ * @param mixed $array
+ *   Array to search within.
+ *   When empty then there will be no error but NULL will be returned.
  * @param array $parents
  *   List of the element's parents (including element name).
  *   When empty array then original $array will be returned.
@@ -315,8 +316,11 @@ function tpps_array_move(array &$array, array $action_data) {
  *   Returns $default if element wasn't found in given array but not reference.
  *   Returns $array when $parents is an empty array.
  */
-function &tpps_array_get_value(array &$array, array $parents = []) {
-  $value = &drupal_array_get_nested_value($array, $parents, $key_exists);
+function &tpps_array_get_value(&$array = [], array $parents = []) {
+  $key_exists = FALSE;
+  if (!empty($array) && is_array($array)) {
+    $value = &drupal_array_get_nested_value($array, $parents, $key_exists);
+  }
   if ($key_exists) {
     return $value;
   }
