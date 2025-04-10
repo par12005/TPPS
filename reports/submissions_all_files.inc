@@ -41,8 +41,7 @@ function tpps_admin_submissions_all_files_report() {
     krsort($submission_list, SORT_NATURAL);
     foreach ($submission_list as $submission) {
       $organism_number = $submission->sharedState['saved_values'][TPPS_PAGE_1]['organism']['number'] ?? 1;
-      if ($files = tpps_submission_file_get_id_list($submission->state)) {
-
+      if ($files = $submission->getFileIdList()) {
         $file_row = [];
         $final_file_row = [];
         foreach ($files as $fid) {

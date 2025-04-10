@@ -13,7 +13,7 @@ function tpps_admin_submissions_without_files_report() {
   $submission_list = tpps_load_submission_multiple();
   $i = 0;
   foreach ($submission_list as $submission) {
-    $files = tpps_submission_file_get_id_list($submission->state);
+    $files = $submission->getFileIdList();
     if ($submission->state['stage'] >= 3 && !$files) {
       $rows[] = [
         ++$i,

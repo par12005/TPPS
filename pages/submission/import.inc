@@ -247,7 +247,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   else {
     // If we don't submit form we need manually change status of attached files
     // from temporaty to permanent to avoid it's automatic removement.
-    tpps_submission_file_set_status($submission->state, FILE_STATUS_PERMANENT);
+    $submission->setFileStatus(FILE_STATUS_PERMANENT, []);
   }
 
   drupal_goto('completed-submission/' . $accession);
@@ -423,8 +423,7 @@ function tpps_submission_import_process_files(array &$state, $new_accession, arr
       }
       // To avoid errors when page navigation used we need to have
       // temporary stored files until final form submit ('summarypage').
-      // @TODO Minor. Think about reusage of function
-      // tpps_submission_file_set_status().
+      // @TODO Minor. Could $submission->setFileStatus() be used?
       if ($new_file->status != 0) {
         $new_file->status = 0;
         file_save($new_file);

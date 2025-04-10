@@ -25,7 +25,7 @@ function tpps_admin_submissions_missing_files_report() {
 
     $submission_list = tpps_load_submission_multiple();
     foreach ($submission_list as $submission) {
-      if ($files = tpps_submission_file_get_id_list($submission->state)) {
+      if ($files = $submission->getFileIdList()) {
         $missing = [];
         foreach ($files as $fid) {
           if (!in_array($fid, $fid_list)) {
