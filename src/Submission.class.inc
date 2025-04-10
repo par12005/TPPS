@@ -2151,199 +2151,53 @@ class Submission {
     return $metadata;
   }
 
-
-  public function getFileList() {
-    // @todo replace $state.
-    $state = $this->state;
-    $files = [];
-    for ($i = 1; $i <= $state['stats']['species_count']; $i++) {
-      $files[] = $state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['file'];
-      if (empty($state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
-        break;
-      }
-    }
-
-    for ($i = 1; $i <= $state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
-      if (isset($state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype'])) {
-        $phenotype = &$state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype'];
-        if (!empty($phenotype['normal-check'])) {
-          $files[] = $phenotype['file'];
-          if ($phenotype['check']) {
-            $files[] = $phenotype['metadata'];
-          }
-        }
-
-        if (!empty($phenotype['iso-check'])) {
-          $files[] = $phenotype['iso'];
-        }
-      }
-
-      // Genotype.
-      if (isset($state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype'])) {
-        $genotype = &$state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype'];
-        if (in_array(
-          ($genotype['ref-genome'] ?? NULL),
-          ['manual', 'manual2', 'url']
-        )) {
-          $files[] = $genotype['tripal_fasta']['file_upload'] ?? NULL;
-          $files[] = $genotype['tripal_fasta']['file_upload_existing'] ?? NULL;
-        }
-        // @TODO Could we skip all this extra checks and just collect files?
-        // @TODO Ask curation team what to do with this.
-        // WARNING: Submission State (not Shared State, v.1).
-        $snps_fieldset = 'SNPs';
-        $ssrs_fieldset = 'ssrs_cpssrs';
-        $file_type = $genotype[$snps_fieldset]['file-type'] ?? NULL;
-        if (($genotype['does_study_include_snp_data'] ?? NULL) == 'yes') {
-          if ($file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE) {
-            $files[] = $genotype[$snps_fieldset]['snps-assay'] ?? NULL;
-            $files[] = $genotype[$snps_fieldset]['assay-design'] ?? NULL;
-          }
-          elseif ($file_type == TPPS_GENOTYPING_FILE_TYPE_VCF) {
-            $files[] = $genotype[$snps_fieldset]['vcf'] ?? NULL;
-          }
-        }
-        if (($genotype['does_study_include_ssr_cpssr_data'] ?? NULL) == 'yes') {
-          $files[] = $genotype[$ssrs_fieldset]['ssrs'] ?? NULL;
-          // @TODO What about cpssrs?
-          // $files[] = $genotype[$ssrs_fieldset]['cpssrs'] ?? NULL;
-        }
-        if (($genotype['does_study_include_other_genotypic_data'] ?? NULL) == 'yes') {
-          $files[] = $genotype['other']['other'] ?? NULL;
-        }
-      }
-    }
-    $files = array_filter($files);
-    return $files;
-  }
-
   /**
-   * Gets form submission state, prepares files for import.
+   * Gets list of Ids of the files attached to submission.
+   *
+   * We use greedy search to get as much as possible data.
    *
    * @return array
    *   Returns list of File IDs or empty array.
+   *
+   * @todo Minor. Cache list of file ids and reset cache of save() method call.
+   * @todo Minor. Use $this->state['input'] to get just submitteddd form data.
+   * Search in 'values' and 'input' require extra work. There is no $step
+   * parent element and structure of the submitted data is different.
    */
   public function getFileIdList() {
-    $complete_form = $this->state['complete form'] ?? NULL;
     $saved_values = $this->sharedState['saved_values'] ?? NULL;
     // Note: Shared State doesn't have 'values' element but State could have
     // newer version of form and other paths.
-    $values = $this->state['values'] ?? NULL;
-    $shared_state_files = $this->state['files'] ?? [];
     $file_info = $this->sharedState['file_info'] ?? NULL;
 
-    $result = [];
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Complete Form.
-    $method_name = 'complete form';
     $fid_list = [];
-    if ($complete_form && $values) {
-      $files = tpps_form_search_field($complete_form, 'managed_file');
-      foreach ($files as $parents) {
-        $fid_list[] = drupal_array_get_nested_value($values, $parents);
-      }
-    }
-    $fid_list = array_filter($fid_list);
-    if (!empty($fid_list)) {
-      $result = array_merge($result, $fid_list);
-    }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Use $form_state['files'] if any.
-    $method_name = '$form_state["files"]';
-    $fid_list = [];
-    $fid_list = array_filter($shared_state_files);
-    if (!empty($fid_list)) {
-      $result = array_merge($result, $fid_list);
-    }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Use $form_state['file_info'] if any.
+    // Use $form_state['file_info'] if any. Available after processing only.
     $method_name = '$form_state["file_info"]';
-    $fid_list = [];
     $fid_list = array_merge(
       array_keys($file_info[1] ?? []),
       array_keys($file_info[2] ?? []),
       array_keys($file_info[3] ?? []),
-      // @TODO Why only 4?
+      // @TODO Why only 4? Probalby it's a form steps but genotype files was
+      // found under '3' so probably it's ($step - 1). Step counts from zero.
       array_keys($file_info[4] ?? [])
     );
-    $fid_list = array_filter($fid_list);
-    if (!empty($fid_list)) {
-      $result = array_merge($result, $fid_list);
-    }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Last chance. Use hardcoded path to file fields.
+    // Use hardcoded paths to file fields.
     $method_name = 'hardcoded';
-    $fid_list = [];
-    if ($values || $saved_values) {
-      $parent_list = $this->getFileParents();
-      foreach ($parent_list as $parents) {
-        if ($values) {
-          $fid = drupal_array_get_nested_value($values, $parents);
-          // Page 4/Genotype/Other (managed file field) has subfields and
-          // returns array so we need to skip this to avoid:
-          // Warning: array_flip(): Can only flip STRING and INTEGER values! in
-          // DrupalDefaultEntityController->load()
-          // (line 175 of /var/www/Drupal/includes/entity.inc).
-          if (!is_array($fid)) {
-            $fid_list[] = $fid;
-          }
-        }
-        if ($saved_values) {
-          $step = ($parents[0] == 'tree-accession') ? TPPS_PAGE_3 : TPPS_PAGE_4;
-          if (!empty($saved_values[$step])) {
-            // When form became outdated (6+ hours) and cron removed temporary
-            // files then resubmitting form cause errors at site. Probably
-            // correct solution is to redirect to submittion edit page
-            // Note: Redirect using GET request not yet implemented. Only POST.
-            $fid = drupal_array_get_nested_value($saved_values[$step], $parents);
-            if (!is_array($fid)) {
-              $fid_list[] = $fid;
-            }
-          }
-        }
-      }
-
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Summary page.
-      // It seems we have unlimited number of extra files which could be
-      // added to study but dump has 10 items.
-      for ($i = 1; $i <= 10; $i++) {
-        // @TODO Seems there is an extra work to loop previously checked values.
-        $parent_list[] = ['summarypage', 'files', $i];
-      }
-      foreach ($parent_list as $parents) {
-        if ($values) {
-          $fid = drupal_array_get_nested_value($values, $parents);
-          // Page 4/Genotype/Other (managed file field) has subfields and
-          // returns array so we need to skip this to avoid:
-          // Warning: array_flip(): Can only flip STRING and INTEGER values! in
-          // DrupalDefaultEntityController->load()
-          // (line 175 of /var/www/Drupal/includes/entity.inc).
-          if (!is_array($fid)) {
-            $fid_list[] = $fid;
-          }
-        }
-        if ($saved_values) {
-          // When form became outdated (6+ hours) and cron removed temporary
-          // files then resubmitting form cause errors at site. Probably
-          // correct solution is to redirect to submittion edit page
-          // Note: Redirect using GET request not yet implemented. Only POST.
-          $fid = drupal_array_get_nested_value($saved_values, $parents);
-          if (!is_array($fid)) {
-            $fid_list[] = $fid;
-          }
-        }
+    if (empty($values) && empty($saved_values)) {
+      return [];
+    }
+    $parent_list = $this->getFileParents();
+    foreach ($parent_list as $step => $step_list) {
+      foreach ($step_list as $parents) {
+        $fid_list[] = (int) tpps_array_get_value($saved_values[$step], $parents);
       }
     }
-
-    $fid_list = array_filter($fid_list ?? []);
-    $fid_list = array_unique($fid_list);
     if (!empty($fid_list)) {
-      $result = array_merge($result, $fid_list);
+      $fid_list = array_unique(array_filter($fid_list));
     }
-
-    $result = array_unique($result);
-    return $result;
+    return $fid_list;
   }
 
   /**
@@ -2387,13 +2241,14 @@ class Submission {
    * Gets hardcoded list of file field parents.
    *
    * WARNING:
-   * Use Submission Shared State (v.1 not Submission State).
+   * Use Submission Shajred State (v.1 not Submission State).
    *
    * @return array
    *   Returns empty array if number of organisms is zero.
    *   Returns list of parents
    *   (from  $form_state['values'] or/and $form_state['saved_values']).
    *
+   * @TODO Add environmental files?
    * @todo Merget with tpps_details_get_study_file_ids(array $state);
    * @todo Make it private or protected.
    */
@@ -2404,44 +2259,50 @@ class Submission {
       $organism_id = 'organism-' . $i;
       $species_id = 'species-' . $i;
       // Page 3. Accession file.
-      $result = array_merge($result, [
+      $result[TPPS_PAGE_3] = [
         ['tree-accession', $species_id, 'file'],
-      ]);
-      // Page 4. Phenotype and Genotype.
-      // @TODO Add environmental files?
-      $result = array_merge($result, [
+      ];
+      // Page 4. Phenotype and Genotype files.
+      $result[TPPS_PAGE_4] = [
         // Phenotype.
         [$organism_id, 'phenotype', 'iso'],
         [$organism_id, 'phenotype', 'file'],
         [$organism_id, 'phenotype', 'metadata'],
         // Genotype.
-        [$organism_id, 'genotype', 'tripal_fasta', 'file', 'file_upload'],
-        // @TODO Check this field:
-        //[$organism_id, 'genotype', 'tripal_fasta', 'file_upload_existing'],
         [$organism_id, 'genotype', 'files', 'snps-assay'], // Shared State.
         [$organism_id, 'genotype', 'files', 'assay-design'],
         [$organism_id, 'genotype', 'files', 'snps-association'],
         [$organism_id, 'genotype', 'files', 'snps-pop-struct'],
         [$organism_id, 'genotype', 'files', 'snps-kinship'],
+        // SSR.
         [$organism_id, 'genotype', 'files', 'ssrs'],
         [$organism_id, 'genotype', 'files', 'ssrs_extra'],
         [$organism_id, 'genotype', 'files', 'indels'],
         [$organism_id, 'genotype', 'files', 'vcf'],
-
+        // Other.
         [$organism_id, 'genotype', 'files', 'other'],
-      ]);
+        // Fasta.
+        [$organism_id, 'genotype', 'tripal_fasta', 'file', 'file_upload'],
+        // @TODO Check this field:
+        // [$organism_id, 'genotype', 'tripal_fasta', 'file_upload_existing'],
+      ];
     }
-    // Analysis.
-    // @TODO Prepare and check.
-    // 'analysis' = [
-    //   'diversity_file' => 0,
-    //   'population_structure_file' => 0,
-    //   'association_genetics_file' => 0,
-    //   'landscape_genomics_file' => 0,
-    //   'phenotype_environment_file' => 0,
-    // ];
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Summary page.
+    $result['summarypage'] = [
+      // Analysis.
+      ['analysis', 'diversity_file'],
+      ['analysis', 'population_structure_file'],
+      ['analysis', 'association_genetics_file'],
+      ['analysis', 'landscape_genomics_file'],
+      ['analysis', 'phenotype_environment_file'],
+    ];
+    // It seems we have unlimited number of extra files which could be
+    // added to study but dump has 10 items.
+    for ($i = 1; $i <= 10; $i++) {
+      $result['summarypage'][] = ['files', $i];
+    }
     return $result;
   }
-
 
 }
