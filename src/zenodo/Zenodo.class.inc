@@ -28,7 +28,7 @@
  *
  * Classes which extends this class:
  * - ZenodoDeposit (publish, newversion, edit and etc.)
- * - ZenodoFiles (default actions with files).
+ * - ZenodoFile (default actions with files).
  *
  * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * How to use:
@@ -195,7 +195,7 @@ class Zenodo {
       // remove 'deposit_id' to have correct API Endpoint URL.
       unset($data['deposit_id']);
     }
-    elseif (static::getClassName() == 'ZenodoFiles') {
+    elseif (static::getClassName() == 'ZenodoFile') {
       // Note: ZenodoDeposit class uses 'action' to pass extra actions like
       // 'edit', 'newversion', 'discard' and etc.
       $data['use_bucket_api'] = TRUE;
@@ -209,9 +209,10 @@ class Zenodo {
     if (static::getClassName() == 'ZenodoDeposit') {
       $data['response'] = RestAPI::post($data['url'], $data['payload'], $data['header']);
     }
-    elseif (static::getClassName() == 'ZenodoFiles') {
+    elseif (static::getClassName() == 'ZenodoFile') {
       // We use New Bucket API which require PUT instead of POST method.
       $data['response'] = RestAPI::put($data['url'], $data['payload'], $data['header']);
+      //dpm(print_r($data, 1), 'File create');
     }
 
     module_invoke_all(static::getHookName('created'), $data);
@@ -308,7 +309,7 @@ class Zenodo {
         }
         break;
 
-      case 'ZenodoFiles':
+      case 'ZenodoFile':
         if (empty($data['use_bucket_api'])) {
           // Zenodo Files API.
           // Example: /api/deposit/depositions/:id/files/:file_id.
@@ -413,7 +414,7 @@ class Zenodo {
   public static function getHookName($action) {
     $module = 'tpps_';
     switch (static::getClassName()) {
-      case 'ZenodoFiles':
+      case 'ZenodoFile':
         $prefix = 'zenodo_files_';
         break;
 
