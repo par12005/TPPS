@@ -35,7 +35,7 @@ function tpps_details_form_callback(array $form, array $form_state) {
  * @return array
  *   Returns list of File Ids.
  *
- * @todo Minor. Use tpps_submission_file_get_parents().
+ * @todo Minor. Use $submission->getFileParents().
  * @todo Probably not in use and outdated. Remove if possible.
  * (Called by orphan function tpps_details_study()).
  */

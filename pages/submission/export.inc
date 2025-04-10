@@ -41,7 +41,7 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
   }
   tpps_submission_export_fixes($submission->state);
   // Files.
-  $fid_list = tpps_submission_file_get_id_list($submission->state, $form);
+  $fid_list = $submission->getFileIdList();
   $files = tpps_submission_export_get_files_info($fid_list);
   if (empty($form_state['input'])) {
     // This check allows to avoid double processing files when new accession
@@ -66,6 +66,7 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
   ];
   tpps_submission_list_add_buttons($form);
   tpps_form_autofocus($form, ['tpps_submission_export_state']);
+
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('submission_export', $form);
   tpps_add_css_js('theme', $form);
