@@ -147,7 +147,7 @@ function tpps_ajax_get_study_details_tab(array $data) {
   }
   // Note: Remove empty elements after processing local VCF files.
   $files = array_filter($files);
-  $study_file_ids = tpps_details_get_study_file_ids($submission->sharedState);
+  $study_file_ids = $submission->getFileIdList();
   $params = ['attributes' => ['target' => '_blank']];
   foreach ($study_file_ids as $fid) {
     if ($file = tpps_file_load($fid)) {
@@ -200,7 +200,16 @@ function tpps_ajax_get_study_details_tab(array $data) {
     'Study Type',
     tpps_form_get_study_type($page2_values['study_type']),
   ];
-  $rows[] = [t('File Downloads'), implode('<br>', $files)];
+  if (!empty($files)) {
+    unset($params['attributes']['title']);
+    $rows[] = [t('File Downloads'),
+      theme('item_list', ['items' => $files])
+        // Add ZIP-file download link to the bottom of the list.
+        . l(t('Download compressed raw files'),
+        'tpps/api/files/' . $submission->accession, $params
+      )
+    ];
+  }
   $rows[] = [t('Population Size'), $state['stats']['tree_count']];
   if (!empty($state['stats']['phenotype_count'])) {
     $rows[] = [t('Phenotype Count'), $state['stats']['phenotype_count']];
@@ -568,8 +577,6 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
     }
     $vcf_location_details[] = $vcf_details;
   }
-
-
 
   if ($view_version == 3) {
     // @NEW -RISH using Emily's redesign that uses index_id. Fast response in ms.
