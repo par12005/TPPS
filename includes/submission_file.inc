@@ -14,14 +14,11 @@
  * @param array $state
  *   TPPS Submission State which will be downgraded to
  *   Submission Form Version 1 to get File Ids.
- * @param array $form
- *   If not empty then report fieldset will be added to form.
- *   We need $form here to add File Detection Report.
  *
  * @return array
  *   Returns list of File IDs or empty array.
  */
-function tpps_submission_file_get_id_list(array $state, array &$form = []) {
+function tpps_submission_file_get_id_list(array $state) {
   // We use Submission Form Version 1 to avoid updates on each form change.
   $submission = new Submission();
   $submission->state = $state;
@@ -34,11 +31,8 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
   $shared_state_files = $submission->state['files'] ?? [];
   $file_info = $submission->sharedState['file_info'] ?? NULL;
 
-  module_load_include('inc', 'tpps', 'includes/form');
   $organism_number = $submission->getOrganismNumber();
   $result = [];
-  $form['#attributes']['class'][] = 'tpps-submission';
-  tpps_add_css_js('theme', $form);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Complete Form.
   $method_name = 'complete form';
@@ -50,7 +44,6 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
     }
   }
   $fid_list = array_filter($fid_list);
-  $report[$method_name] = $fid_list;
   if (!empty($fid_list)) {
     $result = array_merge($result, $fid_list);
   }
@@ -59,7 +52,6 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
   $method_name = '$form_state["files"]';
   $fid_list = [];
   $fid_list = array_filter($shared_state_files);
-  $report[$method_name] = $fid_list;
   if (!empty($fid_list)) {
     $result = array_merge($result, $fid_list);
   }
@@ -71,10 +63,10 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
     array_keys($file_info[1] ?? []),
     array_keys($file_info[2] ?? []),
     array_keys($file_info[3] ?? []),
+    // @TODO Why only 4?
     array_keys($file_info[4] ?? [])
   );
   $fid_list = array_filter($fid_list);
-  $report[$method_name] = $fid_list;
   if (!empty($fid_list)) {
     $result = array_merge($result, $fid_list);
   }
@@ -149,31 +141,8 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
 
   $fid_list = array_filter($fid_list ?? []);
   $fid_list = array_unique($fid_list);
-  $report[$method_name] = $fid_list;
   if (!empty($fid_list)) {
     $result = array_merge($result, $fid_list);
-  }
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Report.
-  $rows = [];
-  foreach ($report as $method => $list) {
-    $count = count($list);
-    $rows[] = [
-      check_plain($method),
-      ($count ? check_plain($count) : t('Not found')),
-      ($count ? '' : check_plain(implode(', ', $list))),
-    ];
-  }
-  if ($rows) {
-    tpps_form_add_report($form, [
-      'files_detection_methods' => [
-        'title' => t('Files Detection Methods'),
-        'data' => theme('table', [
-          'header' => [t('Method'), t('Status'), t('List')],
-          'rows' => $rows,
-        ]),
-      ],
-    ]);
   }
 
   $result = array_unique($result);
