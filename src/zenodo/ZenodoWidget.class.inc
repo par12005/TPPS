@@ -120,13 +120,13 @@ class ZenodoWidget {
               $output = ZenodoDeposit::printDeposition($deposition);
             }
             $zenodo_widget[$deposit_id]['dump'] = [
-              '#markup' => ZenodoDeposit::getHostStatus() . '<br />' . $output,
+              '#markup' => ZenodoHost::getStatus() . '<br />' . $output,
             ];
           }
           else {
             // Only a few links.
             $items = [
-              ZenodoDeposit::getHostStatus(),
+              ZenodoHost::getStatus(),
               l(t('Zenodo Deposition'),
                 'tpps/submission/' . $accession . '/zenodo'
               ),
@@ -178,7 +178,7 @@ class ZenodoWidget {
         $zenodo_widget['message'] = [
           '#markup' => theme('item_list', [
             'items' => [
-              ZenodoDeposit::getHostStatus(),
+              ZenodoHost::getStatus(),
               t("Submission doesn't have Zenodo Deposition."),
             ],
           ]),

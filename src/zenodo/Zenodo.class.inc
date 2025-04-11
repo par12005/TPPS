@@ -66,11 +66,6 @@
  */
 class Zenodo {
 
-  // Host name.
-  // See: https://developers.zenodo.org/?shell#testing.
-  const LIVE_HOST = 'zenodo.org';
-  const SANDBOX_HOST = 'sandbox.zenodo.org';
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // API scope: deposit:write.
 
@@ -281,7 +276,7 @@ class Zenodo {
     //if (variable_get('tpps_zenodo_host_greedy_search', FALSE)) {
     //  $host = ZenodoDeposit::searchHost($data);
     //}
-    $host = static::getHost();
+    $host = ZenodoHost::get();
     $path = $protocol . $host;
     // Add base path and endpoint.
     switch (static::getClassName()) {
@@ -417,7 +412,6 @@ class Zenodo {
    *   Returns name of the hook (without module name prefix).
    */
   public static function getHookName($action) {
-    $module = 'tpps_';
     switch (static::getClassName()) {
       case 'ZenodoFile':
         $prefix = 'zenodo_files_';
@@ -427,166 +421,12 @@ class Zenodo {
         $prefix = 'zenodo_records_';
         break;
 
-      case 'ZenodoBucket':
-        $prefix = 'zenodo_bucket_';
-        break;
-
       case 'ZenodoDeposit':
       default:
         $prefix = 'zenodo_deposit_';
         break;
     }
     return $prefix . $action;
-  }
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Host.
-
-  /**
-   * Sets Zenodo host name and statically cache it.
-   *
-   * Allows to have different host even during single per page request.
-   * This method is needed because we use static methods instead of instance
-   * of class with own properties.
-   *
-   * @param string $host
-   *   Posible values: 'live' and any non-null value.
-   *   When value is 'live' then static variable 'tpps_zenodo_host'
-   *   will have name of the Zenodo Live server.
-   *   Any other value will populate it with name of Zenodo Sandbox server.
-   */
-  public static function setHost($host = NULL) {
-    if (empty($host)) {
-      return;
-    }
-    $zenodo_host = &drupal_static('tpps_zenodo_host');
-    $zenodo_host = (strtolower($host) == 'live')
-      ? static::LIVE_HOST : static::SANDBOX_HOST;
-  }
-
-  /**
-   * Gets Zenodo host name.
-   *
-   * Allows to have different host name even during single per page request
-   * because uses statically cached value which could be changed during even
-   * the same page request multiple times (for example to show depostions on
-   * both Live and Sandbox server at the same page).
-   * To use Live host: ZenodoDeposit::setHost('live');
-   * To use Sandbox host: ZenodoDeposit::setHost('sandbox');
-   *
-   * If host name wasn't set then global site settings will be used.
-   * To reset or force usage of the global settings:
-   * ZenodoDeposit::getHost($reset = TRUE);
-   *
-   * @return string
-   *   Returns Zenodo host name.
-   */
-  public static function getHost($reset = FALSE) {
-    $zenodo_host = &drupal_static('tpps_zenodo_host');
-    if ($reset || empty($zenodo_host)) {
-      $zenodo_host = (variable_get('tpps_zenodo_debug_mode', FALSE))
-        ? static::SANDBOX_HOST : static::LIVE_HOST;
-    }
-    return $zenodo_host;
-  }
-
-  /**
-   * Toggles Zenodo Host.
-   *
-   * @return string
-   *   Returns new host.
-   */
-  public static function toggleHost() {
-    $zenodo_host = &drupal_static('tpps_zenodo_host');
-    $zenodo_host = ($zenodo_host == static::LIVE_HOST)
-      ? static::SANDBOX_HOST : static::LIVE_HOST;
-
-    // Hook will get value of the new host.
-    module_invoke_all(static::getHookName('host_toggled'), $zenodo_host);
-    return $zenodo_host;
-  }
-
-  /**
-   * Generates message with Zenodo Host status.
-   *
-   * By default global host will be shown but if current host and global host
-   * are different then both will be shown.
-   *
-   * @return string
-   *   Returns HTML-string with Zenodo Hosts and hyperlink to change it.
-   *   When global (default) host and current (page specific) differs then
-   *   both will be shown.
-   */
-  public static function getHostStatus() {
-    $global_host = variable_get('tpps_zenodo_debug_mode') ? 'sandbox' : 'live';
-    $current_host = static::getHost() == self::LIVE_HOST ? 'live' : 'sandbox';
-    $message = 'Zenodo Host: <strong>@global_host</strong> [!change_link]';
-    if ($global_host != $current_host) {
-      // Current and Global Hosts are different and both must be shown.
-      $message = 'Zenodo Host (global / current): '
-      . '<strong>@global_host</strong> [!change_link] '
-      . '/ <strong>@current_host</strong> (page specific).';
-    }
-    return t($message, [
-      '@current_host' => $current_host,
-      '@global_host' => strtoupper($global_host),
-      '!change_link' => l(t('Change'), 'admin/config/tpps/zenodo'),
-    ]);
-  }
-
-  /**
-   * Prints out Zenodo hosts.
-   *
-   * By default global host will be shown but if current host and global host
-   * are different then both will be shown.
-   *
-   * Note:
-   * 1. Uses drupal_set_message().
-   * 2. There is no sense to use watchdog().
-   */
-  public static function printHostStatus() {
-    $severity = (static::getHost() == self::LIVE_HOST) ? 'warning' : 'status';
-    drupal_set_message(static::getHostStatus(), $severity);
-  }
-
-  /**
-   * Checks if current (page specific) Zenodo Host is a sandbox-server.
-   *
-   * @return bool
-   *   Returns TRUE when Zenodo Sandbox Host used on current page.
-   */
-  public static function isSandboxHost() {
-    return (static::getHost() == static::SANDBOX_HOST);
-  }
-
-  /**
-   * Checks if current (page specific) Zenodo Host is a live-server.
-   *
-   * @return bool
-   *   Returns TRUE when Zenodo Live Host used on current page.
-   */
-  public static function isLiveHost() {
-    return (static::getHost() == static::LIVE_HOST);
-  }
-
-  /**
-   * Checks if global (site wide) Zenodo Host is a sandbox-server.
-   *
-   * @return bool
-   *   Returns TRUE when Zenodo Sandbox Host used on current page.
-   */
-  public static function isHostGlobalSandbox() {
-    return (bool) variable_get('tpps_zenodo_debug_mode');
-  }
-
-  /**
-   * Checks if global (site wide) Zenodo Host is a live-server.
-   *
-   * @return bool
-   *   Returns TRUE when Zenodo Live Host used on current page.
-   */
-  public static function isHostGlobalLive() {
-    return !static::isHostGlobalSandbox();
   }
 
   /**
@@ -609,20 +449,22 @@ class Zenodo {
    * 1. About Zenodo Host change caused by greedy search use Drupal-hook:
    *    'hook_zenodo_deposit_host_changed'.
    * 2. About Zenodo Host toggle use Drupal-hook called from the
-   *    ZenodoDeposit::toggleHost() method.
+   *    ZenodoHost::toggle() method.
    *
    * @param mixed $data
    *   Request data. Required key is 'deposit_id'.
    *
    * @throws \Exception
    *   Deposit Id wasn't found on both hosts.
+   *
+   * @todo Think about movement to ZenodoHost class or merge with buildUrl().
    */
   public static function searchHost($data) {
     static::validateRequired(['deposit_id'], $data);
     // Use greedy search using both hosts but starting from the
     // global (default) host.
     try {
-      static::getHost();
+      ZenodoHost::get();
       $data['url'] = static::buildUrl($data);
       RestAPI::get($data['url']);
     }
@@ -630,17 +472,17 @@ class Zenodo {
       // Check other host.
       // If Depostion won't be found exception will be thrown and
       // caller could catch it.
-      static::toggleHost();
+      ZenodoHost::toggle();
       $data['url'] = static::buildUrl($data);
       try {
         RestAPI::get($data['url']);
         if (function_exists('module_invoke_all')) {
-          module_invoke_all(static::getHookName('host_changed'), static::getHost());
+          module_invoke_all(static::getHookName('host_changed'), ZenodoHost::get());
         }
       }
       catch (Exception $e) {
         // Restore original host when nothing found on any host.
-        static::toggleHost();
+        ZenodoHost::toggle();
         throw new Exception($e->getMessage(), $e->getCode());
       }
     }
@@ -656,9 +498,9 @@ class Zenodo {
    *   Returns URL which includes Access Token as a GET-parameter.
    */
   public static function addAccessToken($url) {
-    $host = static::getHost();
+    $host = ZenodoHost::get();
     // Access Token.
-    if ($host == self::LIVE_HOST) {
+    if ($host == ZenodoHost::LIVE_HOST) {
       $access_token = variable_get('tpps_zenodo_access_token_live');
     }
     else {

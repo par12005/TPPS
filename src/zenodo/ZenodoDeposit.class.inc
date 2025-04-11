@@ -241,7 +241,7 @@ class ZenodoDeposit extends Zenodo {
       return $output;
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    $host = (static::getHost() == self::LIVE_HOST ? 'live' : 'sandbox');
+    $host = (ZenodoHost::get() == ZenodoHost::LIVE_HOST ? 'live' : 'sandbox');
     $report_path = 'admin/reports/tpps/zenodo-depositions/' . $host . '/';
     switch ($format) {
       case 'dump':
@@ -400,35 +400,6 @@ class ZenodoDeposit extends Zenodo {
     $first = $parts[0];
     $last = implode(' ', array_slice($parts, 1));
     return "$last, $first";
-  }
-
-  /**
-   * Validate if Deposit Id belings to current Zenodo Host.
-   *
-   * There is a problem when 'ZenodoFile' class gets files by Deposit Id
-   * created on other Zenodo Host by other account and having this files at
-   * out pages is confusing.
-   *
-   * Note: Zenodo Files can't validate host because Zenodo allows to get
-   * files data without any access token (files data are public). But only
-   * Deposition data is accessible by owner.
-   *
-   * Note: This method throws an exception.
-   *
-   * @param array $data
-   *   Data for ZenodoDeposit::retrieve() request.
-   *   Required key is 'deposit_id'.
-   *
-   */
-  public static function isHostValid(array $data) {
-    try {
-      $response = static::retrieve($data);
-    }
-    catch (Exception $e) {
-      // In case of any errors assume that host is invalid.
-      return FALSE;
-    }
-    return TRUE;
   }
 
 }

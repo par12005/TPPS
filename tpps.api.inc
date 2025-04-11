@@ -386,15 +386,15 @@ function hook_zenodo_deposit_discarded(array $data, array $response) {
 }
 
 /**
- * Implements hook 'zenodo_deposit_host_toggled'.
+ * Implements hook 'zenodo_host_toggled'.
  *
- * Called from ZenodoDeposit::toggleHost().
+ * Called from ZenodoHost::toggle().
  *
  * @param string $new_host
  *   New Zenodo Host which was switched to.
- *   Possible values: ZenodoDeposit::LIVE_HOST and ZenodoDeposit::SANDBOX_HOST.
+ *   Possible values: ZenodoHost::LIVE_HOST and ZenodoHost::SANDBOX_HOST.
  */
-function hook_zenodo_deposit_host_toggled($new_host) {
+function hook_zenodo_host_toggled($new_host) {
   drupal_set_message($new_host);
 }
 
@@ -410,7 +410,7 @@ function hook_zenodo_deposit_host_toggled($new_host) {
  *
  * @param string $new_host
  *   New Zenodo Host which was switched to.
- *   Possible values: ZenodoDeposit::LIVE_HOST and ZenodoDeposit::SANDBOX_HOST.
+ *   Possible values: ZenodoHost::LIVE_HOST and ZenodoHost::SANDBOX_HOST.
  */
 function hook_zenodo_deposit_host_changed($new_host) {
   drupal_set_message($new_host);

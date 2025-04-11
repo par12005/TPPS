@@ -19,6 +19,7 @@ files[] = src/zenodo/Zenodo.class.inc
 files[] = src/zenodo/ZenodoDeposit.class.inc
 files[] = src/zenodo/ZenodoWidget.class.inc
 files[] = src/zenodo/ZenodoFile.class.inc
+files[] = src/zenodo/ZenodoHost.class.inc
 ; files[] = src/zenodo/ZenodoRecords.class.inc
 
 files[] = src/PhenotypeManual.class.inc
