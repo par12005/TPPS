@@ -46,7 +46,7 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
     'show_deposition_dump' => TRUE,
     'show_deposition_links' => FALSE,
   ];
-  ZenodoDeposit::addWidget($context);
+  ZenodoWidget::add($context);
 
   // Add back button.
   $form['actions'] = $form['actions'] ?? ['#type' => 'container'];

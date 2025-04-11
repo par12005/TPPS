@@ -17,6 +17,7 @@ files[] = src/RestAPI.class.inc
 ; Zenodo API.
 files[] = src/zenodo/Zenodo.class.inc
 files[] = src/zenodo/ZenodoDeposit.class.inc
+files[] = src/zenodo/ZenodoWidget.class.inc
 files[] = src/zenodo/ZenodoFile.class.inc
 ; files[] = src/zenodo/ZenodoRecords.class.inc
 
