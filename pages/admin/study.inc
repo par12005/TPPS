@@ -743,7 +743,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
     'show_deposition_dump' => FALSE,
     'show_deposition_links' => TRUE,
   ];
-  ZenodoDeposit::addWidget($context);
+  ZenodoWidget::add($context);
 
   $form['#attributes']['class'][] = 'tpps-admin-panel';
   // @TODO Rename function and use default names for submitter and validator.
