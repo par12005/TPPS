@@ -507,6 +507,34 @@ class Zenodo {
   }
 
   /**
+   * Generates message with Zenodo Host status.
+   *
+   * By default global host will be shown but if current host and global host
+   * are different then both will be shown.
+   *
+   * @return string
+   *   Returns HTML-string with Zenodo Hosts and hyperlink to change it.
+   *   When global (default) host and current (page specific) differs then
+   *   both will be shown.
+   */
+  public static function getHostStatus() {
+    $global_host = variable_get('tpps_zenodo_debug_mode') ? 'sandbox' : 'live';
+    $current_host = static::getHost() == self::LIVE_HOST ? 'live' : 'sandbox';
+    $message = 'Zenodo Host: <strong>@global_host</strong> [!change_link]';
+    if ($global_host != $current_host) {
+      // Current and Global Hosts are different and both must be shown.
+      $message = 'Zenodo Host (global / current): '
+      . '<strong>@global_host</strong> [!change_link] '
+      . '/ <strong>@current_host</strong> (page specific).';
+    }
+    return t($message, [
+      '@current_host' => $current_host,
+      '@global_host' => strtoupper($global_host),
+      '!change_link' => l(t('Change'), 'admin/config/tpps/zenodo'),
+    ]);
+  }
+
+  /**
    * Prints out Zenodo hosts.
    *
    * By default global host will be shown but if current host and global host
@@ -517,23 +545,8 @@ class Zenodo {
    * 2. There is no sense to use watchdog().
    */
   public static function printHostStatus() {
-    $global_host = variable_get('tpps_zenodo_debug_mode') ? 'sandbox' : 'live';
-    $current_host = static::getHost() == self::LIVE_HOST ? 'live' : 'sandbox';
-    $message = 'Zenodo Host: <strong>@global_host</strong> [!change_link]';
-    if ($global_host != $current_host) {
-      // Current and Global Hosts are different and both must be shown.
-      $message = 'Zenodo Host (global / current): '
-      . '<strong>@global_host</strong> [!change_link] '
-      . '/ <strong>@current_host</strong> (page specific).';
-    }
-    drupal_set_message(t($message,
-      [
-        '@current_host' => $current_host,
-        '@global_host' => strtoupper($global_host),
-        '!change_link' => l(t('Change'), 'admin/config/tpps/zenodo'),
-      ]),
-      ($current_host == 'live' ? 'warning' : 'status')
-    );
+    $severity = (static::getHost() == self::LIVE_HOST) ? 'warning' : 'status';
+    drupal_set_message(static::getHostStatus(), $severity);
   }
 
   /**
