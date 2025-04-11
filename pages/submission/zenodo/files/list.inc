@@ -175,7 +175,13 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
   $form['actions'][$action] = [
     '#type' => 'submit',
     '#name' => $action,
-    '#value' => t(ucfirst($action)),
+    '#value' => t($action),
+  ];
+  $action = 'upload_all';
+  $form['actions'][$action] = [
+    '#type' => 'submit',
+    '#name' => $action,
+    '#value' => t('Upload All'),
   ];
 
   return $form;
@@ -194,6 +200,12 @@ function tpps_submission_zenodo_files_list_form_submit(array &$form, array &$for
     // button clicked so we simply clear all messages out.
     drupal_get_messages();
     drupal_goto('tpps/submission/' . $accession . '/zenodo');
+  }
+  elseif ($action == 'upload_all') {
+    // Existing files will be overwritten and will got new ids.
+    drupal_get_messages();
+    $submission = new Submission($accession);
+    $submission->uploadAllFilesZenodo();
   }
   $form_state['#rebuild'] = TRUE;
 }

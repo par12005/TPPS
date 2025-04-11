@@ -2294,4 +2294,38 @@ class Submission {
     return $result;
   }
 
+  /**
+   * Uploads all study files to the Zenodo.
+   *
+   *
+   *
+   * @TODO Update.
+   *
+   * See function tpps_manage_doi($accession);
+   *
+   * @param string $accession
+   *   Study accession. Format: 'TGDRxxxx'.
+   */
+  public function uploadAllFilesZenodo() {
+    // Process study files.
+    if (empty($fid_list = $this->getFileIdList())) {
+      return;
+    }
+
+    $deposit_id = $this->getZenodoDepositId();
+    if (empty($deposit_id)) {
+      // Create new deposit.
+      $response = ZenodoDeposit::create(['accession' => $this->accession]);
+      $deposit_id = $response['id'];
+      //$deposit_id = $submission->getZenodoDepositId();
+    }
+
+    // @todo Check if file already was uploaded.
+    foreach ($fid_list as $fid) {
+      if ($file = tpps_file_load($fid)) {
+        ZenodoFile::create(['drupal_file' => $file, 'deposit_id' => $deposit_id]);
+      }
+    }
+  }
+
 }

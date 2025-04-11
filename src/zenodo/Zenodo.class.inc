@@ -44,8 +44,11 @@
  *
  * - 'RestAPI' class.
  * - Drupal variables:
- *   - 'tpps_zenodo_api_key',
- *   - 'tpps_zenodo_debug_mode',
+ *   'tpps_zenodo_debug_mode',
+ *   'tpps_zenodo_access_token_live',
+ *   'tpps_zenodo_access_token_sandbox',
+ *   'tpps_zenodo_new_implementation',
+ *   'tpps_zenodo_host_greedy_search',
  * - Drupal hooks system. See /tpps.api.inc file.
  */
 
@@ -215,6 +218,8 @@ class Zenodo {
       //dpm(print_r($data, 1), 'File create');
     }
 
+    // Note: Zenodo Deposit Id will be stored in Submission in Drupal-hook:
+    // 'tpps_zenodo_deposit_created().
     module_invoke_all(static::getHookName('created'), $data);
     return $data['response'];
   }

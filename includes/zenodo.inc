@@ -18,7 +18,7 @@ define('TPPS_20GB', 20000000000);
  */
 function tpps_zenodo_build_url($endpoint = '') {
   // @TODO Statically cache this URL.
-  $token = variable_get('tpps_zenodo_api_key', NULL);
+  $token = variable_get('tpps_zenodo_access_token_live', NULL);
   $prefix = variable_get('tpps_zenodo_prefix', '');
   // @TODO Use url().
   return "https://{$prefix}zenodo.org/api/deposit/depositions"
@@ -89,26 +89,29 @@ function tpps_generate_doi($accession) {
   // dpm('Metadata');
   // dpm($metadata);
 
-  if (!variable_get('tpps_zenodo_new_implementation')) {
-    $has_uploads = tpps_doi_upload_files($id, $state);
+  if (variable_get('tpps_zenodo_new_implementation')) {
+    foreach ($submission->getFileIdList() as $fid) {
+      if ($file = tpps_file_load($fid)) {
+        //$data['accession'] = $submission->accession;
+        $data['drupal_file'] = $file;
+        $data['deposit_id'] = $submission->getZenodoDepositId();
+        ZenodoFile::create($data);
+      }
+    }
   }
   else {
+    $has_uploads = tpps_doi_upload_files($id, $state);
+    if ($has_uploads == FALSE) {
+      echo "This study does not have any uploads so zenodo will never publish this study. Please update the study with at least one file.<br />";
+      // Apparently a study submission must have at least one meta data file
+    }
 
-// @TODO Update.
+    $upload = tpps_doi_metadata($id, $metadata);
+    // dpm('Upload Metadata response');
+    // dpm($upload);
 
-    $has_uploads = ZenodoFile::uploadAll($id, $state);
-    dpm('ZenodoFile::updateAll() is outdated');
+    return $upload;
   }
-  if ($has_uploads == FALSE) {
-    echo "This study does not have any uploads so zenodo will never publish this study. Please update the study with at least one file.<br />";
-    // Apparently a study submission must have at least one meta data file
-  }
-
-  $upload = tpps_doi_metadata($id, $metadata);
-  // dpm('Upload Metadata response');
-  // dpm($upload);
-
-  return $upload;
 }
 
 /**
@@ -143,7 +146,7 @@ function tpps_doi_metadata($id, $metadata) {
 
   $data = new stdClass();
   $data->metadata = $metadata;
-  $token = variable_get('tpps_zenodo_api_key', NULL);
+  $token = variable_get('tpps_zenodo_access_token_live', NULL);
   // $data->access_token = $token;
   $data_json = json_encode($data);
 
@@ -226,7 +229,7 @@ function tpps_doi_upload_files($id, array &$state) {
     }
   }
   $files = array_filter($files);
-  $token = variable_get('tpps_zenodo_api_key', NULL);
+  $token = variable_get('tpps_zenodo_access_token_live', NULL);
   $upload_file_count = 0;
   foreach ($files as $fid) {
     if (!empty($file = tpps_file_load($fid)) && $file->filesize < TPPS_20GB) {
@@ -277,7 +280,7 @@ function tpps_doi_publish($id) {
   $ch = curl_init(tpps_zenodo_build_url("$id/actions/publish"));
   // This is the new API
   $prefix = variable_get('tpps_zenodo_prefix', '');
-  $token = variable_get('tpps_zenodo_api_key', NULL);
+  $token = variable_get('tpps_zenodo_access_token_live', NULL);
   // dpm($token);
   // $ch = curl_init('https://zenodo.org/api/deposit/depositions/'. $id . '/actions/publish');
   // $headers = array();
