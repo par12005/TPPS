@@ -727,6 +727,24 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
     // '#field_prefix' => 'TGDR',
     '#description' => t('WARNING: do not include TGDR.'),
   ];
+
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Zenodo Deposition Widget.
+  $section = [
+    'key' => 'zenodo',
+    'title' => t('Zenodo'),
+    'is_widget' => TRUE,
+  ];
+  tpps_admin_panel_add_section($form, $section);
+  $context = [
+    'form' => &$form['zenodo'],
+    'accession' => $submission->accession,
+    'show_deposition_dump' => FALSE,
+    'show_deposition_links' => TRUE,
+  ];
+  ZenodoDeposit::addWidget($context);
+
   $form['#attributes']['class'][] = 'tpps-admin-panel';
   // @TODO Rename function and use default names for submitter and validator.
   $form['#validate'][] = 'tpps_admin_panel_validate';
@@ -1461,11 +1479,14 @@ function tpps_admin_panel_add_section(array &$form, array $data) {
     '#type' => 'fieldset',
     '#title' => $data['title'] ?? $data['key'] ?? '',
     '#description' => $data['description'] ?? '',
-    'submit' => [
+  ];
+  // Widget has own buttons and don't need default action-button.
+  if (empty($data['is_widget'])) {
+    $form[$data['key']]['submit'] = [
       '#type' => 'submit',
       '#value' => $data['title'],
       '#name' => $data['key'],
       '#weight' => 100,
-    ],
-  ];
+    ];
+  }
 }
