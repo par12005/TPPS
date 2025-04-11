@@ -30,13 +30,13 @@ function tpps_admin_zenodo_depositions_report() {
   if (empty($entity)) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // All depostions.
-    ZenodoDeposit::printHostStatus();
+    ZenodoHost::printStatus();
     $host_list = ['live', 'sandbox'];
     if (!empty($host) && in_array($host, $host_list)) {
       $host_list = [$host];
     }
     foreach ($host_list as $host) {
-      ZenodoDeposit::setHost($host);
+      ZenodoHost::set($host);
       $output .= '<h2>Zenodo Host: ' . l($host, $path . $host) . '</h2>';
       $response = ZenodoDeposit::list([]);
       if (empty($response)) {
@@ -58,8 +58,8 @@ function tpps_admin_zenodo_depositions_report() {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   else {
     // Single deposition.
-    ZenodoDeposit::setHost(($host ?? 'sandbox'));
-    ZenodoDeposit::printHostStatus();
+    ZenodoHost::set(($host ?? 'sandbox'));
+    ZenodoHost::printStatus();
     if (strpos('TGDR', $entity) !== FALSE) {
       // Accession number.
       $submission = new Submission($entity);

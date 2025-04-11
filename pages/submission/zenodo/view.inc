@@ -33,7 +33,7 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
 
   // Show Zenodo Host on page.
   //if (empty($form_state['triggering_element'])) {
-  //  ZenodoDeposit::printHostStatus();
+  //  ZenodoHost::printStatus();
   //}
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

@@ -13,7 +13,7 @@ module_load_include('inc', 'tpps', 'pages/submission/list');
 function tpps_submission_zenodo_files_list_form(array $form, array &$form_state = [], $accession = NULL) {
   // Show Zenodo Host on page.
   if (empty($form_state['triggering_element'])) {
-    ZenodoDeposit::printHostStatus();
+    ZenodoHost::printStatus();
   }
 
   // Check submission accession.
@@ -35,7 +35,7 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
     drupal_goto($path . '/' . $accession . '/zenodo');
   }
 
-  if (!ZenodoDeposit::isHostValid($data)) {
+  if (!ZenodoHost::isValid($data)) {
     $message = t('Deposition was created using different Zenodo Host.');
     drupal_set_message($message, 'error');
     drupal_goto('tpps/submission/' . $accession . '/zenodo');
