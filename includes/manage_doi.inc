@@ -26,44 +26,47 @@ function tpps_manage_doi($accession) {
 
   $submission = new Submission($accession);
 
-  $token = variable_get('tpps_zenodo_api_key', NULL);
+  $token = variable_get('tpps_zenodo_access_token_live', NULL);
   if (!empty($token)) {
     $deposit_id = $submission->getZenodoDepositId();
     if (empty($deposit_id) || isset($_GET['force'])) {
       // No Zenodo Deposit Id found. Let's create new one.
-      if (!variable_get('tpps_zenodo_new_implementation')) {
+      if (variable_get('tpps_zenodo_new_implementation')) {
+        // @TODO Check if Deposit exists.
+        $response = ZenodoDeposit::create(['accession' => $accession]);
+        // $response['id'] contains Zenodo Deposit Id which stored in DB
+        // (in tpps_submission table) but not yet updated in memory. To avoid
+        // reloading whole Submission object - update it without saving to DB.
+        $deposit_id = $response['id'];
+        // Process study files.
+        if (!empty($fid_list = $submission->getFileIdList())) {
+          // @todo Check if file already was uploaded.
+          foreach ($fid_list as $fid) {
+            if ($file = tpps_file_load($fid)) {
+              //$data['accession'] = $submission->accession;
+              $data['drupal_file'] = $file;
+              $data['deposit_id'] = $deposit_id;
+              ZenodoFile::create($data);
+            }
+          }
+        }
+        ZenodoDeposit::publish(['deposit_id' => $deposit_id]);
+        $output .= "<h4>Zenodo Deposit successfully created and published!</h4>";
+      }
+      else {
         $deposit_id = tpps_generate_doi($accession)->id;
         $submission->setZenodoDepositId($deposit_id, $save_on_change = TRUE);
         $doi_object = tpps_doi_publish($deposit_id);
+        $output .= "<h4>DOI successfully published!</h4>";
       }
-      else {
-        $response = ZenodoDeposit::create(['accession' => $accession]);
-
-// @TODO Update.
-        // @TODO Add files. From: tpps_generate_doi().
-        //$has_uploads = ZenodoFile::uploadAll($id, $state);
-        //if ($has_uploads == FALSE) {
-        //  echo "This study does not have any uploads so zenodo will never publish this study. Please update the study with at least one file.<br />";
-        //  // Apparently a study submission must have at least one meta data file
-        //}
-
-        if (!empty($deposit_id = ($response['id'] ?? NULL))) {
-          // $response['id'] contains Zenodo Deposit Id which stored in DB
-          // (in tpps_submission table) but not yet updated in memory. To avoid
-          // reloading whole Submission object - update it without saving to DB.
-          $submission->setZenodoDepositId($deposit_id, $save_on_change = FALSE);
-          $doi_object = ZenodoDeposit::publish(['deposit_id' => $deposit_id]);
-        }
-      }
-      $output .= "<h4>DOI successfully published!</h4>";
     }
     else {
       // Zenodo Deposit Id was found in the TPPS Submission.
-      if (!variable_get('tpps_zenodo_new_implementation')) {
-        $doi_object = tpps_doi_load($deposit_id);
+      if (variable_get('tpps_zenodo_new_implementation')) {
+        $doi_object = ZenodoDepoit::retrieve($deposit_id);
       }
       else {
-        $doi_object = ZenodoDepoit::retrieve($deposit_id);
+        $doi_object = tpps_doi_load($deposit_id);
       }
     }
   }
