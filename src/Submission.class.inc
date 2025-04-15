@@ -170,6 +170,23 @@ class Submission {
    */
   protected $status = '';
 
+  /**
+   * Flag which indicates that Submission was modified and must be saved to DB.
+   *
+   * When changed which require saving to database are done then set this flag
+   * without manually calling save() method. When all changes are done or
+   * hook_exit() was called then submission will be saved.
+   *
+   * @var bool
+   *   When TRUE current submission has modifications which must be saved.
+   *   When FALSE submission is the same as database record has.
+   *
+   * @TODO Implement hook_exit(). See
+   * https://api.drupal.org/api/drupal/modules!system!system.api.php/function/hook_exit/7.x
+   * @TODO Make $submission global variable so it will exist in hook_exit().
+   */
+  protected $isChanged = FALSE;
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Class constants.
 

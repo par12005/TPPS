@@ -88,10 +88,12 @@ class Zenodo {
    */
   public static function list(array $data) {
     $data['payload'] = $data['payload'] ?? [];
-    // Call all implementations of hooks:
-    // - hook_zenodo_deposit_list_alter(),
-    // - hook_zenodo_files_list_alter().
-    drupal_alter(static::getHookName(__FUNCTION__), $data);
+    if (function_exists('drupal_alter')) {
+      // Call all implementations of hooks:
+      // - hook_zenodo_deposit_list_alter(),
+      // - hook_zenodo_files_list_alter().
+      drupal_alter(static::getHookName(__FUNCTION__), $data);
+    }
 
     $data['url'] = static::buildUrl($data);
     $data['response'] = RestAPI::get($data['url'], $data['payload']);
@@ -116,17 +118,21 @@ class Zenodo {
   public static function retrieve(array $data) {
     static::validateRequired(['deposit_id'], $data);
 
-    // Call all implementations of hooks:
-    // - hook_zenodo_deposit_retrieve_alter(),
-    // - hook_zenodo_files_retrieve_alter().
-    // Note: Hooks must be called only once.
-    drupal_alter(static::getHookName(__FUNCTION__), $data);
+    if (function_exists('drupal_alter')) {
+      // Call all implementations of hooks:
+      // - hook_zenodo_deposit_retrieve_alter(),
+      // - hook_zenodo_files_retrieve_alter().
+      // Note: Hooks must be called only once.
+      drupal_alter(static::getHookName(__FUNCTION__), $data);
+    }
 
     $data['url'] = static::buildUrl($data);
     $data['response'] = RestAPI::get($data['url']);
 
     // Note: Hooks must be called only once.
-    module_invoke_all(static::getHookName('retrieved'), $data);
+    if (function_exists('module_invoke_all')) {
+      module_invoke_all(static::getHookName('retrieved'), $data);
+    }
     return $data['response'];
   }
 
@@ -155,17 +161,21 @@ class Zenodo {
    *   403 Forbidden: Deleting an already published deposition.
    */
   public static function delete(array $data) {
-    // Call all implementations of hooks:
-    // - hook_zenodo_deposit_delete_alter(),
-    // - hook_zenodo_files_delete_alter().
-    drupal_alter(static::getHookName(__FUNCTION__), $data);
+    if (function_exists('drupal_alter')) {
+      // Call all implementations of hooks:
+      // - hook_zenodo_deposit_delete_alter(),
+      // - hook_zenodo_files_delete_alter().
+      drupal_alter(static::getHookName(__FUNCTION__), $data);
+    }
     static::validateRequired(['deposit_id'], $data);
 
     $data['url'] = static::buildUrl($data);
     $data['response'] = RestAPI::delete($data['url']);
 
     // Note: When Deposit not found we stil need to remove it's id from Submission.
-    module_invoke_all(static::getHookName('deleted'), $data);
+    if (function_exists('module_invoke_all')) {
+      module_invoke_all(static::getHookName('deleted'), $data);
+    }
   }
 
   /**
@@ -198,10 +208,12 @@ class Zenodo {
       // 'edit', 'newversion', 'discard' and etc.
       $data['use_bucket_api'] = TRUE;
     }
-    // Call all implementations of hooks:
-    // - hook_zenodo_deposit_create_alter(),
-    // - hook_zenodo_files_create_alter().
-    drupal_alter(static::getHookName(__FUNCTION__), $data);
+    if (function_exists('drupal_alter')) {
+      // Call all implementations of hooks:
+      // - hook_zenodo_deposit_create_alter(),
+      // - hook_zenodo_files_create_alter().
+      drupal_alter(static::getHookName(__FUNCTION__), $data);
+    }
 
     $data['url'] = static::buildUrl($data);
     if (static::getClassName() == 'ZenodoDeposit') {
@@ -213,9 +225,11 @@ class Zenodo {
       //dpm(print_r($data, 1), 'File create');
     }
 
-    // Note: Zenodo Deposit Id will be stored in Submission in Drupal-hook:
-    // 'tpps_zenodo_deposit_created().
-    module_invoke_all(static::getHookName('created'), $data);
+    if (function_exists('module_invoke_all')) {
+      // Note: Zenodo Deposit Id will be stored in Submission in Drupal-hook:
+      // 'tpps_zenodo_deposit_created().
+      module_invoke_all(static::getHookName('created'), $data);
+    }
     return $data['response'];
   }
 
@@ -238,16 +252,20 @@ class Zenodo {
   public static function update(array $data) {
     $data['payload'] = $data['payload'] ?? [];
     static::validateRequired(['deposit_id'], $data);
-    // Call all implementations of hooks:
-    // - hook_zenodo_deposit_update_alter(),
-    // - hook_zenodo_files_update_alter().
-    drupal_alter(static::getHookName(__FUNCTION__), $data);
+    if (function_exists('drupal_alter')) {
+      // Call all implementations of hooks:
+      // - hook_zenodo_deposit_update_alter(),
+      // - hook_zenodo_files_update_alter().
+      drupal_alter(static::getHookName(__FUNCTION__), $data);
+    }
     static::validateRequired(['metadata'], $data['payload']);
 
     $data['url'] = static::buildUrl($data);
     $data['response'] = RestAPI::put($data['url'], $data['payload']);
 
-    module_invoke_all(static::getHookName('updated'), $data);
+    if (function_exists('module_invoke_all')) {
+      module_invoke_all(static::getHookName('updated'), $data);
+    }
     return $data['response'];
   }
 
