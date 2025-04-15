@@ -3301,8 +3301,14 @@ function tpps_zenodo_deposit_created(array $data) {
   if (!empty($data['accession']) && !empty($data['response']['id'])) {
     $submission = new Submission($data['accession']);
     if ($submission->doesExist()) {
-      $save_on_change = TRUE;
-      $submission->setZenodoDepositId($data['response']['id'], $save_on_change);
+      // Store DOI.
+      $submission->state['saved_values'][TPPS_PAGE_1]['publication']['dataset_doi']
+        = $data['response']['prereserve_doi']['doi'];
+      // Store Zenodo Deposit Id and save submission to DB.
+      $submission->setZenodoDepositId(
+        $data['response']['id'],
+        $save_on_change = TRUE
+      );
     }
   }
 }

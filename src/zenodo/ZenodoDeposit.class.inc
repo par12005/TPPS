@@ -69,9 +69,11 @@ class ZenodoDeposit extends Zenodo {
     $data['payload'] = $data['payload'] ?? [];
     $data['action'] = 'publish';
 
-    // Call all implementations of hooks:
-    // - hook_zenodo_deposit_publish_alter(),
-    drupal_alter(static::getHookName(__FUNCTION__), $data);
+    if (function_exists('drupal_alter')) {
+      // Call all implementations of hooks:
+      // - hook_zenodo_deposit_publish_alter(),
+      drupal_alter(static::getHookName(__FUNCTION__), $data);
+    }
 
     $data['url'] = static::buildActionUrl($data);
     $data['response'] = RestAPI::post($data['url'], $data['payload']);
@@ -98,9 +100,11 @@ class ZenodoDeposit extends Zenodo {
   public static function edit(array $data) {
     $data['action'] = 'edit';
 
-    // Call all implementations of hooks:
-    // - hook_zenodo_deposit_edit_alter(),
-    drupal_alter(static::getHookName(__FUNCTION__), $data);
+    if (function_exists('drupal_alter')) {
+      // Call all implementations of hooks:
+      // - hook_zenodo_deposit_edit_alter(),
+      drupal_alter(static::getHookName(__FUNCTION__), $data);
+    }
 
     $data['url'] = static::buildActionUrl($data);
     $data['response'] = RestAPI::post($data['url']);
@@ -127,9 +131,11 @@ class ZenodoDeposit extends Zenodo {
   public static function discard(array $data) {
     $data['action'] = 'discard';
     $data['payload'] = $data['payload'] ?? [];
-    // Call all implementations of hooks:
-    // - hook_zenodo_deposit_discard_alter(),
-    drupal_alter(static::getHookName(__FUNCTION__), $data);
+    if (function_exists('drupal_alter')) {
+      // Call all implementations of hooks:
+      // - hook_zenodo_deposit_discard_alter(),
+      drupal_alter(static::getHookName(__FUNCTION__), $data);
+    }
 
     $data['url'] = static::buildActionUrl($data);
     $data['response'] = RestAPI::post($data['url'], $data['payload']);
@@ -175,9 +181,11 @@ class ZenodoDeposit extends Zenodo {
   public static function newVersion(array $data) {
     $data['action'] = 'newversion';
 
-    // Call all implementations of hooks:
-    // - hook_zenodo_deposit_new_version_alter(),
-    drupal_alter(static::getHookName('new_version'), $data);
+    if (function_exists('drupal_alter')) {
+      // Call all implementations of hooks:
+      // - hook_zenodo_deposit_new_version_alter(),
+      drupal_alter(static::getHookName('new_version'), $data);
+    }
 
     $data['url'] = static::buildActionUrl($data);
     $data['response'] = RestAPI::post($data['url']);
