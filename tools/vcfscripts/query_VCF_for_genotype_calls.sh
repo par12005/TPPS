@@ -1,17 +1,34 @@
 #!/bin/bash
-# Original code contribution by Meghan Myles - THANK YOU!
-# Modified by Risharde Ramnath for use with study_details.inc (3/30/2025)
+# CODE CONTRIBUTION BY MEGHAN MYLES - THANK YOU!
+# MODIFIED BY RISHARDE RAMNATH FOR USE WITH STUDY_DETAILS.INC (3/4/2025)
 # module load bcftools/1.12
 
-# VCF file path
-# VCF_FILE="/core/labs/Wegrzyn/meghan_work/query_VCF_for_genotypes/Geraldes_2013.v2.vcf"
-# VCF_FILE="/core/labs/Wegrzyn/VCF/tpps_genotype_web_uploads/tiny_fake_Ptrich_4.vcf"
-VCF_FILE=$2
+# Default parameters
+CHUNK_SIZE=20
+PAGE=1
+VCF_FILE=""
+
+# Parse command line arguments without verbose output
+while getopts "f:p:c:h" opt; do
+    case $opt in
+        f) VCF_FILE="$OPTARG" ;;
+        p) PAGE="$OPTARG" ;;
+        c) CHUNK_SIZE="$OPTARG" ;;
+        h) 
+            echo "Usage: $0 -f VCF_FILE [-p PAGE] [-c CHUNK_SIZE]"
+            echo "  -f VCF_FILE    Path to the VCF file (required)"
+            echo "  -p PAGE        Page number (default: 1)"
+            echo "  -c CHUNK_SIZE  Number of markers per page (default: 20)"
+            exit 0
+            ;;
+        *) exit 1 ;;
+    esac
+done
 
 # Query specific page of markers
 query_vcf() {
     local page=$1
-    local chunk_size=20
+    local chunk_size=$2
 
     # Calculate start and end marker indices
     start_line=$(( (page - 1) * chunk_size + 1 ))
@@ -24,25 +41,41 @@ query_vcf() {
         | awk -v start="$start_line" -v end="$end_line" 'NR >= start && NR <= end {
             # Split alternate alleles
             split($4, alts, ",")
-            
-            # Split genotype
-            split($5, gt, "/")
-            
-            # Determine alleles based on genotype
-            if (gt[1] == "0" && gt[2] == "0") {
-                $5 = $3 "/" $3
-            } else if (gt[1] == "0" || gt[2] == "0") {
-                # One allele is reference
-                $5 = (gt[1] == "0" ? $3 : alts[int(gt[1])]) "/" (gt[2] == "0" ? $3 : alts[int(gt[2])])
+
+            # Handle genotype conversion
+            if ($5 == "./.") {
+                # Missing genotype stays as ./.
+                final_gt = "./."
             } else {
-                # Both alleles are alternate
-                $5 = alts[int(gt[1])] "/" alts[int(gt[2])]
+                # Split genotype
+                split($5, gt, "/")
+
+                # First allele
+                if (gt[1] == ".") {
+                    allele1 = "."
+                } else if (gt[1] == "0") {
+                    allele1 = $3
+                } else {
+                    allele1 = alts[int(gt[1])]
+                }
+
+                # Second allele
+                if (gt[2] == ".") {
+                    allele2 = "."
+                } else if (gt[2] == "0") {
+                    allele2 = $3
+                } else {
+                    allele2 = alts[int(gt[2])]
+                }
+
+                final_gt = allele1 "/" allele2
             }
-            
-            # Remove the REF and ALT columns, keeping only the converted genotype
-            print $1, $2, $5
+
+            # Print sample, ID, and converted genotype
+            print $1, $2, final_gt
         }'
 }
 
-# Call the function with the first argument passed to the script
-query_vcf "${1:-1}"
+# Call the function and exit immediately after completion
+query_vcf "$PAGE" "$CHUNK_SIZE"
+exit 0

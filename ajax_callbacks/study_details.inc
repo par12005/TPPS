@@ -611,7 +611,7 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
 
 
     // Get the genotype calls from the VCF file for the specified page
-    exec("/bin/bash " . dirname(__FILE__) . '/../tools/vcfscripts/query_VCF_for_genotype_calls.sh ' . ($page+1) . ' "' . $vcf_location . '"', $output_lines);
+    exec("/bin/bash " . dirname(__FILE__) . '/../tools/vcfscripts/query_VCF_for_genotype_calls.sh -p ' . ($page+1) . ' " -f ' . $vcf_location . '"', $output_lines);
     foreach ($output_lines as $line) {
       $line_parts = explode(" ", $line);
       $rows[] = [$line_parts[0], $line_parts[1], $line_parts[2]];
