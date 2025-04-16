@@ -32,6 +32,15 @@
     attach: function (context) {
 
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Select/Unselect all for 'checkboxes' form element.
+      // only select the checkboxes of the label that has been clicked.
+      // allows to toggle checkboxes.
+      // https://drupal.stackexchange.com/a/86753
+      $('.form-type-checkboxes > label').click(function() {
+        $(this).nextAll('.form-checkboxes').find('input[type="checkbox"]').trigger('click');
+        console.log('selected all');
+      });
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // VCF PreValidation feature.
       var vcfPreValidateButton = '.vcf-pre-validate-button';
       // Bootstrap tooltip functionality.

@@ -476,6 +476,9 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         // @TODO Dropdown menu is always empty but $time_options is not empty...
         // See TGDR1224 which has timebased phenotypes.
         '#options' => $time_options,
+        '#default_value' => tpps_get_ajax_value($form_state,
+          [$id, 'phenotype', 'time', 'time_phenotypes']
+        ),
         '#description' => t('Please select the phenotypes which are time-based'),
       ];
 
@@ -488,6 +491,9 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         $form[$id]['phenotype']['time']['time_values'][$key] = array(
           '#type' => 'textfield',
           '#title' => t('(Optional) @name time:', ['@name' => $name]),
+          '#default_value' => tpps_get_ajax_value($form_state,
+            [$id, 'phenotype', 'time', 'time_values', $key]
+          ),
           '#states' => [
             'visible' => [
               ':input[name="' . $id . '[phenotype][time][time_phenotypes]['
