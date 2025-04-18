@@ -41,12 +41,30 @@ function tpps_admin_submissions_all_files_report() {
     krsort($submission_list, SORT_NATURAL);
     foreach ($submission_list as $submission) {
       $organism_number = $submission->sharedState['saved_values'][TPPS_PAGE_1]['organism']['number'] ?? 1;
+      $accession = $submission->accession;
       if ($files = $submission->getFileIdList()) {
         $file_row = [];
         $final_file_row = [];
         foreach ($files as $fid) {
           if (in_array($fid, $existing_fid_list) && $file = file_load($fid)) {
-            $api_file_link = l($fid, 'api/file/' . $fid . '/info', $options);
+            $api_file_link =
+              l($fid, 'api/file/' . $fid . '/info',
+                array_merge($options, ['attributes' => ['title' => t('View Info')]])
+              )
+              . ' [' . implode('|', [
+                l(t('G'), 'api/file/' . $fid . '/get',
+                  array_merge($options, ['attributes' => ['title' => t('Get File')]])
+                ),
+                l(t('U'), 'api/file/' . $fid . '/usage',
+                  array_merge($options, ['attributes' => ['title' => t('Usage')]])
+                ),
+                l(t('A'), 'api/file/' . $fid . '/add/' . $accession,
+                  array_merge($options, ['attributes' => ['title' => t('Add Usage')]])
+                ),
+                l(t('D'), 'api/file/' . $fid . '/delete/' . $accession,
+                  array_merge($options, ['attributes' => ['title' => t('Delete Usage')]])
+                ),
+              ]) . ']';
             $found = FALSE;
             foreach ($file_column_list as $group) {
               // @todo Minor. Change format of the output and add organism name.
@@ -129,7 +147,7 @@ function tpps_admin_submissions_all_files_report() {
             $final_file_row[] = '';
             continue;
           }
-          $final_file_row[] = implode(', ', $file_row[$group]);
+          $final_file_row[] = theme('item_list', ['items' => $file_row[$group]]);
         }
 
         $rows[] = array_merge([
