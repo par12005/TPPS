@@ -39,6 +39,9 @@ class ZenodoWidget {
    *   Required keys are:
    *   'form' - array. Drupal Form array.
    *   'accession' - string. TPPS Submission accession. E.g., 'TGDRxxxx'.
+   *
+   * @return bool
+   *   Returns TRUE if Deposit exists and FALSE otherwise.
    */
   public static function add(array $context) {
     // Defines if links from Zenodo Deposition Object be shown.
@@ -49,12 +52,12 @@ class ZenodoWidget {
         t('Empty study accession. Please choose one from the list below.'),
         'error'
       );
-      return;
+      return FALSE;
     }
     $form = &$context['form'] ?? NULL;
     if (is_null($form)) {
       drupal_set_message(t('Zenodo Deposition Widget requres form.'), 'error');
-      return;
+      return FALSE;
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -222,6 +225,7 @@ class ZenodoWidget {
         '#submit' => ['ZenodoWidget::submit'],
       ];
     }
+    return (bool) $deposit_id;
   }
 
   /**
