@@ -2833,7 +2833,8 @@ function tpps_menu_add_submission_pages(array &$items = []) {
  *   Menu items.
  */
 function tpps_menu_add_api(array &$items = []) {
-  // API.
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // File API.
   $items['api/file/%file/info'] = [
     // File Object with extra absolute path and URL for downloading.
     'title' => 'File Info',
@@ -2854,6 +2855,40 @@ function tpps_menu_add_api(array &$items = []) {
     'file' => 'api/file/get.inc',
     'type' => MENU_CALLBACK,
   ];
+  $items['api/file/%file/usage'] = [
+    'title' => "Lists Usage to File",
+    'page callback' => 'tpps_api_file_usage_list',
+    // 2: Managed File Id.
+    'page arguments' => [2],
+    'access callback' => 'tpps_api_access',
+    'file' => 'api/file/usage/list.inc',
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  ];
+  $items['api/file/%file/usage/add/%'] = [
+    'title' => "Adds Usage to File",
+    'page callback' => 'tpps_api_file_usage_add',
+    // 2: Managed File Id.
+    // 5: study accession. E.g., 'TGDR1040'.
+    'page arguments' => [2, 5],
+    'access callback' => 'tpps_api_access',
+    'file' => 'api/file/usage/add.inc',
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  ];
+  $items['api/file/%file/usage/delete/%'] = [
+    'title' => "Adds Usage to File",
+    'page callback' => 'tpps_api_file_usage_delete',
+    // 2: Managed File Id.
+    // 5: study accession. E.g., 'TGDR1040'.
+    'page arguments' => [2, 5],
+    'access callback' => 'tpps_api_access',
+    'file' => 'api/file/usage/delete.inc',
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  ];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
   $items['api/submission/%tpps_submission/vcf'] = [
     'title' => 'List of VCF Files Ids',
     'page callback' => 'tpps_api_submission_vcf_files_list',
