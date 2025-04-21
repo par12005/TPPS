@@ -196,6 +196,12 @@ class Zenodo {
     $data['payload'] = $data['payload'] ?? [];
     $data['header'] = $data['header'] ?? [];
 
+    if (function_exists('module_invoke_all')) {
+      // Note: Zenodo Deposit Id will be stored in Submission in Drupal-hook:
+      // 'tpps_zenodo_deposit_before_create().
+      module_invoke_all(static::getHookName('before_create'), $data);
+    }
+
     if (static::getClassName() == 'ZenodoDeposit') {
       // When (by mistake) study has Deposit Id but it wasn't found on any
       // Zenodo Host we allow to create new Deposition to overwrite existing

@@ -297,20 +297,37 @@ class ZenodoWidget {
     }
     // Validate $action.
     $class = 'ZenodoDeposit';
+    // ZenodoDeposit::create().
+    // ZenodoDeposit::delete().
+    // ZenodoDeposit::update().
     $method_name = $class . '::' . $action;
-    if (!is_callable($method_name, TRUE)) {
-      drupal_set_message(
-        t(
-          'Attempt to call non-existing Zenodo API action: @name.',
-          ['@name' => $method_name]
-        ), 'error'
-      );
-      if ($zenodo_page_path) {
-        drupal_goto($zenodo_page_path);
+    if (is_callable($method_name, TRUE)) {
+      // Get response.
+      try {
+        call_user_func($method_name, $data);
+      }
+      catch (Exception $e) {
+        $message = '@code - @message';
+        if ($e->getCode() == '1002') {
+          $message .= '<br />Please allow overwriting Dataset DOI on [!settings_page_link].';
+        }
+        $params = [
+          '@code' => $e->getCode(),
+          '@message' => $e->getMessage(),
+          '!settings_page_link' => l(t('Zenodo Settings Page'), 'admin/config/tpps/zenodo'),
+        ];
       }
     }
-    // Get response.
-    call_user_func($method_name, $data);
+    else {
+      $message = 'Attempt to call non-existing Zenodo API action: @name.';
+      $params = ['@name' => $method_name];
+    }
+    if (!empty($message)) {
+      drupal_set_message(t($message, $params), 'error');
+    }
+    if ($zenodo_page_path) {
+      drupal_goto($zenodo_page_path);
+    }
   }
 
 }

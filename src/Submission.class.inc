@@ -2345,4 +2345,166 @@ class Submission {
     }
   }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Dataset DOI field on Form Step 1.
+
+  /**
+   * Gets value of the Dataset DOI field on From Step 1.
+   *
+   * @return string
+   *   Returns value of the field or NULL.
+   *   Example: "10.5281/zenodo.199793".
+   */
+  public function getDatasetDOI() {
+    return tpps_array_get_value($this->state,
+      ['saved_values', TPPS_PAGE_1, 'publication', 'dataset_doi']);
+  }
+
+  /**
+   * Sets value of the Dataset DOI field on From Step 1.
+   *
+   * @param string $value
+   *   Dataset DOI. E.g., '10.5281/zenodo.200001'.
+   * @param bool $save_on_change
+   *   Default is TRUE which means TPPS Submission object will be saved to
+   *   database immidietly if Deposit Id changes.
+   *   Set to FALSE if you need to make other changes to TPPS Submission and
+   *   save it later manually.
+   *
+   * @return object
+   *   Returns curren object to allow chaining methods.
+   */
+  public function setDatasetDOI($value, $save_on_change = TRUE) {
+    $was_updated = FALSE;
+    $state_value = &tpps_array_get_value($this->state,
+      ['saved_values', TPPS_PAGE_1, 'publication', 'dataset_doi']
+    );
+    if ($state_value != $value) {
+      $was_updated = TRUE;
+      $state_value = $value;
+    }
+
+    $shared_state_value = &tpps_array_get_value($this->sharedState,
+      ['saved_values', TPPS_PAGE_1, 'dataset_doi']
+    );
+    if ($shared_state_value != $value) {
+      $was_updated = TRUE;
+      $shared_state_value = $value;
+    }
+    if ($save_on_change && $was_updated) {
+      $this->save();
+    }
+    return $this;
+  }
+
+  /**
+   * Updates field "Dataset DOI".
+   *
+   * Note: Shared State and State has different parents for this field.
+   * Note: Used variable by reference instead of methods
+   * getDatasetDOI()/setDatasetDOI() to speed-up processing.
+   *
+   * @param string $dataset_doi
+   *   New value of the Dataset DOI field.
+   *
+   * @todo Replace calls of drupal_set_message() with exceptions.
+   * Make it more independent.
+   * @todo Minor. Re-use get/setDatasetDOI() methods.
+   */
+  public function updateDatasetDOI($dataset_doi = NULL) {
+    $update_result = [];
+
+    // DOI in State.
+    $state_dataset_doi = &tpps_array_get_value($this->state,
+      ['saved_values', TPPS_PAGE_1, 'publication', 'dataset_doi']);
+    $update_result['State'] = $state_dataset_doi;
+    if (
+      // New one.
+      (empty($state_dataset_doi) && !is_null($dataset_doi))
+      // When overwriting of existing value is allowed.
+      || variable_get('tpps_zenodo_overwrite_dataset_doi')
+      // Unset existing.
+      || (!empty($state_dataset_doi) && is_null($dataset_doi))
+    ) {
+      $update_result['State'] = NULL;
+      $state_dataset_doi = $dataset_doi;
+    }
+
+    // DOI in Shared State.
+    $shared_state_dataset_doi = &tpps_array_get_value($this->sharedState,
+      ['saved_values', TPPS_PAGE_1, 'dataset_doi']);
+    $update_result['Shared State'] = $shared_state_dataset_doi;
+    if (
+      // New one.
+      (empty($shared_state_dataset_doi) && !is_null($dataset_doi))
+      // When overwriting of existing value is allowed.
+      || variable_get('tpps_zenodo_overwrite_dataset_doi')
+      // Unset existing.
+      || (!empty($shared_state_dataset_doi) && is_null($dataset_doi))
+    ) {
+      $update_result['Shared State'] = NULL;
+      $shared_state_dataset_doi = $dataset_doi;
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Report DOI update.
+    // Sucess is when all 2 places were updated: Shared State and State.
+    if (count(array_filter((array_values($update_result)))) == 0) {
+      // Sucess.
+      if (is_null($dataset_doi ?? NULL)) {
+        drupal_set_message(t('Dataset DOI was unset.',
+          ['@dataset_doi' => $dataset_doi]
+        ));
+      }
+      else {
+        drupal_set_message(t(
+          'Dataset DOI was set to <strong>@dataset_doi</strong>.',
+          ['@dataset_doi' => $dataset_doi]
+        ));
+      }
+    }
+    else {
+      if (count(array_filter((array_values($update_result)))) == 2) {
+        // Fail.
+        drupal_set_message(t(
+          'Dataset DOI was NOT set to <strong>@new_doi</strong> because '
+          . 'Dataset DOI in both places (Shared State and State) was not empty.'
+          . '<br />Shared State Dataset DOI: <strong>@shared_state_doi</strong>'
+          . '<br />State Dataset DOI: <strong>@state_doi</strong>'
+          ,
+          [
+            '@new_doi' => $dataset_doi,
+            '@state_doi' => $state_dataset_doi,
+            '@shared_state_doi' => $shared_state_dataset_doi,
+          ]
+        ));
+      }
+      else {
+        // Partly updated.
+        foreach ($update_result as $name => $value) {
+          if ($value) {
+            $updated_list[] = $name;
+          }
+          else {
+            $skipped_list[] = $name;
+          }
+        }
+        drupal_set_message(t("New Dataset DOI <strong>@dataset_doi</strong> "
+          . "was set for: @updated_list.<br />Wasn't updated: @skipped_list.",
+          [
+            '@dataset_doi' => $dataset_doi,
+            '@skipped_list' => implode(', ', $skipped_list),
+            '@updated_list' => implode(', ', $updated_list),
+          ]
+        ), 'warning');
+      }
+      // In case of fail suggest to enable Dataset DOI overwrite.
+      $link = l(t('Zenodo Settings Page'), 'admin/config/tpps/zenodo');
+      drupal_set_message(t('To allows existing Dataset DOI be overwritten '
+        . 'visit !settings_page_link. Enable "Overwrite existing Dataset DOI", '
+        . 'then remove Zenodo Deposition and create new one.',
+        ['!settings_page_link' => $link]
+      ));
+    }
+  }
+
 }
