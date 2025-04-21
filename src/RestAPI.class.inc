@@ -370,8 +370,11 @@ class RestAPI {
     else {
       if ($debug_mode) {
         dpm($url, 'URL');
-        dpm(print_r($data, 1), 'Payload');
+        dpm($method, 'Method');
+        dpm(print_r($header, 1), 'Header');
+        dpm(print_r(json_decode($data), 1), 'Payload');
         dpm(print_r($response, 1), 'Response Body');
+        dpm(print_r($info, 1), 'Curl Info');
         dpm(print_r(debug_backtrace(
           !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS
         ), TRUE));

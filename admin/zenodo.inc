@@ -77,5 +77,23 @@ function tpps_zenodo_settings_form(array $form, array &$form_state) {
       . '<br />Disable if new implementation fails.'
     ),
   ];
+
+  $form['submission'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Submission'),
+    '#collapsed' => FALSE,
+    '#collapsible' => TRUE,
+  ];
+  $form['submission']['tpps_zenodo_overwrite_dataset_doi'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Overwrite existing Dataset DOI'),
+    '#default_value' => variable_get('tpps_zenodo_overwrite_dataset_doi'),
+    '#description' => t('When enabled then existing value of the Dataset DOI '
+      . 'in both (Shared State and State) will be overwritten. When disabled '
+      . 'existing value will be left without change and warning message with '
+      . 'new DOI and which fields was updated/skipped will be shown.'
+      . '<br />Note: Zenodo Deposit Id will be stored anyway.'
+    ),
+  ];
   return system_settings_form($form);
 }
