@@ -473,3 +473,12 @@ function tpps_rest_api_request_execution_time($title = '', $execution_time = NUL
  */
 function tpps_zenodo_bucket_create_alter(array &$data) {
 }
+
+/**
+ * Implements hook 'zenodo_deposition_before_create'.
+ *
+ * @param array $data
+ *   Context for ZenodoBucket::create().
+ */
+function hook_zenodo_deposit_before_create(array $data) {
+}

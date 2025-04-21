@@ -295,6 +295,10 @@ function tpps_array_move(array &$array, array $action_data) {
  * To get value by reference use:
  * $ref = &tpps_array_get_value($array, $parents);
  *
+ * To update value:
+ * $ref = &tpps_array_get_value($array, $parents);
+ * $ref = 'new value';
+ *
  * Shortcut for function drupal_array_get_nested_value() with default value.
  * See
  * https://api.drupal.org/api/drupal/includes%21common.inc/function/drupal_array_get_nested_value/7.x#.

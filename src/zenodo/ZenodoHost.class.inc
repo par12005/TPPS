@@ -198,7 +198,7 @@ class ZenodoHost {
    *   Data for ZenodoDeposit::retrieve() request.
    *   Required key is 'deposit_id'.
    */
-  public static function isHostValid(array $data) {
+  public static function isValid(array $data) {
     Zenodo::validateRequired(['deposit_id'], $data);
     try {
       $response = ZenodoDeposit::retrieve($data);

@@ -2888,7 +2888,6 @@ function tpps_menu_add_api(array &$items = []) {
     'delivery callback' => 'drupal_json_output',
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
   $items['api/submission/%tpps_submission/vcf'] = [
     'title' => 'List of VCF Files Ids',
     'page callback' => 'tpps_api_submission_vcf_files_list',
@@ -3308,9 +3307,9 @@ function theme_study_accession(array $variables) {
  * Implements hook 'zenodo_deposition_deleted'.
  */
 function tpps_zenodo_deposit_deleted(array $data) {
-  drupal_set_message(t('Zenodo Deposit was deleted.'));
+  drupal_set_message(t('Zenodo Deposit was <strong>deleted</strong>.'));
   // Clear cache.
-  if (empty($response)) {
+  if (empty($data['response'])) {
     tpps_admin_zenodo_submissions_report_clear_cache();
   }
 
@@ -3318,33 +3317,69 @@ function tpps_zenodo_deposit_deleted(array $data) {
   // But when Deposit wasn't found there will be error message in the response.
   // But safer to remove Deposit Id from the Submission object anyway because
   // having it blocks creation of the new Deposit.
-  if (!empty($data['accession'])) {
-    $submission = new Submission($data['accession']);
-    $save_on_change = TRUE;
-    $submission->setZenodoDepositId(NULL, $save_on_change);
+  if (empty($data['accession'])) {
+    return;
   }
+  $submission = new Submission($data['accession']);
+  if ($submission->doesNotExist()) {
+    return;
+  }
+
+  if ($deposit_id = $submission->getZenodoDepositId()) {
+    // Unset exsisting Dataset DOI value.
+    $submission->updateDatasetDOI(NULL);
+    // WARNING: Be sure to save $submission.
+    $submission->setZenodoDepositId(NULL, $save_on_change = TRUE);
+  }
+}
+
+/**
+ * Implements hook 'zenodo_deposition_before_create'.
+ */
+function tpps_zenodo_deposit_before_create(array $data) {
+  // Get Dataset DOI.
+  $submission = new Submission($data['accession']);
+  if ($submission->doesNotExist()) {
+    $message = t("Submission '@accession' wasn't found.", ['@accession' => $accession]);
+    throw new Exception($message, 1001);
+  }
+  $dataset_doi = $submission->getDatasetDOI();
+  // Check if Dataset DOI is empty and it could be overwritten.
+  if (empty($dataset_doi) || variable_get('tpps_zenodo_overwrite_dataset_doi')) {
+    return;
+  }
+  $message = t('Submission "@accession" has non-empty Dataset DOI (@dataset_doi).',
+    ['@accession' => $data['accession'], '@dataset_doi' => $dataset_doi]
+  );
+  throw new Exception($message, 1002);
 }
 
 /**
  * Implements hook 'zenodo_deposition_created'.
  */
 function tpps_zenodo_deposit_created(array $data) {
-  drupal_set_message(t('Zenodo Deposit was created.'));
+  drupal_set_message(t('Zenodo Deposit was <strong>created</strong>.'));
   // Clear cache.
   tpps_admin_zenodo_submissions_report_clear_cache();
   // Store Zenodo Deposit Id into TPPS Submission.
-  if (!empty($data['accession']) && !empty($data['response']['id'])) {
+  if (!empty($data['accession']) && !empty($deposit_id = $data['response']['id'])) {
     $submission = new Submission($data['accession']);
-    if ($submission->doesExist()) {
-      // Store DOI.
-      $submission->state['saved_values'][TPPS_PAGE_1]['publication']['dataset_doi']
-        = $data['response']['prereserve_doi']['doi'];
-      // Store Zenodo Deposit Id and save submission to DB.
-      $submission->setZenodoDepositId(
-        $data['response']['id'],
-        $save_on_change = TRUE
-      );
+    if ($submission->doesNotExist()) {
+      $message = t("Submission '@accession' wasn't found.", ['@accession' => $accession]);
+      drupal_set_message($message);
+      return;
     }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Store DOI.
+    $dataset_doi = $data['response']['metadata']['prereserve_doi']['doi'] ?? NULL;
+    $submission->updateDatasetDOI($dataset_doi);
+    // WARNING: Be sure to save $submission.
+    // Store Zenodo Deposit Id and save submission to DB.
+    $submission->setZenodoDepositId($deposit_id, $save_on_change = TRUE);
+    drupal_set_message(t(
+      'Zenodo Deposit Id <strong>@deposit_id</strong> stored in submission.',
+      ['@deposit_id' => $deposit_id]
+    ));
   }
 }
 
