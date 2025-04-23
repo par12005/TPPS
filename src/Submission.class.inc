@@ -621,7 +621,7 @@ class Submission {
     // If this study was imported we need to remove it from the list.
     // @TODO Check if study was imported.
     module_load_include('inc', 'tpps', 'includes/imported_studies_list');
-    tpps_imported_studies_list_remove_item($this->accession);
+    ImportedSubmissionList::remove($this->accession);
     $this->accession = $this->state = $this->sharedState = NULL;
     // Do not allow chaining.
     return;
@@ -665,7 +665,7 @@ class Submission {
     // If this study was imported we need to remove it from the list.
     // @todo Check if study was imported to avoid extra moves.
     module_load_include('inc', 'tpps', 'includes/imported_studies_list');
-    tpps_imported_studies_list_remove_item($this->accession);
+    ImportedSubmissionList::remove($this->accession);
     $this->accession = $this->state = $this->sharedState = NULL;
   }
 
@@ -2351,6 +2351,23 @@ class Submission {
       }
     }
     return $this;
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Publication DOI field on Form Step 1.
+
+  /**
+   * Gets value of the Publication DOI field on From Step 1.
+   *
+   * @return string
+   *   Returns value of the field or NULL.
+   *   Example: "10.5281/zenodo.199793".
+   */
+  public function getPublicationDOI() {
+    return $this->get(['saved_values', TPPS_PAGE_1, 'doi'])
+      ?? $this->get(['saved_values', TPPS_PAGE_1, 'publication_doi'])
+      ?? $this->sharedState['saved_values'][TPPS_PAGE_1]['doi']
+      ?? '';
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

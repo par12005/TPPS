@@ -375,7 +375,7 @@ function tpps_array_print_list(array $list = []) {
     }
     else {
       // Using check_plain() blocks HTML Links in the lists.
-      //$value = check_plain($value);
+      // $value = check_plain($value);
     }
     $items[] = '<strong>' . check_plain($key) . ':</strong> ' . $value;
   }

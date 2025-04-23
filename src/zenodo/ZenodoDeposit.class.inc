@@ -249,8 +249,9 @@ class ZenodoDeposit extends Zenodo {
       return $output;
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    $host = (ZenodoHost::get() == ZenodoHost::LIVE_HOST ? 'live' : 'sandbox');
-    $report_path = 'admin/reports/tpps/zenodo-depositions/' . $host . '/';
+    $host = (ZenodoHost::isLive() ? 'live' : 'sandbox');
+    $report_path = 'admin/reports/tpps/zenodo/deposition/' . $host . '/';
+
     switch ($format) {
       case 'dump':
         $dump = tpps_array_dump($deposition);
@@ -266,7 +267,8 @@ class ZenodoDeposit extends Zenodo {
         // Items from 'metadata' first.
         $row['host'] = strtoupper($host);
         $doi = $deposition['metadata']['prereserve_doi']['doi'] ?? '';
-        $row['doi'] = $doi ? l($doi, $report_path . $deposition['id']) : '';
+        // To have it in 2nd column.
+        $row['doi'] = $doi;
 
         foreach ($deposition as $key => $value) {
           $key = check_plain($key);
@@ -274,6 +276,18 @@ class ZenodoDeposit extends Zenodo {
             $value = check_plain($value);
           }
           switch ($key) {
+            case 'record_id':
+            case 'conceptrecid':
+              // Duplicate or useless.
+              $value = NULL;
+              break;
+
+            case 'doi_url':
+            case 'conceptdoi':
+              // Too long for table.
+              $value = NULL;
+              break;
+
             case 'metadata':
             case 'links':
               // Do not show huge arrays.
@@ -282,6 +296,11 @@ class ZenodoDeposit extends Zenodo {
 
             case 'files':
               $value = empty($value) ? t('[Empty]') : t('[NOT empty]');
+              break;
+
+            case 'doi':
+              $value = l($value, $deposition['doi_url']);
+              // $row['doi'] = $doi ? l($doi, $report_path . $deposition['id']) : '';
               break;
 
             case 'id':

@@ -8,14 +8,17 @@
 /**
  * Menu callback. Shows list of imported studies.
  */
-function tpps_admin_imported_studies_report() {
+function tpps_report_submission_imported() {
   module_load_include('inc', 'tpps', 'includes/imported_studies_list');
   module_load_include('inc', 'tpps', 'includes/submissions');
   module_load_include('inc', 'tpps', 'includes/submission_form_version');
-  $list = tpps_imported_studies_list_get();
+  // Get list of all imported submissions.
+  // Keys are accessions for the new (imported) studies and values are
+  // source submission accessions.
+  $list = ImportedSubmissionList::get();
   $rows = [];
   $params = [
-    'query' => ['destination' => 'admin/reports/tpps/imported-studies'],
+    'query' => ['destination' => 'admin/reports/tpps/submission/imported'],
     'html' => TRUE,
   ];
 
@@ -43,7 +46,7 @@ function tpps_admin_imported_studies_report() {
         'Submission @accession not exists.',
         ['@accession' => $local], 'error'
       );
-      tpps_imported_studies_list_remove_item($local);
+      ImportedSubmissionList::remove($local);
       continue;
     }
     $import_meta = $submission->getImportMeta();

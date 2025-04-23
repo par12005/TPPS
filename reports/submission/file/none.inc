@@ -8,7 +8,7 @@
 /**
  * Menu callback. Lists submissions without files.
  */
-function tpps_admin_submissions_without_files_report() {
+function tpps_report_submission_file_none() {
   $rows = [];
   $submission_list = tpps_load_submission_multiple();
   $i = 0;

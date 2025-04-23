@@ -8,10 +8,9 @@
 /**
  * Menu callback. Shows list of organisms per study.
  */
-function tpps_admin_organism_list_report() {
+function tpps_report_organism_list() {
   $name = 'organism_list';
-  $page_title = variable_get('tpps_report_' . $name . '_title',
-        'Organism List');
+  $page_title = variable_get('tpps_report_' . $name . '_title', 'Organism List');
 
   // WARNING: easy_report() requires db_select() not db_query().
   $query = db_select('public.tpps_submission', 'ts');
@@ -58,7 +57,7 @@ function tpps_admin_organism_list_report() {
  *   Returns formatted value.
  *   Empty value will not be formatted and returned as is.
  */
-function tpps_admin_organism_list_report_formatter(string $name, $value, array &$row) {
+function tpps_report_organism_list_formatter(string $name, $value, array &$row) {
   $formatted = check_plain($value);
   if (empty($name) || empty($value)) {
     return $formatted;
