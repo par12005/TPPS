@@ -8,12 +8,17 @@ dependencies[] = tripal
 dependencies[] = ultimate_cron
 dependencies[] = jquery_update
 dependencies[] = tripal_eutils
+
+; Main
 files[] = src/Submission.class.inc
 files[] = src/Organism.class.inc
 files[] = src/ChadoDb.class.inc
 files[] = src/TppsFile.class.inc
 
+; Misc
 files[] = src/RestAPI.class.inc
+files[] = src/ImportedSubmissionList.class.inc
+
 ; Zenodo API.
 files[] = src/zenodo/Zenodo.class.inc
 files[] = src/zenodo/ZenodoDeposit.class.inc
