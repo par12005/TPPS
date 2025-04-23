@@ -8,7 +8,7 @@
 /**
  * Menu callback. Shows list of organisms per study.
  */
-function tpps_admin_doi_duplicates_report($reset = FALSE) {
+function tpps_report_doi_duplicates($reset = FALSE) {
 
   $reset = $_GET['reset'] ?? FALSE;
   $cid = __FUNCTION__;

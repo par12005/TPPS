@@ -8,7 +8,7 @@
 /**
  * Menu callback. Shows list of submissions which are missing files.
  */
-function tpps_admin_submissions_missing_files_report() {
+function tpps_report_submission_file_missing() {
   $reset = $_GET['reset'] ?? FALSE;
   $cid = __FUNCTION__;
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';

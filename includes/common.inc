@@ -192,7 +192,7 @@ function tpps_realpath($uri) {
  *   Returns rendered HTML table with pager.
  */
 function tpps_report_show_table(array $report) {
-  $report_name = $report['report_name'];
+  $report_name = $report['report_name'] ?? NULL;
   $rows = $report['rows'] ?? [];
 
   $per_page = variable_get('tpps_report_items_per_page', 20);
@@ -200,7 +200,8 @@ function tpps_report_show_table(array $report) {
   $chunks = array_chunk($rows, $per_page, TRUE);
   $pager = theme('pager', ['quantity', count($rows) ?? 0]);
   return $pager . theme('table', [
-    'caption' => tpps_report_get_list()[$report_name]['description'],
+    // @TODO Minor. $report_name now is not string but array of parents.
+    //'caption' => tpps_report_get_list()[$report_name]['description'],
     'header' => $report['header'] ?? [],
     'rows' => $chunks[$current_page] ?? [],
     'empty' => $report['empty'] ?? NULL,

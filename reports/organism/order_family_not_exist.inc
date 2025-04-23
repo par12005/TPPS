@@ -8,10 +8,10 @@
 /**
  * Menu callback. Report to find term (Order/Family) not present in DB.
  */
-function tpps_admin_order_family_not_exist_report() {
+function tpps_report_organism_order_family_not_exist() {
   $table = 'chado.organism';
   $table_alias = str_replace('.', '', $table);
-  $page_title = variable_get('tpps_report_order_family_not_exist_title');
+  $page_title = variable_get('tpps_report_organism_order_family_not_exist_title');
 
   // Ids to exclude.
   $list = db_select('chado.organismprop', 'op')
@@ -29,6 +29,7 @@ function tpps_admin_order_family_not_exist_report() {
     'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
     'page_title' => $page_title,
     'table_attributes' => ['class' => ['view' , 'tpps_table']],
+    'items_per_page' => variable_get('tpps_report_items_per_page', 15),
     'header' => [
       [
         'data' => t('Organism Id'),

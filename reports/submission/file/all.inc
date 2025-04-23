@@ -8,7 +8,7 @@
 /**
  * Menu callback. Shows list of all submission's files.
  */
-function tpps_admin_submissions_all_files_report() {
+function tpps_report_submission_file_all() {
   $reset = $_GET['reset'] ?? FALSE;
   $cid = __FUNCTION__;
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
@@ -169,7 +169,7 @@ function tpps_admin_submissions_all_files_report() {
   // Output.
   // Show report table.
   return tpps_report_show_table([
-    'report_name' => 'submissions_all_files',
+    // 'report_name' => 'submissions_all_files',
     'header' => array_merge(
       ['#', t('Accession'), t('UID'), t('Stage'), t('Status')],
       $file_column_list
@@ -182,7 +182,7 @@ function tpps_admin_submissions_all_files_report() {
       t('WARNING: Only studies with files were shown. '
         . 'To get list of studies without file see report: ') .
       l(t('Submissions without Files'),
-          'admin/reports/tpps/submissions-without-files'),
+          'admin/reports/tpps/submission/file/missing'),
     ],
   ]);
 }

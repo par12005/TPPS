@@ -456,7 +456,7 @@ class Zenodo {
   /**
    * Searches for a host where gived Deposit Id exists.
    *
-   * Temporary switches to host which has given Deposit Id.
+   * Temporary (per page request) switches to host which has given Deposit Id.
    *
    * Usage example:
    * if (variable_get('tpps_zenodo_host_greedy_search', FALSE)) {
@@ -510,6 +510,7 @@ class Zenodo {
         throw new Exception($e->getMessage(), $e->getCode());
       }
     }
+    return ZenodoHost::get();
   }
 
   /**

@@ -12,9 +12,8 @@ define('TPPS_CVTERM_TREEGENES_DATABASE', 95);
 /**
  * Menu callback. Shows studies without DOI attached.
  */
-function tpps_admin_new_organisms_report() {
-  $name = 'new_organisms';
-  $page_title = variable_get('tpps_report_new_organisms_title', 'New Organisms');
+function tpps_report_organism_new() {
+  $page_title = variable_get('tpps_report_organism_new_title', 'New Organisms');
 
   tpps_add_css_js('main');
 
@@ -74,7 +73,6 @@ function tpps_admin_new_organisms_report() {
     t('Organism Id'), t('Organism Name'), t('Study'), t('Useful Links')
   ];
   return implode(' | ', $links) . '<br />' . tpps_report_show_table([
-    'report_name' => $name,
     'header' => $header,
     'rows' => $rows,
   ]);
