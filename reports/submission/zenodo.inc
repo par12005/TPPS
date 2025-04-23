@@ -12,7 +12,7 @@
 /**
  * Menu callback. Shows list of submissions which has Zenodo Depositions.
  */
-function tpps_admin_zenodo_submissions_report($reset = FALSE) {
+function tpps_report_submission_zenodo($reset = FALSE) {
   $reset = $_GET['reset'] ?? FALSE;
   $cid = __FUNCTION__;
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
@@ -27,11 +27,10 @@ function tpps_admin_zenodo_submissions_report($reset = FALSE) {
       if (empty($deposit_id)) {
         continue;
       }
-      $publication_doi = $submission->get(
-        ['saved_values', TPPS_PAGE_1, 'doi']
-      ) ?? $submission->get(
-        ['saved_values', TPPS_PAGE_1, 'publication_doi']
-      ) ?? $submission->sharedState['saved_values'][TPPS_PAGE_1]['doi'] ?? '';
+      ZenodoDeposit::searchHost(['deposit_id' => $deposit_id]);
+      $host = ZenodoHost::isLive() ? 'live' : 'sandbox';
+      $publication_doi = $submission->getPublicationDOI();
+      $dataset_doi = $submission->getDatasetDOI();
       $rows[] = [
         'number' => ++$i,
         'accession' => l(
@@ -40,13 +39,15 @@ function tpps_admin_zenodo_submissions_report($reset = FALSE) {
         ),
         'project_id' => $submission->get(['ids', 'project_id']),
         'status' => $submission->status ?? NULL,
-        'deposit_id' => (empty($publication_doi) ? $deposit_id :
-          l($deposit_id, 'api/submission/' . $accession . '/zenodo/deposit')
+        'host' => ZenodoHost::isLive() ? t('Live') : t('Sandbox'),
+        'deposit_id' => l($deposit_id,
+          'admin/reports/tpps/zenodo/deposition/' . $host . '/' . $deposit_id
         ),
         'publication_doi' => $publication_doi,
-        'deposition_files' => (empty($publication_doi) ? '-' : l(
-          t('View Files'), 'api/submission/' . $accession . '/zenodo/files'
-        )),
+        'dataset_doi' => $dataset_doi,
+        'deposition_files' => l(t('View Files'),
+          'tpps/submission/' . $accession . '/zenodo/files'
+        ),
       ];
     }
     // Reverse order of elements.
@@ -60,18 +61,18 @@ function tpps_admin_zenodo_submissions_report($reset = FALSE) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output.
-  $name = 'zenodo_submissions';
   $header = [
     '#',
     t('Accession'),
     t('Project Id'),
     t('Status'),
+    t('Zenodo Host'),
     t('Zenodo Deposit Id'),
     t('Publication DOI'),
+    t('Dataset DOI'),
     t('Deposition Files'),
   ];
   return tpps_report_show_table([
-    'report_name' => $name,
     'header' => $header,
     'rows' => $rows,
   ]);

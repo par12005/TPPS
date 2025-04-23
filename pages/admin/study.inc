@@ -1450,7 +1450,7 @@ function tpps_admin_panel_reports(array &$form) {
       $items[] = l(t($title), $panel_url);
     }
   }
-  $items[] = l(t('Imported Studies'), 'admin/reports/tpps/imported-studies');
+  $items[] = l(t('Imported Studies'), 'admin/reports/tpps/submission/imported');
   $form['report_menu'] = [
     '#type' => 'fieldset',
     '#title' => t('TPPS Reports'),

@@ -4,6 +4,8 @@
  * @file
  * Shows list of Zenodo Depositions.
  *
+ * Path: /admin/reports/tpps/zenodo/deposition
+ *
  * ZenodoDeposit::list().
  *
  * Note:
@@ -22,11 +24,12 @@
  *
  * @TODO Cache Zenodo Responses. Should we?
  */
-function tpps_admin_zenodo_depositions_report() {
-  $host = arg(4);
-  $entity = arg(5);
+function tpps_report_zenodo_deposition() {
+  $host = arg(5);
+  $entity = arg(6);
   $output = '';
-  $path = 'admin/reports/tpps/zenodo-depositions/';
+
+  $path = 'admin/reports/tpps/zenodo/deposition/';
   if (empty($entity)) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // All depostions.
@@ -65,10 +68,10 @@ function tpps_admin_zenodo_depositions_report() {
       $submission = new Submission($entity);
       $deposit_id = $submission->getZenodoDepositId();
     }
-    elseif (strpos('zenodo', arg(5)) !== FALSE) {
+    elseif (strpos('zenodo', $host) !== FALSE) {
       // This is Deposit Id.
       // Example: 10.5281/zenodo.15011388.
-      $doi = arg(4) . '/' . arg(5);
+      $doi = $host . '/' . $entity;
       // @TODO Minor. Get deposit_id by DOI.
     }
     elseif (is_numeric($entity) && ((int) $entity) == $entity) {
