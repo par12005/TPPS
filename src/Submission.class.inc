@@ -2322,37 +2322,35 @@ class Submission {
   }
 
   /**
-   * Uploads all study files to the Zenodo.
-   *
-   *
-   *
-   * @TODO Update.
+   * Uploads all files to the Zenodo Deposit.
    *
    * See function tpps_manage_doi($accession);
    *
-   * @param string $accession
-   *   Study accession. Format: 'TGDRxxxx'.
+   * @throws Exception
+   *   When study wasn't found.
+   *
+   * @return object
+   *   Returns current object to all method chaining.
    */
   public function uploadAllFilesZenodo() {
-    // Process study files.
+    if (empty($deposit_id = $this->getZenodoDepositId())) {
+      throw new Exception(t('Submission "@accession" has empty Zenodo Deposit Id.',
+        ['@accession' => $accession]
+      ));
+    }
     if (empty($fid_list = $this->getFileIdList())) {
+      // Study could have no files. It's not an error.
       return;
     }
 
-    $deposit_id = $this->getZenodoDepositId();
-    if (empty($deposit_id)) {
-      // Create new deposit.
-      $response = ZenodoDeposit::create(['accession' => $this->accession]);
-      $deposit_id = $response['id'];
-      //$deposit_id = $submission->getZenodoDepositId();
-    }
-
-    // @todo Check if file already was uploaded.
+    // @todo Minor. Check if file already was uploaded.
     foreach ($fid_list as $fid) {
       if ($file = tpps_file_load($fid)) {
-        ZenodoFile::create(['drupal_file' => $file, 'deposit_id' => $deposit_id]);
+        $data = ['drupal_file' => $file, 'deposit_id' => $deposit_id];
+        ZenodoFile::create($data);
       }
     }
+    return $this;
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

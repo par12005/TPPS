@@ -205,6 +205,19 @@ function tpps_submission_zenodo_files_list_form_submit(array &$form, array &$for
     // Existing files will be overwritten and will got new ids.
     drupal_get_messages();
     $submission = new Submission($accession);
+    if ($submission->doesNotExist()) {
+      drupal_set_message(t('Submission @accession not found.',
+        ['@accession' => $accession]
+      ));
+      drupal_goto('tpps/submission');
+    }
+    if (empty($submission->getZenodoDepositId())) {
+      drupal_set_message(
+        t('Submission "@accession" has empty Zenodo Deposit Id.',
+        ['@accession' => $accession]
+      ), 'error');
+      drupal_goto('tpps/submission/' . $accession . '/zenodo');
+    }
     $submission->uploadAllFilesZenodo();
   }
   $form_state['#rebuild'] = TRUE;

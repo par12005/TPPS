@@ -3152,6 +3152,9 @@ function tpps_is_main_form(array $form_state) {
  *
  * @return object
  *   Returns Submission object or throw an exception if it's not found.
+ *
+ * @throws Exception
+ *  When study wasn't found.
  */
 function tpps_submission($accession = '') {
   // @TODO Make this variable global.
@@ -3358,29 +3361,33 @@ function tpps_zenodo_deposit_before_create(array $data) {
  * Implements hook 'zenodo_deposition_created'.
  */
 function tpps_zenodo_deposit_created(array $data) {
+  if (empty($data['accession']) || empty($deposit_id = $data['response']['id'])) {
+    return;
+  }
   drupal_set_message(t('Zenodo Deposit was <strong>created</strong>.'));
   // Clear cache.
   tpps_admin_zenodo_submissions_report_clear_cache();
   // Store Zenodo Deposit Id into TPPS Submission.
-  if (!empty($data['accession']) && !empty($deposit_id = $data['response']['id'])) {
-    $submission = new Submission($data['accession']);
-    if ($submission->doesNotExist()) {
-      $message = t("Submission '@accession' wasn't found.", ['@accession' => $accession]);
-      drupal_set_message($message);
-      return;
-    }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Store DOI.
-    $dataset_doi = $data['response']['metadata']['prereserve_doi']['doi'] ?? NULL;
-    $submission->updateDatasetDOI($dataset_doi);
-    // WARNING: Be sure to save $submission.
-    // Store Zenodo Deposit Id and save submission to DB.
-    $submission->setZenodoDepositId($deposit_id, $save_on_change = TRUE);
-    drupal_set_message(t(
-      'Zenodo Deposit Id <strong>@deposit_id</strong> stored in submission.',
-      ['@deposit_id' => $deposit_id]
-    ));
+  $submission = new Submission($data['accession']);
+  if ($submission->doesNotExist()) {
+    $message = t("Submission '@accession' wasn't found.", ['@accession' => $accession]);
+    drupal_set_message($message);
+    return;
   }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Store DOI.
+  $dataset_doi = $data['response']['metadata']['prereserve_doi']['doi'] ?? NULL;
+  $submission->updateDatasetDOI($dataset_doi);
+  // WARNING: Be sure to save $submission.
+  // Store Zenodo Deposit Id and save submission to DB.
+  $submission->setZenodoDepositId($deposit_id, $save_on_change = TRUE);
+  drupal_set_message(t(
+    'Zenodo Deposit Id <strong>@deposit_id</strong> stored in submission.',
+    ['@deposit_id' => $deposit_id]
+  ));
+
+  // Upload all files in Submission to Zenodo Deposit.
+  $submission->uploadAllFilesZenodo();
 }
 
 /**
