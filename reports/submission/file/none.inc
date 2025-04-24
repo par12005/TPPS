@@ -28,7 +28,7 @@ function tpps_report_submission_file_none() {
     t('Number of submissions without files: @number from @total',
     ['@number' => count($rows), '@total' => count($submission_list)]
   ));
-  return tpps_report_show_table([
+  return Report::printTable([
     'report_name' => 'submissions_without_files',
     'header' => ['#', t('Accession'), t('Status'), t('Stage')],
     'rows' => $rows,

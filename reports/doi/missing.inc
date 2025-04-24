@@ -62,7 +62,7 @@ function tpps_report_doi_missing() {
   $query->condition('p.project_id', $sub_query_2, 'IN');
   $query->condition('p.project_id', $sub_query_4, 'NOT IN');
 
-  return '<h2>' . $page_title . '</h2>' . easy_report([
+  return '<h2>' . $page_title . '</h2>' . Report::print([
     'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
     'formatter' => 'tpps_report_doi_missing_formatter',
     'page_title' => $page_title,

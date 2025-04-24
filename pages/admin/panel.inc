@@ -479,6 +479,6 @@ function tpps_admin_panel_reports(array &$form) {
     '#collapsed' => TRUE,
   ];
   $form['report_menu']['table'] = [
-    '#markup' => tpps_reports_overview_page($admin_panel = TRUE),
+    '#markup' => Report::printOverviewPage($admin_panel = TRUE),
   ];
 }

@@ -82,10 +82,7 @@ define('TPPS_GENOTYPING_FILE_TYPE_VCF', 'VCF');
 
 // Rememeber fieldset collapsed state.
 define('TPPS_RFCS_KEY', 'remember_fieldset_collapsed_state');
-
-
 module_load_include('inc', 'tpps', 'includes/common');
-require_once 'tpps.report.inc';
 
 // WARNING:
 // Must be called after common.inc was loaded.
@@ -117,7 +114,6 @@ module_load_include('inc', 'tpps', 'includes/cvterm_utils');
 module_load_include('inc', 'tpps', 'includes/submission_file');
 require_once 'includes/phenotype_synonym.inc';
 require_once 'includes/phenotype_unit.inc';
-require_once 'includes/easy_report.inc';
 require_once 'api/tpps.api.inc';
 
 /**
@@ -471,7 +467,7 @@ function tpps_menu() {
 
   tpps_menu_add_detials_pages($items);
   tpps_menu_add_settings_pages($items);
-  tpps_menu_add_report_pages($items);
+  Report::addAllMenuItems($items);
   tpps_menu_add_submission_pages($items);
   tpps_menu_add_api($items);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

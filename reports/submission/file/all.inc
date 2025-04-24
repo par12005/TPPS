@@ -168,7 +168,7 @@ function tpps_report_submission_file_all() {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output.
   // Show report table.
-  return tpps_report_show_table([
+  return Report::printTable([
     // 'report_name' => 'submissions_all_files',
     'header' => array_merge(
       ['#', t('Accession'), t('UID'), t('Stage'), t('Status')],

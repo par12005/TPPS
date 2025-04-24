@@ -30,7 +30,7 @@ Main steps to add new report:
    * for table (no sorting): /reports/doi/duplicates.inc
 2. Update code of this new file.
 3. Add variables which stores report title to hook_install/uninstall.
-4. Add metadata to ```tpps_report_get_list()```.
+4. Add metadata to ```Report::getList()```.
 5. Add ability to change report title at 'admin/config/tpps/reports'.
    See function ```tpps_reports_settings_form()```.
 6. Add commented new title variable name to ```tpps_reports_settings_form()```.
@@ -38,7 +38,7 @@ Main steps to add new report:
 8. Use ```hook_update_N()``` to set value of the variable which holds report's title.
 9. Clear cache.
 
-Example of the item in function ```tpps_report_get_list()```:
+Example of the item in function ```Report::getList()```:
 ```
     'organism' => [
       'new' => [

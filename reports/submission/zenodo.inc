@@ -72,7 +72,7 @@ function tpps_report_submission_zenodo($reset = FALSE) {
     t('Dataset DOI'),
     t('Deposition Files'),
   ];
-  return tpps_report_show_table([
+  return Report::printTable([
     'header' => $header,
     'rows' => $rows,
   ]);

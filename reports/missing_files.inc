@@ -55,7 +55,7 @@ function tpps_admin_missing_files_report($reset = FALSE) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output.
-  return tpps_report_show_table([
+  return Report::printTable([
     'report_name' => 'missing_files',
     'header' => ['#', t('File Id'), t('Absolute Path'), t('Accession')],
     'rows' => $rows,
