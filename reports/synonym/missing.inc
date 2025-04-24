@@ -52,7 +52,7 @@ function tpps_report_synonym_missing() {
   $base_query->groupBy('chadophenotype.name');
   $base_query->groupBy('chadophenotype_to_synonym.phenotype_synonyms_id');
 
-  return '<h2>' . $page_title . '</h2>' . easy_report([
+  return '<h2>' . $page_title . '</h2>' . Report::print([
     'formatter' => 'tpps_report_synonym_missing_formatter',
     'debug_mode' => FALSE,
     'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
@@ -80,7 +80,7 @@ function tpps_report_synonym_missing() {
 }
 
 /**
- * Values formatter for 'easy_report()'.
+ * Values formatter for 'Report::print()'.
  *
  * @param string $name
  *   Required. Field name.
