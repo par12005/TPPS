@@ -61,7 +61,7 @@ function tpps_report_doi_duplicates($reset = FALSE) {
   //$page_title = variable_get('tpps_report_' . $name . '_title', 'DOI Duplicates');
   //drupal_set_title($page_title);
   $header = ['#', t('Publication DOI'), t('Accession / Project Id / Status')];
-  return tpps_report_show_table([
+  return Report::printTable([
     'report_name' => $name,
     'header' => $header,
     'rows' => $rows,

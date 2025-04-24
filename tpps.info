@@ -18,6 +18,7 @@ files[] = src/TppsFile.class.inc
 ; Misc
 files[] = src/RestAPI.class.inc
 files[] = src/ImportedSubmissionList.class.inc
+files[] = src/Report.class.inc
 
 ; Zenodo API.
 files[] = src/zenodo/Zenodo.class.inc

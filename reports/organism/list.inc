@@ -12,7 +12,7 @@ function tpps_report_organism_list() {
   $name = 'organism_list';
   $page_title = variable_get('tpps_report_' . $name . '_title', 'Organism List');
 
-  // WARNING: easy_report() requires db_select() not db_query().
+  // WARNING: Report::print() requires db_select() not db_query().
   $query = db_select('public.tpps_submission', 'ts');
   $query->leftJoin('chado.project_dbxref', 'pdbxref', 'ts.dbxref_id = pdbxref.dbxref_id');
   $query->join('chado.project_organism', 'po', 'po.project_id = pdbxref.project_id');
@@ -23,7 +23,7 @@ function tpps_report_organism_list() {
   $query->addField('p', 'name');
   $query->condition('ts.status', '%Approved%', 'LIKE');
 
-  return '<h2>' . $page_title . '</h2>' . easy_report([
+  return '<h2>' . $page_title . '</h2>' . Report::print([
     'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
     'page_title' => $page_title,
     'formatter' => 'tpps_admin_' . $name . '_report_formatter',

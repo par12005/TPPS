@@ -36,7 +36,7 @@ function tpps_report_synonym_unit_warning() {
       'study_name',
     ]);
 
-  return '<h2>' . $page_title . '</h2>' . easy_report([
+  return '<h2>' . $page_title . '</h2>' . Report::print([
     'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
     'formatter' => 'tpps_report_synonym_unit_warning_formatter',
     'page_title' => $page_title,

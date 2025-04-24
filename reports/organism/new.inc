@@ -72,7 +72,7 @@ function tpps_report_organism_new() {
   $header = [
     t('Organism Id'), t('Organism Name'), t('Study'), t('Useful Links')
   ];
-  return implode(' | ', $links) . '<br />' . tpps_report_show_table([
+  return implode(' | ', $links) . '<br />' . Report::printTable([
     'header' => $header,
     'rows' => $rows,
   ]);
