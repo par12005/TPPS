@@ -197,8 +197,13 @@ class Zenodo {
 
     // Check if Deposition could be removed.
     $deposition = ZenodoDeposit::retrieve($data);
-    if ($deposition['state'] == 'done' && !empty($deposition['submitted'])) {
-      $message = t("Deposition was published and can't be removed anymore.");
+    if (!empty($deposition['submitted'])) {
+      if (static::getClassName() == 'ZenodoDeposit') {
+        $message = t("Deposition was published and can't be removed anymore.");
+      }
+      else {
+        $message = t("Can't remove files of already published Zenodo Deposition.");
+      }
       throw new Exception($message);
     }
 
