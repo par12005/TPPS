@@ -68,25 +68,36 @@ function tpps_submission_zenodo_files_single_form(array $form, array &$form_stat
       // $file_id is the Zenodo File Id.
       if ($action == 'delete') {
         $data = ['deposit_id' => $deposit_id, 'file_id' => $file_id];
-        ZenodoFile::delete($data);
-        // Validate response and show status message.
-        if (empty($data['response'])) {
-          // Code: 204 No Content.
-          $message = t('Zenodo File "@file_id" was successfully removed '
-            . 'from Zenodo Deposition #@deposit_id.',
-            ['@deposit_id' => $deposit_id, '@file_id' => $file_id]
-          );
-          drupal_set_message($message, 'status');
+        try {
+          ZenodoFile::delete($data);
+          // Validate response and show status message.
+          if (empty($data['response'])) {
+            // Code: 204 No Content.
+            $message = t('Zenodo File "@file_id" was successfully removed '
+              . 'from Zenodo Deposition #@deposit_id.',
+              ['@deposit_id' => $deposit_id, '@file_id' => $file_id]
+            );
+            drupal_set_message($message, 'status');
+          }
+          else {
+            $message = t('Zenodo File "@file_id" was NOT removed. Response: @response.',
+              ['@response' => $data['response'], '@file_id' => $file_id]
+            );
+            drupal_set_message($message, 'error');
+          }
+          // There is nothing to show when Zenodo File was removed and error
+          // message will be shown at Zenodo Files List page.
+          drupal_goto($path . '/' . $accession . '/zenodo/files');
         }
-        else {
-          $message = t('Zenodo File "@file_id" was NOT removed. Response: @response.',
-            ['@response' => $data['response'], '@file_id' => $file_id]
-          );
-          drupal_set_message($message, 'error');
+        catch (Exception $e) {
+          $message = '@code@message';
+          $params = [
+            '@code' => $e->getCode() ? $e->getCode() . ' - ' : '',
+            '@message' => $e->getMessage(),
+            '!settings_page_link' => l(t('Zenodo Settings Page'), 'admin/config/tpps/zenodo'),
+          ];
+          drupal_set_message(t($message, $params), 'error');
         }
-        // There is nothing to show when Zenodo File was removed and error
-        // message will be shown at Zenodo Files List page.
-        drupal_goto($path . '/' . $accession . '/zenodo/files');
       }
     }
   }
