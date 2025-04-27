@@ -368,20 +368,34 @@ class RestAPI {
       return $response;
     }
     else {
-      if ($debug_mode) {
-        $payload = empty($data) ? [] : json_decode($data);
-        dpm($url, 'URL');
-        dpm($method, 'Method');
-        dpm(print_r($header, 1), 'Header');
-        dpm(print_r($payload, 1), 'Payload');
-        dpm(print_r($response, 1), 'Response Body');
-        dpm(print_r($info, 1), 'Curl Info');
-        dpm(print_r(debug_backtrace(
-          !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS
-        ), TRUE));
-      }
       $message = static::getHttpCodeMessage($code) . '.';
-      throw new Exception('RestAPI HTTP-request status:' . $code . ' (' . $message . ')', $code);
+      $exception_data = [
+        'payload' => empty($data) ? [] : json_decode($data),
+        'url' => $url,
+        'method' => $method,
+        'header' => $header,
+        'response' => $response,
+        'code' => $code,
+        'message' => $message,
+        'info' => $info,
+        'backtrace' => debug_backtrace(
+          !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS
+        ),
+      ];
+      if ($debug_mode) {
+        dpm($exception_data['url'], 'URL');
+        dpm($exception_data['method'], 'Method');
+        dpm(print_r($exception_data['header'], 1), 'Header');
+        dpm(print_r($exception_data['payload'], 1), 'Payload');
+        dpm(print_r($exception_data['response'], 1), 'Response Body');
+        dpm(print_r($exception_data['info'], 1), 'Curl Info');
+        dpm(print_r($exception_data['backtrace'], 1), 'Backtrace');
+      }
+      if (function_exists('drupal_alter')) {
+        // tpps_rest_api_exception_alter().
+        drupal_alter('rest_api_exception', $message, $exception_data);
+      }
+      throw new Exception('RestAPI HTTP-request: ' . $message, $code);
     }
   }
 
