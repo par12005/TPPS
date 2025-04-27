@@ -390,6 +390,9 @@ function hook_zenodo_deposit_discarded(array $data, array $response) {
  *
  * Called from ZenodoHost::toggle().
  *
+ * Note: This hook could be called more then once during host search but
+ * hook 'zenodo_host_changed' will be called once.
+ *
  * @param string $new_host
  *   New Zenodo Host which was switched to.
  *   Possible values: ZenodoHost::LIVE_HOST and ZenodoHost::SANDBOX_HOST.
@@ -399,20 +402,18 @@ function hook_zenodo_host_toggled($new_host) {
 }
 
 /**
- * Implements hook 'zenodo_deposit_host_toggled'.
+ * Implements hook 'zenodo_host_changed'.
  *
- * Called from ZenodoDeposit::searchHost().
- * Note:
- * Zenodo Host could be changed twice in searchHost() method because when
- * Deposition wasn't found on any host then original host will be restored.
- * So hook 'zenodo_deposit_host_toggled' will be called twice but this hook
- * will be called only once.
+ * Called from ZenodoHost::search().
+ *
+ * Note: Will be called once during host search if deposition was found on
+ * non-default host.
  *
  * @param string $new_host
  *   New Zenodo Host which was switched to.
  *   Possible values: ZenodoHost::LIVE_HOST and ZenodoHost::SANDBOX_HOST.
  */
-function hook_zenodo_deposit_host_changed($new_host) {
+function hook_zenodo_host_changed($new_host) {
   drupal_set_message($new_host);
 }
 

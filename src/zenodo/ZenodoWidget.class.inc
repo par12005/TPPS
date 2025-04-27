@@ -113,7 +113,7 @@ class ZenodoWidget {
         $data['deposit_id'] = $deposit_id;
         try {
           if (variable_get('tpps_zenodo_host_greedy_search', FALSE)) {
-            ZenodoDeposit::searchHost($data);
+            ZenodoHost::search($data);
           }
           $deposition = ZenodoDeposit::retrieve($data);
           if (!empty($context['show_deposition_dump'])) {
