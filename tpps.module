@@ -3339,7 +3339,7 @@ function tpps_zenodo_deposit_validation_failed(array $response) {
 }
 
 /**
- * Implements hook 'zenodo_files_create_alter'.
+ * Implements alter-hook 'zenodo_files_create'.
  *
  * @param array $data
  *   Context for ZenodoFile::create().
@@ -3371,4 +3371,27 @@ function tpps_zenodo_files_create_alter(array &$data) {
   // curl_setopt($curl, CURLOPT_PUT, true);
   // curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'POST');
   // curl_setopt($curl, CURLOPT_INFILE, $fp);
+}
+
+/**
+ * Implements alter-hook 'rest_api_exception'.
+ *
+ * Allows alter exception messages thrown in RestAPI::doRequest().
+ *
+ * @param string $message
+ *   Original exceptin message which could be modified.
+ * @param array $context
+ *   Request meta-data.
+ */
+function tpps_rest_api_exception_alter(&$message, array $context) {
+  if (!empty($context['response']['status'])) {
+    if (!empty($context['response']['message'])) {
+      $message .= ' ' . $context['response']['message'];
+    }
+    if (!empty($context['response']['errors'])) {
+      foreach ($context['response']['errors'] as $error) {
+        $message .= ' ' . $error['field'] . ': ' . implode(' ', $error['messages']);
+      }
+    }
+  }
 }
