@@ -69,6 +69,9 @@ class ZenodoDeposit extends Zenodo {
     $data['payload'] = $data['payload'] ?? [];
     $data['action'] = 'publish';
 
+    // @todo Minor. Do not allow when ($deposition['submitted] == 1). Gives:
+    // 404 (Not Found.). But this will require extra request to Zenodo API.
+
     if (function_exists('drupal_alter')) {
       // Call all implementations of hooks:
       // - hook_zenodo_deposit_publish_alter(),
