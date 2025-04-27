@@ -79,6 +79,16 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
       }
     }
   }
+
+  // Deposition.
+  $deposition = ZenodoDeposit::retrieve($data);
+  if ($deposition['submitted']) {
+    $message = t("Zenodo Deposition #@deposit_id was published and files "
+      . "can't be added, updated or deleted.",
+      ['@deposit_id' => $data['deposit_id']]
+    );
+    drupal_set_message($message, 'warning');
+  }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Submission files.
   $missing_files = [];
@@ -113,9 +123,11 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
         $zenodo_file_path = $path . '/' . $accession . '/zenodo/files/';
         $delete_url = $zenodo_file_path . $zenodo_file['id'] . '/delete';
         $update_url = $zenodo_file_path . $zenodo_file['id'] . '/update';
-        $rows[$fid]['zenodo'] =
-          // 'Delete' button.
-          l(t('Delete'), $delete_url, $action_link_params)
+        // 'Delete' button.
+        if (empty($deposition['submitted'])) {
+          $delete_button = l(t('Delete'), $delete_url, $action_link_params);
+        }
+        $rows[$fid]['zenodo'] = ($delete_button ?? '')
           // Zenodo File metadata.
           . tpps_array_print_list($zenodo_file);
         unset($zenodo_file_list[$zenodo_file['id']]);
@@ -149,8 +161,10 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
     foreach ($zenodo_file_list as $zenodo_file) {
       $rows[$zenodo_file['id']]['submission'] = '';
       $delete_url = $path . '/' . $accession . '/zenodo/files/' . $zenodo_file['id'] . '/delete';
-      $rows[$zenodo_file['id']]['zenodo'] =
-        l(t('Delete'), $delete_url, $action_link_params)
+      if (empty($deposition['submitted'])) {
+        $delete_button = l(t('Delete'), $delete_url, $action_link_params);
+      }
+      $rows[$zenodo_file['id']]['zenodo'] = ($delete_button ?? '')
         . tpps_array_print_list($zenodo_file);
       unset($zenodo_file_list[$zenodo_file['id']]);
     }
@@ -177,12 +191,14 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
     '#name' => $action,
     '#value' => t($action),
   ];
-  $action = 'upload_all';
-  $form['actions'][$action] = [
-    '#type' => 'submit',
-    '#name' => $action,
-    '#value' => t('Upload All'),
-  ];
+  if (empty($deposition['submitted'])) {
+    $action = 'upload_all';
+    $form['actions'][$action] = [
+      '#type' => 'submit',
+      '#name' => $action,
+      '#value' => t('Upload All'),
+    ];
+  }
 
   return $form;
 }
