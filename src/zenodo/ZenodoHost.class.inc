@@ -46,7 +46,7 @@ class ZenodoHost {
    *
    * Allows to have different host name even during single per page request
    * because uses statically cached value which could be changed during even
-   * the same page request multiple times (for example to show depostions on
+   * the same page request multiple times (for example to show depositions on
    * both Live and Sandbox server at the same page).
    * To use Live host: ZenodoHost::set('live');
    * To use Sandbox host: ZenodoHost::set('sandbox');
@@ -232,4 +232,69 @@ class ZenodoHost {
   public static function getClassName() {
     return static::class;
   }
+
+  /**
+   * Searches for a host where gived Deposit Id exists.
+   *
+   * Temporary (per page request) switches to host which has given Deposit Id.
+   *
+   * Usage example:
+   * if (variable_get('tpps_zenodo_host_greedy_search', FALSE)) {
+   *   ZenodoHost:search(['deposit_id' => $deposit_id]);
+   * }
+   *
+   * Note:
+   * 1. Live and Sandbox hosts could have those Deposit Id but it searches
+   *    for Deposition created using current account (see 'owner' field).
+   * 2. Probablility of existance of the same Deposit Id for the same owner
+   *    on multiple hosts is very low and we could ignore this case.
+   *
+   * To be notified:
+   * 1. About Zenodo Host change caused by greedy search use Drupal-hook:
+   *    'hook_zenodo_deposit_host_changed'.
+   * 2. About Zenodo Host toggle use Drupal-hook called from the
+   *    ZenodoHost::toggle() method.
+   *
+   * @param mixed $data
+   *   Request data. Required key is 'deposit_id'.
+   *
+   * @throws \Exception
+   *   Deposit Id wasn't found on both hosts.
+   */
+  public static function search($data) {
+    Zenodo::validateRequired(['deposit_id'], $data);
+    // Use greedy search using both hosts but starting from the
+    // global (default) host.
+    try {
+      static::get();
+      $data['url'] = ZenodoDeposit::buildUrl($data);
+      RestAPI::get($data['url']);
+    }
+    catch (Exception $e) {
+      // Check other host.
+      // If Depostion won't be found exception will be thrown and
+      // caller could catch it.
+      static::toggle();
+      $data['url'] = ZenodoDeposit::buildUrl($data);
+      try {
+        RestAPI::get($data['url']);
+        if (function_exists('module_invoke_all')) {
+          // tpps_zenodo_host_changed.
+          module_invoke_all(static::getHookName('changed'), static::get());
+        }
+      }
+      catch (Exception $e) {
+        // Restore original host when nothing found on both hosts.
+        static::toggle();
+        // Note: it could be 404 or 403 response code.
+        // throw new Exception($e->getMessage(), $e->getCode());
+        $message = t('Deposition #@deposit_id was NOT found on neither live '
+          . 'nor sandbox servers.', ['@deposit_id' => $data['deposit_id']]
+        );
+        throw new Exception($message);
+      }
+    }
+    return static::get();
+  }
+
 }
