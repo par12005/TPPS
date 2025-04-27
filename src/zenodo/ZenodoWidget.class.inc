@@ -196,27 +196,62 @@ class ZenodoWidget {
     ];
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Show buttons.
-    $action_list = ['create'];
-    if (!empty($deposition)) {
+    // Note: in 'Debug Mode' all the buttons will be shown.
+    if (empty($deposition)) {
+      $action_list = ['create'];
+    }
+    else {
+      switch ($deposition['state']) {
+        // New Deposition.
+        case 'unsubmitted':
+          if (!$deposition['submitted']) {
+            $action_list[] = 'update';
+            $action_list[] = 'delete';
+            $action_list[] = 'publish';
+          }
+          break;
+
+        // Deposition metadata can be updated.
+        // If deposition is also unsubmitted (see submitted) files can be updated as well.
+        case 'inprogress':
+          if ($deposition['submitted']) {
+            $action_list[] = 'update';
+            $action_list[] = 'delete';
+            $action_list[] = 'discard';
+            $action_list[] = 'publish';
+          }
+          // @todo Add files button.
+          break;
+
+        // Deposition has been published.
+        case 'done':
+          if ($deposition['submitted']) {
+            $action_list[] = 'newversion';
+            $action_list[] = 'edit';
+          }
+          break;
+
+        case 'error':
+          $message = t('Deposition is in an error state - contact Zenodo support.');
+          throw new Exception($message);
+      }
+    }
+
+    if ($debug_mode ?? FALSE) {
       $action_list = [
-        'update', 'delete',
-        'publish', 'newversion',
-        // @todo Minor. Buttons which must be shown in certain conditions.
-        // 'discard', 'edit',
+        'create',
+        'update',
+        'delete',
+        'newversion',
+        'discard',
+        'edit',
+        'publish',
       ];
     }
+
     // Add action-buttons in own container.
     $zenodo_widget['actions'] = ['#type' => 'container'];
     foreach ($action_list as $key) {
-      // Show only 'Create' button if there is no Zenodo Deposition and
-      // don't show 'Create' Button when Depositon exists.
-      if (
-        !empty($deposition['id'])
-        // Hide 'Edit' button for not yet submitted Depositions.
-        && $key == 'edit' && empty($deposition['submitted'])
-      ) {
-        continue;
-      }
       $zenodo_widget['actions'][$key] = [
         '#type' => 'submit',
         '#name' => $key,
@@ -226,7 +261,7 @@ class ZenodoWidget {
         '#submit' => ['ZenodoWidget::submit'],
       ];
     }
-    return (bool) $deposit_id;
+    return $deposition ?? NULL;
   }
 
   /**
@@ -302,18 +337,21 @@ class ZenodoWidget {
     // ZenodoDeposit::delete().
     // ZenodoDeposit::update().
     $method_name = $class . '::' . $action;
+    if ($debug_mode ?? FALSE) {
+      dpm('Method: ' . $method_name);
+    }
     if (is_callable($method_name, TRUE)) {
       // Get response.
       try {
         call_user_func($method_name, $data);
       }
       catch (Exception $e) {
-        $message = '@code - @message';
+        $message = '@code@message';
         if ($e->getCode() == '1002') {
           $message .= '<br />Please allow overwriting Dataset DOI on [!settings_page_link].';
         }
         $params = [
-          '@code' => $e->getCode(),
+          '@code' => $e->getCode() ? $e->getCode() . ' - ' : '',
           '@message' => $e->getMessage(),
           '!settings_page_link' => l(t('Zenodo Settings Page'), 'admin/config/tpps/zenodo'),
         ];

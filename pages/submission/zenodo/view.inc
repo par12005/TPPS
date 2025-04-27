@@ -56,18 +56,12 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
     '#name' => $action,
     '#value' => t(ucfirst($action)),
   ];
-  if (
-    ($deposition['state'] == 'inprogress'
-    && empty($deposition['submitted']))
-    || ($debug_mode ?? FALSE)
-  ) {
-    $action = 'files';
-    $form['actions'][$action] = [
-      '#type' => 'submit',
-      '#name' => $action,
-      '#value' => t('Zenodo Files'),
-    ];
-  }
+  $action = 'files';
+  $form['actions'][$action] = [
+    '#type' => 'submit',
+    '#name' => $action,
+    '#value' => t('Zenodo Files'),
+  ];
 
   // WARNING: This CSS class adds theme and design.
   $form['#attributes']['class'][] = 'tpps-submission';
