@@ -201,7 +201,7 @@ class Zenodo {
       if (static::getClassName() == 'ZenodoDeposit') {
         $message = t("Deposition was published and can't be removed anymore.");
       }
-      else {
+      elseif (static::getClassName() == 'ZenodoFile') {
         $message = t("Can't remove files of already published Zenodo Deposition.");
       }
       throw new Exception($message);

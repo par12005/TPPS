@@ -216,7 +216,7 @@ class ZenodoWidget {
         case 'inprogress':
           if ($deposition['submitted']) {
             $action_list[] = 'update';
-            $action_list[] = 'delete';
+            $action_list[] = 'newversion';
             $action_list[] = 'discard';
             $action_list[] = 'publish';
           }
