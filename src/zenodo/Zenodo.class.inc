@@ -281,6 +281,10 @@ class Zenodo {
   /**
    * Builds Endpoint URL for Zenodo API based on class and action.
    *
+   * WARNING: Uses statically set Zenodo Host.
+   * Use ZenodoHost::search() to find host where Zenodo Deposition was created.
+   * See: ZenodoHost::toggle() and ZenodoHost::set() methods.
+   *
    * @param array $data
    *   Data for requiest.
    *   URL will be build using necessary items from $data based on class name.
@@ -292,14 +296,6 @@ class Zenodo {
    */
   public static function buildUrl(array $data) {
     $protocol = 'https://';
-    // Host.
-    //
-    // @TODO Review and test if searchHost could be moved here.
-    //
-    //
-    //if (variable_get('tpps_zenodo_host_greedy_search', FALSE)) {
-    //  $host = ZenodoDeposit::searchHost($data);
-    //}
     $host = ZenodoHost::get();
     $path = $protocol . $host;
     // Add base path and endpoint.
@@ -453,65 +449,6 @@ class Zenodo {
     return $prefix . $action;
   }
 
-  /**
-   * Searches for a host where gived Deposit Id exists.
-   *
-   * Temporary (per page request) switches to host which has given Deposit Id.
-   *
-   * Usage example:
-   * if (variable_get('tpps_zenodo_host_greedy_search', FALSE)) {
-   *   ZenodoDeposit::searchHost($data);
-   * }
-   *
-   * Note:
-   * 1. Live and Sandbox hosts could have those Deposit Id but it searches
-   *    for Deposition created using current account (see 'owner' field).
-   * 2. Probablility of existance of the same Deposit Id for the same owner
-   *    on multiple hosts is very low and we could ignore this case.
-   *
-   * To be notified:
-   * 1. About Zenodo Host change caused by greedy search use Drupal-hook:
-   *    'hook_zenodo_deposit_host_changed'.
-   * 2. About Zenodo Host toggle use Drupal-hook called from the
-   *    ZenodoHost::toggle() method.
-   *
-   * @param mixed $data
-   *   Request data. Required key is 'deposit_id'.
-   *
-   * @throws \Exception
-   *   Deposit Id wasn't found on both hosts.
-   *
-   * @todo Think about movement to ZenodoHost class or merge with buildUrl().
-   */
-  public static function searchHost($data) {
-    static::validateRequired(['deposit_id'], $data);
-    // Use greedy search using both hosts but starting from the
-    // global (default) host.
-    try {
-      ZenodoHost::get();
-      $data['url'] = static::buildUrl($data);
-      RestAPI::get($data['url']);
-    }
-    catch (Exception $e) {
-      // Check other host.
-      // If Depostion won't be found exception will be thrown and
-      // caller could catch it.
-      ZenodoHost::toggle();
-      $data['url'] = static::buildUrl($data);
-      try {
-        RestAPI::get($data['url']);
-        if (function_exists('module_invoke_all')) {
-          module_invoke_all(static::getHookName('host_changed'), ZenodoHost::get());
-        }
-      }
-      catch (Exception $e) {
-        // Restore original host when nothing found on any host.
-        ZenodoHost::toggle();
-        throw new Exception($e->getMessage(), $e->getCode());
-      }
-    }
-    return ZenodoHost::get();
-  }
 
   /**
    * Adds Access Token to given URL.
