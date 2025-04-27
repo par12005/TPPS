@@ -127,7 +127,33 @@ class Zenodo {
     }
 
     $data['url'] = static::buildUrl($data);
-    $data['response'] = RestAPI::get($data['url']);
+    try {
+      $data['response'] = RestAPI::get($data['url']);
+    }
+    catch (Exception $e) {
+      if ($e->getCode() == 404) {
+        $message = t(
+          "Zenodo Deposition #@deposit_id wasn't found on @host Zenodo host.",
+          [
+            '@deposit_id' => $data['deposit_id'],
+            '@host' => (ZenodoHost::isLive() ? 'Live' : 'Sandbox'),
+          ]
+        );
+      }
+      elseif ($e->getCode() == 403) {
+        $message = t(
+          "Access to Zenodo Deposition #@deposit_id denied on @host Zenodo host.",
+          [
+            '@deposit_id' => $data['deposit_id'],
+            '@host' => (ZenodoHost::isLive() ? 'Live' : 'Sandbox'),
+          ]
+        );
+      }
+      else {
+        $message = $e->getMessage();
+      }
+      throw new Exception($message, $e->getCode());
+    }
 
     // Note: Hooks must be called only once.
     if (function_exists('module_invoke_all')) {
@@ -168,6 +194,13 @@ class Zenodo {
       drupal_alter(static::getHookName(__FUNCTION__), $data);
     }
     static::validateRequired(['deposit_id'], $data);
+
+    // Check if Deposition could be removed.
+    $deposition = ZenodoDeposit::retrieve($data);
+    if ($deposition['state'] == 'done' && !empty($deposition['submitted'])) {
+      $message = t("Deposition was published and can't be removed anymore.");
+      throw new Exception($message);
+    }
 
     $data['url'] = static::buildUrl($data);
     $data['response'] = RestAPI::delete($data['url']);

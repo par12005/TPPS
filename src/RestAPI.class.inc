@@ -369,10 +369,11 @@ class RestAPI {
     }
     else {
       if ($debug_mode) {
+        $payload = empty($data) ? [] : json_decode($data);
         dpm($url, 'URL');
         dpm($method, 'Method');
         dpm(print_r($header, 1), 'Header');
-        dpm(print_r(json_decode($data), 1), 'Payload');
+        dpm(print_r($payload, 1), 'Payload');
         dpm(print_r($response, 1), 'Response Body');
         dpm(print_r($info, 1), 'Curl Info');
         dpm(print_r(debug_backtrace(

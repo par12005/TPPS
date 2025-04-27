@@ -27,8 +27,22 @@ function tpps_report_submission_zenodo($reset = FALSE) {
       if (empty($deposit_id)) {
         continue;
       }
-      ZenodoDeposit::searchHost(['deposit_id' => $deposit_id]);
-      $host = ZenodoHost::isLive() ? 'live' : 'sandbox';
+      try {
+        ZenodoHost::search(['deposit_id' => $deposit_id]);
+        $host = ZenodoHost::isLive() ? 'live' : 'sandbox';
+      }
+      catch (Exception $e) {
+        if ($e->getCode() == 1003) {
+          // Deposition wasn't found neither live nor sandbox server.
+          // Skip this Deposition from report but show error-message.
+          drupal_set_message($e->getMessage(), 'error');
+          $host = NULL;
+          //continue;
+        }
+        else {
+          throw new Exception($e->getMessage(), $e->getCode());
+        }
+      }
       $publication_doi = $submission->getPublicationDOI();
       $dataset_doi = $submission->getDatasetDOI();
       $rows[] = [
@@ -39,10 +53,10 @@ function tpps_report_submission_zenodo($reset = FALSE) {
         ),
         'project_id' => $submission->get(['ids', 'project_id']),
         'status' => $submission->status ?? NULL,
-        'host' => ZenodoHost::isLive() ? t('Live') : t('Sandbox'),
-        'deposit_id' => l($deposit_id,
+        'host' => $host ? (ZenodoHost::isLive() ? t('Live') : t('Sandbox')) : $host,
+        'deposit_id' => $host ? l($deposit_id,
           'admin/reports/tpps/zenodo/deposition/' . $host . '/' . $deposit_id
-        ),
+        ) : '<div style="color:red;">' . $deposit_id . '</div>',
         'publication_doi' => $publication_doi,
         'dataset_doi' => $dataset_doi,
         'deposition_files' => l(t('View Files'),
