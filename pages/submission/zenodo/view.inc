@@ -46,7 +46,7 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
     'show_deposition_dump' => TRUE,
     'show_deposition_links' => FALSE,
   ];
-  $is_deposit_exixt = ZenodoWidget::add($context);
+  $deposition = ZenodoWidget::add($context);
 
   // Add back button.
   $form['actions'] = $form['actions'] ?? ['#type' => 'container'];
@@ -56,7 +56,11 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
     '#name' => $action,
     '#value' => t(ucfirst($action)),
   ];
-  if ($is_deposit_exixt) {
+  if (
+    ($deposition['state'] == 'inprogress'
+    && empty($deposition['submitted']))
+    || ($debug_mode ?? FALSE)
+  ) {
     $action = 'files';
     $form['actions'][$action] = [
       '#type' => 'submit',

@@ -40,8 +40,8 @@ class ZenodoWidget {
    *   'form' - array. Drupal Form array.
    *   'accession' - string. TPPS Submission accession. E.g., 'TGDRxxxx'.
    *
-   * @return bool
-   *   Returns TRUE if Deposit exists and FALSE otherwise.
+   * @return array
+   *   Returns Zenodo Depostion array or NULL if deposition wasn't found.
    */
   public static function add(array $context) {
     // Defines if links from Zenodo Deposition Object be shown.
@@ -157,8 +157,9 @@ class ZenodoWidget {
         catch (Exception $e) {
           if (in_array($e->getCode(), [403, 404])) {
             $deposition = NULL;
-            $message = t('Submission has Deposit Id (#@deposit_id) but it'
-              . ' was NOT found on any Zenodo Host. Options: !option_list',
+            $message = t("Submission has Deposit Id (#<strong>@deposit_id"
+                . "</strong>) but it <strong>wasn't found</strong> on neither Live Host nor "
+                . "Sandbox Host.<br />Suggested solutions: !option_list",
               [
                 '@deposit_id' => $deposit_id,
                 '!option_list' => theme('item_list', [

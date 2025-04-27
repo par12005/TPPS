@@ -32,7 +32,7 @@ function tpps_report_zenodo_deposition() {
   $path = 'admin/reports/tpps/zenodo/deposition/';
   if (empty($entity)) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // All depostions.
+    // All depositions.
     ZenodoHost::printStatus();
     $host_list = ['live', 'sandbox'];
     if (!empty($host) && in_array($host, $host_list)) {
@@ -83,20 +83,38 @@ function tpps_report_zenodo_deposition() {
       drupal_set_message(t('Empty Zenodo Deposit Id'), 'error');
     }
     else {
-      $response = ZenodoDeposit::retrieve(['deposit_id' => $deposit_id]);
-      if (empty($response)) {
-        drupal_set_message(t('Empty Zenodo API response.'), 'error');
+      try {
+        $response = ZenodoDeposit::retrieve(['deposit_id' => $deposit_id]);
+        if (empty($response)) {
+          drupal_set_message(t('Empty Zenodo API response.'), 'error');
+        }
+        elseif (!empty($response['status'])) {
+          drupal_set_message(t('Zenodo API Response: @code - @message', [
+            '@code' => $response['status'],
+            '@message' => $response['message'],
+          ]), 'error');
+        }
+        else {
+          $output = ZenodoDeposit::printDeposition($response, 'table');
+          // Show also 'files', 'metadata' and 'links' items.
+          $output .= tpps_array_print_list($response);
+        }
       }
-      elseif (!empty($response['status'])) {
-        drupal_set_message(t('Zenodo API Response: @code - @message', [
-          '@code' => $response['status'],
-          '@message' => $response['message'],
-        ]), 'error');
-      }
-      else {
-        $output = ZenodoDeposit::printDeposition($response, 'table');
-        // Show also 'files', 'metadata' and 'links' items.
-        $output .= tpps_array_print_list($response);
+      catch (Exception $e) {
+        if ($e->getCode() == 404) {
+          drupal_set_message($e->getMessage()
+            // Suggest to look at other host.
+            . '<br />' . l(t('Check this Deposit Id on the other host?'), $path
+            . (ZenodoHost::isLive() ? 'sandbox' : 'live') . '/' . $deposit_id),
+            'error'
+          );
+        }
+        elseif ($e->getCode() == 403) {
+          drupal_set_message($e->getMessage(), 'error');
+        }
+        else {
+          throw new Exception($e->getMessage(), $e->getCode());
+        }
       }
     }
   }

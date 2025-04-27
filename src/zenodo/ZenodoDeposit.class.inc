@@ -110,7 +110,7 @@ class ZenodoDeposit extends Zenodo {
     $data['response'] = RestAPI::post($data['url']);
 
     if (function_exists('module_invoke_all')) {
-      module_invoke_all(static::getHookName('edited'), $data, $response);
+      module_invoke_all(static::getHookName('edited'), $data);
     }
     return $data['response'];
   }
