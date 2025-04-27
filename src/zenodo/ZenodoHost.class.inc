@@ -288,10 +288,10 @@ class ZenodoHost {
         static::toggle();
         // Note: it could be 404 or 403 response code.
         // throw new Exception($e->getMessage(), $e->getCode());
-        $message = t('Deposition #@deposit_id was NOT found on neither live '
-          . 'nor sandbox servers.', ['@deposit_id' => $data['deposit_id']]
+        $message = t('Deposition #@deposit_id was not found on neither live '
+          . 'nor sandbox server.', ['@deposit_id' => $data['deposit_id']]
         );
-        throw new Exception($message);
+        throw new Exception($message, 1003);
       }
     }
     return static::get();
