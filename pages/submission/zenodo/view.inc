@@ -39,6 +39,7 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Zenodo Deposition Widget.
   $context = [
+    'debug_mode' => FALSE,
     'form' => &$form,
     'accession' => $accession,
     'zenodo_page_path' => $path . '/' . $accession . '/zenodo',
