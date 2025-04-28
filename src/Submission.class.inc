@@ -2127,8 +2127,8 @@ class Submission {
     // Authors.
     // WARNING: Using objects is required.
     $primary_author = $page1_values['publication']['primaryAuthor'];
-    $creator_list = [
-      (object) ['name' => ZenodoDeposit::formatAuthorName($primary_author)]
+    $creator_list[] = (object) [
+      'name' => ZenodoDeposit::formatAuthorName($primary_author),
     ];
     $secondary_authors = $page1_values['publication']['secondaryAuthors'];
     for ($i = 1; $i <= $secondary_authors['number']; $i++) {
