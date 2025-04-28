@@ -42,6 +42,20 @@ class ZenodoHost {
   }
 
   /**
+   * Sets Zenodo host to LIVE host.
+   */
+  public static function setLive() {
+    static::set(static::LIVE_HOST);
+  }
+
+  /**
+   * Sets Zenodo host to SANDBOX host.
+   */
+  public static function setSandbox() {
+    static::set(static::SANDBOX_HOST);
+  }
+
+  /**
    * Gets Zenodo host name.
    *
    * Allows to have different host name even during single per page request
