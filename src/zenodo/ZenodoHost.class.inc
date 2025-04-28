@@ -18,7 +18,6 @@ class ZenodoHost {
   const LIVE_HOST = 'zenodo.org';
   const SANDBOX_HOST = 'sandbox.zenodo.org';
 
-
   /**
    * Sets Zenodo host name and statically cache it.
    *

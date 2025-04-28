@@ -187,6 +187,7 @@ class ZenodoDeposit extends Zenodo {
     if (function_exists('drupal_alter')) {
       // Call all implementations of hooks:
       // - hook_zenodo_deposit_new_version_alter(),
+      // - tpps_zenodo_deposit_new_version_alter(),
       drupal_alter(static::getHookName('new_version'), $data);
     }
 
@@ -342,6 +343,18 @@ class ZenodoDeposit extends Zenodo {
 
       case 'list':
       default:
+        if (!empty($deposition['links'])) {
+          foreach ($deposition['links'] as $key => $value) {
+            if (strpos($value, 'sandbox.zenodo.org') !== FALSE) {
+              ZenodoHost::setSandbox();
+            }
+            else {
+              ZenodoHost::setLive();
+            }
+            $deposition['links'][$key] = l($value, Zenodo::addAccessToken($value));
+          }
+
+        }
         $output .= tpps_array_print_list($deposition);
         break;
     }
