@@ -343,6 +343,7 @@ class ZenodoDeposit extends Zenodo {
 
       case 'list':
       default:
+        // @todo Minor. Combine to avoid duplication of the code.
         if (!empty($deposition['links'])) {
           foreach ($deposition['links'] as $key => $value) {
             if (strpos($value, 'sandbox.zenodo.org') !== FALSE) {
@@ -351,10 +352,30 @@ class ZenodoDeposit extends Zenodo {
             else {
               ZenodoHost::setLive();
             }
-            $deposition['links'][$key] = l($value, Zenodo::addAccessToken($value));
+            $deposition['links'][$key]
+              = l($value, Zenodo::addAccessToken($value));
           }
-
         }
+        if (!empty($deposition['files'])) {
+          foreach ($deposition['files'] as $id => $deposit_file) {
+            foreach ($deposit_file['links'] as $key => $value) {
+              if (strpos($value, 'sandbox.zenodo.org') !== FALSE) {
+                ZenodoHost::setSandbox();
+              }
+              else {
+                ZenodoHost::setLive();
+              }
+              $deposition['files'][$id]['links'][$key]
+                = l($value, Zenodo::addAccessToken($value));
+            }
+          }
+        }
+        // Link DOI to doi.org.
+        $doi = &tpps_array_get_value($deposition,
+          ['metadata', 'prereserve_doi', 'doi']
+        );
+        $doi = l($doi, 'https://doi.org/' . $doi);
+
         $output .= tpps_array_print_list($deposition);
         break;
     }
