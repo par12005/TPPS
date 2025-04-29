@@ -307,7 +307,7 @@ class Report {
           'admin_panel' => TRUE,
         ],
         'unit_warning' => [
-          'title' => variable_get('tpps_report_unit_warning_title',
+          'title' => variable_get('tpps_report_synonym_unit_warning_title',
           'Unit Warning (list of phenotypes which unit differs from Synonym)'
           ),
           'description' => t("List of Phenotypes which differs from Synonym's Unit."),
