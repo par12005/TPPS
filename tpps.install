@@ -2352,7 +2352,7 @@ function tpps_update_7127() {
 }
 
 /**
- * Zenodo API Settings.
+ * Zenodo API Settings and Report's titles updates.
  */
 function tpps_update_7128() {
   variable_del('tpps_zenodo_prefix');
@@ -2360,7 +2360,6 @@ function tpps_update_7128() {
   variable_set('tpps_zenodo_new_implementation', FALSE);
   variable_set('tpps_report_zenodo_submissions_title', 'Zenodo Submissions');
   variable_set('tpps_report_zenodo_depositions_title', 'Zenodo Depositions');
-  variable_set('tpps_zenodo_access_token_sandbox', '');
   variable_set('tpps_zenodo_host_greedy_search', FALSE);
   // Rename variable.
   if (
