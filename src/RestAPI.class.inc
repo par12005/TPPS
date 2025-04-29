@@ -378,7 +378,7 @@ class RestAPI {
         'response' => $response,
         'code' => $code,
         'message' => $message,
-        'info' => $info,
+        'curl_info' => $info,
         'backtrace' => debug_backtrace(
           !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS
         ),
@@ -389,7 +389,7 @@ class RestAPI {
         dpm(print_r($exception_data['header'], 1), 'Header');
         dpm(print_r($exception_data['payload'], 1), 'Payload');
         dpm(print_r($exception_data['response'], 1), 'Response Body');
-        dpm(print_r($exception_data['info'], 1), 'Curl Info');
+        dpm(print_r($exception_data['curl_info'], 1), 'Curl Info');
         dpm(print_r($exception_data['backtrace'], 1), 'Backtrace');
       }
       if (function_exists('drupal_alter')) {
