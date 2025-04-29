@@ -6,7 +6,7 @@
  *
  * Path: /admin/reports/tpps/zenodo/deposition
  *
- * ZenodoDeposit::list().
+ * ZenodoDeposit::list([]).
  *
  * Note:
  * 1. There could be ZenodoDeposit without TPPS submission and vice versa.
