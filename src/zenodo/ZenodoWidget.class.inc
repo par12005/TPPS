@@ -337,6 +337,10 @@ class ZenodoWidget {
     // ZenodoDeposit::create().
     // ZenodoDeposit::delete().
     // ZenodoDeposit::update().
+    // ZenodoDeposit::newVersion().
+    // ZenodoDeposit::edit().
+    // ZenodoDeposit::update().
+    // ZenodoDeposit::discard().
     $method_name = $class . '::' . $action;
     if ($debug_mode ?? FALSE) {
       dpm('Method: ' . $method_name);

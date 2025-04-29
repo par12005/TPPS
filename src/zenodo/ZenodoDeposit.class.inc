@@ -195,6 +195,7 @@ class ZenodoDeposit extends Zenodo {
     $data['response'] = RestAPI::post($data['url']);
 
     if (function_exists('module_invoke_all')) {
+      // tpps_zenodo_deposit_new_version_created().
       module_invoke_all(static::getHookName('new_version_created'), $data);
     }
     return $data['response'];

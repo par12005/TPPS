@@ -3395,3 +3395,35 @@ function tpps_rest_api_exception_alter(&$message, array $context) {
     }
   }
 }
+
+/**
+ * Implements 'zenodo_deposit_new_version_created'.
+ */
+function tpps_zenodo_deposit_new_version_created(array $data) {
+  $debug_mode = TRUE;
+  if (empty($data['accession'])) {
+    return;
+  }
+  $submission = new Submission($data['accession']);
+  if ($submission->doesNotExist()) {
+    // @todo Is it an error? Should error message be shown?
+    return;
+  }
+  $deposit_id = $submission->getZenodoDepositId();
+  $new_deposit_id = $data['response']['id'] ?? NULL;
+  if (!empty($new_deposit_id) && $deposit_id != $new_deposit_id) {
+    $submission->setZenodoDepositId($new_deposit_id);
+    drupal_set_message(t('New version of Zenodo Deposit was created.'));
+    if ($debug_mode) {
+      $message = t('New Zenodo Deposit "#@new_deposit_id".'
+        . '<br />Previous Zenodo Deposit Id: @deposit_id.',
+        [
+          '@new_deposit_id' => $new_deposit_id,
+          '@deposit_id' => $deposit_id,
+        ]
+      );
+      drupal_set_message($message);
+      dpm(print_r($data, 1));
+    }
+  }
+}
