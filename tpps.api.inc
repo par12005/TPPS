@@ -188,7 +188,7 @@ function hook_zenodo_deposit_update_alter(array &$data) {
 }
 
 /**
- * Perform alterations before requiest in ZenodoDeposit::list().
+ * Perform alterations before requiest in ZenodoDeposit::list([]).
  *
  * Note: Called before API Endpoint URL will be generated.
  *
@@ -398,6 +398,19 @@ function hook_zenodo_deposit_discarded(array $data, array $response) {
  *   Possible values: ZenodoHost::LIVE_HOST and ZenodoHost::SANDBOX_HOST.
  */
 function hook_zenodo_host_toggled($new_host) {
+  drupal_set_message($new_host);
+}
+
+/**
+ * Implements hook 'zenodo_host_set'.
+ *
+ * Called from ZenodoHost::set().
+ *
+ * @param string $new_host
+ *   New Zenodo Host which was switched to.
+ *   Possible values: 'live' and 'sandbox'.
+ */
+function hook_zenodo_host_set($new_host) {
   drupal_set_message($new_host);
 }
 

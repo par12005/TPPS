@@ -26,7 +26,7 @@ class ZenodoHost {
    * of class with own properties.
    *
    * @param string $host
-   *   Posible values: 'live' and any non-null value.
+   *   Posible values: 'live' and 'sandbox'.
    *   When value is 'live' then static variable 'tpps_zenodo_host'
    *   will have name of the Zenodo Live server.
    *   Any other value will populate it with name of Zenodo Sandbox server.
@@ -36,8 +36,18 @@ class ZenodoHost {
       return;
     }
     $zenodo_host = &drupal_static('tpps_zenodo_host');
-    $zenodo_host = (strtolower($host) == 'live')
-      ? static::LIVE_HOST : static::SANDBOX_HOST;
+    if ($zenodo_host != $host) {
+      if (strtolower($host) == 'live') {
+        $zenodo_host = static::LIVE_HOST;
+      }
+      elseif (strtolower($host) == 'sandbox') {
+        $zenodo_host = static::SANDBOX_HOST;
+      }
+      // 'tpps_zenodo_host_set';
+      if (function_exists('module_invoke_all')) {
+        module_invoke_all(static::getHookName('set'), $host);
+      }
+    }
   }
 
   /**
@@ -92,7 +102,9 @@ class ZenodoHost {
       ? static::SANDBOX_HOST : static::LIVE_HOST;
 
     // Hook will get value of the new host.
-    module_invoke_all(static::getHookName('host_toggled'), $zenodo_host);
+    if (function_exists('module_invoke_all')) {
+      module_invoke_all(static::getHookName('toggled'), $zenodo_host);
+    }
     return $zenodo_host;
   }
 
