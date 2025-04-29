@@ -48,11 +48,19 @@ function tpps_reports_settings_form(array $form, array &$form_state) {
   // 'tpps_report_submission_file_all_title',
   // 'tpps_report_submission_file_none_title'.
   // 'tpps_report_submission_file_missing_title'.
-  foreach (tpps_report_get_list() as $name => $report) {
-    $title = variable_get('tpps_report_' . $name . '_title',
-      str_replace('_', ' ', $name)
-    );
-    $form['titles']['tpps_report_' . $name . '_title'] = [
+  module_load_install('tpps');
+  foreach (tpps_get_variable_list() as $name => $report) {
+    if (
+      strpos($name, 'tpps_report_') === FALSE
+      || strpos($name, '_title') === FALSE
+    ) {
+      continue;
+    }
+    $default_title = ucwords(str_replace('_', ' ',
+      str_replace('tpps_report_', '', str_replace('_title', '', $name))
+    ));
+    $title = variable_get($name, $default_title);
+    $form['titles'][$name] = [
       '#type' => 'textfield',
       '#title' => t("'@title' Report Title", ['@title' => $title]),
       '#default_value' => $title,

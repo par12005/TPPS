@@ -298,7 +298,8 @@ class RestAPI {
    * @todo Convert to private or protected method if it's possible for static.
    */
   public static function doRequest($method, $url, $data = [], array $header = []) {
-    $debug_mode = $data['debug_mode'] ?? 1;
+    $debug_mode = $data['debug_mode'] ?? FALSE;
+    unset($data['debug_mode']);
     // To measure execution time of the request.
     $execution_time_start = microtime(1);
     $method = strtoupper($method);
