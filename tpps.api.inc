@@ -355,7 +355,7 @@ function hook_zenodo_files_retrieve_alter(array &$data) {
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-// Zenodo Depostion Actions: edited, published, new_version_created, discarded.
+// Zenodo Deposition Actions: edited, published, new_version_created, discarded.
 
 /**
  * Implements hook 'zenodo_deposit_edited'.
@@ -518,4 +518,30 @@ function hook_zenodo_deposit_before_create(array $data) {
  *    'message' - string. Clone of the $message to always have original string.
  */
 function hook_rest_api_exception($message, array $exception_context) {
+}
+
+/**
+ * Implements 'submission_dataset_doi_updated'.
+ *
+ * Called from Submission::updateDatasetDOI().
+ *
+ * @param array $data
+ *   Context data related to the event. Keys are:
+ *     'dataset_doi' - string.
+ *       New Dataset DOI.
+ *     'shared_state_dataset_doi' - string.
+ *       DOI found in Submission's Shared State.
+ *     'state_dataset_doi' - string.
+ *       DOI found in Submission's State array.
+ *     'update_result' - array. Result of updating.
+ *       Keys are: 'State' and 'Shared State'. Value could be:
+ *       TRUE - was updated and FALSE when wasn't updated.
+ */
+function hook_submission_dataset_doi_updated(array $data) {
+  // New.
+  $dataset_doi = $data['dataset_doi'];
+  // Stored values of Dataset DOI.
+  $shared_state_dataset_doi = $data['shared_state_dataset_doi'];
+  $state_dataset_doi = $data['state_dataset_doi'];
+  $update_result = $data['update_result'];
 }

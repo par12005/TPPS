@@ -135,15 +135,18 @@ class ZenodoDeposit extends Zenodo {
     $data['action'] = 'discard';
     $data['payload'] = $data['payload'] ?? [];
     if (function_exists('drupal_alter')) {
-      // Call all implementations of hooks:
-      // - hook_zenodo_deposit_discard_alter(),
+      // tpps_zenodo_deposit_discard_alter().
       drupal_alter(static::getHookName(__FUNCTION__), $data);
     }
 
     $data['url'] = static::buildActionUrl($data);
     $data['response'] = RestAPI::post($data['url'], $data['payload']);
 
+dpm(static::getHookName('discarded'));
+dpm(print_r($data, 1));
+
     if (function_exists('module_invoke_all')) {
+      // tpps_zenodo_deposit_discarded().
       module_invoke_all(static::getHookName('discarded'), $data);
     }
     return $data['response'];
@@ -281,9 +284,12 @@ class ZenodoDeposit extends Zenodo {
             $value = check_plain($value);
           }
           switch ($key) {
-            case 'record_id':
             case 'conceptrecid':
-              // Duplicate or useless.
+              $value = Submission::getZenodoConceptRecordLink($value);
+              break;
+
+            case 'record_id':
+              // Duplicate.
               $value = NULL;
               break;
 
@@ -465,6 +471,46 @@ class ZenodoDeposit extends Zenodo {
     $first = $parts[0];
     $last = implode(' ', array_slice($parts, 1));
     return "$last, $first";
+  }
+
+  /**
+   * Lists all depositions for the currently authenticated user.
+   *
+   * Scope (permissions): deposit:write.
+   *
+   * Usage example:
+   *   ZenodoDeposit::list(['query' => ['q' => 'conceptrecid:203383']]);
+   *
+   * @param array $data
+   *   Data for request. Required keys are: 'query'.
+   *   Filter query. See https://developers.zenodo.org/?python#list.
+   *
+   *   'q' - string (optional)
+   *   Search query (using Elasticsearch query string syntax - note that some
+   *   characters have special meaning here, including /, which is also
+   *   present in full DOIs).
+   *   https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html
+   *
+   *   'all_versions' - integer/string (optional)
+   *   Show (true or 1) or hide (false or 0) all versions of deposits.
+   *
+   *   'status' string (optional)
+   *   Filter result based on deposit status (either draft or published)
+   *
+   *   sort' - string (optional)
+   *   Sort order (bestmatch or mostrecent). Prefix with minus to change
+   *   form ascending to descending (e.g. -mostrecent).
+   *
+   *   'page' - integer (optional)
+   *   Page number for pagination.
+   *
+   *
+   * @return array
+   *   Returns array of deposition resources.
+   *   See https://developers.zenodo.org/?python#representation
+   */
+  public static function list(array $data) {
+    return parent::list($data);
   }
 
 }

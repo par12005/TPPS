@@ -299,10 +299,10 @@ class RestAPI {
    */
   public static function doRequest($method, $url, $data = [], array $header = []) {
     $debug_mode = FALSE;
-    if (isset($data['debug_mode'])) {
-      $debug_mode = $data['debug_mode'];
-      unset($data['debug_mode']);
-    }
+    //if (isset($data['debug_mode'])) {
+    //  $debug_mode = $data['debug_mode'];
+    //  unset($data['debug_mode']);
+    //}
     // To measure execution time of the request.
     $execution_time_start = microtime(1);
     $method = strtoupper($method);

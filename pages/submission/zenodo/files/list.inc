@@ -83,9 +83,9 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
   // Deposition.
   $deposition = ZenodoDeposit::retrieve($data);
   if ($deposition['submitted']) {
-    $message = t("Zenodo Deposition #@deposit_id was published and files "
-      . "can't be added, updated or deleted.",
-      ['@deposit_id' => $data['deposit_id']]
+    $message = t("Files can't be added or deleted because Zenodo Deposition "
+      . "<strong>was published</strong>. Create new version of this Deposition "
+      . "to add new or delete existing files."
     );
     drupal_set_message($message, 'warning');
   }
@@ -135,14 +135,20 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
     }
     $update_url = $path . '/' . $accession . '/zenodo/files/' . $fid . '/update';
     unset($submission_file['md5']);
-    $rows[$fid]['submission'] =
-      // 'Create' or 'Update' button.
-      (
-        $rows[$fid]['zenodo']
-        ? l(t('Update'), $update_url, $action_link_params)
-        : l(t('Create'), $create_url, $action_link_params)
-      )
-      // Drupal File metadata.
+
+    // Buttons for the Submission side (left).
+    $submission_button = '';
+    if (!empty($rows[$fid]['zenodo'])) {
+      // Files could be updated in published and not yet published Depositions.
+      $submission_button = l(t('Update'), $update_url, $action_link_params);
+    }
+    else {
+      // New files could be added to not yet published Depositions.
+      if (!$deposition['submitted']) {
+        $submission_button = l(t('Create'), $create_url, $action_link_params);
+      }
+    }
+    $rows[$fid]['submission'] = $submission_button
       . tpps_array_print_list($submission_file);
   }
 
