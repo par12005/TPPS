@@ -16,7 +16,7 @@
  * @param object $file
  *   Fully loaded managed file object.
  */
-function tpps_api_file_get_info($file) {
+function tpps_api_file_info($file) {
   global $base_url;
   // Get absolute path.
   if (

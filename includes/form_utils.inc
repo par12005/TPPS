@@ -367,6 +367,7 @@ function tpps_form_state_info(array &$new, array &$old) {
     'alternative_accessions',
     'data',
     'zenodo_id',
+    'zenodo_conceptrecid',
   ];
   foreach ($optional as $key) {
     $new[$key] = $old[$key] ?? NULL;

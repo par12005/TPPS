@@ -297,7 +297,7 @@ class ZenodoHost {
     }
     catch (Exception $e) {
       // Check other host.
-      // If Depostion won't be found exception will be thrown and
+      // If Deposition won't be found exception will be thrown and
       // caller could catch it.
       static::toggle();
       $data['url'] = ZenodoDeposit::buildUrl($data);
