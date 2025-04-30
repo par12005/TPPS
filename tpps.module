@@ -2674,7 +2674,7 @@ function tpps_menu_add_api(array &$items = []) {
   $items['api/file/%file/info'] = [
     // File Object with extra absolute path and URL for downloading.
     'title' => 'File Info',
-    'page callback' => 'tpps_api_file_get_info',
+    'page callback' => 'tpps_api_file_info',
     // 2: Managed File Id.
     'page arguments' => [2],
     'access callback' => 'tpps_api_access',
@@ -3148,7 +3148,9 @@ function tpps_zenodo_deposit_deleted(array $data) {
     // Unset exsisting Dataset DOI value.
     $submission->updateDatasetDOI(NULL);
     // WARNING: Be sure to save $submission.
-    $submission->setZenodoDepositId(NULL, $save_on_change = TRUE);
+    $submission->setZenodoConceptRecordId(NULL, $save_on_change = FALSE);
+    $submission->setZenodoDepositId(NULL, $save_on_change = FALSE);
+    $submission->save();
   }
 }
 
@@ -3195,8 +3197,12 @@ function tpps_zenodo_deposit_created(array $data) {
   $dataset_doi = $data['response']['metadata']['prereserve_doi']['doi'] ?? NULL;
   $submission->updateDatasetDOI($dataset_doi);
   // WARNING: Be sure to save $submission.
+  $conceptrecid = $data['response']['conceptrecid'] ?? NULL;
+  $submission->setZenodoConceptRecordId($conceptrecid, $save_on_change = FALSE);
   // Store Zenodo Deposit Id and save submission to DB.
-  $submission->setZenodoDepositId($deposit_id, $save_on_change = TRUE);
+  $submission->setZenodoDepositId($deposit_id, $save_on_change = FALSE);
+  $submission->save();
+
   drupal_set_message(t(
     'Zenodo Deposit Id <strong>@deposit_id</strong> stored in submission.',
     ['@deposit_id' => $deposit_id]
@@ -3310,7 +3316,7 @@ function tpps_zenodo_deposit_host_changed($new_host) {
   // @TODO Minor. Add site settings to enable/disble those messages.
   drupal_set_message(
     t(
-      'Zenodo Depostion was found on other Zenodo Host. It was temporary '
+      'Zenodo Deposition was found on other Zenodo Host. It was temporary '
       . '(for this page only) changed to "@new_host".',
       ['@new_host' => $new_host]
     ),
@@ -3334,7 +3340,7 @@ function tpps_zenodo_deposit_validation_failed(array $response) {
     ));
   }
   else {
-    drupal_set_message(t('Zenodo Depostion not found.'));
+    drupal_set_message(t('Zenodo Deposition not found.'));
   }
 }
 
@@ -3400,7 +3406,7 @@ function tpps_rest_api_exception_alter(&$message, array $context) {
  * Implements 'zenodo_deposit_new_version_created'.
  */
 function tpps_zenodo_deposit_new_version_created(array $data) {
-  $debug_mode = TRUE;
+  $debug_mode = FALSE;
   if (empty($data['accession'])) {
     return;
   }
@@ -3412,8 +3418,17 @@ function tpps_zenodo_deposit_new_version_created(array $data) {
   $deposit_id = $submission->getZenodoDepositId();
   $new_deposit_id = $data['response']['id'] ?? NULL;
   if (!empty($new_deposit_id) && $deposit_id != $new_deposit_id) {
-    $submission->setZenodoDepositId($new_deposit_id);
+    // Store Zenodo Concept Record Id (for new depositions only).
+    $conceptrecid = $data['response']['conceptrecid'] ?? NULL;
+    $submission->setZenodoConceptRecordId($conceptrecid, $save_on_change = FALSE);
+    // Store Deposit Id.
+    $submission->setZenodoDepositId($new_deposit_id, $save_on_change = TRUE);
+    // Note: Deposit Id can't be the same when Concept Record Id changed and
+    // Deposit Id will be updated more often so it's safe enough not to force
+    // $submission->save() usage but save only when Deposit Id changed.
+
     drupal_set_message(t('New version of Zenodo Deposit was created.'));
+
     if ($debug_mode) {
       $message = t('New Zenodo Deposit "#@new_deposit_id".'
         . '<br />Previous Zenodo Deposit Id: @deposit_id.',
@@ -3425,5 +3440,127 @@ function tpps_zenodo_deposit_new_version_created(array $data) {
       drupal_set_message($message);
       dpm(print_r($data, 1));
     }
+  }
+
+  tpps_clear_cache_report_submission_zenodo();
+  // @TODO Test if this delay is required.
+  //sleep(0.3);
+}
+
+/**
+ * Implements 'zenodo_deposit_discarded'.
+ */
+function tpps_zenodo_deposit_discarded(array $data) {
+  $debug_mode = FALSE;
+  if (empty($data['accession'])) {
+    return;
+  }
+  $submission = new Submission($data['accession']);
+  if ($submission->doesNotExist()) {
+    // @todo Is it an error? Should error message be shown?
+    return;
+  }
+  $conceptrecid = $submission->getZenodoConceptRecordId();
+  $list = ZenodoDeposit::list(
+    ['query' => ['q' => 'conceptrecid:' . $conceptrecid]]
+  );
+
+  if ($debug_mode) {
+    dpm(print_r($list, 1));
+  }
+
+  $discarded_deposit_id = $submission->getZenodoDepositId();
+  // There will be only one active deposition in the list.
+  $deposit_id = $list[0]['id'] ?? NULL;
+
+dpm($deposit_id, 'did');
+dpm(print_r($list, 1));
+
+
+  $submission->setZenodoConceptRecordId($conceptrecid, $save_on_change = FALSE);
+  $submission->setZenodoDepositId($deposit_id, $save_on_change = TRUE);
+  // Probably only published deposit could be rolled back.
+  // So 'Discard' action must be used only to new versions of the published
+  // Depositions. 'Delete' must be used for unpublished.
+  drupal_set_message(t('Zenodo Deposit #@discarded_deposit_id was discarded. '
+    . 'Rolled back to Deposit #@deposit_id.',
+    [
+      '@discarded_deposit_id' => $discarded_deposit_id,
+      '@deposit_id' => $deposit_id,
+    ]
+  ));
+  tpps_clear_cache_report_submission_zenodo();
+}
+
+/**
+ * Implements 'submission_dataset_doi_updated'.
+ */
+function tpps_submission_dataset_doi_updated(array $data) {
+  // New.
+  $dataset_doi = $data['dataset_doi'];
+  // Stored values of Dataset DOI.
+  $shared_state_dataset_doi = $data['shared_state_dataset_doi'];
+  $state_dataset_doi = $data['state_dataset_doi'];
+  $update_result = $data['update_result'];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Report DOI update.
+  // Sucess is when all 2 places were updated: Shared State and State.
+  if (count(array_filter((array_values($update_result)))) == 0) {
+    // Sucess.
+    if (is_null($dataset_doi ?? NULL)) {
+      drupal_set_message(t('Dataset DOI was unset.',
+        ['@dataset_doi' => $dataset_doi]
+      ));
+    }
+    else {
+      drupal_set_message(t(
+        'Dataset DOI was set to <strong>@dataset_doi</strong>.',
+        ['@dataset_doi' => $dataset_doi]
+      ));
+    }
+  }
+  else {
+    if (count(array_filter((array_values($update_result)))) == 2) {
+      // Fail.
+      drupal_set_message(t(
+        'Dataset DOI was NOT set to <strong>@new_doi</strong> because '
+        . 'Dataset DOI in both places (Shared State and State) was not empty.'
+        . '<br />Shared State Dataset DOI: <strong>@shared_state_doi</strong>'
+        . '<br />State Dataset DOI: <strong>@state_doi</strong>'
+        ,
+        [
+          '@new_doi' => $dataset_doi,
+          '@state_doi' => $state_dataset_doi,
+          '@shared_state_doi' => $shared_state_dataset_doi,
+        ]
+      ));
+    }
+    else {
+      // Partly updated.
+      foreach ($update_result as $name => $value) {
+        if ($value) {
+          $updated_list[] = $name;
+        }
+        else {
+          $skipped_list[] = $name;
+        }
+      }
+      drupal_set_message(t("New Dataset DOI <strong>@dataset_doi</strong> "
+        . "was set for: @updated_list.<br />Wasn't updated: @skipped_list.",
+        [
+          '@dataset_doi' => $dataset_doi,
+          '@skipped_list' => implode(', ', $skipped_list),
+          '@updated_list' => implode(', ', $updated_list),
+        ]
+      ), 'warning');
+    }
+    // In case of fail suggest to enable Dataset DOI overwrite.
+    $link = l(t('Zenodo Settings Page'), 'admin/config/tpps/zenodo');
+    drupal_set_message(t('To allows existing Dataset DOI be overwritten '
+      . 'visit !settings_page_link. Enable "Overwrite existing Dataset DOI", '
+      . 'then remove Zenodo Deposition and create new one.',
+      ['!settings_page_link' => $link]
+    ));
   }
 }

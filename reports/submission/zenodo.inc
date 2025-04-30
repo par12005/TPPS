@@ -24,7 +24,8 @@ function tpps_report_submission_zenodo($reset = FALSE) {
     $submission_list = tpps_load_submission_multiple();
     foreach ($submission_list as $accession => $submission) {
       $deposit_id = $submission->getZenodoDepositId();
-      if (empty($deposit_id)) {
+      $conceptrecid = $submission->getZenodoConceptRecordId();
+      if (!($deposit_id || $conceptrecid)) {
         continue;
       }
       try {
@@ -47,19 +48,18 @@ function tpps_report_submission_zenodo($reset = FALSE) {
       $dataset_doi = $submission->getDatasetDOI();
       $rows[] = [
         'number' => ++$i,
-        'accession' => l(
-          $accession,
-          'api/submission/' . $accession . '/view/state'
-        ),
+        'accession' => $submission->getAccessionLink('api_state'),
         'project_id' => $submission->get(['ids', 'project_id']),
         'status' => $submission->status ?? NULL,
         'host' => $host ? (ZenodoHost::isLive() ? t('Live') : t('Sandbox')) : $host,
-        'deposit_id' => $host ? l($deposit_id,
-          'admin/reports/tpps/zenodo/deposition/' . $host . '/' . $deposit_id
-        ) : '<div style="color:red;">' . $deposit_id . '</div>',
+        'deposit_id' => $submission->getZenodoDepositLink($deposit_id, $host),
+        'conceptrecid' => $submission->getZenodoConceptRecordLink(
+          $submission->getZenodoConceptRecordId()
+        ),
         'publication_doi' => $publication_doi,
         'dataset_doi' => $dataset_doi,
-        'deposition_files' => l(t('View Files'),
+        'deposition_files' => l(
+          t('View Files'),
           'tpps/submission/' . $accession . '/zenodo/files'
         ),
       ];
@@ -82,6 +82,7 @@ function tpps_report_submission_zenodo($reset = FALSE) {
     t('Status'),
     t('Zenodo Host'),
     t('Zenodo Deposit Id'),
+    t('Zenodo Concept Record Id'),
     t('Publication DOI'),
     t('Dataset DOI'),
     t('Deposition Files'),

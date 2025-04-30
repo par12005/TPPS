@@ -87,7 +87,7 @@ class Zenodo {
    *   See https://developers.zenodo.org/?python#representation
    */
   public static function list(array $data) {
-    $data['payload'] = $data['payload'] ?? [];
+    $data['query'] = $data['query'] ?? [];
     if (function_exists('drupal_alter')) {
       // Call all implementations of hooks:
       // - hook_zenodo_deposit_list_alter(),
@@ -96,7 +96,7 @@ class Zenodo {
     }
 
     $data['url'] = static::buildUrl($data);
-    $data['response'] = RestAPI::get($data['url'], $data['payload']);
+    $data['response'] = RestAPI::get($data['url'], $data['query']);
 
     return $data['response'];
   }

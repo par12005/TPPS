@@ -193,6 +193,10 @@ class Submission {
   // Name of the key in $state used to store Zenodo Deposit Id.
   const ZENODO_DEPOSIT_ID_KEY = 'zenodo_id';
 
+  // Name of the key in $state used to store Zenodo Concept Record Id.
+  // https://developers.zenodo.org/?shell#representation
+  const ZENODO_CONCEPT_RECORD_ID_KEY = 'zenodo_conceptrecid';
+
   /**
    * Class constructor.
    *
@@ -432,6 +436,27 @@ class Submission {
     $this->accession = $accession;
     $this->state['accession'] = $this->sharedState['accession'] = $accession;
     return $this;
+  }
+
+  /**
+   * getAccessionLink
+   *
+   * @param string $type
+   * @param mixed $accession
+   *
+   * @return void
+   */
+  public function getAccessionLink($type = 'api_state', $accession = NULL) {
+    $accession = $accession ?? $this->accession ?? NULL;
+    if (is_null($accession)) {
+      return '';
+    }
+    switch ($type) {
+      default:
+      case 'api_state':
+        return l($accession, 'api/submission/' . $accession . '/view/state');
+
+    }
   }
 
   /**
@@ -2097,9 +2122,7 @@ class Submission {
    *   Returns Zenodo Deposit Id or NULL if it wasn't set.
    */
   public function getZenodoDepositId() {
-    return $this->state[
-      self::ZENODO_DEPOSIT_ID_KEY
-    ] ?? NULL;
+    return $this->state[self::ZENODO_DEPOSIT_ID_KEY] ?? NULL;
   }
 
   /**
@@ -2110,6 +2133,110 @@ class Submission {
    */
   public function hasZenodoDepositId() {
     return !empty($this->getZenodoDepositId());
+  }
+
+  /**
+   * Gets Hyperlink to Zenodo Deposit page..
+   *
+   * @param int $deposit_id
+   *   Zenodo Deposit Id.
+   * @param string $host
+   *   Zenodo Deposit Host. Allowed values are: 'live' and 'sandbox'.
+   *
+   * @return string
+   *   Returns HTML A-tag which points to Zenodo Deposit page.
+   */
+  public function getZenodoDepositLink($deposit_id, $host = NULL) {
+    // Get host.
+    if (is_null($host)) {
+      try {
+        ZenodoHost::search(['deposit_id' => $deposit_id]);
+        $host = ZenodoHost::isLive() ? 'live' : 'sandbox';
+      }
+      catch (Exception $e) {
+        if ($e->getCode() == 1003) {
+          // Deposition wasn't found neither live nor sandbox server.
+          // Skip this Deposition from report but show error-message.
+          $host = NULL;
+        }
+      }
+    }
+    // Build link.
+    if ($host) {
+      return l(
+        $deposit_id,
+        'admin/reports/tpps/zenodo/deposition/' . $host . '/' . $deposit_id
+      );
+    }
+    else {
+      return '<div style="color:red;">' . $deposit_id . '</div>';
+    }
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Concept Record Id.
+  //
+
+  /**
+   * Sets Zenodo Concept Record Id.
+   *
+   * Note: Zenodo Deposit Id changes more often then Zenodo Concept Record Id.
+   *
+   * To clear stored id: $submission->setZenodoConceptRecordId(NULL);
+   *
+   * @param int $conceptrecid
+   *   Zenodo Concept Record Id which is parent of the deposition versions.
+   * @param bool $save_on_change
+   *   Default is TRUE which means TPPS Submission object will be saved to
+   *   database immidietly if Deposit Id changes.
+   *   Set to FALSE if you need to make other changes to TPPS Submission and
+   *   save it later manually.
+   */
+  public function setZenodoConceptRecordId($conceptrecid = NULL, $save_on_change = TRUE) {
+    if ($this->get([self::ZENODO_CONCEPT_RECORD_ID_KEY]) != $conceptrecid) {
+      // Differs.
+      $this->set([self::ZENODO_CONCEPT_RECORD_ID_KEY], $conceptrecid);
+      if ($save_on_change) {
+        $this->save();
+      }
+    }
+  }
+
+  /**
+   * Gets Zenodo Deposit Id.
+   *
+   * @return mixed
+   *   Returns Zenodo Concept Record Id  or NULL if it wasn't set.
+   */
+  public function getZenodoConceptRecordId() {
+    return $this->state[self::ZENODO_CONCEPT_RECORD_ID_KEY] ?? NULL;
+  }
+
+  /**
+   * Checks if Submission has Zenodo Deposit Id.
+   *
+   * @return bool
+   *   Returns TRUE if Submission has Zenodo Concept Record Id.
+   *   Returns FALSE otherwise.
+   */
+  public function hasZenodoConceptRecordId() {
+    return !empty($this->getZenodoConceptRecordId());
+  }
+
+  /**
+   * Gets Hyperlink to Zenodo API Endpoint which shows all versions.
+   *
+   * @return string
+   *   Returns HTML A-tag which points to Zenodo Deposit List page where listed
+   *   all versions of the Deposition.
+   */
+  public static function getZenodoConceptRecordLink($conceptrecid) {
+    $query = ['q' => 'conceptrecid:' . $conceptrecid, 'all_versions' => 1];
+    return l($conceptrecid,
+      // This is ZenodoDeposit::list() method's URL.
+      Zenodo::addAccessToken('https://sandbox.zenodo.org/api/deposit/depositions'),
+      ['query' => $query]
+    );
   }
 
   /**
@@ -2475,65 +2602,16 @@ class Submission {
       $update_result['Shared State'] = NULL;
       $shared_state_dataset_doi = $dataset_doi;
     }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Report DOI update.
-    // Sucess is when all 2 places were updated: Shared State and State.
-    if (count(array_filter((array_values($update_result)))) == 0) {
-      // Sucess.
-      if (is_null($dataset_doi ?? NULL)) {
-        drupal_set_message(t('Dataset DOI was unset.',
-          ['@dataset_doi' => $dataset_doi]
-        ));
-      }
-      else {
-        drupal_set_message(t(
-          'Dataset DOI was set to <strong>@dataset_doi</strong>.',
-          ['@dataset_doi' => $dataset_doi]
-        ));
-      }
-    }
-    else {
-      if (count(array_filter((array_values($update_result)))) == 2) {
-        // Fail.
-        drupal_set_message(t(
-          'Dataset DOI was NOT set to <strong>@new_doi</strong> because '
-          . 'Dataset DOI in both places (Shared State and State) was not empty.'
-          . '<br />Shared State Dataset DOI: <strong>@shared_state_doi</strong>'
-          . '<br />State Dataset DOI: <strong>@state_doi</strong>'
-          ,
-          [
-            '@new_doi' => $dataset_doi,
-            '@state_doi' => $state_dataset_doi,
-            '@shared_state_doi' => $shared_state_dataset_doi,
-          ]
-        ));
-      }
-      else {
-        // Partly updated.
-        foreach ($update_result as $name => $value) {
-          if ($value) {
-            $updated_list[] = $name;
-          }
-          else {
-            $skipped_list[] = $name;
-          }
-        }
-        drupal_set_message(t("New Dataset DOI <strong>@dataset_doi</strong> "
-          . "was set for: @updated_list.<br />Wasn't updated: @skipped_list.",
-          [
-            '@dataset_doi' => $dataset_doi,
-            '@skipped_list' => implode(', ', $skipped_list),
-            '@updated_list' => implode(', ', $updated_list),
-          ]
-        ), 'warning');
-      }
-      // In case of fail suggest to enable Dataset DOI overwrite.
-      $link = l(t('Zenodo Settings Page'), 'admin/config/tpps/zenodo');
-      drupal_set_message(t('To allows existing Dataset DOI be overwritten '
-        . 'visit !settings_page_link. Enable "Overwrite existing Dataset DOI", '
-        . 'then remove Zenodo Deposition and create new one.',
-        ['!settings_page_link' => $link]
-      ));
+
+    if (function_exists('module_invoke_all')) {
+      $data = [
+        'update_result' => $update_result,
+        'shared_state_dataset_doi' => $shared_state_dataset_doi,
+        'dataset_doi' => $dataset_doi,
+        'state_dataset_doi' => $state_dataset_doi,
+      ];
+      // 'tpps_submission_dataset_doi_updated().
+      module_invoke_all('submission_dataset_doi_updated', $data);
     }
   }
 

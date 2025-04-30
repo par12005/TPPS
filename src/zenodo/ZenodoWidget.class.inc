@@ -41,10 +41,10 @@ class ZenodoWidget {
    *   'accession' - string. TPPS Submission accession. E.g., 'TGDRxxxx'.
    *
    * @return array
-   *   Returns Zenodo Depostion array or NULL if deposition wasn't found.
+   *   Returns Zenodo Deposition array or NULL if deposition wasn't found.
    */
   public static function add(array $context) {
-    $debug_mode = $context['debug_mode'] ?? FALSE;
+    $debug_mode = isset($context['debug_mode']) ? $context['debug_mode'] : 1;
     // Defines if links from Zenodo Deposition Object be shown.
     $show_deposition_links = $context['show_deposition_links'] ?? FALSE;
 
@@ -175,7 +175,7 @@ class ZenodoWidget {
           }
           // @todo Idea: Switch to other host and retrieve deposition again.
           $zenodo_widget[$deposit_id]['dump'] = [
-            '#markup' => t('No Depostion found.'),
+            '#markup' => t('No Deposition found.'),
           ];
         }
       }
@@ -208,6 +208,8 @@ class ZenodoWidget {
           if (!$deposition['submitted']) {
             $action_list[] = 'update';
             $action_list[] = 'delete';
+            // Roll back to previous version.
+            $action_list[] = 'discard';
             $action_list[] = 'publish';
           }
           break;

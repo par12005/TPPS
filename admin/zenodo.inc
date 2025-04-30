@@ -43,7 +43,7 @@ function tpps_zenodo_settings_form(array $form, array &$form_state) {
     '#description' => t('When enabled then Deposit Id will be searched on both '
       . 'Live and Sandbox Hosts. <br />Useful for debugging and development.'
       . 'But it means at least one extra API-request for each operation which '
-      . "could take 300-5000 milliseconds and if Depostion wan't found on "
+      . "could take 300-5000 milliseconds and if Deposition wan't found on "
       . "default Host number of extra requests could be bigger. "
       . "<br />If only one Zenodo Host is used or for production site it's "
       . 'better to disable this option.'
