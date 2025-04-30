@@ -125,12 +125,11 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
             break;
 
           case TPPS_SUBMISSION_STATUS_APPROVED:
-            $status_label = !empty($submission->state['loaded'])
-              ? "Approved - load completed on "
-                . date("F j, Y, \a\\t g:i a", $submission->state['loaded'])
+            $status_label = $submission->isLoaded() ? "Approved - load completed on "
+                . date("F j, Y, \a\\t g:i a", $submission->getLoadTime())
               : TPPS_SUBMISSION_STATUS_APPROVED;
-            if (!empty($submission->state['loaded'])) {
-              $days_since_load = (time() - $submission->state['loaded']) / (60 * 60 * 24);
+            if ($submission->isLoaded()) {
+              $days_since_load = (time() - $submission->getLoadTime()) / (60 * 60 * 24);
               $unpublished_threshold = variable_get('tpps_unpublished_days_threshold', 180);
               $pub_status = $submission->state['saved_values'][TPPS_PAGE_1]['publication']['status'] ?? NULL;
               if (
@@ -180,7 +179,7 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
                 }
                 $row = [
                   $view_link,
-                  date("F j, Y", $submission->state['loaded'])
+                  date("F j, Y", $submission->getLoadTime())
                     . " (" . round($days_since_load) . " days ago)",
                   $pub_status,
                   $owner,

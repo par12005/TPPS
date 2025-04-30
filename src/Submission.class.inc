@@ -1960,4 +1960,41 @@ class Submission {
       [$organism_index]['name'] ?? NULL;
   }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Load time ('loaded') is when study was loaded to database (processed).
+
+  /**
+   * Sets time of loading to database.
+   *
+   * @param int $time
+   *   Timestamp of the moment when study added to database. See time().
+   */
+  public function setLoadTime($time = NULL) {
+    $this->state['loaded'] = $this->sharedState['loaded'] = $time ?? time();
+  }
+
+  /**
+   * Gets time of the loading to database.
+   *
+   * @return int
+   *   Timestamp of the moment when study added to database. See time().
+   */
+  public function getLoadTime() {
+    return $this->state['loaded'] ?? $this->sharedState['loaded'] ?? NULL;
+  }
+
+  /**
+   * Checks if study has data of loading to database.
+   *
+   * It means study was processed and loaded to database.
+   *
+   * @return bool
+   *   Returns TRUE when time of loading to database was set. It means data
+   *   was loaded to database.
+   *   Returns FALSE otherwise.
+   */
+  public function isLoaded() {
+    return !empty($this->getLoadTime());
+  }
+
 }

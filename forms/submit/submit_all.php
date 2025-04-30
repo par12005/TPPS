@@ -214,7 +214,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     tpps_log('Finishing up...', [], TRIPAL_INFO);
     // Functions starting from tpps_submit_page_1() update $shared_state array
     // with new data so now we are going to update db record.
-    $submission->sharedState['loaded'] = time();
+    $submission->setLoadTime(time());
     $submission->save(TPPS_SUBMISSION_STATUS_APPROVED);
 
     // throw new Exception("DEBUG");
@@ -3210,7 +3210,7 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
           );
         }
         // If not a header line, perform processings
-        
+
         if ($vcf_line[0] != '#'
           && stripos($vcf_line, '.vcf') === FALSE
           && trim($vcf_line) != ""
@@ -4527,8 +4527,8 @@ function tpps_vcf_per_sample_column($file_location, $column_index) {
     // if($file_progress_line_count % 10000 == 0 && $file_progress_line_count != 0) {
     //   echo '[INFO] [VCF PROCESSING STATUS] ' . $file_progress_line_count . " lines done\n";
     // }
-    if ($vcf_line[0] != '#' 
-      && $vcf_line[0] != '"' 
+    if ($vcf_line[0] != '#'
+      && $vcf_line[0] != '"'
       && stripos($vcf_line,'.vcf') === FALSE
       && trim($vcf_line) != ""
       && str_replace("\0", "", $vcf_line) != ""
@@ -4594,8 +4594,8 @@ function tpps_genotype_vcf_processing_batch_all_features_insert($current_id, $se
   if ($analysis_id != NULL) {
     $results = db_query("SELECT f.feature_id as feature_id, f.name as feature_name
       FROM chado.feature f
-      JOIN chado.analysisfeature af ON f.feature_id = af.feature_id 
-      JOIN chado.analysis a ON af.analysis_id = a.analysis_id 
+      JOIN chado.analysisfeature af ON f.feature_id = af.feature_id
+      JOIN chado.analysis a ON af.analysis_id = a.analysis_id
       WHERE a.analysis_id = :analysis_id
     ", [
       ':analysis_id' => $analysis_id
@@ -4605,12 +4605,12 @@ function tpps_genotype_vcf_processing_batch_all_features_insert($current_id, $se
     }
   }
 
-  
+
   // $src_feature_ids_count = count(array_keys($src_feature_data));
   // $lmsg = "SRCFeatures count: " . $src_feature_ids_count . "\n";
   // echo($lmsg);
   // tpps_log($lmsg);
-  
+
 
   $lmsg = "Inserting all featurelocs in db using bulk insert\n";
   echo($lmsg);
@@ -4621,7 +4621,7 @@ function tpps_genotype_vcf_processing_batch_all_features_insert($current_id, $se
   foreach ($src_feature_data as $src_feature_name => $src_feature_info) {
     // we need this for the insert
     $src_feature_id = $src_feature_info['src_feature_id'];
-    
+
     $variant_list = $src_feature_info['variant_list'];
     if (!empty($variant_list)) {
       foreach ($variant_list as $variant_name) {
@@ -4744,7 +4744,7 @@ function tpps_genotype_vcf_processing_batch_some_features_insert($current_id, $s
     foreach ($src_feature_data as $src_feature_name => $src_feature_info) {
       // we need this for the insert
       $src_feature_id = $src_feature_info['src_feature_id'];
-      
+
       $variant_list = $src_feature_info['variant_list'];
       if (!empty($variant_list)) {
         foreach ($variant_list as $variant_name) {
@@ -4776,7 +4776,7 @@ function tpps_genotype_vcf_processing_batch_some_features_insert($current_id, $s
         // Remove these variants from src_feature_data
         $src_feature_data[$src_feature_name]['variant_list'] = [];
       }
-      
+
 
     }
     $sql .= " ON CONFLICT (feature_id, locgroup, rank) DO UPDATE SET fmin=EXCLUDED.fmin";
@@ -5042,7 +5042,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
       tpps_log("Processing Genotype VCF file", [], TRIPAL_INFO);
       $file_progress_line_count = 0;
       $record_count = 0;
-      
+
 
       $src_feature_data = []; // keeps track of scaffold_id connection with variant_name
       if ($analysis_id != NULL) {
@@ -5051,8 +5051,8 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
         $results_srcfeatureids = db_query("SELECT f.feature_id as feature_id, f.name as feature_name
           FROM chado.feature f
-          JOIN chado.analysisfeature af ON f.feature_id = af.feature_id 
-          JOIN chado.analysis a ON af.analysis_id = a.analysis_id 
+          JOIN chado.analysisfeature af ON f.feature_id = af.feature_id
+          JOIN chado.analysis a ON af.analysis_id = a.analysis_id
           WHERE a.analysis_id = :analysis_id
         ", [
           ':analysis_id' => $analysis_id
@@ -5076,8 +5076,8 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           echo '[INFO] [VCF PROCESSING STATUS] ' . $file_progress_line_count . " lines done\n";
         }
         echo substr($vcf_line,0,1) . "\n";
-        if ($vcf_line[0] != '#' 
-          && $vcf_line[0] != '"' 
+        if ($vcf_line[0] != '#'
+          && $vcf_line[0] != '"'
           && stripos($vcf_line,'.vcf') === FALSE
           && trim($vcf_line) != ""
           && str_replace("\0", "", $vcf_line) != ""
@@ -5119,7 +5119,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           // Emily updated suggestion on Tuesday August 9th 2022
           // $marker_name = $scaffold_id . '_' . $position . '-' . $species_code;
 
-          // (3/31/2025) Emily and Gabe suggested we remove the species code from the marker_name 
+          // (3/31/2025) Emily and Gabe suggested we remove the species code from the marker_name
           $marker_name = $scaffold_id . '_' . $position;
 
           // $description = "$ref:$alt"; // Replaced with genotype_combination within $detected_genotypes array (5/31/2023)
@@ -5202,7 +5202,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           //$features_markers_names = [];
           // $features_markers_names[$marker_name] = true;
 
-          
+
           if ($mode_features_and_analysis_checks_and_inserts == true) {
             $lmsg = "FEATURES AND ANALYSIS CHECKS - START\n";
             echo($lmsg);
@@ -5217,10 +5217,10 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             $time_end_feature_find = microtime(true);
             echo("Feature find time: " . floatval($time_end_feature_find - $time_start_feature_find) . " ms\n");
 
-          
+
             // If marker does not exist, insert it into the feature table
             if ($feature_check_count <= 0) {
-              
+
               try {
                 $time_start_feature_insert = microtime(true);
                 $results = chado_insert_record('feature', [
@@ -5237,7 +5237,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
               }
 
             }
-            
+
 
 
             // get the marker_id <- feature_id column value
@@ -5420,7 +5420,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
                 ];
               }
               $src_feature_data[$scaffold_id]['variant_list'][] = $variant_name;
-              
+
               $features_variant_data[$variant_name] = [
                 'src_feature_name' => $scaffold_id,
                 'src_feature_id' => $src_feature_data[$scaffold_id]['src_feature_id'],
@@ -5476,8 +5476,8 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
                   WHERE plant_id = '$tree_id'
                   AND NOT CAST('$variant_name' AS varchar) = ANY(marker_ids)
                 ");
-                
-                
+
+
               }
               else {
                 // this call should be ignored because it's a ./.
@@ -5500,7 +5500,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
               $tree_id = $tree_ids[$j-9];
               $genotype_call = $vcf_line[$j];
               if (trim($genotype_call) != './.') {
-                $plants_array[] = $tree_id; 
+                $plants_array[] = $tree_id;
               }
             }
             $mem_end = memory_get_usage();
@@ -5524,7 +5524,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             tpps_log($lmsg);
             $plants_array = []; // empty memory as quickly as possible
           }
-          
+
           // Rish 12/08/2022: So we have multiple genotypes created
           // So I adjusted some of this code into a for statement
           // since the genotype_desc seems important and so I modified
@@ -5543,7 +5543,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             $lmsg = "FOR LOOP START - EACH UNIQUE GENOTYPE CALLS - IGNORED\n";
             echo($lmsg);
             tpps_log($lmsg);
-            
+
             $time_start_unique_genotypes = microtime(true);
             foreach ($detected_genotypes as $genotype_name => $genotype_info_array) { // eg SNP-scaffold_pos_-POTR-AG
               $time_start_unique_genotype = microtime(true);
@@ -5847,17 +5847,17 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             if(!isset($line_process_cumulative_time)) {
               $line_process_cumulative_time = 0;
             }
-            
+
             $lmsg = "FOR LOOP END - EACH UNIQUE GENOTYPE CALLS - IGNORED\n";
             echo($lmsg);
             tpps_log($lmsg);
-            
+
             $line_process_cumulative_time += $line_process_elapsed_time;
             echo("\nGenotype call records to insert (LINE:$file_progress_line_count): " . count($records['genotype_call']));
           }
-          
+
           echo("Cumulative PHP proctime: " . $line_process_cumulative_time . " ms\n");
-          
+
           // echo("\nrecord group threshold: $record_group ");
 
           $lmsg = "WHILE LOOP END - ENTIRE ROW EXCLUDING BULK INSERT\n";
@@ -5971,7 +5971,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
         tpps_genotype_vcf_processing_batch_some_features_insert($current_id, $seq_var_cvterm, $analysis_id, $features_variant_data, $src_feature_data, true);
       }
 
-      
+
       $mode_features_and_analysis_checks_inserts_bulk_all = false;
       if ($mode_features_and_analysis_checks_inserts_bulk_all == true) {
         tpps_genotype_vcf_processing_batch_all_features_insert($current_id, $seq_var_cvterm, $analysis_id, $features_variant_data, $src_feature_data);
@@ -5988,7 +5988,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
       $lmsg = "Memory usage at end of vcf run - " . ($vcf_memory_end - $while_mem_start) . " (Total currently in use: $vcf_memory_end bytes) DONE\n";
       echo($lmsg);
       tpps_log($lmsg);
-      
+
     }
   }
 }
