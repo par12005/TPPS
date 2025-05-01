@@ -92,7 +92,7 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Submission files.
   $missing_files = [];
-  foreach (array_unique($submission->getFileIdList()) as $fid) {
+  foreach (array_keys($submission->getFileIdList()) as $fid) {
     $create_url = $path . '/' . $accession . '/zenodo/files/' . $fid . '/create';
     if (empty($file = tpps_file_load($fid))) {
       $missing_files[] = $fid;

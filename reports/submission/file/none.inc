@@ -13,8 +13,8 @@ function tpps_report_submission_file_none() {
   $submission_list = tpps_load_submission_multiple();
   $i = 0;
   foreach ($submission_list as $submission) {
-    $files = $submission->getFileIdList();
-    if ($submission->state['stage'] >= 3 && !$files) {
+    $file_list = array_keys($submission->getFileIdList());
+    if ($submission->state['stage'] >= 3 && !$file_list) {
       $rows[] = [
         ++$i,
         l($submission->accession, 'api/submission/'
