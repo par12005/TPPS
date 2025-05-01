@@ -7345,10 +7345,13 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
       //   'type_id' => $type_cvterm,
       // ]);
 
+      
+
       // [RISH] 3/27/2025 - New genotype naming based on Meghan Myles' advice
+      $genotype_name = $variant_name . '-' . $val;
       tpps_safe_chado_insert_record('genotype', [
-        'name' => $variant_name . '-' . $val,
-        'uniquename' => $variant_name . '-' . $val,
+        'name' => $genotype_name,
+        'uniquename' => $genotype_name,
         'description' => $val,
         'type_id' => $type_cvterm,
       ]);
