@@ -98,7 +98,7 @@ function tpps_api_compress_files($accession = NULL) {
   }
   $zip_loc = tpps_realpath(TPPS_TEMP_ZIP) . '/' . $zip_name;
 
-  foreach ($submission->getFileIdList() as $fid) {
+  foreach (array_keys($submission->getFileIdList()) as $fid) {
     $file_str[] = str_replace(' ', '\\ ', tpps_realpath(file_load($fid)->uri));
   }
 

@@ -17,12 +17,11 @@
  */
 function tpps_api_file_usage_add($file, $accession, $count = NULL) {
   $count = $count ?? arg(6) ?? 1;
-  $id = str_replace('TGDR', '', $accession);
-  file_usage_add($file, 'tpps', 'tpps_project', $id, $count);
-  $message = 'Added @count usage for file #@fid and id "@id".';
+  Submission::addFileUsage($file, $accession, $count);
+  $message = 'Added @count usage for file #@fid for submission  "#@accession".';
   return [
     'message' => t($message,
-      ['@count' => $count, '@fid' => $file->fid, '@id' => $id]
+      ['@count' => $count, '@fid' => $file->fid, '@accession' => $accession]
     ),
   ];
 }

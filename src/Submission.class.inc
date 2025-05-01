@@ -596,10 +596,14 @@ class Submission {
    */
   public function save($status = NULL) {
     if (empty($this->accession)) {
+      $message = 'Study accession is empty.';
       $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
       // Function drupal_set_message escapes HTML tags.
-      dpm(print_r($stack, 1));
-      throw new Exception(t('Study accession is empty.'));
+      watchdog('tpps', $message . '<pre>@backtrace</pre>',
+        ['@backtrace' => print_r($stack, 1)],
+        WATCHDOG_ERROR
+      );
+      throw new Exception($message);
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Set status.
@@ -668,7 +672,7 @@ class Submission {
     // files related to this non-existing submission.
     if (!empty($this->state)) {
       // Remove usage of files first.
-      $fid_list = $submission->getFileIdList();
+      $fid_list = array_keys($submission->getFileIdList());
       foreach ($fid_list as $fid) {
         if ($file = tpps_file_load($fid)) {
           // Remove file usage record (not file itself).
@@ -2303,10 +2307,12 @@ class Submission {
   /**
    * Gets list of Ids of the files attached to submission.
    *
-   * We use greedy search to get as much as possible data.
+   * Only prevously saved file parents will be used (hardcoded).
    *
    * @return array
-   *   Returns list of File IDs or empty array.
+   *   Returns list of submission's files where key is File Id and value is the
+   *   parents of the file field in Submission's Shared State.
+   *   Returns an empty array when nothing found.
    *
    * @todo Minor. Cache list of file ids and reset cache of save() method call.
    * @todo Minor. Use $this->state['input'] to get just submitteddd form data.
@@ -2317,34 +2323,20 @@ class Submission {
     $saved_values = $this->sharedState['saved_values'] ?? NULL;
     // Note: Shared State doesn't have 'values' element but State could have
     // newer version of form and other paths.
-    $file_info = $this->sharedState['file_info'] ?? NULL;
-
     $fid_list = [];
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Use $form_state['file_info'] if any. Available after processing only.
-    $method_name = '$form_state["file_info"]';
-    $fid_list = array_merge(
-      array_keys($file_info[1] ?? []),
-      array_keys($file_info[2] ?? []),
-      array_keys($file_info[3] ?? []),
-      // @TODO Why only 4? Probalby it's a form steps but genotype files was
-      // found under '3' so probably it's ($step - 1). Step counts from zero.
-      array_keys($file_info[4] ?? [])
-    );
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Use hardcoded paths to file fields.
-    $method_name = 'hardcoded';
-    if (empty($values) && empty($saved_values)) {
-      return [];
+    if (empty($saved_values)) {
+      return $fid_list;
     }
     $parent_list = $this->getFileParents();
     foreach ($parent_list as $step => $step_list) {
       foreach ($step_list as $parents) {
-        $fid_list[] = (int) tpps_array_get_value($saved_values[$step], $parents);
+        $new_parents = array_merge([$step], $parents);
+        $fid = (int) tpps_array_get_value($saved_values, $new_parents);
+        if (empty($fid)) {
+          continue;
+        }
+        $fid_list[$fid] = $new_parents;
       }
-    }
-    if (!empty($fid_list)) {
-      $fid_list = array_unique(array_filter($fid_list));
     }
     return $fid_list;
   }
@@ -2367,7 +2359,7 @@ class Submission {
    */
   public function setFileStatus($status = FILE_STATUS_PERMANENT, array $fid_list = []) {
     if (empty($fid_list)) {
-      $fid_list = $this->getFileIdList();
+      $fid_list = array_keys($this->getFileIdList());
     }
     if (!empty($fid_list)) {
       foreach ($fid_list as $fid) {
@@ -2402,38 +2394,45 @@ class Submission {
    */
   public function getFileParents() {
     $result = [];
-
+    $result[TPPS_PAGE_3] = [];
+    $result[TPPS_PAGE_4] = [];
     for ($i = 1; $i <= $this->getOrganismNumber(); $i++) {
       $organism_id = 'organism-' . $i;
       $species_id = 'species-' . $i;
       // Page 3. Accession file.
-      $result[TPPS_PAGE_3] = [
-        ['tree-accession', $species_id, 'file'],
-      ];
+      $result[TPPS_PAGE_3] = array_merge(
+        $result[TPPS_PAGE_3],
+        [
+          ['tree-accession', $species_id, 'file'],
+        ]
+      );
       // Page 4. Phenotype and Genotype files.
-      $result[TPPS_PAGE_4] = [
-        // Phenotype.
-        [$organism_id, 'phenotype', 'iso'],
-        [$organism_id, 'phenotype', 'file'],
-        [$organism_id, 'phenotype', 'metadata'],
-        // Genotype.
-        [$organism_id, 'genotype', 'files', 'snps-assay'], // Shared State.
-        [$organism_id, 'genotype', 'files', 'assay-design'],
-        [$organism_id, 'genotype', 'files', 'snps-association'],
-        [$organism_id, 'genotype', 'files', 'snps-pop-struct'],
-        [$organism_id, 'genotype', 'files', 'snps-kinship'],
-        // SSR.
-        [$organism_id, 'genotype', 'files', 'ssrs'],
-        [$organism_id, 'genotype', 'files', 'ssrs_extra'],
-        [$organism_id, 'genotype', 'files', 'indels'],
-        [$organism_id, 'genotype', 'files', 'vcf'],
-        // Other.
-        [$organism_id, 'genotype', 'files', 'other'],
-        // Fasta.
-        [$organism_id, 'genotype', 'tripal_fasta', 'file', 'file_upload'],
-        // @TODO Check this field:
-        // [$organism_id, 'genotype', 'tripal_fasta', 'file_upload_existing'],
-      ];
+      $result[TPPS_PAGE_4] = array_merge(
+        $result[TPPS_PAGE_4],
+        [
+          // Phenotype.
+          [$organism_id, 'phenotype', 'iso'],
+          [$organism_id, 'phenotype', 'file'],
+          [$organism_id, 'phenotype', 'metadata'],
+          // Genotype.
+          [$organism_id, 'genotype', 'files', 'snps-assay'], // Shared State.
+          [$organism_id, 'genotype', 'files', 'assay-design'],
+          [$organism_id, 'genotype', 'files', 'snps-association'],
+          [$organism_id, 'genotype', 'files', 'snps-pop-struct'],
+          [$organism_id, 'genotype', 'files', 'snps-kinship'],
+          // SSR.
+          [$organism_id, 'genotype', 'files', 'ssrs'],
+          [$organism_id, 'genotype', 'files', 'ssrs_extra'],
+          [$organism_id, 'genotype', 'files', 'indels'],
+          [$organism_id, 'genotype', 'files', 'vcf'],
+          // Other.
+          [$organism_id, 'genotype', 'files', 'other'],
+          // Fasta.
+          [$organism_id, 'genotype', 'tripal_fasta', 'file', 'file_upload'],
+          // @TODO Check this field:
+          // [$organism_id, 'genotype', 'tripal_fasta', 'file_upload_existing'],
+        ]
+      );
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Summary page.
@@ -2470,7 +2469,7 @@ class Submission {
         ['@accession' => $accession]
       ));
     }
-    if (empty($fid_list = $this->getFileIdList())) {
+    if (empty($fid_list = array_keys($this->getFileIdList()))) {
       // Study could have no files. It's not an error.
       return;
     }

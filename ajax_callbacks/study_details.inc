@@ -147,9 +147,8 @@ function tpps_ajax_get_study_details_tab(array $data) {
   }
   // Note: Remove empty elements after processing local VCF files.
   $files = array_filter($files);
-  $study_file_ids = $submission->getFileIdList();
   $params = ['attributes' => ['target' => '_blank']];
-  foreach ($study_file_ids as $fid) {
+  foreach (array_keys($submission->getFileIdList()) as $fid) {
     if ($file = tpps_file_load($fid)) {
       $file_url = check_plain(file_create_url($file->uri));
       if (

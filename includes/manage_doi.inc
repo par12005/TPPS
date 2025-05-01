@@ -39,7 +39,7 @@ function tpps_manage_doi($accession) {
         // reloading whole Submission object - update it without saving to DB.
         $deposit_id = $response['id'];
         // Process study files.
-        if (!empty($fid_list = $submission->getFileIdList())) {
+        if (!empty($fid_list = array_keys($submission->getFileIdList()))) {
           // @todo Check if file already was uploaded.
           foreach ($fid_list as $fid) {
             if ($file = tpps_file_load($fid)) {
