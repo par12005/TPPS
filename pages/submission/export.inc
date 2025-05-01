@@ -41,7 +41,7 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
   }
   tpps_submission_export_fixes($submission->state);
   // Files.
-  $fid_list = $submission->getFileIdList();
+  $fid_list = array_keys($submission->getFileIdList());
   $files = tpps_submission_export_get_files_info($fid_list);
   if (empty($form_state['input'])) {
     // This check allows to avoid double processing files when new accession

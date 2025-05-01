@@ -90,7 +90,7 @@ function tpps_generate_doi($accession) {
   // dpm($metadata);
 
   if (variable_get('tpps_zenodo_new_implementation')) {
-    foreach ($submission->getFileIdList() as $fid) {
+    foreach (array_keys($submission->getFileIdList()) as $fid) {
       if ($file = tpps_file_load($fid)) {
         //$data['accession'] = $submission->accession;
         $data['drupal_file'] = $file;
