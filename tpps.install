@@ -451,12 +451,18 @@ function tpps_uninstall() {
   db_delete('public.variable')
     ->condition('name', db_like('tpps_complete_') . '%', 'LIKE')
     ->execute();
-  $tpps_usage = db_select('public.file_usage', 'f')
-    ->fields('f')
-    ->condition('module', 'tpps')
-    ->execute();
-  foreach ($tpps_usage as $row) {
-    file_usage_delete(file_load($row->fid), $row->module, $row->type, $row->id, $row->count);
+
+
+  if (variable_get('tpps_remove_all_file_usage_on_uninstall', FALSE)) {
+    // It's dangerous operation and must be disabled by default.
+    // https://plantcompgenomics.slack.com/archives/C05R396U4QK/p1746087385006169
+    $tpps_usage = db_select('public.file_usage', 'f')
+      ->fields('f')
+      ->condition('module', 'tpps')
+      ->execute();
+    foreach ($tpps_usage as $row) {
+      file_usage_delete(file_load($row->fid), $row->module, $row->type, $row->id, $row->count);
+    }
   }
 }
 
