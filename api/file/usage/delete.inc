@@ -19,15 +19,14 @@
  */
 function tpps_api_file_usage_delete($file, $accession, $count = NULL) {
   $count = $count ?? arg(6) ?? 1;
-  $id = str_replace('TGDR', '', $accession);
-  file_usage_delete($file, 'tpps', 'tpps_project', $id, $count);
-  $message = 'Removed all usage for file #@fid and id "@id".';
+  Submission::deleteFileUsage($file, $accession, $count);
+  $message = 'Removed all usage for file #@fid for submission "@accession".';
   if ($count) {
-    $message = 'Removed @count usage for file #@fid and id "@id".';
+    $message = 'Removed @count usage for file #@fid for submission "@accession".';
   }
   return [
     'message' => t($message,
-      ['@count' => $count, '@fid' => $file->fid, '@id' => $id]
+      ['@count' => $count, '@fid' => $file->fid, '@accession' => $accession]
     ),
   ];
 }

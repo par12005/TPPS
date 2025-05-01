@@ -678,9 +678,7 @@ function tpps_form_build_file_field(array $form_bus) {
 
     // Stop using the file so it can be deleted if the user clicks 'remove'.
     if (variable_get('tpps_genotype_file_usage_delete', TRUE)) {
-      // Study Id is a number in 'TGDRXXX'.
-      $study_id = substr($form_state['accession'], 4);
-      file_usage_delete($file, 'tpps', 'tpps_project', $study_id);
+      Submission::deleteFileUsage($file, $form_state['accession']);
     }
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

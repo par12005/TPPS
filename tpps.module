@@ -1079,8 +1079,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
     $element['columns']['#title'] = t('Define Data');
     $element['columns']['#collapsible'] = TRUE;
     // Stop using the file so it can be deleted if the user clicks 'remove'.
-    $accession = substr($form_state['accession'], 4);
-    file_usage_delete($file, 'tpps', 'tpps_project', $accession);
+    Submission::deleteFileUsage($file, $form_state['accession']);
     $content = tpps_parse_file($fid, 3, !empty($no_header));
     $options = $element['columns-options']['#value'] ?? [];
     $first = TRUE;

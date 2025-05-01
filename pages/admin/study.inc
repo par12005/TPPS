@@ -812,7 +812,7 @@ function tpps_admin_panel_validate($form, &$form_state) {
           }
           if (!empty($form_state['values']["edit_file_{$fid}_file"])) {
             if ($file = tpps_file_load($fid)) {
-              file_usage_add($file, 'tpps', 'tpps_project', substr($accession, 4));
+              Submission::addFileUsage($file, $accession);
             }
           }
         }
