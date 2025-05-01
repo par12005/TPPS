@@ -672,7 +672,7 @@ class Submission {
       foreach ($fid_list as $fid) {
         if ($file = tpps_file_load($fid)) {
           // Remove file usage record (not file itself).
-          file_usage_delete($file, 'tpps', 'tpps_project', $this->getAccessionNumber(), 1);
+          Submission::deleteFileUsage($file, $this->getAccessionNumber());
           if ($force) {
             // Remove file from disk.
             file_delete($file);
@@ -2483,6 +2483,36 @@ class Submission {
       }
     }
     return $this;
+  }
+
+  /**
+   * Adds record about usage of the file.
+   *
+   * @param object $file
+   *   Drupal's Managed File object.
+   * @param string $accession
+   *   Submission's accession. Format: 'TGDRxxxx'.
+   * @param int $count
+   *   The number of references to add to the object. Defaults to 1.
+   */
+  public static function addFileUsage($file, $accession, $count = 1) {
+    $file_id = str_replace('TGDR', '', $accession);
+    file_usage_add($file, 'tpps', 'tpps_project', $file_id, $count);
+  }
+
+  /**
+   * Removes record about usage of the file.
+   *
+   * @param object $file
+   *   Drupal's Managed File object.
+   * @param string $accession
+   *   Submission's accession. Format: 'TGDRxxxx'.
+   * @param int $count
+   *   The number of references to add to the object. Defaults to 1.
+   */
+  public static function deleteFileUsage($file, $accession, $count = 1) {
+    $file_id = str_replace('TGDR', '', $accession);
+    file_usage_delete($file, 'tpps', 'tpps_project', $file_id, $count);
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

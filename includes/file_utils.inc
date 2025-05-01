@@ -595,7 +595,7 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
         ($file = tpps_file_load($form_state['values']['tree-accession']["species-$i"]['file']))
         && $form_state['values']['tree-accession']["species-$i"]['file'] != 0
       ) {
-        file_usage_add($file, 'tpps', 'tpps_project', $accession);
+        Submission::addFileUsage($file, $accession);
       }
 
       $form_state['values']['tree-accession']["species-$i"]['file-columns'] = array();
@@ -635,7 +635,7 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
             $genotype = &$form_state['values']["organism-$i"]['genotype'] ?? '';
             $genotype_form_element = &$form["organism-$i"]['genotype'] ?? '';
             if ($file = tpps_file_load($genotype[$fieldset][$field_name] ?? '')) {
-              file_usage_add($file, 'tpps', 'tpps_project', $accession);
+              Submission::addFileUsage($file, $accession);
               $genotype[$fieldset][$field_name . '-columns'] = [];
               $column_list = $genotype_form_element[$fieldset][$field_name]
                 ['#value']['columns'] ?? [];
@@ -663,7 +663,7 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
               continue;
             }
             if ($file = tpps_file_load(($phenotype[$field_name] ?? NULL))) {
-              file_usage_add($file, 'tpps', 'tpps_project', $accession);
+              Submission::addFileUsage($file, $accession);
             }
             $phenotype[$field_name . '-columns'] = [];
             if (isset($phenotype_form_element[$field_name]['#value']['columns'])) {
@@ -1381,10 +1381,15 @@ function tpps_flat_generator($location, array $options = array()) {
  */
 function tpps_file_remove($fid) {
   if ($file = tpps_file_load($fid)) {
+
+
+// @TODO Use:
+// Submission::deleteFileUsage($file, $accession);
+
     file_usage_delete($file, 'tpps', 'tpps_project');
     if ($result = file_delete($file)) {
       watchdog('tpps', 'Removed file: <pre>@file</pre>',
-       ['@file' => print_r($file, 1)]
+        ['@file' => print_r($file, 1)]
       );
     }
     return $result;
@@ -1407,7 +1412,7 @@ function tpps_file_add_usage($file, $accession) {
   $file_usage = file_usage_list($file);
   $file_id = str_replace('TGDR', '', $accession);
   if (empty($file_usage['tpps']['tpps_project'][$file_id] ?? NULL)) {
-    file_usage_add($file, 'tpps', 'tpps_project', $file_id);
+    Submission::addFileUsage($file, $accession);
   }
 }
 
