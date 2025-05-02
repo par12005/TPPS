@@ -59,10 +59,9 @@ function tpps_report_submission_file_all() {
       // Process local VCF files.
       for ($n = 1; $n <= $submission->getOrganismNumber(); $n++) {
         if ($submission->hasLocalVcf($n)) {
-          $file_row['other'][] = $submission->getLocalVcf($n)
-          . tpps_report_submission_file_build_label(
-            $n, $submission->getOrganismName($n), 'local_vcf'
-          );
+          $organism_name = $submission->getOrganismName($n);
+          $organism_label = check_plain($n . '. ' . $organism_name);
+          $file_row['other'][$organism_label]['local_vcf'] = $submission->getLocalVcf($n);
         }
       }
 
@@ -93,15 +92,13 @@ function tpps_report_submission_file_all() {
           $file_row['other'][] = $fid;
           continue;
         }
+        $organism_label = check_plain($organism_index . '. ' . $organism_name);
+        $field_name = check_plain(end($parents));
 
-        $file_row[$group][] = tpps_build_file_api_link(
+        $file_row[$group][$organism_label][$field_name] = tpps_build_file_api_link(
           $accession,
           $fid,
           $options
-        ) . tpps_report_submission_file_build_label(
-          $organism_index,
-          $organism_name,
-          end($parents)
         );
       }
 
@@ -109,7 +106,7 @@ function tpps_report_submission_file_all() {
       // New array must be used to have correct order of keys.
       foreach ($file_column_list as $group) {
         if (!empty($file_row[$group])) {
-          $final_file_row[] = theme('item_list', ['items' => $file_row[$group]]);
+          $final_file_row[] = tpps_array_print_list($file_row[$group]);
         }
         else {
           $final_file_row[] = '';
@@ -189,24 +186,4 @@ function tpps_build_file_api_link($accession, $fid, array $options) {
       array_merge($options, ['attributes' => ['title' => t('Delete Usage')]])
     ),
   ]) . ']';
-}
-
-/**
- * Builds a file label for the report.
- *
- * @param int $organism_index
- *   Ordinal organism index on page.
- * @param string $organism_name
- *   Name of the organism.
- * @param string $field_name
- *   Machine name of the file field.
- * @access public
- *
- * @return void
- */
-function tpps_report_submission_file_build_label($organism_index, $organism_name, $field_name) {
-  return ' (' . str_replace(' ', '&nbsp;',
-    check_plain($organism_index) . ': <strong>'
-    . check_plain($organism_name) . '</strong>: '
-    . check_plain($field_name)) . ')';
 }
