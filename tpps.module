@@ -3623,9 +3623,11 @@ function tpps_form_tpps_main_alter(array &$form, array &$form_state) {
  */
 function tpps_submission_saved($submission) {
   // Clear cached 'Submission All Files' report.
+  module_load_include('inc', 'tpps', 'reports/submission/file/all');
+  tpps_report_submission_file_single($submission, $reset = TRUE);
   // @TODO Critical. Submission->save() called multiple types per single page request.
   // Minor. Store each submission separately to reset only one submission.
+
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
-  cache_clear_all('tpps_report_submission_file_all', $cache_bin);
   cache_clear_all('tpps_report_submission_zenodo', $cache_bin);
 }
