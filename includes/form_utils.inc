@@ -394,7 +394,6 @@ function tpps_form_state_info(array &$new, array &$old) {
  */
 function tpps_preserve_valid_file(array &$form_state, $fid, $org_num = NULL, $prefix = NULL) {
   if (!form_get_errors() && $file = tpps_file_load($fid)) {
-    Submission::addFileUsage($file, $form_state['accession']);
     if (!empty($org_num) and !empty($prefix)) {
       $species = implode('_', explode(' ',
         $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']

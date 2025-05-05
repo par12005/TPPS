@@ -1078,8 +1078,6 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
     $element['columns']['#type'] = 'fieldset';
     $element['columns']['#title'] = t('Define Data');
     $element['columns']['#collapsible'] = TRUE;
-    // Stop using the file so it can be deleted if the user clicks 'remove'.
-    Submission::deleteFileUsage($file, $form_state['accession']);
     $content = tpps_parse_file($fid, 3, !empty($no_header));
     $options = $element['columns-options']['#value'] ?? [];
     $first = TRUE;
@@ -1393,18 +1391,22 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
  */
 function tpps_main_validate(&$form, &$form_state) {
   global $user;
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // If the user is going backwards or simply saving their data in the form,
   // make sure to save the column data for the managed_file elements. The rest
   // of the validation function does not need to be completed.
-  if (in_array($form_state['triggering_element']['#value'], ['Back', 'Save'])) {
+  $triggering_element = $form_state['triggering_element']['#value'] ?? NULL;
+  if (in_array($triggering_element, ['Back', 'Save'])) {
     tpps_save_file_columns($form, $form_state);
     return;
   }
 
   $submission = new Submission();
-  $submission->state = $form_state;
+  $submission->setState($form_state);
   $is_tppsc = $submission->isTppsc();
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   switch ($form_state['stage']) {
     case 'frontpage':
       if ($is_tppsc) {
@@ -1480,6 +1482,7 @@ function tpps_main_validate(&$form, &$form_state) {
 function tpps_main_submit($form, &$form_state) {
   global $user;
 
+  $triggering_element = $form_state['triggering_element']['#value'] ?? NULL;
   $submission = tpps_submission()->setState($form_state);
 
   $saved_values = &$form_state['saved_values'] ?? NULL;
@@ -1530,7 +1533,6 @@ function tpps_main_submit($form, &$form_state) {
     }
   }
 
-  $triggering_element = $form_state['triggering_element']['#value'] ?? NULL;
   if (
     ($form_state['stage'] == 'frontpage' && $submission->accession)
     // We need to change status of files when user clicked 'Back' or 'Next'
@@ -3562,4 +3564,68 @@ function tpps_submission_dataset_doi_updated(array $data) {
       ['!settings_page_link' => $link]
     ));
   }
+}
+
+/**
+ * Implements 'form_FORM_ID_alter' for 'tppsc_main' form.
+ */
+function tpps_form_tppsc_main_alter($form, $form_state) {
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Fix error "The file used in the ...  field may not be referenced."
+  // When file is present in file system and submission has it's id but file
+  // has no usage record this error will be shown.
+  // Add usage to avoid validation issues.
+  $submission = new Submission();
+  $submission->setState($form_state);
+  $is_tppsc = $submission->isTppsc();
+  $file_list = $submission->getFileIdList();
+  if (!empty($file_list)) {
+    foreach (array_keys($file_list) as $fid) {
+      $file = tpps_file_load($fid);
+      if ($file && Submission::emptyFileUsage($file, $submission->accession)) {
+        Submission::addFileUsage($file, $submission->accession);
+      }
+    }
+  }
+
+  // Process 'Remove' button for files.
+  // Get parents.
+  if (
+    count($form_state['values'] ?? NULL) != 2
+    || strpos($_GET['q'], 'file/ajax/') === FALSE
+  ) {
+    return;
+  }
+  // File was removed from page using 'Remove' button.
+  $parents = tpps_array_get_path($form_state['values']);
+  $fid = tpps_array_get_value($form, array_merge($parents, ['#default_value']));
+  $file = tpps_file_load($fid);
+  if (
+    !(empty($fid)) && !empty($file)
+    && empty(tpps_array_get_value($form_state['input'], array_merge($parents, ['fid'])))
+  ) {
+    $accession = $form_state['input']['accession'];
+    Submission::deleteFileUsage($file, $accession);
+  }
+}
+
+/**
+ * Implements 'form_FORM_ID_alter' for 'tpps_main' form.
+ */
+function tpps_form_tpps_main_alter(array &$form, array &$form_state) {
+  // @TODO Minor. Uncomment when TPPS form must work as TPPSc.
+  // tpps_form_tppsc_main_alter($form, $form_state);
+}
+
+/**
+ * Implements 'submission_saved'.
+ */
+function tpps_submission_saved($submission) {
+  // Clear cached 'Submission All Files' report.
+  // @TODO Critical. Submission->save() called multiple types per single page request.
+  // Minor. Store each submission separately to reset only one submission.
+  $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+  cache_clear_all('tpps_report_submission_file_all', $cache_bin);
+  cache_clear_all('tpps_report_submission_zenodo', $cache_bin);
 }

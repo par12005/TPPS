@@ -381,3 +381,35 @@ function tpps_array_print_list(array $list = []) {
   }
   return theme('item_list', ['items' => $items]);
 }
+
+/**
+ * Gets path to the array element as a list of parents.
+ *
+ * $array = [
+ *   'a' => [
+ *     'b' => [
+ *       'c' => 1,
+ *      ],
+ *    ],
+ *  ];
+ *
+ *  Result: ['a', 'b', 'c'];
+ *
+ *
+ * @param array $array
+ *   Array to process.
+ *
+ * @return array
+ *   Returns parents of the element.
+ */
+function tpps_array_get_path($array) {
+  if (!is_array($array)) {
+    return FALSE;
+  }
+  foreach ($array as $key => $value) {
+    return array_merge(
+      [$key],
+      (is_array($value) ? tpps_array_get_path($value) : [])
+    );
+  }
+}

@@ -616,6 +616,11 @@ class Submission {
     // processing could take long time from script call.
     $this->set(['updated'], time());
 
+    if (function_exists('drupal_alter')) {
+      // tpps_submission_save_alter(),
+      drupal_alter('submission_save', $submission);
+    }
+
     $fields = [
       'status' => $this->status ?? TPPS_SUBMISSION_STATUS_INCOMPLETE,
       'submission_state' => serialize($this->state ?? []),
@@ -628,6 +633,12 @@ class Submission {
       ->fields($fields)
       ->condition('accession', $this->accession)
       ->execute();
+
+    // 'tpps_submission_saved'';
+    if (function_exists('module_invoke_all')) {
+      module_invoke_all('submission_saved', $submission);
+    }
+
     return $this;
   }
 
@@ -2320,6 +2331,7 @@ class Submission {
    * parent element and structure of the submitted data is different.
    */
   public function getFileIdList() {
+    $this->getSharedState();
     $saved_values = $this->sharedState['saved_values'] ?? NULL;
     // Note: Shared State doesn't have 'values' element but State could have
     // newer version of form and other paths.
@@ -2367,7 +2379,9 @@ class Submission {
         if ($file && $file->status != $status) {
           $file->status = $status;
           file_save($file);
-          tpps_file_add_usage($file, $this->accession);
+          if (static::emptyFileUsage($file, $this->accession)) {
+            static::addFileUsage($file, $this->accession);
+          }
         }
       }
     }
@@ -2512,6 +2526,38 @@ class Submission {
   public static function deleteFileUsage($file, $accession, $count = 1) {
     $file_id = str_replace('TGDR', '', $accession);
     file_usage_delete($file, 'tpps', 'tpps_project', $file_id, $count);
+  }
+
+  /**
+   * Gets file usage.
+   *
+   * @param object $file
+   *   Drupal's Managed File object.
+   * @param string $accession
+   *   Submission's accession. Format: 'TGDRxxxx'.
+   *
+   * @return int
+   *   Returns count of the usage for given study.
+   */
+  public static function getFileUsage($file, $accession) {
+    $file_id = str_replace('TGDR', '', $accession);
+    $usage = file_usage_list($file, 'tpps', 'tpps_project', $file_id);
+    return tpps_array_get_value($usage, ['tpps', 'tpps_project', $file_id]);
+  }
+
+  /**
+   * Checks if file usage is empty.
+   *
+   * @param object $file
+   *   Drupal's Managed File object.
+   * @param string $accession
+   *   Submission's accession. Format: 'TGDRxxxx'.
+   *
+   * @return bool
+   *   Returns TRUE if file has no usage record and FALSE otherwise.
+   */
+  public static function emptyFileUsage($file, $accession) {
+    return empty(Submission::getFileUsage($file, $accession));
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
