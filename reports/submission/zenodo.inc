@@ -12,8 +12,8 @@
 /**
  * Menu callback. Shows list of submissions which has Zenodo Depositions.
  */
-function tpps_report_submission_zenodo($reset = FALSE) {
-  $reset = $_GET['reset'] ?? FALSE;
+function tpps_report_submission_zenodo($reset = NULL) {
+  $reset = $reset ?? $_GET['reset'] ?? FALSE;
   $cid = __FUNCTION__;
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   $cache = cache_get($cid, $cache_bin);

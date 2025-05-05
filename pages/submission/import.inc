@@ -428,7 +428,7 @@ function tpps_submission_import_process_files(array &$state, $new_accession, arr
         $new_file->status = 0;
         file_save($new_file);
       }
-      tpps_file_add_usage($new_file, $new_accession);
+      Submission::addFileUsage($new_file, $new_accession);
       // Change File ID in submission state.
       $state = tpps_array_replace($state, $fid, $new_file->fid);
 
