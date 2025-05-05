@@ -636,7 +636,7 @@ class Submission {
 
     // 'tpps_submission_saved'';
     if (function_exists('module_invoke_all')) {
-      module_invoke_all('submission_saved', $submission);
+      module_invoke_all('submission_saved', $this);
     }
 
     return $this;
