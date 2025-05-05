@@ -8,10 +8,10 @@
 /**
  * Menu callback. Shows list of all submission's files.
  */
-function tpps_report_submission_file_all() {
+function tpps_report_submission_file_all($reset = NULL) {
   $debug_mode = FALSE;
 
-  $reset = $_GET['reset'] ?? FALSE;
+  $reset = $reset ?? $_GET['reset'] ?? FALSE;
   $cid = __FUNCTION__;
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   $cache = cache_get($cid, $cache_bin);
@@ -142,7 +142,7 @@ function tpps_report_submission_file_all() {
   ])
   . theme('item_list', [
     'items' => [
-      l(t('To reset cached report'), $_GET['q'], ['query' => ['reset' => 1]]),
+      l(t('Clear cache'), $_GET['q'], ['query' => ['reset' => 1]]),
       l(t('Clear TPPS Cache'), 'admin/config/tpps/cache'),
       t('WARNING: Only studies with files were shown. '
         . 'To get list of studies without file see report: ') .
@@ -173,17 +173,17 @@ function tpps_build_file_api_link($accession, $fid, array $options) {
     array_merge($options, ['attributes' => ['title' => t('View Info')]])
   )
   . ' [' . implode('|', [
-    l(t('G'), 'api/file/' . $fid . '/get',
-      array_merge($options, ['attributes' => ['title' => t('Get File')]])
+    l(t('D'), 'api/file/' . $fid . '/get',
+      array_merge($options, ['attributes' => ['title' => t('Download File')]])
     ),
     l(t('U'), 'api/file/' . $fid . '/usage',
       array_merge($options, ['attributes' => ['title' => t('Usage')]])
     ),
-    l(t('A'), 'api/file/' . $fid . '/add/' . $accession,
-      array_merge($options, ['attributes' => ['title' => t('Add Usage')]])
+    l(t('U+'), 'api/file/' . $fid . '/usage/add/' . $accession,
+      array_merge($options, ['attributes' => ['title' => t('Add 1 Usage')]])
     ),
-    l(t('D'), 'api/file/' . $fid . '/delete/' . $accession,
-      array_merge($options, ['attributes' => ['title' => t('Delete Usage')]])
+    l(t('U-'), 'api/file/' . $fid . '/usage/delete/' . $accession,
+      array_merge($options, ['attributes' => ['title' => t('Delete 1 Usage')]])
     ),
   ]) . ']';
 }
