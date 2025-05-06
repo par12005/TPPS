@@ -115,7 +115,9 @@ function tpps_synonym_add_form_submit($form, &$form_state) {
   );
   drupal_set_message($message);
   watchdog('tpps', $message);
-  cache_clear_all('*', TPPS_CACHE_BIN ?? 'cache', TRUE);
+
+  // Clear only cached list of synonyms.
+  tpps_cache_clear_all(['tpps_synonym_list']);
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

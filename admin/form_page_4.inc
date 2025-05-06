@@ -88,7 +88,7 @@ function tpps_form_page_4_settings_form_submit(array $form, array &$form_state) 
       != variable_get('tpps_page_4_cache_unit_list', FALSE)
   ) {
     $cache_bin = TPPS_CACHE_BIN ?? 'cache';
-    // @TODO Minor. Clear only unit/synonym lists.
-    cache_clear_all('*', $cache_bin, TRUE);
+    // Clear only unit/synonym lists.
+    tpps_cache_clear_all(['tpps_synonym_list', 'tpps_unit_list']);
   }
 }
