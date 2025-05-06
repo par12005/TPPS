@@ -31,8 +31,8 @@ function tpps_cache_settings_form_submit(array $form, array &$form_state) {
   // Process 'Clear TPPS Cache' button.
   $button_name = $form_state['triggering_element']['#name'];
   if ($button_name == TPPS_CLEAR_CACHE_BUTTON_NAME) {
-    $bin = TPPS_CACHE_BIN ?? 'cache';
-    cache_clear_all('*', $bin, TRUE);
-    drupal_set_message(t('Cache bin "@bin" was cleared.', ['@bin' => $bin]));
+    tpps_cache_clear_all(NULL, $force = TRUE);
+    $message = t('Cache bin "@bin" was cleared.', ['@bin' => TPPS_CACHE_BIN)]);
+    drupal_set_message($message);
   }
 }

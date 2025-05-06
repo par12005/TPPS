@@ -8,15 +8,13 @@
 /**
  * Menu callback. Shows list of all submission's files.
  */
-function tpps_report_submission_file_all($reset = NULL) {
+function tpps_report_submission_file_all($accession = NULL) {
   $debug_mode = FALSE;
 
-
-  $reset = $reset ?? $_GET['reset'] ?? FALSE;
-  $cid = __FUNCTION__;
+  $reset = $_GET['reset'] ?? FALSE;
+  $cid = Report::getCacheKey('all', ['submission', 'file']);
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   $cache = cache_get($cid, $cache_bin);
-  $cache_key = $cid;
   $file_column_list = [
     'tree-accession',
     'phenotype',
@@ -25,7 +23,9 @@ function tpps_report_submission_file_all($reset = NULL) {
     'other',
   ];
   $options = ['query' => ['token' => variable_get('tpps_api_token')]];
-  if ($reset || empty($cache) || !isset($cache->data[$cache_key])) {
+
+
+  if ($reset || empty($cache->data)) {
     // Get list of all managed files.
     $existing_fid_list = db_select('file_managed', 't')
       ->fields('t', ['fid'])
@@ -40,55 +40,58 @@ function tpps_report_submission_file_all($reset = NULL) {
     // doesn't work with objects in array values...
     krsort($submission_list, SORT_NATURAL);
     foreach ($submission_list as $submission) {
-      $data = tpps_report_submission_file_single($submission);
+      $data = Report::buildRow('all', ['submission', 'file'],
+        ['submission' => $submission]
+      );
       if (!empty($data)) {
         $rows[$submission->accession] = $data;
       }
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    $cache->data[$cache_key] = $rows;
+    $cache->data = $rows;
     cache_set($cid, $cache->data, $cache_bin);
 
     // Redirect to URL without 'reset' query item.
     drupal_goto($_GET['q']);
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Show warnings.
+  $message = t(
+    'Cached version of report is show. Please <a href="@update_link">update'
+    . '</a> to get most recent updates.',
+    ['@update_link' => url($_GET['q'], ['query' => ['reset' => 1]])]
+  );
+  drupal_set_message($message, 'warning');
+
+  $message = t(
+    'Only studies which has files are shown. Useful reports: <a href="@none_link">'
+    . 'List of studies without files</a>, <a href="@missing_link">List of '
+    . 'studies which files are missing in filesystem</a>.',
+    [
+      '@missing_link' => url('admin/reports/tpps/submission/file/missing'),
+      '@none_link' => url('admin/reports/tpps/submission/file/none'),
+    ]
+  );
+  drupal_set_message($message, 'warning');
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Format output.
   $formatted_rows = [];
+  $report_data = $cache->data;
+  if ($accession) {
+    $report_data = [
+      $accession => $cache->data[$accession],
+    ];
+  }
   // Line counter.
   $i = 0;
-  foreach ($cache->data[$cache_key] as $key => $value) {
-    $final_file_row = [];
-    $accession = $key;
-    // Convert to strings.
-    // New array must be used to have correct order of keys.
-    foreach ($file_column_list as $group) {
-      if (!empty($value['file_row'][$group])) {
-        foreach ($value['file_row'][$group] as $organism_label => $field) {
-          if (empty($field) || !is_array($field)) {
-            continue;
-          }
-          foreach ($field as $field_name => $fid) {
-            $value['file_row'][$group][$organism_label][$field_name]
-              = tpps_build_file_api_link($accession, $fid, $options);
-          }
-        }
-        $final_file_row[] = tpps_array_print_list($value['file_row'][$group]);
-      }
-      else {
-        $final_file_row[] = '-';
-      }
-    }
-    $formatted_rows[] = array_merge(
-      [
-        ++$i,
-        l($accession, 'api/submission/' . $accession . '/view/shared_state'),
-        $value['uid'],
-        $value['stage'],
-        $value['status'],
-      ],
-      $final_file_row
-    );
+  foreach ($report_data as $key => $value) {
+    $formatted_rows[] = Report::themeRow('all', ['submission', 'file'], [
+      'index' => ++$i,
+      'key' => $key,
+      'value' => $value,
+      'file_column_list' => $file_column_list,
+      'options' => $options,
+    ]);
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show report table.
@@ -99,16 +102,6 @@ function tpps_report_submission_file_all($reset = NULL) {
       $file_column_list
     ),
     'rows' => $formatted_rows,
-  ])
-  . theme('item_list', [
-    'items' => [
-      l(t('Clear cache'), $_GET['q'], ['query' => ['reset' => 1]]),
-      l(t('Clear TPPS Cache'), 'admin/config/tpps/cache'),
-      t('WARNING: Only studies with files were shown. '
-        . 'To get list of studies without file see report: ') .
-      l(t('Submissions without Files'),
-          'admin/reports/tpps/submission/file/missing'),
-    ],
   ]);
 }
 
@@ -151,15 +144,27 @@ function tpps_build_file_api_link($accession, $fid, array $options) {
 /**
  * Builds data for single submission in 'submission_file' report.
  *
- * @param object $submission
- *   TPPS Submission.
- * @param bool $reset
- *   Flag to reset cache.
+ * See Report::buildRow().
+ *
+ * @param array $context
+ *   Data to build single row of the report. Keys are:
+ *   'submission' - object. (optional when 'accession' is used).
+ *      TPPS Submission.
+ *   'reset' - bool. (optional).
+ *     When TRUE cache will be updated. Default is FALSE.
+ *   'accession' - string. (optional when 'submission' is used).
+ *     Study accession. E.g., 'TGDRxxxx'.
  *
  * @return array
  *   Returns data to build single row in report 'Submisssion Files All'.
  */
-function tpps_report_submission_file_single($submission, $reset = FALSE) {
+function tpps_report_submission_file_all_build_single_row(array $context) {
+
+  $submission = $context['submission'] ?? NULL;
+  if (empty($submission) && !empty($context['accession'])) {
+    $submission = new Submission($context['accession']);
+  }
+  $reset = $context['reset'] ?? FALSE;
 
   $data = [];
   $debug_mode = FALSE;
@@ -227,15 +232,66 @@ function tpps_report_submission_file_single($submission, $reset = FALSE) {
     'status' => $submission->getStatus(),
     'file_row' => $file_row,
   ];
-  if ($reset) {
+  $cid = Report::getCacheKey('all', ['submission', 'file']);
+  $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+  $cache = cache_get($cid, $cache_bin);
+  if ($reset || !isset($cache->data[$accession])) {
     // Update cache.
-    $cid = 'tpps_report_submission_file_all';
-    $cache_bin = TPPS_CACHE_BIN ?? 'cache';
-    $cache = cache_get($cid, $cache_bin);
-    if (empty($cache) || !isset($cache->data[$cid])) {
-      $cache->data[$cid][$accession] = $data;
-      cache_set($cid, $cache->data, $cache_bin);
-    }
+    $cache->data[$accession] = $data;
+    cache_set($cid, $cache->data, $cache_bin);
   }
   return $data;
+}
+
+/**
+ * Themes single row for 'submission_file_all' report.
+ *
+ * @param array $context
+ *   Keys are:
+ *   'key' - string. Submission accession. E.g., 'TGDRxxxx'.
+ *   'value' - array. Data to theme the row. Keys are:
+ *     'uid' - int. User Id of the study submitter.
+ *     'stage' - mixed. Last submitted TPPS form step.
+ *     'status' - string. Status of Submission.
+ *     'file_row' - array. Nested array of file ids per group
+ *       (phenotype/genotype and etc) and per organism name.
+ *
+ * @return array
+ *   Returns row item for theme_table().
+ */
+function tpps_report_submission_file_all_theme_single_row(array $context) {
+  $key = $context['key'];
+  $value = $context['value'];
+
+  $final_file_row = [];
+  $accession = $key;
+  // Convert to strings.
+  // New array must be used to have correct order of keys.
+  foreach ($context['file_column_list'] as $group) {
+    if (!empty($value['file_row'][$group])) {
+      foreach ($value['file_row'][$group] as $organism_label => $field) {
+        if (empty($field) || !is_array($field)) {
+          continue;
+        }
+        foreach ($field as $field_name => $fid) {
+          $value['file_row'][$group][$organism_label][$field_name]
+            = tpps_build_file_api_link($accession, $fid, $context['options']);
+        }
+      }
+      $final_file_row[] = tpps_array_print_list($value['file_row'][$group]);
+    }
+    else {
+      $final_file_row[] = '';
+    }
+  }
+  return array_merge(
+    [
+      $context['index'],
+      l($accession, 'api/submission/' . $accession . '/view/shared_state'),
+      $value['uid'],
+      $value['stage'],
+      $value['status'],
+    ],
+    $final_file_row
+  );
 }

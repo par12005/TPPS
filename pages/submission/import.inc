@@ -216,8 +216,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   // Update a list of imported studies.
   ImportedSubmissionList::add($accession, $submission->accession);
   // Clear cached list of studies to have new items at 'frontpage'.
-  // @TODO Minor. Clear only accession list.
-  cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
+  tpps_cache_clear_all(['tpps_submission_get_accession_list']);
 
   if ($upgrade_version) {
     // Upgrade to latest Submission Form Version.

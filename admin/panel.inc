@@ -61,13 +61,8 @@ function tpps_admin_panel_settings_form_submit(array $form, array &$form_state) 
     }
   }
   if ($clear_cache) {
-    $cache_bin = TPPS_CACHE_BIN ?? 'cache';
-    // $cid is a function name where it's used.
     $cid = 'tpps_admin_panel_show_all';
-    cache_clear_all($cid, $cache_bin);
-    drupal_set_message(t(
-      'Cache was cleared for CID "@cid" in "@cache_bin" cache bin.',
-      ['@cid' => $cid, '@cache_bin' => $cache_bin]
-    ));
+    tpps_cache_clear_all([$cid]);
+    drupal_set_message(t('Cache was cleared for CID "@cid".', ['@cid' => $cid]));
   }
 }

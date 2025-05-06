@@ -122,22 +122,13 @@ function tpps_submission_purge_multiple_form_submit(array $form, array &$form_st
         for ($i = $data['latest_accession']; $i >= $data['last_real_accession']; $i--) {
           $submission->accession = 'TGDR' . $i;
           $submission->purge();
-          drupal_set_message(t("Submission @accession and it's files was "
-            . "removed and cache was cleared.", ['@accession' => 'TGDR' . $i]
-          ));
         }
       }
       else {
         $submission->accession = $accession;
         $submission->purge();
-        drupal_set_message(
-          t("Submission @accession and it's files was removed and cache was cleared.",
-            ['@accession' => $accession]
-          )
-        );
       }
     }
-    cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
   }
   else {
     drupal_set_message(t('No accession was selected.'));

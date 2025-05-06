@@ -133,12 +133,15 @@ class Report {
     $current_page = pager_default_initialize(count($rows), $per_page);
     $chunks = array_chunk($rows, $per_page, TRUE);
     $pager = theme('pager', ['quantity', count($rows) ?? 0]);
+    tpps_add_css_js();
     return $pager . theme('table', [
       // @TODO Minor. $report_name now is not string but array of parents.
       //'caption' => Report::getList()[$report_name]['description'],
       'header' => $report['header'] ?? [],
       'rows' => $chunks[$current_page] ?? [],
       'empty' => $report['empty'] ?? NULL,
+      // To have vertical align to top of the cell.
+      'attributes' => ['class' => ['tpps_table']],
     ]) . $pager;
   }
 
@@ -243,16 +246,8 @@ class Report {
       return;
     }
 
-    if (isset($parents[0])) {
-      // @TODO Minor. Convert other reports to use the same filename.
-      $path = implode('/', $parents) . '/' . $name;
-      $page_callback = 'tpps_report_' . implode('_', $parents) . '_' . $name;
-    }
-    else {
-      // Outdated reports.
-      $path = $name;
-      $page_callback = 'tpps_admin_' . $name . '_report';
-    }
+    $page_callback = static::getCallbackName($name, $parents);
+    $path = static::getMenuPath($name, $parents);
     $items['admin/reports/tpps/' . $path] =
     $items['tpps-admin-panel/reports/' . $path] = [
       'title' => $item['title'],
@@ -260,8 +255,52 @@ class Report {
       'page callback' => $page_callback,
       'access callback' => 'tpps_access',
       'access arguments' => ['administer tpps module'],
-      'file' => 'reports/' . $path . '.inc',
+      'file' => static::getFilePath($name, $parents),
     ];
+  }
+
+  public static function getMenuPath($name, array $parents = []) {
+    if (isset($parents[0])) {
+      // @TODO Minor. Convert other reports to use the same filename.
+      return implode('/', $parents) . '/' . $name;
+    }
+    else {
+      // Outdated reports.
+      return $name;
+    }
+  }
+
+  /**
+   * getFilePath
+   *
+   * @param mixed $name
+   * @param array $parents
+   *
+   * @return void
+   */
+  public static function getFilePath($name, array $parents = []) {
+    return 'reports/' . static::getMenuPath($name, $parents) . '.inc';
+  }
+
+  /**
+   * Gets name of the report callback.
+   *
+   * @param string $name
+   *   Report name.
+   * @param array $parents
+   *   Report's parents like ['submission', 'file', 'all'].
+   *
+   * @return string
+   *   Returns callback name.
+   */
+  public static function getCallbackName($name, array $parents = []) {
+    if (isset($parents[0])) {
+      return 'tpps_report_' . implode('_', $parents) . '_' . $name;
+    }
+    else {
+      // Outdated reports.
+      return 'tpps_admin_' . $name . '_report';
+    }
   }
 
   /**
@@ -397,6 +436,77 @@ class Report {
         ],
       ],
     ];
+  }
+
+  /**
+   * Builds single row of the report.
+   *
+   * @param mixed $name
+   *   Report name. E.g., 'all' for /admin/reports/tpps/submission/file/all.
+   * @param array $parents
+   *   Report's parents. E.g., ['submission', 'file'].
+   * @param array $context
+   *   Data necessary to build single row.
+   *
+   * @return array
+   *   Returns meta-data which could be used to theme single row.
+   */
+  public static function buildRow($name, array $parents, array $context = []) {
+    $file_name = str_replace('.inc', '', static::getFilePath($name, $parents));
+    module_load_include('inc', 'tpps', $file_name);
+    $callback = static::getCallbackName($name, $parents)
+      . '_build_single_row';
+
+    if (function_exists($callback)) {
+      return call_user_func($callback, $context);
+    }
+    else {
+      watchdog('tpps', 'Report callback @callback not found.',
+        ['@callback' => $callback], WATCHDOG_WARNING
+      );
+    }
+  }
+
+  /**
+   * Builds single row of the report.
+   *
+   * @param mixed $name
+   *   Report name. E.g., 'all' for /admin/reports/tpps/submission/file/all.
+   * @param array $parents
+   *   Report's parents. E.g., ['submission', 'file'].
+   * @param array $context
+   *   Data necessary to build single row.
+   *
+   * @return array
+   *   Returns meta-data which could be used to theme single row.
+   */
+  public static function themeRow($name, array $parents, array $context = []) {
+    $file_name = str_replace('.inc', '', static::getFilePath($name, $parents));
+    module_load_include('inc', 'tpps', $file_name);
+    $callback = static::getCallbackName($name, $parents)
+      . '_theme_single_row';
+    if (function_exists($callback)) {
+      return call_user_func($callback, $context);
+    }
+  }
+
+  /**
+   * Get Cache Key (cid) for report.
+   *
+   * @param string $name
+   *   Report name.
+   * @param array $parents
+   *   Parents of the report.
+   *
+   * @return string
+   *   Returns Cache Key which used to store data to build a report.
+   */
+  public static function getCacheKey($name, array $parents = []) {
+    if (empty($name)) {
+      return '';
+    }
+    $parent_string = (empty($parents) ? '' : implode('_', $parents) . '_');
+    return 'tpps_report_' . $parent_string . $name;
   }
 
 }
