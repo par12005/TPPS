@@ -1559,11 +1559,6 @@ function tpps_main_submit($form, &$form_state) {
     if ($submission->accession) {
       $submission->save();
     }
-    // File status must not be changed here because we need to have termporary
-    // status of file until study completely submitted. See 'summarypage'
-    // processing.
-    // $submission->setFileStatus(FILE_STATUS_PERMANENT, []);
-    cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
     return;
   }
 
@@ -1630,7 +1625,7 @@ function tpps_main_submit($form, &$form_state) {
     // When non-empty (after Page1 submit) study was added we need to
     // reset cached lists of accessions.
     // Note: We must clear cache when submission already stored to DB.
-    cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
+    tpps_cache_clear_all([], $force = TRUE);
   }
 }
 
@@ -3232,7 +3227,7 @@ function tpps_zenodo_deposit_updated(array $data) {
  * Clear cached data for 'Submissions with Zenodo Depositions' report.
  */
 function tpps_clear_cache_report_submission_zenodo() {
-  cache_clear_all('tpps_report_submission_zenodo', (TPPS_CACHE_BIN ?? 'cache'));
+  tpps_cache_clear_all(['tpps_report_submission_zenodo']);
 }
 
 /**
@@ -3619,15 +3614,79 @@ function tpps_form_tpps_main_alter(array &$form, array &$form_state) {
 }
 
 /**
- * Implements 'submission_saved'.
+ * Implements hook 'submission_saved'.
  */
 function tpps_submission_saved($submission) {
-  // Clear cached 'Submission All Files' report.
-  module_load_include('inc', 'tpps', 'reports/submission/file/all');
-  tpps_report_submission_file_single($submission, $reset = TRUE);
+  // Updated Submission's item in 'Submission All Files' report.
+  Report::buildRow('all', ['submission', 'file'],
+    ['submission' => $submission, 'reset' => TRUE]
+  );
+
   // @TODO Critical. Submission->save() called multiple types per single page request.
   // Minor. Store each submission separately to reset only one submission.
+  tpps_cache_clear_all();
+}
 
+/**
+ * Clears TPPS_CACHE_BIN only.
+ *
+ * This function is required because not all 'cid' must be cleared.
+ *
+ * @param bool $force
+ *   When TRUE then even reports which supports per row update will be created.
+ */
+function tpps_cache_clear_all($list = NULL, $force = FALSE) {
+  $list = empty($list) ? tpps_cache_get_cid_list() : $list;
+  if (empty($list)) {
+    return;
+  }
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
-  cache_clear_all('tpps_report_submission_zenodo', $cache_bin);
+  foreach ($list as $cid) {
+    if (!$force && $cid == Report::getCacheKey('all', ['submission', 'file'])) {
+      // Skip reports which supports single row update.
+      continue;
+    }
+    cache_clear_all($cid, $cache_bin);
+  }
+  // @TODO Minor. Show message.
+  // drupal_set_message(t('Cache was cleared for CID "@cid".', ['@cid' => $cid]));
+}
+
+/**
+ * Gets list of cid.
+ *
+ * @return array
+ *   Returns list of cid used in TPPS_CACHE_BIN.
+ */
+function tpps_cache_get_cid_list() {
+  return [
+    'tpps_report_doi_duplicates',
+    'tpps_cv',
+    'tpps_doi_get_accession',
+    'tpps_doi_count_dbxref',
+    'tpps_get_doi_info',
+    'tpps_synonym_list',
+    'tpps_unit_list',
+
+    // List of accessions.
+    'tpps_submission_get_accession_list',
+    'tpps_admin_panel_show_all',
+    'tpps_admin_missing_files_report',
+    Report::getCacheKey('all', ['submission', 'file']),
+    'tpps_report_submission_file_missing',
+    'tpps_report_submission_zenodo',
+    'tpps_phenotype_field',
+  ];
+}
+
+/**
+ * Implements hook 'submission_purged'.
+ */
+function tpps_submission_purged($submission) {
+  tpps_cache_clear_all();
+  drupal_set_message(
+    t("Submission @accession and it's files was removed and cache was cleared.",
+      ['@accession' => $submission->accession]
+    )
+  );
 }

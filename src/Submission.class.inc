@@ -707,6 +707,10 @@ class Submission {
     module_load_include('inc', 'tpps', 'includes/imported_studies_list');
     ImportedSubmissionList::remove($this->accession);
     $this->accession = $this->state = $this->sharedState = NULL;
+    if (function_exists('module_invoke_all')) {
+      // 'tpps_submission_purged().
+      module_invoke_all('submission_purged', $this);
+    }
   }
 
   /**
@@ -2679,14 +2683,14 @@ class Submission {
     }
 
     if (function_exists('module_invoke_all')) {
-      $data = [
+      $context = [
         'update_result' => $update_result,
         'shared_state_dataset_doi' => $shared_state_dataset_doi,
         'dataset_doi' => $dataset_doi,
         'state_dataset_doi' => $state_dataset_doi,
       ];
       // 'tpps_submission_dataset_doi_updated().
-      module_invoke_all('submission_dataset_doi_updated', $data);
+      module_invoke_all('submission_dataset_doi_updated', $context);
     }
   }
 

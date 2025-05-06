@@ -81,6 +81,7 @@ function tpps_form_main_settings_form_submit(array $form, array &$form_state) {
     || ($form_state['values']['tpps_dark_theme'] ?? NULL)
     != variable_get('tpps_dark_theme', FALSE)
   ) {
+    // @TODO Clear only TPPS Cache and CSS cache.
     cache_clear_all();
   }
   // When feature 'Remember Fieldset Collapsed State' enabled/disabled we must

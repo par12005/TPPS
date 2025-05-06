@@ -65,8 +65,7 @@ function tpps_form_front_settings_form_submit(array $form, array &$form_state) {
     || ($form_state['values']['tpps_front_show_others_studies'] ?? NULL)
       != variable_get('tpps_front_show_others_studies', TRUE)
   ) {
-    $cache_bin = TPPS_CACHE_BIN ?? 'cache';
-    // @TODO Minor. Clear only accession list.
-    cache_clear_all('*', $cache_bin, TRUE);
+    // Clear only list of accessions.
+    tpps_cache_clear_all(['tpps_submission_get_accession_list']);
   }
 }
