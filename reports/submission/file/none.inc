@@ -9,28 +9,9 @@
  * Menu callback. Lists submissions without files.
  */
 function tpps_report_submission_file_none() {
-  $rows = [];
-  $submission_list = tpps_load_submission_multiple();
-  $i = 0;
-  foreach ($submission_list as $submission) {
-    $file_list = array_keys($submission->getFileIdList());
-    if ($submission->state['stage'] >= 3 && !$file_list) {
-      $rows[] = [
-        ++$i,
-        l($submission->accession, 'api/submission/'
-        . $submission->accession . '/view/shared_state/saved_values/'),
-        $submission->getStatus(),
-        $submission->state['stage'],
-      ];
-    }
-  }
-  drupal_set_message(
-    t('Number of submissions without files: @number from @total',
-    ['@number' => count($rows), '@total' => count($submission_list)]
-  ));
-  return Report::printTable([
-    'report_name' => 'submissions_without_files',
-    'header' => ['#', t('Accession'), t('Status'), t('Stage')],
-    'rows' => $rows,
-  ]);
+  $file_name = str_replace('.inc', '',
+    Report::getFilePath('all', ['submission', 'file'])
+  );
+  module_load_include('inc', 'tpps', $file_name);
+  return tpps_report_submission_file('none');
 }
