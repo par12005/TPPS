@@ -140,6 +140,7 @@ class SubmissionList {
     if ($submission->doesNotExist()) {
       return $data;
     }
+    $page1_values = $submission->state['saved_values'][TPPS_PAGE_1];
     $data = [
       'submitter' => [
         'uid' => $submission->getSubmitter(),
@@ -152,30 +153,35 @@ class SubmissionList {
         'approved' => $submission->state['approved'] ?? NULL,
         'release' => $submission->state['saved_values']['summarypage']['release-date'] ?? NULL,
         'updated' => $submission->state['updated'] ?? NULL,
+        'cached' => REQUEST_TIME,
       ],
+      // @TODO Move tags to 'Submission' class and store only row data.
       'tags' => tpps_show_tags(tpps_submission_get_tags($submission->accession)),
       'status' => $submission->getStatus(),
       'stage' => $submission->getCurrentStage(),
       'publication' => [
-        'status' => $submission->state['saved_values'][TPPS_PAGE_1]['publication']['status'] ?? NULL,
-        'title' => $submission->state['saved_values'][TPPS_PAGE_1]['publication']['title']
-          ?? t('Title not provided yet'),
+        'status' => $page1_values['publication']['status'] ?? NULL,
+        'title' => $page1_values['publication']['title'] ?? NULL,
       ],
-      'file_row' => [
-        'tree-accession' => [],
-        'phenotype' => [],
-        'genotype' => [],
-        // Group 'other' used for files whith has fid but not belong to any group.
-        'other' => [],
+      'file' => [
+        'grouped_list' => [
+          'tree-accession' => [],
+          'phenotype' => [],
+          'genotype' => [],
+          // Files are missing in file system.
+          // Files which doesn't belong to any group.
+          'other' => [],
+        ],
+        'missing' => [],
+        'id_list' => [],
       ],
-      'file_id_list' => [],
       //'accession' => $submission->accession,
     ];
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Files.
     $file_list = $submission->getFileIdList();
-    $data['file_id_list'] = array_keys($file_list);
+    $data['file']['id_list'] = array_keys($file_list);
 
     if (!empty($file_list)) {
       // List of files per group.
@@ -186,7 +192,7 @@ class SubmissionList {
         if ($submission->hasLocalVcf($n)) {
           $organism_name = $submission->getOrganismName($n);
           $organism_label = check_plain($n . '. ' . $organism_name);
-          $file_row['other'][$organism_label]['local_vcf'] = $submission->getLocalVcf($n);
+          $file_row['genotype'][$organism_label]['local_vcf'] = $submission->getLocalVcf($n);
         }
       }
 
@@ -212,19 +218,16 @@ class SubmissionList {
         }
         $organism_name = $submission->getOrganismName($organism_index);
 
-        // Missing files goes to the 'other' group..
-        if (
-          // !in_array($fid, $existing_fid_list) ||
-          empty($file = file_load($fid))
-        ) {
-          $file_row['other'][] = $fid;
-          continue;
+        // Missing files goes to the 'other' group and will have no hyperlink
+        // to 'File Info' API page.
+        if (empty($file = file_load($fid))) {
+          $data['file']['missing'][] = $fid;
         }
         $organism_label = check_plain($organism_index . '. ' . $organism_name);
         $field_name = check_plain(end($parents));
         $file_row[$group][$organism_label][$field_name] = $fid;
       }
-      $data['file_row'] = $file_row;
+      $data['file']['grouped_list'] = $file_row;
     }
     return $data;
   }

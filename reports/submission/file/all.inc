@@ -6,19 +6,20 @@
  */
 
 /**
- * Menu callback. Shows list of all submission's files.
+ * Menu callback. Shows list of all submissions and their files.
  */
-function tpps_report_submission_file_all($accession = NULL) {
+function tpps_report_submission_file_all() {
+  $filter = explode('/', $_GET['q'])[5];
+  return tpps_report_submission_file($filter);
+}
+
+/**
+ * Shows filtered list of all submission's files.
+ */
+function tpps_report_submission_file($filter = NULL) {
   $debug_mode = FALSE;
 
-  $file_column_list = [
-    'tree-accession',
-    'phenotype',
-    'genotype',
-    // Group 'other' used for files whith has fid but not belong to any group.
-    'other',
-  ];
-  $options = ['query' => ['token' => variable_get('tpps_api_token')]];
+// @TODO Update hook_menu.
 
   $reset = $_GET['reset'] ?? FALSE;
   $data = SubmissionList::get($reset);
@@ -45,13 +46,57 @@ function tpps_report_submission_file_all($accession = NULL) {
     ]
   );
   drupal_set_message($message, 'warning');
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $options = ['query' => ['token' => variable_get('tpps_api_token')]];
+  $accession = explode('/', $_GET['q'])[6] ?? NULL;
+  if (empty($is_single = (strpos($accession, 'TGDR') !== FALSE))) {
+    $accession = NULL;
+  }
+  if ($filter == 'all' || $is_single) {
+    $file_column_list = [
+      'tree-accession',
+      'phenotype',
+      'genotype',
+      // Group 'other' used for files whith has fid but not belong to any group.
+      'other',
+    ];
+  }
+  elseif ($filter == 'missing') {
+    $file_column_list = ['missing'];
+  }
+  elseif ($filter == 'none') {
+    $file_column_list = [];
+  }
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Format output.
-  $formatted_rows = [];
-  $report_data = $data;
-  if ($accession) {
+  if ($is_single) {
     $report_data = [$accession => $data[$accession]];
   }
+  else {
+    if ($filter == 'all') {
+      $report_data = $data;
+    }
+    elseif ($filter == 'missing') {
+      $report_data = [];
+      foreach ($data as $accession => $cached_submission) {
+        if (!empty($cached_submission['file']['missing'])) {
+          $report_data[$accession] = $cached_submission;
+        }
+      }
+    }
+    elseif ($filter == 'none') {
+      $report_data = [];
+      foreach ($data as $accession => $cached_submission) {
+        if (empty($cached_submission['file']['id_list'])) {
+          $report_data[$accession] = $cached_submission;
+        }
+      }
+    }
+  }
+
+  $formatted_rows = [];
   // Line counter.
   $i = 0;
   foreach ($report_data as $key => $value) {
@@ -61,6 +106,8 @@ function tpps_report_submission_file_all($accession = NULL) {
       'value' => $value,
       'file_column_list' => $file_column_list,
       'options' => $options,
+      'report_filter' => $filter,
+      'is_single' => $is_single,
     ]);
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -115,14 +162,8 @@ function tpps_build_file_api_link($accession, $fid, array $options) {
  * Themes single row for 'submission_file_all' report.
  *
  * @param array $context
- *   Keys are:
- *   'key' - string. Submission accession. E.g., 'TGDRxxxx'.
- *   'value' - array. Data to theme the row. Keys are:
- *     'uid' - int. User Id of the study submitter.
- *     'stage' - mixed. Last submitted TPPS form step.
- *     'status' - string. Status of Submission.
- *     'file_row' - array. Nested array of file ids per group
- *       (phenotype/genotype and etc) and per organism name.
+ *   Cached Submission's data (item of the SubmissionList).
+ *   See SubmissionList::buildSingle() for the structure.
  *
  * @return array
  *   Returns row item for theme_table().
@@ -136,20 +177,36 @@ function tpps_report_submission_file_all_theme_single_row(array $context) {
   // Convert to strings.
   // New array must be used to have correct order of keys.
   foreach ($context['file_column_list'] as $group) {
-    if (!empty($value['file_row'][$group])) {
-      foreach ($value['file_row'][$group] as $organism_label => $field) {
+    if ($context['is_single'] || $context['report_filter'] == 'all') {
+      if (empty($value['file']['grouped_list'][$group])) {
+        $final_file_row[] = '';
+        continue;
+      }
+      foreach ($value['file']['grouped_list'][$group] as $organism_label => $field) {
         if (empty($field) || !is_array($field)) {
           continue;
         }
         foreach ($field as $field_name => $fid) {
-          $value['file_row'][$group][$organism_label][$field_name]
-            = tpps_build_file_api_link($accession, $fid, $context['options']);
+          if (in_array($fid, $value['file']['missing'])) {
+            // File is missing in filesystem.
+            $value['file']['grouped_list'][$group][$organism_label][$field_name]
+              = check_plain($fid);
+          }
+          else {
+            // File exists.
+            $value['file']['grouped_list'][$group][$organism_label][$field_name]
+              = tpps_build_file_api_link($accession, $fid, $context['options']);
+          }
         }
       }
-      $final_file_row[] = tpps_array_print_list($value['file_row'][$group]);
+      $final_file_row[] = tpps_array_print_list($value['file']['grouped_list'][$group]);
     }
-    else {
-      $final_file_row[] = '';
+    elseif ($context['report_filter'] == 'missing') {
+      if (!empty($value['file']['missing'])) {
+        $final_file_row[] = theme('item_list',
+          ['items' => $value['file']['missing']]
+        );
+      }
     }
   }
   return array_merge(
