@@ -2724,10 +2724,10 @@ class Submission {
    *   Return submitter user id.
    */
   public function getSubmitter() {
-    if ($this->doesExist()) {
+    if ($this->doesNotExist()) {
       return NULL;
     }
-    return $this->get(['uid']) ?? NULL;
+    return $this->get(['submitting_uid']) ?? NULL;
   }
 
   /**
