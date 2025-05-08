@@ -3617,13 +3617,7 @@ function tpps_form_tpps_main_alter(array &$form, array &$form_state) {
  * Implements hook 'submission_saved'.
  */
 function tpps_submission_saved($submission) {
-  // Updated Submission's item in 'Submission All Files' report.
-  Report::buildRow('all', ['submission', 'file'],
-    ['submission' => $submission, 'reset' => TRUE]
-  );
-
-  // @TODO Critical. Submission->save() called multiple types per single page request.
-  // Minor. Store each submission separately to reset only one submission.
+  // @TODO Critical. $submission->save() called multiple types per page request.
   tpps_cache_clear_all();
 }
 
@@ -3642,8 +3636,14 @@ function tpps_cache_clear_all($list = NULL, $force = FALSE) {
   }
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   foreach ($list as $cid) {
-    if (!$force && $cid == Report::getCacheKey('all', ['submission', 'file'])) {
-      // Skip reports which supports single row update.
+    if (!$force && $cid == SubmissionList::CACHE_ID) {
+      // Do not reset main list of submissions by default because it takes
+      // about 1 min to recreate.
+      // To force update use:
+      // tpps_cache_clear_all(SubmissionList::CACHE_ID)
+      // or
+      // tpps_cache_clear_all(TRUE).
+      // @TODO Create separate bin to store this list or merge all CIDs.
       continue;
     }
     cache_clear_all($cid, $cache_bin);
@@ -3660,6 +3660,8 @@ function tpps_cache_clear_all($list = NULL, $force = FALSE) {
  */
 function tpps_cache_get_cid_list() {
   return [
+    // List of all submissions. Recreation takes about 1 min.
+    SubmissionList::CACHE_ID,
     'tpps_report_doi_duplicates',
     'tpps_cv',
     'tpps_doi_get_accession',
@@ -3672,7 +3674,7 @@ function tpps_cache_get_cid_list() {
     'tpps_submission_get_accession_list',
     'tpps_admin_panel_show_all',
     'tpps_admin_missing_files_report',
-    Report::getCacheKey('all', ['submission', 'file']),
+    //Report::getCacheKey('all', ['submission', 'file']),
     'tpps_report_submission_file_missing',
     'tpps_report_submission_zenodo',
     'tpps_phenotype_field',
