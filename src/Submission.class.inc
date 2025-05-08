@@ -634,6 +634,8 @@ class Submission {
       ->condition('accession', $this->accession)
       ->execute();
 
+    SubmissionList::updateSingle($this);
+
     // 'tpps_submission_saved'';
     if (function_exists('module_invoke_all')) {
       module_invoke_all('submission_saved', $this);
@@ -1872,6 +1874,34 @@ class Submission {
   }
 
   /**
+   * Gets current stage name.
+   *
+   * @return string
+   *   Returns not localized stage name.
+   */
+  public function getCurrentStageName() {
+    $stage = $this->getCurrentStage();
+    $names = $this->getStageNames();
+    return $names[$stage] ?? 'Unknown';
+  }
+
+  /**
+   * Gets list of stage names.
+   *
+   * @return array
+   *   Returns list of stages and their human readable names.
+   */
+  public function getStageNames() {
+    return [
+      TPPS_PAGE_1 => "Author and Species Information",
+      TPPS_PAGE_2 => "Experimental Conditions",
+      TPPS_PAGE_3 => "Plant Accession",
+      TPPS_PAGE_4 => "Submit Data",
+      'summarypage' => "Review Data and Submit",
+    ];
+  }
+
+  /**
    * Gets name of last completed form's stage.
    *
    * Completed stage is a step of multistep form which passed validation
@@ -2682,6 +2712,72 @@ class Submission {
       // 'tpps_submission_dataset_doi_updated().
       module_invoke_all('submission_dataset_doi_updated', $context);
     }
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Submitter.
+
+  /**
+   * Gets id of the submitter's Drupal Account.
+   *
+   * @return int
+   *   Return submitter user id.
+   */
+  public function getSubmitter() {
+    if ($this->doesExist()) {
+      return NULL;
+    }
+    return $this->get(['uid']) ?? NULL;
+  }
+
+  /**
+   * Gets submitter's email address.
+   *
+   * @param bool $reset
+   *   Flag to reset cache.
+   *
+   * @return string
+   *   Returns email address or empty string.
+   */
+  public function getSubmitterMail($reset = FALSE) {
+    $static = &drupal_static(__FUNCTION__);
+
+    $uid = $this->getSubmitter();
+    if ($reset || !isset($static[$uid])) {
+      $static[$uid] = (string) db_select('users', 'u')
+        ->fields('u', ['mail'])
+        ->condition('uid', $uid)
+        ->range(0, 1)
+        ->execute()
+        ->fetchField();
+    }
+    return $static[$uid];
+  }
+
+  /**
+   * Gets Chado-name of the submitter.
+   *
+   * Note: Drupal name could differ.
+   *
+   * @param bool $reset
+   *   Flag to reset cache.
+   *
+   * @return string
+   *   Returns name or empty string.
+   */
+  public function getSubmitterChadoName($reset = FALSE) {
+    $static = &drupal_static(__FUNCTION__);
+
+    $uid = $this->getSubmitter();
+    if ($reset || !isset($static[$uid])) {
+      $query = db_select('chado.contact', 'c')
+        ->fields('c', ['name'])->range(0, 1);
+      $query->join('chado.contactprop', 'cp', 'cp.contact_id = c.contact_id');
+      $query->condition('cp.value', $this->getSubmitterMail())
+        ->condition('cp.type_id', tpps_load_cvterm('email')->cvterm_id);
+      $static[$uid] = (string) $query->execute()->fetchField();
+    }
+    return $static[$uid];
   }
 
 }
