@@ -97,7 +97,7 @@ class SubmissionList {
       $cache = cache_get(static::CACHE_ID, static::CACHE_BIN);
       if ($reset || empty($cache) || (empty($cache->data) && !is_array($cache->data))) {
         // Cache will be empty when module just installed and no submission yet.
-        $cache->data = [];
+        $list = [];
         // Note: Do not load cache from db but use statically cached list to
         // speed-up processing.
         $submission_list = tpps_load_submission_multiple();
@@ -106,10 +106,12 @@ class SubmissionList {
         krsort($submission_list, SORT_NATURAL);
         foreach ($submission_list as $accession => $submission) {
           $accession = $submission->accession;
-          $cache->data[$accession] = SubmissionList::buildSingle($submission);
+          $list[$accession] = SubmissionList::buildSingle($submission);
         }
       }
-      $list = $cache->data;
+      else {
+        $list = $cache->data;
+      }
       static::set($list);
     }
     return $list;
@@ -121,7 +123,7 @@ class SubmissionList {
   public static function set(array $new_list) {
     $list = &drupal_static(static::CACHE_ID);
     $list = $new_list;
-    cache_set(static::CACHE_ID, $list, static::CACHE_BIN);
+    cache_set(static::CACHE_ID, $new_list, static::CACHE_BIN);
   }
 
   /**
@@ -140,7 +142,7 @@ class SubmissionList {
     if ($submission->doesNotExist()) {
       return $data;
     }
-    $page1_values = $submission->state['saved_values'][TPPS_PAGE_1];
+    $page1_values = $submission->get(['saved_values', TPPS_PAGE_1]);
     $data = [
       'submitter' => [
         'uid' => $submission->getSubmitter(),
@@ -160,8 +162,12 @@ class SubmissionList {
       'status' => $submission->getStatus(),
       'stage' => $submission->getCurrentStage(),
       'publication' => [
-        'status' => $page1_values['publication']['status'] ?? NULL,
-        'title' => $page1_values['publication']['title'] ?? NULL,
+        'status' => tpps_array_get_value($page1_values,
+          ['publication', 'status']
+        ),
+        'title' => tpps_array_get_value($page1_values,
+          ['publication', 'title']
+        ),
       ],
       'file' => [
         'grouped_list' => [
