@@ -395,11 +395,11 @@ function tpps_tab_create($uid) {
     'empty' => '',
   );
 
-  $final = $submission->doesExist() ? "<div class='tpps_table'><label for="
+  $final = count($rows) ? "<div class='tpps_table'><label for="
     . "'tpps_incomplete_table'>Incomplete Submissions</label>"
-    . theme('table', $vars) . '</div>' : "";
-  $submission_list = [];
+    . theme('table', $vars) . '</div>' : '';
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $submission_list = tpps_load_submission_multiple([
     'status' => [
       TPPS_SUBMISSION_STATUS_PENDING_APPROVAL,
@@ -408,7 +408,7 @@ function tpps_tab_create($uid) {
     'uid' => $user->uid,
   ]);
 
-  $rows = array();
+  $rows = [];
   foreach ($submission_list as $accession => $submission) {
     $page_1 = &$submission->state['saved_values'][TPPS_PAGE_1];
     $title = $abstract = NULL;
@@ -445,9 +445,9 @@ function tpps_tab_create($uid) {
   $vars['rows'] = $rows;
   $vars['attributes']['id'] = 'tpps_complete_table';
 
-  $final .= $submission->doesExist()
+  $final .= count($rows)
     ? "<div class='tpps_table'><label for='tpps_complete_table'>Complete "
-    . "Submissions</label>" . theme('table', $vars) . '</div>' : "";
+    . "Submissions</label>" . theme('table', $vars) . '</div>' : '';
 
   if (empty($final)) {
     $final .= "<h2>Could not find any Submissions</h2>";
