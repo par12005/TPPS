@@ -139,15 +139,19 @@ function tpps_ajax_get_study_details_tab(array $data) {
   foreach ($study_file_ids as $fid) {
     if ($file = tpps_file_load($fid)) {
       $file_url = check_plain(file_create_url($file->uri));
-      if (stripos($file_url, 'core/labs') === FALSE) {
+      if (
+        stripos($file_url, '/isg/') === FALSE
+        || stripos($file_url, 'core/labs') === FALSE
+      ) {
         $params['attributes']['title'] = 'File id: ' . $fid
           . ', Size: ' . $file->filesize . ' bytes';
         $files[] = l(check_plain($file->filename), $file_url, $params);
       }
     }
   }
-  $page2_values = $state['saved_values'][TPPS_PAGE_2]['study_type'] ?? NULL;
-  $pub_link = $state['title'];
+  $page1_values = $state['saved_values'][TPPS_PAGE_1] ?? NULL;
+  $page2_values = $state['saved_values'][TPPS_PAGE_2] ?? NULL;
+  $pub_link = $submission->sharedState['saved_values'][TPPS_PAGE_1]['publication']['title'];
   $pub_id = db_select('chado.project_pub', 'p')
     ->fields('p', ['pub_id'])
     ->condition('project_id', $state['ids']['project_id'])
@@ -156,16 +160,27 @@ function tpps_ajax_get_study_details_tab(array $data) {
     try {
       $bundle = tripal_load_bundle_entity(['label' => 'Publication']);
       $pub_id = chado_get_record_entity_by_bundle($bundle, $pub_id);
-      $pub_link = l($pub_link, "$base_url/Publication/$pub_id");
+      $pub_link = l($pub_link, 'Publication/' . $pub_id);
     }
     catch (Exception $e) {
       return ['errors' => [$e->getMessage()]];
     }
   }
+  // Build list of authors.
+  $author_list[] = check_plain($page1_values['primaryAuthor']);
+  $secondary_authors_number = $page1_values['publication']['secondaryAuthors']['number'];
+  for ($i = 1; $i <= $secondary_authors_number; $i++) {
+    $author_list[] = check_plain($page1_values['publication']['secondaryAuthors'][$i]);
+  }
+  // Build list of species.
+  $species_list = [];
+  for ($i = 1; $i <= $submission->getOrganismNumber(); $i++) {
+    $species_list[] = $i . ': ' . check_plain($page1_values['organism'][$i]['name']);
+  }
   $rows[] = [t('Accession'), $state['accession']];
   $rows[] = [t('Title'), $pub_link];
-  $rows[] = [t('Authors'), implode(', ', $state['authors'])];
-  $rows[] = [t('Species'), implode('<br>', $species)];
+  $rows[] = [t('Authors'), theme('item_list', ['items' => $author_list])];
+  $rows[] = [t('Species'), theme('item_list', ['items' => $species_list])];
   $rows[] = [t('Data Type'), $page2_values['data_type']];
   module_load_include('inc', 'tpps', 'includes/form');
   $rows[] = [
@@ -451,7 +466,7 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
   $start = $page * $per_page;
 
   $_GET['page'] = $page;
-  
+
 
   // // Set total check = false to begin with
   // $total_check = false;
@@ -500,7 +515,7 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
 
 
 
- 
+
 
   // Removed by Rish in favour of materialized views per project_id / study 3/24/2023
   // $query = db_select('chado.genotype', 'g');
@@ -540,7 +555,7 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
     $vcf_location_details[] = $vcf_details;
   }
 
-  
+
   if ($view_version == 3) {
     // @NEW -RISH using Emily's redesign that uses index_id. Fast response in ms.
     $query_results = chado_query('select max(index_id) as c1 FROM chado.genotypes_' . $project_id, []);
@@ -597,7 +612,7 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
   }
   else if ($view_version == 4) {
     // VERSION 4 - RISH + MEGHAN'S SH SCRIPT (3/30/2025)
-    
+
     $rows = [];
     // $vcf_location = "/core/labs/Wegrzyn/meghan_work/query_VCF_for_genotypes/Geraldes_2013.v2.vcf";
     $vcf_location = $vcf_location_details[0]['location'];
@@ -616,7 +631,7 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
       $line_parts = explode(" ", $line);
       $rows[] = [$line_parts[0], $line_parts[1], $line_parts[2]];
     }
-  
+
     $table = theme('table', [
       'header' => [
         t('Plant'),
