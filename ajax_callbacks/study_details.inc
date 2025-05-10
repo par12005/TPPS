@@ -604,14 +604,17 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
     $output_lines = [];
 
     // Get total reads
-    $plants_count = exec('bcftools query -l "' . $vcf_location . '" | wc -l');
-    $markers_count = exec('bcftools view -H "' . $vcf_location . '" | wc -l');
+    $cmd_plants_count = 'bcftools query -l "' . $vcf_location . '" | wc -l';
+    $plants_count = exec($cmd_plants_count);
+    $cmd_markers_count = 'bcftools view -H "' . $vcf_location . '" | wc -l';
+    $markers_count = exec($cmd_markers_count);
     $total = ceil(($plants_count * $markers_count) / 20);
     pager_default_initialize($total, $per_page);
 
 
     // Get the genotype calls from the VCF file for the specified page
-    exec("/bin/bash " . dirname(__FILE__) . '/../tools/vcfscripts/query_VCF_for_genotype_calls.sh -p ' . ($page+1) . ' " -f ' . $vcf_location . '"', $output_lines);
+    $cmd_calls = "/bin/bash " . dirname(__FILE__) . '/../tools/vcfscripts/query_VCF_for_genotype_calls.sh -p ' . ($page+1) . ' -f "' . $vcf_location . '"';
+    exec($cmd_calls, $output_lines);
     foreach ($output_lines as $line) {
       $line_parts = explode(" ", $line);
       $rows[] = [$line_parts[0], $line_parts[1], $line_parts[2]];
@@ -637,7 +640,10 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
       'content' => $pager . $table,
       'vcf_location_details' => $vcf_location_details,
       'total' => $total,
-      'cmd' => 'bcftools query -l "' . $vcf_location . '" | wc -l'
+      //'cmd' => 'bcftools query -l "' . $vcf_location . '" | wc -l',
+      //'cmd_calls' => $cmd_calls,
+      //'cmd_plants_count' => $cmd_plants_count,
+      //'cmd_markers_count' => $cmd_markers_count
     ];
   }
 }

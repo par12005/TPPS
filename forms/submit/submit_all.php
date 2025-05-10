@@ -4708,17 +4708,24 @@ function tpps_genotype_vcf_processing_batch_some_features_insert($current_id, $s
       $src_feature_id = $feature_data['src_feature_id'];
       // If a src feature exists, we can create a featureloc record
       if ($src_feature_id != NULL) {
+        $fmin = 0;
+        $fmax = -1;
         $variant_id = $feature_data['feature_id'];
         $fmin = $feature_data['fmin'];
         $fmax = $feature_data['fmax'];
-        if ($featureloc_index != 0) {
-          $sql .= ',';
+        if ($fmin <= $fmax) {
+          if ($featureloc_index != 0) {
+            $sql .= ',';
+          }
+          $sql .= "($variant_id, $src_feature_id, $fmin, $fmax)";
+          $featureloc_index = $featureloc_index + 1;
         }
-        $sql .= "($variant_id, $src_feature_id, $fmin, $fmax)";
-        $featureloc_index = $featureloc_index + 1;
+        else {
+          tpps_log("Invalid featureloc fmin > fmax for $variant_name ($variant_id) - not inserting featureloc\n");
+        }
       }
     }
-    $sql .= " ON CONFLICT (feature_id, locgroup, rank) DO UPDATE SET fmin=EXCLUDED.fmin";
+    $sql .= " ON CONFLICT (feature_id, locgroup, rank) DO UPDATE SET fmin=EXCLUDED.fmin, fmax=EXCLUDED.fmax";
     if ($featureloc_index > 0) {
       db_query($sql);
       $lmsg = "Inserting some featurelocs in db using bulk some insert - DONE (count: $featureloc_index)\n";
@@ -5347,7 +5354,8 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
               // if srcfeature_id was found, then we have enough info to add featureloc data
               if (isset($srcfeature_id)) {
-                $fmax = $position;
+                $position = intval($position);
+                $fmax = intval($position);
 
                 // Check to see whether feature is an indel ($ref is non-singular value)
                 // split ref by comma (based on Emily's demo), go through each split value
@@ -5366,7 +5374,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
                 $featureloc_values = [
                   'feature_id' => $variant_id,
                   'srcfeature_id' => $srcfeature_id,
-                  'fmin' => $position,
+                  'fmin' => intval($position),
                   'fmax' => $fmax // ALPHA code above now caters for INDELS
                 ];
 
@@ -5383,11 +5391,14 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
                   $featureloc_count = $row->c1;
                 }
                 // This means no featureloc exists, so insert it
-                if ($featureloc_count == 0) {
+                if ($featureloc_count == 0 && ($featureloc_values['fmin'] <= $featureloc_values['fmax'])) {
                   // This will add it to the multiinsert record system for insertion
                   // The marker_name doesn't mean much here because it is only used a key
                   $records['featureloc'][$variant_name] = $featureloc_values;
                   echo "Featureloc for $variant_name will be created\n";
+                }
+                else {
+                  tpps_log("Featureloc for $variant_name already exists, not inserting or invalid featureloc values for variant: " . $variant_name . ' with fmin: ' . $position . ' fmax: ' . $fmax);
                 }
               }
             }
@@ -5397,8 +5408,9 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             tpps_log($lmsg);
           }
           else {
+            $position = intval($position);
             // Keep track of positions to connect back with src_feature_name and variant_name
-            $fmax = $position;
+            $fmax = intval($position);
             // Check to see whether feature is an indel ($ref is non-singular value)
             // split ref by comma (based on Emily's demo), go through each split value
             $ref_comma_parts = explode(',', $ref); // eg G,GTAC
@@ -5421,12 +5433,17 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
               }
               $src_feature_data[$scaffold_id]['variant_list'][] = $variant_name;
 
-              $features_variant_data[$variant_name] = [
-                'src_feature_name' => $scaffold_id,
-                'src_feature_id' => $src_feature_data[$scaffold_id]['src_feature_id'],
-                'fmin' => $position,
-                'fmax' => $fmax,
-              ];
+              if (intval($position) <= $fmax) {
+                $features_variant_data[$variant_name] = [
+                  'src_feature_name' => $scaffold_id,
+                  'src_feature_id' => $src_feature_data[$scaffold_id]['src_feature_id'],
+                  'fmin' => intval($position),
+                  'fmax' => $fmax,
+                ];
+              }
+              else {
+                tpps_log('Invalid featureloc values for variant: ' . $variant_name . ' with fmin: ' . $position . ' fmax: ' . $fmax);
+              }
             }
           }
           // throw New Exception('DEBUG');
