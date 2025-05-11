@@ -3056,9 +3056,21 @@ function tpps_theme() {
         'string' => NULL,
       ],
     ],
-    'study_accession' => [
+    'submission_accession' => [
       'variables' => [
         'accession' => NULL,
+      ],
+    ],
+    'submission_action_list' => [
+      'variables' => [
+        'accession' => NULL,
+        'destination' => NULL,
+      ],
+    ],
+    'submission_page_list' => [
+      'variables' => [
+        'accession' => NULL,
+        'destination' => NULL,
       ],
     ],
   ];
@@ -3089,8 +3101,7 @@ function theme_fcbold(array $variables) {
  * Highlights number in study accession.
  *
  * Note: Used in function tpps_report_submission_imported().
- * Usage:
- * theme('study_accession', ['accession' => $accession]);
+ * Usage: theme('submission_accession', ['accession' => $accession]);
  *
  * @param array $variables
  *   Data for theming.
@@ -3099,13 +3110,89 @@ function theme_fcbold(array $variables) {
  * @return string
  *   Returns string where 1st char is wrapped with '<strong>' HTML-tag.
  */
-function theme_study_accession(array $variables) {
+function theme_submission_accession(array $variables) {
   $accession = $variables['accession'] ?? NULL;
   if (!empty($accession)) {
     $number = str_replace('TGDR', '', ($accession));
     return '<span class="tpps-study-accession">TGDR</span>'
       . '<span class="tpps-study-accession-number">' . $number . '</span>';
   }
+}
+
+/**
+ * List of Submission's actions.
+ *
+ * @param array $variables
+ *   Data for theming.
+ *   'accession' - String to be processed.
+ *
+ * @return string
+ *   Returns string where 1st char is wrapped with '<strong>' HTML-tag.
+ */
+function theme_submission_actions(array $variables) {
+  $accession = $variables['accession'] ?? NULL;
+  $destination = $variables['destination'] ?? NULL;
+  if (empty($accession)) {
+    return '';
+  }
+  $labels = [
+    // Actions:
+    'view' => theme('fcbold', ['string' => t('View')]),
+    'edit' => theme('fcbold', ['string' => t('Edit')]),
+    'export' => theme('fcbold', ['string' => t('Export')]),
+    'compare' => theme('fcbold', ['string' => t('Compare')]),
+    'purge' => theme('fcbold', ['string' => t('Purge')]),
+  ];
+
+  $params = [
+    'html' => TRUE,
+    'query' => ['destination' => $destination],
+  ];
+  // Actions:
+  return implode(' | ', [
+    l($labels['view'], 'tpps/submission/' . $accession . '/view', $params),
+    l($labels['edit'], 'tppsc/' . $accession, $params),
+    l($labels['export'], 'tpps/submission/' . $accession . '/export', $params),
+    l($labels['compare'], 'tpps/submission/' . $accession . '/compare', $params),
+    l($labels['purge'], 'tpps/submission/' . $accession . '/purge', $params),
+  ]);
+}
+
+/**
+ * List of Submission's pages.
+ *
+ * @param array $variables
+ *   Data for theming.
+ *   'accession' - String to be processed.
+ *
+ * @return string
+ *   Returns string where 1st char is wrapped with '<strong>' HTML-tag.
+ */
+function theme_submission_pages(array $variables) {
+  $accession = $variables['accession'] ?? NULL;
+  $destination = $variables['destination'] ?? NULL;
+  if (empty($accession)) {
+    return '';
+  }
+  $labels = [
+    // Pages:
+    'admin_panel' => theme('fcbold', ['string' => t('Admin Panel')]),
+    'details' => theme('fcbold', ['string' => t('Details (map)')]),
+    'completed_submission' => theme('fcbold',
+      ['string' => t('Completed Submission')]
+    ),
+    'files' => theme('fcbold', ['string' => t('Files')]),
+  ];
+  $params = [
+    'html' => TRUE,
+    'query' => ['destination' => $destination],
+  ];
+  return implode(' | ', [
+    l($labels['admin_panel'], 'tpps-admin-panel/' . $accession, $params),
+    l($labels['details'], 'tpps/details/' . $accession, $params),
+    l($labels['completed_submission'], 'completed-submission/' . $accession, $params),
+    l($labels['files'], 'tpps-admin-panel/file-diagnostics/' . $accession, $params),
+  ]);
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
