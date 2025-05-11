@@ -1151,6 +1151,7 @@ class Submission {
         // 'admin_comments',
         // 'alternative_accessions',
         // 'data',
+        // Stores tree id and coordinates to show google map on study details page.
         // 'tree_info'.
         //
         //  Probably could be unset:

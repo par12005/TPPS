@@ -99,9 +99,14 @@ function tpps_study_location(array &$form, array &$form_state) {
     );
   }
 
-  $locs = tpps_get_ajax_value($form_state, array('study_location', 'locations'), NULL);
+  $locs = tpps_get_ajax_value($form_state, ['study_location', 'locations'], NULL);
 
-  if ($form_state['triggering_element']['#name'] == 'study_locations_map_button' and $type != 2 and !empty($locs) and !empty($locs['number'])) {
+  if (
+    $form_state['triggering_element']['#name'] == 'study_locations_map_button'
+    and $type != 2
+    and !empty($locs)
+    and !empty($locs['number'])
+  ) {
     $coords = array();
     $valid_coords = TRUE;
     for ($i = 1; $i <= $locs['number']; $i++) {
