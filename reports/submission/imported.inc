@@ -22,23 +22,6 @@ function tpps_report_submission_imported() {
     'html' => TRUE,
   ];
 
-  // Build labels once to avoid extra work inside the loop.
-  $labels = [
-    // Actions:
-    'view' => theme('fcbold', ['string' => t('View')]),
-    'edit' => theme('fcbold', ['string' => t('Edit')]),
-    'export' => theme('fcbold', ['string' => t('Export')]),
-    'compare' => theme('fcbold', ['string' => t('Compare')]),
-    'purge' => theme('fcbold', ['string' => t('Purge')]),
-    // Pages:
-    'admin_panel' => theme('fcbold', ['string' => t('Admin Panel')]),
-    'details' => theme('fcbold', ['string' => t('Details (map)')]),
-    'completed_submission' => theme('fcbold',
-      ['string' => t('Completed Submission')]
-    ),
-    'files' => theme('fcbold', ['string' => t('Files')]),
-  ];
-
   foreach ($list as $local => $remote) {
     $submission = new Submission($local);
     if ($submission->doesNotExist()) {
@@ -66,7 +49,7 @@ function tpps_report_submission_imported() {
     }
 
     // Original accession link.
-    $accession_title = theme('study_accession',
+    $accession_title = theme('submission_accession',
       ['accession' => $import_meta['original_accession']]
     );
     if ($import_meta['site'] ?? NULL) {
@@ -83,7 +66,7 @@ function tpps_report_submission_imported() {
     $rows[] = [
       $original_accession_link ?? NULL,
       l(
-        theme('study_accession', ['accession' => $local]),
+        theme('submission_accession', ['accession' => $local]),
         'tpps/submission/' . $local . '/view',
         $params
       ),
@@ -93,28 +76,13 @@ function tpps_report_submission_imported() {
       $import_meta['current_version'] ?? NULL,
       $submission->uid ?? NULL,
       $import_meta['full_date'] ?? NULL,
-      // Actions:
-      implode(' | ', [
-        l($labels['view'], 'tpps/submission/' . $local . '/view', $params),
-        l($labels['edit'], 'tppsc/' . $local, $params),
-        l($labels['export'], 'tpps/submission/' . $local . '/export', $params),
-        l($labels['compare'], 'tpps/submission/' . $local . '/compare', $params),
-        l($labels['purge'], 'tpps/submission/' . $local . '/purge', $params),
+      theme('submission_action_list', [
+        'accession' => $local,
+        'destination' => 'admin/reports/tpps/submission/imported',
       ]),
-      // Pages:
-      implode(' | ', [
-        l($labels['admin_panel'], 'tpps-admin-panel/' . $local, $params),
-        l($labels['details'], 'tpps/details/' . $local, $params),
-        l(
-          $labels['completed_submission'],
-          'completed-submission/' . $local,
-          $params
-        ),
-        l(
-          $labels['files'],
-          'tpps-admin-panel/file-diagnostics/' . $local,
-          $params
-        ),
+      theme('submission_page_list', [
+        'accession' => $local,
+        'destination' => 'admin/reports/tpps/submission/imported',
       ]),
     ];
   }
