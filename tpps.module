@@ -1503,7 +1503,6 @@ function tpps_main_submit($form, &$form_state) {
     else {
       $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
         = TPPS_SUBMISSION_FORM_CURRENT_VERSION;
-
     }
   }
 
@@ -3073,6 +3072,18 @@ function tpps_theme() {
         'destination' => NULL,
       ],
     ],
+    'file_id' => [
+      'variables' => [
+        'fid' => NULL,
+        'attributes' => NULL,
+      ],
+    ],
+    'file_action_list' => [
+      'variables' => [
+        'fid' => NULL,
+        'attributes' => NULL,
+      ],
+    ],
   ];
 }
 
@@ -3193,6 +3204,76 @@ function theme_submission_pages(array $variables) {
     l($labels['completed_submission'], 'completed-submission/' . $accession, $params),
     l($labels['files'], 'tpps-admin-panel/file-diagnostics/' . $accession, $params),
   ]);
+}
+
+/**
+ * Wraps file id into hyperlink.
+ *
+ * @param array $variables
+ *   Data for theming.
+ *   'fid' - string. File Id.
+ *
+ * @return string
+ *   Returns string where 1st char is wrapped with '<strong>' HTML-tag.
+ */
+function theme_file_id(array $variables) {
+  $fid = check_plain($variables['fid']) ?? NULL;
+  $destination = $variables['destination'] ?? NULL;
+  if (empty($fid)) {
+    return '';
+  }
+  $options = [
+    'query' => [
+      'token' => variable_get('tpps_api_token'),
+      'destination' => $destination,
+    ],
+    'attributes' => $variables['attributes'] ?? '',
+  ];
+  return l($fid, 'api/file/' . $fid . '/info', $options);
+}
+
+/**
+ * Wraps file id into hyperlink.
+ *
+ * @param array $variables
+ *   Data for theming.
+ *   'fid' - string. File Id.
+ *   'attributes' - array. List of hyperlink attributes.
+ *
+ * @return string
+ *   Returns string where 1st char is wrapped with '<strong>' HTML-tag.
+ */
+function theme_file_action_list(array $variables) {
+  $accession = $variables['accession'] ?? NULL;
+  $destination = $variables['destination'] ?? NULL;
+  if (empty($accession)) {
+    return '';
+  }
+  $fid = check_plain($variables['fid']) ?? NULL;
+  if (empty($fid)) {
+    return '';
+  }
+  $options = [
+    'query' => [
+      'token' => variable_get('tpps_api_token'),
+      'destination' => $destination,
+    ],
+    'attributes' => $variables['attributes'] ?? '',
+  ];
+  return '[' . implode('|', [
+    l(t('D'), 'api/file/' . $fid . '/get',
+      array_merge($options, ['attributes' => ['title' => t('Download File')]])
+    ),
+    l(t('U'), 'api/file/' . $fid . '/usage',
+      array_merge($options, ['attributes' => ['title' => t('Usage')]])
+    ),
+    l(t('U+'), 'api/file/' . $fid . '/usage/add/' . $accession,
+      array_merge($options, ['attributes' => ['title' => t('Add 1 Usage')]])
+    ),
+    l(t('U-'), 'api/file/' . $fid . '/usage/delete/' . $accession,
+      array_merge($options, ['attributes' => ['title' => t('Delete 1 Usage')]])
+    ),
+  ]) . ']';
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -3665,7 +3746,7 @@ function tpps_form_tppsc_main_alter($form, $form_state) {
   if (!empty($file_list)) {
     foreach (array_keys($file_list) as $fid) {
       $file = tpps_file_load($fid);
-      if ($file && Submission::emptyFileUsage($file, $submission->accession)) {
+      if ($file && Submission::isEmptyFileUsage($file, $submission->accession)) {
         Submission::addFileUsage($file, $submission->accession);
       }
     }

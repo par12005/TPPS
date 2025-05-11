@@ -123,42 +123,6 @@ function tpps_report_submission_file($filter = NULL) {
 }
 
 /**
- * Builds set of links to File API pages.
- *
- * @param string $accession
- *   Submission accession. E.g., 'TGDRxxxx'.
- * @param int $fid
- *   Drupal's managed file id.
- * @param array $options
- *   Links' options.
- *
- * @return string
- *   Returns set of the HTML links which points to File API actions.
- */
-function tpps_build_file_api_link($accession, $fid, array $options) {
-  $fid = check_plain($fid);
-  $accession = check_plain($accession);
-
-  return l($fid, 'api/file/' . $fid . '/info',
-    array_merge($options, ['attributes' => ['title' => t('View Info')]])
-  )
-  . ' [' . implode('|', [
-    l(t('D'), 'api/file/' . $fid . '/get',
-      array_merge($options, ['attributes' => ['title' => t('Download File')]])
-    ),
-    l(t('U'), 'api/file/' . $fid . '/usage',
-      array_merge($options, ['attributes' => ['title' => t('Usage')]])
-    ),
-    l(t('U+'), 'api/file/' . $fid . '/usage/add/' . $accession,
-      array_merge($options, ['attributes' => ['title' => t('Add 1 Usage')]])
-    ),
-    l(t('U-'), 'api/file/' . $fid . '/usage/delete/' . $accession,
-      array_merge($options, ['attributes' => ['title' => t('Delete 1 Usage')]])
-    ),
-  ]) . ']';
-}
-
-/**
  * Themes single row for 'submission_file_all' report.
  *
  * @param array $context
@@ -195,7 +159,11 @@ function tpps_report_submission_file_all_theme_single_row(array $context) {
           else {
             // File exists.
             $value['file']['grouped_list'][$group][$organism_label][$field_name]
-              = tpps_build_file_api_link($accession, $fid, $context['options']);
+              = theme('file_id',
+                ['fid' => $fid, 'attributes' => ['title' => t('View Info')]]
+              ) . theme('file_action_list',
+                ['accession' => $accession, 'fid' => $fid]
+              );
           }
         }
       }

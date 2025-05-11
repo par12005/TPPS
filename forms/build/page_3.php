@@ -22,7 +22,7 @@ require_once 'page_3_helper.php';
  *   The state of the form to be populated.
  */
 function tpps_page_3_create_form(array &$form, array &$form_state) {
-
+  $page_2_values = $form_state['saved_values'][TPPS_PAGE_2] ?? NULL;
   if (isset($form_state['saved_values'][TPPS_PAGE_3])) {
     $values = $form_state['saved_values'][TPPS_PAGE_3];
   }
@@ -30,7 +30,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     $values = array();
   }
 
-  if ($form_state['saved_values'][TPPS_PAGE_2]['study_type'] != 1) {
+  if (($page_2_values['study_type'] ?? NULL) != 1) {
     tpps_study_location($form, $form_state);
   }
 
@@ -72,6 +72,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     . 'contain columns with information about at least the Plant Identifier '
     . 'and the Location of the plant (either gps coordinates or country/state).';
 
+  // @TODO Replace with constant.
   if ($form_state['saved_values'][TPPS_PAGE_2]['study_type'] == '4') {
     $file_description .= ' Location columns should describe the location '
       . 'of the source plant for the Common Garden.';
