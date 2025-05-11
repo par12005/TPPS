@@ -2404,7 +2404,7 @@ class Submission {
         if ($file && $file->status != $status) {
           $file->status = $status;
           file_save($file);
-          if (static::emptyFileUsage($file, $this->accession)) {
+          if (static::isEmptyFileUsage($file, $this->accession)) {
             static::addFileUsage($file, $this->accession);
           }
         }
@@ -2581,7 +2581,7 @@ class Submission {
    * @return bool
    *   Returns TRUE if file has no usage record and FALSE otherwise.
    */
-  public static function emptyFileUsage($file, $accession) {
+  public static function isEmptyFileUsage($file, $accession) {
     return empty(Submission::getFileUsage($file, $accession));
   }
 
