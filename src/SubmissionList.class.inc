@@ -106,7 +106,7 @@ class SubmissionList {
         krsort($submission_list, SORT_NATURAL);
         foreach ($submission_list as $accession => $submission) {
           $accession = $submission->accession;
-          $list[$accession] = SubmissionList::buildSingle($submission);
+          $list[$accession] = static::buildSingle($submission);
         }
       }
       else {
@@ -226,7 +226,7 @@ class SubmissionList {
 
         // Missing files goes to the 'other' group and will have no hyperlink
         // to 'File Info' API page.
-        if (empty($file = file_load($fid))) {
+        if (empty($file = tpps_file_load($fid))) {
           $data['file']['missing'][] = $fid;
         }
         $organism_label = check_plain($organism_index . '. ' . $organism_name);

@@ -115,6 +115,8 @@ class Submission {
   /**
    * Submission's State Array.
    *
+   * See __set()/__get().
+   *
    * Stored in tpps_submission.submission_state as serialized string.
    *
    * @var array
@@ -382,14 +384,17 @@ class Submission {
    * Setter for $state.
    *
    * WARNING: This method will be called when:
-   * $submission->state = $state;
-   * but not:
-   * $submission->state[$element] = $value;
+   *   $submission->state = $state;
+   *   but not:
+   *   $submission->state[$element] = $value;
    *
    * @param array $state
    *   Submission State Array.
    */
   public function setState(array &$state) {
+    // @TODO Remove reference because it limit direct usage of ->setState()
+    //  method and direct setting of the property 'state'.
+    // See tpps_main_submit(). Be sure to update all calls and test.
     $this->state = &$state;
     // Accession.
     if (!empty($this->state['accession'])) {
@@ -2523,6 +2528,10 @@ class Submission {
     return $this;
   }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // File Usage.
+  // @TODO Minor. Create new File class.
+
   /**
    * Adds record about usage of the file.
    *
@@ -2534,8 +2543,10 @@ class Submission {
    *   The number of references to add to the object. Defaults to 1.
    */
   public static function addFileUsage($file, $accession, $count = 1) {
-    $file_id = str_replace('TGDR', '', $accession);
-    file_usage_add($file, 'tpps', 'tpps_project', $file_id, $count);
+    $key = str_replace('TGDR', '', $accession);
+    if (Submission::isEmptyFileUsage($file, $accession)) {
+      file_usage_add($file, 'tpps', 'tpps_project', $key, $count);
+    }
   }
 
   /**
@@ -2549,8 +2560,8 @@ class Submission {
    *   The number of references to add to the object. Defaults to 1.
    */
   public static function deleteFileUsage($file, $accession, $count = 1) {
-    $file_id = str_replace('TGDR', '', $accession);
-    file_usage_delete($file, 'tpps', 'tpps_project', $file_id, $count);
+    $key = str_replace('TGDR', '', $accession);
+    file_usage_delete($file, 'tpps', 'tpps_project', $key, $count);
   }
 
   /**
@@ -2565,9 +2576,9 @@ class Submission {
    *   Returns count of the usage for given study.
    */
   public static function getFileUsage($file, $accession) {
-    $file_id = str_replace('TGDR', '', $accession);
-    $usage = file_usage_list($file, 'tpps', 'tpps_project', $file_id);
-    return tpps_array_get_value($usage, ['tpps', 'tpps_project', $file_id]);
+    $key = str_replace('TGDR', '', $accession);
+    $usage = file_usage_list($file, 'tpps', 'tpps_project', $key);
+    return tpps_array_get_value($usage, ['tpps', 'tpps_project', $key]);
   }
 
   /**
