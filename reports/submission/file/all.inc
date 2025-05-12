@@ -22,7 +22,7 @@ function tpps_report_submission_file($filter = NULL) {
 // @TODO Update hook_menu.
 
   $reset = $_GET['reset'] ?? FALSE;
-  $data = SubmissionList::get($reset);
+  $data = SubmissionCache::get($reset);
   // Redirect to URL without 'reset' query item.
   if (isset($_GET['reset'])) {
     drupal_goto($_GET['q']);
@@ -80,17 +80,17 @@ function tpps_report_submission_file($filter = NULL) {
     }
     elseif ($filter == 'missing') {
       $report_data = [];
-      foreach ($data as $accession => $cached_submission) {
-        if (!empty($cached_submission['file']['missing'])) {
-          $report_data[$accession] = $cached_submission;
+      foreach (array_keys($data) as $accession) {
+        if (!empty($data[$accession]['file']['missing'])) {
+          $report_data[$accession] = $data[$accession];
         }
       }
     }
     elseif ($filter == 'none') {
       $report_data = [];
-      foreach ($data as $accession => $cached_submission) {
-        if (empty($cached_submission['file']['id_list'])) {
-          $report_data[$accession] = $cached_submission;
+      foreach (array_keys($data) as $accession) {
+        if (empty($data[$accession]['file']['id_list'])) {
+          $report_data[$accession] = $data[$accession];
         }
       }
     }
@@ -100,6 +100,9 @@ function tpps_report_submission_file($filter = NULL) {
   // Line counter.
   $i = 0;
   foreach ($report_data as $key => $value) {
+    if (empty($value)) {
+      continue;
+    }
     $formatted_rows[] = Report::themeRow('all', ['submission', 'file'], [
       'index' => ++$i,
       'key' => $key,
@@ -126,22 +129,29 @@ function tpps_report_submission_file($filter = NULL) {
  * Themes single row for 'submission_file_all' report.
  *
  * @param array $context
- *   Cached Submission's data (item of the SubmissionList).
- *   See SubmissionList::buildSingle() for the structure.
+ *   Cached Submission's data (item of the SubmissionCache).
+ *   See SubmissionCache::buildSingle() for the structure.
  *
  * @return array
  *   Returns row item for theme_table().
  */
 function tpps_report_submission_file_all_theme_single_row(array $context) {
+  $debug_mode = FALSE;
   $key = $context['key'];
   $value = $context['value'];
+
+  if ($debug_mode ?? FALSE) {
+    dpm(print_r($value, 1));
+  }
 
   $final_file_row = [];
   $accession = $key;
   // Convert to strings.
   // New array must be used to have correct order of keys.
-  foreach ($context['file_column_list'] as $group) {
-    if ($context['is_single'] || $context['report_filter'] == 'all') {
+  //
+  //dpm($context);
+  if ($context['is_single'] || $context['report_filter'] == 'all') {
+    foreach ($context['file_column_list'] as $group) {
       if (empty($value['file']['grouped_list'][$group])) {
         $final_file_row[] = '';
         continue;
@@ -161,7 +171,7 @@ function tpps_report_submission_file_all_theme_single_row(array $context) {
             $value['file']['grouped_list'][$group][$organism_label][$field_name]
               = theme('file_id',
                 ['fid' => $fid, 'attributes' => ['title' => t('View Info')]]
-              ) . theme('file_action_list',
+              ) . ' ' . theme('file_action_list',
                 ['accession' => $accession, 'fid' => $fid]
               );
           }
@@ -169,19 +179,25 @@ function tpps_report_submission_file_all_theme_single_row(array $context) {
       }
       $final_file_row[] = tpps_array_print_list($value['file']['grouped_list'][$group]);
     }
-    elseif ($context['report_filter'] == 'missing') {
-      if (!empty($value['file']['missing'])) {
-        $final_file_row[] = theme('item_list',
-          ['items' => $value['file']['missing']]
-        );
-      }
+  }
+  elseif ($context['report_filter'] == 'missing') {
+    if (!empty($value['file']['missing'])) {
+      $final_file_row[] = theme('item_list',
+        ['items' => $value['file']['missing']]
+      );
     }
   }
   return array_merge(
     [
       $context['index'],
-      l($accession, 'api/submission/' . $accession . '/view/shared_state'),
-      $value['submitter']['uid'],
+      theme('submission_accession_link', [
+        'accession' => $accession,
+        'path' => 'admin/reports/tpps/submission/file/all/' . $accession,
+      ])
+        . '<br />['
+        . implode(', ', Submission::getPageList(['accession' => $accession]))
+        . ']',
+      theme('submission_submitter', $value),
       $value['stage'],
       $value['status'],
     ],

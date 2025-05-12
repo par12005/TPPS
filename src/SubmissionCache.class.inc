@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains 'SubmissionList' class.
+ * Contains 'SubmissionCache' class.
  *
  * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * Overview.
@@ -24,19 +24,19 @@
  * Update cached data.
  *   Submission->save() updates cached data for thise single submission.
  *   To reset all the cached list use:
- *   - SubmissionList::update() (takes about 40-50 seconds)
+ *   - SubmissionCache::update() (takes about 40-50 seconds)
  *   - cache_clear_all() - fast because just clears cache.
- *   - tpps_cache_clear_all(SubmissionList::CACHE_ID) - very fast.
+ *   - tpps_cache_clear_all(SubmissionCache::CACHE_ID) - very fast.
  *
  * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * Data structure.
- * Data structure defined in SubmissionList::buildSingle() and new items could be
+ * Data structure defined in SubmissionCache::buildSingle() and new items could be
  * added there. Each time Submission saved cached data for this single
  * submission will be udpate.
  *
  * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * Usage.
- *  $data = SubmissionList::get($reset);
+ *  $data = SubmissionCache::get($reset);
  */
 
 /**
@@ -45,7 +45,7 @@
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class SubmissionList {
+class SubmissionCache {
 
   // Cache Id.
   // Used to store most used submision's data for reports.
@@ -108,11 +108,55 @@ class SubmissionList {
           $accession = $submission->accession;
           $list[$accession] = static::buildSingle($submission);
         }
+        // List of studies which must must be resubmitted.
+        // Those studies are present in DB but doesn't have a record in
+        // 'tpps_submission' table.
+        foreach (static::getResubmitList() as $accession) {
+          $list[$accession] = [];
+        }
       }
       else {
         $list = $cache->data;
       }
       static::set($list);
+    }
+    return $list;
+  }
+
+  /**
+   * Gets list of old TGDR Submissions to be resubmitted.
+   *
+   * Example:
+   * [
+   *   [0] => TGDR001
+   *   [1] => TGDR019
+   *   [2] => TGDR203
+   * ]
+   *
+   * @param bool $reset
+   *   Flag to reset cache.
+   *
+   * @return array
+   *   Returns list of study accessions.
+   */
+  public static function getResubmitList($reset = FALSE) {
+    $list = &drupal_static(__METHOD__);
+    if ($reset || (empty($list) && !is_array($list))) {
+      $list = [];
+
+      $subquery = db_select('tpps_submission', 's');
+      $subquery->fields('s', ['accession']);
+
+      $query = db_select('chado.dbxref', 'dbx');
+      $query->join('chado.project_dbxref', 'pd', 'pd.dbxref_id = dbx.dbxref_id');
+      $query->condition('dbx.accession', $subquery, 'NOT IN');
+      $query->condition('dbx.accession', 'TGDR%', 'ILIKE');
+      $query->fields('dbx', ['accession']);
+      $query->orderBy('dbx.accession');
+      $list = $query->execute()->fetchCol('accession');
+      if (is_null($list) || !is_array($list)) {
+        $list = [];
+      }
     }
     return $list;
   }
@@ -144,6 +188,20 @@ class SubmissionList {
     }
     $page1_values = $submission->get(['saved_values', TPPS_PAGE_1]);
     $data = [
+      //'accession' => $submission->accession,
+      'status' => $submission->getStatus(),
+      'stage' => $submission->getCurrentStage(),
+      'project_id' => $submission->get(['ids', 'project_id']),
+      'publication' => [
+        'status' => tpps_array_get_value($page1_values,
+          ['publication', 'status']
+        ),
+        'title' => tpps_array_get_value($page1_values,
+          ['publication', 'title']
+        ),
+        'publication_doi' => $submission->getPublicationDOI(),
+        'dataset_doi' => $submission->getDatasetDOI(),
+      ],
       'submitter' => [
         'uid' => $submission->getSubmitter(),
         'mail' => $submission->getSubmitterMail(),
@@ -157,18 +215,9 @@ class SubmissionList {
         'updated' => $submission->state['updated'] ?? NULL,
         'cached' => REQUEST_TIME,
       ],
-      // @TODO Move tags to 'Submission' class and store only row data.
-      'tags' => tpps_show_tags(tpps_submission_get_tags($submission->accession)),
-      'status' => $submission->getStatus(),
-      'stage' => $submission->getCurrentStage(),
-      'publication' => [
-        'status' => tpps_array_get_value($page1_values,
-          ['publication', 'status']
-        ),
-        'title' => tpps_array_get_value($page1_values,
-          ['publication', 'title']
-        ),
-      ],
+      'tags' => tpps_submission_get_tags($submission->accession),
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Files.
       'file' => [
         'grouped_list' => [
           'tree-accession' => [],
@@ -181,8 +230,25 @@ class SubmissionList {
         'missing' => [],
         'id_list' => [],
       ],
-      //'accession' => $submission->accession,
     ];
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Zenodo.
+    if ($deposit_id = $submission->getZenodoDepositId()) {
+      $data['zenodo'] = [
+        'deposit_id' => $deposit_id,
+        'conceptrecid' => $submission->getZenodoConceptRecordId(),
+      ];
+      // Get Zenodo host.
+      try {
+        ZenodoHost::search(['deposit_id' => $data['zenodo']['deposit_id']]);
+        $host = ZenodoHost::isLive() ? 'live' : 'sandbox';
+      }
+      catch (Exception $e) {
+        $host = NULL;
+      }
+      $data['zenodo']['host'] = $host;
+    }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Files.
@@ -210,26 +276,36 @@ class SubmissionList {
           case TPPS_PAGE_3:
             $group = $parents[1];
             $organism_index = str_replace('species-', '', $parents[2]);
+            $organism_name = $submission->getOrganismName($organism_index);
+            $organism_label = check_plain($organism_index . '. ' . $organism_name);
             break;
 
           case TPPS_PAGE_4:
             $group = $parents[2];
             $organism_index = str_replace('organism-', '', $parents[1]);
+            $organism_name = $submission->getOrganismName($organism_index);
+            $organism_label = check_plain($organism_index . '. ' . $organism_name);
+            break;
+
+          case 'frontpage':
+          case 'summarypage':
+            $group = 'other';
+            $organism_index = NULL;
+            $organism_label = $step;
             break;
 
           default:
             $group = 'other';
             $organism_index = NULL;
+            $organism_label = 'Other';
             break;
         }
-        $organism_name = $submission->getOrganismName($organism_index);
 
         // Missing files goes to the 'other' group and will have no hyperlink
         // to 'File Info' API page.
         if (empty($file = tpps_file_load($fid))) {
           $data['file']['missing'][] = $fid;
         }
-        $organism_label = check_plain($organism_index . '. ' . $organism_name);
         $field_name = check_plain(end($parents));
         $file_row[$group][$organism_label][$field_name] = $fid;
       }
@@ -250,6 +326,26 @@ class SubmissionList {
     $list = static::get();
     $list[$submission->accession] = static::buildSingle($submission);
     static::set($list);
+  }
+
+  /**
+   * remove
+   *
+   * @param string $accession
+   *   TPPS Submission accession. E.g., 'TGDRxxxx'.
+   *
+   * @return bool
+   *   Returns TRUE if cached version was actually removed and FALSE if it
+   *   wasn't found in cache.
+   */
+  public static function remove($accession) {
+    $list = static::get();
+    if (isset($list[$accession])) {
+      unset($list[$accession]);
+      static::set($list);
+      return TRUE;
+    }
+    return FALSE;
   }
 
 }

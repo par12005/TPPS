@@ -3063,23 +3063,43 @@ function tpps_theme() {
         'string' => NULL,
       ],
     ],
-    'submission_accession' => [
+    'submission_accession_link' => [
       'variables' => [
         'accession' => NULL,
+        'path' => NULL,
+        'use_abr' => NULL,
       ],
     ],
-    'submission_action_list' => [
+    'submission_tag_list' => [
       'variables' => [
-        'accession' => NULL,
-        'destination' => NULL,
+        'tags' => NULL,
       ],
     ],
-    'submission_page_list' => [
+    'submission_date' => [
       'variables' => [
-        'accession' => NULL,
-        'destination' => NULL,
+        'date' => NULL,
       ],
     ],
+    'submission_submitter' => [
+      'variables' => [
+        'submitter' => NULL,
+      ],
+    ],
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Zenodo.
+    'zenodo_deposit_link' => [
+      'variables' => [
+        'deposit_id' => NULL,
+        'host' => NULL,
+      ],
+    ],
+    'zenodo_concept_record_link' => [
+      'variables' => [
+        'conceptrecid' => NULL,
+      ],
+    ],
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Files.
     'file_id' => [
       'variables' => [
         'fid' => NULL,
@@ -3093,6 +3113,37 @@ function tpps_theme() {
       ],
     ],
   ];
+}
+
+/**
+ * Themes list of submission's tags.
+ */
+function theme_submission_tag_list(array $variables) {
+  if (!empty($variables['tags'])) {
+    return tpps_show_tags($variables['tags']);
+  }
+}
+
+/**
+ * Themes dates for TPPS Admin Panel.
+ */
+function theme_submission_date(array $variables) {
+  $date = check_plain($variables['date']);
+  return !empty($date) ? date("F j, Y, g:i a", $date) : t('Unknown');
+}
+
+/**
+ * Themes submitter of the TPPS Submission.
+ */
+function theme_submission_submitter($variables) {
+  $submitter = $variables['submitter'] ?? NULL;
+  if (!empty($submitter['name'])) {
+    return $submitter['name'];
+  }
+  if (!empty($submitter['mail'])) {
+    return $submitter['mail'];
+  }
+  return $submitter['uid'] ?? '';
 }
 
 /**
@@ -3119,8 +3170,7 @@ function theme_fcbold(array $variables) {
 /**
  * Highlights number in study accession.
  *
- * Note: Used in function tpps_report_submission_imported().
- * Usage: theme('submission_accession', ['accession' => $accession]);
+ * Usage: theme('submission_accession_link', $vars);
  *
  * @param array $variables
  *   Data for theming.
@@ -3129,89 +3179,67 @@ function theme_fcbold(array $variables) {
  * @return string
  *   Returns string where 1st char is wrapped with '<strong>' HTML-tag.
  */
-function theme_submission_accession(array $variables) {
+function theme_submission_accession_link(array $variables) {
   $accession = $variables['accession'] ?? NULL;
+  $path = $variables['path'] ?? NULL;
+
   if (!empty($accession)) {
     $number = str_replace('TGDR', '', ($accession));
-    return '<span class="tpps-study-accession">TGDR</span>'
+    $output = '<span class="tpps-study-accession">TGDR</span>'
       . '<span class="tpps-study-accession-number">' . $number . '</span>';
+    if ($path) {
+      $output = l($output, $path, ['html' => TRUE]);
+    }
+    return $output;
   }
 }
 
 /**
- * List of Submission's actions.
+ * Creates hyperlink to local Zenodo Deposit page.
  *
- * @param array $variables
- *   Data for theming.
- *   'accession' - String to be processed.
+ * Usage: theme('zenodo_deposit_link', $vars);
  *
- * @return string
- *   Returns string where 1st char is wrapped with '<strong>' HTML-tag.
+ * Usage: theme('submission_zenodo_deposit_link', $vars);
+ * Note: Deposits withour host will be highlighted with red color.
  */
-function theme_submission_actions(array $variables) {
-  $accession = $variables['accession'] ?? NULL;
-  $destination = $variables['destination'] ?? NULL;
-  if (empty($accession)) {
+function theme_zenodo_deposit_link(array $variables) {
+  if (empty($deposit_id = $variables['deposit_id'])) {
     return '';
   }
-  $labels = [
-    // Actions:
-    'view' => theme('fcbold', ['string' => t('View')]),
-    'edit' => theme('fcbold', ['string' => t('Edit')]),
-    'export' => theme('fcbold', ['string' => t('Export')]),
-    'compare' => theme('fcbold', ['string' => t('Compare')]),
-    'purge' => theme('fcbold', ['string' => t('Purge')]),
-  ];
 
-  $params = [
-    'html' => TRUE,
-    'query' => ['destination' => $destination],
-  ];
-  // Actions:
-  return implode(' | ', [
-    l($labels['view'], 'tpps/submission/' . $accession . '/view', $params),
-    l($labels['edit'], 'tppsc/' . $accession, $params),
-    l($labels['export'], 'tpps/submission/' . $accession . '/export', $params),
-    l($labels['compare'], 'tpps/submission/' . $accession . '/compare', $params),
-    l($labels['purge'], 'tpps/submission/' . $accession . '/purge', $params),
-  ]);
+  // Use ZenodoHost::search(['deposit_id' => $deposit_id]); to get host.
+  $host = $variables['host'] ?? NULL;
+  // Build link.
+  if ($host) {
+    $url = 'admin/reports/tpps/zenodo/deposition/' . $host . '/' . $deposit_id;
+    return l($deposit_id, $url);
+  }
+  else {
+    return '<div style="color:red;">' . $deposit_id . '</div>';
+  }
 }
 
 /**
- * List of Submission's pages.
+ * Gets Hyperlink to Zenodo API Endpoint which shows all versions.
  *
- * @param array $variables
- *   Data for theming.
- *   'accession' - String to be processed.
+ * Usage: theme('zenodo_concept_record_link', $vars);
  *
  * @return string
- *   Returns string where 1st char is wrapped with '<strong>' HTML-tag.
+ *   Returns HTML A-tag which points to Zenodo Deposit List page where listed
+ *   all versions of the Deposition.
  */
-function theme_submission_pages(array $variables) {
-  $accession = $variables['accession'] ?? NULL;
-  $destination = $variables['destination'] ?? NULL;
-  if (empty($accession)) {
+function theme_zenodo_concept_record_link($variables) {
+  if (
+    empty($conceptrecid = $variables['conceptrecid'])
+    || empty($host = $variables['host'])
+  ) {
     return '';
   }
-  $labels = [
-    // Pages:
-    'admin_panel' => theme('fcbold', ['string' => t('Admin Panel')]),
-    'details' => theme('fcbold', ['string' => t('Details (map)')]),
-    'completed_submission' => theme('fcbold',
-      ['string' => t('Completed Submission')]
-    ),
-    'files' => theme('fcbold', ['string' => t('Files')]),
-  ];
-  $params = [
-    'html' => TRUE,
-    'query' => ['destination' => $destination],
-  ];
-  return implode(' | ', [
-    l($labels['admin_panel'], 'tpps-admin-panel/' . $accession, $params),
-    l($labels['details'], 'tpps/details/' . $accession, $params),
-    l($labels['completed_submission'], 'completed-submission/' . $accession, $params),
-    l($labels['files'], 'tpps-admin-panel/file-diagnostics/' . $accession, $params),
-  ]);
+  $query = ['q' => 'conceptrecid:' . $conceptrecid, 'all_versions' => 1];
+  // The same API Endpoint uses ZenodoDeposit::list().
+  $url = 'https://' . ($host == 'live' ? '' : 'sandbox.')
+    . 'zenodo.org/api/deposit/depositions';
+  return l($conceptrecid, Zenodo::addAccessToken($url), ['query' => $query]);
 }
 
 /**
@@ -3815,11 +3843,11 @@ function tpps_cache_clear_all($list = NULL, $force = FALSE) {
   }
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   foreach ($list as $cid) {
-    if (!$force && $cid == SubmissionList::CACHE_ID) {
+    if (!$force && $cid == SubmissionCache::CACHE_ID) {
       // Do not reset main list of submissions by default because it takes
       // about 1 min to recreate.
       // To force update use:
-      // tpps_cache_clear_all(SubmissionList::CACHE_ID)
+      // tpps_cache_clear_all(SubmissionCache::CACHE_ID)
       // or
       // tpps_cache_clear_all(TRUE).
       // @TODO Create separate bin to store this list or merge all CIDs.
@@ -3840,7 +3868,7 @@ function tpps_cache_clear_all($list = NULL, $force = FALSE) {
 function tpps_cache_get_cid_list() {
   return [
     // List of all submissions. Recreation takes about 1 min.
-    SubmissionList::CACHE_ID,
+    SubmissionCache::CACHE_ID,
     'tpps_report_doi_duplicates',
     'tpps_cv',
     'tpps_doi_get_accession',

@@ -12,66 +12,49 @@
 /**
  * Menu callback. Shows list of submissions which has Zenodo Depositions.
  */
-function tpps_report_submission_zenodo($reset = NULL) {
-  $reset = $reset ?? $_GET['reset'] ?? FALSE;
-  $cid = __FUNCTION__;
-  $cache_bin = TPPS_CACHE_BIN ?? 'cache';
-  $cache = cache_get($cid, $cache_bin);
-  $cache_key = $cid;
-  if ($reset || empty($cache) || empty($cache->data[$cache_key])) {
-    // Get new data.
-    $i = 0;
-    $submission_list = tpps_load_submission_multiple();
-    foreach ($submission_list as $accession => $submission) {
-      $deposit_id = $submission->getZenodoDepositId();
-      $conceptrecid = $submission->getZenodoConceptRecordId();
-      if (!($deposit_id || $conceptrecid)) {
-        continue;
-      }
-      try {
-        ZenodoHost::search(['deposit_id' => $deposit_id]);
-        $host = ZenodoHost::isLive() ? 'live' : 'sandbox';
-      }
-      catch (Exception $e) {
-        if ($e->getCode() == 1003) {
-          // Deposition wasn't found neither live nor sandbox server.
-          // Skip this Deposition from report but show error-message.
-          drupal_set_message($e->getMessage(), 'error');
-          $host = NULL;
-          //continue;
-        }
-        else {
-          throw new Exception($e->getMessage(), $e->getCode());
-        }
-      }
-      $publication_doi = $submission->getPublicationDOI();
-      $dataset_doi = $submission->getDatasetDOI();
-      $rows[] = [
-        'number' => ++$i,
-        'accession' => $submission->getAccessionLink('api_state'),
-        'project_id' => $submission->get(['ids', 'project_id']),
-        'status' => $submission->status ?? NULL,
-        'host' => $host ? (ZenodoHost::isLive() ? t('Live') : t('Sandbox')) : $host,
-        'deposit_id' => $submission->getZenodoDepositLink($deposit_id, $host),
-        'conceptrecid' => $submission->getZenodoConceptRecordLink(
-          $submission->getZenodoConceptRecordId()
-        ),
-        'publication_doi' => $publication_doi,
-        'dataset_doi' => $dataset_doi,
-        'deposition_files' => l(
-          t('View Files'),
-          'tpps/submission/' . $accession . '/zenodo/files'
-        ),
-      ];
-    }
-    // Reverse order of elements.
-    //$data = array_reverse($data);
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    unset($_GET['reset']);
-    $cache->data[$cache_key] = $rows ?? [];
-    cache_set($cid, $cache->data, $cache_bin);
+function tpps_report_submission_zenodo($reset = FALSE) {
+  $reset = $_GET['reset'] ?? $reset;
+  $data = SubmissionCache::get($reset);
+  // Redirect to URL without 'reset' query item.
+  if (isset($_GET['reset'])) {
+    drupal_goto($_GET['q']);
   }
-  $rows = $cache->data[$cache_key] ?? [];
+
+  $i = 0;
+  foreach ($data as $accession => $item) {
+    if (empty($item['zenodo'])) {
+      continue;
+    }
+    // Get new data.
+    $deposit_id = $item['zenodo']['deposit_id'] ?? NULL;
+    $conceptrecid = $item['zenodo']['conceptrecid'] ?? NULL;
+    if (!$deposit_id && !$conceptrecid) {
+      continue;
+    }
+    $host = $item['zenodo']['host'] ?? NULL;
+    $rows[] = [
+      'number' => ++$i,
+      // @TODO Convert to theme-function.
+      'accession' => theme('submission_accession_link', [
+        'accession' => $accession,
+        'path' => 'api/submission/' . $accession . '/view/state',
+      ]),
+      'project_id' => $item['project_id'],
+      'status' => $item['status'] ?? NULL,
+      'host' => ucfirst($host),
+      'deposit_id' => theme('zenodo_deposit_link',
+        ['deposit_id' => $deposit_id, 'host' => $host]
+      ),
+      'conceptrecid' => theme('zenodo_concept_record_link',
+        ['conceptrecid' => $conceptrecid, 'host' => $host]
+      ),
+      'publication_doi' => $item['publication']['publication_doi'] ?? '',
+      'dataset_doi' => $item['publication']['dataset_doi'] ?? '',
+      'deposition_files' => l(
+        t('View Files'), 'tpps/submission/' . $accession . '/zenodo/files'
+      ),
+    ];
+  }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output.

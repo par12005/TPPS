@@ -285,7 +285,9 @@ dpm(print_r($data, 1));
           }
           switch ($key) {
             case 'conceptrecid':
-              $value = Submission::getZenodoConceptRecordLink($value);
+              $value = theme('zenodo_concept_record_link',
+                ['conceptrecid' => $value, 'host' => $host]
+              );
               break;
 
             case 'record_id':

@@ -49,7 +49,7 @@ function tpps_report_submission_imported() {
     }
 
     // Original accession link.
-    $accession_title = theme('submission_accession',
+    $accession_title = theme('submission_accession_link',
       ['accession' => $import_meta['original_accession']]
     );
     if ($import_meta['site'] ?? NULL) {
@@ -66,7 +66,7 @@ function tpps_report_submission_imported() {
     $rows[] = [
       $original_accession_link ?? NULL,
       l(
-        theme('submission_accession', ['accession' => $local]),
+        theme('submission_accession_link', ['accession' => $local]),
         'tpps/submission/' . $local . '/view',
         $params
       ),
@@ -76,14 +76,12 @@ function tpps_report_submission_imported() {
       $import_meta['current_version'] ?? NULL,
       $submission->uid ?? NULL,
       $import_meta['full_date'] ?? NULL,
-      theme('submission_action_list', [
-        'accession' => $local,
-        'destination' => 'admin/reports/tpps/submission/imported',
-      ]),
-      theme('submission_page_list', [
-        'accession' => $local,
-        'destination' => 'admin/reports/tpps/submission/imported',
-      ]),
+      implode(', ',
+        Submission::getPageList([
+          'accession' => $local,
+          'destination' => 'admin/reports/tpps/submission/imported',
+        ])
+      ),
     ];
   }
   $output = '<h3>'
@@ -107,7 +105,6 @@ function tpps_report_submission_imported() {
       t('Submitted') . $version_tags,
       t('UID'),
       t('Import Date'),
-      t('Actions'),
       t('Pages'),
     ],
     'rows' => $rows,
