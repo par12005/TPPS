@@ -611,7 +611,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
   $form[$section['key']]['new_owner'] = [
     '#type' => 'textfield',
     '#title' => t('Choose a new owner for the submission'),
-    '#default_value' => tpps_get_user_email($submission->uid),
+    '#default_value' => $submission->getSubmitterMail(),
     '#autocomplete_path' => 'tpps/autocomplete/user',
   ];
 

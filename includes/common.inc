@@ -61,31 +61,6 @@ function tpps_string_format_indent($string) {
 }
 
 /**
- * Gets Drupal User Acount Email-address.
- *
- * @param int $uid
- *   Drupal User Id.
- * @param bool $reset
- *   Flag to reset cache.
- *
- * @return string
- *   Returns email-address or empty string if user wasn't found.
- */
-function tpps_get_user_email($uid, $reset = FALSE) {
-  $key = $uid;
-  $static_cache = &drupal_static(__FUNCTION__);
-  if ($reset || !isset($static_cache[$key])) {
-    $static_cache[$key] = (string) db_select('users', 'u')
-      ->fields('u', ['mail'])
-      ->condition('uid', $uid)
-      ->range(0, 1)
-      ->execute()
-      ->fetchField();
-  }
-  return $static_cache[$key];
-}
-
-/**
  * Puts message using both watchdog() and drupal_set_message().
  *
  * WARNING: Not for CLI (messages will be ignored).

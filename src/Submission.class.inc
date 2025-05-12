@@ -444,27 +444,6 @@ class Submission {
   }
 
   /**
-   * getAccessionLink
-   *
-   * @param string $type
-   * @param mixed $accession
-   *
-   * @return void
-   */
-  public function getAccessionLink($type = 'api_state', $accession = NULL) {
-    $accession = $accession ?? $this->accession ?? NULL;
-    if (is_null($accession)) {
-      return '';
-    }
-    switch ($type) {
-      default:
-      case 'api_state':
-        return l($accession, 'api/submission/' . $accession . '/view/state');
-
-    }
-  }
-
-  /**
    * Setter for $status.
    *
    * @param string $status
@@ -639,7 +618,7 @@ class Submission {
       ->condition('accession', $this->accession)
       ->execute();
 
-    SubmissionList::updateSingle($this);
+    SubmissionCache::updateSingle($this);
 
     // 'tpps_submission_saved'';
     if (function_exists('module_invoke_all')) {
@@ -690,7 +669,7 @@ class Submission {
     // files related to this non-existing submission.
     if (!empty($this->state)) {
       // Remove usage of files first.
-      $fid_list = array_keys($submission->getFileIdList());
+      $fid_list = array_keys($this->getFileIdList());
       foreach ($fid_list as $fid) {
         if ($file = tpps_file_load($fid)) {
           // Remove file usage record (not file itself).
@@ -711,8 +690,11 @@ class Submission {
       ->execute();
     // If this study was imported we need to remove it from the list.
     // @todo Check if study was imported to avoid extra moves.
-    module_load_include('inc', 'tpps', 'includes/imported_studies_list');
+    //module_load_include('inc', 'tpps', 'includes/imported_studies_list');
     ImportedSubmissionList::remove($this->accession);
+    // Update cached data.
+    SubmissionCache::remove($this->accession);
+    // Unset current instance (in memory).
     $this->accession = $this->state = $this->sharedState = NULL;
     if (function_exists('module_invoke_all')) {
       // 'tpps_submission_purged().
@@ -2190,44 +2172,6 @@ class Submission {
     return !empty($this->getZenodoDepositId());
   }
 
-  /**
-   * Gets Hyperlink to Zenodo Deposit page..
-   *
-   * @param int $deposit_id
-   *   Zenodo Deposit Id.
-   * @param string $host
-   *   Zenodo Deposit Host. Allowed values are: 'live' and 'sandbox'.
-   *
-   * @return string
-   *   Returns HTML A-tag which points to Zenodo Deposit page.
-   */
-  public function getZenodoDepositLink($deposit_id, $host = NULL) {
-    // Get host.
-    if (is_null($host)) {
-      try {
-        ZenodoHost::search(['deposit_id' => $deposit_id]);
-        $host = ZenodoHost::isLive() ? 'live' : 'sandbox';
-      }
-      catch (Exception $e) {
-        if ($e->getCode() == 1003) {
-          // Deposition wasn't found neither live nor sandbox server.
-          // Skip this Deposition from report but show error-message.
-          $host = NULL;
-        }
-      }
-    }
-    // Build link.
-    if ($host) {
-      return l(
-        $deposit_id,
-        'admin/reports/tpps/zenodo/deposition/' . $host . '/' . $deposit_id
-      );
-    }
-    else {
-      return '<div style="color:red;">' . $deposit_id . '</div>';
-    }
-  }
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Concept Record Id.
   //
@@ -2276,22 +2220,6 @@ class Submission {
    */
   public function hasZenodoConceptRecordId() {
     return !empty($this->getZenodoConceptRecordId());
-  }
-
-  /**
-   * Gets Hyperlink to Zenodo API Endpoint which shows all versions.
-   *
-   * @return string
-   *   Returns HTML A-tag which points to Zenodo Deposit List page where listed
-   *   all versions of the Deposition.
-   */
-  public static function getZenodoConceptRecordLink($conceptrecid) {
-    $query = ['q' => 'conceptrecid:' . $conceptrecid, 'all_versions' => 1];
-    return l($conceptrecid,
-      // This is ZenodoDeposit::list() method's URL.
-      Zenodo::addAccessToken('https://sandbox.zenodo.org/api/deposit/depositions'),
-      ['query' => $query]
-    );
   }
 
   /**
@@ -2800,6 +2728,127 @@ class Submission {
       $static[$uid] = (string) $query->execute()->fetchField();
     }
     return $static[$uid];
+  }
+
+  /**
+   * Generates list of links to Submission related pages.
+   *
+   * @param array $variables
+   *   Keys are: 'accession', 'destination', 'use_abr'.
+   *
+   * @return array
+   *   Returns list of links.
+   *
+   * @todo Separate list generation from theming.
+   * @todo Cache this list.
+   * @todo Implement adding accession at client-side (in browser).
+   */
+  public static function getPageList(array $variables) {
+    $accession = $variables['accession'] ?? NULL;
+    if (empty($accession)) {
+      return '';
+    }
+    $destination = $variables['destination'] ?? NULL;
+    $use_abr = $variables['use_abr'] ?? TRUE;
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    $action_list = [
+      // New tpps/submission pages.
+      'view' => [
+        'title' => t("Submission's view page"),
+        'name' => t('View'),
+        'abr' => t('V'),
+        'path' => 'tpps/submission/' . $accession . '/view',
+      ],
+      'edit' => [
+        'title' => t("Open submission using TPPSc form"),
+        'name' => t('Edit'),
+        'abr' => t('Ed'),
+        'path' => 'tppsc/' . $accession,
+      ],
+      'export' => [
+        'title' => t("Export Submission"),
+        'name' => t('Export'),
+        'abr' => t('Ex'),
+        'path' => 'tpps/submission/' . $accession . '/export',
+      ],
+      'compare' => [
+        'title' => t("Compare submission with other one"),
+        'name' => t('Compare'),
+        'abr' => t('Com'),
+        'path' => 'tpps/submission/' . $accession . '/compare',
+      ],
+      'purge' => [
+        'title' => t("Remove submission and it's files"),
+        'name' => t('Purge'),
+        'abr' => t('Pu'),
+        'path' => 'tpps/submission/' . $accession . '/purge',
+      ],
+      // Old pages:
+      'admin_panel' => [
+        'name' => t('Panel'),
+        'title' => t('TPPS Admin Panel'),
+        'abr' => t('Pa'),
+        'path' => 'tpps-admin-panel/' . $accession,
+      ],
+      'details' => [
+        'name' => t('Details'),
+        'title' => t('Study Details page'),
+        'abr' => t('D'),
+        'path' => 'tpps/details/' . $accession,
+      ],
+      'completed_submission' => [
+        'name' => t('Confirmation page'),
+        'title' => t('Confirmation page shown when submission completely submitted.'),
+        'abr' => t('Con'),
+        'path' => 'completed-submission/' . $accession,
+      ],
+      'files' => [
+        'name' => t('Files'),
+        'title' => t('List of the study files'),
+        'abr' => t('F'),
+        'path' => 'tpps-admin-panel/file-diagnostics/' . $accession,
+      ],
+      // API Endpoints.
+      'state' => [
+        'name' => t('JSON State'),
+        'title' => t("Submission's State in JSON format"),
+        'abr' => t('jS'),
+        'path' => 'api/submission/' . $accession . '/view/state',
+      ],
+      'shared_state' => [
+        'name' => t('JSON Shared State'),
+        'title' => t("Submission's Shared State in JSON format"),
+        'abr' => t('jSS'),
+        'path' => 'api/submission/' . $accession . '/view/shared_state',
+      ],
+      'json_vcf' => [
+        'name' => t('JSON VCF'),
+        'title' => t("Submission's VCF-files in JSON format"),
+        'abr' => t('jVCF'),
+        'path' => 'api/submission/' . $accession . '/vcf',
+      ],
+    ];
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Output.
+    $params = ['html' => TRUE];
+    if ($destination) {
+      $params['query']['destination'] = $destination;
+    }
+    $output = [];
+    foreach ($action_list as $name => $action) {
+      $params['attributes']['title'] = $action['title'] ?? '';
+      if ($use_abr) {
+        $name = $action['abr'];
+      }
+      else {
+        // $name = theme('fcbold', ['string' => $name]);
+        $name = $action['name'];
+      }
+      $output[] = l($name, $action['path'], $params);
+    }
+    return $output;
+
   }
 
 }
