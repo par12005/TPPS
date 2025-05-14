@@ -5128,6 +5128,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
           // (3/31/2025) Emily and Gabe suggested we remove the species code from the marker_name
           $marker_name = $scaffold_id . '_' . $position;
+          $variant_name = $marker_name;
 
           // $description = "$ref:$alt"; // Replaced with genotype_combination within $detected_genotypes array (5/31/2023)
 
@@ -5442,8 +5443,15 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
                 ];
               }
               else {
-                tpps_log('Invalid featureloc values for variant: ' . $variant_name . ' with fmin: ' . $position . ' fmax: ' . $fmax);
+                $msg = 'Invalid featureloc values for variant: ' . $variant_name . ' with fmin: ' . $position . ' fmax: ' . $fmax;
+                echo $msg . "\n";
+                tpps_log($msg);
               }
+            }
+            else {
+              $msg = 'Scaffold ID not found for variant: ' . $variant_name;
+              echo $msg . "\n";
+              tpps_log($msg);
             }
           }
           // throw New Exception('DEBUG');
