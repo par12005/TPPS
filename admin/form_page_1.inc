@@ -74,6 +74,6 @@ function tpps_form_page_1_settings_form_submit(array $form, array &$form_state) 
     != variable_get('tpps_page_1_cache_ajax_responses', TRUE)
   ) {
     // @TODO Minor. Clear only ajax requests.
-    tpps_cache_clear_all(NULL, $force = TRUE);
+    tpps_cache_clear_all();
   }
 }
