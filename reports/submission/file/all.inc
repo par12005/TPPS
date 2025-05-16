@@ -29,24 +29,7 @@ function tpps_report_submission_file($filter = NULL) {
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show warnings.
-  $message = t(
-    'Cached version of report is show. Please <a href="@update_link">update'
-    . '</a> to get most recent updates.',
-    ['@update_link' => url($_GET['q'], ['query' => ['reset' => 1]])]
-  );
-  drupal_set_message($message, 'warning');
-
-  $message = t(
-    'Only studies which has files are shown. Useful reports: <a href="@none_link">'
-    . 'List of studies without files</a>, <a href="@missing_link">List of '
-    . 'studies which files are missing in filesystem</a>.',
-    [
-      '@missing_link' => url('admin/reports/tpps/submission/file/missing'),
-      '@none_link' => url('admin/reports/tpps/submission/file/none'),
-    ]
-  );
-  drupal_set_message($message, 'warning');
-
+  SubmissionCache::printWarning();
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $options = ['query' => ['token' => variable_get('tpps_api_token')]];
   $accession = explode('/', $_GET['q'])[6] ?? NULL;

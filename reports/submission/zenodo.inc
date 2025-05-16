@@ -19,6 +19,7 @@ function tpps_report_submission_zenodo($reset = FALSE) {
   if (isset($_GET['reset'])) {
     drupal_goto($_GET['q']);
   }
+  SubmissionCache::printWarning();
 
   $i = 0;
   foreach ($data as $accession => $item) {
