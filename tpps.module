@@ -3150,9 +3150,46 @@ function theme_submission_date(array $variables) {
  * Themes submitter of the TPPS Submission.
  */
 function theme_submission_submitter($variables) {
+
+  $use_tripal_contact = FALSE;
+  if ($use_tripal_contact) {
+    // @TODO Review this code. Copied from TPPS Admin Panel when it was updated
+    // to use 'SubmissionCache' class. Not tested.
+    $contact_bundle = tripal_load_bundle_entity(
+      ['label' => 'Tripal Contact Profile']
+    );
+    // If Tripal Contact Profile is available, we want to link to the
+    // profile of the owner instead of just displaying the name.
+    if ($contact_bundle) {
+      $query = new EntityFieldQuery();
+      $results = $query->entityCondition('entity_type', 'TripalEntity')
+        ->entityCondition('bundle', $contact_bundle->name)
+        ->fieldCondition('local__email', 'value', $owner_mail)
+        ->range(0, 1)
+        ->execute();
+      // [VS]
+      if (!empty($results['TripalEntity'])) {
+        // Commented out because there is a lot of warning messages
+        // shown at page.
+        //
+        //  $entity = current(
+        //    array_reverse(
+        //      entity_load(
+        //        'TripalEntity',
+        //        array_keys($results['TripalEntity'])
+        //      )
+        //    )
+        //  );
+        //  $owner = "<a href=\"$base_url/TripalContactProfile/"
+        //    . "{$entity->id}\">$submitting_user</a>";
+      }
+      // [/VS]
+    }
+  }
   $submitter = $variables['submitter'] ?? NULL;
   if (!empty($submitter['name'])) {
-    return $submitter['name'];
+    return $submitter['name']
+    . ($submitter['mail'] ? ' (' . $submitter['mail'] . ')' : '');
   }
   if (!empty($submitter['mail'])) {
     return $submitter['mail'];
@@ -3876,6 +3913,8 @@ function tpps_cache_get_cid_list() {
     'tpps_admin_panel_show_all',
     'tpps_admin_missing_files_report',
     'tpps_phenotype_field',
+    // Admin Panel.
+    'tpps_admin_panel_cache_new_species_list',
   ];
 }
 
