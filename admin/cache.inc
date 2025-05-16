@@ -15,7 +15,18 @@ function tpps_cache_settings_form(array $form, array &$form_state) {
 
   // Button to clear cache.
   $form['note'] = [
-    '#markup' => t('Note: Only "tpps" cache bin will be cleared.<br />'),
+    '#markup' => t('Module TPPS provides 2 cache bins and each could be '
+    . 'cleared independently.'
+    . theme('item_list', [
+      'items' => [
+        "'TPPS' Cache Bin is for common things and full rebuild usually "
+          . "doesn't take much time.",
+        "'TPPS Submission' Cache Bin holds most required data for all "
+        . "submissions and allows single submission update. "
+        . "<br />Full rebuild could take more then 60 seconds. "
+        . "<strong>Use with caution!</strong>"
+      ]
+    ])),
   ];
   $form[TPPS_CLEAR_CACHE_BUTTON_NAME] = [
     '#type' => 'submit',
