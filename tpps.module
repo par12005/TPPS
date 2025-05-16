@@ -1632,7 +1632,8 @@ function tpps_main_submit($form, &$form_state) {
     // When non-empty (after Page1 submit) study was added we need to
     // reset cached lists of accessions.
     // Note: We must clear cache when submission already stored to DB.
-    tpps_cache_clear_all([], $force = TRUE);
+    tpps_cache_clear_all();
+    SubmissionList::updateSingle($submission);
   }
 }
 
@@ -2081,6 +2082,7 @@ function tpps_watchdog_cleanup() {
  */
 function tpps_drush_cache_clear(&$types) {
   $types['tpps'] = '_tpps_cache_clear';
+  $types['tpps-submission'] = '_tpps_submission_cache_clear';
 }
 
 /**
@@ -2091,10 +2093,22 @@ function _tpps_cache_clear() {
 }
 
 /**
+ * Utility function that clears all the entries in 'tpps_submission' cache bin.
+ */
+function _tpps_submission_cache_clear() {
+  SubmissionCache::clear();
+}
+
+/**
  * Implements hook_flush_caches().
  */
 function tpps_flush_caches() {
-  return [TPPS_CACHE_BIN];
+  return [
+    TPPS_CACHE_BIN,
+    // WARNING: Do not add 'tpps_submission' cache bin to this list to
+    // avoid clearing each time Clear button on the Performance page
+    // or whenever drupal_flush_all_caches is invoked.
+  ];
 }
 
 /**
@@ -3327,10 +3341,6 @@ function tpps_zenodo_deposit_published(array $data) {
  */
 function tpps_zenodo_deposit_deleted(array $data) {
   drupal_set_message(t('Zenodo Deposit was <strong>deleted</strong>.'));
-  // Clear cache.
-  if (empty($data['response'])) {
-    tpps_clear_cache_report_submission_zenodo();
-  }
 
   // Remove Zenodo Deposit Id from TPPS Submission.
   // But when Deposit wasn't found there will be error message in the response.
@@ -3343,6 +3353,8 @@ function tpps_zenodo_deposit_deleted(array $data) {
   if ($submission->doesNotExist()) {
     return;
   }
+  // Clear cache.
+   SubmissionCache::updateSingle($submission);
 
   if ($deposit_id = $submission->getZenodoDepositId()) {
     // Unset exsisting Dataset DOI value.
@@ -3383,8 +3395,6 @@ function tpps_zenodo_deposit_created(array $data) {
     return;
   }
   drupal_set_message(t('Zenodo Deposit was <strong>created</strong>.'));
-  // Clear cache.
-  tpps_clear_cache_report_submission_zenodo();
   // Store Zenodo Deposit Id into TPPS Submission.
   $submission = new Submission($data['accession']);
   if ($submission->doesNotExist()) {
@@ -3392,6 +3402,7 @@ function tpps_zenodo_deposit_created(array $data) {
     drupal_set_message($message);
     return;
   }
+  SubmissionCache::updateSingle($submission);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Store DOI.
   $dataset_doi = $data['response']['metadata']['prereserve_doi']['doi'] ?? NULL;
@@ -3425,13 +3436,6 @@ function tpps_zenodo_deposit_created(array $data) {
  */
 function tpps_zenodo_deposit_updated(array $data) {
   drupal_set_message(t('Zenodo Deposit was updated.'));
-}
-
-/**
- * Clear cached data for 'Submissions with Zenodo Depositions' report.
- */
-function tpps_clear_cache_report_submission_zenodo() {
-  tpps_cache_clear_all(['tpps_report_submission_zenodo']);
 }
 
 /**
@@ -3641,10 +3645,6 @@ function tpps_zenodo_deposit_new_version_created(array $data) {
       dpm(print_r($data, 1));
     }
   }
-
-  tpps_clear_cache_report_submission_zenodo();
-  // @TODO Test if this delay is required.
-  //sleep(0.3);
 }
 
 /**
@@ -3689,7 +3689,7 @@ dpm(print_r($list, 1));
       '@deposit_id' => $deposit_id,
     ]
   ));
-  tpps_clear_cache_report_submission_zenodo();
+  SubmissionCache::updateSingle($submission);
 }
 
 /**
@@ -3825,6 +3825,7 @@ function tpps_submission_saved($submission) {
     // @todo Very slow because Submission::save() calls many times per single
     // request. Implement single save event before enable clearing cache.
     tpps_cache_clear_all();
+    SubmissionCache::updateSingle($submission);
   }
 }
 
@@ -3835,28 +3836,23 @@ function tpps_submission_saved($submission) {
  *
  * @param bool $force
  *   When TRUE then even reports which supports per row update will be created.
+ *
+ * @TODO Minor. Show message.
  */
 function tpps_cache_clear_all($list = NULL, $force = FALSE) {
-  $list = empty($list) ? tpps_cache_get_cid_list() : $list;
-  if (empty($list)) {
-    return;
-  }
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
-  foreach ($list as $cid) {
-    if (!$force && $cid == SubmissionCache::CACHE_ID) {
-      // Do not reset main list of submissions by default because it takes
-      // about 1 min to recreate.
-      // To force update use:
-      // tpps_cache_clear_all(SubmissionCache::CACHE_ID)
-      // or
-      // tpps_cache_clear_all(TRUE).
-      // @TODO Create separate bin to store this list or merge all CIDs.
-      continue;
-    }
-    cache_clear_all($cid, $cache_bin);
+  if ($list == 'all' || (is_array($list) && empty($list))) {
+    cache_clear_all('*', $cache_bin, TRUE);
   }
-  // @TODO Minor. Show message.
-  drupal_set_message(t('Cache was cleared for CID "@cid".', ['@cid' => $cid]));
+  else {
+    $list = is_null($list) ? tpps_cache_get_cid_list() : $list;
+    if (empty($list)) {
+      return;
+    }
+    foreach ($list as $cid) {
+      cache_clear_all($cid, $cache_bin);
+    }
+  }
 }
 
 /**
@@ -3867,8 +3863,6 @@ function tpps_cache_clear_all($list = NULL, $force = FALSE) {
  */
 function tpps_cache_get_cid_list() {
   return [
-    // List of all submissions. Recreation takes about 1 min.
-    SubmissionCache::CACHE_ID,
     'tpps_report_doi_duplicates',
     'tpps_cv',
     'tpps_doi_get_accession',
@@ -3881,9 +3875,6 @@ function tpps_cache_get_cid_list() {
     'tpps_submission_get_accession_list',
     'tpps_admin_panel_show_all',
     'tpps_admin_missing_files_report',
-    //Report::getCacheKey('all', ['submission', 'file']),
-    'tpps_report_submission_file_missing',
-    'tpps_report_submission_zenodo',
     'tpps_phenotype_field',
   ];
 }

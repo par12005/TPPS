@@ -53,7 +53,8 @@ class SubmissionCache {
   const CACHE_ID = 'tpps_submission_list';
 
   // Cache bin name.
-  const CACHE_BIN = TPPS_CACHE_BIN ?? 'cache';
+  // If custom cache bin wasn't yet created for some reasons we use common one.
+  const CACHE_BIN = 'cache_tpps_submission' ?? 'cache';
 
   /**
    * Updates cached list of Submissions.
@@ -329,7 +330,7 @@ class SubmissionCache {
   }
 
   /**
-   * remove
+   * Remove single item from the cached list.
    *
    * @param string $accession
    *   TPPS Submission accession. E.g., 'TGDRxxxx'.
