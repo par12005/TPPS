@@ -312,6 +312,27 @@ class SubmissionCache {
       }
       $data['file']['grouped_list'] = $file_row;
     }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Imported Study Metadata.
+    $data['import_meta'] = $submission->getImportMeta();
+    $tripal_job_id = $submission->sharedState['job_id'] ?? NULL;
+    $data['tripal_job']['id'] = $tripal_job_id;
+
+    // Get Tripal Job status.
+    if (!empty($tripal_job_id)) {
+      try {
+        $job = new TripalJob();
+        $job->load($tripal_job_id);
+        $data['tripal_job']['status'] = $job->getJob()->status;
+      }
+      catch (Exception $e) {
+        if ($e->getMessage() != "Cannot find a job with this ID provided.") {
+          throw $e;
+        }
+      }
+    }
+
     return $data;
   }
 
@@ -347,6 +368,17 @@ class SubmissionCache {
       return TRUE;
     }
     return FALSE;
+  }
+
+  /**
+   * Prints message about cached report and link to reset cache.
+   */
+  public static function printWarning() {
+    $update_url = url($_GET['q'], ['query' => ['reset' => 1]]);
+    $message = t('Report was cached. <a href="@update_url">Update</a> to get '
+      . 'most recent changes.', ['@update_url' => $update_url]
+    );
+    drupal_set_message($message, 'warning');
   }
 
 }

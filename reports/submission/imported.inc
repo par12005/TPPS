@@ -16,37 +16,41 @@ function tpps_report_submission_imported() {
   // Keys are accessions for the new (imported) studies and values are
   // source submission accessions.
   $list = ImportedSubmissionList::get();
+  $data = SubmissionCache::get();
+
+  if (isset($_GET['reset'])) {
+    // List of imported studies is always smaller then list of all submissions
+    // so update only items from the imported studies list.
+    foreach ($list as $local => $remote) {
+      $submission = new Submission($local);
+      $data[$local] = SubmissionCache::buildSingle($submission);
+    }
+    SubmissionCache::set($data);
+    // Redirect to URL without 'reset' query item.
+    drupal_goto($_GET['q']);
+  }
+
   $rows = [];
   $params = [
     'query' => ['destination' => 'admin/reports/tpps/submission/imported'],
     'html' => TRUE,
   ];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Show Update link.
+  SubmissionCache::printWarning();
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Get report's content.
   foreach ($list as $local => $remote) {
-    $submission = new Submission($local);
-    if ($submission->doesNotExist()) {
-      tpps_message(
-        'Submission @accession not exists.',
-        ['@accession' => $local], 'error'
-      );
+    if (!isset($data[$local])) {
       ImportedSubmissionList::remove($local);
+      drupal_set_message(t("Submission @accession doesn't exist and was "
+        . "removed from list of imported studies.", ['@accession' => $local],
+        'error'
+      ));
       continue;
     }
-    $import_meta = $submission->getImportMeta();
-
-    // Get Tripal Job status.
-    if (!empty($submission->sharedState['job_id'])) {
-      try {
-        $job = new TripalJob();
-        $job->load($submission->sharedState['job_id']);
-        $job_status = $job->getJob()->status;
-      }
-      catch (Exception $e) {
-        if ($e->getMessage() != "Cannot find a job with this ID provided.") {
-          throw $e;
-        }
-      }
-    }
+    $import_meta = $data[$local]['import_meta'];
 
     // Original accession link.
     $accession_title = theme('submission_accession_link',
@@ -65,16 +69,14 @@ function tpps_report_submission_imported() {
     }
     $rows[] = [
       $original_accession_link ?? NULL,
-      l(
-        theme('submission_accession_link', ['accession' => $local]),
-        'tpps/submission/' . $local . '/view',
-        $params
+      l(theme('submission_accession_link', ['accession' => $local]),
+        'tpps/submission/' . $local . '/view', $params
       ),
-      $submission->state['status'] ?? NULL,
-      $job_status ?? '-',
+      $data[$local]['status'] ?? NULL,
+      $data[$local]['tripal_job']['status'] ?? '-',
       $import_meta[TPPS_SUBMISSION_FORM_VERSION_KEY] ?? NULL,
       $import_meta['current_version'] ?? NULL,
-      $submission->uid ?? NULL,
+      $data[$local]['submitter']['uid'] ?? NULL,
       $import_meta['full_date'] ?? NULL,
       implode(', ',
         Submission::getPageList([
@@ -84,6 +86,7 @@ function tpps_report_submission_imported() {
       ),
     ];
   }
+
   $output = '<h3>'
     . l(t('Import New Submission (@next_accession)',
       ['@next_accession' => 'TGDR' . tpps_init_project_get_next_accession()]),
