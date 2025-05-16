@@ -32,26 +32,19 @@ function tpps_manage_doi($accession) {
     if (empty($deposit_id) || isset($_GET['force'])) {
       // No Zenodo Deposit Id found. Let's create new one.
       if (variable_get('tpps_zenodo_new_implementation')) {
-        // @TODO Check if Deposit exists.
-        $response = ZenodoDeposit::create(['accession' => $accession]);
-        // $response['id'] contains Zenodo Deposit Id which stored in DB
-        // (in tpps_submission table) but not yet updated in memory. To avoid
-        // reloading whole Submission object - update it without saving to DB.
-        $deposit_id = $response['id'];
-        // Process study files.
-        if (!empty($fid_list = array_keys($submission->getFileIdList()))) {
-          // @todo Check if file already was uploaded.
-          foreach ($fid_list as $fid) {
-            if ($file = tpps_file_load($fid)) {
-              //$data['accession'] = $submission->accession;
-              $data['drupal_file'] = $file;
-              $data['deposit_id'] = $deposit_id;
-              ZenodoFile::create($data);
-            }
-          }
+        try {
+          $deposition = ZenodoDeposit::retrieve(['deposit_id' => $deposit_id]);
+          ZenodoDeposit::publish(['deposit_id' => $deposit_id]);
+          // Note: files wasn't uploaded automatically.
+          $output .= "<h4>Zenodo Deposit successfully published!</h4>";
         }
-        ZenodoDeposit::publish(['deposit_id' => $deposit_id]);
-        $output .= "<h4>Zenodo Deposit successfully created and published!</h4>";
+        catch (Exception $e) {
+          // Deposition wasn't found. Let's create it.
+          $response = ZenodoDeposit::create(['accession' => $accession]);
+          $deposit_id = $response['id'];
+          ZenodoDeposit::publish(['deposit_id' => $deposit_id]);
+          $output .= "<h4>Zenodo Deposit successfully created and published!</h4>";
+        }
       }
       else {
         $deposit_id = tpps_generate_doi($accession)->id;
@@ -64,6 +57,7 @@ function tpps_manage_doi($accession) {
       // Zenodo Deposit Id was found in the TPPS Submission.
       if (variable_get('tpps_zenodo_new_implementation')) {
         $doi_object = ZenodoDepoit::retrieve($deposit_id);
+        // @TODO Minor. Check if files was uploaded and update if necessary.
       }
       else {
         $doi_object = tpps_doi_load($deposit_id);

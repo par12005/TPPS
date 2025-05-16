@@ -44,7 +44,7 @@ class ZenodoWidget {
    *   Returns Zenodo Deposition array or NULL if deposition wasn't found.
    */
   public static function add(array $context) {
-    $debug_mode = isset($context['debug_mode']) ? $context['debug_mode'] : 1;
+    $debug_mode = $context['debug_mode'] ?? FALSE;
     // Defines if links from Zenodo Deposition Object be shown.
     $show_deposition_links = $context['show_deposition_links'] ?? FALSE;
 
