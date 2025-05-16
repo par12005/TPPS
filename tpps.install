@@ -820,6 +820,7 @@ function tpps_schema() {
   ];
   // #861n70hh6 Add custom cache table to have ability to clear only module's data.
   $schema[TPPS_CACHE_BIN] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_tpps_submission'] = drupal_get_schema_unprocessed('system', 'cache');
 
   // Table to store relations between organism name and NCBI Taxonomy Id.
   $schema['tpps_ncbi_taxonomy'] = [
@@ -2374,10 +2375,6 @@ function tpps_update_7128() {
     );
   }
   variable_del('tpps_zenodo_sandbox_key');
-  // Remove outdated variables related to Admin Panel caching.
-  variable_del('tpps_admin_panel_cache_lists');
-  variable_del('tpps_admin_panel_cache_study_lists');
-  variable_del('tpps_admin_panel_cache_resubmit_list');
 
   // Change name of the report title variables.
   // Format: old => new.
@@ -2402,5 +2399,23 @@ function tpps_update_7128() {
   foreach ($mapping as $old => $new) {
     variable_set($new, variable_get($old));
     variable_del($old);
+  }
+}
+
+/**
+ * New Submission cache system.
+ */
+function tpps_update_7128() {
+  // Remove outdated variables related to Admin Panel caching.
+  variable_del('tpps_admin_panel_cache_lists');
+  variable_del('tpps_admin_panel_cache_study_lists');
+  variable_del('tpps_admin_panel_cache_resubmit_list');
+
+  // Create new cache bin to store only cached submissions.
+  // See 'SubmissionCache' class.
+  $schema = tpps_schema();
+  $table = 'cache_tpps_submission';
+  if (!db_table_exists($table)) {
+    db_create_table($table, $schema[$table]);
   }
 }
