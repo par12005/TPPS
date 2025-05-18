@@ -2400,6 +2400,18 @@ function tpps_update_7128() {
     variable_set($new, variable_get($old));
     variable_del($old);
   }
+  // Configure permissions.
+  $permissions = ['administer zenodo', 'view own zenodo deposits'];
+  foreach(['administrator', 'Curation'] as $role_name) {
+    $role = user_role_load_by_name($role_name);
+    user_role_grant_permissions($role->rid, $permissions);
+  }
+  $permissions = ['view own zenodo deposits'];
+  foreach(['authenticated user'] as $role_name) {
+    $role = user_role_load_by_name($role_name);
+    user_role_grant_permissions($role->rid, $permissions);
+  }
+
 }
 
 /**
