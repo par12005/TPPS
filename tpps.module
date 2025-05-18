@@ -487,10 +487,6 @@ function tpps_menu() {
  * Implements hook_permission().
  *
  * Defines custom TPPS permissions.
- *
- * @TODO Minor. Implement new permissions.
- *   'view any submission'
- *   'edit own/any submission'
  */
 function tpps_permission() {
   return [
@@ -514,6 +510,7 @@ function tpps_permission() {
       'title' => t('Approve/Reject TPPS submissions'),
       'description' => t('Approve or reject pending TPPS submissions.'),
     ],
+    // Submission.
     'tpps delete submission' => [
       'title' => t('Delete TPPS submissions'),
       'description' => t('Delete incomplete TPPS submissions.'),
@@ -521,6 +518,15 @@ function tpps_permission() {
     'view own tpps submission' => [
       'title' => t('View own TPPS submissions'),
       'description' => t('View TPPS submissions as a particular user.'),
+    ],
+    // Zenodo API.
+    'administer zenodo' => [
+      'title' => t('Administer Zenodo'),
+      'description' => t('Perform all Zenodo Deposit and files actions.'),
+    ],
+    'view own zenodo deposits' => [
+      'title' => t('View own Zenodo Deposits'),
+      'description' => t('View Zenodo Deposits of own studies.'),
     ],
   ];
 }

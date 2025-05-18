@@ -44,6 +44,8 @@ class ZenodoWidget {
    *   Returns Zenodo Deposition array or NULL if deposition wasn't found.
    */
   public static function add(array $context) {
+    global $user;
+
     $debug_mode = $context['debug_mode'] ?? FALSE;
     // Defines if links from Zenodo Deposition Object be shown.
     $show_deposition_links = $context['show_deposition_links'] ?? FALSE;
@@ -117,11 +119,41 @@ class ZenodoWidget {
             ZenodoHost::search($data);
           }
           $deposition = ZenodoDeposit::retrieve($data);
+          $output = '';
           if (!empty($context['show_deposition_dump'])) {
             // Show Deposition Dump.
-            $output = $deposition;
-            if (is_array($deposition)) {
-              $output = ZenodoDeposit::printDeposition($deposition);
+            if (
+              user_access('administer zenodo', $user)
+              || $user->uid == 1
+            ) {
+              // For admins show any Zenodo response.
+              $output = $deposition;
+              if (is_array($deposition)) {
+                $output = ZenodoDeposit::printDeposition($deposition);
+              }
+            }
+            elseif (
+              user_access('view own zenodo deposits', $user)
+              && $submission->uid == $user->uid
+            ) {
+              // Show shorter version of Deposition for regular users.
+              if (
+                is_array($deposition)
+                // && $deposition['state'] == 'done'
+                && !empty($deposition['metadata'])
+              ) {
+                // Zenodo Deposit was created but not yet published.
+                // Meghan: Let's only allow regular users to see Zenodo
+                // pages for which state == 'done'.
+                $content = $deposition['metadata'];
+                $content['created'] = str_replace('T', ' ',
+                  ($deposition['created'] ?? '')
+                );
+                $content['modified'] = str_replace('T', ' ',
+                  ($deposition['modified'] ?? '')
+                );
+                $output = tpps_array_print_list($content);
+              }
             }
             $zenodo_widget[$deposit_id]['dump'] = [
               '#markup' => ZenodoHost::getStatus() . '<br />' . $output,
@@ -138,17 +170,22 @@ class ZenodoWidget {
                 'tpps/submission/' . $accession . '/zenodo/files'
               ),
             ];
-            if ($show_deposition_links ?? FALSE) {
-              $zenodo_links = [];
-              foreach ($deposition['links'] as $name => $url) {
-                if (in_array($name, ['html', 'badge', 'latest_draft_html'])) {
-                  $zenodo_links[] = l($name, $url);
+            if (
+              user_access('administer zenodo', $user)
+              || $user->uid == 1
+            ) {
+              if ($show_deposition_links ?? FALSE) {
+                $zenodo_links = [];
+                foreach ($deposition['links'] as $name => $url) {
+                  if (in_array($name, ['html', 'badge', 'latest_draft_html'])) {
+                    $zenodo_links[] = l($name, $url);
+                  }
+                  else {
+                    $zenodo_links[] = l($name, Zenodo::addAccessToken($url));
+                  }
                 }
-                else {
-                  $zenodo_links[] = l($name, Zenodo::addAccessToken($url));
-                }
+                $items = array_merge($items, $zenodo_links);
               }
-              $items = array_merge($items, $zenodo_links);
             }
             $zenodo_widget[$deposit_id]['links'] = [
               '#markup' => theme('item_list', ['items' => $items]),
@@ -252,17 +289,19 @@ class ZenodoWidget {
       ];
     }
 
-    // Add action-buttons in own container.
-    $zenodo_widget['actions'] = ['#type' => 'container'];
-    foreach ($action_list as $key) {
-      $zenodo_widget['actions'][$key] = [
-        '#type' => 'submit',
-        '#name' => $key,
-        '#value' => t(ucfirst(str_replace('_', ' ', $key))),
-        // @todo Minor. Do we need also validator?
-        '#validate' => ['ZenodoWidget::validate'],
-        '#submit' => ['ZenodoWidget::submit'],
-      ];
+    if (user_access('administer zenodo', $user) || $user->uid == 1) {
+      // Add action-buttons in own container.
+      $zenodo_widget['actions'] = ['#type' => 'container'];
+      foreach ($action_list as $key) {
+        $zenodo_widget['actions'][$key] = [
+          '#type' => 'submit',
+          '#name' => $key,
+          '#value' => t(ucfirst(str_replace('_', ' ', $key))),
+          // @todo Minor. Do we need also validator?
+          '#validate' => ['ZenodoWidget::validate'],
+          '#submit' => ['ZenodoWidget::submit'],
+        ];
+      }
     }
     return $deposition ?? NULL;
   }
