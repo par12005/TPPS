@@ -5,13 +5,16 @@
  * Shows list of all Zenodo Depositon Files.
  */
 
-
 /**
  * Menu callback. Shows list of all Zenodo Depositon Files.
  */
 function tpps_submission_zenodo_files_list_form(array $form, array &$form_state = [], $accession = NULL) {
+  global $user;
   // Show Zenodo Host on page.
-  if (empty($form_state['triggering_element'])) {
+  if (
+    empty($form_state['triggering_element'])
+    && ZenodoFilesWidget::isActionAllowed($user)
+  ) {
     ZenodoHost::printStatus();
   }
 

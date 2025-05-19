@@ -15,19 +15,26 @@
  */
 class ZenodoFilesWidget {
 
+  // Name of the widget form element.
+  // Used to get data in validator- and submitter-methods.
+  // Note:
+  // ZenodoDepositWidget uses different name so both could be used on the same form.
   const NAME = 'zenodo_files_widget';
+
   /**
    * Adds Zenodo Files widget to the form.
    *
    * Widget has an action-buttons and list of files.
-   * Passed by reference $form will be altered.
+   * Note:
+   * 1. All users will see the same content. The difference in action-buttons.
+   * 2. Passed by reference $form will be altered.
    *
    * Usage example:
    * $context = [
    *   'form' => &$form,
    *   'accession' => $accession,
-   *   'zenodo_page_path' => $path . '/' . $accession . '/zenodo',
-   *   'files_page_path' => $path . '/' . $accession . '/zenodo/files',
+   *   'zenodo_deposit_page_path' => $path . '/' . $accession . '/zenodo',
+   *   'zenodo_files_page_path' => $path . '/' . $accession . '/zenodo/files',
    * ];
    * ZenodoFilesWidget::add($context);
    *
@@ -94,6 +101,9 @@ class ZenodoFilesWidget {
       drupal_set_message($message, 'error');
       drupal_goto($context['zenodo_deposit_page_path']);
     }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Permissions.
+    $actions_allowed = static::isActionAllowed($user);
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Build output.
     $rows = $zenodo_file_list = $submission_files = [];
@@ -179,7 +189,7 @@ class ZenodoFilesWidget {
           $delete_url = $zenodo_file_path . '/delete';
           $update_url = $zenodo_file_path . '/update';
           // 'Delete' button.
-          if (empty($deposition['submitted'])) {
+          if ($actions_allowed && empty($deposition['submitted'])) {
             $delete_button = l(t('Delete'), $delete_url, $action_link_params);
           }
           $rows[$fid]['zenodo'] = ($delete_button ?? '')
@@ -193,14 +203,16 @@ class ZenodoFilesWidget {
 
       // Buttons for the Submission side (left).
       $submission_button = '';
-      if (!empty($rows[$fid]['zenodo'])) {
-        // Files could be updated in published and not yet published Depositions.
-        $submission_button = l(t('Update'), $update_url, $action_link_params);
-      }
-      else {
-        // New files could be added to not yet published Depositions.
-        if (!$deposition['submitted']) {
-          $submission_button = l(t('Create'), $create_url, $action_link_params);
+      if ($actions_allowed) {
+        if (empty($rows[$fid]['zenodo'])) {
+          // New files could be added to not yet published Depositions.
+          if (!$deposition['submitted']) {
+            $submission_button = l(t('Create'), $create_url, $action_link_params);
+          }
+        }
+        else {
+          // Files could be updated in published and not yet published Depositions.
+          $submission_button = l(t('Update'), $update_url, $action_link_params);
         }
       }
       $rows[$fid]['submission'] = $submission_button
@@ -221,8 +233,8 @@ class ZenodoFilesWidget {
     if (!empty($zenodo_file_list)) {
       foreach ($zenodo_file_list as $zenodo_file) {
         $rows[$zenodo_file['id']]['submission'] = '';
-        $delete_url = 'tpps/submission/' . $accession . '/zenodo/files/' . $zenodo_file['id'] . '/delete';
-        if (empty($deposition['submitted'])) {
+        if ($actions_allowed && empty($deposition['submitted'])) {
+          $delete_url = 'tpps/submission/' . $accession . '/zenodo/files/' . $zenodo_file['id'] . '/delete';
           $delete_button = l(t('Delete'), $delete_url, $action_link_params);
         }
         $rows[$zenodo_file['id']]['zenodo'] = ($delete_button ?? '')
@@ -332,6 +344,32 @@ class ZenodoFilesWidget {
       $submission->uploadAllFilesZenodo();
       $form_state['#rebuild'] = TRUE;
     }
+  }
+
+  /**
+   * Checks if user could peform actions with files.
+   *
+   * @param object $account
+   *   Drupal user account.
+   * @param object $submission
+   *   TPPS Submission.
+   *
+   * @return bool
+   *   Returns TRUE if actions are allowed and FALSE otherwise.
+   */
+  public static function isActionAllowed($account, $submission = NULL) {
+    $actions_allowed = FALSE;
+    if (
+      user_access('administer zenodo', $account)
+      || $account->uid == 1
+      || (
+        user_access('view own zenodo deposits', $account)
+        && ($submission->uid ?? FALSE) == $account->uid
+      )
+    ) {
+      $actions_allowed = TRUE;
+    }
+    return $actions_allowed;
   }
 
 }
