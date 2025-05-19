@@ -102,6 +102,10 @@ function tpps_submission_zenodo_files_single_form(array $form, array &$form_stat
     }
   }
 
+
+  if (!empty($_GET['destination'])) {
+    drupal_goto($_GET['destination']);
+  }
   // @TODO Temporary redirect to list-page.
   drupal_goto($path . '/' . $accession . '/zenodo/files');
 

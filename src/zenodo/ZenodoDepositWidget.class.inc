@@ -2,7 +2,9 @@
 
 /**
  * @file
- * Contains 'ZenodoWidget' class.
+ * Contains 'ZenodoDepositWidget' class.
+ *
+ * @TODO Convert action-links into form-buttons to use only widget's code.
  */
 
 /**
@@ -14,25 +16,26 @@
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class ZenodoWidget {
+class ZenodoDepositWidget {
+
+  const NAME = 'zenodo_deposit_widget';
 
   /**
    * Adds Zenodo Deposit widget to the form.
    *
-   * Widget has an action-buttons and Zenodo Depositon object dump or links
-   * to Zenodo Page.
+   * Widget has an action-buttons and dump of the Zenodo Depositon.
+   * Passed by reference $form will be altered.
    *
    * Usage example:
-   * // Zenodo Deposition Widget.
    * $context = [
    *   'form' => &$form,
    *   'accession' => $accession,
-   *   'zenodo_page_path' => $path . '/' . $accession . '/zenodo',
-   *   'files_page_path' => $path . '/' . $accession . '/zenodo/files',
+   *   'zenodo_deposit_page_path' => $path . '/' . $accession . '/zenodo',
+   *   'zenodo_files_page_path' => $path . '/' . $accession . '/zenodo/files',
    *   'show_deposition_dump' => FALSE,
    *   'show_deposition_links' => FALSE,
    * ];
-   * ZenodoDeposit::addWidget($context);
+   * ZenodoDepositWidget::add($context);
    *
    * @param array $context
    *   Data which is required to build widget.
@@ -50,7 +53,8 @@ class ZenodoWidget {
     // Defines if links from Zenodo Deposition Object be shown.
     $show_deposition_links = $context['show_deposition_links'] ?? FALSE;
 
-    if (empty($accession = $context['accession'])) {
+    $accession = $context['accession'];
+    if (empty($accession)) {
       drupal_set_message(
         t('Empty study accession. Please choose one from the list below.'),
         'error'
@@ -59,27 +63,29 @@ class ZenodoWidget {
     }
     $form = &$context['form'] ?? NULL;
     if (is_null($form)) {
-      drupal_set_message(t('Zenodo Deposition Widget requres form.'), 'error');
+      $message = t('Zenodo Deposition Widget requires the form array.');
+      drupal_set_message($message, 'error');
       return FALSE;
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Widget container and hidden fields.
-    $form['zenodo_deposition'] = $form['zenodo_deposition'] ?? [
+    $widget_name = static::NAME;
+    $form[$widget_name] = $form[$widget_name] ?? [
       '#type' => 'container',
       '#tree' => TRUE,
       // Store Submission Accession and Zenodo Deposit Id.
       'accession' => ['#type' => 'hidden', '#value' => $accession],
-      'zenodo_page_path' => [
+      'zenodo_deposit_page_path' => [
         '#type' => 'hidden',
-        '#value' => $context['zenodo_page_path'] ?? NULL,
+        '#value' => $context['zenodo_deposit_page_path'] ?? NULL,
       ],
-      'files_page_path' => [
+      'zenodo_files_page_path' => [
         '#type' => 'hidden',
-        '#value' => $context['files_page_path'] ?? NULL,
+        '#value' => $context['zenodo_files_page_path'] ?? NULL,
       ],
     ];
-    $zenodo_widget = &$form['zenodo_deposition'];
+    $widget = &$form[$widget_name];
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get Zenodo Deposition.
@@ -94,11 +100,11 @@ class ZenodoWidget {
       // Use Zenodo API.
       if (empty($accession)) {
         drupal_set_message(
-          t('Empty acession. Please choose one from the list below.'),
+          t('Empty accession. Please choose one from the list below.'),
           'error'
         );
-        if ($context['zenodo_page_path']) {
-          drupal_goto($context['zenodo_page_path']);
+        if ($context['zenodo_deposit_page_path']) {
+          drupal_goto($context['zenodo_deposit_page_path']);
         }
       }
       // tpps_submission_list_validate_accession($accession);
@@ -109,7 +115,7 @@ class ZenodoWidget {
 
       // Get Zenodo Deposition.
       if ($deposit_id) {
-        $zenodo_widget[$deposit_id] = [
+        $widget[$deposit_id] = [
           '#type' => 'fieldset',
           '#title' => t('Zenodo Deposit Id: @id', ['@id' => $deposit_id]),
         ];
@@ -155,7 +161,7 @@ class ZenodoWidget {
                 $output = tpps_array_print_list($content);
               }
             }
-            $zenodo_widget[$deposit_id]['dump'] = [
+            $widget[$deposit_id]['dump'] = [
               '#markup' => ZenodoHost::getStatus() . '<br />' . $output,
             ];
           }
@@ -187,7 +193,7 @@ class ZenodoWidget {
                 $items = array_merge($items, $zenodo_links);
               }
             }
-            $zenodo_widget[$deposit_id]['links'] = [
+            $widget[$deposit_id]['links'] = [
               '#markup' => theme('item_list', ['items' => $items]),
             ];
           }
@@ -211,13 +217,13 @@ class ZenodoWidget {
             drupal_set_message($message, 'error');
           }
           // @todo Idea: Switch to other host and retrieve deposition again.
-          $zenodo_widget[$deposit_id]['dump'] = [
+          $widget[$deposit_id]['dump'] = [
             '#markup' => t('No Deposition found.'),
           ];
         }
       }
       else {
-        $zenodo_widget['message'] = [
+        $widget['message'] = [
           '#markup' => theme('item_list', [
             'items' => [
               ZenodoHost::getStatus(),
@@ -228,7 +234,7 @@ class ZenodoWidget {
       }
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    $zenodo_widget['id'] = [
+    $widget['id'] = [
       '#type' => 'hidden',
       '#value' => $deposit_id ?? NULL,
     ];
@@ -291,15 +297,15 @@ class ZenodoWidget {
 
     if (user_access('administer zenodo', $user) || $user->uid == 1) {
       // Add action-buttons in own container.
-      $zenodo_widget['actions'] = ['#type' => 'container'];
+      $widget['actions'] = ['#type' => 'container'];
       foreach ($action_list as $key) {
-        $zenodo_widget['actions'][$key] = [
+        $widget['actions'][$key] = [
           '#type' => 'submit',
           '#name' => $key,
           '#value' => t(ucfirst(str_replace('_', ' ', $key))),
           // @todo Minor. Do we need also validator?
-          '#validate' => ['ZenodoWidget::validate'],
-          '#submit' => ['ZenodoWidget::submit'],
+          '#validate' => ['ZenodoDepositWidget::validate'],
+          '#submit' => ['ZenodoDepositWidget::submit'],
         ];
       }
     }
@@ -309,7 +315,7 @@ class ZenodoWidget {
   /**
    * Validator for buttons on the Zenodo Deposit Widget.
    *
-   * See ZenodoWidget::add().
+   * See ZenodoDepositWidget::add().
    *
    * @param array $form
    *   Drupal Form array.
@@ -317,9 +323,11 @@ class ZenodoWidget {
    *   Drupal Form State array.
    */
   public static function validate(array $form, array $form_state) {
-    $zenodo_widget = $form_state['values']['zenodo_deposition'];
+    $widget = $form_state['values'][static::NAME];
 
-    $accession = $zenodo_widget['accession'] ?? '';
+    dpm($widget);
+
+    $accession = $widget['accession'] ?? '';
     if (empty($accession)) {
       form_set_error('hidden accession field',
         t('Submission accession is required.')
@@ -330,7 +338,7 @@ class ZenodoWidget {
   /**
    * Submitter for the buttons on Zenodo Deposit Widget.
    *
-   * See ZenodoWidget::add().
+   * See ZenodoDepositWidget::add().
    *
    * @param array $form
    *   Drupal Form array.
@@ -338,11 +346,12 @@ class ZenodoWidget {
    *   Drupal Form State array.
    */
   public static function submit(array $form, array $form_state) {
-    $zenodo_widget = $form_state['values']['zenodo_deposition'];
+    $widget_name = static::NAME;
+    $widget = $form_state['values'][$widget_name];
 
-    $files_page_path = $zenodo_widget['files_page_path'] ?? NULL;
-    $zenodo_page_path = $zenodo_widget['zenodo_page_path'] ?? NULL;
-    $accession = $zenodo_widget['accession'] ?? '';
+    $files_page_path = $widget['zenodo_files_page_path'] ?? NULL;
+    $zenodo_page_path = $widget['zenodo_deposit_page_path'] ?? NULL;
+    $accession = $widget['accession'] ?? '';
     $action = $form_state['triggering_element']['#name'];
 
     $data = [];
@@ -350,7 +359,7 @@ class ZenodoWidget {
 
     $submission = new Submission($accession);
     $deposit_id = $submission->getZenodoDepositId();
-    $path = $form_state['zenodo_deposition']['path'] ?? 'tpps/submission';
+    $path = $form_state[$widget_name]['path'] ?? 'tpps/submission';
     // Validate Deposit Id here intead of orm validator because it will be used
     // here and full load of the Submission object takes a lot of time.
     if (empty($deposit_id)) {
