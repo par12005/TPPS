@@ -3918,21 +3918,22 @@ function tpps_cache_clear_all($list = NULL, $force = FALSE) {
  */
 function tpps_cache_get_cid_list() {
   return [
-    'tpps_report_doi_duplicates',
-    'tpps_cv',
-    'tpps_doi_get_accession',
+    // Checked:
     'tpps_doi_count_dbxref',
-    'tpps_get_doi_info',
     'tpps_synonym_list',
     'tpps_unit_list',
+    'tpps_get_doi_info',
+    // Custom list on TPPS Admin Panel.
+    'tpps_admin_panel_cache_new_species_list',
+
+    // Need to be checked:
+    'tpps_report_doi_duplicates',
+    'tpps_cv',
 
     // List of accessions.
     'tpps_submission_get_accession_list',
     'tpps_admin_panel_show_all',
-    'tpps_admin_missing_files_report',
     'tpps_phenotype_field',
-    // Admin Panel.
-    'tpps_admin_panel_cache_new_species_list',
   ];
 }
 
