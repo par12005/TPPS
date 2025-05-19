@@ -387,15 +387,26 @@ function tpps_menu() {
     'file' => 'admin/pages.php',
   ];
 
-  $items['tpps/doi/%'] = [
-    'title' => 'TPPS DOI',
-    'page callback' => 'tpps_manage_doi',
+  $items['tpps/%/dataset-doi'] = [
+    'title' => 'Dataset DOI View Page',
+    'description' => 'Shows Dataset DOI metadata.',
+    'page callback' => 'drupal_get_form',
     // #2 is an accession. E.g., 'TGDRxxxx'.
-    'page arguments' => [2],
+    'page arguments' => ['tpps_dataset_doi_view_form', 1],
     'access callback' => 'tpps_access',
     'access arguments' => ['access content'],
     'type' => MENU_NORMAL_ITEM,
-    'file' => 'includes/manage_doi.inc',
+    'file' => 'pages/dataset_doi/view.inc',
+  ];
+  $items['tpps/%/dataset-doi/files'] = [
+    'title' => 'Dataset DOI File List',
+    'page callback' => 'drupal_get_form',
+    // #2 is an accession. E.g., 'TGDRxxxx'.
+    'page arguments' => ['tpps_dataset_doi_files_form', 1],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['access content'],
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'pages/dataset_doi/files.inc',
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -919,9 +930,10 @@ function tpps_mail($key, array &$message, array $params) {
       );
       if ($params['type'] == 'tpps') {
         $message['body'][] = '<br />';
-        $message['body'][] = t('To generate a DOI for your submission, '
-          . 'please click !link.',
-          ['!link' => l(t('here'), 'tpps/doi/' . $accession, $link_params)]
+        // @todo Minor. Replace 'here' in link with something more meaningful.
+        $message['body'][] = t('To generate a Dataset DOI for your submission, '
+          . 'please click <a href="@link">here</a>.',
+          ['@link' => url('tpps/' . $accession . '/dataset-doi', $link_params)]
         );
       }
       break;
