@@ -126,7 +126,6 @@ function tpps_get_variable_list() {
     'tpps_zenodo_debug_mode' => FALSE,
     'tpps_zenodo_access_token_live' => '',
     'tpps_zenodo_access_token_sandbox' => '',
-    'tpps_zenodo_new_implementation' => TRUE,
     'tpps_zenodo_host_greedy_search' => FALSE,
     // Misc Settings.
     'tpps_theme_fix_pager' => FALSE,
@@ -2361,7 +2360,6 @@ function tpps_update_7127() {
 function tpps_update_7128() {
   variable_del('tpps_zenodo_prefix');
   variable_set('tpps_zenodo_debug_mode', FALSE);
-  variable_set('tpps_zenodo_new_implementation', FALSE);
   variable_set('tpps_report_zenodo_submissions_title', 'Zenodo Submissions');
   variable_set('tpps_report_zenodo_depositions_title', 'Zenodo Depositions');
   variable_set('tpps_zenodo_host_greedy_search', FALSE);

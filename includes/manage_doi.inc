@@ -11,98 +11,12 @@
  */
 
 /**
- * Shows DOI of a TPPS submission.
- *
- * If no DOI exists for the submission, one is automatically generated.
- *
- * @param string $accession
- *   The accession number of the TPPS submission.
- *
- * @return string
- *   The HTML for the DOI page.
- */
-function tpps_manage_doi($accession) {
-  $output = "";
-
-  $submission = new Submission($accession);
-
-  $token = variable_get('tpps_zenodo_access_token_live', NULL);
-  if (!empty($token)) {
-    $deposit_id = $submission->getZenodoDepositId();
-    if (empty($deposit_id) || isset($_GET['force'])) {
-      // No Zenodo Deposit Id found. Let's create new one.
-      if (variable_get('tpps_zenodo_new_implementation')) {
-        try {
-          $deposition = ZenodoDeposit::retrieve(['deposit_id' => $deposit_id]);
-          ZenodoDeposit::publish(['deposit_id' => $deposit_id]);
-          // Note: files wasn't uploaded automatically.
-          $output .= "<h4>Zenodo Deposit successfully published!</h4>";
-        }
-        catch (Exception $e) {
-          // Deposition wasn't found. Let's create it.
-          $response = ZenodoDeposit::create(['accession' => $accession]);
-          $deposit_id = $response['id'];
-          ZenodoDeposit::publish(['deposit_id' => $deposit_id]);
-          $output .= "<h4>Zenodo Deposit successfully created and published!</h4>";
-        }
-      }
-      else {
-        $deposit_id = tpps_generate_doi($accession)->id;
-        $submission->setZenodoDepositId($deposit_id, $save_on_change = TRUE);
-        $doi_object = tpps_doi_publish($deposit_id);
-        $output .= "<h4>DOI successfully published!</h4>";
-      }
-    }
-    else {
-      // Zenodo Deposit Id was found in the TPPS Submission.
-      if (variable_get('tpps_zenodo_new_implementation')) {
-        $doi_object = ZenodoDepoit::retrieve($deposit_id);
-        // @TODO Minor. Check if files was uploaded and update if necessary.
-      }
-      else {
-        $doi_object = tpps_doi_load($deposit_id);
-      }
-    }
-  }
-
-  //dpm($doi_object);
-  if (
-    empty($token)
-    || empty($doi_object)
-    // [RISH] 12/2/2024 - Deprecated since it seems the doi_object format has changed
-    // || (isset($doi_object->status) && $doi_object->status != 200 */
-
-  ) {
-    $output .= "<h4>Unable to load Zenodo DOI. There is likely a problem with "
-      . "the Zenodo API key. Please contact your system administrator.</h4>";
-  }
-  else {
-    // $doi_count = count($doi_object);
-    $doi_objects = $doi_object;
-
-    // It can be an array if you're looking up a previously submitted DOI
-    // or else it's a single object  (when you now submit a DOI)
-    if (is_array($doi_object)) {
-      $doi_object = $doi_objects[0];
-    }
-    $doi = $doi_object->doi;
-    $url = $doi_object->doi_url;
-    $badge = $doi_object->links->badge;
-    $output .= 'Displaying the latest DOI data submitted to Zenodo for this study -<br />';
-    //$output .= 'DOI State: ' . $doi_object->state . '<br />';
-    //$output .= 'DOI Submitted: ' . $doi_object->submitted . '<br />';
-    $output .= 'DOI Created: ' . $doi_object->created . '<br />';
-    $output .= "DOI: <a target=\"blank\" href=\"$url\">$doi</a><br>"
-    . "DOI Badge: <a target=\"blank\" href=\"$badge\"><img src=\"$badge\"></a><br>";
-  }
-  return render($output);
-}
-
-/**
  * Returns expression for matching DOIs.
  *
  * @return string
  *   The regular expression pattern for DOIs.
+ *
+ * @TODO Move to includes/common.inc.
  */
 function tpps_doi_regex() {
   return '/^10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+$/';
@@ -110,14 +24,6 @@ function tpps_doi_regex() {
 
 /**
  * Searches for DOI in already submitted studies.
- *
- * Note: Since caching enabled if multiple studies uses the same DOI (which
- * usually possible only for test studies) then latest study accession will
- * be used. Before first match was used.
- *
- * Total execution time:
- * Getting data from cache: 0.00034999847412109 sec
- * Empty cache or reset:    0.96340107917786 sec
  *
  * @param string $doi
  *   DOI value.
@@ -129,25 +35,17 @@ function tpps_doi_regex() {
  *   Returns FALSE if DOI wasn't found.
  */
 function tpps_doi_get_accession($doi, $reset = FALSE) {
-  $cid = __FUNCTION__;
-  $cache_bin = TPPS_CACHE_BIN ?? 'cache';
-  $cache = cache_get($cid, $cache_bin);
-  $is_cache_allowed = variable_get('tpps_page_1_cache_ajax_responses', TRUE);
-  if ($reset || !$is_cache_allowed || empty($cache)) {
-    $all_submissions = chado_query('SELECT shared_state FROM public.tpps_submission');
-    foreach ($all_submissions as $item) {
-      // Check broken 'submission_state' after edit directly in phpPgAdmin.
-      if (strpos($item->shared_state, '&quot;accession&quot;') === FALSE) {
-        $shared_state = unserialize($item->shared_state);
-      }
-      $submission_doi = strtolower($shared_state['saved_values'][TPPS_PAGE_1]['doi'] ?? NULL);
-      if ($submission_doi) {
-        $cache->data[$submission_doi] = $item->accession ?? NULL;
-      }
-    }
-    cache_set($cid, $cache->data, $cache_bin);
+  if (empty($doi)) {
+    return FALSE;
   }
-  return $cache->data[strtolower($doi)] ?? NULL;
+  $doi = strtolower($doi);
+  $data = SubmissionCache::get($reset);
+  foreach ($data as $accession => $cached_submission) {
+    if (strtolower($cached_submission['publication']['publication_doi']) == $doi) {
+      return $accession;
+    }
+  }
+  return FALSE;
 }
 
 /**
@@ -160,6 +58,8 @@ function tpps_doi_get_accession($doi, $reset = FALSE) {
  *
  * @return int
  *   Returns number of records for given DOI in 'chado.dbxref' table.
+ *
+ * @TODO Minor. Find better name for the function.
  */
 function tpps_doi_count_dbxref($doi, $reset = FALSE) {
   $cid = __FUNCTION__;
@@ -189,7 +89,7 @@ function tpps_doi_count_dbxref($doi, $reset = FALSE) {
  *   Returns response which will be returned back as JSON. Keys:
  *   'error' bool TRUE means validation failed and FALSE that
  *
- * @TODO Think about caching and/or sending to browser unchanged $data
+ * @TODO Minor. Rename function. E.g., 'tpps_publication_doi_get_info()'.
  */
 function tpps_get_doi_info($doi, $reset = FALSE) {
   $key = strtolower($doi);

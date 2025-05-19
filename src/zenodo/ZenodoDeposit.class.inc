@@ -460,8 +460,6 @@ dpm(print_r($data, 1));
   /**
    * Formats an author name for Zenodo metadata fields.
    *
-   * Former: tpps_doi_format_name($name).
-   *
    * @param string $name
    *   The name to format.
    *

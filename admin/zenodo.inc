@@ -67,16 +67,6 @@ function tpps_zenodo_settings_form(array $form, array &$form_state) {
     '#title' => t('Sandbox'),
     '#default_value' => variable_get('tpps_zenodo_access_token_sandbox'),
   ];
-  $form['api']['tpps_zenodo_new_implementation'] = [
-    '#type' => 'checkbox',
-    '#title' => t('Use the new TPPS implementation of the API'),
-    '#default_value' => variable_get('tpps_zenodo_new_implementation'),
-    '#description' => t('When enabled then new implementation will be used. '
-      . 'New implementation uses OOP and implements more Zenodo API actions '
-      . 'then previous one. For example "newversion" action and more files actions.'
-      . '<br />Disable if new implementation fails.'
-    ),
-  ];
 
   $form['submission'] = [
     '#type' => 'fieldset',

@@ -31,15 +31,6 @@
  * - ZenodoFile (default actions with files).
  *
  * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
- * How to use:
- * if (!variable_get('tpps_zenodo_new_implementation')) {
- *   // Old implementation (functions).
- * }
- * else {
- *   // New implementation (classes).
- * }
- *
- * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * Dependencies:
  *
  * - 'RestAPI' class.
@@ -47,7 +38,6 @@
  *   'tpps_zenodo_debug_mode',
  *   'tpps_zenodo_access_token_live',
  *   'tpps_zenodo_access_token_sandbox',
- *   'tpps_zenodo_new_implementation',
  *   'tpps_zenodo_host_greedy_search',
  * - Drupal hooks system. See /tpps.api.inc file.
  */

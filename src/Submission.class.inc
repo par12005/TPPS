@@ -2543,9 +2543,13 @@ class Submission {
    *   Example: "10.5281/zenodo.199793".
    */
   public function getPublicationDOI() {
-    return $this->get(['saved_values', TPPS_PAGE_1, 'doi'])
-      ?? $this->get(['saved_values', TPPS_PAGE_1, 'publication_doi'])
+    return
+      // v.2.
+      $this->get(['saved_values', TPPS_PAGE_1, 'publication_doi'])
+      // Shared State.
       ?? $this->sharedState['saved_values'][TPPS_PAGE_1]['doi']
+      // v.1.
+      ?? $this->get(['saved_values', TPPS_PAGE_1, 'doi'])
       ?? '';
   }
 
