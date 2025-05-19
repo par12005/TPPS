@@ -11,14 +11,28 @@ module_load_include('inc', 'tpps', 'pages/submission/list');
  * Menu callback. Shows Zenodo Action buttons.
  */
 function tpps_submission_zenodo_files_single_form(array $form, array &$form_state = [], $accession = NULL, $file_id = NULL) {
+  global $user;
   // Check submission accession.
   $path = 'tpps/submission';
   if (empty($accession)) {
-    drupal_set_message(t('Empty acession. Please choose one from the list below.'), 'error');
+    $message = t('Empty acession. Please choose one from the list below.');
+    drupal_set_message($message, 'error');
     drupal_goto($path);
   }
   tpps_submission_list_validate_accession($accession);
   $submission = new Submission($accession);
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Check permsisions.
+  $actions_allowed = ZenodoFilesWidget::isActionAllowed($user);
+  if (!$actions_allowed) {
+    // Probably user opened URL directly.
+    $message = t('Actions with files not allowed.');
+    drupal_set_message($message, 'error');
+    drupal_goto($path);
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $form['accession'] = ['#type' => 'hidden', '#value' => $accession];
   $deposit_id = $submission->getZenodoDepositId();
   // Validate Zenodo Deposit Id.

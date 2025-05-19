@@ -24,7 +24,10 @@ class ZenodoDepositWidget {
    * Adds Zenodo Deposit widget to the form.
    *
    * Widget has an action-buttons and dump of the Zenodo Depositon.
-   * Passed by reference $form will be altered.
+   *
+   * Note:
+   * 1. Passed by reference $form will be altered.
+   * 2. Action-buttons could be shown/hidden and content could be short/full.
    *
    * Usage example:
    * $context = [
@@ -128,20 +131,7 @@ class ZenodoDepositWidget {
           $output = '';
           if (!empty($context['show_deposition_dump'])) {
             // Show Deposition Dump.
-            if (
-              user_access('administer zenodo', $user)
-              || $user->uid == 1
-            ) {
-              // For admins show any Zenodo response.
-              $output = $deposition;
-              if (is_array($deposition)) {
-                $output = ZenodoDeposit::printDeposition($deposition);
-              }
-            }
-            elseif (
-              user_access('view own zenodo deposits', $user)
-              && $submission->uid == $user->uid
-            ) {
+            if (static::showShortView($user, $submission)) {
               // Show shorter version of Deposition for regular users.
               if (
                 is_array($deposition)
@@ -161,14 +151,25 @@ class ZenodoDepositWidget {
                 $output = tpps_array_print_list($content);
               }
             }
+            else {
+              // For admins show any Zenodo response.
+              $output = $deposition;
+              if (is_array($deposition)) {
+                $output = ZenodoDeposit::printDeposition($deposition);
+              }
+            }
             $widget[$deposit_id]['dump'] = [
-              '#markup' => ZenodoHost::getStatus() . '<br />' . $output,
+              '#markup' => (static::showShortView($user, $submission)
+                ? '' : ZenodoHost::getStatus() . '<br />') . $output,
             ];
           }
           else {
             // Only a few links.
             $items = [
-              ZenodoHost::getStatus(),
+              static::showShortView($user, $submission) ? '' : ZenodoHost::getStatus(),
+
+// @TODO Update links. Use $context.
+
               l(t('Zenodo Deposition'),
                 'tpps/submission/' . $accession . '/zenodo'
               ),
@@ -177,21 +178,19 @@ class ZenodoDepositWidget {
               ),
             ];
             if (
-              user_access('administer zenodo', $user)
-              || $user->uid == 1
+              !static::showShortView($user, $submission)
+              && $show_deposition_links ?? FALSE
             ) {
-              if ($show_deposition_links ?? FALSE) {
-                $zenodo_links = [];
-                foreach ($deposition['links'] as $name => $url) {
-                  if (in_array($name, ['html', 'badge', 'latest_draft_html'])) {
-                    $zenodo_links[] = l($name, $url);
-                  }
-                  else {
-                    $zenodo_links[] = l($name, Zenodo::addAccessToken($url));
-                  }
+              $zenodo_links = [];
+              foreach ($deposition['links'] as $name => $url) {
+                if (in_array($name, ['html', 'badge', 'latest_draft_html'])) {
+                  $zenodo_links[] = l($name, $url);
                 }
-                $items = array_merge($items, $zenodo_links);
+                else {
+                  $zenodo_links[] = l($name, Zenodo::addAccessToken($url));
+                }
               }
+              $items = array_merge($items, $zenodo_links);
             }
             $widget[$deposit_id]['links'] = [
               '#markup' => theme('item_list', ['items' => $items]),
@@ -295,7 +294,7 @@ class ZenodoDepositWidget {
       ];
     }
 
-    if (user_access('administer zenodo', $user) || $user->uid == 1) {
+    if (static::isActionAllowed($user)) {
       // Add action-buttons in own container.
       $widget['actions'] = ['#type' => 'container'];
       foreach ($action_list as $key) {
@@ -422,6 +421,54 @@ class ZenodoDepositWidget {
     if ($zenodo_page_path) {
       drupal_goto($zenodo_page_path);
     }
+  }
+
+  /**
+   * Checks if user could peform actions with deposition.
+   *
+   * @param object $account
+   *   Drupal user account.
+   * @param object $submission
+   *   TPPS Submission.
+   *
+   * @return bool
+   *   Returns TRUE if actions are allowed and FALSE otherwise.
+   */
+  public static function isActionAllowed($account, $submission = NULL) {
+    $actions_allowed = FALSE;
+    if (
+      user_access('administer zenodo', $account)
+      || $account->uid == 1
+      || (
+        user_access('view own zenodo deposits', $account)
+        && ($submission->uid ?? FALSE) == $account->uid
+      )
+    ) {
+      $actions_allowed = TRUE;
+    }
+    return $actions_allowed;
+  }
+
+  /**
+   * Checks if user must see shorter view of the Deposit dump.
+   *
+   * @param object $account
+   *   Drupal user account.
+   * @param object $submission
+   *   TPPS Submission.
+   *
+   * @return bool
+   *   Returns TRUE if short view must be shown and FALSE otherwise.
+   */
+  public static function showShortView($account, $submission = NULL) {
+    $permission = TRUE;
+    if (
+      user_access('view own zenodo deposits', $account)
+      && ($submission->uid ?? FALSE) == $account->uid
+    ) {
+      $permission = FALSE;
+    }
+    return $permission;
   }
 
 }
