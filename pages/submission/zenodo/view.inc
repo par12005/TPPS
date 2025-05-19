@@ -42,12 +42,12 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
     'debug_mode' => FALSE,
     'form' => &$form,
     'accession' => $accession,
-    'zenodo_page_path' => $path . '/' . $accession . '/zenodo',
-    'files_page_path' => $path . '/' . $accession . '/zenodo/files',
+    'zenodo_deposit_page_path' => $path . '/' . $accession . '/zenodo',
+    'zenodo_files_page_path' => $path . '/' . $accession . '/zenodo/files',
     'show_deposition_dump' => TRUE,
     'show_deposition_links' => FALSE,
   ];
-  $deposition = ZenodoWidget::add($context);
+  $deposition = ZenodoDepositWidget::add($context);
 
   // Add back button.
   $form['actions'] = $form['actions'] ?? ['#type' => 'container'];
@@ -75,7 +75,8 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
  */
 function tpps_submission_zenodo_form_validate(array $form, array &$form_state) {
   // Check accession.
-  $zenodo_widget = $form_state['values']['zenodo_deposition'] ?? NULL;
+  $widget_name = ZenodoDepositWidget::NAME;
+  $zenodo_widget = $form_state['values'][$widget_name] ?? NULL;
   if (empty($accession = $zenodo_widget['accession'] ?? '')) {
     form_set_error('accession',
       t('Empty accession. Please choose from the list below.')
@@ -90,8 +91,9 @@ function tpps_submission_zenodo_form_validate(array $form, array &$form_state) {
  * Form submitter for 'tpps_submission_list_form' form.
  */
 function tpps_submission_zenodo_form_submit(array &$form, array &$form_state) {
+  $widget_name = ZenodoDepositWidget::NAME;
+  $zenodo_widget = $form_state['values'][$widget_name] ?? NULL;
   $action = $form_state['triggering_element']['#name'];
-  $zenodo_widget = $form_state['values']['zenodo_deposition'] ?? NULL;
   if (empty($accession = $zenodo_widget['accession'] ?? '')) {
     drupal_get_messages(
       t('Empty accession. Please choose from the list below.'),

@@ -2437,8 +2437,6 @@ class Submission {
   /**
    * Uploads all files to the Zenodo Deposit.
    *
-   * See function tpps_manage_doi($accession);
-   *
    * @throws Exception
    *   When study wasn't found.
    *
