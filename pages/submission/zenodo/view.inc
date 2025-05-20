@@ -8,8 +8,6 @@
  * /api/zenodo/:deposit_id/:action/
  */
 
-module_load_include('inc', 'tpps', 'pages/submission/list');
-
 /**
  * Menu callback. Shows Zenodo Action buttons.
  *
@@ -25,17 +23,8 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
     );
     drupal_goto($path);
   }
+  module_load_include('inc', 'tpps', 'pages/submission/list');
   tpps_submission_list_validate_accession($accession);
-  //$submission = new Submission($accession);
-
-  //// Check if submission exists.
-  //$deposit_id = $submission->getZenodoDepositId();
-
-  // Show Zenodo Host on page.
-  //if (empty($form_state['triggering_element'])) {
-  //  ZenodoHost::printStatus();
-  //}
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Zenodo Deposition Widget.
   $context = [
@@ -48,7 +37,7 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
     'show_deposition_links' => FALSE,
   ];
   $deposition = ZenodoDepositWidget::add($context);
-
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Add back button.
   $form['actions'] = $form['actions'] ?? ['#type' => 'container'];
   $action = 'back';
@@ -57,13 +46,7 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
     '#name' => $action,
     '#value' => t(ucfirst($action)),
   ];
-  $action = 'files';
-  $form['actions'][$action] = [
-    '#type' => 'submit',
-    '#name' => $action,
-    '#value' => t('Zenodo Files'),
-  ];
-
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // WARNING: This CSS class adds theme and design.
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
@@ -76,14 +59,12 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
 function tpps_submission_zenodo_form_validate(array $form, array &$form_state) {
   // Check accession.
   $widget_name = ZenodoDepositWidget::NAME;
-  $zenodo_widget = $form_state['values'][$widget_name] ?? NULL;
-  if (empty($accession = $zenodo_widget['accession'] ?? '')) {
+  $widget = $form_state['values'][$widget_name] ?? NULL;
+  if (empty($accession = $widget['accession'] ?? '')) {
     form_set_error('accession',
       t('Empty accession. Please choose from the list below.')
     );
   }
-  // Note: Deposit Id will be validated in form submitter because it requires
-  // fully loaded Submission objec (which takes time).
   // @TOdO Minor. Check if clicked button is in the list of existing buttons.
 }
 
@@ -91,25 +72,17 @@ function tpps_submission_zenodo_form_validate(array $form, array &$form_state) {
  * Form submitter for 'tpps_submission_list_form' form.
  */
 function tpps_submission_zenodo_form_submit(array &$form, array &$form_state) {
-  $widget_name = ZenodoDepositWidget::NAME;
-  $zenodo_widget = $form_state['values'][$widget_name] ?? NULL;
   $action = $form_state['triggering_element']['#name'];
-  if (empty($accession = $zenodo_widget['accession'] ?? '')) {
-    drupal_get_messages(
-      t('Empty accession. Please choose from the list below.'),
-      'error'
-    );
-  }
   // 'Back' button.
   if ($action == 'back') {
-    // For some reasons messages from export/import pages duplicates when 'Back'
-    // button clicked so we simply clear all messages out.
-    drupal_get_messages();
-    drupal_goto('tpps/submission/' . $accession);
-  }
-  if ($action == 'files') {
-    drupal_get_messages();
-    drupal_goto('tpps/submission/' . $accession . '/zenodo/files');
+    $widget_name = ZenodoDepositWidget::NAME;
+    $widget = $form_state['values'][$widget_name] ?? NULL;
+    if (!empty($accession = $widget['accession'])) {
+      // For some reasons messages from export/import pages duplicates when 'Back'
+      // button clicked so we simply clear all messages out.
+      drupal_get_messages();
+      drupal_goto('tpps/submission/' . $accession);
+    }
   }
   $form_state['rebuild'] = TRUE;
 }

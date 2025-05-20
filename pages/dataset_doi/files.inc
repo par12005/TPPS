@@ -18,10 +18,9 @@ function tpps_dataset_doi_files_form(array $form, array &$form_state = [], $acce
   $form = $form ?? [];
 
   // Check submission accession.
-  $path = 'tpps/dataset-doi';
   if (empty($accession)) {
-    drupal_set_message(t('Empty accession. Please choose one from the list below.'), 'error');
-    drupal_goto($path);
+    drupal_set_message(t('Empty accession.'), 'error');
+    drupal_goto('<front>');
   }
   module_load_include('inc', 'tpps', 'pages/submission/list');
   tpps_submission_list_validate_accession($accession);
