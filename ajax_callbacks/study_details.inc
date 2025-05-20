@@ -565,11 +565,12 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
       $total = $row->c1;
     }
     pager_default_initialize($total, $per_page);
-    // VERSION 3 - RISH using Emily's index_id to paginate the page columns
+    // VERSION 3 - RISH using Emily's index_id to paginate the page columns.
+    // @TODO Urgent. Update unsecure db query.
     $query = chado_query("select * from chado.genotypes_" . $project_id .
       " where index_id > " . $start .
       " order by index_id asc
-      limit " . $per_page . ";",[]);
+      limit " . $per_page . ";", []);
 
     $cvterm_list = [];
     while (($result = $query->fetchObject())) {

@@ -142,25 +142,36 @@ function tpps_synonym_restore_values(array &$current_phenotype) {
 function tpps_synonym_save(array $phenotypes_meta, array $id_list) {
   tpps_log('Phenotype Synonyms processing started...');
   // Create a small array to make search of phenotype name easier.
-  foreach ($phenotypes_meta as $item) {
+  foreach ($phenotypes_meta as $short_name => $item) {
     // Note: It's possible that synonym not exists when it was automatically
     // detected by unit from Metadata File.
     if (!empty($item['synonym_id']) && !empty($item['name'])) {
       // $item['name'] is Phenotype name in lowser case. For example: 'leaf a'.
       // Phenotype uniquename is using the same name but not lowercased so
       // it couldn't be used.
-      $synonym_list[$item['synonym_id']] = $item['name'];
+      $synonym_list[$item['synonym_id']] = [
+        'short_name' => $short_name,
+        'full_name' => $item['name'],
+      ];
     }
   }
   if (empty($synonym_list) || empty($id_list)) {
     return;
   }
+
+  if ($debug_mode ?? FALSE) {
+    tpps_log($synonym_list, 'synonym_list');
+  }
+
   foreach ($id_list as $uniquename => $phenotype_id) {
     // $uniquename exampe: 'TGDR824-ID_18-11-leaf A-154-Piln-unit'
+    // Ordinal number:      0       1     2  3      4   5    6.
     // $phenotype_name exampe: 'leaf A'
     // But phenotype name could be a one letter!..
-    foreach ($synonym_list as $synonym_id => $phenotype_name) {
-      if ($phenotype_name == explode('-', $uniquename)[2]) {
+    // The other way is to get phenotype original name in $id_list.
+    $phenotype_name = explode('-', strtolower($uniquename))[3];
+    foreach ($synonym_list as $synonym_id => $synonym_data) {
+      if (strtolower($synonym_data['short_name']) == $phenotype_name) {
         // Store relation between Phenotype Id and Synonym Id.
         db_merge('chado.phenotype_to_synonym')
           ->key([

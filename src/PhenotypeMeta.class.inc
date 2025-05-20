@@ -219,7 +219,6 @@ class PhenotypeMeta {
     }
   }
 
-
   /**
    * Processes single row from file.
    *
@@ -234,21 +233,22 @@ class PhenotypeMeta {
     $column_list = $options['meta_columns'];
     $meta = &$options['meta'];
 
-    // tpps_log($column_list, "COLUMNS");
-    // tpps_log($row, "ROW");
-
     if (empty($name = strtolower($row[$column_list['name']]))) {
       tpps_log('Empty phenotype "@name".', ['@name' => $name], TRIPAL_ERROR);
       return;
     }
-    $meta[$name] = [
-      'attr' => 'other',
-      'attr-other' => $row[$column_list['attr']],
-      'desc' => $row[$column_list['desc']],
-      'unit' => 'other',
-      'unit-other' => $row[$column_list['unit']],
-      'env' => $row[$column_list['env']],
-    ];
+    // Note: $meta[$name] is not empty and filled with correct data when
+    // submit_all.php script runs.
+    // @todo Why it should be overwritten here?
+    $meta[$name]['attr'] = 'other';
+    $meta[$name]['attr-other'] = $row[$column_list['attr']];
+    $meta[$name]['desc'] = $row[$column_list['desc']];
+    $meta[$name]['unit'] = 'other';
+    $meta[$name]['unit-other'] = $row[$column_list['unit']];
+    $meta[$name]['env'] = $row[$column_list['env']];
+    // $name is in lower case but we need original phenotype name.
+    $meta[$name]['name'] = $row[$column_list['name']];
+
     if (
       !empty($column_list['struct'])
       && isset($row[$column_list['struct']])

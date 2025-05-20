@@ -380,9 +380,7 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
  */
 function tpps_chado_insert_multi(array $record_groups, array $options = array()) {
 
-  if (!isset($options['devel'])) {
-    $options['devel'] = FALSE;
-  }
+  $options['devel'] = $options['devel'] ?? FALSE;
 
   // Initialize insert statements, schemas, foreign keys, and primary keys.
   $inserts = array();
@@ -419,7 +417,8 @@ function tpps_chado_insert_multi(array $record_groups, array $options = array())
       }
     }
     $inserts[$table]->fields($fields_arr);
-    $primarys[$table] = !empty($schemas[$table]['primary key'][0]) ? $schemas[$table]['primary key'][0] : NULL;
+    $primarys[$table] = !empty($schemas[$table]['primary key'][0])
+      ? $schemas[$table]['primary key'][0] : NULL;
     $fks[$table] = array();
   }
 
@@ -492,7 +491,8 @@ function tpps_chado_insert_multi(array $record_groups, array $options = array())
               }
             }
             if (!empty($values)) {
-              $fks[$table][$id] = chado_update_record($table, $u_vals, $values, array('return_record' => TRUE))->{$primary};
+              $fks[$table][$id] = chado_update_record($table, $u_vals, $values,
+                ['return_record' => TRUE])->{$primary};
               break;
             }
           }

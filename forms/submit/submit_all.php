@@ -1892,22 +1892,18 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
       'year' => !empty($year) ? $year : NULL,
     ];
 
-
-
-tpps_log($meta_headers, 'meta headers');
-
-
+    if ($debug_mode ?? FALSE) {
+      tpps_log($meta_headers, 'meta headers');
+    }
 
     // Get data header values.
     // [VS]
     if ($phenotype['format'] == PhenotypeData::FILE_FORMAT_1) {
       $file_headers = tpps_file_headers($data_fid, $phenotype['file-no-header']);
 
-
-
-tpps_log($file_headers, 'file_headers');
-
-
+      if ($debug_mode ?? FALSE) {
+        tpps_log($file_headers, 'file_headers');
+      }
 
       $data_columns = [];
       if (
@@ -7370,7 +7366,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
       //   'type_id' => $type_cvterm,
       // ]);
 
-      
+
 
       // [RISH] 3/27/2025 - New genotype naming based on Meghan Myles' advice
       $genotype_name = $variant_name . '-' . $val;
