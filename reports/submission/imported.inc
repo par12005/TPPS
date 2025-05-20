@@ -18,6 +18,7 @@ function tpps_report_submission_imported() {
   $list = ImportedSubmissionList::get();
   $data = SubmissionCache::get();
 
+  // Reset single item.
   if (isset($_GET['reset'])) {
     // List of imported studies is always smaller then list of all submissions
     // so update only items from the imported studies list.
@@ -35,10 +36,8 @@ function tpps_report_submission_imported() {
     'query' => ['destination' => 'admin/reports/tpps/submission/imported'],
     'html' => TRUE,
   ];
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Show Update link.
-  SubmissionCache::printWarning();
 
+  SubmissionCache::promptClearCache();
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Get report's content.
   foreach ($list as $local => $remote) {

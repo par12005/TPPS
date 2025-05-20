@@ -19,17 +19,8 @@ function tpps_report_submission_file_all() {
 function tpps_report_submission_file($filter = NULL) {
   $debug_mode = FALSE;
 
-// @TODO Update hook_menu.
-
-  $reset = $_GET['reset'] ?? FALSE;
-  $data = SubmissionCache::get($reset);
-  // Redirect to URL without 'reset' query item.
-  if (isset($_GET['reset'])) {
-    drupal_goto($_GET['q']);
-  }
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Show warnings.
-  SubmissionCache::printWarning();
+  SubmissionCache::promptClearCache();
+  $data = SubmissionCache::get();
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $options = ['query' => ['token' => variable_get('tpps_api_token')]];
   $accession = explode('/', $_GET['q'])[6] ?? NULL;
