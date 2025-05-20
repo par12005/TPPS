@@ -167,19 +167,21 @@ class ZenodoDepositWidget {
             // Only a few links.
             $items = [
               static::showShortView($user, $submission) ? '' : ZenodoHost::getStatus(),
-
-// @TODO Update links. Use $context.
-
-              l(t('Zenodo Deposition'),
-                'tpps/submission/' . $accession . '/zenodo'
+              l(
+                t('Zenodo Deposition'),
+                $context['zenodo_deposit_page_path']
+                  ?? 'tpps/submission/' . $accession . '/zenodo'
               ),
-              l(t('Zenodo Deposition Files'),
-                'tpps/submission/' . $accession . '/zenodo/files'
+              l(
+                t('Zenodo Deposition Files'),
+                $context['zenodo_files_page_path']
+                  ?? 'tpps/submission/' . $accession . '/zenodo/files'
               ),
             ];
+            $items = array_filter($items);
             if (
               !static::showShortView($user, $submission)
-              && $show_deposition_links ?? FALSE
+              && ($show_deposition_links ?? FALSE)
             ) {
               $zenodo_links = [];
               foreach ($deposition['links'] as $name => $url) {
@@ -308,6 +310,23 @@ class ZenodoDepositWidget {
         ];
       }
     }
+
+    // Add Navigation buttons.
+    if (!$show_deposition_links) {
+      // Do not show button if only 2 links is shown.
+      $form['actions'] = $form['actions'] ?? ['#type' => 'container'];
+      $action = 'files';
+      $form['actions'][$action] = [
+        '#type' => 'submit',
+        '#name' => $action,
+        '#value' => t('Zenodo Files'),
+        // To the right.
+        '#weight' => 12345,
+        '#validate' => ['ZenodoDepositWidget::validate'],
+        '#submit' => ['ZenodoDepositWidget::submit'],
+      ];
+    }
+
     return $deposition ?? NULL;
   }
 
@@ -323,8 +342,6 @@ class ZenodoDepositWidget {
    */
   public static function validate(array $form, array $form_state) {
     $widget = $form_state['values'][static::NAME];
-
-    dpm($widget);
 
     $accession = $widget['accession'] ?? '';
     if (empty($accession)) {
@@ -345,13 +362,25 @@ class ZenodoDepositWidget {
    *   Drupal Form State array.
    */
   public static function submit(array $form, array $form_state) {
+    $action = $form_state['triggering_element']['#name'];
     $widget_name = static::NAME;
     $widget = $form_state['values'][$widget_name];
-
     $files_page_path = $widget['zenodo_files_page_path'] ?? NULL;
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Files has a subpage.
+    if ($action == 'files' && !empty($files_page_path)) {
+      //drupal_get_messages();
+      if ($files_page_path) {
+        drupal_goto($files_page_path);
+      }
+      $form_state['rebuild'] = TRUE;
+    }
+
+
+
     $zenodo_page_path = $widget['zenodo_deposit_page_path'] ?? NULL;
     $accession = $widget['accession'] ?? '';
-    $action = $form_state['triggering_element']['#name'];
 
     $data = [];
     $data['accession'] = $accession;
@@ -373,13 +402,6 @@ class ZenodoDepositWidget {
     }
     else {
       $data['deposit_id'] = $deposit_id;
-    }
-    // Files has a subpage.
-    if ($action == 'files' && !empty($files_page_path)) {
-      drupal_get_messages();
-      if ($files_page_path) {
-        drupal_goto($files_page_path);
-      }
     }
     // Validate $action.
     $class = 'ZenodoDeposit';
