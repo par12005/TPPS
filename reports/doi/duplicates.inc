@@ -10,51 +10,41 @@
  */
 function tpps_report_doi_duplicates($reset = FALSE) {
 
-  $reset = $_GET['reset'] ?? FALSE;
-  $cid = __FUNCTION__;
-  $cache_bin = TPPS_CACHE_BIN ?? 'cache';
-  $cache = cache_get($cid, $cache_bin);
-  $cache_key = $cid;
-  if ($reset || empty($cache) || empty($cache->data[$cache_key])) {
-    // Get new data.
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    $data = [];
-    $submission_list = tpps_load_submission_multiple();
-    foreach ($submission_list as $accession => $submission) {
-      $publication_doi = $submission->sharedState['saved_values'][TPPS_PAGE_1]['doi'] ?? NULL;
-      $data[$publication_doi][] = [
-        'accession' => $accession,
-        'project_id' => $submission->sharedState['ids']['project_id'] ?? NULL,
-        'status' => $submission->status ?? NULL,
+  // Show warnings.
+  SubmissionCache::printWarning();
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $report_data = [];
+  foreach (SubmissionCache::get($reset) as $accession => $cached_submission) {
+    $publication_doi = $cached_submission['publication']['publication_doi'] ?? NULL;
+    if (empty($publication_doi)) {
+      continue;
+    }
+    $report_data[$publication_doi][] = [
+      'accession' => $accession,
+      'project_id' => $cached_submission['project_id'] ?? NULL,
+      'status' => $cached_submission['status'] ?? NULL,
+    ];
+  }
+  $report_data = array_reverse($report_data);
+  // Build report.
+  $i = 0;
+  foreach ($report_data as $publication_doi => $list) {
+    $accession_list = [];
+    if (count($list) >= 2) {
+      foreach ($list as $item) {
+        $accession_list[] = l(implode(' / ', $item), 'api/submission/'
+          . $item['accession'] . '/view/shared_state/saved_values/'
+          . TPPS_PAGE_1 . '/doi'
+        );
+      }
+      $rows[] = [
+        ++$i,
+        $publication_doi,
+        theme('item_list', ['items' => $accession_list]),
       ];
     }
-    $data = array_reverse($data);
-
-    // Build report.
-    $i = 0;
-    foreach ($data as $publication_doi => $list) {
-      $accession_list = [];
-      if (count($list) >= 2) {
-        foreach ($list as $item) {
-          $accession_list[] = l(implode(' / ', $item), 'api/submission/'
-            . $item['accession'] . '/view/shared_state/saved_values/'
-            . TPPS_PAGE_1 . '/doi'
-          );
-        }
-        $rows[] = [
-          ++$i,
-          $publication_doi,
-          theme('item_list', ['items' => $accession_list]),
-        ];
-      }
-    }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    unset($_GET['reset']);
-    $cache->data[$cache_key] = $rows ?? [];
-    cache_set($cid, $cache->data, $cache_bin);
   }
-  $rows = $cache->data[$cache_key] ?? [];
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output.
   $name = 'doi_duplicates';
