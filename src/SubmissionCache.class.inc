@@ -373,7 +373,12 @@ class SubmissionCache {
   /**
    * Prints message about cached report and link to reset cache.
    */
-  public static function printWarning() {
+  public static function promptClearCache() {
+    if ($_GET['reset'] ?? FALSE) {
+      static::update();
+      drupal_goto(current_path());
+    }
+
     $update_url = url($_GET['q'], ['query' => ['reset' => 1]]);
     $message = t('Report was cached. <a href="@update_url">Update</a> to get '
       . 'most recent changes.', ['@update_url' => $update_url]

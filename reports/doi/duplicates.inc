@@ -9,9 +9,8 @@
  * Menu callback. Shows list of organisms per study.
  */
 function tpps_report_doi_duplicates($reset = FALSE) {
-
   // Show warnings.
-  SubmissionCache::printWarning();
+  SubmissionCache::promptClearCache();
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $report_data = [];

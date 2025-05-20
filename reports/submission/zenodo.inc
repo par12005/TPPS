@@ -13,14 +13,9 @@
  * Menu callback. Shows list of submissions which has Zenodo Depositions.
  */
 function tpps_report_submission_zenodo($reset = FALSE) {
-  $reset = $_GET['reset'] ?? $reset;
-  $data = SubmissionCache::get($reset);
-  // Redirect to URL without 'reset' query item.
-  if (isset($_GET['reset'])) {
-    drupal_goto($_GET['q']);
-  }
-  SubmissionCache::printWarning();
+  SubmissionCache::promptClearCache();
 
+  $data = SubmissionCache::get($reset);
   $i = 0;
   foreach ($data as $accession => $item) {
     if (empty($item['zenodo'])) {

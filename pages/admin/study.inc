@@ -56,7 +56,7 @@ module_load_include('inc', 'tpps', 'includes/common');
  *   The accession number of the submission being managed.
  */
 function tpps_manage_submission_form(array $form, array $form_state, $accession = NULL) {
-  global $base_url;
+  global $user, $base_url;
 
   $submission = new Submission($accession);
   if ($submission->doesNotExist()) {
