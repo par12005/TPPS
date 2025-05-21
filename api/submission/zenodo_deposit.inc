@@ -16,7 +16,7 @@ function tpps_api_submission_zenodo_deposit($submission) {
     return ['error' => 'Submission has no Zenodo Deposition.'];
   }
 
-  dpm($deposit_id, 'deposit_id');
+  //dpm($deposit_id, 'deposit_id');
   $response = ZenodoDeposit::retrieve([
     'deposit_id' => $deposit_id,
   ]);

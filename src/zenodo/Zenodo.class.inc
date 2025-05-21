@@ -256,7 +256,6 @@ class Zenodo {
     elseif (static::getClassName() == 'ZenodoFile') {
       // We use New Bucket API which require PUT instead of POST method.
       $data['response'] = RestAPI::put($data['url'], $data['payload'], $data['header']);
-      //dpm(print_r($data, 1), 'File create');
     }
 
     if (function_exists('module_invoke_all')) {

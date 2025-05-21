@@ -386,17 +386,27 @@ function tpps_menu() {
     'type' => MENU_NORMAL_ITEM,
     'file' => 'admin/pages.php',
   ];
-
   $items['tpps/%/dataset-doi'] = [
     'title' => 'Dataset DOI View Page',
     'description' => 'Shows Dataset DOI metadata.',
     'page callback' => 'drupal_get_form',
-    // #2 is an accession. E.g., 'TGDRxxxx'.
+    // 1st placeholder is an accession. E.g., 'TGDRxxxx'.
     'page arguments' => ['tpps_dataset_doi_view_form', 1],
     'access callback' => 'tpps_access',
     'access arguments' => ['access content'],
     'type' => MENU_NORMAL_ITEM,
     'file' => 'pages/dataset_doi/view.inc',
+  ];
+  $items['tpps/%/dataset-doi/create'] = [
+    'title' => 'Create Dataset DOI',
+    'description' => 'Create Zenodo Deposit and upload all files.',
+    'page callback' => 'tpps_dataset_doi_create',
+    // 1st placeholder is an accession. E.g., 'TGDRxxxx'.
+    'page arguments' => [1],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['access content'],
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'pages/dataset_doi/create.inc',
   ];
   $items['tpps/%/dataset-doi/files'] = [
     'title' => 'Dataset DOI File List',
@@ -933,7 +943,7 @@ function tpps_mail($key, array &$message, array $params) {
         // @todo Minor. Replace 'here' in link with something more meaningful.
         $message['body'][] = t('To generate a Dataset DOI for your submission, '
           . 'please click <a href="@link">here</a>.',
-          ['@link' => url('tpps/' . $accession . '/dataset-doi', $link_params)]
+          ['@link' => url('tpps/' . $accession . '/dataset-doi/create', $link_params)]
         );
       }
       break;
@@ -970,7 +980,7 @@ function tpps_form_field_process(array $element, array &$form_state, array $form
 
   // Show field's parents and name in the field's description.
   $debug_mode = variable_get('tpps_debug_mode', FALSE);
-  if ($debug_mode) {
+  if ($debug_mode ?? FALSE) {
     $element['#description'] = ($element['#description'] ?? '')
       . '<br />[ ' . implode(' ][ ', $element['#array_parents']) . ' ]';
   }
@@ -2165,7 +2175,7 @@ function tpps_flush_caches() {
  */
 function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
   $debug_mode = FALSE;
-  if ($debug_mode) {
+  if ($debug_mode ?? FALSE) {
     dpm(__FUNCTION__ . '(' . $page_id . ', '
       . ($form === NULL ? 'NULL' : 'form') . ')'
     );
@@ -3560,7 +3570,7 @@ function tpps_rest_api_request_execution_time($title = '', $execution_time = NUL
     '@title' => $title,
     '@time' => $execution_time,
   ];
-  if ($debug_mode) {
+  if ($debug_mode ?? FALSE) {
     drupal_set_message(t($message, $params), 'warning');
   }
   if ($execution_time > $max_execution_time) {
@@ -3688,7 +3698,8 @@ function tpps_zenodo_deposit_new_version_created(array $data) {
 
     drupal_set_message(t('New version of Zenodo Deposit was created.'));
 
-    if ($debug_mode) {
+    if ($debug_mode ?? FALSE) {
+      dpm(print_r($data, 1));
       $message = t('New Zenodo Deposit "#@new_deposit_id".'
         . '<br />Previous Zenodo Deposit Id: @deposit_id.',
         [
@@ -3697,7 +3708,6 @@ function tpps_zenodo_deposit_new_version_created(array $data) {
         ]
       );
       drupal_set_message($message);
-      dpm(print_r($data, 1));
     }
   }
 }
@@ -3720,18 +3730,13 @@ function tpps_zenodo_deposit_discarded(array $data) {
     ['query' => ['q' => 'conceptrecid:' . $conceptrecid]]
   );
 
-  if ($debug_mode) {
+  if ($debug_mode ?? FALSE) {
     dpm(print_r($list, 1));
   }
 
   $discarded_deposit_id = $submission->getZenodoDepositId();
   // There will be only one active deposition in the list.
   $deposit_id = $list[0]['id'] ?? NULL;
-
-dpm($deposit_id, 'did');
-dpm(print_r($list, 1));
-
-
   $submission->setZenodoConceptRecordId($conceptrecid, $save_on_change = FALSE);
   $submission->setZenodoDepositId($deposit_id, $save_on_change = TRUE);
   // Probably only published deposit could be rolled back.

@@ -39,12 +39,6 @@ class RestAPI {
    *   Returns decoded data.
    */
   public static function decodeJSON($json) {
-    $debug_mode = FALSE;
-    if ($debug_mode) {
-      dpm(print_r(debug_backtrace(
-        !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3
-      ), TRUE));
-    }
     $data = json_decode((string) $json, $associative = TRUE);
     // @TODO Minor. Use JSON_THROW_ON_ERROR (PHP 7.3+) if possible.
     if (JSON_ERROR_NONE !== json_last_error()) {
@@ -81,7 +75,7 @@ class RestAPI {
       ];
       $data = json_encode($data);
     }
-    if ($debug_mode) {
+    if ($debug_mode ?? FALSE) {
       dpm($url, __METHOD__);
       dpm($data, __METHOD__);
       dpm($header, __METHOD__);
@@ -386,7 +380,7 @@ class RestAPI {
           !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS
         ),
       ];
-      if ($debug_mode) {
+      if ($debug_mode ?? FALSE) {
         dpm($exception_data['url'], 'URL');
         dpm($exception_data['method'], 'Method');
         dpm(print_r($exception_data['header'], 1), 'Header');

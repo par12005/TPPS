@@ -532,6 +532,7 @@ class Report {
  *   Returns data to build single row in report 'Submisssion Files All'.
  */
 function ___tpps_report_submission_file_all_build_single_row(array $context) {
+  $debug_mode = FALSE;
 
   $submission = $context['submission'] ?? NULL;
   if (empty($submission) && !empty($context['accession'])) {
@@ -540,7 +541,6 @@ function ___tpps_report_submission_file_all_build_single_row(array $context) {
   $reset = $context['reset'] ?? FALSE;
 
   $data = [];
-  $debug_mode = FALSE;
   $accession = $submission->accession;
   if (empty($file_list = $submission->getFileIdList())) {
     // When submission has no files it shouldn't be shown in the report.
