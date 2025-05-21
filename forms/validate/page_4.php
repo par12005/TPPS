@@ -1187,7 +1187,7 @@ function tpps_validate_restore_file_field_on_form_rebuild(array &$form, array &$
   }
   foreach (['upload', 'columns'] as $field) {
     if (isset($element[$field]) && isset($new_element[$field])) {
-      if ($debug_mode) {
+      if ($debug_mode ?? FALSE) {
         $diff = array_diff(
           array_map('serialize', $element[$field]),
           array_map('serialize', $new_element[$field])

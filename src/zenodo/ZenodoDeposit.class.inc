@@ -142,9 +142,6 @@ class ZenodoDeposit extends Zenodo {
     $data['url'] = static::buildActionUrl($data);
     $data['response'] = RestAPI::post($data['url'], $data['payload']);
 
-dpm(static::getHookName('discarded'));
-dpm(print_r($data, 1));
-
     if (function_exists('module_invoke_all')) {
       // tpps_zenodo_deposit_discarded().
       module_invoke_all(static::getHookName('discarded'), $data);
