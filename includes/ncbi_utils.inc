@@ -10,6 +10,7 @@
  *
  * @param string $organism
  *   The name of the organism.
+ *   E.g., 'Gymnocarpos przewalskii'.
  * @param string $rank
  *   The taxonomic rank (subkingdom, order, family, etc).
  *
@@ -79,22 +80,41 @@ function tpps_ncbi_get_subkingdom($organism) {
  * @return mixed
  *   The NCBI Taxonomy Id, or FALSE on failure.
  */
-function tpps_ncbi_get_taxon_id($organism, $list = FALSE) {
+function tpps_ncbi_get_taxon_id($organism, $list = FALSE, $level = 1) {
   $formatted_org = implode('+', explode(' ', $organism));
   $search = new ESearch('taxonomy');
   $search->addParam('term', "{$formatted_org}[Scientific+Name]");
 
   $err_msg = 'Unable to load Taxon ID from NCBI for organism named: ' . $organism;
+  // Delay between requests in milliseconds.
+  $delay = variable_get('tpps_ncbi_api_delay', 300);
+  // Halt time in microseconds. A microsecond is one millionth of a second.
+  usleep($level * $delay * 1000);
   try {
-    $response = $search->get()->xml();
-    if (empty($response->IdList->Id)) {
+    $response = $search->get();
+    if (!$response->isSuccessful()) {
+      // Fail. Try again up to 5 times with dynamically increased delay.
+      if ($level < variable_get('tpps_ncbi_api_max_attempt_number', 5)) {
+        $level++;
+        return tpps_ncbi_get_taxon_id($organism, $list, $level);
+      }
+      else {
+        $message = t('Reached the limit of requests to NCBI API. Increase NCBI API Request Delay.');
+        drupal_set_message($message, 'error');
+        return FALSE;
+      }
+    }
+    // Success.
+    // Parse XML ONLY (!) when we've got correct answer.
+    $xml = $response->xml();
+    if (empty($xml->IdList->Id)) {
       drupal_set_message($err_msg);
       return FALSE;
     }
     if (!$list) {
-      return $response->IdList->Id;
+      return $xml->IdList->Id;
     }
-    return $response->IdList;
+    return $xml->IdList;
   }
   catch (\Exception $e) {
     drupal_set_message($err_msg . ' EUtils Error: ' . $e->getMessage());
