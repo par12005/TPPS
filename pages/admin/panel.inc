@@ -283,6 +283,11 @@ function tpps_report_admin_panel_theme_single_row($accession, array $row, array 
     l(t('Export'), 'tpps/submission/' . $accession . '/export'),
     l(t('Files'), 'tpps-admin-panel/file-diagnostics/' . $accession),
     l(t('Rename local VCF'), 'tpps/submission/' . $accession . '/vcf/local/rename'),
+    (
+      empty($row['zenodo']['deposit_id'])
+      ? l(t('Create Dataset DOI'), 'tpps/' . $accession . '/dataset-doi/create')
+      : l(t('Dataset DOI'), 'tpps/' . $accession . '/dataset-doi')
+    ),
   ];
   // To add items use $action_list and recreate element.
   $actions = theme('item_list', [
