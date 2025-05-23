@@ -124,13 +124,23 @@ function tpps_ncbi_get_taxon_id($organism, $list = FALSE, $level = 1) {
 /**
  * A relaxed version used for testing: Retrieves the NCBI Taxonomy Id of an organism based on its name.
  *
+ * WARNING:
+ * This function is outdated (see mulile request and delay in implementation
+ * of the tpps_ncbi_get_taxon_id() and seems not used by this module anymore.
+ *
  * @param string $organism
  *   The name of the organism.
  *
  * @return mixed
  *   The NCBI Taxonomy Id, or FALSE on failure.
+ *
+ * @TODO Check if there are any calls outside module and remove if possible.
  */
 function tpps_ncbi_get_taxon_id_v2($organism, $list = FALSE) {
+  if (variable_get('tpps_block_function_tpps_ncbi_get_taxon_id_v2', TRUE)) {
+    return;
+  }
+
   $formatted_org = implode('+', explode(' ', $organism));
   // $formatted_org = implode(' ', explode(' ', $organism));
   echo "NCBI Search String Formatted: $formatted_org\n";
