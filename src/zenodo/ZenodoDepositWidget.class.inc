@@ -252,8 +252,10 @@ class ZenodoDepositWidget {
           if (!$deposition['submitted']) {
             $action_list[] = 'update';
             $action_list[] = 'delete';
-            // Roll back to previous version.
-            $action_list[] = 'discard';
+            // 'Discard' action rolls back to previous version but for not yet
+            // published deposition it works as 'Delete' and it's better to
+            // disable it because it's frustrating.
+            //$action_list[] = 'discard';
             $action_list[] = 'publish';
           }
           break;
