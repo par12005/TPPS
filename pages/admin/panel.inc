@@ -276,18 +276,20 @@ function tpps_report_admin_panel_theme_single_row($accession, array $row, array 
     'path' => 'tpps-admin-panel/' . $accession,
   ]);
   $action_list = [
-    l(t('Edit'), 'tppsc/' . $accession),
-    l(t('View'), 'tpps/submission/' . $accession . '/view'),
-    l(t('State JSON'), 'api/submission/' . $accession . '/view/state'),
-    l(t('Shared State JSON'), 'api/submission/' . $accession . '/view/shared_state'),
-    l(t('Export'), 'tpps/submission/' . $accession . '/export'),
-    l(t('Files'), 'tpps-admin-panel/file-diagnostics/' . $accession),
-    l(t('Rename local VCF'), 'tpps/submission/' . $accession . '/vcf/local/rename'),
-    (
-      empty($row['zenodo']['deposit_id'])
-      ? l(t('Create Dataset DOI'), 'tpps/' . $accession . '/dataset-doi/create')
-      : l(t('Dataset DOI'), 'tpps/' . $accession . '/dataset-doi')
+    l(t('Edit'), 'tppsc/' . $accession)
+      . ' | ' . l(t('Details'), 'tpps/details/' . $accession)
+      . ' | ' . l(t('Files'), 'tpps-admin-panel/file-diagnostics/' . $accession),
+    'JSON: ' . l(t('State'), 'api/submission/' . $accession . '/view/state') . ' | '
+      . l(t('Shared State'), 'api/submission/' . $accession . '/view/shared_state'),
+    l(t('View'), 'tpps/submission/' . $accession . '/view')
+      . ' | ' . l(t('Export'), 'tpps/submission/' . $accession . '/export'),
+    'Zenodo: ' . l(t('Deposit'), 'tpps/submission/' . $accession . '/zenodo')
+      . ' | ' . l(t('Files'), 'tpps/submission/' . $accession . '/zenodo/files'),
+    'Dataset DOI: ' . (empty($row['zenodo']['deposit_id'])
+      ? l(t('Create'), 'tpps/' . $accession . '/dataset-doi/create')
+      : l(t('View'), 'tpps/' . $accession . '/dataset-doi')
     ),
+    l(t('Rename local VCF'), 'tpps/submission/' . $accession . '/vcf/local/rename'),
   ];
   // To add items use $action_list and recreate element.
   $actions = theme('item_list', [
