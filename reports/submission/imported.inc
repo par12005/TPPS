@@ -37,7 +37,6 @@ function tpps_report_submission_imported() {
     'html' => TRUE,
   ];
 
-  SubmissionCache::promptClearCache();
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Get report's content.
   foreach ($list as $local => $remote) {
@@ -112,5 +111,5 @@ function tpps_report_submission_imported() {
     'rows' => $rows,
   ]);
   tpps_add_css_js('main');
-  return $output;
+  return $output . SubmissionCache::showClearCacheWidget();
 }
