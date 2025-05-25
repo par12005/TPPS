@@ -740,16 +740,14 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
   $context = [
     'form' => &$form['zenodo'],
     'accession' => $submission->accession,
-    'show_deposition_dump' => FALSE,
-    'show_deposition_links' => TRUE,
     'zenodo_deposit_page_path' => 'tpps/' . $submission->accession . '/dataset-doi',
     'zenodo_files_page_path' => 'tpps/' . $submission->accession . '/dataset-doi/files',
   ];
   if (ZenodoDepositWidget::isActionAllowed($user, $submission)) {
     $context['zenodo_deposit_page_path']
-      = 'tpps/submission/' . $submission->accession . '/zenodo';
+      = 'tpps/' . $submission->accession . '/dataset-doi';
     $context['zenodo_files_page_path']
-      = 'tpps/submission/' . $accession . '/zenodo/files';
+      = 'tpps/' . $submission->accession . '/dataset-doi/files';
   }
   ZenodoDepositWidget::add($context);
 

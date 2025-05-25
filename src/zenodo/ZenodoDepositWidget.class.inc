@@ -35,8 +35,6 @@ class ZenodoDepositWidget {
    *   'accession' => $accession,
    *   'zenodo_deposit_page_path' => $path . '/' . $accession . '/zenodo',
    *   'zenodo_files_page_path' => $path . '/' . $accession . '/zenodo/files',
-   *   'show_deposition_dump' => FALSE,
-   *   'show_deposition_links' => FALSE,
    * ];
    * ZenodoDepositWidget::add($context);
    *
@@ -53,9 +51,6 @@ class ZenodoDepositWidget {
     global $user;
 
     $debug_mode = $context['debug_mode'] ?? FALSE;
-    // Defines if links from Zenodo Deposition Object be shown.
-    $show_deposition_links = $context['show_deposition_links'] ?? FALSE;
-
     $accession = $context['accession'];
     if (empty($accession)) {
       drupal_set_message(
@@ -74,6 +69,7 @@ class ZenodoDepositWidget {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Widget container and hidden fields.
     $widget_name = static::NAME;
+    $widget = &$form[$widget_name];
     $form[$widget_name] = $form[$widget_name] ?? [
       '#type' => 'container',
       '#tree' => TRUE,
@@ -88,18 +84,12 @@ class ZenodoDepositWidget {
         '#value' => $context['zenodo_files_page_path'] ?? NULL,
       ],
     ];
-    $widget = &$form[$widget_name];
-
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get Zenodo Deposition.
     if (
-      !empty($context['$deposition'])
-      && ZenodoDeposit::isDeposition($context['deposition'])
+      empty($context['deposition'])
+      || !ZenodoDeposit::isDeposition($context['deposition'])
     ) {
-      // Zenodo Deposition was already loaded.
-      $deposition = $context['$deposition'];
-    }
-    else {
       // Use Zenodo API.
       if (empty($accession)) {
         drupal_set_message(
@@ -109,95 +99,19 @@ class ZenodoDepositWidget {
         if ($context['zenodo_deposit_page_path']) {
           drupal_goto($context['zenodo_deposit_page_path']);
         }
+        return FALSE;
       }
       // tpps_submission_list_validate_accession($accession);
-      $submission = new Submission($accession);
-
-      // Check if submission exists.
-      $deposit_id = $submission->getZenodoDepositId();
-
-      // Get Zenodo Deposition.
+      $submission = $context['submission'] = new Submission($accession);
+      // @TODO Minor. Check if submission exists.
+      $deposit_id = $context['deposit_id'] = $submission->getZenodoDepositId();
       if ($deposit_id) {
-        $widget[$deposit_id] = [
-          '#type' => 'fieldset',
-          '#title' => t('Zenodo Deposit Id: @id', ['@id' => $deposit_id]),
-        ];
-        $data['deposit_id'] = $deposit_id;
         try {
+          $data['deposit_id'] = $deposit_id;
           if (variable_get('tpps_zenodo_host_greedy_search', FALSE)) {
             ZenodoHost::search($data);
           }
-          $deposition = ZenodoDeposit::retrieve($data);
-          $output = '';
-          if (!empty($context['show_deposition_dump'])) {
-            // Show Deposition Dump.
-            if (static::showShortView($user, $submission)) {
-              // Show shorter version of Deposition for regular users.
-              if (
-                is_array($deposition)
-                // && $deposition['state'] == 'done'
-                && !empty($deposition['metadata'])
-              ) {
-                // Zenodo Deposit was created but not yet published.
-                // Meghan: Let's only allow regular users to see Zenodo
-                // pages for which state == 'done'.
-                $content = $deposition['metadata'];
-                $content['created'] = str_replace('T', ' ',
-                  ($deposition['created'] ?? '')
-                );
-                $content['modified'] = str_replace('T', ' ',
-                  ($deposition['modified'] ?? '')
-                );
-                $output = tpps_array_print_list($content);
-              }
-            }
-            else {
-              // For admins show any Zenodo response.
-              $output = $deposition;
-              if (is_array($deposition)) {
-                $output = ZenodoDeposit::printDeposition($deposition);
-              }
-            }
-            $widget[$deposit_id]['dump'] = [
-              '#markup' => (static::showShortView($user, $submission)
-                ? '' : ZenodoHost::getStatus() . '<br />') . $output,
-            ];
-          }
-          else {
-            // Only a few links.
-            $items = [
-              static::showShortView($user, $submission) ? '' : ZenodoHost::getStatus(),
-              l(
-                t('Zenodo Deposition'),
-                $context['zenodo_deposit_page_path']
-                  ?? 'tpps/submission/' . $accession . '/zenodo'
-              ),
-              l(
-                t('Zenodo Deposition Files'),
-                $context['zenodo_files_page_path']
-                  ?? 'tpps/submission/' . $accession . '/zenodo/files'
-              ),
-            ];
-            $items = array_filter($items);
-            if (
-              !static::showShortView($user, $submission)
-              && ($show_deposition_links ?? FALSE)
-            ) {
-              $zenodo_links = [];
-              foreach ($deposition['links'] as $name => $url) {
-                if (in_array($name, ['html', 'badge', 'latest_draft_html'])) {
-                  $zenodo_links[] = l($name, $url);
-                }
-                else {
-                  $zenodo_links[] = l($name, Zenodo::addAccessToken($url));
-                }
-              }
-              $items = array_merge($items, $zenodo_links);
-            }
-            $widget[$deposit_id]['links'] = [
-              '#markup' => theme('item_list', ['items' => $items]),
-            ];
-          }
+          $context['deposition'] = ZenodoDeposit::retrieve($data);
         }
         catch (Exception $e) {
           if (in_array($e->getCode(), [403, 404])) {
@@ -217,30 +131,14 @@ class ZenodoDepositWidget {
             );
             drupal_set_message($message, 'error');
           }
-          // @todo Idea: Switch to other host and retrieve deposition again.
-          $widget[$deposit_id]['dump'] = [
-            '#markup' => t('No Deposition found.'),
-          ];
         }
       }
-      else {
-        $widget['message'] = [
-          '#markup' => theme('item_list', [
-            'items' => [
-              ZenodoHost::getStatus(),
-              t("Submission doesn't have Zenodo Deposition."),
-            ],
-          ]),
-        ];
-      }
     }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    $widget['id'] = [
-      '#type' => 'hidden',
-      '#value' => $deposit_id ?? NULL,
-    ];
+    $deposition = $context['deposition'] ?? NULL;
+    $widget = array_merge($widget, static::view($context));
+
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Show buttons.
+    // Choose which buttons must be shown.
     // Note: in 'Debug Mode' all the buttons will be shown.
     if (empty($deposition)) {
       $action_list = ['create'];
@@ -285,7 +183,6 @@ class ZenodoDepositWidget {
           throw new Exception($message);
       }
     }
-
     if ($debug_mode) {
       $action_list = [
         'create',
@@ -297,7 +194,6 @@ class ZenodoDepositWidget {
         'publish',
       ];
     }
-
     if (static::isActionAllowed($user)) {
       // Add action-buttons in own container.
       $widget['actions'] = ['#type' => 'container'];
@@ -312,23 +208,18 @@ class ZenodoDepositWidget {
         ];
       }
     }
-
     // Add Navigation buttons.
-    if (!$show_deposition_links) {
-      // Do not show button if only 2 links is shown.
-      $form['actions'] = $form['actions'] ?? ['#type' => 'container'];
-      $action = 'files';
-      $form['actions'][$action] = [
-        '#type' => 'submit',
-        '#name' => $action,
-        '#value' => t('Zenodo Files'),
-        // To the right.
-        '#weight' => 12345,
-        '#validate' => ['ZenodoDepositWidget::validate'],
-        '#submit' => ['ZenodoDepositWidget::submit'],
-      ];
-    }
-
+    $form['actions'] = $form['actions'] ?? ['#type' => 'container'];
+    $action = 'files';
+    $form['actions'][$action] = [
+      '#type' => 'submit',
+      '#name' => $action,
+      '#value' => t('Zenodo Files'),
+      // To the right.
+      '#weight' => 12345,
+      '#validate' => ['ZenodoDepositWidget::validate'],
+      '#submit' => ['ZenodoDepositWidget::submit'],
+    ];
     return $deposition ?? NULL;
   }
 
@@ -482,17 +373,101 @@ class ZenodoDepositWidget {
    *   TPPS Submission.
    *
    * @return bool
-   *   Returns TRUE if short view must be shown and FALSE otherwise.
+   *   Returns TRUE if all data could be shown.
+   *   Returns FALSE when shorter version of deposition (only metadata)
+   *   must be shown.
    */
-  public static function showShortView($account, $submission = NULL) {
-    $permission = TRUE;
+  public static function isFullAccess($account, $submission = NULL) {
+    $permission = FALSE;
     if (
       user_access('view own zenodo deposits', $account)
       && ($submission->uid ?? FALSE) == $account->uid
     ) {
-      $permission = FALSE;
+      $permission = TRUE;
     }
     return $permission;
+  }
+
+  /**
+   * Print deposition view.
+   *
+   * @param array $context
+   *   Metadata.
+   *
+   * @return array
+   *   Returns form element which shows deposition dump.
+   */
+  public static function view(array $context) {
+    global $user;
+    // Output element.
+    $element = [];
+    $debug_mode = $context['debug_mode'] ?? FALSE;
+
+    if (empty($accession = $context['accession'])) {
+      return $element;
+    }
+
+    if (empty($deposit_id = $context['deposit_id'])) {
+      $element['message'] = [
+        '#markup' => theme('item_list', [
+          'items' => [
+            ZenodoHost::getStatus(),
+            t("Submission doesn't have Zenodo Deposition."),
+          ],
+        ]),
+      ];
+      return $element;
+    }
+
+    $submission = $context['submission'];
+    $deposition = $context['deposition'] ?? NULL;
+    if (empty($deposition)) {
+      return $element;
+    }
+    $element[$deposit_id] = [
+      '#type' => 'fieldset',
+      '#title' => t('Zenodo Deposit Id: @id', ['@id' => $deposit_id]),
+    ];
+    $output = '';
+    // Show Deposition Dump.
+    if (static::isFullAccess($user, $submission)) {
+      // For admins show any Zenodo response.
+      $output = $deposition;
+      if (is_array($deposition)) {
+        $output = ZenodoDeposit::printDeposition($deposition);
+      }
+    }
+    else {
+      // Show shorter version of Deposition for regular users.
+      if (
+        is_array($deposition)
+        && !empty($deposition['metadata'])
+        // && $deposition['state'] == 'done'
+      ) {
+        // Zenodo Deposit was created but not yet published.
+        // Meghan: Let's only allow regular users to see Zenodo
+        // pages for which state == 'done'.
+        $content = $deposition['metadata'];
+        $content['created'] = str_replace('T', ' ',
+          ($deposition['created'] ?? '')
+        );
+        $content['modified'] = str_replace('T', ' ',
+          ($deposition['modified'] ?? '')
+        );
+        $output = tpps_array_print_list($content);
+      }
+    }
+    $element[$deposit_id]['dump'] = [
+      '#markup' => ZenodoHost::getStatus() . '<br />' . $output,
+    ];
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // @todo Move under $element[$deposit_id]. Action buttons must be updated.
+    // Currently we can't show multiple widgets on form because of this issue.
+    $element['id'] = [
+      '#type' => 'hidden',
+      '#value' => $deposit_id ?? NULL,
+    ];
+    return $element;
   }
 
 }

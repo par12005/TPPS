@@ -33,8 +33,6 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
     'accession' => $accession,
     'zenodo_deposit_page_path' => $path . '/' . $accession . '/zenodo',
     'zenodo_files_page_path' => $path . '/' . $accession . '/zenodo/files',
-    'show_deposition_dump' => TRUE,
-    'show_deposition_links' => FALSE,
   ];
   $deposition = ZenodoDepositWidget::add($context);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
