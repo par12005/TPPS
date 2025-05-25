@@ -19,7 +19,6 @@ function tpps_report_submission_file_all() {
 function tpps_report_submission_file($filter = NULL) {
   $debug_mode = FALSE;
 
-  SubmissionCache::promptClearCache();
   $data = SubmissionCache::get();
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $options = ['query' => ['token' => variable_get('tpps_api_token')]];
@@ -96,7 +95,7 @@ function tpps_report_submission_file($filter = NULL) {
       $file_column_list
     ),
     'rows' => $formatted_rows,
-  ]);
+  ]) . SubmissionCache::showClearCacheWidget();
 }
 
 /**

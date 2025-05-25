@@ -56,6 +56,10 @@ class SubmissionCache {
   // If custom cache bin wasn't yet created for some reasons we use common one.
   const CACHE_BIN = 'cache_tpps_submission' ?? 'cache';
 
+  // The name of the key used to reset cache in GET-request.
+  // VALUE will be CACHE_BIN.
+  const RESET_KEY = 'reset';
+
   /**
    * Updates cached list of Submissions.
    */
@@ -372,18 +376,27 @@ class SubmissionCache {
 
   /**
    * Prints message about cached report and link to reset cache.
+   *
+   * Note: When message is shown using 'drupal_set_message()' it doesn't matter
+   * where this function called but when theme_item_list() should be used then
+   * it's important to get returned result and show in correct place at page.
    */
-  public static function promptClearCache() {
-    if ($_GET['reset'] ?? FALSE) {
+  public static function showClearCacheWidget() {
+    if (($_GET[static::RESET_KEY] ?? FALSE) == static::CACHE_BIN) {
+      $message = t('Cleared "@cid" cache bin.', ['@cid' => static::CACHE_BIN]);
+      drupal_set_message($message);
       static::update();
       drupal_goto(current_path());
     }
-
-    $update_url = url($_GET['q'], ['query' => ['reset' => 1]]);
+    $query = [static::RESET_KEY => static::CACHE_BIN];
+    $update_url = url($_GET['q'], ['query' => $query]);
     $message = t('Report was cached. <a href="@update_url">Update</a> to get '
       . 'most recent changes.', ['@update_url' => $update_url]
     );
-    drupal_set_message($message, 'warning');
+    if ($debug_mode ?? FALSE) {
+      drupal_set_message($message, 'warning');
+    }
+    return theme('item_list', ['items' => [$message]]);
   }
 
 }
