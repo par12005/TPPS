@@ -79,7 +79,7 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
         'tpps-admin-panel/refresh-genotypes-materialized-views'),
       l(t('TPPS Submission Tools'), 'tpps/submission', $params),
       l(t('NCBI Taxonomy Id Batch Updates'), 'admin/config/tpps/ncbi_batch', $params),
-      l(t('Clear "tpps" cache bin'), 'admin/config/tpps/cache', $params),
+      l(t('Clear "TPPS" or "TPPS Submission" cache bin'), 'admin/config/tpps/cache', $params),
     ],
   ]);
   $form['general_tasks'] = [
@@ -151,7 +151,7 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
         'rows' => $status_list,
         'caption' => $title[$status_name],
         'attributes' => ['class' => ['view', 'tpps_table', 'sticky-caption']],
-      ]);
+      ]) . SubmissionCache::showClearCacheWidget();
       $form[$status_name]['table'] = ['#markup' => $table];
     }
   }
@@ -170,7 +170,7 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
         'header' => ['Accession'],
         'rows' => $output['resubmit'],
         'attributes' => ['class' => ['view', 'tpps_table', 'sticky-caption']],
-      ]),
+      ]) . SubmissionCache::showClearCacheWidget(),
     ],
   ];
   tpps_form_add_fieldset_collapsed_state($form, $form_state, 'resubmit');
@@ -178,8 +178,16 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // 'New Species' table.
   $cid = $key = 'tpps_admin_panel_cache_new_species_list';
-  $cache = cache_get($cid, TPPS_CACHE_BIN ?? 'cache');
+  // @TODO Minor. Create 'TppsCache' class and move this code there.
+  // See SubmissionCache.
+  if (($_GET['reset'] ?? NULL) == $cid) {
+    $message = t('Cleared "@cid" cache id in "tpps" cache bin.', ['@cid' => $cid]);
+    drupal_set_message($message);
+    cache_set($cid, NULL, TPPS_CACHE_BIN ?? 'cache');
+    drupal_goto($_GET['q']);
+  }
 
+  $cache = cache_get($cid, TPPS_CACHE_BIN ?? 'cache');
   $db = chado_get_db(['name' => 'NCBI Taxonomy']);
   if (!empty($db)) {
     if (
@@ -237,7 +245,18 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
                 'class' => ['view', 'tpps_table', 'sticky-caption']
               ],
             ]
-          ),
+          )
+          // Add link to clear cache.
+          // @TODO Minor. Create 'TppsCache' class and move this code there.
+          // See SubmissionCache.
+          . theme('item_list', [
+            'items' => [
+              t('Report was cached. <a href="@url">Update</a> to get most '
+                . 'recent changes.',
+                ['@url' => url($_GET['q'], ['query' => ['reset' => $cid]])]
+              ),
+            ]
+          ]),
         ],
       ];
       tpps_form_add_fieldset_collapsed_state($form, $form_state, 'new_species');

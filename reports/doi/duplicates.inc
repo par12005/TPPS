@@ -10,7 +10,6 @@
  */
 function tpps_report_doi_duplicates($reset = FALSE) {
   // Show warnings.
-  SubmissionCache::promptClearCache();
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $report_data = [];
@@ -54,5 +53,5 @@ function tpps_report_doi_duplicates($reset = FALSE) {
     'report_name' => $name,
     'header' => $header,
     'rows' => $rows,
-  ]);
+  ]) . SubmissionCache::showClearCacheWidget();
 }
