@@ -33,8 +33,6 @@ function tpps_dataset_doi_view_form(array $form, array &$form_state = [], $acces
     'accession' => $accession,
     'zenodo_deposit_page_path' => $_GET['q'],
     'zenodo_files_page_path' => $_GET['q'] . '/files',
-    'show_deposition_dump' => TRUE,
-    'show_deposition_links' => FALSE,
   ];
   $deposition = ZenodoDepositWidget::add($context);
 
