@@ -545,3 +545,14 @@ function hook_submission_dataset_doi_updated(array $data) {
   $state_dataset_doi = $data['state_dataset_doi'];
   $update_result = $data['update_result'];
 }
+
+/**
+ * Implements 'submission_form_version_changed'.
+ *
+ * @param array $context
+ *   Keys are: 'previous_version' and 'new_version'.
+ */
+function tpps_submission_form_version_changed(array $context) {
+  $old = $context['previous_version'];
+  $new = $context['new_version'];
+}
