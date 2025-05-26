@@ -2873,4 +2873,29 @@ class Submission {
     return $this->state['saved_values'][static::FORM_VERSION_KEY] ?? 1;
   }
 
+  /**
+   * Sets Submission Form Version.
+   *
+   * @return bool
+   *   Returns TRUE if version was changed and FALSE otherwise.
+   */
+  public function setFormVersion($version, $save_on_change = FALSE) {
+    $current_version = $this->gerFormVersion();
+    if ($current_version != $version) {
+      $this->state['saved_values'][static::FORM_VERSION_KEY] == $version;
+      if ($save_on_change) {
+        $this->save();
+      }
+      // 'tpps_submission_form_version_changed'';
+      if (function_exists('module_invoke_all')) {
+        module_invoke_all('submission_form_version_changed', [
+          'previous_version' => $current_version,
+          'new_version' => $version,
+        ]);
+      }
+      return TRUE;
+    }
+    return FALSE;
+  }
+
 }
