@@ -15,7 +15,7 @@ module_load_include('inc', 'tpps', 'includes/form');
  */
 function tpps_submission_list_form(array $form, array &$form_state = [], $accession = NULL) {
   // Accession.
-  $accession_list = tpps_submission_get_accession_list();
+  $accession_list = SubmissionCache::getAccessionList();
   $form['tpps_submission_accession'] = [
     '#type' => 'select',
     '#title' => t('Accession'),

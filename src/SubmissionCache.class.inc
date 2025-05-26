@@ -188,6 +188,29 @@ class SubmissionCache {
    */
   public static function buildSingle($submission) {
     $data = [];
+
+    if (
+      empty($submission->state)
+      || empty($submission->state['saved_values'][TPPS_PAGE_1])
+    ) {
+      // Note: There is no need to use Submission::purge() because it's probably
+      // not submitted fully study left on Step 1.
+      $submission->delete();
+      // Study is treated as orphan (or empty) and will be removed when:
+      // 1. It has no publication title.
+      // 2. Page 1 wasn't submitted or saved yet.
+      // 3. Removement is allowed (default is allow removement).
+      // Note: Empty study will be created when user goes to Page 1 from
+      // 'Welcome' page. Empty studies often created during developement
+      // but users could also create empty studies. Not sure if accession
+      // number of those studies could be reused but it's better to avoid
+      // useless records in DB.
+      watchdog('tpps', 'Removed empty submission @accession.',
+        ['@accession' => $submission->accession]
+      );
+      return $data;
+    }
+
     if ($submission->doesNotExist()) {
       return $data;
     }
@@ -401,6 +424,72 @@ class SubmissionCache {
       drupal_set_message($message, 'warning');
     }
     return theme('item_list', ['items' => [$message]]);
+  }
+
+  /**
+   * Builds a list of accessions for form.
+   *
+   * Former: tpps_submission_get_accession_list().
+   *
+   * @param array $condition_list
+   *   List of condtions for Drupal DB API contions.
+   *   For example: [['uid'], $user->uid, '=']
+   *     First element is an array of parents against item in
+   *     'public.cache_tpps_submission' DB table.
+   *     Second is value. Empty value is allowed.
+   *     3rd is optional operator. Default is '='.
+   *     Possible values: '!=', '<>', '='.
+   *   Possible fields: 'uid', 'accession', 'status' and etc.
+   *   See SubmissionCache::buildSingle().
+   *
+   * @return array
+   *   Returns list of accession to be used in form.
+   *   Key is an accession and value is a human readable title.
+   */
+  public static function getAccessionList(array $condition_list = []) {
+    $data = static::get();
+    $list = [];
+
+    foreach ($data as $accession => $cached_submission) {
+      $title = $cached_submission['publication']['title'] ?? t('No Title');
+      $title = (strlen($title) > 97) ? substr($title, 0, 97) . '...' : $title;
+      $item = $accession . ' - ' . $title;
+      if (empty($condition_list)) {
+        $list[$accession] = $item;
+      }
+      else {
+        $match = [];
+        foreach ($condition_list as $condition) {
+          // @TODO Minor. To use list of parents switch $key and $value in
+          // $conditions.
+          $parents = $condition[0] ?? NULL;
+          $value = $condition[1] ?? NULL;
+          if (empty($parents)) {
+            continue;
+          }
+          $operation = $condition[2] ?? '=';
+          $existing_value = tpps_array_get_value($cached_submission, $parents);
+          if ($operation == '=') {
+            $match[] = ($existing_value == $value);
+          }
+          elseif ($operation == '!=' || $operation == '<>') {
+            $match[] = ($existing_value != $value);
+          }
+          else {
+            // dpm('Not supported operation.');
+          }
+        }
+        // Add to list when ALL conditions matches.
+        if (
+          count($match) == count($condition_list)
+          && count(array_filter($match)) == count($match)
+        ) {
+          $list[$accession] = $item;
+        }
+      }
+    }
+    krsort($list, SORT_NATURAL);
+    return $list;
   }
 
 }
