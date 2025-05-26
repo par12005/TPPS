@@ -645,6 +645,9 @@ class Submission {
   /**
    * Delete submission from database.
    *
+   * Removes only record from 'tpps_submission' table.
+   * See 'purge()' method for full study removement.
+   *
    * @TODO Minor. Destroy object and do not allow chaining.
    */
   public function delete() {
@@ -662,13 +665,22 @@ class Submission {
     // @TODO Check if study was imported.
     module_load_include('inc', 'tpps', 'includes/imported_studies_list');
     ImportedSubmissionList::remove($this->accession);
+
+    SubmissionCache::remove($this->accession);
     $this->accession = $this->state = $this->sharedState = NULL;
-    // Do not allow chaining.
-    return;
+    if (function_exists('module_invoke_all')) {
+      // 'tpps_submission_deleted().
+      module_invoke_all('submission_deleted', $this);
+    }
+
+    // Do not allow chaining methods because object destroyed.
+    return NULL;
   }
 
   /**
-   * Removes TPPS Submission and it's files.
+   * Removes Submission, it's files and all the data from db.
+   *
+   * To remove only record from tpps_submission' table see Submission::delete().
    *
    * @param bool $force
    *   Boolean indicating that the file should be deleted
@@ -702,9 +714,12 @@ class Submission {
     db_delete('chado.dbxref')
       ->condition('accession', $this->accession)
       ->execute();
+    // Remove all data added during processing.
+    // @TODO Check if study was processed first.
+    module_load_include('inc', 'tpps', 'includes/submissions');
+    tpps_submission_clear_db($this->accession);
     // If this study was imported we need to remove it from the list.
     // @todo Check if study was imported to avoid extra moves.
-    //module_load_include('inc', 'tpps', 'includes/imported_studies_list');
     ImportedSubmissionList::remove($this->accession);
     // Update cached data.
     SubmissionCache::remove($this->accession);
