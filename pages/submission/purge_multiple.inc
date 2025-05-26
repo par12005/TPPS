@@ -12,7 +12,7 @@ module_load_include('inc', 'tpps', 'pages/submission/list');
  */
 function tpps_submission_purge_multiple_get_range() {
   $output = [
-    'accession_list' => tpps_submission_get_accession_list(),
+    'accession_list' => SubmissionCache::getAccessionList(),
     // Note: without 'TGDR' - only number.
     // Value from DB autoincrement.
     'latest_accession' => tpps_init_project_get_next_accession() - 1,

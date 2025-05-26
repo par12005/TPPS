@@ -2888,7 +2888,7 @@ class Submission {
   /**
    * Gets Submission Form Version.
    *
-   * Former: tpps_submission_form_version_get(array $form_state) {
+   * Former: tpps_submission_form_version_get().
    *
    * @return int
    *   Returns Submission's Form version.
