@@ -35,40 +35,40 @@ function tpps_front_create_form(array &$form, array $form_state) {
       // Logged in.
       $options = [
         'new' => 'Create new TPPSC Submission',
-        ' YOUR / INCOMPLETE ' => tpps_submission_get_accession_list([
-          ['status', TPPS_SUBMISSION_STATUS_INCOMPLETE],
-          ['uid', $user->uid],
+        ' YOUR / INCOMPLETE ' => SubmissionCache::getAccessionList([
+          [['status'], TPPS_SUBMISSION_STATUS_INCOMPLETE],
+          [['submitter', 'uid'], $user->uid],
         ]),
       ];
       if (variable_get('tpps_front_show_pending_status_mine', FALSE)) {
         $options = $options + [
-          ' YOUR / PENDING APPROVAL' => tpps_submission_get_accession_list([
-            ['status', TPPS_SUBMISSION_STATUS_PENDING_APPROVAL],
-            ['uid', $user->uid],
+          ' YOUR / PENDING APPROVAL' => SubmissionCache::getAccessionList([
+            [['status'], TPPS_SUBMISSION_STATUS_PENDING_APPROVAL],
+            [['submitter', 'uid'], $user->uid],
           ]),
         ];
       }
       if (variable_get('tpps_front_show_approved_status_mine', FALSE)) {
         $options = $options + [
-          ' YOUR / APPROVED ' => tpps_submission_get_accession_list([
-            ['status', TPPS_SUBMISSION_STATUS_APPROVED],
-            ['uid', $user->uid],
+          ' YOUR / APPROVED ' => SubmissionCache::getAccessionList([
+            [['status'], TPPS_SUBMISSION_STATUS_APPROVED],
+            [['submitter', 'uid'], $user->uid],
           ]),
         ];
       }
       if (variable_get('tpps_front_show_others_studies', TRUE)) {
         $options = $options + [
-          ' OTHERS / INCOMPLETE ' => tpps_submission_get_accession_list([
-            ['status', TPPS_SUBMISSION_STATUS_INCOMPLETE],
-            ['uid', $user->uid, '<>'],
+          ' OTHERS / INCOMPLETE ' => SubmissionCache::getAccessionList([
+            [['status'], TPPS_SUBMISSION_STATUS_INCOMPLETE],
+            [['submitter', 'uid'], $user->uid, '<>'],
           ]),
         ];
       }
       if (variable_get('tpps_front_show_pending_status_others', FALSE)) {
         $options = $options + [
-          ' OTHERS / PENDING APPROVAL' => tpps_submission_get_accession_list([
-            ['status', TPPS_SUBMISSION_STATUS_PENDING_APPROVAL],
-            ['uid', $user->uid, '<>'],
+          ' OTHERS / PENDING APPROVAL' => SubmissionCache::getAccessionList([
+            [['status'], TPPS_SUBMISSION_STATUS_PENDING_APPROVAL],
+            [['submitter', 'uid'], $user->uid, '<>'],
           ]),
         ];
       }
@@ -145,9 +145,9 @@ function tpps_front_create_form(array &$form, array $form_state) {
     // @TODO Check what anonymous users will see.
     if (user_is_logged_in()) {
       $options_arr = ['new' => 'Create new TPPS Submission']
-        + tpps_submission_get_accession_list([
-          ['status', TPPS_SUBMISSION_STATUS_INCOMPLETE, '='],
-          ['uid', $user->uid, '='],
+        + SubmissionCache::getAccessionList([
+          [['status'], TPPS_SUBMISSION_STATUS_INCOMPLETE, '='],
+          [['submitter', 'uid'], $user->uid, '='],
         ]);
       if (count($options_arr) > 1) {
         $form['accession'] = [

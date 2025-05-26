@@ -57,7 +57,7 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
     $form['tpps_submission_accession_2'] = [
       '#type' => 'select',
       '#title' => t('Accession to compare with'),
-      '#options' => tpps_submission_get_accession_list(),
+      '#options' => SubmissionCache::getAccessionList(),
     ];
     $form['actions'] = ['#type' => 'container'];
     $form['actions']['compare'] = [

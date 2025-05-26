@@ -72,7 +72,6 @@ function tpps_get_variable_list() {
     'tpps_remember_fieldset_collapsed_state' => FALSE,
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Form. Front page.
-    'tpps_front_cache_accession_list' => TRUE,
     'tpps_front_show_pending_status_mine' => FALSE,
     'tpps_front_show_approved_status_mine' => FALSE,
     'tpps_front_show_pending_status_others' => FALSE,

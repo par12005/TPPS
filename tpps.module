@@ -3952,8 +3952,6 @@ function tpps_cache_get_cid_list() {
     'tpps_report_doi_duplicates',
     'tpps_cv',
 
-    // List of accessions.
-    'tpps_submission_get_accession_list',
     'tpps_admin_panel_show_all',
     'tpps_phenotype_field',
   ];
