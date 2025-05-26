@@ -199,6 +199,20 @@ class Submission {
   // https://developers.zenodo.org/?shell#representation
   const ZENODO_CONCEPT_RECORD_ID_KEY = 'zenodo_conceptrecid';
 
+  // Name of the key which stores Submission Form version.
+  const FORM_VERSION_KEY = 'submission_form_version';
+
+  // Number of the initial version of Form State Array.
+  // This value will be used to apply incremental changes (patches).
+  const FORM_VERSION_START = 1;
+
+  // Version of Submission Form State Array.
+  // See tpps_submission_form_get_change_list() for changes per version.
+  // Version 1: Only removed data which is useless for processing study.
+  // Version 2: #86ayw8a7k Page 4 Genotype Logic Adjustments.
+  // @TODO Minor. Rename to 'latest_version'?
+  const FORM_VERSION_CURRENT = 2;
+
   /**
    * Class constructor.
    *
@@ -982,7 +996,7 @@ class Submission {
       $import_meta['full_date'] .= (empty($import_meta['imported']) ? ''
         : ' [' . $import_meta['imported'] . ']');
     }
-    $import_meta['current_version'] = $this->state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY];
+    $import_meta['current_version'] = $this->state['saved_values'][Submission::FORM_VERSION_KEY];
     return $import_meta;
   }
 
@@ -1114,7 +1128,7 @@ class Submission {
         'tpps_submission_export_files',
         // @TODO Submission Form Version is useless for pipeline processing
         // but could be useful for debugging.
-        //['saved_values', TPPS_SUBMISSION_FORM_VERSION_KEY],
+        //['saved_values', Submission::FORM_VERSION_KEY],
 
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // List of the fields which must be left.
@@ -2564,8 +2578,10 @@ class Submission {
    *   Example: "10.5281/zenodo.199793".
    */
   public function getDatasetDOI() {
-    return tpps_array_get_value($this->state,
-      ['saved_values', TPPS_PAGE_1, 'publication', 'dataset_doi']);
+    return tpps_array_get_value(
+      $this->state,
+      ['saved_values', TPPS_PAGE_1, 'dataset_doi']
+    );
   }
 
   /**
@@ -2585,7 +2601,7 @@ class Submission {
   public function setDatasetDOI($value, $save_on_change = TRUE) {
     $was_updated = FALSE;
     $state_value = &tpps_array_get_value($this->state,
-      ['saved_values', TPPS_PAGE_1, 'publication', 'dataset_doi']
+      ['saved_values', TPPS_PAGE_1, 'dataset_doi']
     );
     if ($state_value != $value) {
       $was_updated = TRUE;
@@ -2615,8 +2631,6 @@ class Submission {
    * @param string $dataset_doi
    *   New value of the Dataset DOI field.
    *
-   * @todo Replace calls of drupal_set_message() with exceptions.
-   * Make it more independent.
    * @todo Minor. Re-use get/setDatasetDOI() methods.
    */
   public function updateDatasetDOI($dataset_doi = NULL) {
@@ -2624,7 +2638,7 @@ class Submission {
 
     // DOI in State.
     $state_dataset_doi = &tpps_array_get_value($this->state,
-      ['saved_values', TPPS_PAGE_1, 'publication', 'dataset_doi']);
+      ['saved_values', TPPS_PAGE_1, 'dataset_doi']);
     $update_result['State'] = $state_dataset_doi;
     if (
       // New one.
@@ -2851,6 +2865,22 @@ class Submission {
     }
     return $output;
 
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Form version.
+
+  /**
+   * Gets Submission Form Version.
+   *
+   * Former: tpps_submission_form_version_get(array $form_state) {
+   *
+   * @return int
+   *   Returns Submission's Form version.
+   *   Returns 1 (default value) if version wasn't set.
+   */
+  public function getFormVersion() {
+    return $this->state['saved_values'][static::FORM_VERSION_KEY] ?? 1;
   }
 
 }

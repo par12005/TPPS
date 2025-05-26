@@ -166,6 +166,7 @@ function tpps_report_submission_file_all_theme_single_row(array $context) {
       theme('submission_accession_link', [
         'accession' => $accession,
         'path' => 'admin/reports/tpps/submission/file/all/' . $accession,
+        'show_version' => TRUE,
       ])
         . '<br />['
         . implode(', ', Submission::getPageList(['accession' => $accession]))

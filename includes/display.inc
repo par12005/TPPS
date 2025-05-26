@@ -64,7 +64,7 @@ function tpps_table_display(array &$state, array $options = []) {
         $key_str = t('Submission Import Metadata');
         $import_meta = $submission->getImportMeta();
         if (!empty($import_meta)) {
-          $version = $import_meta[TPPS_SUBMISSION_FORM_VERSION_KEY] ?? '-';
+          $version = $import_meta[Submission::FORM_VERSION_KEY] ?? '-';
           $val_str = theme('item_list', [
             'items' => [
               t('Original Accession: !url', ['!url' => $import_meta['accession_link']]),
@@ -77,8 +77,8 @@ function tpps_table_display(array &$state, array $options = []) {
           ]);
         }
       }
-      if ($key == 'submission_form_version') {
-        // This is not Submission State Array but Submission Interface which
+      if ($key == Submission::FORM_VERSION_KEY) {
+        // This is not Submission State Array but Submission Shared State which
         // version is always '1'. So we don't need to show this.
         continue;
       }
