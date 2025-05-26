@@ -1655,14 +1655,6 @@ function tpps_main_submit($form, &$form_state) {
   if ($submission->accession) {
     $submission->save();
   }
-
-  if ($form_state['stage'] == TPPS_PAGE_1) {
-    // When non-empty (after Page1 submit) study was added we need to
-    // reset cached lists of accessions.
-    // Note: We must clear cache when submission already stored to DB.
-    tpps_cache_clear_all();
-    SubmissionCache::updateSingle($submission);
-  }
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
