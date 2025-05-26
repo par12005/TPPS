@@ -50,21 +50,25 @@ function tpps_report_submission_imported() {
     }
     $import_meta = $data[$local]['import_meta'];
 
-    // Original accession link.
-    $accession_title = theme('submission_accession_link',
-      ['accession' => $import_meta['original_accession']]
-    );
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Original study.
     if ($import_meta['site'] ?? NULL) {
-      $accession_url = $import_meta['site']
-        . '/tpps/submission/' . $import_meta['original_accession'] . '/export';
-      $original_accession_link = l($accession_title, $accession_url, $params)
-        . (($import_meta['site'] == 'https://treegenesdb.org')
+      $original_accession_link = theme('submission_accession_link',
+        [
+          'accession' => $import_meta['original_accession'],
+          'path' => $import_meta['site']
+            . '/tpps/submission/' . $import_meta['original_accession'] . '/export',
+        ]
+      ) . (($import_meta['site'] == 'https://treegenesdb.org')
           ? '@<strong>LIVE</strong>' : '@dev');
     }
     else {
       // Plain text if there is no information about original site.
-      $original_accession_link = $accession_title;
+      $original_accession_link = theme('submission_accession_link',
+        ['accession' => $import_meta['original_accession']]
+      );
     }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $rows[] = [
       $original_accession_link ?? NULL,
       l(theme('submission_accession_link', ['accession' => $local]),
@@ -72,7 +76,7 @@ function tpps_report_submission_imported() {
       ),
       $data[$local]['status'] ?? NULL,
       $data[$local]['tripal_job']['status'] ?? '-',
-      $import_meta[TPPS_SUBMISSION_FORM_VERSION_KEY] ?? NULL,
+      $import_meta[Submission::FORM_VERSION_KEY] ?? NULL,
       $import_meta['current_version'] ?? NULL,
       $data[$local]['submitter']['uid'] ?? NULL,
       $import_meta['full_date'] ?? NULL,

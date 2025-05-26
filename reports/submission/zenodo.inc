@@ -32,6 +32,7 @@ function tpps_report_submission_zenodo($reset = FALSE) {
       'accession' => theme('submission_accession_link', [
         'accession' => $accession,
         'path' => 'api/submission/' . $accession . '/view/state',
+        'show_version' => TRUE,
       ]),
       'project_id' => $item['project_id'],
       'status' => $item['status'] ?? NULL,

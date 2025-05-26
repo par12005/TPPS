@@ -197,6 +197,7 @@ class SubmissionCache {
       'status' => $submission->getStatus(),
       'stage' => $submission->getCurrentStage(),
       'project_id' => $submission->get(['ids', 'project_id']),
+      Submission::FORM_VERSION_KEY => $submission->getFormVersion(),
       'publication' => [
         'status' => tpps_array_get_value($page1_values,
           ['publication', 'status']
@@ -344,6 +345,9 @@ class SubmissionCache {
    * Updates single submission in the list of cached submissions.
    *
    * WARNING: Do not use in the loop. See buildSingle() method.
+   *
+   * @param object $submission
+   *   TPPS Submission.
    */
   public static function updateSingle($submission) {
     if ($submission->doesNotExist()) {
