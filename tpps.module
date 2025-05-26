@@ -1520,21 +1520,21 @@ function tpps_main_submit($form, &$form_state) {
   module_load_include('inc', 'tpps', 'includes/submission_form_version');
 
   // Get Submission Form Version.
-  $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY] =
-    $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
-      ?? ($values[TPPS_SUBMISSION_FORM_VERSION_KEY] ?? NULL);
-  if (empty($saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY])) {
+  $saved_values[Submission::FORM_VERSION_KEY] =
+    $saved_values[Submission::FORM_VERSION_KEY]
+      ?? ($values[Submission::FORM_VERSION_KEY] ?? NULL);
+  if (empty($saved_values[Submission::FORM_VERSION_KEY])) {
     if ($submission->accession) {
-      $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
-        = tpps_submission_form_version_get($submission->state);
+      $saved_values[Submission::FORM_VERSION_KEY]
+        = $submission->getFormVersion();
     }
     else {
-      $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
-        = TPPS_SUBMISSION_FORM_CURRENT_VERSION;
+      $saved_values[Submission::FORM_VERSION_KEY]
+        = Submission::FORM_VERSION_CURRENT;
     }
   }
 
-  unset($values[TPPS_SUBMISSION_FORM_VERSION_KEY]);
+  unset($values[Submission::FORM_VERSION_KEY]);
 
   // If this form was submitted after import we need to upgrade version.
   // Note: If form version is up-to-date then nothing will be done.
@@ -1661,7 +1661,7 @@ function tpps_main_submit($form, &$form_state) {
     // reset cached lists of accessions.
     // Note: We must clear cache when submission already stored to DB.
     tpps_cache_clear_all();
-    SubmissionList::updateSingle($submission);
+    SubmissionCache::updateSingle($submission);
   }
 }
 
@@ -3261,16 +3261,30 @@ function theme_fcbold(array $variables) {
 function theme_submission_accession_link(array $variables) {
   $accession = $variables['accession'] ?? NULL;
   $path = $variables['path'] ?? NULL;
+  $show_version = $variables['show_version'] ?? FALSE;
 
-  if (!empty($accession)) {
-    $number = str_replace('TGDR', '', ($accession));
-    $output = '<span class="tpps-study-accession">TGDR</span>'
-      . '<span class="tpps-study-accession-number">' . $number . '</span>';
-    if ($path) {
-      $output = l($output, $path, ['html' => TRUE]);
-    }
-    return $output;
+  if (empty($accession)) {
+    return;
   }
+  $data = SubmissionCache::get();
+  $number = str_replace('TGDR', '', ($accession));
+  $output = '<span class="tpps-study-accession">TGDR</span>'
+    . '<span class="tpps-study-accession-number" title="'
+    . t('Study accession number') . '">' . $number . '</span>';
+
+  // Extra data.
+  if ($show_version) {
+    if (!empty($data[$accession][Submission::FORM_VERSION_KEY])) {
+      $output .= ' {<span class="tpps-study-form-version-number" title="'
+        .  t('Submission Form Version Number') . '">'
+        . $data[$accession][Submission::FORM_VERSION_KEY] . '</span>}';
+    }
+  }
+  if ($path) {
+    $output = l($output, $path, ['html' => TRUE]);
+  }
+  return $output;
+
 }
 
 /**
@@ -3739,17 +3753,28 @@ function tpps_zenodo_deposit_discarded(array $data) {
   $deposit_id = $list[0]['id'] ?? NULL;
   $submission->setZenodoConceptRecordId($conceptrecid, $save_on_change = FALSE);
   $submission->setZenodoDepositId($deposit_id, $save_on_change = TRUE);
-  // Probably only published deposit could be rolled back.
-  // So 'Discard' action must be used only to new versions of the published
-  // Depositions. 'Delete' must be used for unpublished.
-  drupal_set_message(t('Zenodo Deposit #@discarded_deposit_id was discarded. '
-    . 'Rolled back to Deposit #@deposit_id.',
-    [
-      '@discarded_deposit_id' => $discarded_deposit_id,
-      '@deposit_id' => $deposit_id,
-    ]
-  ));
-  SubmissionCache::updateSingle($submission);
+  // Only published deposit could be rolled back.
+  if ($discarded_deposit_id == $deposit_id) {
+    // Undo changes made in edit mode.
+    // Was: state == 'inprogress' && submitted == 1.
+    // Became: state == 'done' && submitted == 1.
+    drupal_set_message(t('Changes in Zenodo Deposition #@deposit_id was discarded.',
+      ['@deposit_id' => $deposit_id]
+    ));
+
+  }
+  else {
+    // So 'Discard' action must be used only to new versions of the published
+    // Depositions. 'Delete' must be used for unpublished.
+    drupal_set_message(t('Zenodo Deposition #@discarded_deposit_id was discarded. '
+      . 'Rolled back to Deposition #@deposit_id.',
+      [
+        '@discarded_deposit_id' => $discarded_deposit_id,
+        '@deposit_id' => $deposit_id,
+      ]
+    ));
+    SubmissionCache::updateSingle($submission);
+  }
 }
 
 /**

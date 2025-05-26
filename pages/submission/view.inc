@@ -46,7 +46,7 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
               ['!site' => l($import_meta['site'], $import_meta['site'])]
             ),
             t('Submission Form Version: @version.',
-            ['@version' => $import_meta[TPPS_SUBMISSION_FORM_VERSION_KEY]]),
+            ['@version' => $import_meta[Submission::FORM_VERSION_KEY]]),
           ],
         ]),
       ],

@@ -26,7 +26,7 @@
  *
  * - Submission Interface has NO version. It equals to Submission Form Version 1.
  * - Submission Form (not $form_state) has ALWAYS latest version
- *   (TPPS_SUBMISSION_FORM_CURRENT_VERSION).
+ *   (Submission::FORM_VERSION_CURRENT).
  * - Submission Form State of imported (usually old, version 1 or lower then
  *   latest verstion) studies must be UPgranded.
  * - To generate Submission Interface from current Submission Form State
@@ -84,20 +84,6 @@
  *       processing to speed-up interface creation.
  */
 
-// Number of the initial version of Form State Array.
-// This value will be used to apply incremental changes (patches).
-define('TPPS_SUBMISSION_FORM_START_VERSION', 1);
-
-// Key in $form_state which used to store Submission Interface version.
-define('TPPS_SUBMISSION_FORM_VERSION_KEY', 'submission_form_version');
-
-// Version of Submission Form State Array.
-// See tpps_submission_form_get_change_list() for changes per version.
-// Version 1: Only removed data which is useless for processing study.
-// Version 2: #86ayw8a7k Page 4 Genotype Logic Adjustments.
-// @TODO Minor. Rename to 'latest_version'?
-define('TPPS_SUBMISSION_FORM_CURRENT_VERSION', 2);
-
 module_load_include('inc', 'tpps', 'includes/submission_form_version_changes');
 
 /**
@@ -122,15 +108,17 @@ function tpps_is_debug_mode() {
  *   Returns 1 (default value) if version wasn't set.
  */
 function tpps_submission_form_version_is_outdated(array $form_state) {
-  $form_version = $form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY]
+  $form_version = $form_state['saved_values'][Submission::FORM_VERSION_KEY]
     // Not use current version to assume form is outdated and need to be
     // upgraded. So it's '1' version.
     ?? 1;
-  return ($form_version != TPPS_SUBMISSION_FORM_CURRENT_VERSION);
+  return ($form_version != Submission::FORM_VERSION_CURRENT);
 }
 
 /**
  * Gets Submission Form Version.
+ *
+ * Use $submission->getFormVersion().
  *
  * @param array $form_state
  *   Submission's Form State array.
@@ -140,7 +128,7 @@ function tpps_submission_form_version_is_outdated(array $form_state) {
  *   Returns 1 (default value) if version wasn't set.
  */
 function tpps_submission_form_version_get(array $form_state) {
-  return $form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1;
+  return $form_state['saved_values'][Submission::FORM_VERSION_KEY] ?? 1;
 }
 
 /**
@@ -157,14 +145,14 @@ function tpps_submission_form_version_get(array $form_state) {
  */
 function tpps_submission_form_version_set(array &$form_state, $version, $force = FALSE) {
   if ($force) {
-    $form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] = $version;
+    $form_state['saved_values'][Submission::FORM_VERSION_KEY] = $version;
   }
   else {
-    $form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] =
+    $form_state['saved_values'][Submission::FORM_VERSION_KEY] =
       // Do not overwrite if version was set.
-      $form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY]
+      $form_state['saved_values'][Submission::FORM_VERSION_KEY]
       ?? $version
-      ?? TPPS_SUBMISSION_FORM_START_VERSION;
+      ?? Submission::FORM_VERSION_START;
   }
 }
 
@@ -184,7 +172,7 @@ function tpps_submission_form_version_set(array &$form_state, $version, $force =
  *
  * To downgrade to specific versions (4 to 3):
  *   $current_version = tpps_submission_form_version_get($form_state);
- *   $desired_version = TPPS_SUBMISSION_FORM_START_VERSION;
+ *   $desired_version = Submission::FORM_VERSION_START;
  *   for ($i = $current_version; $i >= $desired_version; $i--) {
  *     tpps_submission_form_version_downgrade($form_state, $i, $interface);
  *   }
@@ -272,7 +260,7 @@ function tpps_submission_form_version_downgrade_to_latest(array $form_state, arr
  *   tpps_submission_form_version_upgrade_to_latest($form_state, $result);
  *
  * To upgrade to specific versions (from 3 to 4):
- *   $start_version = TPPS_SUBMISSION_FORM_START_VERSION;
+ *   $start_version = Submission::FORM_VERSION_START;
  *   $desired_version = tpps_submission_form_version_get($form_state);
  *   for ($i = $start_version; $i <= $desired_version; $i++) {
  *     tpps_submission_form_version_upgrade($form_state, $i, $interface);
@@ -331,7 +319,7 @@ function tpps_submission_form_version_upgrade_to_latest(array $form_state, array
   $form_version = tpps_submission_form_version_get($result);
   // Skip 1st version.
   $start_version = ($form_version == 1) ? 2 : $form_version;
-  $latest_version = TPPS_SUBMISSION_FORM_CURRENT_VERSION;
+  $latest_version = Submission::FORM_VERSION_CURRENT;
   if ($start_version > $latest_version) {
     return FALSE;
   }
@@ -407,12 +395,12 @@ function tpps_submission_form_version_migrate(array $form_state, $version, array
   tpps_array_apply_changes($change_list, $result);
 
   if ($direction == 'upgrade') {
-    $result['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] = $version;
+    $result['saved_values'][Submission::FORM_VERSION_KEY] = $version;
   }
   elseif ($direction == 'downgrade') {
     // @TODO Minor. Remove after testing those extra check
     // cause it's overkill but left to be sure.
-    $result['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY]
+    $result['saved_values'][Submission::FORM_VERSION_KEY]
       = (($version > 1) ? ($version - 1) : 1);
   }
   return TRUE;

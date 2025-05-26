@@ -148,7 +148,8 @@ class ZenodoFilesWidget {
     $deposition = ZenodoDeposit::retrieve($data);
     if ($deposition['submitted']) {
       $message = t("Files can't be added or deleted because Zenodo Deposition "
-        . "<strong>was published</strong>. <br />Create new version of this "
+        . "<strong>was published</strong>. Only filenames could be updated."
+        . "<br />Create <strong>new version</strong> of this "
         . "Deposition to add new or delete existing files."
       );
       drupal_set_message($message, 'warning');

@@ -182,13 +182,13 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   // @TODO Minor. Remove 'saved_values' but be sure to restore those values
   // when submission reopened using '/tppsc' form.
   module_load_include('inc', 'tpps', 'includes/submission_form_version');
-  $submission_version = $submission->state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1;
+  $submission_version = $submission->state['saved_values'][Submission::FORM_VERSION_KEY] ?? 1;
   $submission->state['saved_values']['tpps_submission_import'] = [
     'original_accession' => $submission->accession,
     'imported' => REQUEST_TIME,
     'imported_date' => format_date(REQUEST_TIME, 'custom', 'Y-m-d h:s:i O'),
     'site' => $submission->state['tpps_submission_export_site'] ?? 'https://treegenesdb.org',
-    TPPS_SUBMISSION_FORM_VERSION_KEY => $submission_version,
+    Submission::FORM_VERSION_KEY => $submission_version,
   ];
   // Files.
   tpps_submission_import_process_files($submission->state, $accession, $form);
@@ -373,8 +373,8 @@ function tpps_submission_import_state_mods(array &$state, $new_accession) {
   // Store imported (original) Submission Form Version.
   module_load_include('inc', 'tpps', 'includes/submission_form_version');
   // Set Submission Form Version.
-  $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
-    = $state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1;
+  $saved_values[Submission::FORM_VERSION_KEY]
+    = $state['saved_values'][Submission::FORM_VERSION_KEY] ?? 1;
   // @TODO Check if this is required.
   //unset($state['tpps_submission_export_site']);
 
