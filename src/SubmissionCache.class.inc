@@ -373,7 +373,9 @@ class SubmissionCache {
    *   TPPS Submission.
    */
   public static function updateSingle($submission) {
-    if ($submission->doesNotExist()) {
+    // Note: Do not use Submission::doesExist() because it will try to load
+    // submission from DB and will fail if it wasn't yet saved.
+    if ($submission->accession) {
       return;
     }
     $list = static::get();
