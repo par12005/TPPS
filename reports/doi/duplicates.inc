@@ -11,6 +11,7 @@
 function tpps_report_doi_duplicates($reset = FALSE) {
   // Show warnings.
 
+  $rows = [];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $report_data = [];
   foreach (SubmissionCache::get($reset) as $accession => $cached_submission) {
@@ -53,5 +54,6 @@ function tpps_report_doi_duplicates($reset = FALSE) {
     'report_name' => $name,
     'header' => $header,
     'rows' => $rows,
+    'empty' => t('No data'),
   ]) . SubmissionCache::showClearCacheWidget();
 }

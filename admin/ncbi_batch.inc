@@ -8,11 +8,6 @@
 // Name of the submit button.
 define('TPPS_NCBI_BATCH_UPDATE_BUTTON_NAME', 'ncbi_batch_update');
 
-// Delay between requests to NCBI server.
-// @TODO Move to the module's settings page.
-// WARNING: When there is no delay a lof of requests will fail.
-define('TPPS_NCBI_REQUEST_DELAY', 25000);
-
 /**
  * NCBI Taxonomy Id batch update form.
  */
@@ -27,6 +22,11 @@ function tpps_ncbi_batch_settings_form(array $form, array &$form_state) {
     // @todo Add button to clear results.
     unset($_SESSION['tpps_ncbi_batch']);
   }
+
+  $report_path = 'admin/reports/tpps/organism/ncbi';
+  $form['report'] = [
+    '#markup' => '<p>' . l(t('List of the NCBI Taxonomy Ids.'), $report_path) . '</p>',
+  ];
 
   // Button to start batch process.
   $form[TPPS_NCBI_BATCH_UPDATE_BUTTON_NAME] = [
@@ -91,10 +91,6 @@ function tpps_ncbi_batch_callback($organism_id, $organism_name, $total, array &$
     $context['sandbox']['progress'] = 0;
     $context['sandbox']['current_item'] = '';
     $context['sandbox']['total'] = $total;
-  }
-  // Delay to avoid failed requests.
-  if (!empty(TPPS_NCBI_REQUEST_DELAY)) {
-    usleep(TPPS_NCBI_REQUEST_DELAY ?? 200000);
   }
   // Request NCBI.
   $organism = tpps_organism($organism_id)->requestNcbiTaxonomyId();
