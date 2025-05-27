@@ -113,6 +113,7 @@ function tpps_report_submission_imported() {
       t('Pages'),
     ],
     'rows' => $rows,
+    'empty' => t('No data'),
   ]);
   tpps_add_css_js('main');
   return $output . SubmissionCache::showClearCacheWidget();

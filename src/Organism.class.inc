@@ -295,14 +295,6 @@ class Organism {
       return;
     }
     $xml = tpps_ncbi_get_taxon_id($this->name, FALSE);
-
-    // @todo REplace to catch exceptions.
-    //  try {
-    //    $xml = tpps_ncbi_get_taxon_id($this->name, FALSE);
-    //  }
-    //  catch (e) {
-    //    dpm('sdfsd');
-    //  }
     $response = json_decode(json_encode($xml), TRUE);
     $this->ncbiTaxonomyId = check_plain($response[0]) ?? FALSE;
 
