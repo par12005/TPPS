@@ -95,6 +95,7 @@ function tpps_report_submission_file($filter = NULL) {
       $file_column_list
     ),
     'rows' => $formatted_rows,
+    'empty' => t('No data'),
   ]) . SubmissionCache::showClearCacheWidget();
 }
 

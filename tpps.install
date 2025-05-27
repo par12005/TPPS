@@ -57,6 +57,9 @@ function tpps_get_variable_list() {
     'tpps_report_submission_file_all_title' => "Submission's All Files",
     'tpps_report_submission_file_none_title' => 'Submissions without Files',
     'tpps_report_submission_file_missing_title' => 'Submissions Missing Files',
+    'tpps_report_organism_ncbi_all_title' => 'All organisms and their NCBI Taxonomy Ids',
+    'tpps_report_organism_ncbi_missing_title' => 'Organisms without NCBI Taxonomy Id',
+
 
     // Submission Tools.
     'tpps_submission_secret_key' => '',
@@ -2361,7 +2364,10 @@ function tpps_update_7128() {
   variable_set('tpps_zenodo_debug_mode', FALSE);
   variable_set('tpps_report_zenodo_submissions_title', 'Zenodo Submissions');
   variable_set('tpps_report_zenodo_depositions_title', 'Zenodo Depositions');
+  variable_set('tpps_report_organism_ncbi_all_title', 'All organisms and their NCBI Taxonomy Ids');
+  variable_set('tpps_report_organism_ncbi_missing_title', 'Organisms without NCBI Taxonomy Id');
   variable_set('tpps_zenodo_host_greedy_search', FALSE);
+
   // Rename variable.
   if (
     !is_null(variable_get('tpps_zenodo_sandbox_key', NULL))
@@ -2408,7 +2414,6 @@ function tpps_update_7128() {
     $role = user_role_load_by_name($role_name);
     user_role_grant_permissions($role->rid, $permissions);
   }
-
 }
 
 /**

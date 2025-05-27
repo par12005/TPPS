@@ -14,6 +14,7 @@
  */
 function tpps_report_submission_zenodo($reset = FALSE) {
   $data = SubmissionCache::get($reset);
+  $rows = [];
   $i = 0;
   foreach ($data as $accession => $item) {
     if (empty($item['zenodo'])) {
@@ -68,5 +69,6 @@ function tpps_report_submission_zenodo($reset = FALSE) {
   return Report::printTable([
     'header' => $header,
     'rows' => $rows,
+    'empty' => t('No data'),
   ]) . SubmissionCache::showClearCacheWidget();
 }

@@ -374,6 +374,20 @@ class Report {
           'description' => t('Lists non-existing order/family.'),
           'admin_panel' => TRUE,
         ],
+        'ncbi' => [
+          'all' => [
+            'title' => variable_get('tpps_report_organism_ncbi_all_title',
+              'All Organisms and their NCBI Taxonomy Ids'),
+            'description' => t('List of all organisms and their NCBI Taxonomy Ids.'),
+            'admin_panel' => FALSE,
+          ],
+          'missing' => [
+            'title' => variable_get('tpps_report_organism_ncbi_missing_title',
+              'Organisms without  NCBI Taxonomy Ids'),
+            'description' => t('List of organisms which are missing NCBI Taxonomy Ids.'),
+            'admin_panel' => FALSE,
+          ],
+        ],
       ],
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // DOI.
