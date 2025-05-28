@@ -37,50 +37,57 @@ function tpps_admin_settings(array $form, array &$form_state) {
     '#default_value' => $tpps_db_csv_directory
   );
 
-  $form['tpps_db_csv_directory_user'] = array(
+  $form['tpps_db_csv_directory_user'] = [
     '#type' => 'textfield',
     '#title' => 'Database directory user',
-    '#suffix' => '<div>The shared directory must be owned by the correct user in order for it to be read by the database process, this will try to set the directory permissions to the user your specify here (default: postgres)</div>',
+    '#description' => t('The shared directory must be owned by the correct '
+      . 'user in order for it to be read by the database process, '
+      . 'this will try to set the directory permissions to the user '
+      . 'your specify here (default: postgres)'
+    ),
     '#default_value' => $tpps_db_directory_user
-  );
+  ];
 
-  $form['tpps_ncbi_api_key'] = array(
+  // WARNING: We set veriable for another module here.
+  $form['tripal_eutils_ncbi_api_key'] = [
     '#type' => 'textfield',
     '#title' => t('TPPS NCBI EUtils API Key'),
-    '#default_value' => variable_get('tpps_ncbi_api_key', NULL),
-  );
-
-  $form['tpps_geocode_api_key'] = array(
+    '#default_value' => variable_get('tripal_eutils_ncbi_api_key'),
+  ];
+  $form['tpps_geocode_api_key'] = [
     '#type' => 'textfield',
     '#title' => t('TPPS OpenCage Geocoding API Key'),
-    '#default_value' => variable_get('tpps_geocode_api_key', NULL),
-  );
+    '#default_value' => variable_get('tpps_geocode_api_key'),
+  ];
 
   $form['tpps_unpublished_days_threshold'] = array(
     '#type' => 'textfield',
-    '#title' => t('Number of days before an unpublished study gets highlighted in TPPS Admin panel'),
+    '#title' => t('Number of days before an unpublished study gets '
+      . 'highlighted in TPPS Admin panel'),
     '#default_value' => variable_get('tpps_unpublished_days_threshold', 180),
   );
 
-  $form['tpps_gps_epsilon'] = array(
+  $form['tpps_gps_epsilon'] = [
     '#type' => 'textfield',
     '#title' => t('TPPS GPS Epsilon'),
     '#default_value' => variable_get('tpps_gps_epsilon', .001),
-    '#description' => t('This is the amount of error TPPS should allow for when trying to match plants. An epsilon value of 1 is around 100km, and an epsilon value of .001 is around 100 m.'),
-  );
-
-  $form['tpps_admin_email'] = array(
+    '#description' => t('This is the amount of error TPPS should allow for '
+      . 'when trying to match plants. An epsilon value of 1 is around 100km, '
+      . 'and an epsilon value of .001 is around 100 m.'),
+  ];
+  $form['tpps_admin_email'] = [
     '#type' => 'textfield',
     '#title' => t('TPPS Admin Email Address'),
-    '#default_value' => variable_get('tpps_admin_email', ''),
-  );
-
-  $form['tpps_cartogratree_env'] = array(
+    '#default_value' => variable_get('tpps_admin_email'),
+  ];
+  $form['tpps_cartogratree_env'] = [
     '#type' => 'checkbox',
     '#title' => t('Use environmental layers from CartograPlant'),
     '#default_value' => $cartogratree_env,
-    '#description' => t("If CartograPlant is installed, TPPS can add an optional field to the environment section for environment layers, using the data pulled in through CartograPlant."),
-  );
+    '#description' => t("If CartograPlant is installed, TPPS can add an "
+      . "optional field to the environment section for environment layers, "
+      . "using the data pulled in through CartograPlant."),
+  ];
 
   $form['tpps_latest_job_status_slack_updates_api_url'] = array(
     '#type' => 'textfield',
