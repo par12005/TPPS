@@ -193,8 +193,10 @@ class SubmissionCache {
     $data = [];
 
     if (
-      empty($submission->state)
-      || empty($submission->state['saved_values'][TPPS_PAGE_1])
+      ($submission->state['status'] ?? NULL) == TPPS_SUBMISSION_STATUS_INCOMPLETE
+      && ($submission->state['stage'] ?? NULL) == TPPS_PAGE_1
+      && empty($submission->state['saved_values'][TPPS_PAGE_1])
+      // @TODO Check if publication title is empty (not set).
     ) {
       // Note: There is no need to use Submission::purge() because it's probably
       // not submitted fully study left on Step 1.

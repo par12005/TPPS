@@ -35,42 +35,50 @@ function tpps_front_create_form(array &$form, array $form_state) {
       // Logged in.
       $options = [
         'new' => 'Create new TPPSC Submission',
-        ' YOUR / INCOMPLETE ' => SubmissionCache::getAccessionList([
-          [['status'], TPPS_SUBMISSION_STATUS_INCOMPLETE],
-          [['submitter', 'uid'], $user->uid],
-        ]),
       ];
+      // Incomplete own studies for logged-in user.
+      $list = SubmissionCache::getAccessionList([
+        [['status'], TPPS_SUBMISSION_STATUS_INCOMPLETE],
+        [['submitter', 'uid'], $user->uid],
+      ]);
+      if ($list) {
+        $options = $options + [' YOUR / INCOMPLETE ' => $list];
+      }
       if (variable_get('tpps_front_show_pending_status_mine', FALSE)) {
-        $options = $options + [
-          ' YOUR / PENDING APPROVAL' => SubmissionCache::getAccessionList([
-            [['status'], TPPS_SUBMISSION_STATUS_PENDING_APPROVAL],
-            [['submitter', 'uid'], $user->uid],
-          ]),
-        ];
+        $list = SubmissionCache::getAccessionList([
+          [['status'], TPPS_SUBMISSION_STATUS_PENDING_APPROVAL],
+          [['submitter', 'uid'], $user->uid],
+        ]);
+        if ($list) {
+          $options = $options + [' YOUR / PENDING APPROVAL' => $list];
+        }
       }
       if (variable_get('tpps_front_show_approved_status_mine', FALSE)) {
-        $options = $options + [
-          ' YOUR / APPROVED ' => SubmissionCache::getAccessionList([
-            [['status'], TPPS_SUBMISSION_STATUS_APPROVED],
-            [['submitter', 'uid'], $user->uid],
-          ]),
-        ];
+        $list = SubmissionCache::getAccessionList([
+          [['status'], TPPS_SUBMISSION_STATUS_APPROVED],
+          [['submitter', 'uid'], $user->uid],
+        ]);
+        if ($list) {
+          $options = $options + [' YOUR / APPROVED ' => $list];
+        }
       }
       if (variable_get('tpps_front_show_others_studies', TRUE)) {
-        $options = $options + [
-          ' OTHERS / INCOMPLETE ' => SubmissionCache::getAccessionList([
-            [['status'], TPPS_SUBMISSION_STATUS_INCOMPLETE],
-            [['submitter', 'uid'], $user->uid, '<>'],
-          ]),
-        ];
+        $list = SubmissionCache::getAccessionList([
+          [['status'], TPPS_SUBMISSION_STATUS_INCOMPLETE],
+          [['submitter', 'uid'], $user->uid, '<>'],
+        ]);
+        if ($list) {
+          $options = $options + [' OTHERS / INCOMPLETE ' => $list];
+        }
       }
       if (variable_get('tpps_front_show_pending_status_others', FALSE)) {
-        $options = $options + [
-          ' OTHERS / PENDING APPROVAL' => SubmissionCache::getAccessionList([
-            [['status'], TPPS_SUBMISSION_STATUS_PENDING_APPROVAL],
-            [['submitter', 'uid'], $user->uid, '<>'],
-          ]),
-        ];
+        $list = SubmissionCache::getAccessionList([
+          [['status'], TPPS_SUBMISSION_STATUS_PENDING_APPROVAL],
+          [['submitter', 'uid'], $user->uid, '<>'],
+        ]);
+        if ($list) {
+          $options = $options + [' OTHERS / PENDING APPROVAL' => $list];
+        }
       }
       if (count($options) > 1) {
         $form['accession'] = [
@@ -80,25 +88,25 @@ function tpps_front_create_form(array &$form, array $form_state) {
           '#options' => $options,
           '#default_value' => $form_state['saved_values']['frontpage']['accession'] ?? 'new',
         ];
-      }
-      tpps_form_autofocus($form, ['accession']);
-      $form['use_old_tgdr'] = [
-        '#type' => 'checkbox',
-        '#title' => t('I would like to use an existing TGDR number'),
-        '#default_value' => FALSE,
-      ];
-      $form['old_tgdr'] = [
-        '#type' => 'select',
-        '#title' => t('Existing TGDR number'),
-        '#options' => tpps_submission_get_tgdr_number_list(TRUE),
-        '#description' => t('<div class="error">WARNING: Using this TGDR '
-          . 'number will clear all data associated with this study!</div>'),
-        '#states' => [
-          'visible' => [
-            ':input[name="use_old_tgdr"]' => ['checked' => TRUE],
+        tpps_form_autofocus($form, ['accession']);
+        $form['use_old_tgdr'] = [
+          '#type' => 'checkbox',
+          '#title' => t('I would like to use an existing TGDR number'),
+          '#default_value' => FALSE,
+        ];
+        $form['old_tgdr'] = [
+          '#type' => 'select',
+          '#title' => t('Existing TGDR number'),
+          '#options' => tpps_submission_get_tgdr_number_list(TRUE),
+          '#description' => t('<div class="error">WARNING: Using this TGDR '
+            . 'number will clear all data associated with this study!</div>'),
+          '#states' => [
+            'visible' => [
+              ':input[name="use_old_tgdr"]' => ['checked' => TRUE],
+            ],
           ],
-        ],
-      ];
+        ];
+      }
     }
     $form['Next'] = ['#type' => 'submit', '#value' => t('Continue to TPPSC')];
 
