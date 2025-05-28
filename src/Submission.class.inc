@@ -667,11 +667,12 @@ class Submission {
     ImportedSubmissionList::remove($this->accession);
 
     SubmissionCache::remove($this->accession);
-    $this->accession = $this->state = $this->sharedState = NULL;
     if (function_exists('module_invoke_all')) {
       // 'tpps_submission_deleted().
-      module_invoke_all('submission_deleted', $this);
+      module_invoke_all('submission_deleted', $this->accession);
     }
+    // Be sure to unset at the very end.
+    $this->accession = $this->state = $this->sharedState = NULL;
 
     // Do not allow chaining methods because object destroyed.
     return NULL;
