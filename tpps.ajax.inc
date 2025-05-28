@@ -36,6 +36,11 @@ module_load_include('inc', 'tpps', 'ajax_callbacks/study_details');
  *
  * @return array
  *   Returns data ready to be sent to browser.
+ *   Keys are:
+ *   - 'success' - bool. TRUE when request proccessed sucessfully.
+ *   - 'errors' - array. Optional. List of localized messages.
+ *   - 'warnings' - array. Optional. List of localized messages.
+ *   - Other data which could be proccessed by JS code in browser.
  */
 function tpps_ajax_callback($callback = '', $payload = NULL) {
   $function = 'tpps_ajax_' . check_plain($callback);

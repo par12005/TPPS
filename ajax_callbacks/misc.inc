@@ -77,7 +77,9 @@ function tpps_ajax_get_doi($data = NULL) {
 }
 
 /**
- * Wrapper for function tpps_ncbi_get_taxon_id().
+ * Get NCBI Taxonomy Id.
+ *
+ * Wrapper for the function tpps_ncbi_get_taxon_id().
  *
  * @param array $data
  *   POST data with required 'organism' item which must contain organism name.
@@ -86,7 +88,15 @@ function tpps_ajax_get_doi($data = NULL) {
  *   Returns array with data to be sent back to browser.
  */
 function tpps_ajax_get_ncbi_taxonomy_id(array $data) {
-  $xml = tpps_ncbi_get_taxon_id($data['organism']);
+  try {
+    $xml = tpps_ncbi_get_taxon_id($data['organism']);
+  }
+  catch (Exception $e) {
+    $response['id'] = FALSE;
+    $response['success'] = FALSE;
+    $response['errors'][] = t("Can't get data from NCBI database.");
+    return $response;
+  }
   // Convert Simple XML Object into PHP's array.
   $ncbi_response = json_decode(json_encode($xml), TRUE);
   $response['id'] = check_plain($ncbi_response[0]) ?? FALSE;

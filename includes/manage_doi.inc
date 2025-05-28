@@ -90,11 +90,13 @@ function tpps_doi_count_dbxref($doi, $reset = FALSE) {
  *   'error' bool TRUE means validation failed and FALSE that
  *
  * @TODO Minor. Rename function. E.g., 'tpps_publication_doi_get_info()'.
+ * @todo Create class 'Dryad'.
  */
 function tpps_get_doi_info($doi, $reset = FALSE) {
+
   $key = strtolower($doi);
 
-  $cid = __FUNCTION__;
+  $cid = 'tpps_get_doi_info';
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   $cache = cache_get($cid, $cache_bin);
   $is_cache_allowed = variable_get('tpps_page_1_cache_ajax_responses', TRUE);
