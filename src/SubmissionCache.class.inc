@@ -97,7 +97,6 @@ class SubmissionCache {
     // Using static cache allows to avoid extra db query to get stored in db
     // cache and allows to update single items faster.
     $list = &drupal_static(static::CACHE_ID);
-
     if ($reset || (empty($list) && !is_array($list))) {
       $cache = cache_get(static::CACHE_ID, static::CACHE_BIN);
       if ($reset || empty($cache) || (empty($cache->data) && !is_array($cache->data))) {
@@ -108,17 +107,21 @@ class SubmissionCache {
         $submission_list = tpps_load_submission_multiple();
         // WARNIG: ksort do not respect keys and they will be lost but asort()
         // doesn't work with objects in array values...
-        krsort($submission_list, SORT_NATURAL);
         foreach ($submission_list as $accession => $submission) {
           $accession = $submission->accession;
-          $list[$accession] = static::buildSingle($submission);
+          if (!empty($accession)) {
+            $list[$accession] = static::buildSingle($submission);
+          }
         }
         // List of studies which must must be resubmitted.
         // Those studies are present in DB but doesn't have a record in
         // 'tpps_submission' table.
         foreach (static::getResubmitList() as $accession) {
-          $list[$accession] = [];
+          if (!empty($accession)) {
+            $list[$accession] = [];
+          }
         }
+        krsort($list, SORT_NATURAL);
       }
       else {
         $list = $cache->data;

@@ -476,7 +476,7 @@ function hook_zenodo_deposit_published(array $data, array $response) {
  * @param float $execution_time
  *   Request execution time in msec.
  */
-function tpps_rest_api_request_execution_time($title = '', $execution_time = NULL) {
+function hook_rest_api_request_execution_time($title = '', $execution_time = NULL) {
 }
 
 /**
@@ -485,7 +485,7 @@ function tpps_rest_api_request_execution_time($title = '', $execution_time = NUL
  * @param array $data
  *   Context for ZenodoBucket::create().
  */
-function tpps_zenodo_bucket_create_alter(array &$data) {
+function hook_zenodo_bucket_create_alter(array &$data) {
 }
 
 /**
@@ -552,7 +552,18 @@ function hook_submission_dataset_doi_updated(array $data) {
  * @param array $context
  *   Keys are: 'previous_version' and 'new_version'.
  */
-function tpps_submission_form_version_changed(array $context) {
+function hook_submission_form_version_changed(array $context) {
   $old = $context['previous_version'];
   $new = $context['new_version'];
+}
+
+/**
+ * Impleemnts 'submission_deleted'.
+ *
+ * @param string $accession
+ *   TPPS Submission accession. E.g., 'TGDRxxxx'.
+ */
+function hook_submission_deleted($accession) {
+  $message = t('Removed study @accession.', ['@accession' => $accession]);
+  drupal_set_message($message, 'warning');
 }
