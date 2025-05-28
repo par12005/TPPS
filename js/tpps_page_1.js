@@ -435,8 +435,14 @@
               Drupal.tpps.doiFill(data);
             }
             else {
-              var url = Drupal.settings.basePath + Drupal.settings.tpps.ajaxUrl
-                + '/get_doi';
+              let url = Drupal.settings.basePath + Drupal.settings.tpps.ajaxUrl;
+              if (Drupal.settings.tpps.useLiveProxy) {
+                // Requests from dev-site is often blocked and using live-site as a
+                // proxy is a workaround.
+                // WARNING: live-site do not have latest changes from dev-branch.
+                url = 'https://treegenesdb.org/ajax/tpps';
+              }
+              url = url + '/get_doi';
               // Remove existing messages.
               Drupal.tpps.clearMessages(doiMessageBox);
               $.ajax({
