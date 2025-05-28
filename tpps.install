@@ -85,6 +85,7 @@ function tpps_get_variable_list() {
     'tpps_page_1_cache_ajax_responses' => TRUE,
     'tpps_page_1_dryad_api_url' => 'http://datadryad.org/api/v2/datasets/',
     'tpps_page_1_ajax_debug' => FALSE,
+    'tpps_page_1_use_live_proxy' => FALSE,
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Form. Page 4 Settings.
     'tpps_page_4_cache_synonym_list' => FALSE,
@@ -2367,6 +2368,7 @@ function tpps_update_7128() {
   variable_set('tpps_report_organism_ncbi_all_title', 'All organisms and their NCBI Taxonomy Ids');
   variable_set('tpps_report_organism_ncbi_missing_title', 'Organisms without NCBI Taxonomy Id');
   variable_set('tpps_zenodo_host_greedy_search', FALSE);
+  variable_set('tpps_page_1_use_live_proxy', FALSE);
 
   // Rename variable.
   if (

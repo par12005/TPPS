@@ -109,6 +109,8 @@ function tpps_ncbi_get_subkingdom($organism) {
  *
  * @thrown Exception
  *   When all attempts to get data from NCBI failed.
+ *
+ * @todo Use live-site as a proxy to get data when requests to NCBI API fails.
  */
 function tpps_ncbi_get_taxon_id($organism, $list = FALSE, $level = 1) {
   $formatted_org = implode('+', explode(' ', $organism));
