@@ -171,11 +171,19 @@ function tpps_species_autocomplete($string) {
  *
  * @param string $string
  *   The string the user has already entered into the text field.
+ *
+ * @return array
+ *   Returns list of matches.
  */
 function tpps_ncbi_species_autocomplete($string) {
-  $matches = array();
+  $matches = [];
 
-  $taxons = tpps_ncbi_get_taxon_id("$string*", TRUE);
+  try {
+    $taxons = tpps_ncbi_get_taxon_id("$string*", TRUE);
+  }
+  catch (Exception $e) {
+    return [];
+  }
   $taxons = json_decode(json_encode($taxons))->Id;
 
   $fetch = new EFetch('taxonomy');
