@@ -244,15 +244,8 @@
       Drupal.tpps.fieldEnable(fieldSelector);
     }
     else {
-      let url = Drupal.settings.basePath + Drupal.settings.tpps.ajaxUrl;
-      if (Drupal.settings.tpps.useLiveProxy) {
-        // Requests from dev-site is often blocked and using live-site as a
-        // proxy is a workaround.
-        // WARNING: live-site do not have latest changes from dev-branch.
-        url = 'https://treegenesdb.org/ajax/tpps';
-      }
-      dog(Drupal.settings.tpps.useLiveProxy);
-      url = url + '/get_ncbi_taxonomy_id';
+      let url = Drupal.settings.basePath + Drupal.settings.tpps.ajaxUrl
+        + '/get_ncbi_taxonomy_id';
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Requiest NCBI id for organism.
       $.ajax({
@@ -435,14 +428,8 @@
               Drupal.tpps.doiFill(data);
             }
             else {
-              let url = Drupal.settings.basePath + Drupal.settings.tpps.ajaxUrl;
-              if (Drupal.settings.tpps.useLiveProxy) {
-                // Requests from dev-site is often blocked and using live-site as a
-                // proxy is a workaround.
-                // WARNING: live-site do not have latest changes from dev-branch.
-                url = 'https://treegenesdb.org/ajax/tpps';
-              }
-              url = url + '/get_doi';
+              let url = Drupal.settings.basePath
+                + Drupal.settings.tpps.ajaxUrl + '/get_doi';
               // Remove existing messages.
               Drupal.tpps.clearMessages(doiMessageBox);
               $.ajax({

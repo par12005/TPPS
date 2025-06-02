@@ -2323,25 +2323,8 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'page arguments' => ['tpps_admin_settings'],
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
+    // WARNING: filename differs from the settings group name.
     'file' => 'admin/config.php',
-  ];
-  $items['admin/config/tpps/google_maps'] = [
-    'title' => 'Google Maps',
-    'description' => 'Google Maps settings',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_google_maps_settings_form'],
-    'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/google_maps.inc',
-  ];
-  $items['admin/config/tpps/misc'] = [
-    'title' => 'Misc',
-    'description' => 'Misc settings',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_misc_settings_form'],
-    'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/misc.inc',
   ];
   $items['admin/config/tpps/watchdog_cleanup'] = [
     'title' => 'Watchdog Cleanup',
@@ -2352,15 +2335,6 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/watchdog_cleanup.inc',
   ];
-  $items['admin/config/tpps/cache'] = [
-    'title' => 'Cache',
-    'description' => 'Cache settings',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_cache_settings_form'],
-    'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/cache.inc',
-  ];
   $items['admin/config/tpps/ncbi_batch'] = [
     'title' => 'NCBI Taxonomy Id Batch Update',
     'description' => 'Gets taxonomy id for existing organisms from NCBI using Batch API.',
@@ -2370,15 +2344,22 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/ncbi_batch.inc',
   ];
-  $items['admin/config/tpps/submission'] = [
-    'title' => 'Submission',
-    'description' => 'Submission Settings',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_settings_form'],
-    'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/submission.inc',
-  ];
+
+  $list = ['google_maps', 'misc', 'ncbi', 'cache', 'submission'];
+  foreach ($list as $name) {
+    $human_name = ucfirst(str_replace('_', ' ', $name));
+    $items['admin/config/tpps/' . $name] = [
+      'title' => $human_name,
+      'description' => $human_name . ' Settings',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => ['tpps_' . $name . '_settings_form'],
+      'access arguments' => ['administer tpps module'],
+      'file path' => TPPS_MODULE_PATH,
+      'file' => 'admin/' . $name . '.inc',
+    ];
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Forms.
   $items['admin/config/tpps/form'] = [
     'title' => 'Form',
     'description' => 'Form Settings',
