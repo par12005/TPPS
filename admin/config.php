@@ -48,12 +48,6 @@ function tpps_admin_settings(array $form, array &$form_state) {
     '#default_value' => $tpps_db_directory_user
   ];
 
-  // WARNING: We set veriable for another module here.
-  $form['tripal_eutils_ncbi_api_key'] = [
-    '#type' => 'textfield',
-    '#title' => t('TPPS NCBI EUtils API Key'),
-    '#default_value' => variable_get('tripal_eutils_ncbi_api_key'),
-  ];
   $form['tpps_geocode_api_key'] = [
     '#type' => 'textfield',
     '#title' => t('TPPS OpenCage Geocoding API Key'),
