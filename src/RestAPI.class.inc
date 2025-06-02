@@ -357,16 +357,15 @@ class RestAPI {
     }
     // Validate HTTP request code.
     $code = $info['http_code'];
+    $message = static::getHttpCodeMessage($code);
     if ($code == 0 && empty($response)) {
-      throw new Exception('RestAPI HTTP-request reached execution time limit: '
-        . static::TIMEOUT . ' seconds.');
+      throw new Exception($message);
     }
     if ($code >= 200  && $code <= 204) {
       // https://developers.zenodo.org/?shell#http-status-codes
       return $response;
     }
     else {
-      $message = static::getHttpCodeMessage($code) . '.';
       $exception_data = [
         'payload' => empty($data) ? [] : json_decode($data),
         'url' => $url,

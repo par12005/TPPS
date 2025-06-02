@@ -69,42 +69,6 @@ function tpps_misc_settings_form(array $form, array &$form_state) {
       . '/^[^\s]*\s[^\s]*$/'
     ),
   ];
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // NCBI API Settings.
-  $form['ncbi_settings'] = [
-    '#type' => 'fieldset',
-    '#title' => t('NCBI API Settings'),
-    '#collapsible' => TRUE,
-  ];
-  $form['ncbi_settings']['tpps_ncbi_api_delay'] = [
-    '#type' => 'textfield',
-    '#title' => t('NCBI API Request Delay, milliseconds'),
-    '#default_value' => variable_get('tpps_ncbi_api_delay'),
-    '#description' => t('Value must be positive integer. This delay will '
-      . 'dynamically increase every fail request up to 5 times.'
-      . '<br />Recommended values is: 100 milliseconds.'
-      . '<br /><a href="@url">NCBI API has limit: 3 requests per second</a>.'
-      . 'But seems actual limit is a little bit higher (maybe 10 rps).',
-      [
-        '@url' => 'https://support.nlm.nih.gov/kbArticle/?pn=KA-05318'
-      ]
-    ),
-    '#element_validate' => ['element_validate_integer_positive'],
-  ];
-  $form['ncbi_settings']['tpps_ncbi_api_max_attempt_number'] = [
-    '#type' => 'textfield',
-    '#title' => t('Max number of attempts when NCBI API Request fails'),
-    '#default_value' => variable_get('tpps_ncbi_api_max_attempt_number'),
-    '#element_validate' => ['element_validate_integer_positive'],
-  ];
-  $form['ncbi_settings']['tpps_ncbi_allow_fix_missing_data'] = [
-    '#type' => 'checkbox',
-    '#title' => t('Allows to fix missing NCBI Taxonomy data'),
-    '#default_value' => variable_get('tpps_ncbi_allow_fix_missing_data'),
-    '#description' => t('When tab "Species" on study details page loads and '
-      . 'NCBI Taxomony data is missing then request NCBI server again and '
-      . 'store data into correct chado-tables.'),
-  ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Theme Settings.

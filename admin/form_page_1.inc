@@ -39,17 +39,6 @@ function tpps_form_page_1_settings_form(array $form, array &$form_state) {
       . 'each time this setting become checked.'
     ),
   ];
-  $form['tpps_page_1_use_live_proxy'] = [
-    '#type' => 'checkbox',
-    '#title' => t('Use Live-site as a proxy for NCBI API requests'),
-    '#default_value' => variable_get('tpps_page_1_use_live_proxy'),
-    '#description' => t(
-      'Default is unchecked.<br />'
-      . "When checked NCBI API requests will be pointed to live-site."
-      . "<br />Note: live-site won't have latest changes."
-    ),
-  ];
-
   $form['tpps_page_1_dryad_api_url'] = [
     '#type' => 'textfield',
     '#title' => t('Dryad API Endpoint URL'),
