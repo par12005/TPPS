@@ -938,14 +938,12 @@ function tpps_mail($key, array &$message, array $params) {
           ),
         ]
       );
-      if ($params['type'] == 'tpps') {
-        $message['body'][] = '<br />';
-        // @todo Minor. Replace 'here' in link with something more meaningful.
-        $message['body'][] = t('To generate a Dataset DOI for your submission, '
-          . 'please click <a href="@link">here</a>.',
-          ['@link' => url('tpps/' . $accession . '/dataset-doi/create', $link_params)]
-        );
-      }
+      $message['body'][] = '<br />';
+      // @todo Minor. Replace 'here' in link with something more meaningful.
+      $message['body'][] = t('To generate a Dataset DOI for your submission, '
+        . 'please click <a href="@link">here</a>.',
+        ['@link' => url('tpps/' . $accession . '/dataset-doi/create', $link_params)]
+      );
       break;
 
     default:
