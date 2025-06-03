@@ -127,6 +127,9 @@ function tpps_get_variable_list() {
     'tpps_zenodo_access_token_live' => '',
     'tpps_zenodo_access_token_sandbox' => '',
     'tpps_zenodo_host_greedy_search' => FALSE,
+    // RestAPI Class Settings.
+    'tpps_rest_api_debug_mode' => FALSE,
+    'tpps_rest_api_timeout' => 30,
     // Misc Settings.
     'tpps_theme_fix_pager' => FALSE,
     'tpps_js_debug_mode' => ['quickDebugMode' => 'quickDebugMode'],
@@ -134,6 +137,9 @@ function tpps_get_variable_list() {
     'tpps_validation_regex_doi' => '/^10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+$/',
     'tpps_validation_regex_organism_name' => '/^[^\s]+\s[^\s]+(\s[^\s]+)*$/',
     'tpps_validation_regex_single_space' => '/^[^\s]*\s[^\s]*$/',
+    // NCBI API Setting.
+    'tpps_ncbi_api_delay' => 300,
+    'tpps_ncbi_api_max_attempt_number' => 5,
     // Google Maps.
     'tpps_google_map_id' => '',
     'tpps_maps_api_key' => '',
@@ -2365,6 +2371,9 @@ function tpps_update_7128() {
   variable_set('tpps_report_organism_ncbi_all_title', 'All organisms and their NCBI Taxonomy Ids');
   variable_set('tpps_report_organism_ncbi_missing_title', 'Organisms without NCBI Taxonomy Id');
   variable_set('tpps_zenodo_host_greedy_search', FALSE);
+  // Rest API Settings.
+  variable_set('tpps_rest_api_timeout', 30);
+  variable_set('tpps_rest_api_debug_mode', FALSE);
 
   // Rename variable.
   if (

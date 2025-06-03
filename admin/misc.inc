@@ -10,6 +10,37 @@
  */
 function tpps_misc_settings_form(array $form, array &$form_state) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Rest API Settings.
+  $form['rest_api'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Rest API'),
+    '#collapsible' => TRUE,
+  ];
+  $form['rest_api']['tpps_rest_api_debug_mode'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Debug mode'),
+    '#default_value' => variable_get('tpps_rest_api_debug_mode'),
+    '#description' => t("When enabled extra debug-messages will be shown on "
+      . "page when error or exception happens."),
+  ];
+  $form['rest_api']['tpps_rest_api_timeout'] = [
+    '#type' => 'textfield',
+    '#title' => t('RestAPI request timeout'),
+    '#default_value' => variable_get('tpps_rest_api_timeout'),
+    '#description' => t("The maximum number of seconds to allow cURL "
+      . "functions to execute. <br />To set in milliseconds use: "
+      . "CURLOPT_TIMEOUT_MS.<br />See !link.",
+      [
+        '!link' => l(
+          'https://curl.se/libcurl/c/CURLOPT_TIMEOUT.html',
+          'https://curl.se/libcurl/c/CURLOPT_TIMEOUT.html'
+        ),
+      ]
+    ),
+    '#element_validate' => ['element_validate_integer_positive'],
+
+  ];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Validation Regular Expressions.
   $form['validation_regex'] = [
     '#type' => 'fieldset',
