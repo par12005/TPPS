@@ -269,9 +269,6 @@ class PhenotypeData {
           'Tree Identifier' => ['id' => [self::DATA_TYPE_PLANT_IDENTIFIER]],
           'Phenotype Data' => ['phenotype-data' => [self::DATA_TYPE_PHENOTYPE_DATA]],
         ];
-        $has_year_column = in_array(
-          self::DATA_TYPE_YEAR, array_values($file_element['#value']['columns'])
-        );
         break;
 
       case self::FILE_FORMAT_2:
@@ -280,6 +277,7 @@ class PhenotypeData {
           'Phenotype Name/Identifier' => ['phenotype-name' => [2]],
           'Phenotype Value(s)' => ['val' => [3]],
         ];
+        // WARNING: Not tested and probably won't work.
         $has_year_column = in_array(
           // "Magic number" '6' is a key of 'Year' optons for format 2.
           // See getColumnOptions() method.
@@ -312,12 +310,15 @@ class PhenotypeData {
         }
         // One column has Plant Id and we need to exclude it.
         $file_phenotypes_count = $column_number - 1;
+
         // If phenotype file has column 'year' which is not actually
         // phenotype and doesn't have own row in metadata file we need to
         // compare files differently.
-        if ($has_year_column) {
-          $file_phenotypes_count = $file_phenotypes_count - 1;
-        }
+        // Note:
+        // self::DATA_TYPE_PHENOTYPE_DATA is zero so array_filter() could be used.
+        $file_phenotypes_count = count($file_element['#value']['columns'])
+          - count(array_filter($file_element['#value']['columns']));
+
         if ($phenotype_number != $file_phenotypes_count) {
           $params = [
             '@count' => $phenotype_number,
