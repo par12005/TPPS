@@ -12,6 +12,17 @@
  */
 function tpps_synonym_add_form(array $form, array &$form_state) {
   $values = $form_state['values']['synonym'] ?? [];
+
+  $form['links'] = [
+    '#markup' => theme('item_list', [
+      'title' => t('Useful links'),
+      'items' => [
+        l(t('List of all Phenotype Synonyms'), 'admin/reports/tpps/synonym/list'),
+        l(t('List of phenotypes without Synonyms'), 'admin/reports/tpps/synonym/missing'),
+        l(t('List of phenotypes without synonym'), 'admin/reports/tpps/synonym/unit_warning'),
+      ],
+    ]),
+  ];
   $form['synonym'] = [
     '#type' => 'container',
     '#tree' => TRUE,
@@ -46,6 +57,7 @@ function tpps_synonym_add_form(array $form, array &$form_state) {
   ];
   $form['synonym']['cvterm_1_id'] = [
     '#type' => 'textfield',
+    '#title' => 'CV Term 1 Id',
     '#attributes' => ['maxlength' => 10, 'size' => 10],
     '#element_validate' => ['element_validate_integer_positive'],
     '#default_value' => $values['cvterm_1_id'] ?? '',
@@ -62,10 +74,19 @@ function tpps_synonym_add_form(array $form, array &$form_state) {
     '#title' => 'Is Common Phenotype?',
     '#default_value' => $values['is_common_phenotype'] ?? 0,
   ];
+
+  // Note: not id but group name.
+  $unit_list = db_select('chado.phenotype_unit_group', 't')
+    ->fields('t', ['unit_group'])
+    ->orderBy('unit_group')
+    ->execute()
+    ->fetchCol('unit_group');
+
   $form['synonym']['unit_group'] = [
-    '#type' => 'textfield',
+    '#type' => 'select',
     '#title' => 'Unit Group',
-    '#default_value' => $values['unit_group'] ?? '',
+    '#options' => array_combine($unit_list, $unit_list),
+    '#default_value' => $values['unit_group'] ?? NULL,
     '#required' => TRUE,
   ];
 
@@ -79,6 +100,16 @@ function tpps_synonym_add_form(array $form, array &$form_state) {
     '#title' => 'Measurement Type',
     '#default_value' => $values['measurement_type'] ?? '',
     '#required' => TRUE,
+  ];
+  $form['synonym']['is_environmental_phenotype'] = [
+    '#type' => 'checkbox',
+    '#title' => 'Is Environmental Phenotype?',
+    '#default_value' => $values['is_environmental_phenotype'] ?? 0,
+  ];
+  $form['synonym']['phenotype_group'] = [
+    '#type' => 'textfield',
+    '#title' => 'Phenotype Group',
+    '#default_value' => $values['phenotype_group'] ?? '',
   ];
 
   // Actions.

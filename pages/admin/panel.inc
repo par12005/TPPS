@@ -80,11 +80,12 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
       l(t('TPPS Submission Tools'), 'tpps/submission', $params),
       l(t('NCBI Taxonomy Id Batch Updates'), 'admin/config/tpps/ncbi_batch', $params),
       l(t('Clear "TPPS" or "TPPS Submission" cache bin'), 'admin/config/tpps/cache', $params),
+      l(t('Create new Phenotype Synonym'), 'admin/config/tpps/synonym', $params),
     ],
   ]);
   $form['general_tasks'] = [
     '#type' => 'fieldset',
-    '#title' => t('General tasks'),
+    '#title' => t('General Tasks'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
     'tasks' => ['#markup' => $task_list],
