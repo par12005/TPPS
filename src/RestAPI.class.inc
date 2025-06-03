@@ -8,7 +8,7 @@
  *  RestAPI::post($url, $data);
  *  RestAPI::delete($url);
  *
- *  @todo Do not use dpm().
+ *  @todo Minor. Do not use dpm().
  */
 
 /**
@@ -19,11 +19,38 @@
  */
 class RestAPI {
 
-  // The maximum number of seconds to allow cURL functions to execute.
-  // To set in milliseconds use: CURLOPT_TIMEOUT_MS.
-  // https://curl.se/libcurl/c/CURLOPT_TIMEOUT.html.
-  // @todo Minor. Move to site settings.
-  const TIMEOUT = 30;
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Static class constants.
+
+  /**
+   * Is Debug Mode enabled.
+   *
+   * When TRUE then more debug messages will be shown.
+   *
+   * @return bool
+   *   Returns TRUE when 'Debug Mode' for 'RestAPI' class is enabled.
+   *   Returns FALSE otherwise.
+   */
+  public static function isDebugMode() {
+    return variable_get('tpps_rest_api_debug_mode', TRUE);
+  }
+
+  /**
+   * Gets timeout value.
+   *
+   * The maximum number of seconds to allow cURL functions to execute.
+   * To set in milliseconds use: CURLOPT_TIMEOUT_MS.
+   * https://curl.se/libcurl/c/CURLOPT_TIMEOUT.html.
+   *
+   * @return int
+   *   Returns value of the timeout in milliseconds.
+   */
+  public static function getTimeout() {
+    return variable_get('tpps_rest_api_timeout', 30);
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Methods.
 
   /**
    * Decode JSON and handles invalid JSON.
@@ -64,7 +91,6 @@ class RestAPI {
    *   Returns API response.
    */
   public static function post($url, $data = [], array $header = []) {
-    $debug_mode = FALSE;
     // @TODO Minor. Implement more complex check. Regexp?
     if (in_array('Content-Type: application/json', $header)) {
       $data = json_encode($data);
@@ -75,7 +101,7 @@ class RestAPI {
       ];
       $data = json_encode($data);
     }
-    if ($debug_mode ?? FALSE) {
+    if (static::isDebugMode()) {
       dpm($url, __METHOD__);
       dpm($data, __METHOD__);
       dpm($header, __METHOD__);
@@ -292,11 +318,6 @@ class RestAPI {
    * @todo Convert to private or protected method if it's possible for static.
    */
   public static function doRequest($method, $url, $data = [], array $header = []) {
-    $debug_mode = FALSE;
-    //if (isset($data['debug_mode'])) {
-    //  $debug_mode = $data['debug_mode'];
-    //  unset($data['debug_mode']);
-    //}
     // To measure execution time of the request.
     $execution_time_start = microtime(1);
     $method = strtoupper($method);
@@ -328,7 +349,7 @@ class RestAPI {
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
     // The maximum number of seconds for curl operation.
-    curl_setopt($curl, CURLOPT_TIMEOUT, static::TIMEOUT);
+    curl_setopt($curl, CURLOPT_TIMEOUT, static::getTimeout());
 
     // EXECUTE:
     $response = curl_exec($curl);
@@ -379,7 +400,7 @@ class RestAPI {
           !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS
         ),
       ];
-      if ($debug_mode ?? FALSE) {
+      if (static::isDebugMode()) {
         dpm($exception_data['url'], 'URL');
         dpm($exception_data['method'], 'Method');
         dpm(print_r($exception_data['header'], 1), 'Header');
