@@ -339,6 +339,12 @@ class Report {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Synonym.
       'synonym' => [
+        'list' => [
+          'title' => variable_get('tpps_report_synonym_list_title',
+            'Phenotype Synonyms'),
+          'description' => t('List of all phenotype synonyms.'),
+          'admin_panel' => TRUE,
+        ],
         'missing' => [
           'title' => variable_get('tpps_report_synonym_missing_title',
             'List of phenotypes without Synonyms'),

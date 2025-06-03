@@ -39,6 +39,7 @@ function tpps_get_variable_list() {
     // Synonym reports.
     'tpps_report_synonym_missing_title' => 'List of phenotypes without Synonyms',
     'tpps_report_synonym_unit_warning_title' => 'Unit Warning (list of phenotypes which unit differs from Synonym)',
+    'tpps_report_synonym_list_title' => 'Phenotype Synonyms',
     // Organism reports.
     'tpps_report_organism_list_title' => 'Organism List',
     'tpps_report_organism_new_title' => 'New Organisms',
@@ -2370,6 +2371,8 @@ function tpps_update_7128() {
   variable_set('tpps_report_zenodo_depositions_title', 'Zenodo Depositions');
   variable_set('tpps_report_organism_ncbi_all_title', 'All organisms and their NCBI Taxonomy Ids');
   variable_set('tpps_report_organism_ncbi_missing_title', 'Organisms without NCBI Taxonomy Id');
+
+  variable_set('tpps_report_synonym_list_title', 'Phenotype Synonyms');
   variable_set('tpps_zenodo_host_greedy_search', FALSE);
   // Rest API Settings.
   variable_set('tpps_rest_api_timeout', 30);
