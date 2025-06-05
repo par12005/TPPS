@@ -163,31 +163,36 @@ function tpps_submission_zenodo_files_single_form_submit(array &$form, array &$f
 
 /**
  * Form submitter for 'tpps_submission_list_form' form.
+ *
+ * Prepaires data for ZenodoFile methods and shows messages.
  */
 function tpps_submission_zenodo_files_action($action, $deposit_id, $file_id, $accession) {
   $path = 'tpps/submission';
-  if (
-    $action == 'create'
-    // $file_id is the Drupal File Id.
-    && is_numeric($file_id)
-    // File exists.
-    && !empty($file = tpps_file_load($file_id))
-  ) {
-    $data['drupal_file'] = $file;
-    $data['deposit_id'] = $deposit_id;
-    ZenodoFile::create($data);
-    // @TODO Validate response and show status message.
-    // Success.
-    $message = t('Drupal file #@file_id was successfully added to '
-      . 'Zenodo Deposition #@deposit_id.',
-      [
-        '@deposit_id' => $deposit_id,
-        '@file_id' => $file_id,
-      ]
-    );
-    drupal_set_message($message, 'status');
-    // @TODO Minor. Redirect to single file page in case of success.
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  if ($action == 'create') {
+    if (
+        // $file_id is the Drupal File Id.
+      is_numeric($file_id)
+      // File exists.
+      && !empty($file = tpps_file_load($file_id))
+    ) {
+      $data['drupal_file'] = $file;
+      $data['deposit_id'] = $deposit_id;
+      ZenodoFile::create($data);
+      // @TODO Validate response and show status message.
+      // Success.
+      $message = t('Drupal file #@file_id was successfully added to '
+        . 'Zenodo Deposition #@deposit_id.',
+        [
+          '@deposit_id' => $deposit_id,
+          '@file_id' => $file_id,
+        ]
+      );
+      drupal_set_message($message, 'status');
+      // @TODO Minor. Redirect to single file page in case of success.
+    }
   }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Delete.
   if ($action == 'delete') {
     if (is_numeric($file_id)) {
@@ -202,23 +207,15 @@ function tpps_submission_zenodo_files_action($action, $deposit_id, $file_id, $ac
       // Validate response and show status message.
       if (empty($data['response'])) {
         // Code: 204 No Content.
-        $message = t('Zenodo File "@file_id" was successfully @actioned '
-          . 'from Zenodo Deposition #@deposit_id.',
-          [
-            '@deposit_id' => $deposit_id,
-            '@file_id' => $file_id,
-            '@action' => $action,
-          ]
+        $message = t('Zenodo File "@file_id" (Deposition #@deposit_id) was '
+          . 'successfully deleted.',
+          ['@deposit_id' => $deposit_id, '@file_id' => $file_id]
         );
         drupal_set_message($message, 'status');
       }
       else {
-        $message = t('Zenodo File "@file_id" was NOT @actioned. Response: @response.',
-          [
-            '@response' => $data['response'],
-            '@file_id' => $file_id,
-            '@action' => $action,
-          ]
+        $message = t('Removement of the Zenodo File "@file_id" failed. Response: @response.',
+          ['@response' => $data['response'], '@file_id' => $file_id]
         );
         drupal_set_message($message, 'error');
       }
@@ -236,44 +233,76 @@ function tpps_submission_zenodo_files_action($action, $deposit_id, $file_id, $ac
       drupal_set_message(t($message, $params), 'error');
     }
   }
-
-
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Update.
-
   if ($action == 'update') {
-    if (!is_numeric($file_id)) {
+    $data = ['deposit_id' => $deposit_id];
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Get required Drupal File.
+    // We could remove by Zenodo File Id but not update. To update we need
+    // appropriate Drupal File.
+    if (is_numeric($file_id)) {
       // Drupal File Id.
+      if (empty($file = tpps_file_load($file_id))) {
+        $message = t('Drupal File #@file_id was not found.',
+          ['@file_id' => $file_id]
+        );
+        throw new Exception($message);
+      }
+      $data['drupal_file'] = $file;
+    }
+    else {
+      // Zenodo File Id.
+      $data['file_id'] = $file_id;
       // @TODO Minor. Get Zenodo File Id by Drupal File Id and remove exception.
-      $message = t('Update by Zenodo File Id not yet implemented');
-      throw new Exception($message);
+      // Find submission by Zenodo Deposit Id. $data['deposit_id']
+      $submission_cache = SubmissionCache::get($reset);
+      $rows = [];
+      $i = 0;
+      foreach ($submission_cache as $accession => $item) {
+        if (
+          empty($item['zenodo'])
+          || empty($item['zenodo']['deposit_id'])
+          || $data['deposit_id'] != $item['zenodo']['deposit_id']
+        ) {
+          continue;
+        }
+        foreach ($submission_cache['file']['id_list'] as $fid) {
+          if (empty($fid) || empty($file = tpps_file_load($fid))) {
+            continue;
+          }
+          if (
+            ZenodoFile::getChecksum(['zenodo_fid' => $file_id])
+            == ZenodoFile::getChecksum(['drupal_file' => $file])
+          ) {
+            $data['drupal_file'] = $file;
+          }
+        }
+      }
+      if (empty($data['drupal_file'])) {
+        $message = t("Dupal file for Zenodo File #@zenodo_fid wasn't found."
+          . "It cound't be updated. Remove it and then create new one.",
+          ['@zenodo_fid' => $file_id]
+        );
+        throw new Exception($message);
+      }
     }
-    if (empty($file = tpps_file_load($file_id))) {
-      $message = t('File @file_id was not found.', ['@file_id' => $file_id]);
-      throw new Exception($message);
-    }
-    $data = ['deposit_id' => $deposit_id, 'drupal_file' => $file];
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Do the update.
     try {
       ZenodoFile::update($data);
       // Validate response and show status message.
       if (empty($data['response'])) {
         // Code: 204 No Content.
-        $message = t('Zenodo File "@file_id" was successfully @actioned '
-          . 'from Zenodo Deposition #@deposit_id.',
-          [
-            '@deposit_id' => $deposit_id,
-            '@file_id' => $file_id,
-            '@action' => $action,
-          ]
+        $message = t('Zenodo File "@file_id" (Deposition #@deposit_id) was '
+          . 'successfully updated.',
+          ['@deposit_id' => $deposit_id, '@file_id' => $file_id]
         );
         drupal_set_message($message, 'status');
       }
       else {
-        $message = t('Zenodo File "@file_id" was NOT @actioned. Response: @response.',
-          [
-            '@response' => $data['response'],
-            '@file_id' => $file_id,
-            '@action' => $action,
-          ]
+        $message = t('Updating of the Zenodo File "@file_id" failed. Response: @response.',
+          ['@response' => $data['response'], '@file_id' => $file_id]
         );
         drupal_set_message($message, 'error');
       }
@@ -291,10 +320,8 @@ function tpps_submission_zenodo_files_action($action, $deposit_id, $file_id, $ac
       drupal_set_message(t($message, $params), 'error');
     }
   }
-
-
+  // Return to the initial page to allow to use widget at any page.
   if (!empty($_GET['destination'])) {
     drupal_goto($_GET['destination']);
   }
-
 }
