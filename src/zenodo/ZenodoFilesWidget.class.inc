@@ -81,10 +81,10 @@ class ZenodoFilesWidget {
     ];
     $widget = &$form[$widget_name];
 
+    $submission_cache = SubmissionCache::get();
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get content.
-    $submission = new Submission($accession);
-    $deposit_id = $submission->getZenodoDepositId();
+    $deposit_id = $submission_cache[$accession]['zenodo']['deposit_id'] ?? NULL;
     $widget['id'] = ['#type' => 'hidden', '#value' => $deposit_id ?? NULL];
     $widget['accession'] = ['#type' => 'hidden', '#value' => $accession];
 
@@ -158,7 +158,7 @@ class ZenodoFilesWidget {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Submission files.
     $missing_files = [];
-    $submission_file_list = array_keys($submission->getFileIdList());
+    $submission_file_list = $submission_cache[$accession]['file']['id_list'] ?? [];
     foreach ($submission_file_list as $fid) {
       $create_url = 'tpps/submission/' . $accession . '/zenodo/files/' . $fid . '/create';
       if (empty($file = tpps_file_load($fid))) {
@@ -177,16 +177,16 @@ class ZenodoFilesWidget {
         'filesize' => $file->filesize,
         'status' => $file->status,
         'timestamp' => $file->timestamp,
-        'md5' => md5(file_get_contents(tpps_realpath($file->uri))) ?? '',
       ];
       // Find relations between Submission and Zenodo files.
       if (!empty($zenodo_file_list)) {
         foreach ($zenodo_file_list as $zenodo_file) {
-          if ($zenodo_file['checksum'] != $submission_file['md5']) {
+          if (
+            ZenodoFile::getChecksum(['drupal_file' => $file])
+            != ZenodoFile::getChecksum(['zenodo_file' => $zenodo_file])
+          ) {
             continue;
           }
-          // Note: Filesize will be the same but filenames could differ.
-          unset($zenodo_file['checksum']);
           $zenodo_file_path = 'tpps/submission/' . $accession . '/zenodo/files/' . $zenodo_file['id'];
           // 'Delete' button.
           if ($actions_allowed && empty($deposition['submitted'])) {
@@ -200,7 +200,6 @@ class ZenodoFilesWidget {
         }
       }
       $update_url = 'tpps/submission/' . $accession . '/zenodo/files/' . $fid . '/update';
-      unset($submission_file['md5']);
 
       // Buttons for the Submission side (left).
       $submission_button = '';
