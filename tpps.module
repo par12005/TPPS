@@ -3464,7 +3464,8 @@ function tpps_zenodo_deposit_created(array $data) {
   ));
 
   // Upload all files in Submission to Zenodo Deposit.
-  $submission->uploadAllFilesZenodo();
+  // @TODO Minor. Use 'update' to be sure old files removed.
+  $submission->actionAllFilesZenodo('create');
 }
 
 /**
