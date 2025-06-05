@@ -96,11 +96,11 @@ class ZenodoFilesWidget {
       drupal_set_message($message, 'error');
       drupal_goto($context['zenodo_deposit_page_path']);
     }
-    if (!ZenodoHost::isValid($data)) {
-      $message = t('Deposition was created using different Zenodo Host.');
-      drupal_set_message($message, 'error');
-      drupal_goto($context['zenodo_deposit_page_path']);
-    }
+    //if (!ZenodoHost::isValid($data)) {
+    //  $message = t('Deposition was created using different Zenodo Host.');
+    //  drupal_set_message($message, 'error');
+    //  drupal_goto($context['zenodo_deposit_page_path']);
+    //}
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Permissions.
     $actions_allowed = static::isActionAllowed($user);
@@ -144,6 +144,7 @@ class ZenodoFilesWidget {
         }
       }
     }
+    $count_zenodo_file_list = count($zenodo_file_list);
     // Deposition.
     $deposition = ZenodoDeposit::retrieve($data);
     if ($deposition['submitted']) {
@@ -158,7 +159,8 @@ class ZenodoFilesWidget {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Submission files.
     $missing_files = [];
-    foreach (array_keys($submission->getFileIdList()) as $fid) {
+    $submission_file_list = array_keys($submission->getFileIdList());
+    foreach ($submission_file_list as $fid) {
       $create_url = 'tpps/submission/' . $accession . '/zenodo/files/' . $fid . '/create';
       if (empty($file = tpps_file_load($fid))) {
         $missing_files[] = $fid;
@@ -199,7 +201,7 @@ class ZenodoFilesWidget {
           unset($zenodo_file_list[$zenodo_file['id']]);
         }
       }
-      $update_url = 'tpps/submission/' . $accession . '/zenodo/files/' . $fid . '/update';
+      //$update_url = 'tpps/submission/' . $accession . '/zenodo/files/' . $fid . '/update';
       unset($submission_file['md5']);
 
       // Buttons for the Submission side (left).
@@ -257,7 +259,7 @@ class ZenodoFilesWidget {
     tpps_add_css_js('theme', $widget);
 
     // @TODO permissions.
-    // @TODO File buttons are links (not form buttons).
+    // @TODO Convert File's actions into form buttons (currently they are links).
 
     // Add back button.
     $widget['actions'] = ['#type' => 'container'];
@@ -269,16 +271,36 @@ class ZenodoFilesWidget {
       '#validate' => ['ZenodoFilesWidget::validate'],
       '#submit' => ['ZenodoFilesWidget::submit'],
     ];
-    if (empty($deposition['submitted'])) {
-      $action = 'upload_all';
+
+    if (empty($deposition['submitted']) && $count_zenodo_file_list == 0) {
+      $action = 'create_all';
       $widget['actions'][$action] = [
         '#type' => 'submit',
         '#name' => $action,
-        '#value' => t('Upload All'),
+        '#value' => t('Create All'),
         '#validate' => ['ZenodoFilesWidget::validate'],
         '#submit' => ['ZenodoFilesWidget::submit'],
       ];
     }
+    else {
+      $action = 'update_all';
+      $widget['actions'][$action] = [
+        '#type' => 'submit',
+        '#name' => $action,
+        '#value' => t('Update All'),
+        '#validate' => ['ZenodoFilesWidget::validate'],
+        '#submit' => ['ZenodoFilesWidget::submit'],
+      ];
+      $action = 'delete_all';
+      $widget['actions'][$action] = [
+        '#type' => 'submit',
+        '#name' => $action,
+        '#value' => t('Delete All'),
+        '#validate' => ['ZenodoFilesWidget::validate'],
+        '#submit' => ['ZenodoFilesWidget::submit'],
+      ];
+    }
+
   }
 
   /**
@@ -323,7 +345,7 @@ class ZenodoFilesWidget {
       drupal_goto($zenodo_page_path);
     }
     // Upload all files.
-    elseif ($action == 'upload_all') {
+    elseif (in_array($action, ['create_all', 'update_all', 'delete_all'])) {
       $data = [];
       $data['accession'] = $accession;
       // Existing files will be overwritten and will got new ids.
@@ -342,7 +364,8 @@ class ZenodoFilesWidget {
         ), 'error');
         drupal_goto($zenodo_page_path);
       }
-      $submission->uploadAllFilesZenodo();
+
+      $submission->actionAllFilesZenodo(str_replace('_all', '', $action));
       $form_state['#rebuild'] = TRUE;
     }
   }

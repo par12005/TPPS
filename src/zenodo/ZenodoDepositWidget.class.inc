@@ -214,8 +214,8 @@ class ZenodoDepositWidget {
     $form['actions'][$action] = [
       '#type' => 'submit',
       '#name' => $action,
-      '#value' => t('Zenodo Files'),
-      // To the right.
+      '#value' => t('Files'),
+      // Move button to the right. Huge positive integer number must be used.
       '#weight' => 12345,
       '#validate' => ['ZenodoDepositWidget::validate'],
       '#submit' => ['ZenodoDepositWidget::submit'],

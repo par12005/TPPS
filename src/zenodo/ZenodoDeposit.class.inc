@@ -305,7 +305,7 @@ class ZenodoDeposit extends Zenodo {
               break;
 
             case 'files':
-              $value = empty($value) ? t('[Empty]') : t('[NOT EMPTY]');
+              $value = count($value);
               break;
 
             case 'doi':
