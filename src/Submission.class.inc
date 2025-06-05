@@ -2473,7 +2473,12 @@ class Submission {
    * @return object
    *   Returns current object to all method chaining.
    */
-  public function uploadAllFilesZenodo() {
+  public function actionAllFilesZenodo($action) {
+    if (!in_array($action, ['create', 'delete', 'update'])) {
+      throw new Exception(t("Unsupported Zenodo File's action: @action.",
+        ['@action' => $action]
+      ));
+    }
     if (empty($deposit_id = $this->getZenodoDepositId())) {
       throw new Exception(t('Submission "@accession" has empty Zenodo Deposit Id.',
         ['@accession' => $accession]
@@ -2481,14 +2486,52 @@ class Submission {
     }
     if (empty($fid_list = array_keys($this->getFileIdList()))) {
       // Study could have no files. It's not an error.
-      return;
+      return $this;
     }
-
     // @todo Minor. Check if file already was uploaded.
-    foreach ($fid_list as $fid) {
-      if ($file = tpps_file_load($fid)) {
-        $data = ['drupal_file' => $file, 'deposit_id' => $deposit_id];
-        ZenodoFile::create($data);
+    if ($action == 'create') {
+      foreach ($fid_list as $fid) {
+        if ($file = tpps_file_load($fid)) {
+          $data = ['drupal_file' => $file, 'deposit_id' => $deposit_id];
+          ZenodoFile::$action($data);
+        }
+      }
+    }
+    elseif (in_array($action, ['delete', 'update'])) {
+      $data = ['deposit_id' => $deposit_id];
+      if (variable_get('tpps_zenodo_host_greedy_search', FALSE)) {
+        ZenodoHost::search($data);
+      }
+      try {
+        $deposition = ZenodoDeposit::retrieve($data);
+      }
+      catch (Exception $e) {
+        // Can't get deposition.
+        throw new Exception(t('Deposition "@deposit_id" not found.',
+          ['@deposit_id' => $deposit_id]
+        ));
+      }
+
+      switch ($action) {
+        case 'delete':
+          foreach ($deposition['files'] as $file) {
+            ZenodoFile::delete([
+              'deposit_id' => $deposit_id,
+              'file_id' => $file['id']
+            ]);
+          }
+          break;
+
+        case 'update':
+          foreach ($fid_list as $fid) {
+            if ($file = tpps_file_load($fid)) {
+              ZenodoFile::update([
+                'deposit_id' => $deposit_id,
+                'drupal_file' => $file,
+              ]);
+            }
+          }
+          break;
       }
     }
     return $this;
