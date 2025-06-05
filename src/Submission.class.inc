@@ -853,6 +853,21 @@ class Submission {
   }
 
   /**
+   * Check if submission is empty.
+   *
+   * Note: Submission could exist in DB (use doesExists() to check this).
+   * This method checks only state in memory.
+   * $submission = new Submission();
+   * $submission->isEmpty(); // Gives TRUE.
+   *
+   * @return bool
+   *   Returns TRUE if submission is empty (no data added yet).
+   */
+  public function isEmpty() {
+    return empty($this->accession);
+  }
+
+  /**
    * Gets Project Id.
    *
    * @return int
