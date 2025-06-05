@@ -79,7 +79,7 @@ class Zenodo {
    *   See https://developers.zenodo.org/?python#representation
    */
   public static function list(array $data, $reset = FALSE) {
-    $key = $data['deposit_id'] . ($data['file_id'] ?? '');
+    $key = $data ? $data['deposit_id'] . ($data['file_id'] ?? '') : 'list';
     $static_cache = &drupal_static(__METHOD__);
     if ($reset || !isset($static_cache[$key])) {
       $data['query'] = $data['query'] ?? [];

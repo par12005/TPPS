@@ -2621,14 +2621,16 @@ class Submission {
    *   Example: "10.5281/zenodo.199793".
    */
   public function getPublicationDOI() {
-    return
-      // v.2.
-      $this->get(['saved_values', TPPS_PAGE_1, 'publication_doi'])
-      // Shared State.
-      ?? $this->sharedState['saved_values'][TPPS_PAGE_1]['doi']
-      // v.1.
-      ?? $this->get(['saved_values', TPPS_PAGE_1, 'doi'])
-      ?? '';
+    switch ($this->getFormVersion()) {
+      case 2:
+        return $this->get(['saved_values', TPPS_PAGE_1, 'publication_doi']);
+
+      case 1:
+      default:
+      return $this->get(['saved_values', TPPS_PAGE_1, 'doi']);
+    }
+    // Backup: Shared State.
+    return $this->sharedState['saved_values'][TPPS_PAGE_1]['doi'] ?? '';
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -2642,10 +2644,15 @@ class Submission {
    *   Example: "10.5281/zenodo.199793".
    */
   public function getDatasetDOI() {
-    return tpps_array_get_value(
-      $this->state,
-      ['saved_values', TPPS_PAGE_1, 'dataset_doi']
-    );
+    switch ($this->getFormVersion()) {
+      case 2:
+        $parents = ['saved_values', TPPS_PAGE_1, 'publication', 'dataset_doi'];
+
+      case 1:
+      default:
+        $parents = ['saved_values', TPPS_PAGE_1, 'dataset_doi'];
+    }
+    return tpps_array_get_value($this->state, $parents);
   }
 
   /**
@@ -2664,21 +2671,32 @@ class Submission {
    */
   public function setDatasetDOI($value, $save_on_change = TRUE) {
     $was_updated = FALSE;
-    $state_value = &tpps_array_get_value($this->state,
-      ['saved_values', TPPS_PAGE_1, 'dataset_doi']
-    );
+    switch ($this->getFormVersion()) {
+      case 2:
+        $parents = ['saved_values', TPPS_PAGE_1, 'publication', 'dataset_doi'];
+
+      case 1:
+      default:
+        $parents = ['saved_values', TPPS_PAGE_1, 'dataset_doi'];
+    }
+    // State.
+    $state_value = tpps_array_get_value($this->state, $parents);
     if ($state_value != $value) {
       $was_updated = TRUE;
-      $state_value = $value;
+      tpps_array_set_value($this->state, $parents, $value);
     }
 
-    $shared_state_value = &tpps_array_get_value($this->sharedState,
-      ['saved_values', TPPS_PAGE_1, 'dataset_doi']
+    // Shared State.
+    $shared_state_parents = ['saved_values', TPPS_PAGE_1, 'dataset_doi'];
+    $shared_state_value = tpps_array_get_value(
+      $this->sharedState,
+      $shared_state_parents
     );
     if ($shared_state_value != $value) {
       $was_updated = TRUE;
-      $shared_state_value = $value;
+      tpps_array_set_value($this->sharedState, $shared_state_parents, $value);
     }
+    // Save changes.
     if ($save_on_change && $was_updated) {
       $this->save();
     }
@@ -2694,16 +2712,12 @@ class Submission {
    *
    * @param string $dataset_doi
    *   New value of the Dataset DOI field.
-   *
-   * @todo Minor. Re-use get/setDatasetDOI() methods.
    */
   public function updateDatasetDOI($dataset_doi = NULL) {
     $update_result = [];
 
     // DOI in State.
-    $state_dataset_doi = &tpps_array_get_value($this->state,
-      ['saved_values', TPPS_PAGE_1, 'dataset_doi']);
-    $update_result['State'] = $state_dataset_doi;
+    $state_dataset_doi = $this->getDatasetDOI();
     if (
       // New one.
       (empty($state_dataset_doi) && !is_null($dataset_doi))
@@ -2713,33 +2727,15 @@ class Submission {
       || (!empty($state_dataset_doi) && is_null($dataset_doi))
     ) {
       $update_result['State'] = NULL;
-      $state_dataset_doi = $dataset_doi;
-    }
-
-    // DOI in Shared State.
-    $shared_state_dataset_doi = &tpps_array_get_value($this->sharedState,
-      ['saved_values', TPPS_PAGE_1, 'dataset_doi']);
-    $update_result['Shared State'] = $shared_state_dataset_doi;
-    if (
-      // New one.
-      (empty($shared_state_dataset_doi) && !is_null($dataset_doi))
-      // When overwriting of existing value is allowed.
-      || variable_get('tpps_zenodo_overwrite_dataset_doi')
-      // Unset existing.
-      || (!empty($shared_state_dataset_doi) && is_null($dataset_doi))
-    ) {
-      $update_result['Shared State'] = NULL;
-      $shared_state_dataset_doi = $dataset_doi;
+      $this->setDatasetDOI($dataset_doi);
     }
 
     if (function_exists('module_invoke_all')) {
       $context = [
-        'update_result' => $update_result,
-        'shared_state_dataset_doi' => $shared_state_dataset_doi,
-        'dataset_doi' => $dataset_doi,
-        'state_dataset_doi' => $state_dataset_doi,
+        'new' => $dataset_doi,
+        'old' => $state_dataset_doi,
       ];
-      // 'tpps_submission_dataset_doi_updated().
+      // tpps_submission_dataset_doi_updated().
       module_invoke_all('submission_dataset_doi_updated', $context);
     }
   }
