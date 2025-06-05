@@ -30,6 +30,7 @@ function tpps_dataset_doi_create($accession = NULL) {
     // Reload submission object.
     $submission = new Submission($accession);
   }
-  $submission->uploadAllFilesZenodo();
+  // @TODO Minor. Use 'update' to be sure old files removed.
+  $submission->actionAllFilesZenodo('create');
   drupal_goto($parent_path);
 }
