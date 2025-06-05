@@ -71,24 +71,29 @@ class Zenodo {
    * @param array $data
    *   Data for request. Required keys are: 'query'.
    *   Filter query. See https://developers.zenodo.org/?python#list.
+   * @param bool $reset
+   *   When TRUE statically cached data will be updated.
    *
    * @return array
    *   Returns array of deposition resources.
    *   See https://developers.zenodo.org/?python#representation
    */
-  public static function list(array $data) {
-    $data['query'] = $data['query'] ?? [];
-    if (function_exists('drupal_alter')) {
-      // Call all implementations of hooks:
-      // - hook_zenodo_deposit_list_alter(),
-      // - hook_zenodo_files_list_alter().
-      drupal_alter(static::getHookName(__FUNCTION__), $data);
+  public static function list(array $data, $reset = FALSE) {
+    $key = 'list';
+    $static_cache = &drupal_static(__METHOD__);
+    if ($reset || !isset($static_cache[$key])) {
+      $data['query'] = $data['query'] ?? [];
+      if (function_exists('drupal_alter')) {
+        // Call all implementations of hooks:
+        // - hook_zenodo_deposit_list_alter(),
+        // - hook_zenodo_file_list_alter().
+        drupal_alter(static::getHookName(__FUNCTION__), $data);
+      }
+      $data['url'] = static::buildUrl($data);
+      $data['response'] = RestAPI::get($data['url'], $data['query']);
+      $static_cache[$key] = $data['response'] ?? '';
     }
-
-    $data['url'] = static::buildUrl($data);
-    $data['response'] = RestAPI::get($data['url'], $data['query']);
-
-    return $data['response'];
+    return $static_cache[$key];
   }
 
   /**
@@ -100,56 +105,62 @@ class Zenodo {
    *
    * @param array $data
    *   Data for request. Required keys are: 'deposit_id'.
+   * @param bool $reset
+   *   When TRUE statically cached data will be updated.
    *
    * @return array
    *   Returns array of deposition resources.
    *   See https://developers.zenodo.org/?python#representation
    */
-  public static function retrieve(array $data) {
+  public static function retrieve(array $data, $reset = FALSE) {
     static::validateRequired(['deposit_id'], $data);
 
-    if (function_exists('drupal_alter')) {
-      // Call all implementations of hooks:
-      // - hook_zenodo_deposit_retrieve_alter(),
-      // - hook_zenodo_files_retrieve_alter().
+    $key = $data['deposit_id'];
+    $static_cache = &drupal_static(__METHOD__);
+    if ($reset || !isset($static_cache[$key])) {
+      if (function_exists('drupal_alter')) {
+        // Call all implementations of hooks:
+        // - hook_zenodo_deposit_retrieve_alter(),
+        // - hook_zenodo_file_retrieve_alter().
+        // Note: Hooks must be called only once.
+        drupal_alter(static::getHookName(__FUNCTION__), $data);
+      }
+      $data['url'] = static::buildUrl($data);
+      try {
+        $data['response'] = RestAPI::get($data['url'], $data);
+      }
+      catch (Exception $e) {
+        if ($e->getCode() == 404) {
+          $message = t(
+            "Zenodo Deposition #@deposit_id wasn't found on @host Zenodo host.",
+            [
+              '@deposit_id' => $data['deposit_id'],
+              '@host' => (ZenodoHost::isLive() ? 'Live' : 'Sandbox'),
+            ]
+          );
+        }
+        elseif ($e->getCode() == 403) {
+          $message = t(
+            "Access to Zenodo Deposition #@deposit_id denied on @host Zenodo host.",
+            [
+              '@deposit_id' => $data['deposit_id'],
+              '@host' => (ZenodoHost::isLive() ? 'Live' : 'Sandbox'),
+            ]
+          );
+        }
+        else {
+          $message = $e->getMessage();
+        }
+        throw new Exception($message, $e->getCode());
+      }
+
       // Note: Hooks must be called only once.
-      drupal_alter(static::getHookName(__FUNCTION__), $data);
-    }
-
-    $data['url'] = static::buildUrl($data);
-    try {
-      $data['response'] = RestAPI::get($data['url']);
-    }
-    catch (Exception $e) {
-      if ($e->getCode() == 404) {
-        $message = t(
-          "Zenodo Deposition #@deposit_id wasn't found on @host Zenodo host.",
-          [
-            '@deposit_id' => $data['deposit_id'],
-            '@host' => (ZenodoHost::isLive() ? 'Live' : 'Sandbox'),
-          ]
-        );
+      if (function_exists('module_invoke_all')) {
+        module_invoke_all(static::getHookName('retrieved'), $data);
       }
-      elseif ($e->getCode() == 403) {
-        $message = t(
-          "Access to Zenodo Deposition #@deposit_id denied on @host Zenodo host.",
-          [
-            '@deposit_id' => $data['deposit_id'],
-            '@host' => (ZenodoHost::isLive() ? 'Live' : 'Sandbox'),
-          ]
-        );
-      }
-      else {
-        $message = $e->getMessage();
-      }
-      throw new Exception($message, $e->getCode());
+      $static_cache[$key] = $data['response'];
     }
-
-    // Note: Hooks must be called only once.
-    if (function_exists('module_invoke_all')) {
-      module_invoke_all(static::getHookName('retrieved'), $data);
-    }
-    return $data['response'];
+    return $static_cache[$key];
   }
 
   /**
