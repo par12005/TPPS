@@ -380,7 +380,9 @@ class SubmissionCache {
   public static function updateSingle($submission) {
     // Note: Do not use Submission::doesExist() because it will try to load
     // submission from DB and will fail if it wasn't yet saved.
-    if ($submission->accession) {
+    // WARNING: Do not use PHP's empty() to check if protected property
+    // 'accession' was set and not empty.
+    if ($submission->isEmpty()) {
       return;
     }
     $list = static::get();

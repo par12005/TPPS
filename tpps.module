@@ -3398,8 +3398,8 @@ function tpps_zenodo_deposit_deleted(array $data) {
     return;
   }
   // Clear cache.
-   SubmissionCache::updateSingle($submission);
-
+  SubmissionCache::updateSingle($submission);
+  // Clear relation with Zenodo Deposit.
   if ($deposit_id = $submission->getZenodoDepositId()) {
     // Unset exsisting Dataset DOI value.
     $submission->updateDatasetDOI(NULL);
