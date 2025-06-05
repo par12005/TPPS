@@ -94,7 +94,7 @@ function hook_zenodo_deposit_retrieved(array $data) {
 // Zenodo Deposition File's Events: created, updated, deleted, retrieved.
 
 /**
- * Implements hook 'zenodo_files_deleted'.
+ * Implements hook 'zenodo_file_deleted'.
  *
  * Note: Called only in successful removement of the Zenodo Deposition.
  *
@@ -103,12 +103,12 @@ function hook_zenodo_deposit_retrieved(array $data) {
  * @param array $response
  *   API Response.
  */
-function hook_zenodo_files_deleted(array $data, array $response) {
+function hook_zenodo_file_deleted(array $data, array $response) {
   tpps_admin_zenodo_submissions_report_clear_cache();
 }
 
 /**
- * Implements hook 'zenodo_files_created'.
+ * Implements hook 'zenodo_file_created'.
  *
  * Note: Called only in successful Zenodo Deposition creation.
  *
@@ -117,31 +117,31 @@ function hook_zenodo_files_deleted(array $data, array $response) {
  * @param array $response
  *   API Response.
  */
-function hook_zenodo_files_created(array $data, array $response) {
+function hook_zenodo_file_created(array $data, array $response) {
   tpps_admin_zenodo_submissions_report_clear_cache();
 }
 
 /**
- * Implements hook 'zenodo_files_updated'.
+ * Implements hook 'zenodo_file_updated'.
  *
  * @param array $data
  *   Request Data. Required keys are: 'deposit_id', 'file_id'.
  * @param array $response
  *   API Response.
  */
-function hook_zenodo_files_updated(array $data, array $response) {
+function hook_zenodo_file_updated(array $data, array $response) {
   tpps_admin_zenodo_submissions_report_clear_cache();
 }
 
 /**
- * Implements hook 'zenodo_files_retrieve'.
+ * Implements hook 'zenodo_file_retrieve'.
  *
  * @param array $data
  *   Request Data. Required keys are: 'deposit_id', 'file_id'.
  * @param array $response
  *   API Response.
  */
-function hook_zenodo_files_retrieved(array $data, array $response) {
+function hook_zenodo_file_retrieved(array $data, array $response) {
   tpps_admin_zenodo_submissions_report_clear_cache();
 }
 
@@ -298,7 +298,7 @@ function hook_zenodo_deposit_new_version_alter(array &$data) {
  *   Required item is 'deposit_id'.
  *   See https://developers.zenodo.org/?python#delete.
  */
-function hook_zenodo_files_delete_alter(array &$data) {
+function hook_zenodo_file_delete_alter(array &$data) {
   dpm($data['deposit_id']);
 }
 
@@ -310,7 +310,7 @@ function hook_zenodo_files_delete_alter(array &$data) {
  * @param array $data
  *   Data for Zenodo API request. Could be empty.
  */
-function hook_zenodo_files_create_alter(array &$data) {
+function hook_zenodo_file_create_alter(array &$data) {
   dpm($data);
 }
 
@@ -323,7 +323,7 @@ function hook_zenodo_files_create_alter(array &$data) {
  *   Data for Zenodo API request.
  *   Required item is 'deposit_id', 'metadata'.
  */
-function hook_zenodo_files_update_alter(array &$data) {
+function hook_zenodo_file_update_alter(array &$data) {
   dpm($data['deposit_id']);
 }
 
@@ -336,7 +336,7 @@ function hook_zenodo_files_update_alter(array &$data) {
  *   Data for request. Required keys are: 'query'.
  *   See https://developers.zenodo.org/?python#list.
  */
-function hook_zenodo_files_list_alter(array &$query) {
+function hook_zenodo_file_list_alter(array &$query) {
   dpm($query);
 }
 
@@ -350,7 +350,7 @@ function hook_zenodo_files_list_alter(array &$query) {
  *   Required item is 'deposit_id'.
  *   See https://developers.zenodo.org/?python#retrieve.
  */
-function hook_zenodo_files_retrieve_alter(array &$data) {
+function hook_zenodo_file_retrieve_alter(array &$data) {
   dpm($data);
 }
 
@@ -471,12 +471,12 @@ function hook_zenodo_deposit_published(array $data, array $response) {
 /**
  * Implements hook 'rest_api_request_execution_time'.
  *
- * @param string $title
- *   Message which defines of request.
  * @param float $execution_time
  *   Request execution time in msec.
+ * @param string $data
+ *   Request meta-data to be shown in log messages.
  */
-function hook_rest_api_request_execution_time($title = '', $execution_time = NULL) {
+function hook_rest_api_request_execution_time($execution_time, array $data = []) {
 }
 
 /**
