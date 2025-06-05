@@ -129,7 +129,8 @@ class RestAPI {
    *   Returns API response.
    */
   public static function get($url, array $data = [], array $header = []) {
-    return self::doRequest('GET', $url, $data, $header);
+    $query = $data['query'] ?? [];
+    return self::doRequest('GET', $url, $query, $header);
   }
 
   /**
@@ -339,11 +340,11 @@ class RestAPI {
       }
       else {
         // GET.
-        $url = url($url, [
-          'query' => $data,
-          'https' => TRUE,
-          'external' => TRUE,
-        ]);
+        $params = ['https' => TRUE, 'external' => TRUE];
+        if (!empty($data)) {
+          $params['query'] = $data;
+        }
+        $url = url($url, $params);
       }
     }
 
