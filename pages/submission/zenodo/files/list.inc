@@ -65,7 +65,8 @@ function tpps_submission_zenodo_files_list_form_submit(array &$form, array &$for
       ), 'error');
       drupal_goto('tpps/submission/' . $accession . '/zenodo');
     }
-    $submission->uploadAllFilesZenodo();
+    // @TODO Minor. Use 'update' to be sure old files removed.
+    $submission->actionAllFilesZenodo('create');
   }
   $form_state['#rebuild'] = TRUE;
 }
