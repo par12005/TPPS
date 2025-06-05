@@ -163,7 +163,10 @@ class Zenodo {
    * 2. Only unpublished depositions may be deleted.
    *
    * @param array $data
-   *   Data for request. Required keys are: 'deposit_id'.
+   *   Data for request.
+   *   Required keys:
+   *     Zenodo Deposit: 'deposit_id'.
+   *     Zenodo File: 'deposit_id', 'file_id'.
    *
    * @return mixed
    *   Returns API response.

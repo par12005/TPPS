@@ -217,8 +217,6 @@ class ZenodoHost {
    * files data without any access token (files data are public). But only
    * Deposition data is accessible by owner.
    *
-   * Note: This method throws an exception.
-   *
    * @param array $data
    *   Data for ZenodoDeposit::retrieve() request.
    *   Required key is 'deposit_id'.
