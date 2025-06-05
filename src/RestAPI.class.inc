@@ -4,6 +4,10 @@
  * @file
  * Contains 'RestAPI' class.
  *
+ * WARNING:
+ * Do not use any caching in class. Caching must be done outside the class
+ * because not all responses and not all methods could be cached.
+ *
  * Usage:
  *  RestAPI::post($url, $data);
  *  RestAPI::delete($url);
@@ -118,12 +122,14 @@ class RestAPI {
    *   API Endpoint URL.
    * @param array $data
    *   Data for request.
+   * @param array $header
+   *   HTTP-headers.
    *
    * @return mixed
    *   Returns API response.
    */
-  public static function get($url, array $data = []) {
-    return self::doRequest('GET', $url, $data);
+  public static function get($url, array $data = [], array $header = []) {
+    return self::doRequest('GET', $url, $data, $header);
   }
 
   /**
@@ -318,8 +324,6 @@ class RestAPI {
    * @todo Convert to private or protected method if it's possible for static.
    */
   public static function doRequest($method, $url, $data = [], array $header = []) {
-    // To measure execution time of the request.
-    $execution_time_start = microtime(1);
     $method = strtoupper($method);
     $curl = curl_init();
     // Why not use CURLOPT_POS: https://stackoverflow.com/a/74812403
@@ -352,20 +356,28 @@ class RestAPI {
     curl_setopt($curl, CURLOPT_TIMEOUT, static::getTimeout());
 
     // EXECUTE:
+    $execution_time_start = microtime(1);
     $response = curl_exec($curl);
     $info = curl_getinfo($curl);
     curl_close($curl);
-    $execution_time = (microtime(1) - $execution_time_start) * 1000;
 
+    // Execution time.
+    $execution_time = (microtime(1) - $execution_time_start) * 1000;
     // Allow other modules to react on request execution time.
     if (function_exists('module_invoke_all')) {
       module_invoke_all(
         'rest_api_request_execution_time',
-        'RestAPI ' . $method . '-request',
-        $execution_time
+        $execution_time,
+        [
+          'Method' => $method,
+          'URL' => $url,
+          'Payload' => $data['payload'] ?? NULL,
+          'Headers' => $header ?? NULL,
+        ]
       );
     }
 
+    // Prepare response.
     if ($info['content_type'] == 'application/json') {
       if (!empty($response)) {
         // PHP's json_decode() could throw an exception of invalid JSON.
@@ -383,7 +395,7 @@ class RestAPI {
       throw new Exception($message);
     }
     if ($code >= 200  && $code <= 204) {
-      // https://developers.zenodo.org/?shell#http-status-codes
+      // Codes: https://developers.zenodo.org/?shell#http-status-codes
       return $response;
     }
     else {

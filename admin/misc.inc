@@ -21,8 +21,23 @@ function tpps_misc_settings_form(array $form, array &$form_state) {
     '#title' => t('Debug mode'),
     '#default_value' => variable_get('tpps_rest_api_debug_mode'),
     '#description' => t("When enabled extra debug-messages will be shown on "
-      . "page when error or exception happens."),
+      . "page when error or exception happens."
+      . "<br />When enabled then execution time of all requests will be "
+      . "logged to watchdog."
+    ),
   ];
+  $form['rest_api']['tpps_rest_api_max_execution_time'] = [
+    '#type' => 'textfield',
+    '#title' => t('Request Max Execution Time, milliseconds'),
+    '#default_value' => variable_get('tpps_rest_api_max_execution_time'),
+    '#description' => t("Longer requests will be logged using watchdog()."
+      . "<br />Default: 5000."
+      . "<br />Note: Any request which runs more then this limit "
+      . "will be logged to watchdog even if debug mode is disabled."
+    ),
+    '#element_validate' => ['element_validate_integer_positive'],
+  ];
+
   $form['rest_api']['tpps_rest_api_timeout'] = [
     '#type' => 'textfield',
     '#title' => t('RestAPI request timeout'),
@@ -38,7 +53,6 @@ function tpps_misc_settings_form(array $form, array &$form_state) {
       ]
     ),
     '#element_validate' => ['element_validate_integer_positive'],
-
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Validation Regular Expressions.

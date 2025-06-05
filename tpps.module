@@ -3529,31 +3529,25 @@ function tpps_zenodo_deposit_create_alter(array &$data = []) {
 /**
  * Implements hook 'rest_api_request_execution_time'.
  *
- * @param string $title
- *   Message which defines of request.
  * @param float $execution_time
  *   Request execution time in milliseconds.
+ * @param array $data
+ *   Request meta-data.
  */
-function tpps_rest_api_request_execution_time($title = '', $execution_time = NULL) {
-  if (empty($title) || empty($execution_time)) {
-    return;
-  }
-  // Limit of request execution time in milliseconds.
-  // Longer requests will be logged using watchdog().
-  $max_execution_time = 5000;
-
-  // @TODO Use variable and settings for debug mode.
-  $debug_mode = variable_get('tpps_rest_api_debug_mode', FALSE);
-  $message = '@title execution time: @time msec.';
+function tpps_rest_api_request_execution_time($execution_time, array $data = []) {
+  $log_message = 'Rest API Request execution time: @time msec. !request_data';
   $params = [
-    '@title' => $title,
     '@time' => $execution_time,
+    '!request_data' => tpps_array_print_list($data),
   ];
-  if ($debug_mode ?? FALSE) {
-    drupal_set_message(t($message, $params), 'warning');
+  if (variable_get('tpps_rest_api_debug_mode', FALSE)) {
+    drupal_set_message(t($log_message, $params), 'warning');
   }
-  if ($execution_time > $max_execution_time) {
-    watchdog('tpps', $message, $params, WATCHDOG_WARNING);
+  if (
+    $execution_time >= variable_get('tpps_rest_api_max_execution_time', 5000)
+    || variable_get('tpps_rest_api_debug_mode', FALSE)
+  ) {
+    watchdog('tpps', $log_message, $params, WATCHDOG_WARNING);
   }
 }
 
@@ -3593,12 +3587,12 @@ function tpps_zenodo_deposit_validation_failed(array $response) {
 }
 
 /**
- * Implements alter-hook 'zenodo_files_create'.
+ * Implements alter-hook 'zenodo_file_create'.
  *
  * @param array $data
  *   Context for ZenodoFile::create().
  */
-function tpps_zenodo_files_create_alter(array &$data) {
+function tpps_zenodo_file_create_alter(array &$data) {
   $file = $data['drupal_file'];
   if (empty($file)) {
     return;

@@ -183,7 +183,7 @@ class Zenodo {
     if (function_exists('drupal_alter')) {
       // Call all implementations of hooks:
       // - hook_zenodo_deposit_delete_alter(),
-      // - hook_zenodo_files_delete_alter().
+      // - hook_zenodo_file_delete_alter().
       drupal_alter(static::getHookName(__FUNCTION__), $data);
     }
     static::validateRequired(['deposit_id'], $data);
@@ -248,7 +248,7 @@ class Zenodo {
     if (function_exists('drupal_alter')) {
       // Call all implementations of hooks:
       // - hook_zenodo_deposit_create_alter(),
-      // - hook_zenodo_files_create_alter().
+      // - hook_zenodo_file_create_alter().
       drupal_alter(static::getHookName(__FUNCTION__), $data);
     }
 
@@ -291,11 +291,16 @@ class Zenodo {
     if (function_exists('drupal_alter')) {
       // Call all implementations of hooks:
       // - hook_zenodo_deposit_update_alter(),
-      // - hook_zenodo_files_update_alter().
+      // - hook_zenodo_file_update_alter().
       drupal_alter(static::getHookName(__FUNCTION__), $data);
     }
+    if (static::getClassName() != 'ZenodoDeposit') {
+      $message = t('Not implemented for @class.',
+        ['@class' => static::getClassName()]
+      );
+      throw new Exception($message);
+    }
     static::validateRequired(['metadata'], $data['payload']);
-
     $data['url'] = static::buildUrl($data);
     $data['response'] = RestAPI::put($data['url'], $data['payload']);
 
@@ -464,11 +469,11 @@ class Zenodo {
   public static function getHookName($action) {
     switch (static::getClassName()) {
       case 'ZenodoFile':
-        $prefix = 'zenodo_files_';
+        $prefix = 'zenodo_file_';
         break;
 
       case 'ZenodoRecords':
-        $prefix = 'zenodo_records_';
+        $prefix = 'zenodo_record_';
         break;
 
       case 'ZenodoDeposit':
