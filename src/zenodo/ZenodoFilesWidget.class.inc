@@ -188,10 +188,9 @@ class ZenodoFilesWidget {
           // Note: Filesize will be the same but filenames could differ.
           unset($zenodo_file['checksum']);
           $zenodo_file_path = 'tpps/submission/' . $accession . '/zenodo/files/' . $zenodo_file['id'];
-          $delete_url = $zenodo_file_path . '/delete';
-          $update_url = $zenodo_file_path . '/update';
           // 'Delete' button.
           if ($actions_allowed && empty($deposition['submitted'])) {
+            $delete_url = $zenodo_file_path . '/delete';
             $delete_button = l(t('Delete'), $delete_url, $action_link_params);
           }
           $rows[$fid]['zenodo'] = ($delete_button ?? '')
@@ -200,7 +199,7 @@ class ZenodoFilesWidget {
           unset($zenodo_file_list[$zenodo_file['id']]);
         }
       }
-      //$update_url = 'tpps/submission/' . $accession . '/zenodo/files/' . $fid . '/update';
+      $update_url = 'tpps/submission/' . $accession . '/zenodo/files/' . $fid . '/update';
       unset($submission_file['md5']);
 
       // Buttons for the Submission side (left).
