@@ -500,14 +500,15 @@ class ZenodoDeposit extends Zenodo {
    *
    *   'page' - integer (optional)
    *   Page number for pagination.
-   *
+   * @param bool $reset
+   *   When TRUE statically cached data will be updated.
    *
    * @return array
    *   Returns array of deposition resources.
    *   See https://developers.zenodo.org/?python#representation
    */
-  public static function list(array $data) {
-    return parent::list($data);
+  public static function list(array $data, $reset = FALSE) {
+    return parent::list($data, $reset);
   }
 
 }
