@@ -79,7 +79,7 @@ class Zenodo {
    *   See https://developers.zenodo.org/?python#representation
    */
   public static function list(array $data, $reset = FALSE) {
-    $key = 'list';
+    $key = $data['deposit_id'] . ($data['file_id'] ?? '');
     $static_cache = &drupal_static(__METHOD__);
     if ($reset || !isset($static_cache[$key])) {
       $data['query'] = $data['query'] ?? [];
@@ -115,7 +115,7 @@ class Zenodo {
   public static function retrieve(array $data, $reset = FALSE) {
     static::validateRequired(['deposit_id'], $data);
 
-    $key = $data['deposit_id'];
+    $key = $data['deposit_id'] . ($data['file_id'] ?? '');
     $static_cache = &drupal_static(__METHOD__);
     if ($reset || !isset($static_cache[$key])) {
       if (function_exists('drupal_alter')) {
