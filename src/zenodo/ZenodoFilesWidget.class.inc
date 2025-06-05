@@ -123,15 +123,24 @@ class ZenodoFilesWidget {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Zenodo Files.
     //
+    // Deposition.
+    $deposition = ZenodoDeposit::retrieve($data);
+    if ($deposition['submitted']) {
+      $message = t("Files can't be added or deleted because Zenodo Deposition "
+        . "<strong>was published</strong>. Only filenames could be updated."
+        . "<br />Create <strong>new version</strong> of this "
+        . "Deposition to add new or delete existing files."
+      );
+      drupal_set_message($message, 'warning');
+    }
     // Format:
     //  id (String, 36 characters ) 83fea13b-8a51-4b67-aa75-089570415401
     //  filename (String, 28 characters ) TGDR400_Phenotype_Data_1.csv
     //  filesize (Float) 12362
     //  checksum (String, 32 characters ) 4bd90201fbb420ae5c149a4af50a224b
     //  links (String, 218 characters ) <a href="https://zenodo.org/api/deposit/deposit...
-    $response = ZenodoFile::list($data);
-    if (!empty($response)) {
-      foreach ($response as $item) {
+    if (!empty($deposition['files'])) {
+      foreach ($deposition['files'] as $item) {
         foreach ($item as $key => $value) {
           $links = '';
           if ($key == 'links') {
@@ -145,16 +154,6 @@ class ZenodoFilesWidget {
       }
     }
     $count_zenodo_file_list = count($zenodo_file_list);
-    // Deposition.
-    $deposition = ZenodoDeposit::retrieve($data);
-    if ($deposition['submitted']) {
-      $message = t("Files can't be added or deleted because Zenodo Deposition "
-        . "<strong>was published</strong>. Only filenames could be updated."
-        . "<br />Create <strong>new version</strong> of this "
-        . "Deposition to add new or delete existing files."
-      );
-      drupal_set_message($message, 'warning');
-    }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Submission files.
