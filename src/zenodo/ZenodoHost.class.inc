@@ -290,8 +290,8 @@ class ZenodoHost {
     // global (default) host.
     try {
       static::get();
-      $data['url'] = ZenodoDeposit::buildUrl($data);
-      RestAPI::get($data['url']);
+      // Using ZenodoDeposit instate of RestAPI::get() allows to use static caching.
+      ZenodoDeposit::retrieve(['deposit_id' => $data['deposit_id']]);
     }
     catch (Exception $e) {
       // Check other host.
