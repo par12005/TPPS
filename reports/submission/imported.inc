@@ -42,10 +42,10 @@ function tpps_report_submission_imported() {
   foreach ($list as $local => $remote) {
     if (!isset($data[$local])) {
       ImportedSubmissionList::remove($local);
-      drupal_set_message(t("Submission @accession doesn't exist and was "
-        . "removed from list of imported studies.", ['@accession' => $local],
-        'error'
-      ));
+      $message = t("Submission @accession doesn't exist and was removed from "
+        . "list of imported studies.", ['@accession' => $local]
+      );
+      drupal_set_message($message, 'error');
       continue;
     }
     $import_meta = $data[$local]['import_meta'];

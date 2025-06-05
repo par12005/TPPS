@@ -3742,70 +3742,19 @@ function tpps_zenodo_deposit_discarded(array $data) {
  */
 function tpps_submission_dataset_doi_updated(array $data) {
   // New.
-  $dataset_doi = $data['dataset_doi'];
+  $dataset_doi = $data['new'];
   // Stored values of Dataset DOI.
-  $shared_state_dataset_doi = $data['shared_state_dataset_doi'];
-  $state_dataset_doi = $data['state_dataset_doi'];
-  $update_result = $data['update_result'];
+  $state_dataset_doi = $data['old'];
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Report DOI update.
-  // Sucess is when all 2 places were updated: Shared State and State.
-  if (count(array_filter((array_values($update_result)))) == 0) {
-    // Sucess.
-    if (is_null($dataset_doi ?? NULL)) {
-      drupal_set_message(t('Dataset DOI was unset.',
-        ['@dataset_doi' => $dataset_doi]
-      ));
-    }
-    else {
-      drupal_set_message(t(
-        'Dataset DOI was set to <strong>@dataset_doi</strong>.',
-        ['@dataset_doi' => $dataset_doi]
-      ));
-    }
+  if (is_null($dataset_doi ?? NULL)) {
+    drupal_set_message(t('Dataset DOI was unset.',
+      ['@dataset_doi' => $dataset_doi]
+    ));
   }
   else {
-    if (count(array_filter((array_values($update_result)))) == 2) {
-      // Fail.
-      drupal_set_message(t(
-        'Dataset DOI was NOT set to <strong>@new_doi</strong> because '
-        . 'Dataset DOI in both places (Shared State and State) was not empty.'
-        . '<br />Shared State Dataset DOI: <strong>@shared_state_doi</strong>'
-        . '<br />State Dataset DOI: <strong>@state_doi</strong>'
-        ,
-        [
-          '@new_doi' => $dataset_doi,
-          '@state_doi' => $state_dataset_doi,
-          '@shared_state_doi' => $shared_state_dataset_doi,
-        ]
-      ));
-    }
-    else {
-      // Partly updated.
-      foreach ($update_result as $name => $value) {
-        if ($value) {
-          $updated_list[] = $name;
-        }
-        else {
-          $skipped_list[] = $name;
-        }
-      }
-      drupal_set_message(t("New Dataset DOI <strong>@dataset_doi</strong> "
-        . "was set for: @updated_list.<br />Wasn't updated: @skipped_list.",
-        [
-          '@dataset_doi' => $dataset_doi,
-          '@skipped_list' => implode(', ', $skipped_list),
-          '@updated_list' => implode(', ', $updated_list),
-        ]
-      ), 'warning');
-    }
-    // In case of fail suggest to enable Dataset DOI overwrite.
-    $link = l(t('Zenodo Settings Page'), 'admin/config/tpps/zenodo');
-    drupal_set_message(t('To allows existing Dataset DOI be overwritten '
-      . 'visit !settings_page_link. Enable "Overwrite existing Dataset DOI", '
-      . 'then remove Zenodo Deposition and create new one.',
-      ['!settings_page_link' => $link]
+    drupal_set_message(t(
+      'Dataset DOI was set to <strong>@dataset_doi</strong>.',
+      ['@dataset_doi' => $dataset_doi]
     ));
   }
 }
