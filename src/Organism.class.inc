@@ -14,8 +14,8 @@
  * To get NCBI Taxonomy Id:
  *   tpps_organism($id)->requestNcbiTaxonomyId()->ncbiTaxonomyId;
  * To load organism from DB:
- *   tpps_organism($id);
- *   tpps_organism($name);
+ *   tpps_organism($organism_id);
+ *   tpps_organism($organism_name);
  *
  * Not implemented:
  *
@@ -67,6 +67,8 @@ class Organism {
   /**
    * Organism Genus. Required 1st part of the full name.
    *
+   * DB: chado.organism.genus.
+   *
    * @var string
    */
   protected $genus;
@@ -74,12 +76,16 @@ class Organism {
   /**
    * Organism Species. Required 2nd part of the full name.
    *
+   * DB: chado.organism.species.
+   *
    * @var string
    */
   protected $species;
 
   /**
    * Organism infraspecific name. Optional 3rd part of the full name.
+   *
+   * DB: chado.organism.infraspecific_name.
    *
    * @var string
    */
@@ -89,13 +95,11 @@ class Organism {
    * Class constructor.
    *
    * @param mixed $organism_key
-   *   Organism Name or Id.
+   *   Organism Name or Organism Id.
    */
   public function __construct($organism_key = NULL) {
     if (!empty($organism_key)) {
-      //if (is_numeric($organism_key)) {
       if (is_numeric($organism_key) && !is_string($organism_key)) {
-
         $this->id = $organism_key;
       }
       else {
@@ -186,33 +190,25 @@ class Organism {
    * Note: data from db table 'chado.organism' will be loaded.
    */
   public function load() {
-    if (!empty($this->id) && !empty($this->name)) {
+    if ($this->isLoaded()) {
+      // No not load multiple times. See $this->reload().
       return;
     }
     $query = db_select('chado.organism', 'co')
       ->fields('co')
       ->range(0, 1);
-    // Loadby name.
-    if (!empty($this->id)) {
-      // Load by id.
-      $query->condition('organism_id', $this->id);
-    }
-    else {
+    if (empty($this->id)) {
       // Load by name.
       if (!empty($this->name)) {
         $this->parseName();
         if (empty($this->genus) || empty($this->species)) {
-          watchodg('tpps', 'Empty organism name.');
+          watchdog('tpps', 'Empty organism name.');
           return;
         }
-        $query->condition('genus', '%' . db_like($this->genus) . '%', 'LIKE');
-        $query->condition('species', '%' . db_like($this->species) . '%', 'LIKE');
-        if (empty($this->infraspecificName)) {
-          $query->condition(
-            'infraspecificName',
-            '%' . db_like($this->infraspecificName) . '%',
-            'LIKE'
-          );
+        $query->condition('genus', $this->genus);
+        $query->condition('species', $this->species);
+        if (!empty($this->infraspecificName)) {
+          $query->condition('infraspecific_name', $this->infraspecificName);
         }
       }
       else {
@@ -221,20 +217,43 @@ class Organism {
         return;
       }
     }
-    if (!empty($query)) {
-      $organism = $query->execute()->fetchAssoc();
-      // Set properties.
+    else {
+      // Load by id.
+      $query->condition('organism_id', $this->id);
+    }
+
+    $organism = $query->execute()->fetchAssoc();
+    // Set properties.
+    if (empty($this->id)) {
+      // Loaded by name.
+      $this->id = $this->id ?? $organism['organism_id'] ?? NULL;
+    }
+    else {
+      // Loaded by 'organism_id'.
       $this->genus = $organism['genus'] ?? NULL;
       $this->species = $organism['species'] ?? NULL;
-      $this->infraspecificName = $organism['infraspecificName'] ?? NULL;
-      // There is also columns:
-      // abbreviation,
-      // common_name,
-      // type_id,
-      // comment.
-      $this->generateName();
+      $this->infraspecificName = $organism['infraspecific_name'] ?? NULL;
     }
+    // There is also columns:
+    // abbreviation,
+    // common_name,
+    // type_id,
+    // comment.
+    $this->generateName();
     return $this;
+  }
+
+  /**
+   * Checks if organism was loaded from DB.
+   *
+   * @return bool
+   *   Returns TRUE if organism was loaded and FALSE otherwise.
+   */
+  public function isLoaded() {
+    // When organism loaded then property 'name' will be generated and there
+    // is no other way to generate. This could be used to check if organism
+    // was loaded.
+    return (bool) (!empty($this->name) && !empty($this->id));
   }
 
   /**
@@ -261,7 +280,7 @@ class Organism {
     $name = tpps_parse_organism_name($this->name);
     $this->genus = $name['genus'] ?? NULL;
     $this->species = $name['species'] ?? NULL;
-    $this->infraspecificName = $name['extra'] ?? NULL;
+    $this->infraspecificName = $name['infraspecific_name'] ?? NULL;
   }
 
   /**
@@ -272,7 +291,7 @@ class Organism {
     if (empty($this->name)) {
       $message = t("Can't get NCBI Taxonomy Id because there are no organism name.");
       watchdog('tpps', $message, [], WATCHDOG_ERROR);
-      dpm($message);
+      drupal_set_message($message);
       return;
     }
     $xml = tpps_ncbi_get_taxon_id($this->name, FALSE);
@@ -292,13 +311,7 @@ class Organism {
       return FALSE;
     }
     // Save to DB table 'tpps_ncbi_taxonomy'.
-    $fields = [
-      'organism_id' => $this->id ?? NULL,
-      'organism_name' => $this->name ?? NULL,
-      'taxonomy_id' => $this->ncbiTaxonomyId ?? NULL,
-    ];
-    db_insert(self::TABLE_NCBI_TAXONOMY)->fields($fields)->execute();
-
+    $this->saveTaxonomy();
     // Provide chaining only in case of success.
     return $this;
   }
@@ -407,19 +420,19 @@ class Organism {
   public function &getNcbiTaxonomyId() {
     if (empty($this->ncbiTaxonomyId)) {
       // Get from DB.
-      // @TODO Use constant to store table names.
       $this->load();
       if (empty($this->id)) {
         $message = t('No organism Id');
         watchdog('tpps', $message, [], WATCHDOG_ERROR);
         return;
       }
-      $this->ncbiTaxonomyId = db_select(self::TABLE_NCBI_TAXONOMY, 't')
-        ->fields('t')
+      $result = db_select(self::TABLE_NCBI_TAXONOMY, 't')
+        ->fields('t', ['taxonomy_id'])
         ->condition('organism_id', $this->id)
         ->range(0, 1)
         ->execute()
         ->fetchField();
+      $this->ncbiTaxonomyId = $result;
       if (empty($this->ncbiTaxonomyId)) {
         $this->requestNcbiTaxonomyId();
       }
@@ -477,6 +490,10 @@ class Organism {
   }
 
 }
+
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// Useful functions (not methods).
 
 /**
  * FTest for organism class.

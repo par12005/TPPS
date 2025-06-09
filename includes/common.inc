@@ -494,8 +494,9 @@ function ftest_tpps_is_valid() {
  *   Returns array with keys: 'genus', 'species' and 'extra'.
  */
 function tpps_parse_organism_name($organism_name) {
-  $keys = ['genus', 'species', 'extra'];
-  return array_combine($keys, explode(" ", $organism_name, 3));
+  $keys = ['genus', 'species', 'infraspecific_name'];
+  $list = explode(" ", $organism_name, 3);
+  return array_combine(array_slice($keys, 0, count($list)), $list);
 }
 
 /**
