@@ -99,7 +99,7 @@ class Organism {
    */
   public function __construct($organism_key = NULL) {
     if (!empty($organism_key)) {
-      if (is_numeric($organism_key) && !is_string($organism_key)) {
+      if (is_numeric($organism_key)) {
         $this->id = $organism_key;
       }
       else {
@@ -464,29 +464,233 @@ class Organism {
     return !($this->doesExist());
   }
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Because of late static binding of PHP we need this to get table names
-  // outside this class.
-  // https://github.com/bmewburn/vscode-intelephense/issues/916.
-
   /**
-   * Gets vale of the TABLE_ORGANISM constant outside of this class.
+   * Processes NCBI Taxonomy Id from NCBI and stores in correct table.
    *
-   * @return string
-   *   Returns DB table name.
+   * Original idea: submit_all.php:875
+   * $taxons = tpps_ncbi_get_taxon_id($raw_name, TRUE);
+   *
+   * DB tables which will be updated:
+   * 'chado.dbxref',
+   * 'chado.organism_dbxref'.
+   *
+   * @param mixed $submission
+   * @param mixed $use_log
+   *
+   * @return void
    */
-  public static function getTableOrganismName() {
-    return static::TABLE_ORGANISM;
+  public function processTaxonomyId($submission, $use_log = NULL) {
+    $this->load();
+
+    $use_log = $use_log ?? function_exists('tpps_log');
+    $taxons = tpps_ncbi_get_taxon_id($this->name, TRUE);
+    if ($use_log) {
+      tpps_log("NCBI taxon data found: \n@taxons_dump",
+        ['@taxons_dump' => print_r($taxons, 1)], TRIPAL_DEBUG
+      );
+    }
+    $taxons = json_decode(json_encode($taxons))->Id;
+    if (empty($taxons) || count($taxons) === 0) {
+      if ($use_log) {
+        tpps_log("This study contains a species in which we could not find a "
+          . "matching record on NCBI: @name",
+          ['@name' => $raw_name]
+        );
+      }
+    }
+
+    if (empty($taxons)) {
+      if ($use_log) {
+        tpps_log("NO NCBI ID could be found from NCBI for $genus $species $infra",
+          [], TRIPAL_WARNING);
+      }
+    }
+    else {
+      // DB Id: 93.
+      $ncbi_db_id = ChadoDb::getId('NCBI Taxonomy');
+
+      $ncbi_id = $taxons;
+      // Check to see if taxon exists in dbxref by getting the dbxref_id for it
+      $results_dbxref = chado_query('SELECT * FROM chado.dbxref WHERE accession = :accession AND db_id = :db_id', [
+        ':accession' => $ncbi_id,
+        ':db_id' => $ncbi_db_id
+      ]);
+      $dbxref_id = NULL;
+      foreach ($results_dbxref as $dbxref_row) {
+        $dbxref_id = $dbxref_row->dbxref_id;
+      }
+
+      // If there is no NCBI ID in dbxref, add it
+      if ($dbxref_id == NULL) {
+        if ($use_log) {
+          tpps_log('Did not find NCBI ID @ncbi_id, adding it to dbxref table.',
+            ['@ncbi_id' => $ncbi_id],
+            TRIPAL_INFO
+          );
+        }
+        $dbxref_id = tpps_chado_insert_record('dbxref', [
+          'db_id' => $ncbi_db_id,
+          'accession' => $ncbi_id,
+          'version' => '',
+        ]);
+      }
+      else {
+        if ($use_log) {
+          tpps_log('NCBI ID @ncbi_id already exists in dbxref table.',
+            ['@ncbi_id' => $ncbi_id], TRIPAL_INFO);
+        }
+      }
+
+      // Now we still need to make sure there is no organism_dbxref record, search for one.
+      $organism_dbxref_id = NULL;
+      $results_organism_dbxref = chado_query('SELECT * FROM chado.organism_dbxref
+        WHERE organism_id = :organism_id
+        AND dbxref_id = :dbxref_id',
+      [
+        ':organism_id' => $this->id,
+        ':dbxref_id' => $dbxref_id
+      ]);
+      foreach ($results_organism_dbxref as $organism_dbxref_row) {
+        $organism_dbxref_id = $organism_dbxref_row->organism_dbxref_id;
+      }
+
+      // If there is no organism_dbxref_id, we need to add it to the organism_dbxref table.
+      if ($organism_dbxref_id == NULL) {
+        $organism_dbxref_id = tpps_chado_insert_record('organism_dbxref', [
+          'organism_id' => $this->id,
+          'dbxref_id' => $dbxref_id,
+        ]);
+        if ($use_log) {
+          tpps_log("Did not find organism_dbxref_id, adding it to the organism_dbxref table.");
+        }
+      }
+      else {
+        if ($use_log) {
+          tpps_log("organism_dbxref_id $organism_dbxref_id already exists in organism_dbxref table.");
+        }
+      }
+    }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    $shared_state = $submission->sharedState;
+    $page1_values = $submission->sharedState['saved_values'][TPPS_PAGE_1];
+    $i = $this->getIndex($submission);
+
+    if (!empty(tpps_load_cvterm('Type'))) {
+      tpps_chado_insert_record('organismprop', [
+        'organism_id' => $this->id,
+        'type_id' => tpps_load_cvterm('Type')->cvterm_id,
+        'value' => $page1_values['organism'][$i]['is_tree'] ? 'Tree' : 'Non-tree',
+      ]);
+    }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    $code_exists = tpps_chado_prop_exists(
+      'organism',
+      $shared_state['ids']['organism_ids'][$i],
+      'organism 4 letter code'
+    );
+
+    if (!$code_exists) {
+      foreach (tpps_get_species_codes($genus, $species) as $trial_code) {
+        $new_code_query = chado_select_record('organismprop', ['value'], [
+          'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id,
+          'value' => $trial_code,
+        ]);
+
+        if (empty($new_code_query)) {
+          break;
+        }
+      }
+
+      tpps_chado_insert_record('organismprop', array(
+        'organism_id' => $shared_state['ids']['organism_ids'][$i],
+        'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id,
+        'value' => $trial_code,
+      ));
+    }
+
+    $ranks = array(
+      'family',
+      'order',
+      'subkingdom',
+    );
+
+    foreach ($ranks as $rank) {
+      $exists = tpps_chado_prop_exists(
+        'organism', $shared_state['ids']['organism_ids'][$i], $rank
+      );
+      if (!$exists) {
+        $taxon = tpps_get_taxon($page1_values['organism'][$i]['name'], $rank);
+        if ($taxon) {
+          tpps_chado_insert_record('organismprop', array(
+            'organism_id' => $shared_state['ids']['organism_ids'][$i],
+            'type_id' => tpps_load_cvterm($rank)->cvterm_id,
+            'value' => $taxon,
+          ));
+        }
+      }
+    }
+
+    tpps_chado_insert_record('project_organism', array(
+      'organism_id' => $shared_state['ids']['organism_ids'][$i],
+      'project_id' => $shared_state['ids']['project_id'],
+    ));
+
+    if ($use_log) {
+      tpps_log("Adding " . $shared_state['ids']['organism_ids'][$i] . " to pub_organism");
+    }
+
+
+    // @TOdO Get from db.
+    $publication_id = $shared_state['ids']['pub_id'];
+    if (empty($publication_id)) {
+      // @TODO Get from db.
+      //$publication_id = tpps_chado_insert_record('pub', [
+      //  'title' => $publication_title,
+      //  'series_name' => $publication_journal,
+      //  'type_id' => tpps_load_cvterm('article')->cvterm_id,
+      //  'pyear' => $publication_year,
+      //  'uniquename' => implode('; ', $authors)
+      //    . " $publication_title. $publication_journal; $publication_year",
+      //]);
+    }
+
+    tpps_chado_insert_record('pub_organism', array(
+      'organism_id' => $shared_state['ids']['organism_ids'][$i],
+      'pub_id' => $publication_id,
+    ));
+
+    // Not needed for already processed studies.
+    //tpps_tripal_entity_publish('Organism', array(
+    //  "$genus $species",
+    //  $shared_state['ids']['organism_ids'][$i],
+    //));
   }
 
   /**
-   * Gets vale of the TABLE_NCBI_TAXONOMY constant outside of this class.
+   * Gets ordinal number of the organism on TPPS Form.
    *
-   * @return string
-   *   Returns DB table name.
+   * @param object $submission
+   *  TPPS Submission.
+   *
+   * @return mixed
+   *   Returns integer index or FALSE in case of errors.
    */
-  public static function getTableNcbiTaxonomyName() {
-    return static::TABLE_NCBI_TAXONOMY;
+  public function getIndex($submission) {
+    if (empty($submission) && $submission->doesNotExist()) {
+      return FALSE;
+    }
+    $this->load();
+    $page1_values = $submission->sharedState['saved_values'][TPPS_PAGE_1];
+    foreach ($page1_values['organism'] as $index => $item) {
+      if (!is_numeric($index) || !is_array($item)) {
+        continue;
+      }
+      if (trim($item['name']) == trim($this->name)) {
+        return $index;
+      }
+    }
   }
 
 }

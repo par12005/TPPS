@@ -874,14 +874,15 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
     // if ($infra != "" and $infra != NULL and $organism_results_id == -1) {
     // UPDATED ON 9/26/2024 - Conversation with Emily
     if ($organism_results_id == -1) {
-      // Lookup to see if this species exists on NCBI
+      // Lookup to see if this species exists on NCBI.
+      // @TODO Minor. Reuse:
+      // $organism = new Organism($raw_name)->processTaxonomyId($submission, $use_log = TRUE);
       $taxons = tpps_ncbi_get_taxon_id($raw_name, TRUE);
       tpps_log("NCBI taxon data found: \n@taxons_dump",
         ['@taxons_dump' => print_r($taxons, 1)], TRIPAL_DEBUG);
       $taxons = json_decode(json_encode($taxons))->Id;
       tpps_log("NCBI taxon data found: \n@taxons_dump",
         ['@taxons_dump' => print_r($taxons, 1)], TRIPAL_DEBUG);
-
       if (empty($taxons) || count($taxons) === 0) {
         // throw new Exception("This study contains a species in which we could not find a matching record on NCBI: " . $raw_name);
         tpps_log("This study contains a species in which we could not find a matching record on NCBI: " . $raw_name);
