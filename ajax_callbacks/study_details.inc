@@ -48,10 +48,9 @@ function tpps_ajax_get_species_details_tab(array $data) {
     $id = $result->organism_id;
     $common_name = $result->common_name;
     $family = $order = "";
-    if (
-      empty($family_exists = tpps_chado_prop_exists('organism', $id, 'family'))
-      || empty($order_exists = tpps_chado_prop_exists('organism', $id, 'order'))
-    ) {
+    $family_exists = tpps_chado_prop_exists('organism', $id, 'family');
+    $order_exists = tpps_chado_prop_exists('organism', $id, 'order');
+    if (empty($family_exists) || empty($order_exists)) {
       if (variable_get('tpps_ncbi_allow_fix_missing_data', FALSE)) {
         $organism = new Organism($id);
         if ($organism->isLoaded()) {
