@@ -48,16 +48,29 @@ function tpps_ajax_get_species_details_tab(array $data) {
     $id = $result->organism_id;
     $common_name = $result->common_name;
     $family = $order = "";
+    $family_exists = tpps_chado_prop_exists('organism', $id, 'family');
+    $order_exists = tpps_chado_prop_exists('organism', $id, 'order');
+    if (empty($family_exists) || empty($order_exists)) {
+      if (variable_get('tpps_ncbi_allow_fix_missing_data', FALSE)) {
+        $organism = new Organism($id);
+        if ($organism->isLoaded()) {
+          $organism->processTaxonomyId($submission);
+          $message = t('Updated NCBI Taxonomy data for organism: @name (@id).',
+            ['@id' => $organism->id, '@name' => $organism->name]
+          );
+          drupal_set_message($message);
+        }
+      }
+    }
 
-    if (tpps_chado_prop_exists('organism', $id, 'family')) {
+    if ($family_exists) {
       $family = db_select('chado.organismprop', 'o')
         ->fields('o', ['value'])
         ->condition('organism_id', $id)
         ->condition('type_id', tpps_load_cvterm('family')->cvterm_id)
         ->execute()->fetchObject()->value;
     }
-
-    if (tpps_chado_prop_exists('organism', $id, 'order')) {
+    if ($order_exists) {
       $order = db_select('chado.organismprop', 'o')
         ->fields('o', ['value'])
         ->condition('organism_id', $id)
