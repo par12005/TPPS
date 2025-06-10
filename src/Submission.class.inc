@@ -1997,4 +1997,28 @@ class Submission {
     return !empty($this->getLoadTime());
   }
 
+  /**
+   * Fixes missing family, order and other data from NCBI service.
+   *
+   * @return bool
+   *   Returns TRUE if data was updated and FALSE in case of fail.
+   */
+  public function fixMissingNcbiData() {
+    if ($this->doesNotExist()) {
+      return FALSE;
+    }
+    $organism_id_list = $this->state['ids']['organism_ids'] ?? NULL;
+    if (empty($organism_id_list)) {
+      // This means that study wasn't yet processed. Run tripal job first.
+      return FALSE;
+    }
+    foreach ($organism_id_list as $organism_id) {
+      $organism = new Organism($organism_id);
+      if ($organism->isLoaded()) {
+        $organism->processTaxonomyId($this);
+      }
+    }
+    return TRUE;
+  }
+
 }
