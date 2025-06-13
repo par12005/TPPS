@@ -311,25 +311,11 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
       }
     }
 
-    if (!empty($phenotype_file)) {
-      PhenotypeData::validateNormal($org_num, $form, $form_state);
-    }
-    if (!form_get_errors()) {
-      tpps_preserve_valid_file($form_state,
-        //Phenotype data file id.
-        $phenotype['file'], $org_num, "Phenotype_Data");
-    }
+    PhenotypeData::validate($org_num, $form, $form_state);
   }
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Iso/Mass Spectrometry.
-  if ($iso_check) {
-    PhenotypeData::validateIso($org_num, $form, $form_state);
-    if (!form_get_errors()) {
-      // Preserve file if it is valid.
-      tpps_preserve_valid_file($form_state, $phenotype['iso'], $org_num, "Phenotype_Data");
-    }
-  }
+  PhenotypeIso::validate($org_num, $form, $form_state);
 }
 
 /**
