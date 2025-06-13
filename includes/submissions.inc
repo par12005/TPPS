@@ -1099,6 +1099,7 @@ function tpps_submission_get_accession_list(array $conditions = [], $remove_empt
   $key = serialize($conditions);
   $is_cache_allowed = variable_get('tpps_front_cache_accession_list', FALSE);
   if (!$is_cache_allowed || $reset || empty($cache) || empty($cache->data[$key])) {
+    $list = [];
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $fields = array_diff(
       array_keys(
