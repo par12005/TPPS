@@ -552,12 +552,12 @@ function tpps_form_add_report(array &$form, array $meta) {
  *     'page' => TPPS_PAGE_3; // int Default is TPPS_PAGE_4.
  *   ]);
  *
- *   List of fields which used 'fid'-related code:
+ *   List of fields which use 'fid'-related code:
  *     'snps-assay',
  *     'ssrs',
  *     'ssrs_extra'.
  *
- *   List of fields which not used 'fid'-related code:
+ *   List of fields which not use 'fid'-related code:
  *     'assay-design',
  *     'snps-pop-struct',
  *     'snps-association',

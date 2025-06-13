@@ -63,7 +63,7 @@ class SnpAssociation {
    *   Drupal Form API State Array.
    */
   public static function build($id, array &$form, array $form_state) {
-    $page4_values = $form_state['saved_values']['4'];
+    $page4_values = $form_state['saved_values'][TPPS_PAGE_4];
   }
 
   /**
