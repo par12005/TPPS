@@ -1921,15 +1921,15 @@ function tpps_watchdog_cleanup() {
       'type' => 'php',
       'message' => '%type: !message in %function (line %line of %file).',
       'variables' => 'a:6:{s:5:"%type";s:6:"Notice";s:8:"!message";s:19:"Undefined offset: 1";s:9:"%function";s:46:"tripal_galaxy_form_webform_client_form_alter()";s:5:"%file";s:68:"/var/www/Drupal/sites/all/modules/tripal_galaxy/tripal_galaxy.module";s:5:"%line";i:614;s:14:"severity_level";i:5;}',
-      'severity' => '5',
+      'severity' => WATCHDOG_NOTICE,
     ],
     // Warning: Invalid argument supplied for foreach() in file_entity_set_title_alt_properties_on_file_fields() (line 248 of /var/www/Drupal/sites/all/modules/file_entity/file_entity.file.inc).
     [
       'uid' => '0',
       'type' => 'php',
       'message' => '%type: !message in %function (line %line of %file).',
-      'variables' => 'a:6:{s:5:"%type";s:7:"Warning";s:8:"!message";s:39:"Invalid argument supplied for foreach()";s:9:"%function";s:53:"file_entity_set_title_alt_properties_on_file_fields()";s:5:"%file";s:66:"/var/www/Drupal/sites/all/modules/file_entity/file_entity.file.inc";s:5:"%line";i:248;s:14:"severity_level";i:4;}',
-      'severity' => '4',
+      'variables' => 'Invalid argument supplied for foreach()',
+      'severity' => WATCHDOG_WARNING,
     ],
     // Cron thread 1 started.
     [
@@ -1939,11 +1939,42 @@ function tpps_watchdog_cleanup() {
       'variables' => 'a:1:{s:7:"%thread";i:1;}',
       'severity' => '7',
     ],
+    // Did not delete temporary file "public://tpps_accession/test_accession_122.csv" during garbage collection, because it is in use by the following modules: tpps.
+    [
+      'uid' => '0',
+      'type' => 'file system',
+      'message' => 'Did not delete temporary file "%path" during garbage '
+      . 'collection, because it is in use by the following modules: %modules.',
+      'severity' => '6',
+    ],
+    // bio_data/132727.
+    [
+      'uid' => '0',
+      'type' => 'access denied',
+      'message' => 'bio_data/',
+      'severity' => WATCHDOG_WARNING,
+    ],
+    // Notice: Undefined variable: show_nafgs_menu in include() (line 147 of /var/www/Drupal/sites/all/themes/sites/all/themes/dawn/tpl/page.tpl.php).
+    [
+      'uid' => '0',
+      'type' => 'php',
+      'message' => '%type: !message in %function (line %line of %file).',
+      'variables' => 'Undefined variable: show_nafgs_menu',
+      'severity' => WATCHDOG_NOTICE,
+    ],
   ];
+
+  // @TODO Remove duplidates and leave only one (modified) message with number
+  // of the removed items.
   foreach ($filter as $filter_item) {
     $query = db_delete('watchdog');
     foreach ($filter_item as $field => $value) {
-      $query->condition($field, $value);
+      if (in_array($field, ['message', 'variables'])) {
+        $query->condition($field, '%' . db_like($value) . '%', 'LIKE');
+      }
+      else {
+        $query->condition($field, $value);
+      }
     }
     $query->execute();
   }
