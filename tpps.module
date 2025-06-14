@@ -1888,7 +1888,6 @@ if (!function_exists('array_key_first')) {
 function tpps_init() {
   // Removed spam message:
   // Notice: Undefined variable: show_nafgs_menu in include() (line 147 of
-  // :w
   // /var/www/Drupal/sites/all/themes/sites/all/themes/dawn/tpl/page.tpl.php).
   // It can't be fixed because there is no write access to this module.
   if (!empty($_SESSION['messages']['error'])) {
@@ -1911,6 +1910,7 @@ function tpps_init() {
  * Removes spam-messages in watchdog log.
  */
 function tpps_watchdog_cleanup() {
+  $debug_mode = FALSE;
   // To get new data for filtering:
   // $wid = 55333636;
   // $result = db_query("SELECT * FROM public.watchdog where wid= " . $wid)->fetchAssoc();
@@ -1920,7 +1920,12 @@ function tpps_watchdog_cleanup() {
       'uid' => '0',
       'type' => 'php',
       'message' => '%type: !message in %function (line %line of %file).',
-      'variables' => 'a:6:{s:5:"%type";s:6:"Notice";s:8:"!message";s:19:"Undefined offset: 1";s:9:"%function";s:46:"tripal_galaxy_form_webform_client_form_alter()";s:5:"%file";s:68:"/var/www/Drupal/sites/all/modules/tripal_galaxy/tripal_galaxy.module";s:5:"%line";i:614;s:14:"severity_level";i:5;}',
+      //'variables' => 'a:6:{s:5:"%type";s:6:"Notice";s:8:"!message";s:19:"Undefined offset: 1";s:9:"%function";s:46:"tripal_galaxy_form_webform_client_form_alter()";s:5:"%file";s:68:"/var/www/Drupal/sites/all/modules/tripal_galaxy/tripal_galaxy.module";s:5:"%line";i:614;s:14:"severity_level";i:5;}',
+      'variables' => [
+        'tripal_galaxy_form_webform_client_form_alter()',
+        '/var/www/Drupal/sites/all/modules/tripal_galaxy/tripal_galaxy.module',
+        '614',
+      ],
       'severity' => WATCHDOG_NOTICE,
     ],
     // Warning: Invalid argument supplied for foreach() in file_entity_set_title_alt_properties_on_file_fields() (line 248 of /var/www/Drupal/sites/all/modules/file_entity/file_entity.file.inc).
@@ -1928,7 +1933,11 @@ function tpps_watchdog_cleanup() {
       'uid' => '0',
       'type' => 'php',
       'message' => '%type: !message in %function (line %line of %file).',
-      'variables' => 'Invalid argument supplied for foreach()',
+      'variables' => [
+        'Invalid argument supplied for foreach()',
+        '248',
+        '/var/www/Drupal/sites/all/modules/file_entity/file_entity.file.inc',
+      ],
       'severity' => WATCHDOG_WARNING,
     ],
     // Cron thread 1 started.
@@ -1956,27 +1965,77 @@ function tpps_watchdog_cleanup() {
     ],
     // Notice: Undefined variable: show_nafgs_menu in include() (line 147 of /var/www/Drupal/sites/all/themes/sites/all/themes/dawn/tpl/page.tpl.php).
     [
-      'uid' => '0',
       'type' => 'php',
+      //'variables' => 'a:6:{s:5:"%type";s:6:"Notice";s:8:"!message";s:35:"Undefined variable: show_nafgs_menu";s:9:"%function";s:9:"include()";s:5:"%file";s:71:"/var/www/Drupal/sites/all/themes/sites/all/themes/dawn/tpl/page.tpl.php";s:5:"%line";i:147;s:14:"severity_level";i:5;}',
+      'variables' => [
+        'Undefined variable: show_nafgs_menu',
+        '/var/www/Drupal/sites/all/themes/sites/all/themes/dawn/tpl/page.tpl.php',
+        '147',
+      ],
       'message' => '%type: !message in %function (line %line of %file).',
-      'variables' => 'Undefined variable: show_nafgs_menu',
       'severity' => WATCHDOG_NOTICE,
     ],
+    // Warning: Invalid argument supplied for foreach() in file_entity_set_title_alt_properties_on_file_fields() (line 248 of /var/www/Drupal/sites/all/modules/file_entity/file_entity.file.inc).
+    [
+      'type' => 'php',
+      'variables' => [
+        'Invalid argument supplied for foreach()',
+        '248',
+        '/var/www/Drupal/sites/all/modules/file_entity/file_entity.file.inc',
+      ],
+      'severity' => WATCHDOG_WARNING,
+    ],
+
   ];
 
+  $table = 'watchdog';
   // @TODO Remove duplidates and leave only one (modified) message with number
   // of the removed items.
   foreach ($filter as $filter_item) {
-    $query = db_delete('watchdog');
-    foreach ($filter_item as $field => $value) {
-      if (in_array($field, ['message', 'variables'])) {
-        $query->condition($field, '%' . db_like($value) . '%', 'LIKE');
+    if (
+      !empty($filter_item['variables'])
+      && is_array($filter_item['variables'])
+    ) {
+      $query = db_select($table, 't')->fields('t', []);
+      if ($debug_mode ?? FALSE) {
+        $query->addTag('debug');
       }
-      else {
-        $query->condition($field, $value);
+      foreach ($filter_item as $field => $value) {
+        switch ($field) {
+          case 'variables':
+            foreach ($value as $string_value) {
+              // Required. Add to the list of selected columns.
+              //$query->addExpression("position('" . $string_value
+              //  . "'::bytea in " . $field . ")", 'pos'
+              //);
+              $query->where("position('" . $string_value
+                . "'::bytea in " . $field . ") > 0"
+              );
+            }
+            break;
+
+          default:
+            $query->condition($field, $value);
+            break;
+        }
+      }
+      $list = $query->execute()->fetchCol('wid');
+      if (!empty($list)) {
+        db_delete('watchdog')->condition('wid', $list, 'IN')->execute();
       }
     }
-    $query->execute();
+    else {
+      $query = db_delete($table);
+      foreach ($filter_item as $field => $value) {
+        if (strpos($value, '%') !== FALSE) {
+          $query->condition($field, $value);
+        }
+        else {
+          $query->condition($field, '%' . db_like($value) . '%', 'LIKE');
+        }
+      }
+      $query->execute();
+    }
   }
 }
 
