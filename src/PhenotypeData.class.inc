@@ -20,7 +20,7 @@
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class PhenotypeData {
+class PhenotypeData extends TppsFile {
 
   // WARNING: For format = 0.
   // @todo Maybe use fuction which returns correct value by $format.
@@ -57,7 +57,7 @@ class PhenotypeData {
   /**
    * Gets file id.
    *
-   * @param int $org_num
+   * @param int $organism_index
    *   Ordinal number of organism at page.
    * @param array $form_state
    *   Drupal Form State array.
@@ -65,17 +65,18 @@ class PhenotypeData {
    * @return mixed
    *   Returns File Id or NULL if file wasn't uploaded.
    */
-  public static function getFileId($org_num, array $form_state) {
-    $parents = ['organism-' . $org_num, 'phenotype', static::FIELD_NAME];
-    $value = drupal_array_get_nested_value(
-      $form_state['values'], $parents, NULL
-    ) ?? drupal_array_get_nested_value(
-      $form_state['saved_values'][TPPS_PAGE_4], $parents, NULL
-    ) ?? NULL;
+  public static function getFileId($organism_index, array $form_state) {
+    $parents = ['organism-' . $organism_index, 'phenotype', static::FIELD_NAME];
+    $value = drupal_array_get_nested_value($form_state['values'], $parents)
+      ?? drupal_array_get_nested_value(
+        $form_state['saved_values'][TPPS_PAGE_4],
+        $parents
+      )
+      ?? NULL;
 
     // Other way to get value:
     $normal_check = tpps_get_ajax_value(
-      $form_state, ["organism-$org_num", 'phenotype', static::FIELD_NAME],
+      $form_state, ["organism-$organism_index", 'phenotype', static::FIELD_NAME],
       TRUE
     );
     return $value;
@@ -87,7 +88,7 @@ class PhenotypeData {
    * Checkbox title: "My phenotypes include traits and/or environmental
    * information other than mass spectrometry or isotope analysis".
    *
-   * @param int $org_num
+   * @param int $organism_index
    *   Ordinal number of organism at page.
    * @param array $form_state
    *   Drupal Form State array.
@@ -95,12 +96,12 @@ class PhenotypeData {
    * @return bool
    *   Returns TRUE if checkbox was selected and FALSE otherwise.
    */
-  public static function isSelected($org_num, array $form_state) {
-    $parents = ["organism-$org_num", 'phenotype', static::CHECKBOX_NAME];
+  public static function isSelected($organism_index, array $form_state) {
+    $parents = ['organism-' . $organism_index, 'phenotype', static::CHECKBOX_NAME];
     $value = drupal_array_get_nested_value(
-      $form_state['values'], $parents, NULL
+      $form_state['values'], $parents
     ) ?? drupal_array_get_nested_value(
-      $form_state['saved_values'][TPPS_PAGE_4], $parents, NULL
+      $form_state['saved_values'][TPPS_PAGE_4], $parents
     ) ?? NULL;
     return $value;
   }
@@ -116,7 +117,7 @@ class PhenotypeData {
    *   Drupal Form API State Array.
    */
   public static function build($id, array &$form, array $form_state) {
-    $page4_values = $form_state['saved_values']['4'] ?? NULL;
+    $page4_values = $form_state['saved_values'][TPPS_PAGE_4] ?? NULL;
     $phenotype_dir = variable_get('tpps_phenotype_files_dir', 'tpps_phenotype');
     $normal_check = tpps_get_ajax_value(
       $form_state, ["organism-$id", 'phenotype', 'normal-check'],
@@ -211,28 +212,28 @@ class PhenotypeData {
   /**
    * Form API validator for Phenotype data file field.
    *
-   * @param int $org_num
+   * @param int $organism_index
    *   Ordinal number of organism.
    * @param array $form
    *   Drupal Form API Array.
    * @param array $form_state
    *   Drupal Form API State Array.
    *
-   * @todo Rename $org_num.
+   * @todo Rename $organism_index.
    */
-  public static function validate($org_num, array &$form, array &$form_state) {
-    $phenotype = &$form_state['values']["organism-$org_num"]['phenotype'] ?? NULL;
+  public static function validate($organism_index, array &$form, array &$form_state) {
+    $phenotype = &$form_state['values']["organism-$organism_index"]['phenotype'] ?? NULL;
 
-    if (empty($normal_check = static::isSelected($org_num, $form_state))) {
+    if (empty($normal_check = static::isSelected($organism_index, $form_state))) {
       return;
     }
 
-    $id = "organism-$org_num";
+    $id = "organism-$organism_index";
     $page3_values = $form_state['saved_values'][TPPS_PAGE_3] ?? NULL;
     // The form_state values of the phenotype fieldset for organism $id.
     // @TODO Minor. Rename to $file_form_element.
     $file_element = $form[$id]['phenotype']['file'];
-    $fid = static::getFileId($org_num, $form_state);
+    $fid = static::getFileId($organism_index, $form_state);
     $metadata_file_id = $phenotype['metadata'];
     $form_field_error_name = "$id][phenotype][file";
 
@@ -364,7 +365,7 @@ class PhenotypeData {
 
       // Check if phenotype names in data and metadata files matches.
       $phenotype_meta_names = [];
-      $phenotype_name_col = self::getPhenotypeNameColumn($org_num, $form_state);
+      $phenotype_name_col = self::getPhenotypeNameColumn($organism_index, $form_state);
       if (isset($phenotype_name_col)) {
         $phenotype_meta_names = tpps_parse_file_column(
           $metadata_file_id,
@@ -406,7 +407,7 @@ class PhenotypeData {
     if ($is_metadata_file) {
       $phenotype_file_tree_col = $groups['Tree Identifier']['1'];
       if (isset($phenotype_file_tree_col)) {
-        $species_index = empty($page3_values['tree-accession']['check']) ? 'species-1' : "species-$org_num";
+        $species_index = empty($page3_values['tree-accession']['check']) ? 'species-1' : "species-$organism_index";
         $tree_accession_file = $page3_values['tree-accession'][$species_index]['file'];
         $column_vals = $page3_values['tree-accession'][$species_index]['file-columns'];
 
@@ -446,7 +447,7 @@ class PhenotypeData {
     }
 
     if (!form_get_errors()) {
-      tpps_preserve_valid_file($form_state, $fid, $org_num, "Phenotype_Data");
+      tpps_preserve_valid_file($form_state, $fid, $organism_index, "Phenotype_Data");
     }
   }
 
@@ -501,8 +502,8 @@ class PhenotypeData {
    *   Returns index of the column which holds phenotype name. E.g., "A".
    */
   public static function getPhenotypeNameColumn($id, array $form_state) {
-    $path = [
-      "organism-$id", 'phenotype', 'metadata-groups',
+    $parents = [
+      'organism-' . $id, 'phenotype', 'metadata-groups',
       // 'Phenotype Id' is name of the column (not option's name or index)
       // which created on server side during validation.
       'Phenotype Id',
@@ -510,10 +511,12 @@ class PhenotypeData {
       // for 'Phenotype Id'.
       '1',
     ];
-    return drupal_array_get_nested_value($form_state['input'], $path)
-      ?? drupal_array_get_nested_value($form_state['values'], $path)
-      ?? drupal_array_get_nested_value($form_state['saved_values'][TPPS_PAGE_4], $path)
-      ?? NULL;
+    return drupal_array_get_nested_value($form_state['input'], $parents)
+      ?? drupal_array_get_nested_value($form_state['values'], $parents)
+      ?? drupal_array_get_nested_value(
+        $form_state['saved_values'][TPPS_PAGE_4],
+        $parents
+      ) ?? NULL;
   }
 
   /**
@@ -521,7 +524,7 @@ class PhenotypeData {
    *
    * @param array $form_state
    *   Drupal Form API State array.
-   * @param int $org_num
+   * @param int $organism_index
    *   Ordinal number of organism on page.
    * @param int $data_type_id
    *   Data type Id. See constants of this class.
@@ -529,9 +532,11 @@ class PhenotypeData {
    * @return bool
    *   Returns TRUE if data type was set and FALSE otherwise.
    */
-  public static function isDataTypeSet(array $form_state, $org_num, $data_type_id) {
-    $selected_columns = $form_state['input']["organism-$org_num"]['phenotype']
-      ['file']['columns'];
+  public static function isDataTypeSet(array $form_state, $organism_index, $data_type_id) {
+    $selected_columns = drupal_array_get_nested_value(
+      $form_state['input'],
+      ['organism-' . $organism_index, 'phenotype', 'file', 'columns']
+    );
     return in_array($data_type_id, $selected_columns);
   }
 

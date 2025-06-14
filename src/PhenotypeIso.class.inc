@@ -14,7 +14,7 @@
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class PhenotypeIso {
+class PhenotypeIso extends TppsFile {
 
   // Data Type's Id.
   const DATA_TYPE_PLANT_IDENTIFIER = 1;
@@ -33,54 +33,29 @@ class PhenotypeIso {
   const FIELD_NAME = 'iso';
 
   /**
-   * Gets file id.
+   * Gets parents for checkbox which makes field required.
    *
-   * @param int $org_num
-   *   Ordinal number of organism at page.
-   * @param array $form_state
-   *   Drupal Form State array.
+   * @param int $organism_index
+   *   Ordinal number on form.
    *
-   * @return mixed
-   *   Returns File Id or NULL if file wasn't uploaded.
+   * @return array
+   *   Returns parents for the checkbox which makes this field required.
    */
-  public static function getFileId($org_num, array $form_state) {
-    $parents = ['organism-' . $org_num, 'phenotype', static::FIELD_NAME];
-    $value = drupal_array_get_nested_value(
-      $form_state['values'], $parents, NULL
-    ) ?? drupal_array_get_nested_value(
-      $form_state['saved_values'][TPPS_PAGE_4], $parents, NULL
-    ) ?? NULL;
-
-    // Other way to get value:
-    $normal_check = tpps_get_ajax_value(
-      $form_state, ["organism-$org_num", 'phenotype', static::FIELD_NAME],
-      TRUE
-    );
-    return $value;
+  public static function getCheckboxParents($organism_index) {
+    return ['organism-' . $organism_index, 'phenotype', static::CHECKBOX_NAME];
   }
 
   /**
-   * Checks if "Iso" checkbox was selected.
+   * Gets parents of the field.
    *
-   * Checkbox title:
-   * "My phenotypes include results from a mass spectrometry or isotope analysis".
+   * @param int $organism_index
+   *   Ordinal number on form.
    *
-   * @param int $org_num
-   *   Ordinal number of organism at page.
-   * @param array $form_state
-   *   Drupal Form State array.
-   *
-   * @return bool
-   *   Returns TRUE if checkbox was selected and FALSE otherwise.
+   * @return array
+   *   Returns parents for the checkbox which makes this field required.
    */
-  public static function isSelected($org_num, array $form_state) {
-    $parents = ["organism-$org_num", 'phenotype', static::CHECKBOX_NAME];
-    $value = drupal_array_get_nested_value(
-      $form_state['values'], $parents, NULL
-    ) ?? drupal_array_get_nested_value(
-      $form_state['saved_values'][TPPS_PAGE_4], $parents, NULL
-    ) ?? NULL;
-    return $value;
+  public static function getParents($organism_index) {
+    return ['organism-' . $organism_index, 'phenotype', static::FIELD_NAME];
   }
 
   /**
@@ -132,23 +107,26 @@ class PhenotypeIso {
    * This file used when checkbox "My phenotypes include results from a
    * mass spectrometry or isotope analysis" on Page 4 was checked.
    *
-   * @param int $org_num
-   *   Ordinal number of organism.
+   * @param int $organism_index
+   *   Ordinal number of organism on page.
    * @param array $form
    *   Drupal Form API Array.
    * @param array $form_state
    *   Drupal Form API State Array.
    */
-  public static function validate($org_num, array &$form, array &$form_state) {
-    if (!static::isSelected($org_num, $form_state)) {
+  public static function validate($organism_index, array &$form, array &$form_state) {
+    $debug_mode = 1;
+    if (!static::isSelected($organism_index, $form_state)) {
       return;
     }
 
-    $id = "organism-$org_num";
-    $form_field_error_name = "$id][phenotype][iso";
-    $file_element = $form[$id]['phenotype']['iso'];
+    $id = 'organism-' . $organism_index;
+    $form_field_error_name = $id . '][phenotype][' . static::FIELD_NAME;
+    $file_element = $form[$id]['phenotype'][static::FIELD_NAME];
 
-    if (empty($fid = static::getFileId($org_num, $form_state))) {
+//dpm(print_r($file_element, 1));
+
+    if (empty($fid = static::getFileId($organism_index, $form_state))) {
       $message = t("Phenotype Isotope/Mass Spectrometry File: field is required.");
       form_set_error($form_field_error_name, $message);
       return;
@@ -157,17 +135,25 @@ class PhenotypeIso {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Validate columns.
     $required_groups = [
-      'Tree Identifier' => ['id' => [self::DATA_TYPE_PLANT_IDENTIFIER]],
-      'Metabolomic Data' => ['metabolomic-data' => [self::DATA_TYPE_METABOLOMIC_DATA]],
+      'Tree Identifier' => ['id' => [static::DATA_TYPE_PLANT_IDENTIFIER]],
+      'Metabolomic Data' => ['metabolomic-data' => [static::DATA_TYPE_METABOLOMIC_DATA]],
     ];
     $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
+
+//dpm($groups);
+
     if (form_get_errors()) {
       return;
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Validate number of 'Metabolomic data' columns.
-    $headers = tpps_file_headers($fid);
+    $headers = static::getHeader($organism_index, $form_state);
+
+    dpm(print_r($headers, 1), 'iso header');
+
+
+
     $id_col_name = key($headers);
     while (($k = array_search(NULL, $headers))) {
       unset($headers[$k]);
@@ -187,7 +173,7 @@ class PhenotypeIso {
     // Get correct accession file and it's metadata for current organism.
     $page3_values = $form_state['saved_values'][TPPS_PAGE_3] ?? NULL;
     $species_index = empty($page3_values['tree-accession']['check'])
-      ? 'species-1' : "species-$org_num";
+      ? 'species-1' : "species-$organism_index";
     $species = $page3_values['tree-accession'][$species_index];
     $tree_accession_file = $species['file'];
     $id_col_accession_name = $species['file-groups']['Tree Id']['1'];
@@ -212,9 +198,14 @@ class PhenotypeIso {
       form_set_error($form_field_error_name, t($message, $params));
     }
 
+    if ($debug_mode ?? FALSE) {
+      form_set_error('debug', 'DEBUG');
+      return;
+    }
+
     if (!form_get_errors()) {
       // Preserve file if it is valid.
-      tpps_preserve_valid_file($form_state, $fid, $org_num, "Phenotype_Data");
+      tpps_preserve_valid_file($form_state, $fid, $organism_index, "Phenotype_Data");
     }
   }
 
@@ -226,10 +217,13 @@ class PhenotypeIso {
    */
   public static function getColumnOptions() {
     return [
-      '0' => 'N/A',
+      // 1st item will be selected by default so if there is a lot columns it's
+      // easier to change order than manually set it.
+      // @TODO Implement pre-selection or suggestions for the columns.
       self::DATA_TYPE_METABOLOMIC_DATA => 'Metabolomic Data',
       self::DATA_TYPE_PLANT_IDENTIFIER => 'Plant Identifier',
       self::DATA_TYPE_CLONE_NUMBER => 'Clone Number',
+      '0' => 'N/A',
     ];
   }
 

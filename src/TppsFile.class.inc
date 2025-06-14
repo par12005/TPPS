@@ -1,0 +1,187 @@
+<?php
+
+/**
+ * @file
+ * Contains 'TppsFile' class.
+ */
+
+/**
+ * Contains common methods to manage files.
+ *
+ * @package tpps
+ * @author Vlad Savitsky <vlad.savitsky@gmail.com>
+ */
+class TppsFile {
+
+  /**
+   * Gets parents of the field.
+   *
+   * WARNING: Must be overwritten by child class.
+   *
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   *
+   * @return array
+   *   Returns list of paretns.
+   *
+   * @throws Exception
+   *   When child class doesn't overwrite this method.
+   */
+  //public static function getParents($organism_index) {
+  //  if (static::getClassName() == 'TppsFile') {
+  //    $message = t('Class must implement @method', ['@method' => __METHOD__]);
+  //    throw new Exception($message);
+  //  }
+  //  return [];
+  //}
+
+  /**
+   * Gets parents for checkbox which makes field required.
+   *
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   *
+   * @return array
+   *   Returns list of paretns.
+   *
+   * @throws Exception
+   *   When child class doesn't overwrite this method.
+   */
+  //public static function getCheckboxParents($organism_index) {
+  //  if (static::getClassName() == 'TppsFile') {
+  //    $message = t('Class must implement @method', ['@method' => __METHOD__]);
+  //    throw new Exception($message);
+  //  }
+  //  return [];
+  //}
+
+  /**
+   * Gets number of columns in the file.
+   *
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   * @param array $form_state
+   *   Drupal Form State array.
+   *
+   * @return int
+   *   Returns number of columns (width) of the file.
+   */
+  public static function countColumns($organism_index, array $form_state) {
+    $fid = static::getFileId($organism_index, $form_state);
+    return tpps_file_width($fid);
+  }
+
+  /**
+   * Gets length of the file.
+   *
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   * @param array $form_state
+   *   Drupal Form State array.
+   *
+   * @return int
+   *   Returns length of the file.
+   */
+  public static function countRows($organism_index, array $form_state) {
+    $fid = static::getFileId($organism_index, $form_state);
+    return tpps_file_len($fid);
+  }
+
+  /**
+   * Gets 1st row (header) of the file.
+   *
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   * @param array $form_state
+   *   Drupal Form State array.
+   *
+   * @return int
+   *   Returns 1st row (header) of the file.
+   */
+  public static function getHeader($organism_index, array $form_state) {
+    if (empty($fid = static::getFileId($organism_index, $form_state))) {
+      return NULL;
+    }
+    return tpps_file_get_header($fid);
+  }
+
+  /**
+   * Checks if "Iso" checkbox was selected.
+   *
+   * Checkbox title:
+   * "My phenotypes include results from a mass spectrometry or isotope analysis".
+   *
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   * @param array $form_state
+   *   Drupal Form State array.
+   *
+   * @return bool
+   *   Returns TRUE if checkbox was selected and FALSE otherwise.
+   */
+  public static function isSelected($organism_index, array $form_state) {
+    $parents = static::getCheckboxParents($organism_index);
+    return drupal_array_get_nested_value(
+        $form_state['values'], $parents
+      ) ?? drupal_array_get_nested_value(
+        $form_state['saved_values'][TPPS_PAGE_4], $parents
+      ) ?? NULL;
+  }
+
+  /**
+   * Gets file id.
+   *
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   * @param array $form_state
+   *   Drupal Form State array.
+   *
+   * @return mixed
+   *   Returns File Id or NULL if file wasn't uploaded.
+   */
+  public static function getFileId($organism_index, array $form_state) {
+    return drupal_array_get_nested_value(
+      $form_state['values'],
+        static::getParents($organism_index)
+      )
+      ?? drupal_array_get_nested_value(
+        $form_state['saved_values'][TPPS_PAGE_4],
+        static::getParents($organism_index)
+      )
+      ?? NULL;
+
+    // Other way to get value:
+    if (0) {
+      // @TODO Review and remove if possible.
+      $normal_check = tpps_get_ajax_value(
+        $form_state,
+        ['organism-' . $organism_index, 'phenotype', static::FIELD_NAME],
+        TRUE
+      );
+    }
+  }
+
+  /**
+   * Gets Class Name.
+   *
+   * Since 5.5 you can use class keyword for the class name resolution,
+   * which would be a lot faster than making function calls.
+   * Also works with interfaces.
+   *
+   * C extends B extends A
+   *
+   * static::class  // MyNamespace\ClassC when run in A
+   * self::class    // MyNamespace\ClassA when run in A
+   * parent::class  // MyNamespace\ClassB when run in C
+   * MyClass::class // MyNamespace\MyClass
+   *
+   * See https://stackoverflow.com/questions/506705
+   *
+   * @return string
+   *   Returns class name when called from static method.
+   */
+  public static function getClassName() {
+    return static::class;
+  }
+
+}

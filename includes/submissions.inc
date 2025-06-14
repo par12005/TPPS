@@ -910,8 +910,10 @@ function tpps_submission_update_stats(array &$form_state) {
       for ($i = 1; $i <= $form_state['stats']['species_count']; $i++) {
         $phenotype = $form_state['values']["organism-$i"]['phenotype'] ?? NULL;
         $form_state['stats']['unique_phenotypes'] += $phenotype['phenotypes-meta']['number'] ?? 0;
-        if (tpps_file_load($phenotype['file'])) {
-          $rows = tpps_file_len($phenotype['file']) + !empty($phenotype['file-no-header']);
+        // Note: both 'Normal' and 'Iso' files could be used at the same time.
+        if (PhenotypeData::isSelected($i, $form_state)) {
+          $fid = PhenotypeData::getFileId($i, $form_state);
+          $rows = tpps_file_len($fid) + !empty($phenotype['file-no-header']);
           if ($phenotype['format'] == 0) {
             $phenotype_file_name_cols = $phenotype['file-groups']['Phenotype Data']['0'];
             $form_state['stats']['phenotype_count'] += $rows * count($phenotype_file_name_cols);
@@ -919,21 +921,28 @@ function tpps_submission_update_stats(array &$form_state) {
           else {
             $form_state['stats']['phenotype_count'] += $rows;
           }
-
           if (tpps_file_load($phenotype['metadata'])) {
-            $form_state['stats']['unique_phenotypes'] += tpps_file_len($phenotype['metadata']) + !empty($phenotype['metadata-no-header']);
+            $form_state['stats']['unique_phenotypes'] +=
+              tpps_file_len($phenotype['metadata'])
+              + !empty($phenotype['metadata-no-header']);
           }
-
-          continue;
         }
-        if (tpps_file_load($phenotype['iso'])) {
-          $headers = tpps_file_headers($phenotype['iso']);
-          while (($k = array_search(NULL, $headers))) {
-            unset($headers[$k]);
+        if (PhenotypeIso::isSelected($i, $form_state)) {
+          $headers = PhenotypeIso::getHeader($i, $form_state);
+watchdog('tpps', 'header ' . print_r($headers, 1));
+//exit;
+
+          if (!empty($headers)) {
+            while (($k = array_search(NULL, $headers))) {
+              unset($headers[$k]);
+            }
+            // @TODO Update to count new 'Clone Number' column.
+            // If column set - use '2' but if not - '1'
+            $num_unique_columns = count(array_unique($headers)) - 1;
+            $form_state['stats']['phenotype_count'] +=
+              PhenotypeData::countRows($i, $form_state)
+              * $num_unique_columns;
           }
-          $num_unique_columns = count(array_unique($headers)) - 1;
-          $rows = tpps_file_len($phenotype['iso']);
-          $form_state['stats']['phenotype_count'] += $rows * $num_unique_columns;
         }
       }
       break;
