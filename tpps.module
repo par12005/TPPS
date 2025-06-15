@@ -1901,7 +1901,7 @@ function tpps_init() {
       unset($_SESSION['messages']['error']);
     }
   }
-  if (!is_live_site()) {
+  if (!is_live_site() || variable_get('tpps_watchdog_cleanup', false)) {
     tpps_watchdog_cleanup();
   }
 }
@@ -1985,8 +1985,27 @@ function tpps_watchdog_cleanup() {
       ],
       'severity' => WATCHDOG_WARNING,
     ],
-
+    // Cleaned up 128 released locks.
+    [
+      'uid' => '0',
+      'type' => 'ultimate_cron_lock',
+      'message' => 'Cleaned up @count released locks',
+      'severity' => WATCHDOG_DEBUG,
+    ],
+    // Access denied: node/add.
+    [
+      'uid' => '0',
+      'type' => 'access denied',
+      'message' => 'node/add',
+      'severity' => WATCHDOG_WARNING,
+    ],
   ];
+
+  if ($extra_filter = variable_get('tpps_watchdog_cleanup_filter', [])) {
+    if (is_array($extra_filter) && !empty($extra_filter)) {
+      $filter += $extra_filter;
+    }
+  }
 
   $table = 'watchdog';
   // @TODO Remove duplidates and leave only one (modified) message with number

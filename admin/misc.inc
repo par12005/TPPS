@@ -11,6 +11,18 @@
 function tpps_misc_settings_form(array $form, array &$form_state) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $form['general'] = [
+    '#type' => 'fieldset',
+    '#title' => t('General Settings'),
+    '#collapsible' => TRUE,
+  ];
+  $form['general']['tpps_watchdog_cleanup'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Allows to remove spam watchdog messages'),
+    '#default_value' => variable_get('tpps_watchdog_cleanup'),
+  ];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Validation Regular Expressions.
   $form['validation_regex'] = [
     '#type' => 'fieldset',
