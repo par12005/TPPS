@@ -27,13 +27,13 @@ class TppsFile {
    * @throws Exception
    *   When child class doesn't overwrite this method.
    */
-  //public static function getParents($organism_index) {
-  //  if (static::getClassName() == 'TppsFile') {
-  //    $message = t('Class must implement @method', ['@method' => __METHOD__]);
-  //    throw new Exception($message);
-  //  }
-  //  return [];
-  //}
+  public static function getParents($organism_index) {
+    if (static::getClassName() == 'TppsFile') {
+      $message = t('Class must implement @method', ['@method' => __METHOD__]);
+      throw new Exception($message);
+    }
+    return [];
+  }
 
   /**
    * Gets parents for checkbox which makes field required.
@@ -47,13 +47,13 @@ class TppsFile {
    * @throws Exception
    *   When child class doesn't overwrite this method.
    */
-  //public static function getCheckboxParents($organism_index) {
-  //  if (static::getClassName() == 'TppsFile') {
-  //    $message = t('Class must implement @method', ['@method' => __METHOD__]);
-  //    throw new Exception($message);
-  //  }
-  //  return [];
-  //}
+  public static function getCheckboxParents($organism_index) {
+    if (static::getClassName() == 'TppsFile') {
+      $message = t('Class must implement @method', ['@method' => __METHOD__]);
+      throw new Exception($message);
+    }
+    return [];
+  }
 
   /**
    * Gets number of columns in the file.
@@ -142,13 +142,13 @@ class TppsFile {
   public static function getFileId($organism_index, array $form_state) {
     return drupal_array_get_nested_value(
       $form_state['values'],
-        static::getParents($organism_index)
-      )
-      ?? drupal_array_get_nested_value(
-        $form_state['saved_values'][TPPS_PAGE_4],
-        static::getParents($organism_index)
-      )
-      ?? NULL;
+      static::getParents($organism_index)
+    )
+    ?? drupal_array_get_nested_value(
+      $form_state['saved_values'][TPPS_PAGE_4],
+      static::getParents($organism_index)
+    )
+    ?? NULL;
 
     // Other way to get value:
     if (0) {

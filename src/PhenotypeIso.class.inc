@@ -139,9 +139,6 @@ class PhenotypeIso extends TppsFile {
       'Metabolomic Data' => ['metabolomic-data' => [static::DATA_TYPE_METABOLOMIC_DATA]],
     ];
     $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
-
-//dpm($groups);
-
     if (form_get_errors()) {
       return;
     }
@@ -149,10 +146,6 @@ class PhenotypeIso extends TppsFile {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Validate number of 'Metabolomic data' columns.
     $headers = static::getHeader($organism_index, $form_state);
-
-    dpm(print_r($headers, 1), 'iso header');
-
-
 
     $id_col_name = key($headers);
     while (($k = array_search(NULL, $headers))) {

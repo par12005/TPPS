@@ -1868,19 +1868,10 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
     $groups = $phenotype['file-groups'];
 
     $column_vals = $phenotype['file-columns'];
-    switch ($phenotype['format']) {
-      case PhenotypeData::FILE_FORMAT_1:
-        $time_index  = PhenotypeData::DATA_TYPE_TIMEPOINT;
-        $clone_index = PhenotypeData::DATA_TYPE_CLONE_NUMBER;
-        $year_index  = PhenotypeData::DATA_TYPE_YEAR;
-        break;
+    $time_index  = PhenotypeData::DATA_TYPE_TIMEPOINT;
+    $clone_index = PhenotypeData::DATA_TYPE_CLONE_NUMBER;
+    $year_index  = PhenotypeData::DATA_TYPE_YEAR;
 
-      case PhenotypeData::FILE_FORMAT_2:
-        $time_index  = '4';
-        $clone_index = '5';
-        $year_index  = '6';
-        break;
-    }
     $time = array_search($time_index, $column_vals);
     $clone = array_search($clone_index, $column_vals);
     // Get column index which holds 'year' data. E.g., 'B'.
@@ -1898,29 +1889,24 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
     }
 
     // Get data header values.
-    // [VS]
-    if ($phenotype['format'] == PhenotypeData::FILE_FORMAT_1) {
-      $file_headers = tpps_file_headers($data_fid, $phenotype['file-no-header']);
-
-      if ($debug_mode ?? FALSE) {
-        tpps_log($file_headers, 'file_headers');
-      }
-
-      $data_columns = [];
-      if (
-        is_array($groups['Phenotype Data']['0'])
-        && !empty($groups['Phenotype Data']['0'])
-      ) {
-        foreach ($groups['Phenotype Data']['0'] as $col) {
-          $data_columns[$col] = $file_headers[$col];
-        }
-      }
-      else {
-        $col = $groups['Phenotype Data'][0];
+    $file_headers = tpps_file_headers($data_fid, $phenotype['file-no-header']);
+    if ($debug_mode ?? FALSE) {
+      tpps_log($file_headers, 'file_headers');
+    }
+    $data_columns = [];
+    if (
+      is_array($groups['Phenotype Data']['0'])
+      && !empty($groups['Phenotype Data']['0'])
+    ) {
+      foreach ($groups['Phenotype Data']['0'] as $col) {
         $data_columns[$col] = $file_headers[$col];
       }
-      unset($file_headers);
     }
+    else {
+      $col = $groups['Phenotype Data'][0];
+      $data_columns[$col] = $file_headers[$col];
+    }
+    unset($file_headers);
 
     $options['no_header'] = $phenotype['file-no-header'];
     $options['tree_id'] = $groups['Tree Identifier']['1'];
