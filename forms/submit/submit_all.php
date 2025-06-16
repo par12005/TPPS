@@ -6914,6 +6914,7 @@ function tpps_process_phenotype_data($row, array &$options = []) {
     if ($iso) {
       // "Iso Check"
       $records['phenotypeprop']["$phenotype_name-unit"] = [
+        // CVTerm Id of the Unit 'chemical substance'.
         'type_id' => 139527,
         // value: the chemical name/identifier.
         'value' => $meta['unit'],
