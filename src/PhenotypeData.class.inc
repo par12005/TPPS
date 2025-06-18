@@ -168,17 +168,16 @@ class PhenotypeData extends TppsFile {
     $phenotype_number = $phenotype['phenotypes-meta']['number'];
     // File Id of metadata file.
     $phenotype_meta = $phenotype['metadata'];
-    // @TODO Minor. Rename to $phenotype_file into $fid.
-    $phenotype_file = $phenotype[static::FIELD_NAME];
+    $fid = $phenotype[static::FIELD_NAME];
 
-    if (empty($phenotype_file)) {
+    if (empty($fid)) {
       form_set_error($form_field_error_name,
         t('Phenotype File: field is required.')
       );
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Phenotype Metafile was used.
-    $is_metadata_file = (bool) ($phenotype['check'] && !empty($phenotype_file));
+    $is_metadata_file = (bool) ($phenotype['check'] && !empty($fid));
     if ($is_metadata_file) {
       module_load_include('inc', 'tpps', 'src/PhenotypeMeta.class');
       PhenotypeMeta::validate($org_num, $form, $form_state);
@@ -230,8 +229,8 @@ class PhenotypeData extends TppsFile {
         }
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Check if phenotype name matches column names in Phenotype File.
-        if (!form_get_errors() && !empty($phenotype_file)) {
-          $file_header = tpps_file_get_header($phenotype_file);
+        if (!form_get_errors() && !empty($fid)) {
+          $file_header = tpps_file_get_header($fid);
           if (!empty($file_header) && !in_array(($name ?? NULL), $file_header)) {
             $message = t('Phenotype @phenotype_id Name: Name '
               . '"<strong>@phenotype_name</strong>" do not match any column name '
