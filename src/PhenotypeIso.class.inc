@@ -233,6 +233,32 @@ class PhenotypeIso extends TppsFile {
    *   Necessary data.
    */
   public static function process($organism_index, array $shared_state, array &$options = []) {
+    if (!static::isSelected($organism_index, $shared_state)) {
+      return;
+    }
+    $fid = static::getFileId($organism_index, $shared_state);
+    tpps_add_project_file($shared_state, $fid);
+
+    $options['iso'] = TRUE;
+    $options['file_headers'] = static::getHeader($organism_index, $shared_state);
+    $options['meta'] = [
+      'desc' => "Mass Spectrometry",
+      // Unit name replaced with Unit Id (cvterm_id for 'chemical substance').
+      // Outdated: 'unit' => "intensity (arbitrary nits)".
+      'unit' => 139527,
+      'unit_id' => 139527,
+      'attr_id' => tpps_load_cvterm('intensity')->cvterm_id,
+      // Manual term for MASS Spec.
+      'struct_id' => tpps_load_cvterm('whole plant')->cvterm_id,
+    ];
+
+    tpps_log('ISO_FID: ' . $fid, [], TRIPAL_DEBUG);
+    tpps_log('Processing phenotype_data file data...', [], TRIPAL_INFO);
+    tpps_file_iterator($fid, 'tpps_process_phenotype_data', $options);
+    tpps_log('Inserting phenotype_data into database using insert_multi...', [], TRIPAL_INFO);
+    // [VS]
+    $id_list = tpps_chado_insert_multi($options['records'], ['fks' => 'phenotype']);
+    tpps_log('Done.', [], TRIPAL_INFO);
   }
 
 }
