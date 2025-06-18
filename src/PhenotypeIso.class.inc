@@ -220,4 +220,19 @@ class PhenotypeIso extends TppsFile {
     ];
   }
 
+  /**
+   * Processes a file.
+   *
+   * Note: called from /forms/submit/submit_all.php script.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number on page.
+   * @param array $shared_state
+   *   Submission's Shared State.
+   * @param array $options
+   *   Necessary data.
+   */
+  public static function process($organism_index, array $shared_state, array &$options = []) {
+  }
+
 }

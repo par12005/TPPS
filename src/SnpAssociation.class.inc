@@ -430,6 +430,8 @@ class SnpAssociation {
    *   Ordinal organism number on page.
    * @param array $shared_state
    *   Submission's Shared State.
+   *
+   * @todo See TppsFile::getFileId() but there is no Form Versions support.
    */
   public static function getFileId($organism_index, array $shared_state) {
     return $shared_state['saved_values'][TPPS_PAGE_4]["organism-$organism_index"]
@@ -438,6 +440,8 @@ class SnpAssociation {
 
   /**
    * Processes a file.
+   *
+   * Note: called from /forms/submit/submit_all.php script.
    *
    * @param int $organism_index
    *   Ordinal organism number on page.
