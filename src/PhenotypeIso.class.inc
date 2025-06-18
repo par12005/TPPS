@@ -182,7 +182,7 @@ class PhenotypeIso extends TppsFile {
       $acc_no_header
     );
 
-    if (empty($missing_trees)) {
+    if (!empty($missing_trees)) {
       $params = ['@list' => implode(', ', $missing_trees)];
       $message = "Mass spectrometry/Isotope file: We detected Plant "
         . "Identifiers that were not in your Plant Accession file. Please "
