@@ -135,9 +135,22 @@ class PhenotypeIso extends TppsFile {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Validate columns.
     $required_groups = [
-      'Tree Identifier' => ['id' => [static::DATA_TYPE_PLANT_IDENTIFIER]],
+      'Plant Identifier' => ['id' => [static::DATA_TYPE_PLANT_IDENTIFIER]],
       'Metabolomic Data' => ['metabolomic-data' => [static::DATA_TYPE_METABOLOMIC_DATA]],
     ];
+
+
+
+
+// @TODO Check if Accession file has column 'Clone Number'.
+
+    $has = FALSE;
+    if ($has) {
+      $required_groups['Clone Number'] = [
+        'clone_number' => [static::DATA_TYPE_CLONE_NUMBER]
+      ];
+    }
+
     $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
     if (form_get_errors()) {
       return;
