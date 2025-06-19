@@ -518,9 +518,9 @@ class PhenotypeData extends TppsFile {
    * @return string
    *   Returns index of the column which holds phenotype name. E.g., "A".
    */
-  public static function getPhenotypeNameColumn($id, array $form_state) {
+  public static function getPhenotypeNameColumn($organism_index, array $form_state) {
     $parents = [
-      'organism-' . $id, 'phenotype', 'metadata-groups',
+      'organism-' . $organism_index, 'phenotype', 'metadata-groups',
       // 'Phenotype Id' is name of the column (not option's name or index)
       // which created on server side during validation.
       'Phenotype Id',
@@ -537,6 +537,8 @@ class PhenotypeData extends TppsFile {
 
   /**
    * Checks if given DataType was set using column's widget.
+   *
+   * WARNING: only for validation because uses $form_state['input'].
    *
    * @param array $form_state
    *   Drupal Form API State array.
