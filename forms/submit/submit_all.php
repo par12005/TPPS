@@ -205,11 +205,11 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
       tpps_log('Files renamed!' . PHP_EOL, [], TRIPAL_INFO);
     }
 
-    // if (variable_get('tpps_submitall_run_nextflow', TRUE)) {
-    //   // @TODO Run only when study has VCF files.
-    //   tpps_log('Nextflow New Study Pipeline', [], TRIPAL_INFO);
-    //   tpps_nextflow_new_study_pipeline($submission->sharedState);
-    // }
+    if (variable_get('tpps_submitall_run_nextflow', TRUE)) {
+      // @TODO Run only when study has VCF files.
+      tpps_log('Nextflow New Study Pipeline', [], TRIPAL_INFO);
+      tpps_nextflow_new_study_pipeline($submission->sharedState);
+    }
 
     tpps_log('Finishing up...', [], TRIPAL_INFO);
     // Functions starting from tpps_submit_page_1() update $shared_state array
