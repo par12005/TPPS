@@ -12,3 +12,4 @@ cscope.out
 *NetrwTreeListing
 **.patch
 **.diff
+output-*.txt
