@@ -37,9 +37,11 @@ module_load_include('inc', 'tpps', 'ajax_callbacks/study_details');
  */
 function tpps_ajax_callback($callback = '') {
   $function = 'tpps_ajax_' . check_plain($callback);
+  // If we never succed we fail.
+  $response['success'] = FALSE;
   if (function_exists($function)) {
-    $response = call_user_func($function, $_POST);
-    if (empty($response)) {
+    $result = call_user_func($function, $_POST);
+    if (empty($result)) {
       $response['errors'][] = t('Empty response from AJAX callback.');
     }
   }
@@ -47,19 +49,18 @@ function tpps_ajax_callback($callback = '') {
     // Note order of elements in $_POST probably will be the same as
     // in AJAX-request's 'data' element and callback could get more then
     // 1 argument in correct order.
-    $response = call_user_func($callback, $_POST);
-    if (empty($response)) {
+    $result = call_user_func($callback, $_POST);
+    if (empty($result)) {
       $response['errors'][] = t('Empty response from function @callback().', ['@callback' => $callback]);
       $response['errors'][] = print_r(array_values($_POST));
     }
     else {
+      $response = $result;
       $response['success'] = TRUE;
     }
   }
   else {
     $response['errors'][] = t('Callback not found.');
   }
-  // If we never succed we fail.
-  $response['success'] = $response['success'] ?? FALSE;
   return $response;
 }
