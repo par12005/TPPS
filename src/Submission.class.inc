@@ -248,8 +248,8 @@ class Submission {
    * Sets value of the sub-element of $state (and $sharedState if exists).
    *
    * WARNING:
-   * Only non-modified emements in sharedState could be updated using this
-   * method. To update modified elements use $submission->setSharedState().
+   * Only non-modified during submit_all.php script processing elements in
+   * $sharedState property could be updated using this method.
    *
    * @param array $parents
    *   Path to the element including element name.
@@ -259,15 +259,17 @@ class Submission {
    * @param mixed $value
    *   Value to be set.
    * @param bool $force
-   *   When TRUE then sharedState will be updated even if sub-element not exists.
    *   Default is FALSE.
+   *   When TRUE then $sharedState property will be updated and element will
+   *   be set even if it doesn't exist.
    */
   public function set(array $parents, $value, $force = FALSE) {
     drupal_array_set_nested_value($this->state, $parents, $value);
     // Update sharedState only if this value was there before.
     $key_exists = FALSE;
     drupal_array_get_nested_value($this->sharedState, $parents, $key_exists);
-    // @TODO Shared State could have different $parents.
+    // @TODO Shared State could have different $parents because of Form Versions.
+    // See tpps_submission_local_vcf_get_parents().
     if ($key_exists || $force) {
       drupal_array_set_nested_value($this->sharedState, $parents, $value);
     }
@@ -278,8 +280,8 @@ class Submission {
    * Unsets the sub-element of $state (and $sharedState).
    *
    * WARNING:
-   * Only non-modified emements in sharedState could be updated using this
-   * method. To update modified elements use $submission->setSharedState().
+   * Only non-modified during submit_all.php script processing elements in
+   * $sharedState property could be updated using this method.
    *
    * @param array $parents
    *   List of the parents including field name.
@@ -849,7 +851,11 @@ class Submission {
    *   Returns TRUE if record in database exists and FALSE otherwise.
    */
   public function doesExist() {
-    $this->load();
+    // WARNING:
+    // When doesExist() or doesNotExist() was called in the middle of the
+    // process previous changes will be lost because it reloads submission
+    // from database and overwrite this changes in memory.
+    // $this->load();
     return (bool) (
       !empty($this->accession)
       && !empty($this->id)
@@ -2019,6 +2025,16 @@ class Submission {
       }
     }
     return TRUE;
+  }
+
+  /**
+   * Gets TPPS Form version.
+   *
+   * @return int
+   *   Returns version number. Default is 1.
+   */
+  public function getFormVersion() {
+    return $this->state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1;
   }
 
 }
