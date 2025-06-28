@@ -103,6 +103,7 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
         l(t('Shared State JSON'), 'api/submission/' . $accession . '/view/shared_state'),
         l(t('Export'), 'tpps/submission/' . $accession . '/export'),
         l(t('Files'), 'tpps-admin-panel/file-diagnostics/' . $accession),
+        l(t('Rename local VCF'), 'tpps/submission/' . $accession . '/vcf/local/rename'),
       ];
       // To add items use $action_list and recreate element.
       $actions = theme('item_list', [
