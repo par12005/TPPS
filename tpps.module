@@ -2623,6 +2623,16 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'pages/submission/purge_multiple.inc',
   ];
+  $items['tpps/submission/%/vcf/local/rename'] = [
+    'title callback' => 'tpps_submission_title',
+    'title arguments' => [2, 3],
+    'description' => 'TPPS Submission Rename local VCF',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_local_vcf_rename_form', 2],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'pages/submission/vcf/local/rename.inc',
+  ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 }
 
