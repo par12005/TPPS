@@ -636,16 +636,56 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
 
     // Get total reads
     $cmd_plants_count = 'bcftools query -l "' . $vcf_location . '" | wc -l';
-    // $plants_count = exec($cmd_plants_count);
-    $cmd_markers_count = 'bcftools view -H "' . $vcf_location . '" | wc -l';
-    // $markers_count = exec($cmd_markers_count);
+    $plants_count = exec($cmd_plants_count);
+    // $cmd_markers_count = 'bcftools view -H "' . $vcf_location . '" | wc -l';
+    $cmd_markers_count = "bcftools index --stats \"$vcf_location\" | awk '{sum += $3} END {print sum}'";
+    $markers_count = exec($cmd_markers_count);
     $total = ceil(($plants_count * $markers_count) / 20);
     pager_default_initialize($total, $per_page);
 
 
     // Get the genotype calls from the VCF file for the specified page
-    $cmd_calls = "/bin/bash " . dirname(__FILE__) . '/../tools/vcfscripts/query_VCF_for_genotype_calls.sh -p ' . ($page+1) . ' -f "' . $vcf_location . '"';
+    // $cmd_calls = "/bin/bash " . dirname(__FILE__) . '/../tools/vcfscripts/query_VCF_for_genotype_calls.sh -p ' . ($page+1) . ' -f \'' . $vcf_location . '\'';
+    $time = microtime(true) * 1000; // Get current time in milliseconds
+    $output_location = '/isg/treegenes/study_markers_pages_tmp/markers_' . $data['accession'] . '_' . ($page+1) . '_' . $time . '.txt';
+    $cmd_calls = "/bin/bash " . dirname(__FILE__) . '/../tools/vcfscripts/query_vcf_for_markers.sh -p ' . ($page+1) . ' -f \'' . $vcf_location . '\' > ' . $output_location . ' &';
+    // $start_line = ($page * 20) + 1;
+    // $end_line = ($page + 1) * 20;
+    // $cmd_calls = "#!/bin/bash
+    //   bcftools query -f '[%SAMPLE\\t%ID\\t%REF\\t%ALT\\t%GT\\n]' \"$vcf_location\" | \\
+    //   head -n $end_line | tail -n +$start_line | \\
+    //   awk -F'\\t' '{
+    //       split(\$4, alts, \",\")
+    //       if (\$5 == \"./.\") {
+    //           final_gt = \"./.\"
+    //       } else {
+    //           split(\$5, gt, \"/\")
+    //           allele1 = (gt[1] == \".\") ? \".\" : (gt[1] == \"0\") ? \$3 : alts[int(gt[1])]
+    //           allele2 = (gt[2] == \".\") ? \".\" : (gt[2] == \"0\") ? \$3 : alts[int(gt[2])]
+    //           final_gt = allele1 \"/\" allele2
+    //       }
+    //       print \$1, \$2, final_gt
+    //   }'
+    // ";
     // exec($cmd_calls, $output_lines);
+    // $output_string = shell_exec($cmd_calls);
+
+    //$file = new SplFileObject('myfile.txt');
+    //$file->seek(9999);     // Seek to line no. 10,000
+    //echo $file->current(); // Print contents of that line
+    // $vcf_content = gzopen($vcf_location, 'r');
+
+    //$cmd_calls = "bcftools query -f '[%SAMPLE\t%ID\t%REF\t%ALT\t%GT\n]' \"$vcf_location\" | head -n 10";
+    
+    exec($cmd_calls, $pid_info);
+    $pid_data = explode(' ', $pid_info[0]);
+    $pid = $pid_data[1]; // Get the PID of the background process
+    sleep(1);
+    exec('kill -9 ' . $pid); // Kill the background process after 2 seconds
+    $output_lines = file($output_location, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    // print_r($output_lines);
+
+    // $output_lines = explode("\n", $output_string);
     foreach ($output_lines as $line) {
       $line_parts = explode(" ", $line);
       $rows[] = [$line_parts[0], $line_parts[1], $line_parts[2]];
@@ -666,15 +706,20 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
       'empty' => '',
     ]);
     $pager = theme('pager', ['quantity', $total]);
+    @unlink($output_location); // Clean up the temporary file
     return [
       'success' => TRUE,
       'content' => $pager . $table,
       'vcf_location_details' => $vcf_location_details,
       'total' => $total,
       //'cmd' => 'bcftools query -l "' . $vcf_location . '" | wc -l',
+      'output_lines' => $output_lines,
       'cmd_calls' => $cmd_calls,
       'cmd_plants_count' => $cmd_plants_count,
-      'cmd_markers_count' => $cmd_markers_count
+      'cmd_markers_count' => $cmd_markers_count,
+      'start_line' => $start_line,
+      'end_line' => $end_line,
+      'pid_info' => $pid_info,
     ];
   }
 }
