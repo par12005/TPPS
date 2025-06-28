@@ -1901,7 +1901,7 @@ function tpps_init() {
       unset($_SESSION['messages']['error']);
     }
   }
-  if (!is_live_site() || variable_get('tpps_watchdog_cleanup', FALSE)) {
+  if (variable_get('tpps_watchdog_cleanup', FALSE)) {
     tpps_watchdog_cleanup();
   }
 }
@@ -1910,7 +1910,7 @@ function tpps_init() {
  * Gets list of hardcoded rules to cleanup watchdog messages.
  */
 function tpps_watchdog_cleanup_rules() {
-  $filter = [
+  return [
     [
       'uid' => '0',
       'type' => 'php',
@@ -1993,7 +1993,6 @@ function tpps_watchdog_cleanup_rules() {
       'severity' => WATCHDOG_WARNING,
     ],
   ];
-  return $filter;
 }
 
 /**
@@ -2011,25 +2010,25 @@ function tpps_watchdog_dump($wid) {
  * Removes spam-messages in watchdog log.
  */
 function tpps_watchdog_cleanup() {
-  $debug_mode = FALSE;
-  $filter = tpps_watchdog_cleanup_rules();
+  $rule_list = tpps_watchdog_cleanup_rules();
   $table = 'watchdog';
-  if ($extra_filter = variable_get('tpps_watchdog_cleanup_filter', [])) {
-    if (is_array($extra_filter) && !empty($extra_filter)) {
-      $filter += $extra_filter;
+  if ($custom_rules = variable_get('tpps_watchdog_cleanup_filter', [])) {
+    if (is_array($custom_rules) && !empty($custom_rules)) {
+      $rule_list = array_merge($rule_list, $custom_rules);
     }
   }
   // @todo Minor. Remove duplidates and leave only one (modified) message
   // with number of the removed items.
-  foreach ($filter as $filter_item) {
+  foreach ($rule_list as $filter_item) {
+    if (!is_array($filter_item)) {
+      watchdog('tpps', 'Watchdog cleanup rules are broken.', [], WATCHDOG_ERROR);
+      continue;
+    }
     if (
       !empty($filter_item['variables'])
       && is_array($filter_item['variables'])
     ) {
       $query = db_select($table, 't')->fields('t', []);
-      if ($debug_mode ?? FALSE) {
-        $query->addTag('debug');
-      }
       foreach ($filter_item as $field => $value) {
         switch ($field) {
           case 'example':
@@ -2037,12 +2036,8 @@ function tpps_watchdog_cleanup() {
 
           case 'variables':
             foreach ($value as $string_value) {
-              // Required. Add to the list of selected columns.
-              //$query->addExpression("position('" . $string_value
-              //  . "'::bytea in " . $field . ")", 'pos'
-              //);
-              $query->where("position('" . $string_value
-                . "'::bytea in " . $field . ") > 0"
+              $query->where(
+                "position('" . $string_value . "'::bytea in " . $field . ") > 0"
               );
             }
             break;
