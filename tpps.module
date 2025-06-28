@@ -1888,7 +1888,6 @@ if (!function_exists('array_key_first')) {
 function tpps_init() {
   // Removed spam message:
   // Notice: Undefined variable: show_nafgs_menu in include() (line 147 of
-  // :w
   // /var/www/Drupal/sites/all/themes/sites/all/themes/dawn/tpl/page.tpl.php).
   // It can't be fixed because there is no write access to this module.
   if (!empty($_SESSION['messages']['error'])) {
@@ -1902,50 +1901,177 @@ function tpps_init() {
       unset($_SESSION['messages']['error']);
     }
   }
-  if (!is_live_site()) {
+  if (!is_live_site() || variable_get('tpps_watchdog_cleanup', FALSE)) {
     tpps_watchdog_cleanup();
   }
 }
 
 /**
- * Removes spam-messages in watchdog log.
+ * Gets list of hardcoded rules to cleanup watchdog messages.
  */
-function tpps_watchdog_cleanup() {
-  // To get new data for filtering:
-  // $wid = 55333636;
-  // $result = db_query("SELECT * FROM public.watchdog where wid= " . $wid)->fetchAssoc();
-  // dpm(var_export($result, 1));
+function tpps_watchdog_cleanup_rules() {
   $filter = [
     [
       'uid' => '0',
       'type' => 'php',
       'message' => '%type: !message in %function (line %line of %file).',
-      'variables' => 'a:6:{s:5:"%type";s:6:"Notice";s:8:"!message";s:19:"Undefined offset: 1";s:9:"%function";s:46:"tripal_galaxy_form_webform_client_form_alter()";s:5:"%file";s:68:"/var/www/Drupal/sites/all/modules/tripal_galaxy/tripal_galaxy.module";s:5:"%line";i:614;s:14:"severity_level";i:5;}',
-      'severity' => '5',
+      'variables' => [
+        'tripal_galaxy_form_webform_client_form_alter()',
+        '/var/www/Drupal/sites/all/modules/tripal_galaxy/tripal_galaxy.module',
+        '614',
+      ],
+      'severity' => WATCHDOG_NOTICE,
     ],
-    // Warning: Invalid argument supplied for foreach() in file_entity_set_title_alt_properties_on_file_fields() (line 248 of /var/www/Drupal/sites/all/modules/file_entity/file_entity.file.inc).
     [
+      'example' => "Warning: Invalid argument supplied for foreach() in file_entity_set_title_alt_properties_on_file_fields() (line 248 of /var/www/Drupal/sites/all/modules/file_entity/file_entity.file.inc).",
       'uid' => '0',
       'type' => 'php',
       'message' => '%type: !message in %function (line %line of %file).',
-      'variables' => 'a:6:{s:5:"%type";s:7:"Warning";s:8:"!message";s:39:"Invalid argument supplied for foreach()";s:9:"%function";s:53:"file_entity_set_title_alt_properties_on_file_fields()";s:5:"%file";s:66:"/var/www/Drupal/sites/all/modules/file_entity/file_entity.file.inc";s:5:"%line";i:248;s:14:"severity_level";i:4;}',
-      'severity' => '4',
+      'variables' => [
+        'Invalid argument supplied for foreach()',
+        '248',
+        '/var/www/Drupal/sites/all/modules/file_entity/file_entity.file.inc',
+      ],
+      'severity' => WATCHDOG_WARNING,
     ],
-    // Cron thread 1 started.
     [
+      'example' => "Cron thread 1 started.",
       'uid' => '0',
       'type' => 'serial_launcher',
       'message' => 'Cron thread %thread started',
       'variables' => 'a:1:{s:7:"%thread";i:1;}',
       'severity' => '7',
     ],
+    [
+      'example' => 'Did not delete temporary file "public://tpps_accession/test_accession_122.csv" during garbage collection, because it is in use by the following modules: tpps.',
+      'uid' => '0',
+      'type' => 'file system',
+      'message' => 'Did not delete temporary file "%path" during garbage '
+      . 'collection, because it is in use by the following modules: %modules.',
+      'severity' => '6',
+    ],
+    [
+      'example' => "bio_data/132727.",
+      'uid' => '0',
+      'type' => 'access denied',
+      'message' => 'bio_data/',
+      'severity' => WATCHDOG_WARNING,
+    ],
+    [
+      'example' => "Notice: Undefined variable: show_nafgs_menu in include() (line 147 of /var/www/Drupal/sites/all/themes/sites/all/themes/dawn/tpl/page.tpl.php).",
+      'type' => 'php',
+      'variables' => [
+        'Undefined variable: show_nafgs_menu',
+        '/var/www/Drupal/sites/all/themes/sites/all/themes/dawn/tpl/page.tpl.php',
+        '147',
+      ],
+      'message' => '%type: !message in %function (line %line of %file).',
+      'severity' => WATCHDOG_NOTICE,
+    ],
+    [
+      'example' => "Warning: Invalid argument supplied for foreach() in file_entity_set_title_alt_properties_on_file_fields() (line 248 of /var/www/Drupal/sites/all/modules/file_entity/file_entity.file.inc).",
+      'type' => 'php',
+      'variables' => [
+        'Invalid argument supplied for foreach()',
+        '248',
+        '/var/www/Drupal/sites/all/modules/file_entity/file_entity.file.inc',
+      ],
+      'severity' => WATCHDOG_WARNING,
+    ],
+    [
+      'example' => "Cleaned up 128 released locks.",
+      'uid' => '0',
+      'type' => 'ultimate_cron_lock',
+      'message' => 'Cleaned up @count released locks',
+      'severity' => WATCHDOG_DEBUG,
+    ],
+    [
+      'example' => "Access denied: node/add.",
+      'uid' => '0',
+      'type' => 'access denied',
+      'message' => 'node/add',
+      'severity' => WATCHDOG_WARNING,
+    ],
   ];
-  foreach ($filter as $filter_item) {
-    $query = db_delete('watchdog');
-    foreach ($filter_item as $field => $value) {
-      $query->condition($field, $value);
+  return $filter;
+}
+
+/**
+ * Dumps single watchdog message.
+ *
+ * @param int $wid
+ *   Watchdog message Id.
+ */
+function tpps_watchdog_dump($wid) {
+  $result = db_query("SELECT * FROM public.watchdog where wid= " . $wid)->fetchAssoc();
+  dpm(var_export($result, 1));
+}
+
+/**
+ * Removes spam-messages in watchdog log.
+ */
+function tpps_watchdog_cleanup() {
+  $debug_mode = FALSE;
+  $filter = tpps_watchdog_cleanup_rules();
+  $table = 'watchdog';
+  if ($extra_filter = variable_get('tpps_watchdog_cleanup_filter', [])) {
+    if (is_array($extra_filter) && !empty($extra_filter)) {
+      $filter += $extra_filter;
     }
-    $query->execute();
+  }
+  // @todo Minor. Remove duplidates and leave only one (modified) message
+  // with number of the removed items.
+  foreach ($filter as $filter_item) {
+    if (
+      !empty($filter_item['variables'])
+      && is_array($filter_item['variables'])
+    ) {
+      $query = db_select($table, 't')->fields('t', []);
+      if ($debug_mode ?? FALSE) {
+        $query->addTag('debug');
+      }
+      foreach ($filter_item as $field => $value) {
+        switch ($field) {
+          case 'example':
+            continue;
+
+          case 'variables':
+            foreach ($value as $string_value) {
+              // Required. Add to the list of selected columns.
+              //$query->addExpression("position('" . $string_value
+              //  . "'::bytea in " . $field . ")", 'pos'
+              //);
+              $query->where("position('" . $string_value
+                . "'::bytea in " . $field . ") > 0"
+              );
+            }
+            break;
+
+          default:
+            $query->condition($field, $value);
+            break;
+        }
+      }
+      $list = $query->execute()->fetchCol('wid');
+      if (!empty($list)) {
+        db_delete('watchdog')->condition('wid', $list, 'IN')->execute();
+      }
+    }
+    else {
+      $query = db_delete($table);
+      foreach ($filter_item as $field => $value) {
+        if ($field == 'example') {
+          continue;
+        }
+        if (strpos($value, '%') !== FALSE) {
+          $query->condition($field, $value);
+        }
+        else {
+          $query->condition($field, '%' . db_like($value) . '%', 'LIKE');
+        }
+      }
+      $query->execute();
+    }
   }
 }
 
@@ -2182,6 +2308,15 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/misc.inc',
+  ];
+  $items['admin/config/tpps/watchdog_cleanup'] = [
+    'title' => 'Watchdog Cleanup',
+    'description' => 'Manage cleaning of the watchdog spam-messages.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_watchdog_cleanup_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/watchdog_cleanup.inc',
   ];
   $items['admin/config/tpps/cache'] = [
     'title' => 'Cache',

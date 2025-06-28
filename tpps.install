@@ -12,6 +12,7 @@
  * necessary materialized views.
  */
 function tpps_install() {
+  variable_set('tpps_watchdog_cleanup', FALSE);
   variable_set('tpps_ncbi_api_delay', 300);
   variable_set('tpps_ncbi_api_max_attempt_number', 5);
   variable_set('tpps_ncbi_allow_fix_missing_data', FALSE);
@@ -421,6 +422,7 @@ function tpps_install() {
  * usage from public.file_usage.
  */
 function tpps_uninstall() {
+  variable_del('tpps_watchdog_cleanup');
   variable_del('tpps_ncbi_api_delay');
   variable_del('tpps_ncbi_api_max_attempt_number');
   variable_del('tpps_ncbi_allow_fix_missing_data');
