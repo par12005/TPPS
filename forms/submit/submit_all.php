@@ -1682,7 +1682,6 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
   $page1_values = $shared_state['saved_values'][TPPS_PAGE_1];
   $page4_values = $shared_state['saved_values'][TPPS_PAGE_4];
   $phenotype = $page4_values["organism-$i"]['phenotype'] ?? NULL;
-  $organism_name = $page1_values['organism'][$i]['name'];
   if (empty($phenotype)) {
     return;
   }
@@ -1730,9 +1729,12 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
     'phenotype_count' => $phenotype_count,
     'data' => &$shared_state['data']['phenotype'],
     'job' => &$job,
+    // @todo Minor. Use $submission->getOrganismName($i).
+    'organism_name' => $page1_values['organism'][$i]['name'],
   ];
 
   $phenotype_number = $phenotype['phenotypes-meta']['number'];
+
   if (!empty($phenotype['normal-check'])) {
     $phenotypes_meta = [];
     $data_fid = $phenotype['file'];
@@ -1868,19 +1870,10 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
     $groups = $phenotype['file-groups'];
 
     $column_vals = $phenotype['file-columns'];
-    switch ($phenotype['format']) {
-      case PhenotypeData::FILE_FORMAT_1:
-        $time_index  = PhenotypeData::DATA_TYPE_TIMEPOINT;
-        $clone_index = PhenotypeData::DATA_TYPE_CLONE_NUMBER;
-        $year_index  = PhenotypeData::DATA_TYPE_YEAR;
-        break;
+    $time_index  = PhenotypeData::DATA_TYPE_TIMEPOINT;
+    $clone_index = PhenotypeData::DATA_TYPE_CLONE_NUMBER;
+    $year_index  = PhenotypeData::DATA_TYPE_YEAR;
 
-      case PhenotypeData::FILE_FORMAT_2:
-        $time_index  = '4';
-        $clone_index = '5';
-        $year_index  = '6';
-        break;
-    }
     $time = array_search($time_index, $column_vals);
     $clone = array_search($clone_index, $column_vals);
     // Get column index which holds 'year' data. E.g., 'B'.
@@ -1898,29 +1891,24 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
     }
 
     // Get data header values.
-    // [VS]
-    if ($phenotype['format'] == PhenotypeData::FILE_FORMAT_1) {
-      $file_headers = tpps_file_headers($data_fid, $phenotype['file-no-header']);
-
-      if ($debug_mode ?? FALSE) {
-        tpps_log($file_headers, 'file_headers');
-      }
-
-      $data_columns = [];
-      if (
-        is_array($groups['Phenotype Data']['0'])
-        && !empty($groups['Phenotype Data']['0'])
-      ) {
-        foreach ($groups['Phenotype Data']['0'] as $col) {
-          $data_columns[$col] = $file_headers[$col];
-        }
-      }
-      else {
-        $col = $groups['Phenotype Data'][0];
+    $file_headers = tpps_file_headers($data_fid, $phenotype['file-no-header']);
+    if ($debug_mode ?? FALSE) {
+      tpps_log($file_headers, 'file_headers');
+    }
+    $data_columns = [];
+    if (
+      is_array($groups['Phenotype Data']['0'])
+      && !empty($groups['Phenotype Data']['0'])
+    ) {
+      foreach ($groups['Phenotype Data']['0'] as $col) {
         $data_columns[$col] = $file_headers[$col];
       }
-      unset($file_headers);
     }
+    else {
+      $col = $groups['Phenotype Data'][0];
+      $data_columns[$col] = $file_headers[$col];
+    }
+    unset($file_headers);
 
     $options['no_header'] = $phenotype['file-no-header'];
     $options['tree_id'] = $groups['Tree Identifier']['1'];
@@ -1928,16 +1916,15 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
     $options['data_columns'] = $data_columns ?? NULL;
     $options['meta'] = $phenotypes_meta;
     $options['file_empty'] = $phenotype['file-empty'];
-    $options['organism_name'] = $organism_name;
+    // Function tpps_process_phenotype_data() is used to process both Phenotype
+    // Data and Phenotype Iso files. To avoid errors when multiple organisms
+    // are processed we explicitly set 'iso' key it here.
+    $options['iso'] = FALSE;
 
     // Phenotype data (not metadata).
     tpps_log('DATA_FID:' . $data_fid, [], TRIPAL_DEBUG);
     tpps_log('Processing phenotype_data file data...', [], TRIPAL_INFO);
 
-    // @TODO Function tpps_process_phenotype_data() checks 'iso' key to detect
-    // if it's iso or normal-check but this key not set explicitly here.
-    // So processing assumes that if 'iso' not set then it's 'normal' which is
-    // wrong because both could be selected at the same time.
     tpps_file_iterator($data_fid, 'tpps_process_phenotype_data', $options);
     $shared_state['data']['phenotype_meta'] += $phenotypes_meta;
     tpps_log('Inserting data into database using insert_multi...', [], TRIPAL_INFO);
@@ -1948,34 +1935,7 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // ISO.
-  if (!empty($phenotype['iso-check'])) {
-    $iso_fid = $phenotype['iso'];
-    tpps_add_project_file($shared_state, $iso_fid);
-
-    $options['iso'] = TRUE;
-    $options['records'] = $records;
-    $options['cvterms'] = $phenotype_cvterms;
-    $options['file_headers'] = tpps_file_headers($iso_fid);
-    $options['organism_name'] = $organism_name;
-    $options['meta'] = [
-      'desc' => "Mass Spectrometry",
-      // Unit name replaced with Unit Id (cvterm_id for 'chemical substance').
-      // Outdated: 'unit' => "intensity (arbitrary nits)".
-      'unit' => 139527,
-      'unit_id' => 139527,
-      'attr_id' => tpps_load_cvterm('intensity')->cvterm_id,
-      // Manual term for MASS Spec.
-      'struct_id' => tpps_load_cvterm('whole plant')->cvterm_id,
-    ];
-
-    tpps_log('ISO_FID: ' . $iso_fid, [], TRIPAL_DEBUG);
-    tpps_log('Processing phenotype_data file data...', [], TRIPAL_INFO);
-    tpps_file_iterator($iso_fid, 'tpps_process_phenotype_data', $options);
-    tpps_log('Inserting phenotype_data into database using insert_multi...', [], TRIPAL_INFO);
-    // [VS]
-    $id_list = tpps_chado_insert_multi($options['records'], ['fks' => 'phenotype']);
-    tpps_log('Done.', [], TRIPAL_INFO);
-  }
+  PhenotypeIso::process($i, $shared_state, $options);
   // Store relations between Phenotype, Synonym, Unit.
   if ($id_list) {
     tpps_synonym_save($phenotypes_meta, $id_list);
@@ -5141,7 +5101,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           // if ($record_count > 100) {
           //   break;
           // }
-          
+
           $genotype_count += count($stocks);
           $vcf_line = explode("\t", $vcf_line);
           $scaffold_id = explode(" ",$vcf_line[0])[0]; // take the first part if it is space delimited (8/13/2024 RISH discussion with Emily)
@@ -7039,10 +6999,11 @@ function tpps_process_phenotype_data($row, array &$options = []) {
       'value' => $iso ? $meta['desc'] : $meta[strtolower($name)]['desc'],
       '#fk' => ['phenotype' => $phenotype_name],
     ];
-    // $iso means "intensity / mass spectrometry".
+    // $iso is TRUE when "Isotope/Mass spectrometry" file is processing.
     if ($iso) {
       // "Iso Check"
       $records['phenotypeprop']["$phenotype_name-unit"] = [
+        // CVTerm Id of the Unit 'chemical substance'.
         'type_id' => 139527,
         // value: the chemical name/identifier.
         'value' => $meta['unit'],

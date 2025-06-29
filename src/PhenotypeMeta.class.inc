@@ -77,18 +77,17 @@ class PhenotypeMeta {
   /**
    * Validates file field.
    *
-   * @param int $org_num
+   * @param int $organism_index
    *   Ordinal organism number on page.
    * @param array $form
    *   Drupal Form API array.
    * @param array $form_state
    *   Drupal Form API State array.
    */
-  public static function validate($org_num, array &$form, array &$form_state) {
-    $organism = &$form_state['values']["organism-$org_num"] ?? NULL;
+  public static function validate($organism_index, array &$form, array &$form_state) {
+    $organism = &$form_state['values']["organism-$organism_index"] ?? NULL;
     $phenotype = &$organism['phenotype'] ?? NULL;
-    //$organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
-    $id = "organism-$org_num";
+    $id = 'organism-' . $organism_index;
 
     $phenotype_number = $phenotype['phenotypes-meta']['number'];
     // File Id of metadata file.
@@ -133,7 +132,7 @@ class PhenotypeMeta {
       tpps_preserve_valid_file(
         $form_state,
         $form_state['values'][$id]['phenotype']['metadata'],
-        $org_num,
+        $organism_index,
         "Phenotype_Metadata"
       );
     }
@@ -287,6 +286,21 @@ class PhenotypeMeta {
       ])
       ->condition('phenotype_synonyms_id', $synonym_id)
       ->execute();
+  }
+
+  /**
+   * Processes a file.
+   *
+   * Note: called from /forms/submit/submit_all.php script.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number on page.
+   * @param array $shared_state
+   *   Submission's Shared State.
+   * @param array $options
+   *   Necessary data.
+   */
+  public static function process($organism_index, array $shared_state, array &$options = []) {
   }
 
 }
