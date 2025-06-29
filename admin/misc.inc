@@ -9,7 +9,6 @@
  * TPPS Misc Settings Form.
  */
 function tpps_misc_settings_form(array $form, array &$form_state) {
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $form['general'] = [
     '#type' => 'fieldset',
