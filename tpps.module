@@ -1908,6 +1908,10 @@ function tpps_init() {
 
 /**
  * Gets list of hardcoded rules to cleanup watchdog messages.
+ *
+ * WARNING:
+ * 'message' is string (not array)
+ * 'variables' could be string and array.
  */
 function tpps_watchdog_cleanup_rules() {
   return [
@@ -2107,8 +2111,8 @@ function tpps_flush_caches() {
  *   When integer it's TPPS Form Page Id.
  *
  *   What is $page_id?
- *                      | $page_id     | CSS       | JS        | File                          |
- *   -------------------+--------------+-----------+-----------+-------------------------------+
+ *   |                  | $page_id     | CSS       | JS        | File                          |
+ *   +------------------+--------------+-----------+-----------+-------------------------------+
  *   Theme              | 'theme'      | Yes       | No        | /css/theme/<name>.css         |
  *   TPPS main CSS/JS   | 'main'       | Yes       | Yes       | /css/tpps.css                 |
  *   Specific Page Id   | $page_number | If exists | If exists | /css/tpps_page_${page_id}.css |
@@ -2116,7 +2120,6 @@ function tpps_flush_caches() {
  *
  *   Constants like TPPS_PAGE_1 and etc could be used to improve code readablility.
  *   Custom Page Id like 'study_export' for 'TPPS Study Export Page'.
- *
  * @param array $form
  *   Drupal Form API form array.
  *   When NULL then CSS/JS will be added as it's a regular page.
