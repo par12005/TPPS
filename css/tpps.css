@@ -137,6 +137,10 @@ th > div.form-type-select > .ajax-progress {
 .tpps_table td {
   padding: 10px;
 }
+#tpps_table_display tbody>tr>td:nth-child(1) {
+  min-width: 50px;
+  width: 150px;
+}
 table.sticky-title caption {
   display: none;
 }

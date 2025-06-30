@@ -60,23 +60,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     ],
   ];
 
-  $iso_check = tpps_get_ajax_value(
-    $form_state, [$id, 'phenotype', 'iso-check'], NULL
-  );
-  if (!empty($iso_check)) {
-    $form[$id]['phenotype']['iso'] = array(
-      '#type' => 'managed_file',
-      '#title' => t('Phenotype Isotope/Mass Spectrometry file: *'),
-      '#upload_location' => 'public://' . $phenotype_dir,
-      '#upload_validators' => ['file_validate_extensions' => ['csv tsv']],
-      '#description' => t('Please upload a file containing all of your '
-        . 'isotope/mass spectrometry data. The format of this file is very '
-        . 'important! The first column of your file should contain plant '
-        . 'identifiers which match the plant identifiers you provided in '
-        . 'your plant accession file, and all of the remaining columns '
-        . 'should contain isotope or mass spectrometry data.'),
-    );
-  }
+  PhenotypeIso::build($id, $form, $form_state);
 
   if (!empty($normal_check)) {
     // @TODO Use static call of build() method.
