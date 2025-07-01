@@ -31,28 +31,35 @@ module_load_include('inc', 'tpps', 'ajax_callbacks/study_details');
  *      in this case.
  *   List of functions for search purpose:
  *   - tpps_ncbi_get_taxon_id().
+ * @param array $payload
+ *   Optional payload. Could be used for testing to emulate POST data.
  *
  * @return array
  *   Returns data ready to be sent to browser.
  */
-function tpps_ajax_callback($callback = '') {
+function tpps_ajax_callback($callback = '', $payload = NULL) {
   $function = 'tpps_ajax_' . check_plain($callback);
   // If we never succed we fail.
   $response['success'] = FALSE;
+  $payload = $payload ?? $_POST;
   if (function_exists($function)) {
-    $result = call_user_func($function, $_POST);
+    $result = call_user_func($function, $payload);
     if (empty($result)) {
       $response['errors'][] = t('Empty response from AJAX callback.');
+    }
+    else {
+      $response = $result;
+      $response['success'] = TRUE;
     }
   }
   elseif (function_exists($callback)) {
     // Note order of elements in $_POST probably will be the same as
     // in AJAX-request's 'data' element and callback could get more then
     // 1 argument in correct order.
-    $result = call_user_func($callback, $_POST);
+    $result = call_user_func($callback, $payload);
     if (empty($result)) {
       $response['errors'][] = t('Empty response from function @callback().', ['@callback' => $callback]);
-      $response['errors'][] = print_r(array_values($_POST));
+      $response['errors'][] = print_r(array_values($payload));
     }
     else {
       $response = $result;

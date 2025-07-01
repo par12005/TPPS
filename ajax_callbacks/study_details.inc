@@ -676,7 +676,7 @@ function tpps_ajax_get_genotype_details_tab(array $data) {
     // $vcf_content = gzopen($vcf_location, 'r');
 
     //$cmd_calls = "bcftools query -f '[%SAMPLE\t%ID\t%REF\t%ALT\t%GT\n]' \"$vcf_location\" | head -n 10";
-    
+
     exec($cmd_calls, $pid_info);
     $pid_data = explode(' ', $pid_info[0]);
     $pid = $pid_data[1]; // Get the PID of the background process
@@ -822,7 +822,10 @@ function _tpps_details_tab_build_table($query, $total, $submission) {
     // Status: development not completed (works but requires more testing).
     // @todo Minor. Move to the SnpAssociation class.
     for ($i = 1; $i <= $organism_number; $i++) {
-      if (empty($fid = SnpAssociation::getFileId($i, $shared_state))) {
+      if (
+        empty($fid = SnpAssociation::getFileId($i, $shared_state))
+        || empty($file = tpps_file_load($fid))
+      ) {
         continue;
       }
       // @todo Get index of the year column in file.
@@ -932,19 +935,27 @@ function _tpps_details_tab_build_table($query, $total, $submission) {
       ];
     }
   }
-  $table = theme('table', [
-    'header' => $header,
-    'rows' => $rows,
-    'attributes' => ['class' => ['view'], 'id' => 'tpps_table_display'],
-    'caption' => '',
-    'colgroups' => NULL,
-    'sticky' => FALSE,
-    'empty' => '',
-  ]);
-  $pager = theme('pager', ['quantity', $total]);
-  return [
-    'success' => TRUE,
-    'content' => $pager . $table,
-  ];
+  if (!empty($header) && !empty($rows)) {
+    $table = theme('table', [
+      'header' => $header,
+      'rows' => $rows,
+      'attributes' => ['class' => ['view'], 'id' => 'tpps_table_display'],
+      'caption' => '',
+      'colgroups' => NULL,
+      'sticky' => FALSE,
+      'empty' => '',
+    ]);
+    $pager = theme('pager', ['quantity', $total]);
+    return [
+      'success' => TRUE,
+      'content' => $pager . $table,
+    ];
+  }
+  else {
+    return [
+      'success' => FALSE,
+    ];
+  }
+
 
 }
