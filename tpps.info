@@ -10,8 +10,16 @@ dependencies[] = jquery_update
 dependencies[] = tripal_eutils
 files[] = src/Submission.class.inc
 files[] = src/Organism.class.inc
+<<<<<<< HEAD
 files[] = src/ChadoDb.class.inc
 files[] = src/TppsFile.class.inc
+=======
+
+files[] = src/RestAPI.class.inc
+;files[] = src/ZenodoDeposit.class.inc
+;files[] = src/ZenodoFiles.class.inc
+
+>>>>>>> 8c8e637a (Implemented new 'RestAPI' class to make API requests using curl.)
 files[] = src/PhenotypeManual.class.inc
 files[] = src/PhenotypeMeta.class.inc
 files[] = src/PhenotypeData.class.inc
