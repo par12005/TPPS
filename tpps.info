@@ -12,6 +12,11 @@ files[] = src/Submission.class.inc
 files[] = src/Organism.class.inc
 files[] = src/ChadoDb.class.inc
 files[] = src/TppsFile.class.inc
+
+files[] = src/RestAPI.class.inc
+;files[] = src/ZenodoDeposit.class.inc
+;files[] = src/ZenodoFiles.class.inc
+
 files[] = src/PhenotypeManual.class.inc
 files[] = src/PhenotypeMeta.class.inc
 files[] = src/PhenotypeData.class.inc
