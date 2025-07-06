@@ -191,10 +191,12 @@ class SubmissionCache {
    */
   public static function buildSingle($submission) {
     $data = [];
-
+    if ($submission->isEmpty()) {
+      return $data;
+    }
     if (
       ($submission->state['status'] ?? NULL) == TPPS_SUBMISSION_STATUS_INCOMPLETE
-      && ($submission->state['stage'] ?? NULL) == TPPS_PAGE_1
+      && ($submission->state['stage'] ?? NULL) == TPPS_PAGE_2
       && empty($submission->state['saved_values'][TPPS_PAGE_1])
       // @TODO Check if publication title is empty (not set).
     ) {
@@ -213,10 +215,6 @@ class SubmissionCache {
       watchdog('tpps', 'Removed empty submission @accession.',
         ['@accession' => $submission->accession]
       );
-      return $data;
-    }
-
-    if ($submission->doesNotExist()) {
       return $data;
     }
     $page1_values = $submission->get(['saved_values', TPPS_PAGE_1]);
@@ -351,7 +349,6 @@ class SubmissionCache {
     $data['import_meta'] = $submission->getImportMeta();
     $tripal_job_id = $submission->sharedState['job_id'] ?? NULL;
     $data['tripal_job']['id'] = $tripal_job_id;
-
     // Get Tripal Job status.
     if (!empty($tripal_job_id)) {
       try {
@@ -365,7 +362,6 @@ class SubmissionCache {
         }
       }
     }
-
     return $data;
   }
 
