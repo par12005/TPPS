@@ -53,7 +53,9 @@ function tpps_ajax_callback($callback = '', $payload = NULL) {
       $response['errors'][] = t('Empty response from AJAX callback.');
     }
     else {
-      $response = $result;
+      if (!is_bool($result)) {
+        $response = $result;
+      }
       $response['success'] = TRUE;
     }
   }
@@ -67,7 +69,9 @@ function tpps_ajax_callback($callback = '', $payload = NULL) {
       $response['errors'][] = print_r(array_values($payload));
     }
     else {
-      $response = $result;
+      if (!is_bool($result)) {
+        $response = $result;
+      }
       $response['success'] = TRUE;
     }
   }
