@@ -20,10 +20,8 @@ function tpps_misc_settings_form(array $form, array &$form_state) {
     '#type' => 'checkbox',
     '#title' => t('Debug mode'),
     '#default_value' => variable_get('tpps_rest_api_debug_mode'),
-    '#description' => t("When enabled extra debug-messages will be shown on "
-      . "page when error or exception happens."
-      . "<br />When enabled then execution time of all requests will be "
-      . "logged to watchdog."
+    '#description' => t("When enabled then details and execution time of "
+      . "all requests will be logged to watchdog."
     ),
   ];
   $form['rest_api']['tpps_rest_api_max_execution_time'] = [
