@@ -2324,15 +2324,6 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     // WARNING: filename differs from the settings group name.
     'file' => 'admin/config.php',
   ];
-  $items['admin/config/tpps/watchdog_cleanup'] = [
-    'title' => 'Watchdog Cleanup',
-    'description' => 'Manage cleaning of the watchdog spam-messages.',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_watchdog_cleanup_settings_form'],
-    'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/watchdog_cleanup.inc',
-  ];
   $items['admin/config/tpps/ncbi_batch'] = [
     'title' => 'NCBI Taxonomy Id Batch Update',
     'description' => 'Gets taxonomy id for existing organisms from NCBI using Batch API.',
@@ -2343,12 +2334,21 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file' => 'admin/ncbi_batch.inc',
   ];
 
-  $list = ['google_maps', 'misc', 'ncbi', 'cache', 'submission'];
-  foreach ($list as $name) {
-    $human_name = ucfirst(str_replace('_', ' ', $name));
+  $list = [
+    'google_maps' => NULL,
+    'misc' => NULL,
+    'ncbi' => NULL,
+    'cache' => NULL,
+    'submission' => NULL,
+    'rest_api' => 'RestAPI Class Settings',
+    'watchdog_cleanup' => 'Manage cleaning of the watchdog spam-messages.',
+  ];
+  foreach ($list as $name => $description) {
+    $human_name = ucwords(str_replace('_', ' ', $name));
+    $description = $description ?? $human_name . ' Settings';
     $items['admin/config/tpps/' . $name] = [
       'title' => $human_name,
-      'description' => $human_name . ' Settings',
+      'description' => $description,
       'page callback' => 'drupal_get_form',
       'page arguments' => ['tpps_' . $name . '_settings_form'],
       'access arguments' => ['administer tpps module'],

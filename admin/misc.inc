@@ -10,49 +10,6 @@
  */
 function tpps_misc_settings_form(array $form, array &$form_state) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Rest API Settings.
-  $form['rest_api'] = [
-    '#type' => 'fieldset',
-    '#title' => t('Rest API'),
-    '#collapsible' => TRUE,
-  ];
-  $form['rest_api']['tpps_rest_api_debug_mode'] = [
-    '#type' => 'checkbox',
-    '#title' => t('Debug mode'),
-    '#default_value' => variable_get('tpps_rest_api_debug_mode'),
-    '#description' => t("When enabled then details and execution time of "
-      . "all requests will be logged to watchdog."
-    ),
-  ];
-  $form['rest_api']['tpps_rest_api_max_execution_time'] = [
-    '#type' => 'textfield',
-    '#title' => t('Request Max Execution Time, milliseconds'),
-    '#default_value' => variable_get('tpps_rest_api_max_execution_time'),
-    '#description' => t("Longer requests will be logged using watchdog()."
-      . "<br />Default: 5000."
-      . "<br />Note: Any request which runs more then this limit "
-      . "will be logged to watchdog even if debug mode is disabled."
-    ),
-    '#element_validate' => ['element_validate_integer_positive'],
-  ];
-
-  $form['rest_api']['tpps_rest_api_timeout'] = [
-    '#type' => 'textfield',
-    '#title' => t('RestAPI request timeout'),
-    '#default_value' => variable_get('tpps_rest_api_timeout'),
-    '#description' => t("The maximum number of seconds to allow cURL "
-      . "functions to execute. <br />To set in milliseconds use: "
-      . "CURLOPT_TIMEOUT_MS.<br />See !link.",
-      [
-        '!link' => l(
-          'https://curl.se/libcurl/c/CURLOPT_TIMEOUT.html',
-          'https://curl.se/libcurl/c/CURLOPT_TIMEOUT.html'
-        ),
-      ]
-    ),
-    '#element_validate' => ['element_validate_integer_positive'],
-  ];
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Validation Regular Expressions.
   $form['validation_regex'] = [
     '#type' => 'fieldset',
