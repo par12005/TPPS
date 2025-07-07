@@ -105,11 +105,6 @@ class RestAPI {
       ];
       $data = json_encode($data);
     }
-    if (static::isDebugMode()) {
-      dpm($url, __METHOD__);
-      dpm($data, __METHOD__);
-      dpm($header, __METHOD__);
-    }
     return self::doRequest('POST', $url, $data, $header);
   }
 
@@ -413,15 +408,6 @@ class RestAPI {
           !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS
         ),
       ];
-      if (static::isDebugMode()) {
-        dpm($exception_data['url'], 'URL');
-        dpm($exception_data['method'], 'Method');
-        dpm(print_r($exception_data['header'], 1), 'Header');
-        dpm(print_r($exception_data['payload'], 1), 'Payload');
-        dpm(print_r($exception_data['response'], 1), 'Response Body');
-        dpm(print_r($exception_data['curl_info'], 1), 'Curl Info');
-        dpm(print_r($exception_data['backtrace'], 1), 'Backtrace');
-      }
       if (function_exists('drupal_alter')) {
         // tpps_rest_api_exception_alter().
         drupal_alter('rest_api_exception', $message, $exception_data);
