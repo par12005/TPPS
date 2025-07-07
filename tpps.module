@@ -3541,9 +3541,6 @@ function tpps_rest_api_request_execution_time($execution_time, array $data = [])
     '@time' => $execution_time,
     '!request_data' => tpps_array_print_list($data),
   ];
-  if (variable_get('tpps_rest_api_debug_mode', FALSE)) {
-    drupal_set_message(t($log_message, $params), 'warning');
-  }
   if (
     $execution_time >= variable_get('tpps_rest_api_max_execution_time', 5000)
     || variable_get('tpps_rest_api_debug_mode', FALSE)
