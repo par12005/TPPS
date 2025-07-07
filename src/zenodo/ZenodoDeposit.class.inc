@@ -79,6 +79,7 @@ class ZenodoDeposit extends Zenodo {
     }
 
     $data['url'] = static::buildActionUrl($data);
+    static::delay();
     $data['response'] = RestAPI::post($data['url'], $data['payload']);
 
     if (function_exists('module_invoke_all')) {
@@ -110,6 +111,7 @@ class ZenodoDeposit extends Zenodo {
     }
 
     $data['url'] = static::buildActionUrl($data);
+    static::delay();
     $data['response'] = RestAPI::post($data['url']);
 
     if (function_exists('module_invoke_all')) {
@@ -140,6 +142,7 @@ class ZenodoDeposit extends Zenodo {
     }
 
     $data['url'] = static::buildActionUrl($data);
+    static::delay();
     $data['response'] = RestAPI::post($data['url'], $data['payload']);
 
     if (function_exists('module_invoke_all')) {
@@ -192,6 +195,7 @@ class ZenodoDeposit extends Zenodo {
     }
 
     $data['url'] = static::buildActionUrl($data);
+    static::delay();
     $data['response'] = RestAPI::post($data['url']);
 
     if (function_exists('module_invoke_all')) {

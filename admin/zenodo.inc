@@ -49,7 +49,22 @@ function tpps_zenodo_settings_form(array $form, array &$form_state) {
       . 'better to disable this option.'
     ),
   ];
-
+  $form['api']['tpps_zenodo_api_request_delay'] = [
+    '#type' => 'textfield',
+    '#title' => t('API Request Delay, milliseconds'),
+    '#default_value' => variable_get('tpps_zenodo_api_request_delay'),
+    '#description' => t("Single operation could require multiple (at least 3) "
+      . "API requests and Zenodo Service will block spam-requests. Delay will "
+      . "be applied before any API operation of all Zenodo entities "
+      . "(Deposition, File, Record) so use with caution."
+      . "<br />Default: 100 milliseconds (0.1 second)."
+      . "<br />Note: Empty value means no delay."
+      . "<br />Note: Values larger than 1000 (i.e. more than 1 "
+      . "second) may not be supported by the operating system."
+    ),
+    '#element_validate' => ['element_validate_integer_positive'],
+    // @TODO Check if value is less than 1000.
+  ];
   $form['api']['tokens'] = [
     '#type' => 'fieldset',
     '#title' => t('Access Tokens'),

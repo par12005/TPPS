@@ -90,6 +90,7 @@ class Zenodo {
         drupal_alter(static::getHookName(__FUNCTION__), $data);
       }
       $data['url'] = static::buildUrl($data);
+      static::delay();
       $data['response'] = RestAPI::get($data['url'], $data['query']);
       $static_cache[$key] = $data['response'] ?? '';
     }
@@ -127,6 +128,7 @@ class Zenodo {
       }
       $data['url'] = static::buildUrl($data);
       try {
+        static::delay();
         $data['response'] = RestAPI::get($data['url'], $data);
       }
       catch (Exception $e) {
@@ -151,6 +153,11 @@ class Zenodo {
         else {
           $message = $e->getMessage();
         }
+        $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
+        watchdog('tpps', $message . '<pre>@backtrace</pre>',
+          ['@backtrace' => print_r($stack, 1)],
+          WATCHDOG_ERROR
+        );
         throw new Exception($message, $e->getCode());
       }
 
@@ -212,6 +219,7 @@ class Zenodo {
     }
 
     $data['url'] = static::buildUrl($data);
+    static::delay();
     $data['response'] = RestAPI::delete($data['url']);
 
     // Note: When Deposit not found we stil need to remove it's id from Submission.
@@ -264,6 +272,7 @@ class Zenodo {
     }
 
     $data['url'] = static::buildUrl($data);
+    static::delay();
     if (static::getClassName() == 'ZenodoDeposit') {
       $data['response'] = RestAPI::post($data['url'], $data['payload'], $data['header']);
     }
@@ -313,6 +322,7 @@ class Zenodo {
     }
     static::validateRequired(['metadata'], $data['payload']);
     $data['url'] = static::buildUrl($data);
+    static::delay();
     $data['response'] = RestAPI::put($data['url'], $data['payload']);
 
     if (function_exists('module_invoke_all')) {
@@ -388,6 +398,7 @@ class Zenodo {
           // New Zenodo Bucket API.
           // See https://developers.zenodo.org/?shell#quickstart-upload
           static::validateRequired(['deposit_id'], $data);
+          static::delay();
           $deposition = ZenodoDeposit::retrieve($data);
           $path = $deposition['links']['bucket'];
           if (!empty($data['drupal_file']->filename)) {
@@ -495,7 +506,6 @@ class Zenodo {
     return $prefix . $action;
   }
 
-
   /**
    * Adds Access Token to given URL.
    *
@@ -514,10 +524,16 @@ class Zenodo {
     else {
       $access_token = variable_get('tpps_zenodo_access_token_sandbox');
     }
-    return url($url, [
-      'query' => ['access_token' => $access_token],
-      //'external' => $external,
-    ]);
+    return url($url, ['query' => ['access_token' => $access_token]]);
+  }
+
+  /**
+   * Performs delay before API request to avoid pentalty for spam-requests.
+   *
+   * This delay is Zenodo API related (not RestAPI).
+   */
+  public static function delay() {
+    usleep(variable_get('tpps_zenodo_api_request_delay') * 1000);
   }
 
 }

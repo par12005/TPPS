@@ -300,6 +300,7 @@ class ZenodoHost {
       static::toggle();
       $data['url'] = ZenodoDeposit::buildUrl($data);
       try {
+        static::delay();
         RestAPI::get($data['url']);
         if (function_exists('module_invoke_all')) {
           // tpps_zenodo_host_changed.
@@ -318,6 +319,15 @@ class ZenodoHost {
       }
     }
     return static::get();
+  }
+
+  /**
+   * Performs delay before API request to avoid pentalty for spam-requests.
+   *
+   * This delay is Zenodo API related (not RestAPI).
+   */
+  public static function delay() {
+    usleep(variable_get('tpps_zenodo_api_request_delay') * 1000);
   }
 
 }
