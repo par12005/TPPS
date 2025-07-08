@@ -9,7 +9,7 @@
  * because not all responses and not all methods could be cached.
  *
  * Usage:
- *  RestAPI::post($url, $data);
+ *  RestAPI::post($url, $payload);
  *  RestAPI::delete($url);
  *
  *  @todo Minor. Do not use dpm().
@@ -331,9 +331,9 @@ class RestAPI {
    *   HTTP method. Possible values are: 'POST', 'GET', 'PUT', 'DELETE'.
    * @param string $url
    *   API Endpoint URL.
-   * @param mixed $data
+   * @param mixed $payload
    *   Payload. Required for POST-requests (payload).
-   *   Could be an array for GET-requests.
+   *   Could be a URL query part for GET-requests.
    *   To send JSON use header: 'Content-Type: application/json'.
    * @param array $header
    *   HTTP-headers. Required for POST-requests.
@@ -346,27 +346,27 @@ class RestAPI {
    *
    * @todo Convert to private or protected method if it's possible for static.
    */
-  public static function doRequest($method, $url, $data = [], array $header = []) {
+  public static function doRequest($method, $url, $payload = [], array $header = []) {
     $method = strtoupper($method);
     $curl = curl_init();
     // Why not use CURLOPT_POS: https://stackoverflow.com/a/74812403
     curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
     curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
 
-    if ($data) {
+    if (!empty($payload)) {
       if (in_array($method, ['POST', 'DELETE', 'PUT'])) {
         curl_setopt($curl, CURLOPT_SAFE_UPLOAD, TRUE);
         // Different processing of array and string:
         // https://stackoverflow.com/questions/5224790
-        curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $payload);
       }
       else {
         // GET.
-        $params = ['https' => TRUE, 'external' => TRUE];
-        if (!empty($data)) {
-          $params['query'] = $data;
-        }
-        $url = url($url, $params);
+        $url = url($url, [
+          'https' => TRUE,
+          'external' => TRUE,
+          'query' => $payload,
+        ]);
       }
     }
 
@@ -414,7 +414,7 @@ class RestAPI {
           'Request' => [
             'Method' => $method,
             'URL' => $url,
-            'Payload' => $data['payload'] ?? NULL,
+            'Payload' => $payload ?? NULL,
             'Headers' => $header ?? NULL,
           ],
           'Response' => $response,
@@ -431,7 +431,7 @@ class RestAPI {
     }
     else {
       $exception_data = [
-        'payload' => empty($data) ? [] : json_decode($data),
+        'payload' => empty($payload) ? [] : json_decode($payload),
         'url' => $url,
         'method' => $method,
         'header' => $header,

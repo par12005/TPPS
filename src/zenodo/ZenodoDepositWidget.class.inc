@@ -255,6 +255,7 @@ class ZenodoDepositWidget {
    *   Drupal Form State array.
    */
   public static function submit(array $form, array $form_state) {
+    $debug_mode = FALSE;
     $action = $form_state['triggering_element']['#name'];
     $widget_name = static::NAME;
     $widget = $form_state['values'][$widget_name];
@@ -305,6 +306,7 @@ class ZenodoDepositWidget {
     // ZenodoDeposit::edit().
     // ZenodoDeposit::update().
     // ZenodoDeposit::discard().
+    // ZenodoDeposit::publish().
     $method_name = $class . '::' . $action;
     if ($debug_mode ?? FALSE) {
       dpm('Method: ' . $method_name);
