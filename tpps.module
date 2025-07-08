@@ -3528,25 +3528,36 @@ function tpps_zenodo_deposit_create_alter(array &$data = []) {
 }
 
 /**
- * Implements hook 'rest_api_request_execution_time'.
+ * Implements hook 'rest_api_request_complete'.
  *
- * @param float $execution_time
- *   Request execution time in milliseconds.
- * @param array $data
- *   Request meta-data.
+ * @param array $context
+ *   Request's context.
+ *   Keys:
+ *   'Code' - int. HTTP code.
+ *   'Message' - string. HTTP code message.
+ *   'Execution Time' - float. Request execution time in milliseconds.
+ *   'Request' - array. Keys are 'Method', 'URL', 'Payload', 'Headers'.
+ *   'Response' - mixed. Remote server's response.
  */
-function tpps_rest_api_request_execution_time($execution_time, array $data = []) {
-  $log_message = 'Rest API Request execution time: @time msec. !request_data';
-  $params = [
-    '@time' => $execution_time,
-    '!request_data' => tpps_array_print_list($data),
-  ];
+function tpps_rest_api_request_complete(array $context = []) {
+  $max_execution_time = variable_get('tpps_rest_api_max_execution_time', 5000);
   if (
-    $execution_time >= variable_get('tpps_rest_api_max_execution_time', 5000)
-    || variable_get('tpps_rest_api_debug_mode', FALSE)
+    ($context['Execution Time'] ?? 0) <= $max_execution_time
+    && !RestAPI::isLogRequestAllowed()
+    && !RestAPI::isLogResponseAllowed()
   ) {
-    watchdog('tpps', $log_message, $params, WATCHDOG_WARNING);
+    return;
   }
+  // Note: Execution time will always be shown.
+  if (!RestAPI::isLogRequestAllowed()) {
+    unset($context['Request']);
+  }
+  if (!RestAPI::isLogResponseAllowed()) {
+    unset($context['Response']);
+  }
+  $message = 'Rest API Request Complete. !context';
+  $params = ['!context' => tpps_array_print_list($context)];
+  watchdog('tpps', $message, $params, WATCHDOG_WARNING);
 }
 
 /**

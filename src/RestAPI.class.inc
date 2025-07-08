@@ -27,16 +27,23 @@ class RestAPI {
   // Static class constants.
 
   /**
-   * Is Debug Mode enabled.
-   *
-   * When TRUE then more debug messages will be shown.
+   * Checks if request logging is allowed.
    *
    * @return bool
-   *   Returns TRUE when 'Debug Mode' for 'RestAPI' class is enabled.
-   *   Returns FALSE otherwise.
+   *   Returns TRUE when logging is allowed and FALSE otherwise.
    */
-  public static function isDebugMode() {
-    return variable_get('tpps_rest_api_debug_mode', TRUE);
+  public static function isLogRequestAllowed() {
+    return variable_get('tpps_rest_api_allow_log_request', FALSE);
+  }
+
+  /**
+   * Checks if response logging is allowed.
+   *
+   * @return bool
+   *   Returns TRUE when logging is allowed and FALSE otherwise.
+   */
+  public static function isLogResponseAllowed() {
+    return variable_get('tpps_rest_api_allow_log_response', FALSE);
   }
 
   /**
@@ -359,19 +366,6 @@ class RestAPI {
 
     // Execution time.
     $execution_time = (microtime(1) - $execution_time_start) * 1000;
-    // Allow other modules to react on request execution time.
-    if (function_exists('module_invoke_all')) {
-      module_invoke_all(
-        'rest_api_request_execution_time',
-        $execution_time,
-        [
-          'Method' => $method,
-          'URL' => $url,
-          'Payload' => $data['payload'] ?? NULL,
-          'Headers' => $header ?? NULL,
-        ]
-      );
-    }
 
     // Prepare response.
     if ($info['content_type'] == 'application/json') {
@@ -387,6 +381,27 @@ class RestAPI {
     // Validate HTTP request code.
     $code = $info['http_code'];
     $message = static::getHttpCodeMessage($code);
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Allow other modules to react on request.
+    if (function_exists('module_invoke_all')) {
+      // tpps_rest_api_request_complete().
+      module_invoke_all(
+        'rest_api_request_complete',
+        [
+          'Code' => $code,
+          'Message' => $message,
+          'Execution Time' => $execution_time,
+          'Request' => [
+            'Method' => $method,
+            'URL' => $url,
+            'Payload' => $data['payload'] ?? NULL,
+            'Headers' => $header ?? NULL,
+          ],
+          'Response' => $response,
+        ]
+      );
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     if ($code == 0 && empty($response)) {
       throw new Exception($message);
     }

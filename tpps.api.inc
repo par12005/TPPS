@@ -469,14 +469,18 @@ function hook_zenodo_deposit_published(array $data, array $response) {
 }
 
 /**
- * Implements hook 'rest_api_request_execution_time'.
+ * Implements hook 'rest_api_request_complete'.
  *
- * @param float $execution_time
- *   Request execution time in msec.
- * @param string $data
- *   Request meta-data to be shown in log messages.
+ * @param array $context
+ *   Request's context.
+ *   Keys:
+ *   'Code' - int. HTTP code.
+ *   'Message' - string. HTTP code message.
+ *   'Execution Time' - float. Request execution time in milliseconds.
+ *   'Request' - array. Keys are 'Method', 'URL', 'Payload', 'Headers'.
+ *   'Response' - mixed. Remote server's response.
  */
-function hook_rest_api_request_execution_time($execution_time, array $data = []) {
+function hook_rest_api_request_complete(array $context = []) {
 }
 
 /**

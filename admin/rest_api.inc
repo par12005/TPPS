@@ -14,12 +14,19 @@ function tpps_rest_api_settings_form(array $form, array &$form_state) {
     '#title' => t('Rest API Class Settings'),
     '#collapsible' => TRUE,
   ];
-  $form['rest_api']['tpps_rest_api_debug_mode'] = [
+  $form['rest_api']['tpps_rest_api_allow_log_request'] = [
     '#type' => 'checkbox',
-    '#title' => t('Debug mode'),
-    '#default_value' => variable_get('tpps_rest_api_debug_mode'),
+    '#title' => t('Allow Request Logging'),
+    '#default_value' => variable_get('tpps_rest_api_allow_log_request'),
     '#description' => t("When enabled all requests will be logged to watchdog."),
   ];
+  $form['rest_api']['tpps_rest_api_allow_log_response'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Allow Response Logging'),
+    '#default_value' => variable_get('tpps_rest_api_allow_log_response'),
+    '#description' => t("When enabled all responses will be logged to watchdog."),
+  ];
+
   $form['rest_api']['tpps_rest_api_max_execution_time'] = [
     '#type' => 'textfield',
     '#title' => t('Request Max Execution Time, milliseconds'),
