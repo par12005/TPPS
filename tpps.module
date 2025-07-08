@@ -3548,6 +3548,11 @@ function tpps_rest_api_request_complete(array $context = []) {
   ) {
     return;
   }
+  // Validate method.
+  $method = $context['Request']['Method'] ?? NULL;
+  if (!RestAPI::isLogRequestTypeAllowed($method)) {
+    return;
+  }
   // Note: Execution time will always be shown.
   if (!RestAPI::isLogRequestAllowed()) {
     unset($context['Request']);

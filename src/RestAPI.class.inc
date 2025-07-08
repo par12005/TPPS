@@ -23,8 +23,28 @@
  */
 class RestAPI {
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Static class constants.
+  /**
+   * Gets types of requests selected for logging.
+   *
+   * @return array
+   *   Returns TRUE when logging is allowed and FALSE otherwise.
+   */
+  public static function getLogRequestTypes() {
+    return array_keys(array_filter(variable_get('tpps_rest_api_log_type', [])));
+  }
+
+  /**
+   * Checks if given HTTP Request type was selected for logging.
+   *
+   * @param string $type
+   *   HTTP Request type. Possible values 'put', 'get', 'post', 'delete'.
+   *
+   * @return bool
+   *   Return TRUE if given type was selected and FALSE otherwise.
+   */
+  public static function isLogRequestTypeAllowed($type) {
+    return in_array(strtolower($type), static::getLogRequestTypes());
+  }
 
   /**
    * Checks if request logging is allowed.
@@ -33,7 +53,7 @@ class RestAPI {
    *   Returns TRUE when logging is allowed and FALSE otherwise.
    */
   public static function isLogRequestAllowed() {
-    return variable_get('tpps_rest_api_allow_log_request', FALSE);
+    return variable_get('tpps_rest_api_log_show_request', FALSE);
   }
 
   /**
@@ -43,7 +63,7 @@ class RestAPI {
    *   Returns TRUE when logging is allowed and FALSE otherwise.
    */
   public static function isLogResponseAllowed() {
-    return variable_get('tpps_rest_api_allow_log_response', FALSE);
+    return variable_get('tpps_rest_api_log_show_response', FALSE);
   }
 
   /**

@@ -130,8 +130,9 @@ function tpps_get_variable_list() {
     'tpps_zenodo_host_greedy_search' => FALSE,
     'tpps_zenodo_api_request_delay' => 100,
     // RestAPI Class Settings.
-    'tpps_rest_api_allow_log_request' => FALSE,
-    'tpps_rest_api_allow_log_response' => FALSE,
+    'tpps_rest_api_log_type' => [],
+    'tpps_rest_api_log_show_request' => FALSE,
+    'tpps_rest_api_log_show_response' => FALSE,
     'tpps_rest_api_timeout' => 30,
     'tpps_rest_api_max_execution_time' => 5000,
 
@@ -2380,9 +2381,10 @@ function tpps_update_7128() {
   variable_set('tpps_zenodo_host_greedy_search', FALSE);
   variable_set('tpps_zenodo_api_request_delay', 100);
   // Rest API Settings.
+  variable_set('tpps_rest_api_log_type', []);
   variable_set('tpps_rest_api_timeout', 30);
-  variable_set('tpps_rest_api_allow_log_request', FALSE);
-  variable_set('tpps_rest_api_allow_log_response', FALSE);
+  variable_set('tpps_rest_api_log_show_request', FALSE);
+  variable_set('tpps_rest_api_log_show_response', FALSE);
   variable_set('tpps_rest_api_max_execution_time', 5000);
 
   // Rename variable.

@@ -14,20 +14,43 @@ function tpps_rest_api_settings_form(array $form, array &$form_state) {
     '#title' => t('Rest API Class Settings'),
     '#collapsible' => TRUE,
   ];
-  $form['rest_api']['tpps_rest_api_allow_log_request'] = [
-    '#type' => 'checkbox',
-    '#title' => t('Allow Request Logging'),
-    '#default_value' => variable_get('tpps_rest_api_allow_log_request'),
-    '#description' => t("When enabled all requests will be logged to watchdog."),
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Log.
+  $form['rest_api']['log'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Logging'),
+    '#collapsible' => TRUE,
+    '#description' => t('Requests longer then max execution time will be logged'
+      . 'automatically.'),
   ];
-  $form['rest_api']['tpps_rest_api_allow_log_response'] = [
-    '#type' => 'checkbox',
-    '#title' => t('Allow Response Logging'),
-    '#default_value' => variable_get('tpps_rest_api_allow_log_response'),
-    '#description' => t("When enabled all responses will be logged to watchdog."),
+  $form['rest_api']['log']['tpps_rest_api_log_type'] = [
+    '#type' => 'checkboxes',
+    '#options' => [
+      'get' => 'GET',
+      'post' => 'POST',
+      'put' => 'PUT',
+      'delete' => 'DELETE',
+    ],
+    '#title' => t('Log Request types'),
+    '#default_value' => variable_get('tpps_rest_api_log_type', []),
   ];
-
-  $form['rest_api']['tpps_rest_api_max_execution_time'] = [
+  $form['rest_api']['log']['tpps_rest_api_log_show_request'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Show Request'),
+    '#default_value' => variable_get('tpps_rest_api_log_show_request'),
+  ];
+  $form['rest_api']['log']['tpps_rest_api_log_show_response'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Show Response'),
+    '#default_value' => variable_get('tpps_rest_api_log_show_response'),
+  ];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $form['rest_api']['time'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Time'),
+    '#collapsible' => TRUE,
+  ];
+  $form['rest_api']['time']['tpps_rest_api_max_execution_time'] = [
     '#type' => 'textfield',
     '#title' => t('Request Max Execution Time, milliseconds'),
     '#default_value' => variable_get('tpps_rest_api_max_execution_time'),
@@ -39,7 +62,7 @@ function tpps_rest_api_settings_form(array $form, array &$form_state) {
     '#element_validate' => ['element_validate_integer_positive'],
   ];
 
-  $form['rest_api']['tpps_rest_api_timeout'] = [
+  $form['rest_api']['time']['tpps_rest_api_timeout'] = [
     '#type' => 'textfield',
     '#title' => t('RestAPI request timeout'),
     '#default_value' => variable_get('tpps_rest_api_timeout'),
