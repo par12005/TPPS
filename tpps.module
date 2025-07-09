@@ -3293,7 +3293,14 @@ function theme_zenodo_concept_record_link($variables) {
   ) {
     return '';
   }
-  $query = ['q' => 'conceptrecid:' . $conceptrecid, 'all_versions' => 1];
+  // Docs: https://developers.zenodo.org/?javascript#list
+  $query = [
+    'q' => 'conceptrecid:' . $conceptrecid,
+    'all_versions' => 1,
+    // optional. Sort order (bestmatch or mostrecent).
+    // Prefix with minus to change form ascending to descending (e.g. -mostrecent).
+    'sort' => 'mostrecent',
+  ];
   // The same API Endpoint uses ZenodoDeposit::list().
   $url = 'https://' . ($host == 'live' ? '' : 'sandbox.')
     . 'zenodo.org/api/deposit/depositions';
