@@ -144,7 +144,6 @@ class ZenodoDeposit extends Zenodo {
     $data['url'] = static::buildActionUrl($data);
     static::delay();
     $data['response'] = RestAPI::post($data['url'], $data['payload']);
-
     if (function_exists('module_invoke_all')) {
       // tpps_zenodo_deposit_discarded().
       module_invoke_all(static::getHookName('discarded'), $data);
@@ -513,6 +512,45 @@ class ZenodoDeposit extends Zenodo {
    */
   public static function list(array $data, $reset = FALSE) {
     return parent::list($data, $reset);
+  }
+
+  /**
+   * Gets list of all the Zenodo Deposition versions.
+   *
+   * @param array $data
+   *   Context data. Keys are: 'deposit_id' or 'conceptrecid' (at least one
+   *   must be set).
+   *   Better to use 'conceptrecid' to avoid extra Zenodo API request.
+   * @param string $sort
+   *   Sort order (bestmatch or mostrecent).
+   *   Prefix with minus to change form ascending to descending (e.g. -mostrecent).
+   *
+   * @return array
+   *   Returns list of all the Zenodo Deposition versions sorted by creation
+   *   date in ascending order.
+   */
+  public static function getAllVersions(array $data, $sort = 'mostrecent') {
+    if (empty($data['conceptrecid'])) {
+      if (empty($data['deposit_id'])) {
+        $message = "Can't get Zenodo Deposition version because of empty 'deposit_id'.";
+        throw new Exception($message);
+      }
+      else {
+        $deposition = ZenodoDeposit::retrieve(['deposit_id' => $data['deposit_id']]);
+        $data['conceptrecid'] = $deposition['conceptrecid'] ?? NULL;
+        if (empty($data['conceptrecid'])) {
+          return [];
+        }
+      }
+    }
+    $data = [
+      'query' => [
+        'q' => 'conceptrecid:' . $data['conceptrecid'],
+        'all_versions' => 1,
+        'sort' => $sort,
+      ],
+    ];
+    return ZenodoDeposit::list($data);
   }
 
 }

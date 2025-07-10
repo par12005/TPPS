@@ -80,6 +80,8 @@ class Zenodo {
    */
   public static function list(array $data, $reset = FALSE) {
     $key = 'list';
+    //ksort($data);
+    // @TODO Check if only this key could be used.
     if (!empty($data)) {
       $key = ($data['deposit_id'] ?? '') . ($data['file_id'] ?? '');
       if (empty($key)) {
@@ -97,7 +99,7 @@ class Zenodo {
       }
       $data['url'] = static::buildUrl($data);
       static::delay();
-      $data['response'] = RestAPI::get($data['url'], $data['query']);
+      $data['response'] = RestAPI::get($data['url'], $data);
       $static_cache[$key] = $data['response'] ?? '';
     }
     return $static_cache[$key];
@@ -121,7 +123,6 @@ class Zenodo {
    */
   public static function retrieve(array $data, $reset = FALSE) {
     static::validateRequired(['deposit_id'], $data);
-
     $key = $data['deposit_id'] . ($data['file_id'] ?? '');
     $static_cache = &drupal_static(__METHOD__);
     if ($reset || !isset($static_cache[$key])) {
@@ -184,13 +185,15 @@ class Zenodo {
    *
    * Note:
    * 1. Since operation used for both (Deposits and Files) we use Drupal hooks.
-   * 2. Only unpublished depositions may be deleted.
+   * 2. Only unpublished depositions could be deleted.
+   * 3. Editions could be 'discarded'.
    *
    * @param array $data
    *   Data for request.
    *   Required keys:
    *     Zenodo Deposit: 'deposit_id'.
    *     Zenodo File: 'deposit_id', 'file_id'.
+   *   Item 'deposition' will be added during processing.
    *
    * @return mixed
    *   Returns API response.
@@ -213,8 +216,9 @@ class Zenodo {
     static::validateRequired(['deposit_id'], $data);
 
     // Check if Deposition could be removed.
-    $deposition = ZenodoDeposit::retrieve($data);
-    if (!empty($deposition['submitted'])) {
+    $data['deposition'] = ZenodoDeposit::retrieve($data);
+
+    if (!empty($data['deposition']['submitted'])) {
       if (static::getClassName() == 'ZenodoDeposit') {
         $message = t("Deposition was published and can't be removed anymore.");
       }
