@@ -3391,12 +3391,18 @@ function tpps_zenodo_deposit_published(array $data) {
  * Implements hook 'zenodo_deposit_deleted'.
  */
 function tpps_zenodo_deposit_deleted(array $data) {
-  drupal_set_message(t('Zenodo Deposit was <strong>deleted</strong>.'));
+  $message = t('Zenodo Deposit #@deposit_id was <strong>deleted</strong>.',
+    ['@deposit_id' => $data['deposit_id']]
+  );
+  drupal_set_message($message);
 
-  // Remove Zenodo Deposit Id from TPPS Submission.
-  // But when Deposit wasn't found there will be error message in the response.
-  // But safer to remove Deposit Id from the Submission object anyway because
-  // having it blocks creation of the new Deposit.
+  if (empty($deposition = $data['deposition'])) {
+    if (!empty($data['deposit_id'])) {
+      $deposition = ZenodoDeposit::retrieve($data);
+    }
+  }
+
+  // Update Submission.
   if (empty($data['accession'])) {
     return;
   }
@@ -3404,17 +3410,46 @@ function tpps_zenodo_deposit_deleted(array $data) {
   if ($submission->doesNotExist()) {
     return;
   }
+  if (!empty($deposition)) {
+    // Check if there is previous version.
+    $version_list = ZenodoDeposit::getAllVersions(
+      [
+        // The other way to get 'coneptrecid':
+        //$conceptrecid = $submission->getZenodoConceptRecordId();
+        'conceptrecid' => $deposition['conceptrecid'] ?? NULL,
+        'deposit_id' => $deposition['id'],
+      ],
+      $sort = 'mostrecent'
+    );
+    if (empty($version_list)) {
+      // Was removed unpublished last version.
+      $conceptrecid = NULL;
+      $new_deposit_id = NULL;
+      $message = t('Removed last unpublished version of Zenodo Deposition.');
+    }
+    else {
+      $conceptrecid = $deposition['conceptrecid'];
+      $new_deposit_id = $version_list[0]['id'];
+      $message = t('Restored previous verion of the Zenodo Deposit: #@deposit_id.',
+        ['@deposit_id' => $new_deposit_id]
+      );
+    }
+    drupal_set_message($message);
+    if ($deposition['id'] = $submission->getZenodoDepositId()) {
+      // Unset exsisting Dataset DOI value.
+      $submission->updateDatasetDOI(NULL);
+      // WARNING: Be sure to save $submission.
+      $submission->setZenodoConceptRecordId($conceptrecid, $save_on_change = FALSE);
+      $submission->setZenodoDepositId($new_deposit_id, $save_on_change = FALSE);
+      $submission->save();
+      $message = t('Submission @accession was updated.',
+        ['@accession' => $data['accession']]
+      );
+      drupal_set_message($message);
+    }
+  }
   // Clear cache.
   SubmissionCache::updateSingle($submission);
-  // Clear relation with Zenodo Deposit.
-  if ($deposit_id = $submission->getZenodoDepositId()) {
-    // Unset exsisting Dataset DOI value.
-    $submission->updateDatasetDOI(NULL);
-    // WARNING: Be sure to save $submission.
-    $submission->setZenodoConceptRecordId(NULL, $save_on_change = FALSE);
-    $submission->setZenodoDepositId(NULL, $save_on_change = FALSE);
-    $submission->save();
-  }
 }
 
 /**
@@ -3691,6 +3726,10 @@ function tpps_zenodo_deposit_new_version_created(array $data) {
     // $submission->save() usage but save only when Deposit Id changed.
 
     drupal_set_message(t('New version of Zenodo Deposit was created.'));
+    drupal_set_message(
+      t('Remember to update Zenodo Deposit files to publish.'),
+      'warning'
+    );
 
     if ($debug_mode ?? FALSE) {
       dpm(print_r($data, 1));
@@ -3741,11 +3780,10 @@ function tpps_zenodo_deposit_discarded(array $data) {
     drupal_set_message(t('Changes in Zenodo Deposition #@deposit_id was discarded.',
       ['@deposit_id' => $deposit_id]
     ));
-
   }
   else {
-    // So 'Discard' action must be used only to new versions of the published
-    // Depositions. 'Delete' must be used for unpublished.
+    // 'Discard' action must be used only when when editing already published
+    // Deposition. 'Delete' must be used for unpublished Deposition.
     drupal_set_message(t('Zenodo Deposition #@discarded_deposit_id was discarded. '
       . 'Rolled back to Deposition #@deposit_id.',
       [

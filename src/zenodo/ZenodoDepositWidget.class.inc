@@ -147,35 +147,24 @@ class ZenodoDepositWidget {
       switch ($deposition['state']) {
         // New Deposition.
         case 'unsubmitted':
-          if (!$deposition['submitted']) {
-            $action_list[] = 'update';
-            $action_list[] = 'delete';
-            // 'Discard' action rolls back to previous version but for not yet
-            // published deposition it works as 'Delete' and it's better to
-            // disable it because it's frustrating.
-            //$action_list[] = 'discard';
-            $action_list[] = 'publish';
-          }
+          $action_list[] = 'update';
+          $action_list[] = 'delete';
+          $action_list[] = 'publish';
           break;
 
         // Deposition metadata can be updated.
         // If deposition is also unsubmitted (see submitted) files can be updated as well.
         case 'inprogress':
-          if ($deposition['submitted']) {
-            $action_list[] = 'update';
-            $action_list[] = 'newversion';
-            $action_list[] = 'discard';
-            $action_list[] = 'publish';
-          }
-          // @todo Add files button.
+          $action_list[] = 'update';
+          //$action_list[] = 'newversion';
+          $action_list[] = 'discard';
+          $action_list[] = 'publish';
           break;
 
         // Deposition has been published.
         case 'done':
-          if ($deposition['submitted']) {
-            $action_list[] = 'newversion';
-            $action_list[] = 'edit';
-          }
+          $action_list[] = 'newversion';
+          $action_list[] = 'edit';
           break;
 
         case 'error':

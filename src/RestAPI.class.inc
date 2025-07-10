@@ -144,6 +144,7 @@ class RestAPI {
    *   API Endpoint URL.
    * @param array $data
    *   Data for request.
+   *   WARNING: Item 'query' is a sub-element of the $data.
    * @param array $header
    *   HTTP-headers.
    *
@@ -362,6 +363,7 @@ class RestAPI {
       }
       else {
         // GET.
+        // Note: $payload contains URL's query.
         $url = url($url, [
           'https' => TRUE,
           'external' => TRUE,
@@ -377,6 +379,7 @@ class RestAPI {
     curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
     // The maximum number of seconds for curl operation.
     curl_setopt($curl, CURLOPT_TIMEOUT, static::getTimeout());
+    curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, static::getTimeout());
 
     // EXECUTE:
     $execution_time_start = microtime(1);
