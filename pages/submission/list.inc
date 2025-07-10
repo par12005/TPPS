@@ -15,7 +15,7 @@ module_load_include('inc', 'tpps', 'includes/form');
  */
 function tpps_submission_list_form(array $form, array &$form_state = [], $accession = NULL) {
   // Accession.
-  $accession_list = tpps_submission_get_accession_list();
+  $accession_list = SubmissionCache::getAccessionList();
   $form['tpps_submission_accession'] = [
     '#type' => 'select',
     '#title' => t('Accession'),
@@ -28,19 +28,22 @@ function tpps_submission_list_form(array $form, array &$form_state = [], $access
     '#default_value' => $accession ?? array_key_first($accession_list) ?? '',
     '#required' => TRUE,
   ];
-  // Buttons.
-  $form['actions'] = ['#type' => 'container'];
-  $buttons = ['create', 'view', 'export', 'import', 'compare', 'purge'];
-  foreach ($buttons as $key) {
-    $form['actions'][$key] = [
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $action_list = [
+    'create', 'view', 'export', 'import', 'compare', 'purge', 'zenodo', 'edit',
+  ];
+  foreach ($action_list as $action) {
+    $form[$action] = [
       '#type' => 'submit',
-      '#name' => $key,
-      '#value' => t(ucfirst($key)),
+      '#value' => $action,
     ];
-    // States. Show/Hide buttons.
-    if ($key != 'import') {
-      $state = ($key == 'create') ? 'value' : '!value';
-      $form['actions'][$key]['#states'] = [
+    // Hide buttons when 'new' accession selected.
+    if ($action != 'import') {
+      $state = '!value';
+      if ($action == 'create') {
+        $state = 'value';
+      }
+      $form[$action]['#states'] = [
         'visible' => [
           ':input[name="tpps_submission_accession"]' => [$state => 'new'],
         ],
@@ -54,15 +57,35 @@ function tpps_submission_list_form(array $form, array &$form_state = [], $access
 }
 
 /**
- * Form submitter for 'tpps_form_page_1_settings_form' form.
+ * Form validator for 'tpps_submission_list_form' form.
+ */
+function tpps_submission_list_form_validate(array $form, array &$form_state) {
+  // Check accession.
+  $accession = $form_state['values']['tpps_submission_accession'] ?? '';
+  if (empty($accession)) {
+    form_set_error('tpps_submission_accession',
+      t('Empty accession. Please choose from the list below.')
+    );
+  }
+  // Check action and group.
+  $action = $form_state['triggering_element']['#value'] ?? NULL;
+  if (empty($action)) {
+    form_set_error('non-existing_form_element', t('Empty action.'));
+  }
+}
+
+/**
+ * Form submitter for 'tpps_submission_list_form' form.
  */
 function tpps_submission_list_form_submit(array $form, array &$form_state) {
-  $action = $form_state['triggering_element']['#name'] ?? NULL;
-  $path = 'tpps/submission';
   $accession = $form_state['values']['tpps_submission_accession'] ?? '';
-
+  $action = $form_state['triggering_element']['#value'] ?? NULL;
+  $path = 'tpps/submission';
   if ($accession == 'new' && $action == 'create') {
     drupal_goto('tppsc');
+  }
+  elseif ($action == 'edit' && !empty($accession)) {
+    drupal_goto('tppsc/' . $accession);
   }
   else {
     $path .= ($accession && $action) ? '/' . $accession . '/' . $action : '';
@@ -73,11 +96,14 @@ function tpps_submission_list_form_submit(array $form, array &$form_state) {
 /**
  * Adds 'Back' button to TPPS Submission subforms.
  *
+ * NOTE:
+ * Used on subpages for navigation.
+ *
  * @param array $form
  *   Drupal Form API array.
  */
 function tpps_submission_list_add_buttons(array &$form, $add_action = TRUE) {
-  $form['actions'] = ['#type' => 'container'];
+  $form['actions'] = $form['actions'] ?? ['#type' => 'container'];
   // Back-button.
   $action = 'back';
   $form['actions'][$action] = [

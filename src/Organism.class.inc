@@ -294,15 +294,15 @@ class Organism {
       drupal_set_message($message);
       return;
     }
-    $xml = tpps_ncbi_get_taxon_id($this->name, FALSE);
-
-    // @todo REplace to catch exceptions.
-    //  try {
-    //    $xml = tpps_ncbi_get_taxon_id($this->name, FALSE);
-    //  }
-    //  catch (e) {
-    //    dpm('sdfsd');
-    //  }
+    try {
+      $xml = tpps_ncbi_get_taxon_id($this->name, FALSE);
+    }
+    catch (Exception $e) {
+      $message = t("Can't get data from NCBI database: @message",
+        ['@message' => $e->getMessage()]);
+      watchdog('tpps', $message, [], WATCHDOG_ERROR);
+      return FALSE;
+    }
     $response = json_decode(json_encode($xml), TRUE);
     $this->ncbiTaxonomyId = check_plain($response[0]) ?? FALSE;
 
@@ -448,10 +448,7 @@ class Organism {
    */
   public function doesExist() {
     $this->load();
-    return (bool) (
-      !empty($this->name)
-      && !empty($this->id)
-    );
+    return (bool) (!empty($this->name) && !empty($this->id));
   }
 
   /**

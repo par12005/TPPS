@@ -115,6 +115,8 @@ class Submission {
   /**
    * Submission's State Array.
    *
+   * See __set()/__get().
+   *
    * Stored in tpps_submission.submission_state as serialized string.
    *
    * @var array
@@ -169,6 +171,47 @@ class Submission {
    * @var string
    */
   protected $status = '';
+
+  /**
+   * Flag which indicates that Submission was modified and must be saved to DB.
+   *
+   * When changed which require saving to database are done then set this flag
+   * without manually calling save() method. When all changes are done or
+   * hook_exit() was called then submission will be saved.
+   *
+   * @var bool
+   *   When TRUE current submission has modifications which must be saved.
+   *   When FALSE submission is the same as database record has.
+   *
+   * @TODO Implement hook_exit(). See
+   * https://api.drupal.org/api/drupal/modules!system!system.api.php/function/hook_exit/7.x
+   * @TODO Make $submission global variable so it will exist in hook_exit().
+   */
+  protected $isChanged = FALSE;
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Class constants.
+
+  // Name of the key in $state used to store Zenodo Deposit Id.
+  const ZENODO_DEPOSIT_ID_KEY = 'zenodo_id';
+
+  // Name of the key in $state used to store Zenodo Concept Record Id.
+  // https://developers.zenodo.org/?shell#representation
+  const ZENODO_CONCEPT_RECORD_ID_KEY = 'zenodo_conceptrecid';
+
+  // Name of the key which stores Submission Form version.
+  const FORM_VERSION_KEY = 'submission_form_version';
+
+  // Number of the initial version of Form State Array.
+  // This value will be used to apply incremental changes (patches).
+  const FORM_VERSION_START = 1;
+
+  // Version of Submission Form State Array.
+  // See tpps_submission_form_get_change_list() for changes per version.
+  // Version 1: Only removed data which is useless for processing study.
+  // Version 2: #86ayw8a7k Page 4 Genotype Logic Adjustments.
+  // @TODO Minor. Rename to 'latest_version'?
+  const FORM_VERSION_CURRENT = 2;
 
   /**
    * Class constructor.
@@ -355,14 +398,17 @@ class Submission {
    * Setter for $state.
    *
    * WARNING: This method will be called when:
-   * $submission->state = $state;
-   * but not:
-   * $submission->state[$element] = $value;
+   *   $submission->state = $state;
+   *   but not:
+   *   $submission->state[$element] = $value;
    *
    * @param array $state
    *   Submission State Array.
    */
   public function setState(array &$state) {
+    // @TODO Remove reference because it limit direct usage of ->setState()
+    //  method and direct setting of the property 'state'.
+    // See tpps_main_submit(). Be sure to update all calls and test.
     $this->state = &$state;
     // Accession.
     if (!empty($this->state['accession'])) {
@@ -548,10 +594,14 @@ class Submission {
    */
   public function save($status = NULL) {
     if (empty($this->accession)) {
+      $message = 'Study accession is empty.';
       $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
       // Function drupal_set_message escapes HTML tags.
-      dpm(print_r($stack, 1));
-      throw new Exception(t('Study accession is empty.'));
+      watchdog('tpps', $message . '<pre>@backtrace</pre>',
+        ['@backtrace' => print_r($stack, 1)],
+        WATCHDOG_ERROR
+      );
+      throw new Exception($message);
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Set status.
@@ -563,6 +613,11 @@ class Submission {
     // Note: REQUEST_TIME couldn't be used because called from CLI script and
     // processing could take long time from script call.
     $this->set(['updated'], time());
+
+    if (function_exists('drupal_alter')) {
+      // tpps_submission_save_alter(),
+      drupal_alter('submission_save', $submission);
+    }
 
     $fields = [
       'status' => $this->status ?? TPPS_SUBMISSION_STATUS_INCOMPLETE,
@@ -576,11 +631,22 @@ class Submission {
       ->fields($fields)
       ->condition('accession', $this->accession)
       ->execute();
+
+    SubmissionCache::updateSingle($this);
+
+    // 'tpps_submission_saved'';
+    if (function_exists('module_invoke_all')) {
+      module_invoke_all('submission_saved', $this);
+    }
+
     return $this;
   }
 
   /**
    * Delete submission from database.
+   *
+   * Removes only record from 'tpps_submission' table.
+   * See 'purge()' method for full study removement.
    *
    * @TODO Minor. Destroy object and do not allow chaining.
    */
@@ -598,14 +664,24 @@ class Submission {
     // If this study was imported we need to remove it from the list.
     // @TODO Check if study was imported.
     module_load_include('inc', 'tpps', 'includes/imported_studies_list');
-    tpps_imported_studies_list_remove_item($this->accession);
+    ImportedSubmissionList::remove($this->accession);
+
+    SubmissionCache::remove($this->accession);
+    if (function_exists('module_invoke_all')) {
+      // 'tpps_submission_deleted().
+      module_invoke_all('submission_deleted', $this->accession);
+    }
+    // Be sure to unset at the very end.
     $this->accession = $this->state = $this->sharedState = NULL;
-    // Do not allow chaining.
-    return;
+
+    // Do not allow chaining methods because object destroyed.
+    return NULL;
   }
 
   /**
-   * Removes TPPS Submission and it's files.
+   * Removes Submission, it's files and all the data from db.
+   *
+   * To remove only record from tpps_submission' table see Submission::delete().
    *
    * @param bool $force
    *   Boolean indicating that the file should be deleted
@@ -620,11 +696,11 @@ class Submission {
     // files related to this non-existing submission.
     if (!empty($this->state)) {
       // Remove usage of files first.
-      $fid_list = tpps_submission_file_get_id_list($this->state);
+      $fid_list = array_keys($this->getFileIdList());
       foreach ($fid_list as $fid) {
         if ($file = tpps_file_load($fid)) {
           // Remove file usage record (not file itself).
-          file_usage_delete($file, 'tpps', 'tpps_project', $this->getAccessionNumber(), 1);
+          Submission::deleteFileUsage($file, $this->getAccessionNumber());
           if ($force) {
             // Remove file from disk.
             file_delete($file);
@@ -639,11 +715,21 @@ class Submission {
     db_delete('chado.dbxref')
       ->condition('accession', $this->accession)
       ->execute();
+    // Remove all data added during processing.
+    // @TODO Check if study was processed first.
+    module_load_include('inc', 'tpps', 'includes/submissions');
+    tpps_submission_clear_db($this->accession);
     // If this study was imported we need to remove it from the list.
     // @todo Check if study was imported to avoid extra moves.
-    module_load_include('inc', 'tpps', 'includes/imported_studies_list');
-    tpps_imported_studies_list_remove_item($this->accession);
+    ImportedSubmissionList::remove($this->accession);
+    // Update cached data.
+    SubmissionCache::remove($this->accession);
+    // Unset current instance (in memory).
     $this->accession = $this->state = $this->sharedState = NULL;
+    if (function_exists('module_invoke_all')) {
+      // 'tpps_submission_purged().
+      module_invoke_all('submission_purged', $this);
+    }
   }
 
   /**
@@ -764,6 +850,21 @@ class Submission {
    */
   public function getAccessionNumber() {
     return str_replace('TGDR', '', ($this->accession));
+  }
+
+  /**
+   * Check if submission is empty.
+   *
+   * Note: Submission could exist in DB (use doesExists() to check this).
+   * This method checks only state in memory.
+   * $submission = new Submission();
+   * $submission->isEmpty(); // Gives TRUE.
+   *
+   * @return bool
+   *   Returns TRUE if submission is empty (no data added yet).
+   */
+  public function isEmpty() {
+    return empty($this->accession);
   }
 
   /**
@@ -926,7 +1027,7 @@ class Submission {
       $import_meta['full_date'] .= (empty($import_meta['imported']) ? ''
         : ' [' . $import_meta['imported'] . ']');
     }
-    $import_meta['current_version'] = $this->state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY];
+    $import_meta['current_version'] = $this->state['saved_values'][Submission::FORM_VERSION_KEY];
     return $import_meta;
   }
 
@@ -1058,7 +1159,7 @@ class Submission {
         'tpps_submission_export_files',
         // @TODO Submission Form Version is useless for pipeline processing
         // but could be useful for debugging.
-        //['saved_values', TPPS_SUBMISSION_FORM_VERSION_KEY],
+        //['saved_values', Submission::FORM_VERSION_KEY],
 
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // List of the fields which must be left.
@@ -1082,6 +1183,7 @@ class Submission {
         // 'admin_comments',
         // 'alternative_accessions',
         // 'data',
+        // Stores tree id and coordinates to show google map on study details page.
         // 'tree_info'.
         //
         //  Probably could be unset:
@@ -1805,6 +1907,34 @@ class Submission {
   }
 
   /**
+   * Gets current stage name.
+   *
+   * @return string
+   *   Returns not localized stage name.
+   */
+  public function getCurrentStageName() {
+    $stage = $this->getCurrentStage();
+    $names = $this->getStageNames();
+    return $names[$stage] ?? 'Unknown';
+  }
+
+  /**
+   * Gets list of stage names.
+   *
+   * @return array
+   *   Returns list of stages and their human readable names.
+   */
+  public function getStageNames() {
+    return [
+      TPPS_PAGE_1 => "Author and Species Information",
+      TPPS_PAGE_2 => "Experimental Conditions",
+      TPPS_PAGE_3 => "Plant Accession",
+      TPPS_PAGE_4 => "Submit Data",
+      'summarypage' => "Review Data and Submit",
+    ];
+  }
+
+  /**
    * Gets name of last completed form's stage.
    *
    * Completed stage is a step of multistep form which passed validation
@@ -1940,8 +2070,9 @@ class Submission {
    * @param int $organism_index
    *   Ordinal number of the organism at page.
    *
-   * @return bool
-   *   Returns path to the local VCF file or NULL if study has no local VCF file.
+   * @return mixed
+   *   Returns path to the local VCF file.
+   *   Returns NULL if study has no local VCF file.
    */
   public function getLocalVcf($organism_index = 1) {
     if (!$this->hasLocalVcf($organism_index)) {
@@ -2027,14 +2158,814 @@ class Submission {
     return TRUE;
   }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Zenodo Deposition.
+  //
+  // Note: Special methods used to encapsulate Zenodo Data in TPPS Submission
+  // and have ability to change/rename it in single place.
+
   /**
-   * Gets TPPS Form version.
+   * Sets Zenodo Deposit Id.
+   *
+   * To clear stored id: $submission->setZenodoDepositId();
+   *
+   * @param int $deposit_id
+   *   Zenodo Deposition Id.
+   * @param bool $save_on_change
+   *   Default is TRUE which means TPPS Submission object will be saved to
+   *   database immidietly if Deposit Id changes.
+   *   Set to FALSE if you need to make other changes to TPPS Submission and
+   *   save it later manually.
+   */
+  public function setZenodoDepositId($deposit_id = NULL, $save_on_change = TRUE) {
+    if ($this->get([self::ZENODO_DEPOSIT_ID_KEY]) != $deposit_id) {
+      // Deposit Id was changed.
+      $this->set([self::ZENODO_DEPOSIT_ID_KEY], $deposit_id);
+      if ($save_on_change) {
+        $this->save();
+      }
+    }
+  }
+
+  /**
+   * Gets Zenodo Deposit Id.
+   *
+   * @return mixed
+   *   Returns Zenodo Deposit Id or NULL if it wasn't set.
+   */
+  public function getZenodoDepositId() {
+    return $this->state[self::ZENODO_DEPOSIT_ID_KEY] ?? NULL;
+  }
+
+  /**
+   * Checks if Submission has Zenodo Deposit Id.
+   *
+   * @return bool
+   *   Returns TRUE if Submission has Zenodo Deposit Id and FALSE otherwise.
+   */
+  public function hasZenodoDepositId() {
+    return !empty($this->getZenodoDepositId());
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Concept Record Id.
+  //
+
+  /**
+   * Sets Zenodo Concept Record Id.
+   *
+   * Note: Zenodo Deposit Id changes more often then Zenodo Concept Record Id.
+   *
+   * To clear stored id: $submission->setZenodoConceptRecordId(NULL);
+   *
+   * @param int $conceptrecid
+   *   Zenodo Concept Record Id which is parent of the deposition versions.
+   * @param bool $save_on_change
+   *   Default is TRUE which means TPPS Submission object will be saved to
+   *   database immidietly if Deposit Id changes.
+   *   Set to FALSE if you need to make other changes to TPPS Submission and
+   *   save it later manually.
+   */
+  public function setZenodoConceptRecordId($conceptrecid = NULL, $save_on_change = TRUE) {
+    if ($this->get([self::ZENODO_CONCEPT_RECORD_ID_KEY]) != $conceptrecid) {
+      // Differs.
+      $this->set([self::ZENODO_CONCEPT_RECORD_ID_KEY], $conceptrecid);
+      if ($save_on_change) {
+        $this->save();
+      }
+    }
+  }
+
+  /**
+   * Gets Zenodo Deposit Id.
+   *
+   * @return mixed
+   *   Returns Zenodo Concept Record Id  or NULL if it wasn't set.
+   */
+  public function getZenodoConceptRecordId() {
+    return $this->state[self::ZENODO_CONCEPT_RECORD_ID_KEY] ?? NULL;
+  }
+
+  /**
+   * Checks if Submission has Zenodo Deposit Id.
+   *
+   * @return bool
+   *   Returns TRUE if Submission has Zenodo Concept Record Id.
+   *   Returns FALSE otherwise.
+   */
+  public function hasZenodoConceptRecordId() {
+    return !empty($this->getZenodoConceptRecordId());
+  }
+
+  /**
+   * Generates Zenodo Deposition Metadata.
+   *
+   * See required fields: https://developers.zenodo.org/#representation.
+   *
+   * @return array
+   *   Returns Zenodo Deposit Metadata.
+   */
+  public function buildZenodoDepositMetadata() {
+    $page1_values = $this->get(['saved_values', TPPS_PAGE_1]);
+    $page2_values = $this->get(['saved_values', TPPS_PAGE_2]);
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Authors.
+    // WARNING: Using objects is required.
+    $primary_author = $this->sharedState['saved_values'][TPPS_PAGE_1]['primaryAuthor'] ?? NULL;
+    if (empty($primary_author)) {
+      throw new Exception('Primary Author field is empty');
+    }
+    else {
+      $creator_list[] = (object) [
+        'name' => ZenodoDeposit::formatAuthorName($primary_author),
+      ];
+    }
+    $secondary_authors = $page1_values['publication']['secondaryAuthors'];
+    for ($i = 1; $i <= $secondary_authors['number']; $i++) {
+      $creator_list[] = (object) [
+        'name' => ZenodoDeposit::formatAuthorName($secondary_authors[$i]),
+      ];
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Keywords.
+    $keyword_list = [];
+    for ($i = 1; $i <= $page1_values['organism']['number']; $i++) {
+      $keyword_list[] = $page1_values['organism'][$i]['name'];
+    }
+    module_load_include('inc', 'tpps', 'includes/form');
+    $keyword_list[] = tpps_form_get_study_type($page2_values['study_type']);
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Metadata.
+    $metadata = (object) [
+      'publication_date' => date('Y-m-d'),
+      'title' => $page1_values['publication']['title'],
+      'upload_type' => 'dataset',
+      'description' => $page1_values['publication']['abstract'],
+      'creators' => $creator_list,
+      'keywords' => $keyword_list,
+      'notes' => $this->get(['saved_values', 'summarypage', 'comments']),
+      'related_identifiers' => [
+        (object) [
+          'relation' => 'isAlternateIdentifier',
+          'identifier' => url(
+            '/tpps/details/' . $this->accession, ['absolute' => TRUE]
+          ),
+        ],
+      ],
+      'access_right' => 'open',
+      'license' => 'cc-zero',
+    ];
+    return $metadata;
+  }
+
+  /**
+   * Gets list of Ids of the files attached to submission.
+   *
+   * Only prevously saved file parents will be used (hardcoded).
+   *
+   * @return array
+   *   Returns list of submission's files where key is File Id and value is the
+   *   parents of the file field in Submission's Shared State.
+   *   Returns an empty array when nothing found.
+   *
+   * @todo Minor. Cache list of file ids and reset cache of save() method call.
+   * @todo Minor. Use $this->state['input'] to get just submitteddd form data.
+   * Search in 'values' and 'input' require extra work. There is no $step
+   * parent element and structure of the submitted data is different.
+   */
+  public function getFileIdList() {
+    $this->getSharedState();
+    $saved_values = $this->sharedState['saved_values'] ?? NULL;
+    // Note: Shared State doesn't have 'values' element but State could have
+    // newer version of form and other paths.
+    $fid_list = [];
+    if (empty($saved_values)) {
+      return $fid_list;
+    }
+    $parent_list = $this->getFileParents();
+    foreach ($parent_list as $step => $step_list) {
+      foreach ($step_list as $parents) {
+        $new_parents = array_merge([$step], $parents);
+        $fid = (int) tpps_array_get_value($saved_values, $new_parents);
+        if (empty($fid)) {
+          continue;
+        }
+        $fid_list[$fid] = $new_parents;
+      }
+    }
+    return $fid_list;
+  }
+
+  /**
+   * Sets status of list of files or all files.
+   *
+   * Method chaining: yes.
+   * If file has no usage yet it will be added.
+   *
+   * @param int $status
+   *   File status.
+   *   '1' = permanent. See constant FILE_STATUS_PERMANENT.
+   *     Permanent files has protection and won't be removed in 6h by cron.
+   *   '0' = temporary. No constant for this case - use integer.
+   *     Will be removed by cron in 6h.
+   * @param array $fid_list
+   *   Array with list of files which status must be updated.
+   *   When empty then all files in current submission will be updated.
+   */
+  public function setFileStatus($status = FILE_STATUS_PERMANENT, array $fid_list = []) {
+    if (empty($fid_list)) {
+      $fid_list = array_keys($this->getFileIdList());
+    }
+    if (!empty($fid_list)) {
+      foreach ($fid_list as $fid) {
+        $file = tpps_file_load($fid);
+        if ($file && $file->status != $status) {
+          $file->status = $status;
+          file_save($file);
+          if (static::isEmptyFileUsage($file, $this->accession)) {
+            static::addFileUsage($file, $this->accession);
+          }
+        }
+      }
+    }
+    else {
+      // @todo Minor. Silently report about empty list. Use Drupal hooks.
+    }
+    // Allow method chaining.
+    return $this;
+  }
+
+  /**
+   * Gets hardcoded list of file field parents.
+   *
+   * WARNING:
+   * Use Submission Shajred State (v.1 not Submission State).
+   *
+   * @return array
+   *   Returns empty array if number of organisms is zero.
+   *   Returns list of parents
+   *   (from  $form_state['values'] or/and $form_state['saved_values']).
+   *
+   * @todo Make it private or protected.
+   * @TODO Add environmental files?
+   */
+  public function getFileParents() {
+    $result = [];
+    $result[TPPS_PAGE_3] = [];
+    $result[TPPS_PAGE_4] = [];
+    for ($i = 1; $i <= $this->getOrganismNumber(); $i++) {
+      $organism_id = 'organism-' . $i;
+      $species_id = 'species-' . $i;
+      // Page 3. Accession file.
+      $result[TPPS_PAGE_3] = array_merge(
+        $result[TPPS_PAGE_3],
+        [
+          ['tree-accession', $species_id, 'file'],
+        ]
+      );
+      // Page 4. Phenotype and Genotype files.
+      $result[TPPS_PAGE_4] = array_merge(
+        $result[TPPS_PAGE_4],
+        [
+          // Phenotype.
+          [$organism_id, 'phenotype', 'iso'],
+          [$organism_id, 'phenotype', 'file'],
+          [$organism_id, 'phenotype', 'metadata'],
+          // Genotype.
+          [$organism_id, 'genotype', 'files', 'snps-assay'], // Shared State.
+          [$organism_id, 'genotype', 'files', 'assay-design'],
+          [$organism_id, 'genotype', 'files', 'snps-association'],
+          [$organism_id, 'genotype', 'files', 'snps-pop-struct'],
+          [$organism_id, 'genotype', 'files', 'snps-kinship'],
+          // SSR.
+          [$organism_id, 'genotype', 'files', 'ssrs'],
+          [$organism_id, 'genotype', 'files', 'ssrs_extra'],
+          [$organism_id, 'genotype', 'files', 'indels'],
+          [$organism_id, 'genotype', 'files', 'vcf'],
+          // Other.
+          [$organism_id, 'genotype', 'files', 'other'],
+          // Fasta.
+          [$organism_id, 'genotype', 'tripal_fasta', 'file', 'file_upload'],
+          // @TODO Check this field:
+          // [$organism_id, 'genotype', 'tripal_fasta', 'file_upload_existing'],
+        ]
+      );
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Summary page.
+    $result['summarypage'] = [
+      // Analysis.
+      ['analysis', 'diversity_file'],
+      ['analysis', 'population_structure_file'],
+      ['analysis', 'association_genetics_file'],
+      ['analysis', 'landscape_genomics_file'],
+      ['analysis', 'phenotype_environment_file'],
+    ];
+    // It seems we have unlimited number of extra files which could be
+    // added to study but dump has 10 items.
+    for ($i = 1; $i <= 10; $i++) {
+      $result['summarypage'][] = ['files', $i];
+    }
+    return $result;
+  }
+
+  /**
+   * Uploads all files to the Zenodo Deposit.
+   *
+   * @throws Exception
+   *   When study wasn't found.
+   *
+   * @return object
+   *   Returns current object to all method chaining.
+   */
+  public function actionAllFilesZenodo($action) {
+    if (!in_array($action, ['create', 'delete', 'update'])) {
+      throw new Exception(t("Unsupported Zenodo File's action: @action.",
+        ['@action' => $action]
+      ));
+    }
+    if (empty($deposit_id = $this->getZenodoDepositId())) {
+      throw new Exception(t('Submission "@accession" has empty Zenodo Deposit Id.',
+        ['@accession' => $accession]
+      ));
+    }
+    if (empty($fid_list = array_keys($this->getFileIdList()))) {
+      // Study could have no files. It's not an error.
+      return $this;
+    }
+    // @todo Minor. Check if file already was uploaded.
+    if ($action == 'create') {
+      foreach ($fid_list as $fid) {
+        if ($file = tpps_file_load($fid)) {
+          $data = ['drupal_file' => $file, 'deposit_id' => $deposit_id];
+          ZenodoFile::$action($data);
+        }
+      }
+    }
+    elseif (in_array($action, ['delete', 'update'])) {
+      $data = ['deposit_id' => $deposit_id];
+      if (variable_get('tpps_zenodo_host_greedy_search', FALSE)) {
+        ZenodoHost::search($data);
+      }
+      try {
+        $deposition = ZenodoDeposit::retrieve($data);
+      }
+      catch (Exception $e) {
+        // Can't get deposition.
+        throw new Exception(t('Deposition "@deposit_id" not found.',
+          ['@deposit_id' => $deposit_id]
+        ));
+      }
+
+      switch ($action) {
+        case 'delete':
+          foreach ($deposition['files'] as $file) {
+            ZenodoFile::delete([
+              'deposit_id' => $deposit_id,
+              'file_id' => $file['id']
+            ]);
+          }
+          break;
+
+        case 'update':
+          foreach ($fid_list as $fid) {
+            if ($file = tpps_file_load($fid)) {
+              ZenodoFile::update([
+                'deposit_id' => $deposit_id,
+                'drupal_file' => $file,
+              ]);
+            }
+          }
+          break;
+      }
+    }
+    return $this;
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // File Usage.
+  // @TODO Minor. Create new File class.
+
+  /**
+   * Adds record about usage of the file.
+   *
+   * @param object $file
+   *   Drupal's Managed File object.
+   * @param string $accession
+   *   Submission's accession. Format: 'TGDRxxxx'.
+   * @param int $count
+   *   The number of references to add to the object. Defaults to 1.
+   */
+  public static function addFileUsage($file, $accession, $count = 1) {
+    $key = str_replace('TGDR', '', $accession);
+    if (Submission::isEmptyFileUsage($file, $accession)) {
+      file_usage_add($file, 'tpps', 'tpps_project', $key, $count);
+    }
+  }
+
+  /**
+   * Removes record about usage of the file.
+   *
+   * @param object $file
+   *   Drupal's Managed File object.
+   * @param string $accession
+   *   Submission's accession. Format: 'TGDRxxxx'.
+   * @param int $count
+   *   The number of references to add to the object. Defaults to 1.
+   */
+  public static function deleteFileUsage($file, $accession, $count = 1) {
+    $key = str_replace('TGDR', '', $accession);
+    file_usage_delete($file, 'tpps', 'tpps_project', $key, $count);
+  }
+
+  /**
+   * Gets file usage.
+   *
+   * @param object $file
+   *   Drupal's Managed File object.
+   * @param string $accession
+   *   Submission's accession. Format: 'TGDRxxxx'.
    *
    * @return int
-   *   Returns version number. Default is 1.
+   *   Returns count of the usage for given study.
+   */
+  public static function getFileUsage($file, $accession) {
+    $key = str_replace('TGDR', '', $accession);
+    $usage = file_usage_list($file, 'tpps', 'tpps_project', $key);
+    return tpps_array_get_value($usage, ['tpps', 'tpps_project', $key]);
+  }
+
+  /**
+   * Checks if file usage is empty.
+   *
+   * @param object $file
+   *   Drupal's Managed File object.
+   * @param string $accession
+   *   Submission's accession. Format: 'TGDRxxxx'.
+   *
+   * @return bool
+   *   Returns TRUE if file has no usage record and FALSE otherwise.
+   */
+  public static function isEmptyFileUsage($file, $accession) {
+    return empty(Submission::getFileUsage($file, $accession));
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Publication DOI field on Form Step 1.
+
+  /**
+   * Gets value of the Publication DOI field on From Step 1.
+   *
+   * @return string
+   *   Returns value of the field or NULL.
+   *   Example: "10.5281/zenodo.199793".
+   */
+  public function getPublicationDOI() {
+    switch ($this->getFormVersion()) {
+      case 2:
+        return $this->get(['saved_values', TPPS_PAGE_1, 'publication_doi']);
+
+      case 1:
+      default:
+      return $this->get(['saved_values', TPPS_PAGE_1, 'doi']);
+    }
+    // Backup: Shared State.
+    return $this->sharedState['saved_values'][TPPS_PAGE_1]['doi'] ?? '';
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Dataset DOI field on Form Step 1.
+
+  /**
+   * Gets value of the Dataset DOI field on From Step 1.
+   *
+   * @return string
+   *   Returns value of the field or NULL.
+   *   Example: "10.5281/zenodo.199793".
+   */
+  public function getDatasetDOI() {
+    switch ($this->getFormVersion()) {
+      case 2:
+        $parents = ['saved_values', TPPS_PAGE_1, 'publication', 'dataset_doi'];
+
+      case 1:
+      default:
+        $parents = ['saved_values', TPPS_PAGE_1, 'dataset_doi'];
+    }
+    return tpps_array_get_value($this->state, $parents);
+  }
+
+  /**
+   * Sets value of the Dataset DOI field on From Step 1.
+   *
+   * @param string $value
+   *   Dataset DOI. E.g., '10.5281/zenodo.200001'.
+   * @param bool $save_on_change
+   *   Default is TRUE which means TPPS Submission object will be saved to
+   *   database immidietly if Deposit Id changes.
+   *   Set to FALSE if you need to make other changes to TPPS Submission and
+   *   save it later manually.
+   *
+   * @return object
+   *   Returns curren object to allow chaining methods.
+   */
+  public function setDatasetDOI($value, $save_on_change = TRUE) {
+    $was_updated = FALSE;
+    switch ($this->getFormVersion()) {
+      case 2:
+        $parents = ['saved_values', TPPS_PAGE_1, 'publication', 'dataset_doi'];
+
+      case 1:
+      default:
+        $parents = ['saved_values', TPPS_PAGE_1, 'dataset_doi'];
+    }
+    // State.
+    $state_value = tpps_array_get_value($this->state, $parents);
+    if ($state_value != $value) {
+      $was_updated = TRUE;
+      tpps_array_set_value($this->state, $parents, $value);
+    }
+
+    // Shared State.
+    $shared_state_parents = ['saved_values', TPPS_PAGE_1, 'dataset_doi'];
+    $shared_state_value = tpps_array_get_value(
+      $this->sharedState,
+      $shared_state_parents
+    );
+    if ($shared_state_value != $value) {
+      $was_updated = TRUE;
+      tpps_array_set_value($this->sharedState, $shared_state_parents, $value);
+    }
+    // Save changes.
+    if ($save_on_change && $was_updated) {
+      $this->save();
+    }
+    return $this;
+  }
+
+  /**
+   * Updates field "Dataset DOI".
+   *
+   * Note: Shared State and State has different parents for this field.
+   * Note: Used variable by reference instead of methods
+   * getDatasetDOI()/setDatasetDOI() to speed-up processing.
+   *
+   * @param string $dataset_doi
+   *   New value of the Dataset DOI field.
+   */
+  public function updateDatasetDOI($dataset_doi = NULL) {
+    $update_result = [];
+
+    // DOI in State.
+    $state_dataset_doi = $this->getDatasetDOI();
+    if (
+      // New one.
+      (empty($state_dataset_doi) && !is_null($dataset_doi))
+      // When overwriting of existing value is allowed.
+      || variable_get('tpps_zenodo_overwrite_dataset_doi')
+      // Unset existing.
+      || (!empty($state_dataset_doi) && is_null($dataset_doi))
+    ) {
+      $update_result['State'] = NULL;
+      $this->setDatasetDOI($dataset_doi);
+    }
+
+    if (function_exists('module_invoke_all')) {
+      $context = [
+        'new' => $dataset_doi,
+        'old' => $state_dataset_doi,
+      ];
+      // tpps_submission_dataset_doi_updated().
+      module_invoke_all('submission_dataset_doi_updated', $context);
+    }
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Submitter.
+
+  /**
+   * Gets id of the submitter's Drupal Account.
+   *
+   * @return int
+   *   Return submitter user id.
+   */
+  public function getSubmitter() {
+    if ($this->doesNotExist()) {
+      return NULL;
+    }
+    return $this->get(['submitting_uid']) ?? NULL;
+  }
+
+  /**
+   * Gets submitter's email address.
+   *
+   * @param bool $reset
+   *   Flag to reset cache.
+   *
+   * @return string
+   *   Returns email address or empty string.
+   */
+  public function getSubmitterMail($reset = FALSE) {
+    $static = &drupal_static(__FUNCTION__);
+
+    $uid = $this->getSubmitter();
+    if ($reset || !isset($static[$uid])) {
+      $static[$uid] = (string) db_select('users', 'u')
+        ->fields('u', ['mail'])
+        ->condition('uid', $uid)
+        ->range(0, 1)
+        ->execute()
+        ->fetchField();
+    }
+    return $static[$uid];
+  }
+
+  /**
+   * Gets Chado-name of the submitter.
+   *
+   * Note: Drupal name could differ.
+   *
+   * @param bool $reset
+   *   Flag to reset cache.
+   *
+   * @return string
+   *   Returns name or empty string.
+   */
+  public function getSubmitterChadoName($reset = FALSE) {
+    $static = &drupal_static(__FUNCTION__);
+
+    $uid = $this->getSubmitter();
+    if ($reset || !isset($static[$uid])) {
+      $query = db_select('chado.contact', 'c')
+        ->fields('c', ['name'])->range(0, 1);
+      $query->join('chado.contactprop', 'cp', 'cp.contact_id = c.contact_id');
+      $query->condition('cp.value', $this->getSubmitterMail())
+        ->condition('cp.type_id', tpps_load_cvterm('email')->cvterm_id);
+      $static[$uid] = (string) $query->execute()->fetchField();
+    }
+    return $static[$uid];
+  }
+
+  /**
+   * Generates list of links to Submission related pages.
+   *
+   * @param array $variables
+   *   Keys are: 'accession', 'destination', 'use_abr'.
+   *
+   * @return array
+   *   Returns list of links.
+   *
+   * @todo Separate list generation from theming.
+   * @todo Cache this list.
+   * @todo Implement adding accession at client-side (in browser).
+   */
+  public static function getPageList(array $variables) {
+    $accession = $variables['accession'] ?? NULL;
+    if (empty($accession)) {
+      return '';
+    }
+    $destination = $variables['destination'] ?? NULL;
+    $use_abr = $variables['use_abr'] ?? TRUE;
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    $action_list = [
+      // New tpps/submission pages.
+      'view' => [
+        'title' => t("Submission's view page"),
+        'name' => t('View'),
+        'abr' => t('V'),
+        'path' => 'tpps/submission/' . $accession . '/view',
+      ],
+      'edit' => [
+        'title' => t("Open submission using TPPSc form"),
+        'name' => t('Edit'),
+        'abr' => t('Ed'),
+        'path' => 'tppsc/' . $accession,
+      ],
+      'export' => [
+        'title' => t("Export Submission"),
+        'name' => t('Export'),
+        'abr' => t('Ex'),
+        'path' => 'tpps/submission/' . $accession . '/export',
+      ],
+      'compare' => [
+        'title' => t("Compare submission with other one"),
+        'name' => t('Compare'),
+        'abr' => t('Com'),
+        'path' => 'tpps/submission/' . $accession . '/compare',
+      ],
+      'purge' => [
+        'title' => t("Remove submission and it's files"),
+        'name' => t('Purge'),
+        'abr' => t('Pu'),
+        'path' => 'tpps/submission/' . $accession . '/purge',
+      ],
+      // Old pages:
+      'admin_panel' => [
+        'name' => t('Panel'),
+        'title' => t('TPPS Admin Panel'),
+        'abr' => t('Pa'),
+        'path' => 'tpps-admin-panel/' . $accession,
+      ],
+      'details' => [
+        'name' => t('Details'),
+        'title' => t('Study Details page'),
+        'abr' => t('D'),
+        'path' => 'tpps/details/' . $accession,
+      ],
+      'completed_submission' => [
+        'name' => t('Confirmation page'),
+        'title' => t('Confirmation page shown when submission completely submitted.'),
+        'abr' => t('Con'),
+        'path' => 'completed-submission/' . $accession,
+      ],
+      'files' => [
+        'name' => t('Files'),
+        'title' => t('List of the study files'),
+        'abr' => t('F'),
+        'path' => 'tpps-admin-panel/file-diagnostics/' . $accession,
+      ],
+      // API Endpoints.
+      'state' => [
+        'name' => t('JSON State'),
+        'title' => t("Submission's State in JSON format"),
+        'abr' => t('jS'),
+        'path' => 'api/submission/' . $accession . '/view/state',
+      ],
+      'shared_state' => [
+        'name' => t('JSON Shared State'),
+        'title' => t("Submission's Shared State in JSON format"),
+        'abr' => t('jSS'),
+        'path' => 'api/submission/' . $accession . '/view/shared_state',
+      ],
+      'json_vcf' => [
+        'name' => t('JSON VCF'),
+        'title' => t("Submission's VCF-files in JSON format"),
+        'abr' => t('jVCF'),
+        'path' => 'api/submission/' . $accession . '/vcf',
+      ],
+    ];
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Output.
+    $params = ['html' => TRUE];
+    if ($destination) {
+      $params['query']['destination'] = $destination;
+    }
+    $output = [];
+    foreach ($action_list as $name => $action) {
+      $params['attributes']['title'] = $action['title'] ?? '';
+      if ($use_abr) {
+        $name = $action['abr'];
+      }
+      else {
+        // $name = theme('fcbold', ['string' => $name]);
+        $name = $action['name'];
+      }
+      $output[] = l($name, $action['path'], $params);
+    }
+    return $output;
+
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Form version.
+
+  /**
+   * Gets Submission Form Version.
+   *
+   * Former: tpps_submission_form_version_get().
+   *
+   * @return int
+   *   Returns Submission's Form version.
+   *   Returns 1 (default value) if version wasn't set.
    */
   public function getFormVersion() {
-    return $this->state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1;
+    return $this->state['saved_values'][static::FORM_VERSION_KEY] ?? 1;
+  }
+
+  /**
+   * Sets Submission Form Version.
+   *
+   * @return bool
+   *   Returns TRUE if version was changed and FALSE otherwise.
+   */
+  public function setFormVersion($version, $save_on_change = FALSE) {
+    $current_version = $this->gerFormVersion();
+    if ($current_version != $version) {
+      $this->state['saved_values'][static::FORM_VERSION_KEY] == $version;
+      if ($save_on_change) {
+        $this->save();
+      }
+      // 'tpps_submission_form_version_changed'';
+      if (function_exists('module_invoke_all')) {
+        module_invoke_all('submission_form_version_changed', [
+          'previous_version' => $current_version,
+          'new_version' => $version,
+        ]);
+      }
+      return TRUE;
+    }
+    return FALSE;
   }
 
 }

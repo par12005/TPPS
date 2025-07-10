@@ -10,7 +10,7 @@
  */
 function tpps_admin_variable_list_report() {
   $report_name = 'variable_list';
-  $report = tpps_report_get_list()[$report_name];
+  $report = Report::getList()[$report_name];
 
   $table = 'public.variable';
   $table_alias = str_replace('.', '', $table);
@@ -18,10 +18,10 @@ function tpps_admin_variable_list_report() {
     ->fields($table_alias, ['name', 'value'])
     ->condition('name', 'tpps%', 'LIKE');
 
-  return '<h2>' . $report['title'] . '</h2>' . easy_report([
+  return '<h2>' . $report['title'] . '</h2>' . Report::print([
     'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
     'formatter' => is_live_site() ? ''
-    : 'tpps_admin_' . $report_name . '_report_formatter',
+    : 'tpps_admin_variable_list_report_formatter',
     'page_title' => $report['title'],
     'table_attributes' => ['class' => ['view' , 'tpps_table']],
     'items_per_page' => 1000,

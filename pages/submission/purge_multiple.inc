@@ -12,7 +12,7 @@ module_load_include('inc', 'tpps', 'pages/submission/list');
  */
 function tpps_submission_purge_multiple_get_range() {
   $output = [
-    'accession_list' => tpps_submission_get_accession_list(),
+    'accession_list' => SubmissionCache::getAccessionList(),
     // Note: without 'TGDR' - only number.
     // Value from DB autoincrement.
     'latest_accession' => tpps_init_project_get_next_accession() - 1,
@@ -122,22 +122,13 @@ function tpps_submission_purge_multiple_form_submit(array $form, array &$form_st
         for ($i = $data['latest_accession']; $i >= $data['last_real_accession']; $i--) {
           $submission->accession = 'TGDR' . $i;
           $submission->purge();
-          drupal_set_message(t("Submission @accession and it's files was "
-            . "removed and cache was cleared.", ['@accession' => 'TGDR' . $i]
-          ));
         }
       }
       else {
         $submission->accession = $accession;
         $submission->purge();
-        drupal_set_message(
-          t("Submission @accession and it's files was removed and cache was cleared.",
-            ['@accession' => $accession]
-          )
-        );
       }
     }
-    cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
   }
   else {
     drupal_set_message(t('No accession was selected.'));

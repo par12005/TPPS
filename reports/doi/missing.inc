@@ -8,8 +8,8 @@
 /**
  * Menu callback. Shows studies without DOI attached.
  */
-function tpps_admin_missing_doi_report() {
-  $page_title = variable_get('tpps_report_missing_doi_title', 'Missing DOI');
+function tpps_report_doi_missing() {
+  $page_title = variable_get('tpps_report_doi_missing_title', 'Missing DOI');
 
   // Original query from Emily.
   //  select
@@ -62,9 +62,9 @@ function tpps_admin_missing_doi_report() {
   $query->condition('p.project_id', $sub_query_2, 'IN');
   $query->condition('p.project_id', $sub_query_4, 'NOT IN');
 
-  return '<h2>' . $page_title . '</h2>' . easy_report([
+  return '<h2>' . $page_title . '</h2>' . Report::print([
     'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
-    'formatter' => 'tpps_admin_missing_doi_report_formatter',
+    'formatter' => 'tpps_report_doi_missing_formatter',
     'page_title' => $page_title,
     'table_attributes' => ['class' => ['view' , 'tpps_table']],
     'items_per_page' => variable_get('tpps_report_items_per_page', 15),
@@ -79,7 +79,7 @@ function tpps_admin_missing_doi_report() {
 }
 
 /**
- * Values formatter for 'tpps_admin_unit_warning_report'.
+ * Values formatter for 'tpps_report_doi_missing' report.
  *
  * @param string $name
  *   Required. Field name.
@@ -96,7 +96,7 @@ function tpps_admin_missing_doi_report() {
  *   Returns formatted value.
  *   Empty value will not be formatted and returned as is.
  */
-function tpps_admin_missing_doi_report_formatter(string $name, $value, array &$row) {
+function tpps_report_doi_missing_formatter(string $name, $value, array &$row) {
   $formatted = check_plain($value);
   if (empty($name) || empty($value)) {
     return $formatted;

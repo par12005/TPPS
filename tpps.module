@@ -82,8 +82,6 @@ define('TPPS_GENOTYPING_FILE_TYPE_VCF', 'VCF');
 
 // Rememeber fieldset collapsed state.
 define('TPPS_RFCS_KEY', 'remember_fieldset_collapsed_state');
-
-
 module_load_include('inc', 'tpps', 'includes/common');
 
 // WARNING:
@@ -116,7 +114,6 @@ module_load_include('inc', 'tpps', 'includes/cvterm_utils');
 module_load_include('inc', 'tpps', 'includes/submission_file');
 require_once 'includes/phenotype_synonym.inc';
 require_once 'includes/phenotype_unit.inc';
-require_once 'includes/easy_report.inc';
 require_once 'api/tpps.api.inc';
 
 /**
@@ -389,18 +386,38 @@ function tpps_menu() {
     'type' => MENU_NORMAL_ITEM,
     'file' => 'admin/pages.php',
   ];
-
-  $items['tpps/doi/%'] = [
-    'title' => 'TPPS DOI',
-    'page callback' => 'tpps_manage_doi',
-    'page arguments' => [2],
+  $items['tpps/%/dataset-doi'] = [
+    'title' => 'Dataset DOI View Page',
+    'description' => 'Shows Dataset DOI metadata.',
+    'page callback' => 'drupal_get_form',
+    // 1st placeholder is an accession. E.g., 'TGDRxxxx'.
+    'page arguments' => ['tpps_dataset_doi_view_form', 1],
     'access callback' => 'tpps_access',
     'access arguments' => ['access content'],
     'type' => MENU_NORMAL_ITEM,
-    'file' => 'includes/manage_doi.inc',
+    'file' => 'pages/dataset_doi/view.inc',
   ];
-
-
+  $items['tpps/%/dataset-doi/create'] = [
+    'title' => 'Create Dataset DOI',
+    'description' => 'Create Zenodo Deposit and upload all files.',
+    'page callback' => 'tpps_dataset_doi_create',
+    // 1st placeholder is an accession. E.g., 'TGDRxxxx'.
+    'page arguments' => [1],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['access content'],
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'pages/dataset_doi/create.inc',
+  ];
+  $items['tpps/%/dataset-doi/files'] = [
+    'title' => 'Dataset DOI File List',
+    'page callback' => 'drupal_get_form',
+    // #2 is an accession. E.g., 'TGDRxxxx'.
+    'page arguments' => ['tpps_dataset_doi_files_form', 1],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['access content'],
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'pages/dataset_doi/files.inc',
+  ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $items['tpps/autocomplete/%'] = [
@@ -471,7 +488,7 @@ function tpps_menu() {
 
   tpps_menu_add_detials_pages($items);
   tpps_menu_add_settings_pages($items);
-  tpps_menu_add_report_pages($items);
+  Report::addAllMenuItems($items);
   tpps_menu_add_submission_pages($items);
   tpps_menu_add_api($items);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -491,10 +508,6 @@ function tpps_menu() {
  * Implements hook_permission().
  *
  * Defines custom TPPS permissions.
- *
- * @TODO Minor. Implement new permissions.
- *   'view any submission'
- *   'edit own/any submission'
  */
 function tpps_permission() {
   return [
@@ -518,6 +531,7 @@ function tpps_permission() {
       'title' => t('Approve/Reject TPPS submissions'),
       'description' => t('Approve or reject pending TPPS submissions.'),
     ],
+    // Submission.
     'tpps delete submission' => [
       'title' => t('Delete TPPS submissions'),
       'description' => t('Delete incomplete TPPS submissions.'),
@@ -525,6 +539,15 @@ function tpps_permission() {
     'view own tpps submission' => [
       'title' => t('View own TPPS submissions'),
       'description' => t('View TPPS submissions as a particular user.'),
+    ],
+    // Zenodo API.
+    'administer zenodo' => [
+      'title' => t('Administer Zenodo'),
+      'description' => t('Perform all Zenodo Deposit and files actions.'),
+    ],
+    'view own zenodo deposits' => [
+      'title' => t('View own Zenodo Deposits'),
+      'description' => t('View Zenodo Deposits of own studies.'),
     ],
   ];
 }
@@ -915,13 +938,12 @@ function tpps_mail($key, array &$message, array $params) {
           ),
         ]
       );
-      if ($params['type'] == 'tpps') {
-        $message['body'][] = '<br />';
-        $message['body'][] = t('To generate a DOI for your submission, '
-          . 'please click !link.',
-          ['!link' => l(t('here'), 'tpps/doi/' . $accession, $link_params)]
-        );
-      }
+      $message['body'][] = '<br />';
+      // @todo Minor. Replace 'here' in link with something more meaningful.
+      $message['body'][] = t('To generate a Dataset DOI for your submission, '
+        . 'please click <a href="@link">here</a>.',
+        ['@link' => url('tpps/' . $accession . '/dataset-doi/create', $link_params)]
+      );
       break;
 
     default:
@@ -956,7 +978,7 @@ function tpps_form_field_process(array $element, array &$form_state, array $form
 
   // Show field's parents and name in the field's description.
   $debug_mode = variable_get('tpps_debug_mode', FALSE);
-  if ($debug_mode) {
+  if ($debug_mode ?? FALSE) {
     $element['#description'] = ($element['#description'] ?? '')
       . '<br />[ ' . implode(' ][ ', $element['#array_parents']) . ' ]';
   }
@@ -1082,9 +1104,6 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
     $element['columns']['#type'] = 'fieldset';
     $element['columns']['#title'] = t('Define Data');
     $element['columns']['#collapsible'] = TRUE;
-    // Stop using the file so it can be deleted if the user clicks 'remove'.
-    $accession = substr($form_state['accession'], 4);
-    file_usage_delete($file, 'tpps', 'tpps_project', $accession);
     $content = tpps_parse_file($fid, 3, !empty($no_header));
     $options = $element['columns-options']['#value'] ?? [];
     $first = TRUE;
@@ -1398,23 +1417,27 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
  */
 function tpps_main_validate(&$form, &$form_state) {
   global $user;
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // If the user is going backwards or simply saving their data in the form,
   // make sure to save the column data for the managed_file elements. The rest
   // of the validation function does not need to be completed.
-  if (in_array($form_state['triggering_element']['#value'], ['Back', 'Save'])) {
+  $triggering_element = $form_state['triggering_element']['#value'] ?? NULL;
+  if (in_array($triggering_element, ['Back', 'Save'])) {
     tpps_save_file_columns($form, $form_state);
     return;
   }
 
   $submission = new Submission();
-  $submission->state = $form_state;
+  $submission->setState($form_state);
   $is_tppsc = $submission->isTppsc();
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   switch ($form_state['stage']) {
     case 'frontpage':
       if ($is_tppsc) {
         if (
-          $form_state['values']['use_old_tgdr']
+          ($form_state['values']['use_old_tgdr'] ?? FALSE)
           and !$form_state['values']['old_tgdr']
         ) {
           form_set_error('old_tgdr',
@@ -1485,6 +1508,7 @@ function tpps_main_validate(&$form, &$form_state) {
 function tpps_main_submit($form, &$form_state) {
   global $user;
 
+  $triggering_element = $form_state['triggering_element']['#value'] ?? NULL;
   $submission = tpps_submission()->setState($form_state);
 
   $saved_values = &$form_state['saved_values'] ?? NULL;
@@ -1494,22 +1518,21 @@ function tpps_main_submit($form, &$form_state) {
   module_load_include('inc', 'tpps', 'includes/submission_form_version');
 
   // Get Submission Form Version.
-  $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY] =
-    $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
-      ?? ($values[TPPS_SUBMISSION_FORM_VERSION_KEY] ?? NULL);
-  if (empty($saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY])) {
+  $saved_values[Submission::FORM_VERSION_KEY] =
+    $saved_values[Submission::FORM_VERSION_KEY]
+      ?? ($values[Submission::FORM_VERSION_KEY] ?? NULL);
+  if (empty($saved_values[Submission::FORM_VERSION_KEY])) {
     if ($submission->accession) {
-      $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
-        = tpps_submission_form_version_get($submission->state);
+      $saved_values[Submission::FORM_VERSION_KEY]
+        = $submission->getFormVersion();
     }
     else {
-      $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
-        = TPPS_SUBMISSION_FORM_CURRENT_VERSION;
-
+      $saved_values[Submission::FORM_VERSION_KEY]
+        = Submission::FORM_VERSION_CURRENT;
     }
   }
 
-  unset($values[TPPS_SUBMISSION_FORM_VERSION_KEY]);
+  unset($values[Submission::FORM_VERSION_KEY]);
 
   // If this form was submitted after import we need to upgrade version.
   // Note: If form version is up-to-date then nothing will be done.
@@ -1517,15 +1540,26 @@ function tpps_main_submit($form, &$form_state) {
   tpps_submission_form_version_upgrade_to_latest($form_state, $new_form_state);
   $form_state = $new_form_state;
 
-  $submission->setState($form_state);
-  if ($submission->accession) {
+  // Works:
+  $submission->state = $form_state;
+  // Doesn't work because used $form_state as reference and $form_state will
+  // be switched below which blocks form state saving.
+  // $submission->setState($form_state);
+
+  if (!empty($form_state['accession'])) {
+    $submission->accession = $form_state['accession'];
+    $submission->status = $form_state['status'] ?? TPPS_SUBMISSION_STATUS_INCOMPLETE;
+    // @TODO Save only once.
     $submission->save();
   }
 
   if ($submission->isTppsc()) {
     $form_state['status'] = TPPS_SUBMISSION_STATUS_INCOMPLETE;
     // Use old TGDR.
-    if ($form_state['stage'] == 'frontpage' && $values['use_old_tgdr']) {
+    if (
+      $form_state['stage'] == 'frontpage'
+      && ($values['use_old_tgdr'] ?? FALSE)
+    ) {
       $form_state['dbxref_id'] = $form_state['values']['old_tgdr'];
       $form_state['accession'] = chado_select_record(
         'dbxref', ['accession'], ['dbxref_id' => $form_state['dbxref_id']]
@@ -1535,7 +1569,6 @@ function tpps_main_submit($form, &$form_state) {
     }
   }
 
-  $triggering_element = $form_state['triggering_element']['#value'] ?? NULL;
   if (
     ($form_state['stage'] == 'frontpage' && $submission->accession)
     // We need to change status of files when user clicked 'Back' or 'Next'
@@ -1545,7 +1578,7 @@ function tpps_main_submit($form, &$form_state) {
     // @TODO Minor. Check case when old TGDR reused it will be overwritten.
     // Could we skip file status changing?
     // && !$form_state['values']['use_old_tgdr']
-    tpps_submission_file_set_status($form_state, 0);
+    $submission->setFileStatus(0, []);
   }
   $saved_values[$form_state['stage']] = $values;
 
@@ -1562,11 +1595,6 @@ function tpps_main_submit($form, &$form_state) {
     if ($submission->accession) {
       $submission->save();
     }
-    // File status must not be changed here because we need to have termporary
-    // status of file until study completely submitted. See 'summarypage'
-    // processing.
-    // tpps_submission_file_set_status($form_state, FILE_STATUS_PERMANENT);
-    cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
     return;
   }
 
@@ -1601,7 +1629,7 @@ function tpps_main_submit($form, &$form_state) {
         // Complete button.
         $submission->setStatus(TPPS_SUBMISSION_STATUS_PENDING_APPROVAL);
         $submission->set(['completed'], time());
-        tpps_submission_file_set_status($submission->state, FILE_STATUS_PERMANENT);
+        $submission->setFileStatus(FILE_STATUS_PERMANENT, []);
         // Save Submission Info.
         $submission->generateSharedState();
         $submission->save();
@@ -1627,13 +1655,6 @@ function tpps_main_submit($form, &$form_state) {
   $submission->setState($form_state);
   if ($submission->accession) {
     $submission->save();
-  }
-
-  if ($form_state['stage'] == TPPS_PAGE_1) {
-    // When non-empty (after Page1 submit) study was added we need to
-    // reset cached lists of accessions.
-    // Note: We must clear cache when submission already stored to DB.
-    cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
   }
 }
 
@@ -2082,6 +2103,7 @@ function tpps_watchdog_cleanup() {
  */
 function tpps_drush_cache_clear(&$types) {
   $types['tpps'] = '_tpps_cache_clear';
+  $types['tpps-submission'] = '_tpps_submission_cache_clear';
 }
 
 /**
@@ -2092,10 +2114,22 @@ function _tpps_cache_clear() {
 }
 
 /**
+ * Utility function that clears all the entries in 'tpps_submission' cache bin.
+ */
+function _tpps_submission_cache_clear() {
+  SubmissionCache::clear();
+}
+
+/**
  * Implements hook_flush_caches().
  */
 function tpps_flush_caches() {
-  return [TPPS_CACHE_BIN];
+  return [
+    TPPS_CACHE_BIN,
+    // WARNING: Do not add 'tpps_submission' cache bin to this list to
+    // avoid clearing each time Clear button on the Performance page
+    // or whenever drupal_flush_all_caches is invoked.
+  ];
 }
 
 /**
@@ -2134,7 +2168,7 @@ function tpps_flush_caches() {
  */
 function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
   $debug_mode = FALSE;
-  if ($debug_mode) {
+  if ($debug_mode ?? FALSE) {
     dpm(__FUNCTION__ . '(' . $page_id . ', '
       . ($form === NULL ? 'NULL' : 'form') . ')'
     );
@@ -2287,43 +2321,8 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'page arguments' => ['tpps_admin_settings'],
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
+    // WARNING: filename differs from the settings group name.
     'file' => 'admin/config.php',
-  ];
-  $items['admin/config/tpps/google_maps'] = [
-    'title' => 'Google Maps',
-    'description' => 'Google Maps settings',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_google_maps_settings_form'],
-    'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/google_maps.inc',
-  ];
-  $items['admin/config/tpps/misc'] = [
-    'title' => 'Misc',
-    'description' => 'Misc settings',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_misc_settings_form'],
-    'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/misc.inc',
-  ];
-  $items['admin/config/tpps/watchdog_cleanup'] = [
-    'title' => 'Watchdog Cleanup',
-    'description' => 'Manage cleaning of the watchdog spam-messages.',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_watchdog_cleanup_settings_form'],
-    'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/watchdog_cleanup.inc',
-  ];
-  $items['admin/config/tpps/cache'] = [
-    'title' => 'Cache',
-    'description' => 'Cache settings',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_cache_settings_form'],
-    'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/cache.inc',
   ];
   $items['admin/config/tpps/ncbi_batch'] = [
     'title' => 'NCBI Taxonomy Id Batch Update',
@@ -2334,24 +2333,31 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/ncbi_batch.inc',
   ];
-  $items['admin/config/tpps/admin-panel'] = [
-    'title' => 'Admin Panel',
-    'description' => 'Admin Panel Settings',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_admin_panel_settings_form'],
-    'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/panel.inc',
+
+  $list = [
+    'google_maps' => NULL,
+    'misc' => NULL,
+    'ncbi' => NULL,
+    'cache' => NULL,
+    'submission' => NULL,
+    'rest_api' => 'RestAPI Class Settings',
+    'watchdog_cleanup' => 'Manage cleaning of the watchdog spam-messages.',
   ];
-  $items['admin/config/tpps/submission'] = [
-    'title' => 'Submission',
-    'description' => 'Submission Settings',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_settings_form'],
-    'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/submission.inc',
-  ];
+  foreach ($list as $name => $description) {
+    $human_name = ucwords(str_replace('_', ' ', $name));
+    $description = $description ?? $human_name . ' Settings';
+    $items['admin/config/tpps/' . $name] = [
+      'title' => $human_name,
+      'description' => $description,
+      'page callback' => 'drupal_get_form',
+      'page arguments' => ['tpps_' . $name . '_settings_form'],
+      'access arguments' => ['administer tpps module'],
+      'file path' => TPPS_MODULE_PATH,
+      'file' => 'admin/' . $name . '.inc',
+    ];
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Forms.
   $items['admin/config/tpps/form'] = [
     'title' => 'Form',
     'description' => 'Form Settings',
@@ -2478,152 +2484,15 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/js_debug_mode.inc',
   ];
-}
-
-/**
- * Gets reports meta-data.
- *
- * See tpps_reports_overview_page() which builds list of report links.
- *
- * To add new item:
- * 1. Insert item below.
- * 2. Add variable name into tpps_reports_settings_form().
- */
-function tpps_report_get_list() {
-  return [
-    'missing_doi' => [
-      'url' => 'missing-doi',
-      'title' => variable_get('tpps_report_missing_doi_title', 'Missing DOI'),
-      'description' => t('List of Studies without DOI attached.'),
-      'page callback' => 'tpps_missing_doi_report',
-      'admin_panel' => TRUE,
-    ],
-    'order_family_not_exist' => [
-      'url' => 'order-family-not-exist',
-      'title' => variable_get('tpps_report_order_family_not_exist_title',
-        'Order/Family not exist'),
-      'description' => t('Lists non-existing order/family.'),
-      'admin_panel' => TRUE,
-    ],
-    'no_synonym' => [
-      'url' => 'no-synonyms',
-      'title' => variable_get('tpps_report_no_synonym_title',
-        'List of phenotypes without Synonyms'),
-      'description' => t('List of phenotypes without synonym.'),
-      'admin_panel' => TRUE,
-    ],
-    'unit_warning' => [
-      'url' => 'unit-warning',
-      'title' => variable_get('tpps_report_unit_warning_title',
-      'Unit Warning (list of phenotypes which unit differs from Synonym)'
-      ),
-      'description' => t("List of Phenotypes which differs from Synonym's Unit."),
-      'admin_panel' => TRUE,
-    ],
-    // Files.
-    'submissions_all_files' => [
-      'url' => 'submissions-all-files',
-      'title' => variable_get('tpps_report_submissions_all_files_title',
-        "Submission's All Files"
-      ),
-      'description' => t('List of all (existing and missing) File Ids for ALL submissions'),
-      'admin_panel' => TRUE,
-    ],
-    'submissions_without_files' => [
-      'url' => 'submissions-without-files',
-      'title' => variable_get('tpps_report_submissions_without_files_title',
-        'Submissions without Files'),
-      'description' => t('List of submissions which has no files.'),
-      'admin_panel' => TRUE,
-    ],
-    'submissions_missing_files' => [
-      'url' => 'submissions-missing-files',
-      'title' => variable_get('tpps_report_submissions_missing_files_title',
-        "Submission's Missing Files"
-      ),
-      'description' => t('List submissions which has files but those files '
-      . 'are missing in filesystem.'),
-      'admin_panel' => TRUE,
-    ],
-    'missing_files' => [
-      'url' => 'missing-files',
-      'title' => variable_get('tpps_report_missing_files_title',
-        'Files missing in filesystem'
-      ),
-      'description' => t("List of all (including submission's) files missing "
-      . "in filesystem but present in DB table 'file_managed'."),
-      'admin_panel' => TRUE,
-    ],
-    'imported_studies' => [
-      'url' => 'imported-studies',
-      'title' => variable_get('tpps_report_imported_studies_title', 'Imported Studies'),
-      'description' => t('List of Imported Studies Accessions.'),
-      'admin_panel' => TRUE,
-    ],
-    // Misc.
-    'variable_list' => [
-      'url' => 'variable-list',
-      'title' => variable_get('tpps_report_variable_list_title',
-        'TPPS module variables'
-      ),
-      'description' => t("List of TPPS module's variables with prefix 'tpps'."),
-      'admin_panel' => FALSE,
-    ],
-    // Useful db queries.
-    'organism_list' => [
-      'url' => 'organism-list',
-      'title' => variable_get('tpps_report_organism_list_title',
-        'Organism List'
-      ),
-      'description' => t('List of organisms per study.'),
-      'admin_panel' => FALSE,
-    ],
-    'doi_duplicates' => [
-      'url' => 'doi-duplicates',
-      'title' => variable_get('tpps_report_doi_duplicates_title', 'DOI Duplicates'),
-      'description' => t('List of submissions with the same Publication DOI.'),
-      'page callback' => 'tpps_admin_doi_duplicates_report',
-      'admin_panel' => TRUE,
-    ],
-    'new_organisms' => [
-      'url' => 'new-organisms',
-      'title' => variable_get('tpps_report_new_organisms_title', 'New Organisms'),
-      'description' => t('List of Studies with new organisms (missing in NCBI database).'),
-      'page callback' => 'tpps_new_organisms_report',
-      'admin_panel' => TRUE,
-    ],
-  ];
-}
-
-/**
- * Adds report menu items for hook_menu().
- *
- * To add new item: see reports/README.md.
- *
- * @param array $items
- *   Menu items.
- */
-function tpps_menu_add_report_pages(array &$items = []) {
-  $items = $items ?? [];
-  // Add parent menu item.
-  $items['admin/reports/tpps'] = [
-    'title' => 'TPPS Reports',
-    'description' => 'TPPS module reports',
-    'page callback' => 'tpps_reports_overview_page',
+  $items['admin/config/tpps/zenodo'] = [
+    'title' => 'Zenodo',
+    'description' => 'Zenodo Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_zenodo_settings_form'],
     'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/zenodo.inc',
   ];
-
-  foreach (tpps_report_get_list() as $name => $report) {
-    $items['admin/reports/tpps/' . $report['url']] =
-    $items['tpps-admin-panel/reports/' . $report['url']] = [
-      'title' => $report['title'],
-      'description' => $report['description'],
-      'page callback' => 'tpps_admin_' . $name . '_report',
-      'access callback' => 'tpps_access',
-      'access arguments' => ['administer tpps module'],
-      'file' => 'reports/' . $name . '.inc',
-    ];
-  }
 }
 
 /**
@@ -2767,6 +2636,40 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'file' => 'pages/submission/vcf/local/rename.inc',
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Zenodo API actions.
+  $items['tpps/submission/%/zenodo'] = [
+    'title callback' => 'tpps_submission_title',
+    // 2nd - submission accession. E.g. 'TGDR1234'.
+    'title arguments' => [2],
+    'description' => 'Zenodo Deposition Overview Page',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_zenodo_form', 2],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'pages/submission/zenodo/view.inc',
+  ];
+  $items['tpps/submission/%/zenodo/files'] = [
+    'title callback' => 'tpps_submission_title',
+    // 2nd - submission accession. E.g. 'TGDR1234'.
+    'title arguments' => [2],
+    'description' => 'Zenodo File List',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_zenodo_files_list_form', 2],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'pages/submission/zenodo/files/list.inc',
+  ];
+  $items['tpps/submission/%/zenodo/files/%'] = [
+    'title callback' => 'tpps_submission_title',
+    // 2nd - submission accession. E.g. 'TGDR1234'.
+    'title arguments' => [2, 5],
+    'description' => 'Zenodo Single File Page',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_zenodo_files_single_form', 2, 5],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'pages/submission/zenodo/files/single.inc',
+  ];
 }
 
 /**
@@ -2776,11 +2679,12 @@ function tpps_menu_add_submission_pages(array &$items = []) {
  *   Menu items.
  */
 function tpps_menu_add_api(array &$items = []) {
-  // API.
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // File API.
   $items['api/file/%file/info'] = [
     // File Object with extra absolute path and URL for downloading.
     'title' => 'File Info',
-    'page callback' => 'tpps_api_file_get_info',
+    'page callback' => 'tpps_api_file_info',
     // 2: Managed File Id.
     'page arguments' => [2],
     'access callback' => 'tpps_api_access',
@@ -2797,6 +2701,39 @@ function tpps_menu_add_api(array &$items = []) {
     'file' => 'api/file/get.inc',
     'type' => MENU_CALLBACK,
   ];
+  $items['api/file/%file/usage'] = [
+    'title' => "Lists Usage to File",
+    'page callback' => 'tpps_api_file_usage_list',
+    // 2: Managed File Id.
+    'page arguments' => [2],
+    'access callback' => 'tpps_api_access',
+    'file' => 'api/file/usage/list.inc',
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  ];
+  $items['api/file/%file/usage/add/%'] = [
+    'title' => "Adds Usage to File",
+    'page callback' => 'tpps_api_file_usage_add',
+    // 2: Managed File Id.
+    // 5: study accession. E.g., 'TGDR1040'.
+    'page arguments' => [2, 5],
+    'access callback' => 'tpps_api_access',
+    'file' => 'api/file/usage/add.inc',
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  ];
+  $items['api/file/%file/usage/delete/%'] = [
+    'title' => "Adds Usage to File",
+    'page callback' => 'tpps_api_file_usage_delete',
+    // 2: Managed File Id.
+    // 5: study accession. E.g., 'TGDR1040'.
+    'page arguments' => [2, 5],
+    'access callback' => 'tpps_api_access',
+    'file' => 'api/file/usage/delete.inc',
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  ];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $items['api/submission/%tpps_submission/vcf'] = [
     'title' => 'List of VCF Files Ids',
     'page callback' => 'tpps_api_submission_vcf_files_list',
@@ -2814,6 +2751,26 @@ function tpps_menu_add_api(array &$items = []) {
     'page arguments' => [2],
     'access callback' => 'tpps_api_access',
     'file' => 'api/submission/view.inc',
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  ];
+  $items['api/submission/%tpps_submission/zenodo/deposit'] = [
+    'title' => 'Zenodo Deposition',
+    'description' => 'Zenodo Deposition in JSON format',
+    'page callback' => 'tpps_api_submission_zenodo_deposit',
+    'page arguments' => [2],
+    'access callback' => 'tpps_api_access',
+    'file' => 'api/submission/zenodo_deposit.inc',
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  ];
+  $items['api/submission/%tpps_submission/zenodo/files'] = [
+    'title' => 'Zenodo Deposition Files',
+    'description' => 'Zenodo Deposition Files in JSON format',
+    'page callback' => 'tpps_api_submission_zenodo_files',
+    'page arguments' => [2],
+    'access callback' => 'tpps_api_access',
+    'file' => 'api/submission/zenodo_files.inc',
     'type' => MENU_CALLBACK,
     'delivery callback' => 'drupal_json_output',
   ];
@@ -2925,33 +2882,6 @@ function tpps_api_access() {
 }
 
 /**
- * Menu callback. Shows list of TPPS Reports.
- *
- * See
- * tpps_menu_add_report_pages();
- * tpps_admin_panel_reports();
- *
- * @param bool $admin_panel
- *   Determines if only items for 'Admin Panel' must be returned.
- *
- * @return string
- *   Returns rendered list of links to report pages with descriptions.
- */
-function tpps_reports_overview_page($admin_panel = FALSE) {
-  foreach (tpps_report_get_list() as $name => $report) {
-    if (!$admin_panel || ($admin_panel && $report['admin_panel'])) {
-      $items[] = '<strong>' . l(t($report['title']), 'admin/reports/tpps/'
-        . $report['url']) . '</strong><br /><em>' . $report['description']
-        . '</em>';
-    }
-  }
-  return theme('item_list', [
-    'title' => t('TPPS Reports'),
-    'items' => $items,
-  ]);
-}
-
-/**
  * Dynamyc menu item titles for TPPS Submisssion pages.
  *
  * @param string $accession
@@ -3041,6 +2971,9 @@ function tpps_is_main_form(array $form_state) {
  *
  * @return object
  *   Returns Submission object or throw an exception if it's not found.
+ *
+ * @throws Exception
+ *  When study wasn't found.
  */
 function tpps_submission($accession = '') {
   // @TODO Make this variable global.
@@ -3137,18 +3070,130 @@ function tpps_theme() {
         'string' => NULL,
       ],
     ],
-    'study_accession' => [
+    'submission_accession_link' => [
       'variables' => [
         'accession' => NULL,
+        'path' => NULL,
+        'use_abr' => NULL,
+      ],
+    ],
+    'submission_tag_list' => [
+      'variables' => [
+        'tags' => NULL,
+      ],
+    ],
+    'submission_date' => [
+      'variables' => [
+        'date' => NULL,
+      ],
+    ],
+    'submission_submitter' => [
+      'variables' => [
+        'submitter' => NULL,
+      ],
+    ],
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Zenodo.
+    'zenodo_deposit_link' => [
+      'variables' => [
+        'deposit_id' => NULL,
+        'host' => NULL,
+      ],
+    ],
+    'zenodo_concept_record_link' => [
+      'variables' => [
+        'conceptrecid' => NULL,
+      ],
+    ],
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Files.
+    'file_id' => [
+      'variables' => [
+        'fid' => NULL,
+        'attributes' => NULL,
+      ],
+    ],
+    'file_action_list' => [
+      'variables' => [
+        'fid' => NULL,
+        'attributes' => NULL,
       ],
     ],
   ];
 }
 
 /**
+ * Themes list of submission's tags.
+ */
+function theme_submission_tag_list(array $variables) {
+  if (!empty($variables['tags'])) {
+    return tpps_show_tags($variables['tags']);
+  }
+}
+
+/**
+ * Themes dates for TPPS Admin Panel.
+ */
+function theme_submission_date(array $variables) {
+  $date = check_plain($variables['date']);
+  return !empty($date) ? date("F j, Y, g:i a", $date) : t('Unknown');
+}
+
+/**
+ * Themes submitter of the TPPS Submission.
+ */
+function theme_submission_submitter($variables) {
+
+  $use_tripal_contact = FALSE;
+  if ($use_tripal_contact) {
+    // @TODO Review this code. Copied from TPPS Admin Panel when it was updated
+    // to use 'SubmissionCache' class. Not tested.
+    $contact_bundle = tripal_load_bundle_entity(
+      ['label' => 'Tripal Contact Profile']
+    );
+    // If Tripal Contact Profile is available, we want to link to the
+    // profile of the owner instead of just displaying the name.
+    if ($contact_bundle) {
+      $query = new EntityFieldQuery();
+      $results = $query->entityCondition('entity_type', 'TripalEntity')
+        ->entityCondition('bundle', $contact_bundle->name)
+        ->fieldCondition('local__email', 'value', $owner_mail)
+        ->range(0, 1)
+        ->execute();
+      // [VS]
+      if (!empty($results['TripalEntity'])) {
+        // Commented out because there is a lot of warning messages
+        // shown at page.
+        //
+        //  $entity = current(
+        //    array_reverse(
+        //      entity_load(
+        //        'TripalEntity',
+        //        array_keys($results['TripalEntity'])
+        //      )
+        //    )
+        //  );
+        //  $owner = "<a href=\"$base_url/TripalContactProfile/"
+        //    . "{$entity->id}\">$submitting_user</a>";
+      }
+      // [/VS]
+    }
+  }
+  $submitter = $variables['submitter'] ?? NULL;
+  if (!empty($submitter['name'])) {
+    return $submitter['name']
+    . ($submitter['mail'] ? ' (' . $submitter['mail'] . ')' : '');
+  }
+  if (!empty($submitter['mail'])) {
+    return $submitter['mail'];
+  }
+  return $submitter['uid'] ?? '';
+}
+
+/**
  * Makes first char of the string bold.
  *
- * Note: Used in function tpps_admin_imported_studies_report().
+ * Note: Used in function tpps_report_submission_imported().
  * Usage:
  * theme('fcbold', ['string' => $string]);
  *
@@ -3169,9 +3214,7 @@ function theme_fcbold(array $variables) {
 /**
  * Highlights number in study accession.
  *
- * Note: Used in function tpps_admin_imported_studies_report().
- * Usage:
- * theme('study_accession', ['accession' => $accession]);
+ * Usage: theme('submission_accession_link', $vars);
  *
  * @param array $variables
  *   Data for theming.
@@ -3180,11 +3223,717 @@ function theme_fcbold(array $variables) {
  * @return string
  *   Returns string where 1st char is wrapped with '<strong>' HTML-tag.
  */
-function theme_study_accession(array $variables) {
+function theme_submission_accession_link(array $variables) {
   $accession = $variables['accession'] ?? NULL;
-  if (!empty($accession)) {
-    $number = str_replace('TGDR', '', ($accession));
-    return '<span class="tpps-study-accession">TGDR</span>'
-      . '<span class="tpps-study-accession-number">' . $number . '</span>';
+  $path = $variables['path'] ?? NULL;
+  $show_version = $variables['show_version'] ?? FALSE;
+
+  if (empty($accession)) {
+    return;
   }
+  $data = SubmissionCache::get();
+  $number = str_replace('TGDR', '', ($accession));
+  $output = '<span class="tpps-study-accession">TGDR</span>'
+    . '<span class="tpps-study-accession-number" title="'
+    . t('Study accession number') . '">' . $number . '</span>';
+
+  // Extra data.
+  if ($show_version) {
+    if (!empty($data[$accession][Submission::FORM_VERSION_KEY])) {
+      $output .= ' {<span class="tpps-study-form-version-number" title="'
+        .  t('Submission Form Version Number') . '">'
+        . $data[$accession][Submission::FORM_VERSION_KEY] . '</span>}';
+    }
+  }
+  if ($path) {
+    $output = l($output, $path, ['html' => TRUE]);
+  }
+  return $output;
+
+}
+
+/**
+ * Creates hyperlink to local Zenodo Deposit page.
+ *
+ * Usage: theme('zenodo_deposit_link', $vars);
+ *
+ * Usage: theme('submission_zenodo_deposit_link', $vars);
+ * Note: Deposits withour host will be highlighted with red color.
+ */
+function theme_zenodo_deposit_link(array $variables) {
+  if (empty($deposit_id = $variables['deposit_id'])) {
+    return '';
+  }
+
+  // Use ZenodoHost::search(['deposit_id' => $deposit_id]); to get host.
+  $host = $variables['host'] ?? NULL;
+  // Build link.
+  if ($host) {
+    $url = 'admin/reports/tpps/zenodo/deposition/' . $host . '/' . $deposit_id;
+    return l($deposit_id, $url);
+  }
+  else {
+    return '<div style="color:red;">' . $deposit_id . '</div>';
+  }
+}
+
+/**
+ * Gets Hyperlink to Zenodo API Endpoint which shows all versions.
+ *
+ * Usage: theme('zenodo_concept_record_link', $vars);
+ *
+ * @return string
+ *   Returns HTML A-tag which points to Zenodo Deposit List page where listed
+ *   all versions of the Deposition.
+ */
+function theme_zenodo_concept_record_link($variables) {
+  if (
+    empty($conceptrecid = $variables['conceptrecid'])
+    || empty($host = $variables['host'])
+  ) {
+    return '';
+  }
+  // Docs: https://developers.zenodo.org/?javascript#list
+  $query = [
+    'q' => 'conceptrecid:' . $conceptrecid,
+    'all_versions' => 1,
+    // optional. Sort order (bestmatch or mostrecent).
+    // Prefix with minus to change form ascending to descending (e.g. -mostrecent).
+    'sort' => 'mostrecent',
+  ];
+  // The same API Endpoint uses ZenodoDeposit::list().
+  $url = 'https://' . ($host == 'live' ? '' : 'sandbox.')
+    . 'zenodo.org/api/deposit/depositions';
+  return l($conceptrecid, Zenodo::addAccessToken($url), ['query' => $query]);
+}
+
+/**
+ * Wraps file id into hyperlink.
+ *
+ * @param array $variables
+ *   Data for theming.
+ *   'fid' - string. File Id.
+ *
+ * @return string
+ *   Returns string where 1st char is wrapped with '<strong>' HTML-tag.
+ */
+function theme_file_id(array $variables) {
+  $fid = check_plain($variables['fid']) ?? NULL;
+  $destination = $variables['destination'] ?? NULL;
+  if (empty($fid)) {
+    return '';
+  }
+  $options = [
+    'query' => [
+      'token' => variable_get('tpps_api_token'),
+      'destination' => $destination,
+    ],
+    'attributes' => $variables['attributes'] ?? '',
+  ];
+  return l($fid, 'api/file/' . $fid . '/info', $options);
+}
+
+/**
+ * Wraps file id into hyperlink.
+ *
+ * @param array $variables
+ *   Data for theming.
+ *   'fid' - string. File Id.
+ *   'attributes' - array. List of hyperlink attributes.
+ *
+ * @return string
+ *   Returns string where 1st char is wrapped with '<strong>' HTML-tag.
+ */
+function theme_file_action_list(array $variables) {
+  $accession = $variables['accession'] ?? NULL;
+  $destination = $variables['destination'] ?? NULL;
+  if (empty($accession)) {
+    return '';
+  }
+  $fid = check_plain($variables['fid']) ?? NULL;
+  if (empty($fid)) {
+    return '';
+  }
+  $options = [
+    'query' => [
+      'token' => variable_get('tpps_api_token'),
+      'destination' => $destination,
+    ],
+    'attributes' => $variables['attributes'] ?? '',
+  ];
+  return '[' . implode('|', [
+    l(t('D'), 'api/file/' . $fid . '/get',
+      array_merge($options, ['attributes' => ['title' => t('Download File')]])
+    ),
+    l(t('U'), 'api/file/' . $fid . '/usage',
+      array_merge($options, ['attributes' => ['title' => t('Usage')]])
+    ),
+    l(t('U+'), 'api/file/' . $fid . '/usage/add/' . $accession,
+      array_merge($options, ['attributes' => ['title' => t('Add 1 Usage')]])
+    ),
+    l(t('U-'), 'api/file/' . $fid . '/usage/delete/' . $accession,
+      array_merge($options, ['attributes' => ['title' => t('Delete 1 Usage')]])
+    ),
+  ]) . ']';
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// Zenodo Hooks.
+
+/**
+ * Implements hook 'zenodo_deposit_published'.
+ */
+function tpps_zenodo_deposit_published(array $data) {
+  drupal_set_message(t('Zenodo Deposit was <strong>published</strong>.'));
+}
+
+/**
+ * Implements hook 'zenodo_deposit_deleted'.
+ */
+function tpps_zenodo_deposit_deleted(array $data) {
+  $message = t('Zenodo Deposit #@deposit_id was <strong>deleted</strong>.',
+    ['@deposit_id' => $data['deposit_id']]
+  );
+  drupal_set_message($message);
+
+  if (empty($deposition = $data['deposition'])) {
+    if (!empty($data['deposit_id'])) {
+      $deposition = ZenodoDeposit::retrieve($data);
+    }
+  }
+
+  // Update Submission.
+  if (empty($data['accession'])) {
+    return;
+  }
+  $submission = new Submission($data['accession']);
+  if ($submission->doesNotExist()) {
+    return;
+  }
+  if (!empty($deposition)) {
+    // Check if there is previous version.
+    $version_list = ZenodoDeposit::getAllVersions(
+      [
+        // The other way to get 'coneptrecid':
+        //$conceptrecid = $submission->getZenodoConceptRecordId();
+        'conceptrecid' => $deposition['conceptrecid'] ?? NULL,
+        'deposit_id' => $deposition['id'],
+      ],
+      $sort = 'mostrecent'
+    );
+    if (empty($version_list)) {
+      // Was removed unpublished last version.
+      $conceptrecid = NULL;
+      $new_deposit_id = NULL;
+      $message = t('Removed last unpublished version of Zenodo Deposition.');
+    }
+    else {
+      $conceptrecid = $deposition['conceptrecid'];
+      $new_deposit_id = $version_list[0]['id'];
+      $message = t('Restored previous verion of the Zenodo Deposit: #@deposit_id.',
+        ['@deposit_id' => $new_deposit_id]
+      );
+    }
+    drupal_set_message($message);
+    if ($deposition['id'] = $submission->getZenodoDepositId()) {
+      // Unset exsisting Dataset DOI value.
+      $submission->updateDatasetDOI(NULL);
+      // WARNING: Be sure to save $submission.
+      $submission->setZenodoConceptRecordId($conceptrecid, $save_on_change = FALSE);
+      $submission->setZenodoDepositId($new_deposit_id, $save_on_change = FALSE);
+      $submission->save();
+      $message = t('Submission @accession was updated.',
+        ['@accession' => $data['accession']]
+      );
+      drupal_set_message($message);
+    }
+  }
+  // Clear cache.
+  SubmissionCache::updateSingle($submission);
+}
+
+/**
+ * Implements hook 'zenodo_deposit_before_create'.
+ */
+function tpps_zenodo_deposit_before_create(array $data) {
+  // Get Dataset DOI.
+  $submission = new Submission($data['accession']);
+  if ($submission->doesNotExist()) {
+    $message = t("Submission '@accession' wasn't found.", ['@accession' => $accession]);
+    throw new Exception($message, 1001);
+  }
+  $dataset_doi = $submission->getDatasetDOI();
+  // Check if Dataset DOI is empty and it could be overwritten.
+  if (empty($dataset_doi) || variable_get('tpps_zenodo_overwrite_dataset_doi')) {
+    return;
+  }
+  $message = t('Submission "@accession" has non-empty Dataset DOI (@dataset_doi).',
+    ['@accession' => $data['accession'], '@dataset_doi' => $dataset_doi]
+  );
+  throw new Exception($message, 1002);
+}
+
+/**
+ * Implements hook 'zenodo_deposit_created'.
+ */
+function tpps_zenodo_deposit_created(array $data) {
+  if (empty($data['accession']) || empty($deposit_id = $data['response']['id'])) {
+    return;
+  }
+  drupal_set_message(t('Zenodo Deposit was <strong>created</strong>.'));
+  // Store Zenodo Deposit Id into TPPS Submission.
+  $submission = new Submission($data['accession']);
+  if ($submission->doesNotExist()) {
+    $message = t("Submission '@accession' wasn't found.", ['@accession' => $accession]);
+    drupal_set_message($message);
+    return;
+  }
+  SubmissionCache::updateSingle($submission);
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Store DOI.
+  $dataset_doi = $data['response']['metadata']['prereserve_doi']['doi'] ?? NULL;
+  $submission->updateDatasetDOI($dataset_doi);
+  // WARNING: Be sure to save $submission.
+  $conceptrecid = $data['response']['conceptrecid'] ?? NULL;
+  $submission->setZenodoConceptRecordId($conceptrecid, $save_on_change = FALSE);
+  // Store Zenodo Deposit Id and save submission to DB.
+  $submission->setZenodoDepositId($deposit_id, $save_on_change = FALSE);
+  $submission->save();
+
+  drupal_set_message(t(
+    'Zenodo Deposit Id <strong>@deposit_id</strong> stored in submission.',
+    ['@deposit_id' => $deposit_id]
+  ));
+
+  // Upload all files in Submission to Zenodo Deposit.
+  // @TODO Minor. Use 'update' to be sure old files removed.
+  $submission->actionAllFilesZenodo('create');
+}
+
+/**
+ * Implements hook 'zenodo_deposit_updated'.
+ *
+ * @param array $data
+ *   Request Data. Keys are:
+ *   - 'deposit_id' int Required. Zenodo Deposit Id.
+ *   - 'accession' string Required. TPPS Submission accession.
+ *   - 'url' string Required. Zenodo API Endpoint URL.
+ *   - 'payload' array Required. Request payload.
+ *   - 'response' mixed Required. Zenodo API Response.
+ */
+function tpps_zenodo_deposit_updated(array $data) {
+  drupal_set_message(t('Zenodo Deposit was <strong>updated</strong>.'));
+}
+
+/**
+ * Alters data before requiest ZenodoDeposit::update() will be done.
+ *
+ * Note: Called before API Endpoint URL will be generated.
+ *
+ * @param array $data
+ *   Data for Zenodo API request. Could be empty.
+ *
+ * @todo Minor. Allow to change all fields. Should edit-form be used?
+ */
+function tpps_zenodo_deposit_update_alter(array &$data = []) {
+  // Validation.
+  if (empty($data) || empty($data['accession'])) {
+    return;
+  }
+  // Populate $data with actual data from the $submission.
+  $submission = new Submission($data['accession']);
+  if ($submission->doesExist()) {
+    $data['payload']['metadata'] = $submission->buildZenodoDepositMetadata();
+  }
+}
+
+/**
+ * Alters data before requiest ZenodoDeposit::create() will be done.
+ *
+ * Note: Called before API Endpoint URL will be generated.
+ *
+ * @param array $data
+ *   Data for Zenodo API request. Could be empty.
+ *
+ * @todo The same as tpps_zenodo_deposit_update_alter().
+ */
+function tpps_zenodo_deposit_create_alter(array &$data = []) {
+  // Validation.
+  if (empty($data) || empty($data['accession'])) {
+    return;
+  }
+  // Populate $data with actual data from the $submission.
+  $submission = new Submission($data['accession']);
+  if ($submission->doesExist()) {
+    $data['payload']['metadata'] = $submission->buildZenodoDepositMetadata();
+  }
+}
+
+/**
+ * Implements hook 'rest_api_request_complete'.
+ *
+ * @param array $context
+ *   Request's context.
+ *   Keys:
+ *   'Code' - int. HTTP code.
+ *   'Message' - string. HTTP code message.
+ *   'Execution Time' - float. Request execution time in milliseconds.
+ *   'Request' - array. Keys are 'Method', 'URL', 'Payload', 'Headers'.
+ *   'Response' - mixed. Remote server's response.
+ */
+function tpps_rest_api_request_complete(array $context = []) {
+  $max_execution_time = variable_get('tpps_rest_api_max_execution_time', 5000);
+  if (
+    ($context['Execution Time'] ?? 0) <= $max_execution_time
+    && !RestAPI::isLogRequestAllowed()
+    && !RestAPI::isLogResponseAllowed()
+  ) {
+    return;
+  }
+  // Validate method.
+  $method = $context['Request']['Method'] ?? NULL;
+  if (!RestAPI::isLogRequestTypeAllowed($method)) {
+    return;
+  }
+  // Note: Execution time will always be shown.
+  if (!RestAPI::isLogRequestAllowed()) {
+    unset($context['Request']);
+  }
+  if (!RestAPI::isLogResponseAllowed()) {
+    unset($context['Response']);
+  }
+  $message = 'Rest API Request Complete. !context';
+  $params = ['!context' => tpps_array_print_list($context)];
+  watchdog('tpps', $message, $params, WATCHDOG_WARNING);
+}
+
+/**
+ * Implements hook 'zenodo_deposit_host_changed'.
+ */
+function tpps_zenodo_deposit_host_changed($new_host) {
+  // @TODO Minor. Add site settings to enable/disble those messages.
+  drupal_set_message(
+    t(
+      'Zenodo Deposition was found on other Zenodo Host. It was temporary '
+      . '(for this page only) changed to "@new_host".',
+      ['@new_host' => $new_host]
+    ),
+    'warning'
+  );
+}
+
+/**
+ * Implements hook 'zenodo_deposit_validation_failed'.
+ */
+function tpps_zenodo_deposit_validation_failed(array $response) {
+  // @TODO Minor. Add site settings to enable/disble those messages.
+  if (!empty($response['status']) && !empty($response['message'])) {
+    drupal_set_message(t('ZenodoDeposit Resource validation failed. '
+      . '<br />Response: <strong>@code - @message</strong>'
+      . '<br />Check if correct Zenodo server was used.',
+      [
+        '@code' => $response['status'],
+        '@message' => $response['message'],
+      ]
+    ));
+  }
+  else {
+    drupal_set_message(t('Zenodo Deposition not found.'));
+  }
+}
+
+/**
+ * Implements alter-hook 'zenodo_file_create'.
+ *
+ * @param array $data
+ *   Context for ZenodoFile::create().
+ */
+function tpps_zenodo_file_create_alter(array &$data) {
+  $file = $data['drupal_file'];
+  if (empty($file)) {
+    return;
+  }
+  $data['header'] = [
+    'Content-Type: application/octet-stream',
+    'Accept: application/json',
+  ];
+  $data['payload'] = file_get_contents(tpps_realpath($file->uri));
+
+  // @TODO Review and remove if it's useless.
+  // $cFile = new CURLFile(
+  //   tpps_realpath($file->uri),
+  //  //$file->filemime,
+  //  'application/octet-stream',
+  //  $file->filename
+  // );
+  // $filepath = tpps_realpath($file->uri);
+  // $fp = '@' . $filepath;
+  // $size = filesize($filepath);
+
+  //  $file = curl_file_create($this->file, 'application/octet-stream', 'EcommProdotti');
+
+  // curl_setopt($curl, CURLOPT_PUT, true);
+  // curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'POST');
+  // curl_setopt($curl, CURLOPT_INFILE, $fp);
+}
+
+/**
+ * Implements alter-hook 'rest_api_exception'.
+ *
+ * Allows alter exception messages thrown in RestAPI::doRequest().
+ *
+ * @param string $message
+ *   Original exceptin message which could be modified.
+ * @param array $context
+ *   Request meta-data.
+ */
+function tpps_rest_api_exception_alter(&$message, array $context) {
+  if (!empty($context['response']['status'])) {
+    if (!empty($context['response']['message'])) {
+      $message .= ' ' . $context['response']['message'];
+    }
+    if (!empty($context['response']['errors'])) {
+      foreach ($context['response']['errors'] as $error) {
+        $message .= ' ' . $error['field'] . ': ' . implode(' ', $error['messages']);
+      }
+    }
+  }
+}
+
+/**
+ * Implements 'zenodo_deposit_new_version_created'.
+ */
+function tpps_zenodo_deposit_new_version_created(array $data) {
+  $debug_mode = FALSE;
+  if (empty($data['accession'])) {
+    return;
+  }
+  $submission = new Submission($data['accession']);
+  if ($submission->doesNotExist()) {
+    // @todo Is it an error? Should error message be shown?
+    return;
+  }
+  $deposit_id = $submission->getZenodoDepositId();
+  $new_deposit_id = $data['response']['id'] ?? NULL;
+  if (!empty($new_deposit_id) && $deposit_id != $new_deposit_id) {
+    // Store Zenodo Concept Record Id (for new depositions only).
+    $conceptrecid = $data['response']['conceptrecid'] ?? NULL;
+    $submission->setZenodoConceptRecordId($conceptrecid, $save_on_change = FALSE);
+    // Store Deposit Id.
+    $submission->setZenodoDepositId($new_deposit_id, $save_on_change = TRUE);
+    // Note: Deposit Id can't be the same when Concept Record Id changed and
+    // Deposit Id will be updated more often so it's safe enough not to force
+    // $submission->save() usage but save only when Deposit Id changed.
+
+    if ($debug_mode ?? FALSE) {
+      dpm(print_r($data, 1));
+      $message = t('New Zenodo Deposit "#@new_deposit_id".'
+        . '<br />Previous Zenodo Deposit Id: @deposit_id.',
+        [
+          '@new_deposit_id' => $new_deposit_id,
+          '@deposit_id' => $deposit_id,
+        ]
+      );
+      drupal_set_message($message);
+    }
+    drupal_set_message(t('New version of Zenodo Deposit was created.'));
+  }
+}
+
+/**
+ * Implements 'zenodo_deposit_discarded'.
+ */
+function tpps_zenodo_deposit_discarded(array $data) {
+  $debug_mode = FALSE;
+  if (empty($data['accession'])) {
+    return;
+  }
+  $submission = new Submission($data['accession']);
+  if ($submission->doesNotExist()) {
+    // @todo Is it an error? Should error message be shown?
+    return;
+  }
+  $conceptrecid = $submission->getZenodoConceptRecordId();
+  $list = ZenodoDeposit::list(
+    ['query' => ['q' => 'conceptrecid:' . $conceptrecid]]
+  );
+
+  if ($debug_mode ?? FALSE) {
+    dpm(print_r($list, 1));
+  }
+
+  $discarded_deposit_id = $submission->getZenodoDepositId();
+  // There will be only one active deposition in the list.
+  $deposit_id = $list[0]['id'] ?? NULL;
+  $submission->setZenodoConceptRecordId($conceptrecid, $save_on_change = FALSE);
+  $submission->setZenodoDepositId($deposit_id, $save_on_change = TRUE);
+  // Only published deposit could be rolled back.
+  if ($discarded_deposit_id == $deposit_id) {
+    // Undo changes made in edit mode.
+    // Was: state == 'inprogress' && submitted == 1.
+    // Became: state == 'done' && submitted == 1.
+    drupal_set_message(t('Changes in Zenodo Deposition #@deposit_id was discarded.',
+      ['@deposit_id' => $deposit_id]
+    ));
+  }
+  else {
+    // 'Discard' action must be used only when when editing already published
+    // Deposition. 'Delete' must be used for unpublished Deposition.
+    drupal_set_message(t('Zenodo Deposition #@discarded_deposit_id was discarded. '
+      . 'Rolled back to Deposition #@deposit_id.',
+      [
+        '@discarded_deposit_id' => $discarded_deposit_id,
+        '@deposit_id' => $deposit_id,
+      ]
+    ));
+    SubmissionCache::updateSingle($submission);
+  }
+}
+
+/**
+ * Implements 'submission_dataset_doi_updated'.
+ */
+function tpps_submission_dataset_doi_updated(array $data) {
+  // New.
+  $dataset_doi = $data['new'];
+  // Stored values of Dataset DOI.
+  $state_dataset_doi = $data['old'];
+
+  if (is_null($dataset_doi ?? NULL)) {
+    drupal_set_message(t('Dataset DOI was unset.',
+      ['@dataset_doi' => $dataset_doi]
+    ));
+  }
+  else {
+    drupal_set_message(t(
+      'Dataset DOI was set to <strong>@dataset_doi</strong>.',
+      ['@dataset_doi' => $dataset_doi]
+    ));
+  }
+}
+
+/**
+ * Implements 'form_FORM_ID_alter' for 'tppsc_main' form.
+ */
+function tpps_form_tppsc_main_alter($form, $form_state) {
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Fix error "The file used in the ...  field may not be referenced."
+  // When file is present in file system and submission has it's id but file
+  // has no usage record this error will be shown.
+  // Add usage to avoid validation issues.
+  $submission = new Submission();
+  $submission->setState($form_state);
+  $is_tppsc = $submission->isTppsc();
+  $file_list = $submission->getFileIdList();
+  if (!empty($file_list)) {
+    foreach (array_keys($file_list) as $fid) {
+      $file = tpps_file_load($fid);
+      if ($file && Submission::isEmptyFileUsage($file, $submission->accession)) {
+        Submission::addFileUsage($file, $submission->accession);
+      }
+    }
+  }
+
+  // Process 'Remove' button for files.
+  // Get parents.
+  if (
+    count($form_state['values'] ?? NULL) != 2
+    || strpos($_GET['q'], 'file/ajax/') === FALSE
+  ) {
+    return;
+  }
+  // File was removed from page using 'Remove' button.
+  $parents = tpps_array_get_path($form_state['values']);
+  $fid = tpps_array_get_value($form, array_merge($parents, ['#default_value']));
+  $file = tpps_file_load($fid);
+  if (
+    !(empty($fid)) && !empty($file)
+    && empty(tpps_array_get_value($form_state['input'], array_merge($parents, ['fid'])))
+  ) {
+    $accession = $form_state['input']['accession'];
+    Submission::deleteFileUsage($file, $accession);
+  }
+}
+
+/**
+ * Implements 'form_FORM_ID_alter' for 'tpps_main' form.
+ */
+function tpps_form_tpps_main_alter(array &$form, array &$form_state) {
+  // @todo Minor. Uncomment when TPPS form must work as TPPSc.
+  // tpps_form_tppsc_main_alter($form, $form_state);
+}
+
+/**
+ * Implements hook 'submission_saved'.
+ */
+function tpps_submission_saved($submission) {
+  if (variable_get('tpps_submission_clear_cache_on_save', FALSE)) {
+    // @todo Very slow because Submission::save() calls many times per single
+    // request. Implement single save event before enable clearing cache.
+    tpps_cache_clear_all();
+    SubmissionCache::updateSingle($submission);
+  }
+}
+
+/**
+ * Clears TPPS_CACHE_BIN only.
+ *
+ * This function is required because not all 'cid' must be cleared.
+ *
+ * @param bool $force
+ *   When TRUE then even reports which supports per row update will be created.
+ *
+ * @TODO Minor. Show message.
+ */
+function tpps_cache_clear_all($list = NULL, $force = FALSE) {
+  $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+  if ($list == 'all' || (is_array($list) && empty($list))) {
+    cache_clear_all('*', $cache_bin, TRUE);
+  }
+  else {
+    $list = is_null($list) ? tpps_cache_get_cid_list() : $list;
+    if (empty($list)) {
+      return;
+    }
+    foreach ($list as $cid) {
+      cache_clear_all($cid, $cache_bin);
+    }
+  }
+}
+
+/**
+ * Gets list of cid.
+ *
+ * @return array
+ *   Returns list of cid used in TPPS_CACHE_BIN.
+ */
+function tpps_cache_get_cid_list() {
+  return [
+    // Checked:
+    'tpps_doi_count_dbxref',
+    'tpps_synonym_list',
+    'tpps_unit_list',
+    // Responses of DataDryad API.
+    'tpps_get_doi_info',
+    // Custom list on TPPS Admin Panel.
+    'tpps_admin_panel_cache_new_species_list',
+
+    // Need to be checked:
+    'tpps_report_doi_duplicates',
+    'tpps_cv',
+    'tpps_phenotype_field',
+  ];
+}
+
+/**
+ * Implements hook 'submission_purged'.
+ */
+function tpps_submission_purged($submission) {
+  tpps_cache_clear_all();
+  drupal_set_message(
+    t("Submission @accession and it's files was removed and cache was cleared.",
+      ['@accession' => $submission->accession]
+    )
+  );
 }

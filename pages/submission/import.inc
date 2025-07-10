@@ -42,7 +42,7 @@ function tpps_submission_import_form(array $form, array &$form_state, $accession
   }
   else {
     // Select accession.
-    $accession_list = tpps_submission_get_accession_list();
+    $accession_list = SubmissionCache::getAccessionList();
     $new_accession = [
       'new' => t('New (@accession)', ['@accession' => $next_accession]),
     ];
@@ -182,13 +182,13 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   // @TODO Minor. Remove 'saved_values' but be sure to restore those values
   // when submission reopened using '/tppsc' form.
   module_load_include('inc', 'tpps', 'includes/submission_form_version');
-  $submission_version = $submission->state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1;
+  $submission_version = $submission->state['saved_values'][Submission::FORM_VERSION_KEY] ?? 1;
   $submission->state['saved_values']['tpps_submission_import'] = [
     'original_accession' => $submission->accession,
     'imported' => REQUEST_TIME,
     'imported_date' => format_date(REQUEST_TIME, 'custom', 'Y-m-d h:s:i O'),
     'site' => $submission->state['tpps_submission_export_site'] ?? 'https://treegenesdb.org',
-    TPPS_SUBMISSION_FORM_VERSION_KEY => $submission_version,
+    Submission::FORM_VERSION_KEY => $submission_version,
   ];
   // Files.
   tpps_submission_import_process_files($submission->state, $accession, $form);
@@ -214,10 +214,10 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     $submission->status = $submission->get(['status']);
   }
   // Update a list of imported studies.
-  tpps_imported_studies_list_add_item($accession, $submission->accession);
+  ImportedSubmissionList::add($accession, $submission->accession);
   // Clear cached list of studies to have new items at 'frontpage'.
-  // @TODO Minor. Clear only accession list.
-  cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
+  SubmissionCache::updateSingle($submission);
+  tpps_cache_clear_all(['tpps_submission_get_accession_list']);
 
   if ($upgrade_version) {
     // Upgrade to latest Submission Form Version.
@@ -247,7 +247,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   else {
     // If we don't submit form we need manually change status of attached files
     // from temporaty to permanent to avoid it's automatic removement.
-    tpps_submission_file_set_status($submission->state, FILE_STATUS_PERMANENT);
+    $submission->setFileStatus(FILE_STATUS_PERMANENT, []);
   }
 
   drupal_goto('completed-submission/' . $accession);
@@ -374,8 +374,8 @@ function tpps_submission_import_state_mods(array &$state, $new_accession) {
   // Store imported (original) Submission Form Version.
   module_load_include('inc', 'tpps', 'includes/submission_form_version');
   // Set Submission Form Version.
-  $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
-    = $state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1;
+  $saved_values[Submission::FORM_VERSION_KEY]
+    = $state['saved_values'][Submission::FORM_VERSION_KEY] ?? 1;
   // @TODO Check if this is required.
   //unset($state['tpps_submission_export_site']);
 
@@ -423,13 +423,12 @@ function tpps_submission_import_process_files(array &$state, $new_accession, arr
       }
       // To avoid errors when page navigation used we need to have
       // temporary stored files until final form submit ('summarypage').
-      // @TODO Minor. Think about reusage of function
-      // tpps_submission_file_set_status().
+      // @TODO Minor. Could $submission->setFileStatus() be used?
       if ($new_file->status != 0) {
         $new_file->status = 0;
         file_save($new_file);
       }
-      tpps_file_add_usage($new_file, $new_accession);
+      Submission::addFileUsage($new_file, $new_accession);
       // Change File ID in submission state.
       $state = tpps_array_replace($state, $fid, $new_file->fid);
 
