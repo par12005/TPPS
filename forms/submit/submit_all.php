@@ -5135,6 +5135,10 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           }
           else {
             $marker_name = $variant_name; // Use the variant name as the marker name
+
+            // Gabe discussion on 7/3/2025
+            // $marker_name = $scaffold_id . '_' . $position; // Use the variant name as the marker name
+            // $variant_name = $marker_name; // Use the marker name as the variant name
           }
 
           // $description = "$ref:$alt"; // Replaced with genotype_combination within $detected_genotypes array (5/31/2023)
