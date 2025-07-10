@@ -269,35 +269,36 @@ class ZenodoFilesWidget {
       '#submit' => ['ZenodoFilesWidget::submit'],
     ];
 
-    if (empty($deposition['submitted']) && $count_zenodo_file_list == 0) {
-      $action = 'create_all';
-      $widget['actions'][$action] = [
-        '#type' => 'submit',
-        '#name' => $action,
-        '#value' => t('Create All'),
-        '#validate' => ['ZenodoFilesWidget::validate'],
-        '#submit' => ['ZenodoFilesWidget::submit'],
-      ];
+    if (!$deposition['submitted']) {
+      if ($count_zenodo_file_list == 0) {
+        $action = 'create_all';
+        $widget['actions'][$action] = [
+          '#type' => 'submit',
+          '#name' => $action,
+          '#value' => t('Create All'),
+          '#validate' => ['ZenodoFilesWidget::validate'],
+          '#submit' => ['ZenodoFilesWidget::submit'],
+        ];
+      }
+      else {
+        $action = 'update_all';
+        $widget['actions'][$action] = [
+          '#type' => 'submit',
+          '#name' => $action,
+          '#value' => t('Update All'),
+          '#validate' => ['ZenodoFilesWidget::validate'],
+          '#submit' => ['ZenodoFilesWidget::submit'],
+        ];
+        $action = 'delete_all';
+        $widget['actions'][$action] = [
+          '#type' => 'submit',
+          '#name' => $action,
+          '#value' => t('Delete All'),
+          '#validate' => ['ZenodoFilesWidget::validate'],
+          '#submit' => ['ZenodoFilesWidget::submit'],
+        ];
+      }
     }
-    else {
-      $action = 'update_all';
-      $widget['actions'][$action] = [
-        '#type' => 'submit',
-        '#name' => $action,
-        '#value' => t('Update All'),
-        '#validate' => ['ZenodoFilesWidget::validate'],
-        '#submit' => ['ZenodoFilesWidget::submit'],
-      ];
-      $action = 'delete_all';
-      $widget['actions'][$action] = [
-        '#type' => 'submit',
-        '#name' => $action,
-        '#value' => t('Delete All'),
-        '#validate' => ['ZenodoFilesWidget::validate'],
-        '#submit' => ['ZenodoFilesWidget::submit'],
-      ];
-    }
-
   }
 
   /**
