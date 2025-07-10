@@ -336,6 +336,8 @@ class Zenodo {
     $data['response'] = RestAPI::put($data['url'], $data['payload']);
 
     if (function_exists('module_invoke_all')) {
+      // tpps_zenodo_file_updated().
+      // tpps_zenodo_deposit_updated().
       module_invoke_all(static::getHookName('updated'), $data);
     }
     return $data['response'];

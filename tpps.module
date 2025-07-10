@@ -3522,7 +3522,7 @@ function tpps_zenodo_deposit_created(array $data) {
  *   - 'response' mixed Required. Zenodo API Response.
  */
 function tpps_zenodo_deposit_updated(array $data) {
-  drupal_set_message(t('Zenodo Deposit was updated.'));
+  drupal_set_message(t('Zenodo Deposit was <strong>updated</strong>.'));
 }
 
 /**
@@ -3725,12 +3725,6 @@ function tpps_zenodo_deposit_new_version_created(array $data) {
     // Deposit Id will be updated more often so it's safe enough not to force
     // $submission->save() usage but save only when Deposit Id changed.
 
-    drupal_set_message(t('New version of Zenodo Deposit was created.'));
-    drupal_set_message(
-      t('Remember to update Zenodo Deposit files to publish.'),
-      'warning'
-    );
-
     if ($debug_mode ?? FALSE) {
       dpm(print_r($data, 1));
       $message = t('New Zenodo Deposit "#@new_deposit_id".'
@@ -3742,6 +3736,7 @@ function tpps_zenodo_deposit_new_version_created(array $data) {
       );
       drupal_set_message($message);
     }
+    drupal_set_message(t('New version of Zenodo Deposit was created.'));
   }
 }
 

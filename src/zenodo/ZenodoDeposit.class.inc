@@ -66,12 +66,13 @@ class ZenodoDeposit extends Zenodo {
    *   Returns API response.
    */
   public static function publish(array $data) {
+    static::validateRequired(['deposit_id', 'accession'], $data);
+    // Note: Update is required when state = 'inprogress' but it's safe enough
+    // to do this for 'unsubmitted' state too to have actual publication date.
+    ZenodoDeposit::update($data);
+
     $data['payload'] = $data['payload'] ?? [];
     $data['action'] = 'publish';
-
-    // @todo Minor. Do not allow when ($deposition['submitted] == 1). Gives:
-    // 404 (Not Found.). But this will require extra request to Zenodo API.
-
     if (function_exists('drupal_alter')) {
       // Call all implementations of hooks:
       // - hook_zenodo_deposit_publish_alter(),
