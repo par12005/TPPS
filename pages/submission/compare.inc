@@ -19,7 +19,7 @@ module_load_include('inc', 'tpps', 'pages/submission/list');
  */
 function tpps_submission_compare_form(array $form, array &$form_state, $accession_1 = '', $accession_2 = '') {
   tpps_submission_list_validate_accession($accession_1);
-  $accession_list = tpps_submission_get_accession_list();
+  $accession_list = SubmissionCache::getAccessionList();
   $form['tpps_submission_accession_1'] = [
     '#type' => 'select',
     '#title' => t('Accession 1'),

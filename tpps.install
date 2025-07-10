@@ -6,150 +6,176 @@
  */
 
 /**
+ * Gets list of all module variables and their values.
+ *
+ * @return array
+ *   Returns list of variables.
+ */
+function tpps_get_variable_list() {
+  return [
+    'tpps_watchdog_cleanup' => FALSE,
+    'tpps_ncbi_api_delay' => 300,
+    'tpps_ncbi_api_max_attempt_number' => 5,
+    'tpps_ncbi_allow_fix_missing_data' => FALSE,
+    // API.
+    'tpps_api_token' => '',
+    // Admin Panel.
+    // Cronjob.
+    'tpps_latest_job_status_slack_updates_job_frequency' => '*/15 * * * *',
+    'tpps_refresh_views_job_frequency' => '0 */12 * * *',
+    'tpps_refresh_plusgeno_view_frequency' => '0 0 * * SAT',
+    'tpps_delayed_submissions_job_frequency' => '0 */6 * * *',
+    'tpps_cron_rule_ref_genomes_recreate' => '0 0 */3 * *',
+    // Reports.
+    'tpps_report_items_per_page' => 20,
+    'tpps_imported_studies_list' => '',
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Report Titles.
+    // See:
+    // - Report::getList()
+    // - tpps_reports_settings_form() (/admin/config/tpps/reports).
+    'tpps_report_missing_files_title' => 'List of missing files',
+    'tpps_report_variable_list_title' => 'TPPS module variables',
+    // Synonym reports.
+    'tpps_report_synonym_missing_title' => 'List of phenotypes without Synonyms',
+    'tpps_report_synonym_unit_warning_title' => 'Unit Warning (list of phenotypes which unit differs from Synonym)',
+    'tpps_report_synonym_list_title' => 'Phenotype Synonyms',
+    // Organism reports.
+    'tpps_report_organism_list_title' => 'Organism List',
+    'tpps_report_organism_new_title' => 'New Organisms',
+    'tpps_report_organism_order_family_not_exist_title' => 'Order/Family not exist',
+    // DOI reports.
+    'tpps_report_doi_duplicates_title' => 'DOI Duplicates',
+    'tpps_report_doi_missing_title' => 'Missing DOI',
+    // Zenodo reports.
+    'tpps_report_zenodo_deposition_title' => 'Zenodo Depositions',
+    // Submission reprots.
+    'tpps_report_submission_imported_title' => 'Imported Studies',
+    'tpps_report_submission_zenodo_title' => 'Submissions with Zenodo Depositions',
+    // Submission/File reprots.
+    'tpps_report_submission_file_all_title' => "Submission's All Files",
+    'tpps_report_submission_file_none_title' => 'Submissions without Files',
+    'tpps_report_submission_file_missing_title' => 'Submissions Missing Files',
+    // NCBI API.
+    'tpps_report_organism_ncbi_all_title' => 'All organisms and their NCBI Taxonomy Ids',
+    'tpps_report_organism_ncbi_missing_title' => 'Organisms without NCBI Taxonomy Id',
+
+    // Submission Tools.
+    'tpps_submission_secret_key' => '',
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Form. Main settings.
+    'tpps_theme' => 'default',
+    'tpps_top_bar' => 'status',
+    'tpps_dark_theme' => FALSE,
+    'tpps_debug_mode' => FALSE,
+    'tpps_autofocus_delay' => 1000,
+    'tpps_dump_max_len_state' => 300000,
+    'tpps_dump_max_len_sharedState' => 300000,
+    'tpps_remember_fieldset_collapsed_state' => FALSE,
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Form. Front page.
+    'tpps_front_show_pending_status_mine' => FALSE,
+    'tpps_front_show_approved_status_mine' => FALSE,
+    'tpps_front_show_pending_status_others' => FALSE,
+    'tpps_front_show_others_studies' => TRUE,
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Form. Page 1 Settings.
+    'tpps_page_1_doi_check_source' => 'public.tpps_submissions',
+    'tpps_page_1_cache_ajax_responses' => TRUE,
+    'tpps_page_1_dryad_api_url' => 'http://datadryad.org/api/v2/datasets/',
+    'tpps_page_1_ajax_debug' => FALSE,
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Form. Page 4 Settings.
+    'tpps_page_4_cache_synonym_list' => FALSE,
+    'tpps_page_4_cache_unit_list' => FALSE,
+    'tpps_page_4_update_ploidy_description' => TRUE,
+    'tpps_page_4_use_alphabetic_list' => TRUE,
+    'tpps_page_4_env_check_always_visible' => TRUE,
+    'tpps_page_4_env_check_ajax_update' => TRUE,
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Submit All/Common.
+    'tpps_submitall_skip_gps_request' => FALSE,
+    'tpps_submitall_phenotype_debug_mode' => FALSE,
+    'tpps_submitall_log_tripal_suppress_cli' => TRUE,
+    'tpps_submitall_run_nextflow' => FALSE,
+    'tpps_submitall_rename_files' => FALSE,
+    // Submit All / CLI Log Settings.
+    'tpps_submitall_log_cli_severity_level' => 7,
+    'tpps_submitall_log_cli_show_time' => FALSE,
+    'tpps_submitall_log_cli_show_function' => FALSE,
+    'tpps_submitall_log_cli_show_linenumber' => FALSE,
+    'tpps_submitall_log_cli_time_format' => 'Y/m/d H:i:s O',
+    'tpps_submitall_log_cli_colorful' => FALSE,
+    'tpps_submitall_log_cli_show_caller_function' => FALSE,
+    // Submit All / File Log Settings.
+    'tpps_submitall_log_file_severity_level' => 7,
+    'tpps_submitall_log_file_show_time' => FALSE,
+    'tpps_submitall_log_file_show_function' => FALSE,
+    'tpps_submitall_log_file_show_linenumber' => FALSE,
+    'tpps_submitall_log_file_time_format' => 'Y/m/d H:i:s O',
+    'tpps_submitall_log_file_show_caller_function' => FALSE,
+    // Submit All / Tripal Log Settings.
+    'tpps_submitall_log_tripal_severity_level' => 7,
+    'tpps_submitall_log_tripal_show_time' => FALSE,
+    'tpps_submitall_log_tripal_show_function' => FALSE,
+    'tpps_submitall_log_tripal_show_linenumber' => FALSE,
+    'tpps_submitall_log_tripal_time_format' => 'Y/m/d H:i:s O',
+    'tpps_submitall_log_tripal_show_caller_function' => FALSE,
+    // Submit All/ CVTerms.
+    'tpps_submitall_cvterm_phenotype_year' => '',
+    // Zenodo Settings.
+    'tpps_zenodo_debug_mode' => FALSE,
+    'tpps_zenodo_access_token_live' => '',
+    'tpps_zenodo_access_token_sandbox' => '',
+    'tpps_zenodo_host_greedy_search' => FALSE,
+    'tpps_zenodo_api_request_delay' => 100,
+    // RestAPI Class Settings.
+    'tpps_rest_api_log_type' => [],
+    'tpps_rest_api_log_show_request' => FALSE,
+    'tpps_rest_api_log_show_response' => FALSE,
+    'tpps_rest_api_timeout' => 30,
+    'tpps_rest_api_max_execution_time' => 5000,
+
+    // Misc Settings.
+    'tpps_theme_fix_pager' => FALSE,
+    'tpps_js_debug_mode' => ['quickDebugMode' => 'quickDebugMode'],
+    // Misc: Validation Regexes.
+    'tpps_validation_regex_doi' => '/^10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+$/',
+    'tpps_validation_regex_organism_name' => '/^[^\s]+\s[^\s]+(\s[^\s]+)*$/',
+    'tpps_validation_regex_single_space' => '/^[^\s]*\s[^\s]*$/',
+    // NCBI API Setting.
+    'tpps_ncbi_api_delay' => 300,
+    'tpps_ncbi_api_max_attempt_number' => 5,
+    // Google Maps.
+    'tpps_google_map_id' => '',
+    'tpps_maps_api_key' => '',
+    'tpps_google_map_zoom_smooth_timeout' => 100,
+    'tpps_google_map_zoom_default_level' => 3,
+    'tpps_google_map_zoom_custom_level' => 14,
+    // Submission Export.
+    // @todo Add ability to change those variables at settings page.
+    'tpps_submission_export_show_file_search_report' => FALSE,
+    'tpps_submission_file_salt' => md5(REQUEST_TIME),
+    'tpps_submission_export_exclude_data' => TRUE,
+    'tpps_submission_export_exclude_tree_info' => TRUE,
+    // Submission Import.
+    'tpps_staging_http_username' => '',
+    'tpps_staging_http_password' => '',
+    // Files.
+    'tpps_file_use_api' => FALSE,
+  ];
+}
+
+/**
  * Implements hook_install().
  *
  * Define local cvterms, add necessary foreign keys to schema tables, create
  * necessary materialized views.
  */
 function tpps_install() {
-  variable_set('tpps_watchdog_cleanup', FALSE);
-  variable_set('tpps_ncbi_api_delay', 300);
-  variable_set('tpps_ncbi_api_max_attempt_number', 5);
-  variable_set('tpps_ncbi_allow_fix_missing_data', FALSE);
-  // API.
-  variable_set('tpps_api_token', '');
-  // Admin Panel.
-  variable_set('tpps_admin_panel_cache_lists', FALSE);
-  variable_set('tpps_admin_panel_cache_new_species_list', FALSE);
-  variable_set('tpps_admin_panel_cache_resubmit_list', FALSE);
-  variable_set('tpps_admin_panel_show_execution_time', FALSE);
-  // Cronjob.
-  variable_set('tpps_latest_job_status_slack_updates_job_frequency', '*/15 * * * *');
-  variable_set('tpps_refresh_views_job_frequency', '0 */12 * * *');
-  variable_set('tpps_refresh_plusgeno_view_frequency', '0 0 * * SAT');
-  variable_set('tpps_delayed_submissions_job_frequency', '0 */6 * * *');
-  variable_set('tpps_cron_rule_ref_genomes_recreate', '0 0 */3 * *');
-  // Report Titles.
-  // See tpps_reports_settings_form();
-  variable_set('tpps_report_variable_list_title', 'TPPS module variables');
-  variable_set('tpps_report_items_per_page', 20);
-  variable_set(
-    'tpps_report_submissions_all_files_title',
-    "Submission's All Files"
-  );
-  variable_set(
-    'tpps_report_submissions_without_files_title',
-    'Submissions without Files'
-  );
-  variable_get(
-    'tpps_report_submissions_missing_files_title',
-    'Submissions Missing Files'
-  );
-  variable_set('tpps_report_missing_doi_title', 'Missing DOI');
-  variable_set(
-    'tpps_report_imported_studies_title', 'Imported Studies'
-  );
-  variable_set('tpps_report_missing_files_title', 'List of missing files');
-  variable_set('tpps_report_no_synonym_title',
-    'List of phenotypes without Synonyms'
-  );
-  variable_set('tpps_report_unit_warning_title',
-    'Unit Warning (list of phenotypes which unit differs from Synonym)'
-  );
-  variable_set('tpps_report_order_family_not_exist_title',
-    'Order/Family not exist'
-  );
-  variable_set('tpps_report_organism_list_title', 'Organism List');
-  variable_set('tpps_report_doi_duplicates_title', 'DOI Duplicates');
-  variable_set('tpps_report_new_organisms_title', 'New Organisms');
-  // Submission Tools.
-  variable_set('tpps_submission_secret_key', '');
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Form. Main settings.
-  variable_set('tpps_theme', 'default');
-  variable_set('tpps_top_bar', 'status');
-  variable_set('tpps_dark_theme', FALSE);
-  variable_set('tpps_debug_mode', FALSE);
-  variable_set('tpps_autofocus_delay', 1000);
-  variable_set('tpps_dump_max_len_state', 300000);
-  variable_set('tpps_dump_max_len_sharedState', 300000);
-  variable_set('tpps_remember_fieldset_collapsed_state', FALSE);
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Form. Front page.
-  variable_set('tpps_front_cache_accession_list', TRUE);
-  variable_set('tpps_front_show_pending_status_mine', FALSE);
-  variable_set('tpps_front_show_approved_status_mine', FALSE);
-  variable_set('tpps_front_show_pending_status_others', FALSE);
-  variable_set('tpps_front_show_others_studies', TRUE);
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Form. Page 1 Settings.
-  variable_set('tpps_page_1_doi_check_source', 'public.tpps_submissions');
-  variable_set('tpps_page_1_cache_ajax_responses', TRUE);
-  variable_set('tpps_page_1_dryad_api_url', 'http://datadryad.org/api/v2/datasets/');
-  variable_set('tpps_page_1_ajax_debug', FALSE);
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Form. Page 4 Settings.
-  variable_set('tpps_page_4_cache_synonym_list', FALSE);
-  variable_set('tpps_page_4_cache_unit_list', FALSE);
-  variable_set('tpps_page_4_update_ploidy_description', TRUE);
-  variable_set('tpps_page_4_use_alphabetic_list', TRUE);
-  variable_set('tpps_page_4_env_check_always_visible', TRUE);
-  variable_set('tpps_page_4_env_check_ajax_update', TRUE);
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Submit All/Common.
-  variable_set('tpps_submitall_skip_gps_request', FALSE);
-  variable_set('tpps_submitall_phenotype_debug_mode', FALSE);
-  variable_set('tpps_submitall_log_tripal_suppress_cli', TRUE);
-  variable_set('tpps_submitall_run_nextflow', FALSE);
-  variable_set('tpps_submitall_rename_files', FALSE);
-  // Submit All / CLI Log Settings.
-  variable_set('tpps_submitall_log_cli_severity_level', 7);
-  variable_set('tpps_submitall_log_cli_show_time', FALSE);
-  variable_set('tpps_submitall_log_cli_show_function', FALSE);
-  variable_set('tpps_submitall_log_cli_show_linenumber', FALSE);
-  variable_set('tpps_submitall_log_cli_time_format', 'Y/m/d H:i:s O');
-  variable_set('tpps_submitall_log_cli_colorful', FALSE);
-  // Submit All / File Log Settings.
-  variable_set('tpps_submitall_log_file_severity_level', 7);
-  variable_set('tpps_submitall_log_file_show_time', FALSE);
-  variable_set('tpps_submitall_log_file_show_function', FALSE);
-  variable_set('tpps_submitall_log_file_show_linenumber', FALSE);
-  variable_set('tpps_submitall_log_file_time_format', 'Y/m/d H:i:s O');
-  // Submit All / Tripal Log Settings.
-  variable_set('tpps_submitall_log_tripal_severity_level', 7);
-  variable_set('tpps_submitall_log_tripal_show_time', FALSE);
-  variable_set('tpps_submitall_log_tripal_show_function', FALSE);
-  variable_set('tpps_submitall_log_tripal_show_linenumber', FALSE);
-  variable_set('tpps_submitall_log_tripal_time_format', 'Y/m/d H:i:s O');
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Misc Settings.
-  variable_set('tpps_theme_fix_pager', FALSE);
-  variable_set('tpps_js_debug_mode', ['quickDebugMode' => 'quickDebugMode']);
-  // Misc: Validation Regexes.
-  variable_set('tpps_validation_regex_doi',
-    '/^10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+$/');
-  variable_set('tpps_validation_regex_organism_name',
- '/^[^\s]+\s[^\s]+(\s[^\s]+)*$/');
-  variable_set('tpps_validation_regex_single_space', '/^[^\s]*\s[^\s]*$/');
-
-  // Google Maps.
-  variable_set('tpps_google_map_id', '');
-  variable_set('tpps_maps_api_key', '');
-  variable_set('tpps_google_map_zoom_smooth_timeout', 100);
-  variable_set('tpps_google_map_zoom_default_level', 3);
-  variable_set('tpps_google_map_zoom_custom_level', 14);
-  // Submission Export.
-  // @TODO Add ability to change those variables at settings page.
-  variable_set('tpps_submission_export_show_file_search_report', FALSE);
-  variable_set('tpps_submission_file_salt', md5(REQUEST_TIME));
-  variable_set('tpps_submission_export_exclude_data', TRUE);
-  variable_set('tpps_submission_export_exclude_tree_info', TRUE);
-  // Submission Import.
-  variable_set('tpps_staging_http_username', '');
-  variable_set('tpps_staging_http_password', '');
-  // Files.
-  variable_set('tpps_file_use_api', FALSE);
+  foreach (tpps_get_variable_list() as $name => $value) {
+    variable_set($name, $value);
+  }
 
   // [/VS]
   tpps_alter_tpps_submissions();
@@ -422,137 +448,29 @@ function tpps_install() {
  * usage from public.file_usage.
  */
 function tpps_uninstall() {
-  variable_del('tpps_watchdog_cleanup');
-  variable_del('tpps_ncbi_api_delay');
-  variable_del('tpps_ncbi_api_max_attempt_number');
-  variable_del('tpps_ncbi_allow_fix_missing_data');
-  // API.
-  variable_del('tpps_api_token');
-  // Admin Panel.
-  variable_del('tpps_admin_panel_cache_study_lists');
-  variable_del('tpps_admin_panel_cache_new_species_list');
-  variable_del('tpps_admin_panel_cache_resubmit_list');
-  variable_del('tpps_admin_panel_show_execution_time');
-  // Cronjob.
-  variable_del('tpps_latest_job_status_slack_updates_job_frequency');
-  variable_del('tpps_refresh_views_job_frequency');
-  variable_del('tpps_refresh_plusgeno_view_frequency');
-  variable_del('tpps_delayed_submissions_job_frequency');
-  variable_del('tpps_cron_rule_ref_genomes_recreate');
-  // Reports Titles.
-  // See tpps_reports_settings_form();
-  variable_del('tpps_report_variable_list_title');
-  variable_del('tpps_report_items_per_page');
-  variable_del('tpps_report_submissions_all_files_title');
-  variable_del('tpps_report_submissions_without_files_title');
-  variable_del('tpps_report_submissions_missing_files_title');
-  variable_del('tpps_report_missing_doi_title');
-  variable_del('tpps_report_imported_studies_title');
-  variable_del('tpps_report_missing_files_title');
-  variable_del('tpps_report_no_synonym_title');
-  variable_del('tpps_report_unit_warning_title');
-  variable_del('tpps_report_order_family_not_exist_title');
-  variable_del('tpps_report_organism_list_title');
-  variable_del('tpps_report_doi_duplicates_title');
-  variable_del('tpps_report_new_organisms_title');
-  // Submission Tools.
-  variable_del('tpps_submission_secret_key');
-  // Form. Main settings.
-  variable_del('tpps_theme');
-  variable_del('tpps_top_bar');
-  variable_del('tpps_dark_theme');
-  variable_del('tpps_debug_mode');
-  variable_del('tpps_autofocus_delay');
-  variable_del('tpps_dump_max_len_state');
-  variable_del('tpps_dump_max_len_sharedState');
-  variable_del('tpps_remember_fieldset_collapsed_state');
-  // Form. Front page.
-  variable_del('tpps_front_cache_accession_list');
-  variable_del('tpps_front_show_pending_status_mine');
-  variable_del('tpps_front_show_approved_status_mine');
-  variable_del('tpps_front_show_pending_status_others');
-  variable_del('tpps_front_show_others_studies');
-  // Form. Page 1.
-  variable_det('tpps_page_1_doi_check_source');
-  variable_del('tpps_page_1_cache_ajax_responses');
-  variable_del('tpps_page_1_dryad_api_url');
-  variable_del('tpps_page_1_ajax_debug');
-  // Form. Page 4 Settings.
-  variable_del('tpps_page_4_cache_synonym_list');
-  variable_del('tpps_page_4_cache_unit_list');
-  variable_del('tpps_page_4_update_ploidy_description');
-  variable_del('tpps_page_4_use_alphabetic_list');
-  variable_del('tpps_page_4_env_check_always_visible');
-  variable_del('tpps_page_4_env_check_ajax_update');
-  // Submit All settings.
-  variable_del('tpps_submitall_skip_gps_request');
-  variable_del('tpps_submitall_phenotype_debug_mode');
-  variable_del('tpps_submitall_log_tripal_suppress_cli');
-  variable_del('tpps_submitall_run_nextflow');
-  variable_del('tpps_submitall_rename_files');
-  // Submit All/ CVTerms.
-  variable_del('tpps_submitall_cvterm_phenotype_year');
-  // Submit All / CLI Log Settings.
-  variable_del('tpps_submitall_log_cli_severity_level');
-  variable_del('tpps_submitall_log_cli_show_time');
-  variable_del('tpps_submitall_log_cli_show_caller_function');
-  variable_del('tpps_submitall_log_cli_time_format');
-  variable_del('tpps_submitall_log_cli_colorful');
-  // Submit All / File Log Settings.
-  variable_del('tpps_submitall_log_file_severity_level');
-  variable_del('tpps_submitall_log_file_show_time');
-  variable_del('tpps_submitall_log_file_show_caller_function');
-  variable_del('tpps_submitall_log_file_time_format');
-  // Submit All / Tripal Log Settings.
-  variable_del('tpps_submitall_log_tripal_severity_level');
-  variable_del('tpps_submitall_log_tripal_show_time');
-  variable_del('tpps_submitall_log_tripal_show_caller_function');
-  variable_del('tpps_submitall_log_tripal_time_format');
-
-  // Misc Settings.
-  variable_del('tpps_theme_fix_pager');
-  variable_del('tpps_js_debug_mode');
-  // Misc: Validation Regexes.
-  variable_del('tpps_validation_regex_doi');
-  variable_del('tpps_validation_regex_organism_name');
-  variable_del('tpps_validation_regex_single_space');
-  // Google Maps.
-  variable_del('tpps_google_map_id');
-  variable_del('tpps_maps_api_key');
-  variable_del('tpps_google_map_zoom_smooth_timeout');
-  variable_del('tpps_google_map_zoom_default_level');
-  variable_del('tpps_google_map_zoom_custom_level');
-
-  variable_del('tpps_imported_studies_list');
-  // Submission Import/Export.
-  variable_del('tpps_submission_export_show_file_search_report');
-  variable_del('tpps_submission_file_salt');
-  variable_del('tpps_submission_export_exclude_data');
-  variable_del('tpps_submission_export_exclude_tree_info');
-  // Submission Import.
-  variable_del('tpps_staging_http_username');
-  variable_del('tpps_staging_http_password');
-  // Files.
-  variable_del('tpps_file_use_api');
-  // [/VS]
-
+  foreach (array_keys(tpps_get_variable_list()) as $name) {
+    variable_del($name);
+  }
   // Remove all incomplete submissions connected to user profiles.
   db_delete('public.variable')
     ->condition('name', db_like('tpps_incomplete_') . '%', 'LIKE')
     ->execute();
-
   // Remove all complete submissions connected to user profiles.
   db_delete('public.variable')
     ->condition('name', db_like('tpps_complete_') . '%', 'LIKE')
     ->execute();
 
-  $tpps_usage = db_select('public.file_usage', 'f')
-    ->fields('f')
-    ->condition('module', 'tpps')
-    ->execute();
 
-  foreach ($tpps_usage as $row) {
-    file_usage_delete(file_load($row->fid), $row->module, $row->type, $row->id, $row->count);
+  if (variable_get('tpps_remove_all_file_usage_on_uninstall', FALSE)) {
+    // It's dangerous operation and must be disabled by default.
+    // https://plantcompgenomics.slack.com/archives/C05R396U4QK/p1746087385006169
+    $tpps_usage = db_select('public.file_usage', 'f')
+      ->fields('f')
+      ->condition('module', 'tpps')
+      ->execute();
+    foreach ($tpps_usage as $row) {
+      file_usage_delete(file_load($row->fid), $row->module, $row->type, $row->id, $row->count);
+    }
   }
 }
 
@@ -913,6 +831,7 @@ function tpps_schema() {
   ];
   // #861n70hh6 Add custom cache table to have ability to clear only module's data.
   $schema[TPPS_CACHE_BIN] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_tpps_submission'] = drupal_get_schema_unprocessed('system', 'cache');
 
   // Table to store relations between organism name and NCBI Taxonomy Id.
   $schema['tpps_ncbi_taxonomy'] = [
@@ -2445,4 +2364,93 @@ function tpps_update_7126() {
 function tpps_update_7127() {
   variable_set('tpps_ncbi_api_delay', 300);
   variable_set('tpps_ncbi_api_max_attempt_number', 5);
+}
+
+/**
+ * Zenodo API Settings and Report's titles updates.
+ */
+function tpps_update_7128() {
+  variable_del('tpps_zenodo_prefix');
+  variable_set('tpps_zenodo_debug_mode', FALSE);
+  variable_set('tpps_report_zenodo_submissions_title', 'Zenodo Submissions');
+  variable_set('tpps_report_zenodo_depositions_title', 'Zenodo Depositions');
+  variable_set('tpps_report_organism_ncbi_all_title', 'All organisms and their NCBI Taxonomy Ids');
+  variable_set('tpps_report_organism_ncbi_missing_title', 'Organisms without NCBI Taxonomy Id');
+
+  variable_set('tpps_report_synonym_list_title', 'Phenotype Synonyms');
+  variable_set('tpps_zenodo_host_greedy_search', FALSE);
+  variable_set('tpps_zenodo_api_request_delay', 100);
+  // Rest API Settings.
+  variable_set('tpps_rest_api_log_type', []);
+  variable_set('tpps_rest_api_timeout', 30);
+  variable_set('tpps_rest_api_log_show_request', FALSE);
+  variable_set('tpps_rest_api_log_show_response', FALSE);
+  variable_set('tpps_rest_api_max_execution_time', 5000);
+
+  // Rename variable.
+  if (
+    !is_null(variable_get('tpps_zenodo_sandbox_key', NULL))
+    && is_null(variable_set('tpps_zenodo_access_token_live', NULL))
+  ) {
+    variable_set('tpps_zenodo_access_token_live',
+      variable_get('tpps_zenodo_sandbox_key', '')
+    );
+  }
+  variable_del('tpps_zenodo_sandbox_key');
+  variable_del('tpps_admin_panel_show_execution_time');
+  variable_del('tpps_admin_panel_cache_new_species_list');
+
+  // Change name of the report title variables.
+  // Format: old => new.
+  $mapping = [
+    'tpps_report_missing_files_title' => 'tpps_report_missing_files_title',
+    'tpps_report_variable_list_title' => 'tpps_report_variable_list_title',
+    'tpps_report_no_synonym_title' => 'tpps_report_synonym_missing_title',
+    'tpps_report_unit_warning_title' => 'tpps_report_synonym_unit_warning_title',
+    'tpps_report_organism_list_title' => 'tpps_report_organism_list_title',
+    'tpps_report_new_organisms_title' => 'tpps_report_organism_new_title',
+    'tpps_report_order_family_not_exist_title' => 'tpps_report_organism_order_family_not_exist_title',
+    'tpps_report_doi_duplicates_title' => 'tpps_report_doi_duplicates_title',
+    'tpps_report_missing_doi_title' => 'tpps_report_doi_missing_title',
+    'tpps_report_zenodo_depositions_title' => 'tpps_report_zenodo_deposition_title',
+    'tpps_report_imported_studies_title' => 'tpps_report_submission_imported_title',
+    'tpps_report_zenodo_submissions_title' => 'tpps_report_submission_zenodo_title',
+    'tpps_report_submissions_all_files_title' => 'tpps_report_submission_file_all_title',
+    'tpps_report_submissions_without_files_title' => 'tpps_report_submission_file_none_title',
+    'tpps_report_submissions_missing_files_title' => 'tpps_report_submission_file_missing_title',
+  ];
+
+  foreach ($mapping as $old => $new) {
+    variable_set($new, variable_get($old));
+    variable_del($old);
+  }
+  // Configure permissions.
+  $permissions = ['administer zenodo', 'view own zenodo deposits'];
+  foreach(['administrator', 'Curation'] as $role_name) {
+    $role = user_role_load_by_name($role_name);
+    user_role_grant_permissions($role->rid, $permissions);
+  }
+  $permissions = ['view own zenodo deposits'];
+  foreach(['authenticated user'] as $role_name) {
+    $role = user_role_load_by_name($role_name);
+    user_role_grant_permissions($role->rid, $permissions);
+  }
+}
+
+/**
+ * New Submission cache system.
+ */
+function tpps_update_7129() {
+  // Remove outdated variables related to Admin Panel caching.
+  variable_del('tpps_admin_panel_cache_lists');
+  variable_del('tpps_admin_panel_cache_study_lists');
+  variable_del('tpps_admin_panel_cache_resubmit_list');
+
+  // Create new cache bin to store only cached submissions.
+  // See 'SubmissionCache' class.
+  $schema = tpps_schema();
+  $table = 'cache_tpps_submission';
+  if (!db_table_exists($table)) {
+    db_create_table($table, $schema[$table]);
+  }
 }

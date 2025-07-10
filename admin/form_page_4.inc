@@ -52,8 +52,7 @@ function tpps_form_page_4_settings_form(array $form, array &$form_state) {
   $form['tpps_page_4_env_check_always_visible'] = [
     '#type' => 'checkbox',
     '#title' => t('Field "Is environmental phenotype" is always visible'),
-    '#default_value' =>
-      variable_get('tpps_page_4_env_check_always_visible'),
+    '#default_value' => variable_get('tpps_page_4_env_check_always_visible'),
     '#description' => t(
       'Default is <strong>checked</strong>.<br />'
       . "When checked this checkbox will be always visible. When unchecked it "
@@ -64,8 +63,7 @@ function tpps_form_page_4_settings_form(array $form, array &$form_state) {
   $form['tpps_page_4_env_check_ajax_update'] = [
     '#type' => 'checkbox',
     '#title' => t('Field "Is environmental phenotype" will update form.'),
-    '#default_value' =>
-      variable_get('tpps_page_4_env_check_ajax_update'),
+    '#default_value' => variable_get('tpps_page_4_env_check_ajax_update'),
     '#description' => t(
       'Default is <strong>checked</strong>.<br />'
       . "When checked and 'Is environmental phenotype' checkbox is checked then "
@@ -90,7 +88,7 @@ function tpps_form_page_4_settings_form_submit(array $form, array &$form_state) 
       != variable_get('tpps_page_4_cache_unit_list', FALSE)
   ) {
     $cache_bin = TPPS_CACHE_BIN ?? 'cache';
-    // @TODO Minor. Clear only unit/synonym lists.
-    cache_clear_all('*', $cache_bin, TRUE);
+    // Clear only unit/synonym lists.
+    tpps_cache_clear_all(['tpps_synonym_list', 'tpps_unit_list']);
   }
 }

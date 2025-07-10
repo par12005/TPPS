@@ -61,31 +61,6 @@ function tpps_string_format_indent($string) {
 }
 
 /**
- * Gets Drupal User Acount Email-address.
- *
- * @param int $uid
- *   Drupal User Id.
- * @param bool $reset
- *   Flag to reset cache.
- *
- * @return string
- *   Returns email-address or empty string if user wasn't found.
- */
-function tpps_get_user_email($uid, $reset = FALSE) {
-  $key = $uid;
-  $static_cache = &drupal_static(__FUNCTION__);
-  if ($reset || !isset($static_cache[$key])) {
-    $static_cache[$key] = (string) db_select('users', 'u')
-      ->fields('u', ['mail'])
-      ->condition('uid', $uid)
-      ->range(0, 1)
-      ->execute()
-      ->fetchField();
-  }
-  return $static_cache[$key];
-}
-
-/**
  * Puts message using both watchdog() and drupal_set_message().
  *
  * WARNING: Not for CLI (messages will be ignored).
@@ -172,39 +147,6 @@ function tpps_realpath($uri) {
     }
   }
   return $path;
-}
-
-/**
- * Shows report as a table with pager.
- *
- * WARNING:
- * Specific to reports settings are used! DON'T USE for regular table with pager.
- *
- * @param array $report
- *   Required keys:
- *   - 'report_name' - string. Machine report name (with underscores).
- *   - 'header' - array. List of the table's header labels.
- *   - 'rows' - array. Table data to be shown.
- *   Optional keys:
- *   - 'empty' - string. Localized string which will be shown when 'rows' is empty.
- *
- * @return string
- *   Returns rendered HTML table with pager.
- */
-function tpps_report_show_table(array $report) {
-  $report_name = $report['report_name'];
-  $rows = $report['rows'] ?? [];
-
-  $per_page = variable_get('tpps_report_items_per_page', 20);
-  $current_page = pager_default_initialize(count($rows), $per_page);
-  $chunks = array_chunk($rows, $per_page, TRUE);
-  $pager = theme('pager', ['quantity', count($rows) ?? 0]);
-  return $pager . theme('table', [
-    'caption' => tpps_report_get_list()[$report_name]['description'],
-    'header' => $report['header'] ?? [],
-    'rows' => $chunks[$current_page] ?? [],
-    'empty' => $report['empty'] ?? NULL,
-  ]) . $pager;
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

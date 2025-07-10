@@ -56,7 +56,7 @@ module_load_include('inc', 'tpps', 'includes/common');
  *   The accession number of the submission being managed.
  */
 function tpps_manage_submission_form(array $form, array $form_state, $accession = NULL) {
-  global $base_url;
+  global $user, $base_url;
 
   $submission = new Submission($accession);
   if ($submission->doesNotExist()) {
@@ -611,7 +611,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
   $form[$section['key']]['new_owner'] = [
     '#type' => 'textfield',
     '#title' => t('Choose a new owner for the submission'),
-    '#default_value' => tpps_get_user_email($submission->uid),
+    '#default_value' => $submission->getSubmitterMail(),
     '#autocomplete_path' => 'tpps/autocomplete/user',
   ];
 
@@ -727,6 +727,30 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
     // '#field_prefix' => 'TGDR',
     '#description' => t('WARNING: do not include TGDR.'),
   ];
+
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Zenodo Deposition Widget.
+  $section = [
+    'key' => 'zenodo',
+    'title' => t('Zenodo'),
+    'is_widget' => TRUE,
+  ];
+  tpps_admin_panel_add_section($form, $section);
+  $context = [
+    'form' => &$form['zenodo'],
+    'accession' => $submission->accession,
+    'zenodo_deposit_page_path' => 'tpps/' . $submission->accession . '/dataset-doi',
+    'zenodo_files_page_path' => 'tpps/' . $submission->accession . '/dataset-doi/files',
+  ];
+  if (ZenodoDepositWidget::isActionAllowed($user, $submission)) {
+    $context['zenodo_deposit_page_path']
+      = 'tpps/' . $submission->accession . '/dataset-doi';
+    $context['zenodo_files_page_path']
+      = 'tpps/' . $submission->accession . '/dataset-doi/files';
+  }
+  ZenodoDepositWidget::add($context);
+
   $form['#attributes']['class'][] = 'tpps-admin-panel';
   // @TODO Rename function and use default names for submitter and validator.
   $form['#validate'][] = 'tpps_admin_panel_validate';
@@ -793,8 +817,9 @@ function tpps_admin_panel_validate($form, &$form_state) {
             );
           }
           if (!empty($form_state['values']["edit_file_{$fid}_file"])) {
-            if ($file = tpps_file_load($fid)) {
-              file_usage_add($file, 'tpps', 'tpps_project', substr($accession, 4));
+            $file = tpps_file_load($fid);
+            if ($file && Submission::isEmptyFileUsage($file, $accession)) {
+              Submission::addFileUsage($file, $accession);
             }
           }
         }
@@ -1180,7 +1205,6 @@ function tpps_admin_panel_submit($form, &$form_state) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'reject':
       $submission->save(TPPS_SUBMISSION_STATUS_INCOMPLETE);
-      cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
       // Email notification.
       $lang = user_preferred_language($owner);
       drupal_mail('tpps', 'user_rejected', $to, $lang, $params, $from, TRUE);
@@ -1232,7 +1256,6 @@ function tpps_admin_panel_submit($form, &$form_state) {
       }
 
       $submission->save();
-      cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1253,7 +1276,6 @@ function tpps_admin_panel_submit($form, &$form_state) {
         ]
       ));
       $submission->save($form_state['values']['state-status']);
-      cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1415,6 +1437,8 @@ function tpps_admin_panel_get_reports() {
     'submissions_all_files' => $panel_url . '/submissions-all-files',
     'organism_list' => $panel_url . '/organism-list',
     'doi_duplicates' => $panel_url . '/doi-duplicates',
+    'zenodo_submissions' => $panel_url . '/zenodo-submissions',
+    'zenodo_depositions' => $panel_url . '/zenodo-depositions',
   ];
 }
 
@@ -1430,7 +1454,7 @@ function tpps_admin_panel_reports(array &$form) {
       $items[] = l(t($title), $panel_url);
     }
   }
-  $items[] = l(t('Imported Studies'), 'admin/reports/tpps/imported-studies');
+  $items[] = l(t('Imported Studies'), 'admin/reports/tpps/submission/imported');
   $form['report_menu'] = [
     '#type' => 'fieldset',
     '#title' => t('TPPS Reports'),
@@ -1459,11 +1483,14 @@ function tpps_admin_panel_add_section(array &$form, array $data) {
     '#type' => 'fieldset',
     '#title' => $data['title'] ?? $data['key'] ?? '',
     '#description' => $data['description'] ?? '',
-    'submit' => [
+  ];
+  // Widget has own buttons and don't need default action-button.
+  if (empty($data['is_widget'])) {
+    $form[$data['key']]['submit'] = [
       '#type' => 'submit',
       '#value' => $data['title'],
       '#name' => $data['key'],
       '#weight' => 100,
-    ],
-  ];
+    ];
+  }
 }

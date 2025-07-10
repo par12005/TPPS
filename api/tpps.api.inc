@@ -23,7 +23,7 @@ function tpps_api_new_study_pipeline_finished() {
   else {
     $results['status'] = 'Incorrect token';
   }
-  
+
   drupal_json_output($results);
 }
 
@@ -98,8 +98,7 @@ function tpps_api_compress_files($accession = NULL) {
   }
   $zip_loc = tpps_realpath(TPPS_TEMP_ZIP) . '/' . $zip_name;
 
-  $files = tpps_details_get_study_file_ids($submission->sharedState);
-  foreach ($files as $fid) {
+  foreach (array_keys($submission->getFileIdList()) as $fid) {
     $file_str[] = str_replace(' ', '\\ ', tpps_realpath(file_load($fid)->uri));
   }
 

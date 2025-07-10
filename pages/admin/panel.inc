@@ -55,222 +55,20 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
 function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FALSE) {
   global $base_url;
 
+  $reset = $_GET['reset'] ?? $reset;
   tpps_admin_panel_reports($form);
+  $submission_list = SubmissionCache::get($reset);
 
-  $cid = __FUNCTION__;
-  $cache_bin = TPPS_CACHE_BIN ?? 'cache';
-  $cache = cache_get($cid, $cache_bin);
-
-  $key = 'tpps_admin_panel_cache_study_lists';
-  if ($reset || empty($cache) || empty($cache->data[$key])
-    || !variable_get($key, FALSE)
-  ) {
-    // Get new data.
-    $submission_list = tpps_load_submission_multiple([]);
-    // Note: order in this list defines order of the tables at page.
-    $output = [
-      'unpublished_old' => [],
-      'pending' => [],
-      'approved' => [],
-      'incomplete' => [],
-    ];
-    $submitting_user_cache = [];
-    // 0.03 msec
-    $mail_cvterm = tpps_load_cvterm('email')->cvterm_id;
-
-    foreach ($submission_list as $accession => $submission) {
-      $uid = $submission->uid ?? NULL;
-
-      if (empty($submitting_user_cache[$uid])) {
-        $mail = tpps_get_user_email($uid);
-        $query = db_select('chado.contact', 'c');
-        $query->join('chado.contactprop', 'cp', 'cp.contact_id = c.contact_id');
-        $query->condition('cp.value', $mail);
-        $query->condition('cp.type_id', $mail_cvterm);
-        $query->fields('c', array('name'));
-        $query->range(0, 1);
-        $query = $query->execute();
-        $name = $query->fetchObject()->name ?? NULL;
-
-        $submitting_user_cache[$uid] = $name ?? $mail;
-      }
-      $submitting_user = $submitting_user_cache[$uid] ?? NULL;
-      $view_link = l($accession, 'tpps-admin-panel/' . $accession);
-      $action_list = [
-        l(t('Edit'), 'tppsc/' . $accession),
-        l(t('View'), 'tpps/submission/' . $accession . '/view'),
-        l(t('State JSON'), 'api/submission/' . $accession . '/view/state'),
-        l(t('Shared State JSON'), 'api/submission/' . $accession . '/view/shared_state'),
-        l(t('Export'), 'tpps/submission/' . $accession . '/export'),
-        l(t('Files'), 'tpps-admin-panel/file-diagnostics/' . $accession),
-        l(t('Rename local VCF'), 'tpps/submission/' . $accession . '/vcf/local/rename'),
-      ];
-      // To add items use $action_list and recreate element.
-      $actions = theme('item_list', [
-        'items' => $action_list,
-        'attributes' => ['class' => ['admin-panel-action-list']],
-      ]);
-      if ($submission->doesExist()) {
-        switch ($submission->status) {
-          case TPPS_SUBMISSION_STATUS_PENDING_APPROVAL:
-            $row = [
-              $view_link,
-              $submitting_user,
-              $submission->state['saved_values'][TPPS_PAGE_1]['publication']['title'],
-              !empty($submission->state['completed'])
-              ? date("F j, Y, g:i a", $submission->state['completed']) : "Unknown",
-              tpps_show_tags(tpps_submission_get_tags($accession)),
-              $actions,
-            ];
-            $output['pending'][(int) substr($accession, 4)] = $row;
-            break;
-
-          case TPPS_SUBMISSION_STATUS_APPROVED:
-            $status_label = $submission->isLoaded() ? "Approved - load completed on "
-                . date("F j, Y, \a\\t g:i a", $submission->getLoadTime())
-              : TPPS_SUBMISSION_STATUS_APPROVED;
-            if ($submission->isLoaded()) {
-              $days_since_load = (time() - $submission->getLoadTime()) / (60 * 60 * 24);
-              $unpublished_threshold = variable_get('tpps_unpublished_days_threshold', 180);
-              $pub_status = $submission->state['saved_values'][TPPS_PAGE_1]['publication']['status'] ?? NULL;
-              if (
-                !empty($pub_status)
-                and $pub_status != 'Published'
-                and $days_since_load >= $unpublished_threshold
-              ) {
-                $owner = $submitting_user;
-                $contact_bundle = tripal_load_bundle_entity(
-                  ['label' => 'Tripal Contact Profile']
-                );
-                $owner_mail = tpps_get_user_email($uid);
-                $owner = "$submitting_user ($owner_mail)";
-
-                // If Tripal Contact Profile is available, we want to link to the
-                // profile of the owner instead of just displaying the name.
-                if ($contact_bundle) {
-                  $query = new EntityFieldQuery();
-                  $results = $query->entityCondition('entity_type', 'TripalEntity')
-                    ->entityCondition('bundle', $contact_bundle->name)
-                    ->fieldCondition('local__email', 'value', $owner_mail)
-                    ->range(0, 1)
-                    ->execute();
-                  // [VS]
-                  if (!empty($results['TripalEntity'])) {
-                    // Commented out because there is a lot of warning messages
-                    // shown at page.
-                    //
-                    //  $entity = current(
-                    //    array_reverse(
-                    //      entity_load(
-                    //        'TripalEntity',
-                    //        array_keys($results['TripalEntity'])
-                    //      )
-                    //    )
-                    //  );
-                    //  $owner = "<a href=\"$base_url/TripalContactProfile/"
-                    //    . "{$entity->id}\">$submitting_user</a>";
-                  }
-                  // [/VS]
-                }
-                if (tpps_access('view own tpps submission', $accession)) {
-                  $new_action_list = $action_list;
-                  $new_action_list[] = l(t('Edit publication information'),
-                    'tpps/' . $accession . '/edit-publication'
-                  );
-                }
-                $row = [
-                  $view_link,
-                  date("F j, Y", $submission->getLoadTime())
-                    . " (" . round($days_since_load) . " days ago)",
-                  $pub_status,
-                  $owner,
-                  theme('item_list', [
-                    'items' => $new_action_list,
-                    'attributes' => ['class' => ['admin-panel-action-list']],
-                  ]),
-                ];
-                $output['unpublished_old'][(int) substr($accession, 4)] = $row;
-              }
-            }
-
-          case TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING:
-            $status_label = $status_label ?? (
-              !empty($submission->state['approved'])
-              ? ("Submission Job Running - job started on "
-                . date("F j, Y, \a\t g:i a", $submission->state['approved']))
-              : TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING
-            );
-
-          case TPPS_SUBMISSION_STATUS_APPROVED_DELAYED:
-            if (empty($status_label)) {
-              $release = $submission->state['saved_values']['summarypage']['release-date'] ?? NULL;
-              $release = strtotime("{$release['day']}-{$release['month']}-{$release['year']}");
-              $status_label = "Approved - Delayed Submission Release on " . date("F j, Y", $release);
-            }
-            $row = [
-              $view_link,
-              $submitting_user,
-              $submission->state['saved_values'][TPPS_PAGE_1]['publication']['title'],
-              $status_label,
-              tpps_show_tags(tpps_submission_get_tags($accession)),
-              $actions,
-            ];
-            $output['approved'][(int) substr($accession, 4)] = $row;
-            break;
-
-          default:
-            switch ($submission->state['stage'] ?? NULL) {
-              case TPPS_PAGE_1:
-                $stage = "Author and Species Information";
-                break;
-
-              case TPPS_PAGE_2:
-                $stage = "Experimental Conditions";
-                break;
-
-              case TPPS_PAGE_3:
-                $stage = "Plant Accession";
-                break;
-
-              case TPPS_PAGE_4:
-                $stage = "Submit Data";
-                break;
-
-              case 'summarypage':
-                $stage = "Review Data and Submit";
-                break;
-
-              default:
-                $stage = "Unknown";
-                break;
-            }
-
-            $date = (
-              !empty($submission->state['updated'])
-              ? date("F j, Y, g:i a", $submission->state['updated'])
-              : t('Unknown')
-            );
-            $title = $submission->state['saved_values'][TPPS_PAGE_1]['publication']['title']
-              ?? t('Title not provided yet');
-            $output['incomplete'][(int) substr($accession, 4)] = [
-              $view_link,
-              $submitting_user,
-              $title,
-              $stage,
-              $date,
-              tpps_show_tags(tpps_submission_get_tags($accession)),
-              $actions,
-            ];
-            break;
-        }
-      }
-    }
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    $cache->data[$key] = $output;
-    cache_set($cid, $cache->data, $cache_bin);
+  $output = [
+    'unpublished_old' => [],
+    'pending' => [],
+    'approved' => [],
+    'incomplete' => [],
+    'resubmit' => [],
+  ];
+  foreach ($submission_list as $accession => $item) {
+    tpps_report_admin_panel_theme_single_row($accession, $item, $output);
   }
-  $output = $cache->data[$key] ?? NULL;
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // List of general tasks.
@@ -281,12 +79,13 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
         'tpps-admin-panel/refresh-genotypes-materialized-views'),
       l(t('TPPS Submission Tools'), 'tpps/submission', $params),
       l(t('NCBI Taxonomy Id Batch Updates'), 'admin/config/tpps/ncbi_batch', $params),
-      l(t('Clear "tpps" cache bin'), 'admin/config/tpps/cache', $params),
+      l(t('Clear "TPPS" or "TPPS Submission" cache bin'), 'admin/config/tpps/cache', $params),
+      l(t('Create new Phenotype Synonym'), 'admin/config/tpps/synonym', $params),
     ],
   ]);
   $form['general_tasks'] = [
     '#type' => 'fieldset',
-    '#title' => t('General tasks'),
+    '#title' => t('General Tasks'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
     'tasks' => ['#markup' => $task_list],
@@ -337,6 +136,9 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
     'incomplete' => t('Incomplete TPPS submissions'),
   ];
   foreach ($output as $status_name => $status_list) {
+    if ($status_name == 'resubmit') {
+      continue;
+    }
     if (!empty($status_list)) {
       krsort($status_list);
       $form[$status_name] = [
@@ -350,7 +152,7 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
         'rows' => $status_list,
         'caption' => $title[$status_name],
         'attributes' => ['class' => ['view', 'tpps_table', 'sticky-caption']],
-      ]);
+      ]) . SubmissionCache::showClearCacheWidget();
       $form[$status_name]['table'] = ['#markup' => $table];
     }
   }
@@ -358,46 +160,35 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Old TGDR Submissions to be resubmitted.
-  $key = 'tpps_admin_panel_cache_resubmit_list';
-  if (
-    $reset || empty($cache) || empty($cache->data[$key])
-    || !variable_get($key, FALSE)
-  ) {
-    // Get new data.
-    $subquery = db_select('tpps_submission', 's');
-    $subquery->fields('s', ['accession']);
-
-    $query = db_select('chado.dbxref', 'dbx');
-    $query->join('chado.project_dbxref', 'pd', 'pd.dbxref_id = dbx.dbxref_id');
-    $query->condition('dbx.accession', $subquery, 'NOT IN');
-    $query->condition('dbx.accession', 'TGDR%', 'ILIKE');
-    $query->fields('dbx', ['accession']);
-    $query->orderBy('dbx.accession');
-
-    $cache->data[$key] = $query->execute()->fetchAll(PDO::FETCH_ASSOC);
-    cache_set($cid, $cache->data, $cache_bin);
-  }
-  if (!empty($cache->data[$key])) {
-    $title = t('Old TGDR Submissions to be resubmitted');
-    $form['resubmit'] = [
-      '#type' => 'fieldset',
-      '#title' => "<img src='$base_url/misc/message-16-warning.png'> " . $title,
-      '#collapsible' => TRUE,
-      'table' => [
-        '#markup' => theme('table', [
-          'header' => ['Accession'],
-          'caption' => $title,
-          'attributes' => ['class' => ['view', 'tpps_table', 'sticky-caption']],
-          'rows' => $cache->data[$key]
-        ]),
-      ],
-    ];
-    tpps_form_add_fieldset_collapsed_state($form, $form_state, 'resubmit');
-  }
+  $title = t('Old TGDR Submissions to be resubmitted');
+  $form['resubmit'] = [
+    '#type' => 'fieldset',
+    '#title' => "<img src='$base_url/misc/message-16-warning.png'> " . $title,
+    '#collapsible' => TRUE,
+    'table' => [
+      '#markup' => theme('table', [
+        'caption' => $title,
+        'header' => ['Accession'],
+        'rows' => $output['resubmit'],
+        'attributes' => ['class' => ['view', 'tpps_table', 'sticky-caption']],
+      ]) . SubmissionCache::showClearCacheWidget(),
+    ],
+  ];
+  tpps_form_add_fieldset_collapsed_state($form, $form_state, 'resubmit');
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // New Species table.
-  $key = 'tpps_admin_panel_cache_new_species_list';
+  // 'New Species' table.
+  $cid = $key = 'tpps_admin_panel_cache_new_species_list';
+  // @TODO Minor. Create 'TppsCache' class and move this code there.
+  // See SubmissionCache.
+  if (($_GET['reset'] ?? NULL) == $cid) {
+    $message = t('Cleared "@cid" cache id in "tpps" cache bin.', ['@cid' => $cid]);
+    drupal_set_message($message);
+    cache_set($cid, NULL, TPPS_CACHE_BIN ?? 'cache');
+    drupal_goto($_GET['q']);
+  }
+
+  $cache = cache_get($cid, TPPS_CACHE_BIN ?? 'cache');
   $db = chado_get_db(['name' => 'NCBI Taxonomy']);
   if (!empty($db)) {
     if (
@@ -417,21 +208,19 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
       $query = $query->execute();
 
       $org_bundle = tripal_load_bundle_entity(['label' => 'Organism']);
+      $i = 0;
       while (($org = $query->fetchObject())) {
+        $name = $org->genus . ' ' . $org->species;
         $id = chado_get_record_entity_by_bundle($org_bundle, $org->organism_id);
-        if (!empty($id)) {
-          $rows[] = [
-            "<a href=\"$base_url/bio_data/{$id}/edit\" target=\"_blank\">"
-            . "$org->genus $org->species</a>",
-          ];
-        }
-        else {
-          $rows[] = ["$org->genus $org->species"];
-        }
+        $rows[] = [
+          ++$i,
+          empty($id) ? $name : l($name, '/bio_data/' . $id . '/edit',
+            ['attributes' => ['target' => '_blank']]),
+        ];
       }
 
       $cache->data[$key] = $rows;
-      cache_set($cid, $cache->data, $cache_bin);
+      cache_set($cid, $cache->data, TPPS_CACHE_BIN ?? 'cache');
     }
     if (!empty($cache->data[$key])) {
       $title = t('New Species');
@@ -445,7 +234,7 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
         'table' => [
           '#markup' => theme('table',
             [
-              'header' => [t('Name')],
+              'header' => ['#', t('Name')],
               'rows' => $cache->data[$key],
               'sticky' => TRUE,
               'attributes' => [
@@ -457,7 +246,18 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
                 'class' => ['view', 'tpps_table', 'sticky-caption']
               ],
             ]
-          ),
+          )
+          // Add link to clear cache.
+          // @TODO Minor. Create 'TppsCache' class and move this code there.
+          // See SubmissionCache.
+          . theme('item_list', [
+            'items' => [
+              t('Report was cached. <a href="@url">Update</a> to get most '
+                . 'recent changes.',
+                ['@url' => url($_GET['q'], ['query' => ['reset' => $cid]])]
+              ),
+            ]
+          ]),
         ],
       ];
       tpps_form_add_fieldset_collapsed_state($form, $form_state, 'new_species');
@@ -479,6 +279,369 @@ function tpps_admin_panel_reports(array &$form) {
     '#collapsed' => TRUE,
   ];
   $form['report_menu']['table'] = [
-    '#markup' => tpps_reports_overview_page($admin_panel = TRUE),
+    '#markup' => Report::printOverviewPage($admin_panel = TRUE),
   ];
 }
+
+function tpps_report_admin_panel_theme_single_row($accession, array $row, array &$output) {
+  $number = (int) str_replace('TGDR', '', $accession);
+  if (is_array($row) && empty($row)) {
+    // Fill list of studies which must be resubmitted.
+    $output['resubmit'][$number] = [$accession];
+    return;
+  }
+
+  $view_link = theme('submission_accession_link', [
+    'accession' => $accession,
+    'path' => 'tpps-admin-panel/' . $accession,
+  ]);
+  $action_list = [
+    l(t('Edit'), 'tppsc/' . $accession)
+      . ' | ' . l(t('Details'), 'tpps/details/' . $accession)
+      . ' | ' . l(t('Files'), 'tpps-admin-panel/file-diagnostics/' . $accession),
+    'JSON: ' . l(t('State'), 'api/submission/' . $accession . '/view/state') . ' | '
+      . l(t('Shared State'), 'api/submission/' . $accession . '/view/shared_state'),
+    l(t('View'), 'tpps/submission/' . $accession . '/view')
+      . ' | ' . l(t('Export'), 'tpps/submission/' . $accession . '/export'),
+    'Zenodo: ' . l(t('Deposit'), 'tpps/submission/' . $accession . '/zenodo')
+      . ' | ' . l(t('Files'), 'tpps/submission/' . $accession . '/zenodo/files'),
+    'Dataset DOI: ' . (empty($row['zenodo']['deposit_id'])
+      ? l(t('Create'), 'tpps/' . $accession . '/dataset-doi/create')
+      : l(t('View'), 'tpps/' . $accession . '/dataset-doi')
+    ),
+    l(t('Rename local VCF'), 'tpps/submission/' . $accession . '/vcf/local/rename'),
+  ];
+  // To add items use $action_list and recreate element.
+  $actions = theme('item_list', [
+    'items' => $action_list,
+    'attributes' => ['class' => ['admin-panel-action-list']],
+  ]);
+
+  switch ($row['status']) {
+    case TPPS_SUBMISSION_STATUS_PENDING_APPROVAL:
+      $output['pending'][$number] = [
+        $view_link,
+        theme('submission_submitter', $row),
+        $row['publication']['title'],
+        theme('submission_date', ['date' => $row['date']['completed']]),
+        theme('submission_tag_list', ['tags' => $row['tags']]),
+        $actions,
+      ];
+      break;
+
+    case TPPS_SUBMISSION_STATUS_APPROVED:
+    case TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING:
+    case TPPS_SUBMISSION_STATUS_APPROVED_DELAYED:
+
+      if ($row['status'] == TPPS_SUBMISSION_STATUS_APPROVED) {
+        $status_label = !empty($row['date']['loaded'])
+          ? "Approved - load completed on " . date("F j, Y, \a\\t g:i a",
+          $row['date']['loaded']) : TPPS_SUBMISSION_STATUS_APPROVED;
+      }
+      elseif ($row['status'] == TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING) {
+        $status_label = $status_label ?? (
+          !empty($row['date']['approved'])
+          ? ("Submission Job Running - job started on "
+            . date("F j, Y, \a\t g:i a", $row['date']['approved']))
+          : TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING
+        );
+      }
+      elseif ($row['status'] == TPPS_SUBMISSION_STATUS_APPROVED_DELAYED) {
+        $release = $row['date']['release'];
+        $release = strtotime("{$release['day']}-{$release['month']}-{$release['year']}");
+        $status_label = "Approved - Delayed Submission Release on "
+          . date("F j, Y", $release);
+      }
+
+      if (!empty($row['date']['loaded'])) {
+        $new_action_list = $action_list;
+        $days_since_load = (time() - $row['date']['loaded']) / (60 * 60 * 24);
+        $unpublished_threshold = variable_get('tpps_unpublished_days_threshold', 180);
+        $pub_status = $row['publication']['status'] ?? NULL;
+        if (
+          !empty($pub_status) && ($pub_status) != 'Published'
+          && $days_since_load >= $unpublished_threshold
+        ) {
+          if (tpps_access('view own tpps submission', $accession)) {
+            $new_action_list[] = l(t('Edit publication information'),
+              'tpps/' . $accession . '/edit-publication'
+            );
+          }
+          $output['unpublished_old'][$number] = [
+            $view_link,
+            date("F j, Y", $row['date']['loaded']) . " (" . round($days_since_load) . " days ago)",
+            $pub_status,
+            theme('submission_submitter', $row),
+            theme('item_list', [
+              'items' => $new_action_list,
+              'attributes' => ['class' => ['admin-panel-action-list']],
+            ]),
+          ];
+        }
+        else {
+          $output['approved'][$number] = [
+            $view_link,
+            theme('submission_submitter', $row),
+            $row['publication']['title'],
+            $status_label,
+            theme('submission_tag_list', ['tags' => $row['tags']]),
+            $actions,
+          ];
+        }
+      }
+      else {
+        $output['approved'][$number] = [
+          $view_link,
+          theme('submission_submitter', $row),
+          $row['publication']['title'],
+          $status_label,
+          theme('submission_tag_list', ['tags' => $row['tags']]),
+          $actions,
+        ];
+      }
+      break;
+
+    default:
+      switch ($row['stage'] ?? NULL) {
+        case TPPS_PAGE_1:
+          $stage = "Author and Species Information";
+          break;
+
+        case TPPS_PAGE_2:
+          $stage = "Experimental Conditions";
+          break;
+
+        case TPPS_PAGE_3:
+          $stage = "Plant Accession";
+          break;
+
+        case TPPS_PAGE_4:
+          $stage = "Submit Data";
+          break;
+
+        case 'summarypage':
+          $stage = "Review Data and Submit";
+          break;
+
+        default:
+          $stage = "Unknown";
+          break;
+      }
+
+      $output['incomplete'][$number] = [
+        $view_link,
+        theme('submission_submitter', $row),
+        $row['publication']['title'] ?? t('Title not provided yet'),
+        check_plain($stage),
+        theme('submission_date', ['date' => $row['date']['updated']]),
+        theme('submission_tag_list', ['tags' => $row['tags']]),
+        $actions,
+      ];
+      break;
+  }
+}
+
+function ___old($context) {
+
+  $submission = $context['submission'] ?? NULL;
+  if (empty($submission) && !empty($context['accession'])) {
+    $submission = new Submission($context['accession']);
+  }
+  $reset = $context['reset'] ?? FALSE;
+  $output = &$context['ouput'];
+
+  $data = [];
+  $submitting_user_cache = [];
+  $debug_mode = FALSE;
+  $accession = $submission->accession;
+    // 0.03 msec
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $uid = $submission->uid ?? NULL;
+
+  if (empty($submitting_user_cache[$uid])) {
+    $mail = $submission->getSubmitterMail();
+    $query = db_select('chado.contact', 'c');
+    $query->join('chado.contactprop', 'cp', 'cp.contact_id = c.contact_id');
+    $query->condition('cp.value', $mail);
+    $query->condition('cp.type_id', tpps_load_cvterm('email')->cvterm_id);
+
+    $query->fields('c', array('name'));
+    $query->range(0, 1);
+    $query = $query->execute();
+    $name = $query->fetchObject()->name ?? NULL;
+
+    $submitting_user_cache[$uid] = $name ?? $mail;
+  }
+  $submitting_user = $submitting_user_cache[$uid] ?? NULL;
+  $view_link = l($accession, 'tpps-admin-panel/' . $accession);
+  $action_list = [
+    l(t('Edit'), 'tppsc/' . $accession),
+    l(t('View'), 'tpps/submission/' . $accession . '/view'),
+    l(t('State JSON'), 'api/submission/' . $accession . '/view/state'),
+    l(t('Shared State JSON'), 'api/submission/' . $accession . '/view/shared_state'),
+    l(t('Export'), 'tpps/submission/' . $accession . '/export'),
+    l(t('Files'), 'tpps-admin-panel/file-diagnostics/' . $accession),
+  ];
+  // To add items use $action_list and recreate element.
+  $actions = theme('item_list', [
+    'items' => $action_list,
+    'attributes' => ['class' => ['admin-panel-action-list']],
+  ]);
+  if ($submission->doesExist()) {
+    switch ($submission->status) {
+      case TPPS_SUBMISSION_STATUS_PENDING_APPROVAL:
+        $row = [
+          $view_link,
+          $submitting_user,
+          $submission->state['saved_values'][TPPS_PAGE_1]['publication']['title'],
+          !empty($submission->state['completed'])
+          ? date("F j, Y, g:i a", $submission->state['completed']) : "Unknown",
+          tpps_show_tags(tpps_submission_get_tags($accession)),
+          $actions,
+        ];
+        $output['pending'][(int) substr($accession, 4)] = $row;
+        break;
+
+      case TPPS_SUBMISSION_STATUS_APPROVED:
+        $status_label = $submission->isLoaded() ? "Approved - load completed on "
+            . date("F j, Y, \a\\t g:i a", $submission->getLoadTime())
+          : TPPS_SUBMISSION_STATUS_APPROVED;
+        if ($submission->isLoaded()) {
+          $days_since_load = (time() - $submission->getLoadTime()) / (60 * 60 * 24);
+          $unpublished_threshold = variable_get('tpps_unpublished_days_threshold', 180);
+          $pub_status = $submission->state['saved_values'][TPPS_PAGE_1]['publication']['status'] ?? NULL;
+          if (
+            !empty($pub_status)
+            and $pub_status != 'Published'
+            and $days_since_load >= $unpublished_threshold
+          ) {
+            $owner = $submitting_user;
+            $contact_bundle = tripal_load_bundle_entity(
+              ['label' => 'Tripal Contact Profile']
+            );
+            //$owner_mail = tpps_get_user_email($uid);
+            $owner = "$submitting_user ($owner_mail)";
+
+            // If Tripal Contact Profile is available, we want to link to the
+            // profile of the owner instead of just displaying the name.
+            if ($contact_bundle) {
+              $query = new EntityFieldQuery();
+              $results = $query->entityCondition('entity_type', 'TripalEntity')
+                ->entityCondition('bundle', $contact_bundle->name)
+                ->fieldCondition('local__email', 'value', $owner_mail)
+                ->range(0, 1)
+                ->execute();
+              // [VS]
+              if (!empty($results['TripalEntity'])) {
+                // Commented out because there is a lot of warning messages
+                // shown at page.
+                //
+                //  $entity = current(
+                //    array_reverse(
+                //      entity_load(
+                //        'TripalEntity',
+                //        array_keys($results['TripalEntity'])
+                //      )
+                //    )
+                //  );
+                //  $owner = "<a href=\"$base_url/TripalContactProfile/"
+                //    . "{$entity->id}\">$submitting_user</a>";
+              }
+              // [/VS]
+            }
+            if (tpps_access('view own tpps submission', $accession)) {
+              $new_action_list = $action_list;
+              $new_action_list[] = l(t('Edit publication information'),
+                'tpps/' . $accession . '/edit-publication'
+              );
+            }
+            $row = [
+              $view_link,
+              date("F j, Y", $submission->getLoadTime())
+                . " (" . round($days_since_load) . " days ago)",
+              $pub_status,
+              $owner,
+              theme('item_list', [
+                'items' => $new_action_list,
+                'attributes' => ['class' => ['admin-panel-action-list']],
+              ]),
+            ];
+            $output['unpublished_old'][(int) substr($accession, 4)] = $row;
+          }
+        }
+
+      case TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING:
+        $status_label = $status_label ?? (
+          !empty($submission->state['approved'])
+          ? ("Submission Job Running - job started on "
+            . date("F j, Y, \a\t g:i a", $submission->state['approved']))
+          : TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING
+        );
+
+      case TPPS_SUBMISSION_STATUS_APPROVED_DELAYED:
+        if (empty($status_label)) {
+          $release = $submission->state['saved_values']['summarypage']['release-date'] ?? NULL;
+          $release = strtotime("{$release['day']}-{$release['month']}-{$release['year']}");
+          $status_label = "Approved - Delayed Submission Release on " . date("F j, Y", $release);
+        }
+        $row = [
+          $view_link,
+          $submitting_user,
+          $submission->state['saved_values'][TPPS_PAGE_1]['publication']['title'],
+          $status_label,
+          tpps_show_tags(tpps_submission_get_tags($accession)),
+          $actions,
+        ];
+        $output['approved'][(int) substr($accession, 4)] = $row;
+        break;
+
+      default:
+        switch ($submission->state['stage'] ?? NULL) {
+          case TPPS_PAGE_1:
+            $stage = "Author and Species Information";
+            break;
+
+          case TPPS_PAGE_2:
+            $stage = "Experimental Conditions";
+            break;
+
+          case TPPS_PAGE_3:
+            $stage = "Plant Accession";
+            break;
+
+          case TPPS_PAGE_4:
+            $stage = "Submit Data";
+            break;
+
+          case 'summarypage':
+            $stage = "Review Data and Submit";
+            break;
+
+          default:
+            $stage = "Unknown";
+            break;
+        }
+
+        $date = (
+          !empty($submission->state['updated'])
+          ? date("F j, Y, g:i a", $submission->state['updated'])
+          : t('Unknown')
+        );
+        $title = $submission->state['saved_values'][TPPS_PAGE_1]['publication']['title']
+          ?? t('Title not provided yet');
+        $output['incomplete'][(int) substr($accession, 4)] = [
+          $view_link,
+          $submitting_user,
+          $title,
+          $stage,
+          $date,
+          tpps_show_tags(tpps_submission_get_tags($accession)),
+          $actions,
+        ];
+        break;
+    }
+  }
+  return $output;
+}
+

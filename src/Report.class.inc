@@ -1,0 +1,637 @@
+<?php
+
+/**
+ * @file
+ * Contains 'Report' class.
+ */
+
+/**
+ * Manages Drupal Reports.
+ *
+ * @package tpps
+ * @author Vlad Savistky <vlad.savitsky@gmail.com>
+ */
+class Report {
+
+  /**
+   * Generates report based on given DB Query.
+   *
+   * @param array $meta
+   *   Metadata for report. See README.md for more details.
+   *
+   * @return string
+   *   Returns themed table with pagers.
+   */
+  public static function print(array $meta) {
+    if (empty($meta['header']) || empty($meta['query'])) {
+      drupal_set_message('No metadata to build report.');
+      return '';
+    }
+    extract($meta);
+    if (!empty($debug_mode)) {
+      $query->addTag('debug');
+    }
+    // Pager and sorting.
+    $report_query = $query->extend('PagerDefault')
+      ->limit(($items_per_page ? $items_per_page : 25))
+      ->extend('TableSort')
+      ->orderByHeader($header);
+    $data = $report_query->execute()->fetchAll();
+    // Formatter.
+    if (!isset($meta['formatter'])) {
+      // When $meta['formatter'] was just wasn't set then use default.
+      // But it it was set to NULL, FALSE or empty string just skip formatting.
+      $formatter = 'Report::formatter';
+    }
+    $is_formatter = (!empty($formatter) && function_exists($formatter));
+
+    // Prepare rows for report.
+    $rows = [];
+    foreach ($data as $row_id => $row) {
+      foreach ($row as $field_id => $field_value) {
+        $rows[$row_id][$field_id] = [
+          'data' => (!$is_formatter ? check_plain($field_value)
+            : call_user_func($formatter, $field_id, $field_value, (array) $row)
+          ),
+          'style' => 'vertical-align:top;min-width:10px;',
+        ];
+      }
+    }
+    if (!empty($css_path)) {
+      drupal_add_css($css_path);
+    }
+    if (!empty($page_title)) {
+      drupal_set_title($page_title);
+    }
+    return theme('pager') . theme('table',
+      [
+        'header' => $header,
+        'caption' => $page_title,
+        'empty' => $empty_message ?? t('No data found.'),
+        'attributes' => $table_attributes,
+        'rows' => $rows,
+      ]
+    ) . theme('pager');
+  }
+
+  /**
+   * Values formatter for 'Report::print()'.
+   *
+   * @param string $name
+   *   Required. Field name.
+   *   Machine table field name (column name) without table name and dot.
+   * @param mixed $value
+   *   Field value.
+   * @param array $row
+   *   Data of the whole table row with hidden fields.
+   *   This data could be used to format other fields. For example,
+   *   hidden field 'uid' or 'entity_id' could be used to build a link to
+   *   user profile page.
+   *
+   * @return mixed
+   *   Returns formatted value.
+   *   Empty value will not be formatted and returned as is.
+   */
+  public static function exampleFormatter(string $name, $value, array $row) {
+    $formatted = check_plain($value);
+    if (empty($name) || empty($value)) {
+      return $formatted;
+    }
+    $name = check_plain($name);
+    switch ($name) {
+      case 'publicctestudy_name':
+        if (!empty($value)) {
+          $formatted = l($formatted, 'tpps-admin-panel/' . $formatted);
+        }
+        break;
+    }
+    return $formatted;
+  }
+
+  /**
+   * Shows report as a table with pager.
+   *
+   * WARNING:
+   * Specific to reports settings are used! DON'T USE for regular table with pager.
+   *
+   * @param array $report
+   *   Required keys:
+   *   - 'report_name' - string. Machine report name (with underscores).
+   *   - 'header' - array. List of the table's header labels.
+   *   - 'rows' - array. Table data to be shown.
+   *   Optional keys:
+   *   - 'empty' - string. Localized string which will be shown when 'rows' is empty.
+   *
+   * @return string
+   *   Returns rendered HTML table with pager.
+   */
+  public static function printTable(array $report) {
+    $report_name = $report['report_name'] ?? NULL;
+    $rows = $report['rows'] ?? [];
+
+    $per_page = variable_get('tpps_report_items_per_page', 20);
+    $current_page = pager_default_initialize(count($rows), $per_page);
+    $chunks = array_chunk($rows, $per_page, TRUE);
+    $pager = theme('pager', ['quantity', count($rows) ?? 0]);
+    tpps_add_css_js();
+    return $pager . theme('table', [
+      // @TODO Minor. $report_name now is not string but array of parents.
+      //'caption' => Report::getList()[$report_name]['description'],
+      'header' => $report['header'] ?? [],
+      'rows' => $chunks[$current_page] ?? [],
+      'empty' => $report['empty'] ?? NULL,
+      // To have vertical align to top of the cell.
+      'attributes' => ['class' => ['tpps_table']],
+    ]) . $pager;
+  }
+
+  /**
+   * Menu callback. Shows list of TPPS Reports.
+   *
+   * See
+   * tpps_menu_add_report_pages();
+   * tpps_admin_panel_reports();
+   *
+   * @param bool $admin_panel
+   *   Determines if only items for 'Admin Panel' must be returned.
+   *
+   * @return string
+   *   Returns rendered list of links to report pages with descriptions.
+   */
+  public static function printOverviewPage($admin_panel = FALSE) {
+    return static::buildOverviewPage(static::getList(), [], $admin_panel);
+  }
+
+  /**
+   * Builds list of items for report overview page.
+   *
+   * @param array $list
+   *   Array with data.
+   * @param bool $admin_panel
+   *   Determines if only items for 'Admin Panel' must be returned.
+   */
+  public static function buildOverviewPage(array $list, array $parents, $admin_panel = FALSE) {
+    $items = [];
+    foreach ($list as $key => $value) {
+      if (empty($value['title'])) {
+        $output = static::buildOverviewPage($value, array_merge($parents, [$key]), $admin_panel);
+        // This a list and it requires some text before to be shown correctly.
+        $items[] = '<strong>' . check_plain(strtoupper($key)) . ':</strong> ' . $output;
+      }
+      else {
+        // Build URL.
+        $path = $key;
+        if (isset($parents[0])) {
+          $path = implode('/', $parents) . '/' . $key;
+        }
+
+        $output = l(t($value['title']), 'admin/reports/tpps/' . $path,
+          ['attributes' => ['title' => $value['description']]]
+        );
+        if (!$admin_panel) {
+          $output = '<strong>' . $output . '</strong><br /><em>' . $value['description'] . '</em>';
+        }
+        $items[] = $output;
+      }
+    }
+    return theme('item_list', ['items' => $items]);
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Menu.
+
+  /**
+   * Adds report menu items for hook_menu().
+   *
+   * To add new item: see reports/README.md.
+   *
+   * @param array $items
+   *   Menu items.
+   *
+   * @todo Minor. Rename folder 'reports' to 'report'.
+   */
+  public static function addAllMenuItems(array &$items = []) {
+    $items = $items ?? [];
+    // Add parent menu item.
+    $items['admin/reports/tpps'] = [
+      'title' => 'TPPS Reports',
+      'description' => 'TPPS module reports',
+      'page callback' => 'Report::printOverviewPage',
+      'access arguments' => ['administer tpps module'],
+    ];
+
+    foreach (static::getList() as $name => $item) {
+      static::addSubMenuItem($items, [], $name, $item);
+    }
+  }
+
+  /**
+   * Recursively adds report menu items.
+   *
+   * @param array $items
+   *   Drupal menu item list.
+   * @param array $parents
+   *   List of parent element names.
+   * @param string $name
+   *   Current element name.
+   * @param array $item
+   *   Item. Could be a single item metadata or list of subelements.
+   */
+  public static function addSubMenuItem(array &$items, array $parents, $name, array $item) {
+    if (empty($item['title'])) {
+      // List of sub-items.
+      $parents[] = $name;
+      foreach ($item as $sub_name => $sub_item) {
+        static::addSubMenuItem($items, $parents, $sub_name, $sub_item);
+      }
+      return;
+    }
+
+    $page_callback = static::getCallbackName($name, $parents);
+    $path = static::getMenuPath($name, $parents);
+    $items['admin/reports/tpps/' . $path] =
+    $items['tpps-admin-panel/reports/' . $path] = [
+      'title' => $item['title'],
+      'description' => $item['description'],
+      'page callback' => $page_callback,
+      'access callback' => 'tpps_access',
+      'access arguments' => ['administer tpps module'],
+      'file' => static::getFilePath($name, $parents),
+    ];
+  }
+
+  public static function getMenuPath($name, array $parents = []) {
+    if (isset($parents[0])) {
+      // @TODO Minor. Convert other reports to use the same filename.
+      return implode('/', $parents) . '/' . $name;
+    }
+    else {
+      // Outdated reports.
+      return $name;
+    }
+  }
+
+  /**
+   * getFilePath
+   *
+   * @param mixed $name
+   * @param array $parents
+   *
+   * @return void
+   */
+  public static function getFilePath($name, array $parents = []) {
+    return 'reports/' . static::getMenuPath($name, $parents) . '.inc';
+  }
+
+  /**
+   * Gets name of the report callback.
+   *
+   * @param string $name
+   *   Report name.
+   * @param array $parents
+   *   Report's parents like ['submission', 'file', 'all'].
+   *
+   * @return string
+   *   Returns callback name.
+   */
+  public static function getCallbackName($name, array $parents = []) {
+    if (isset($parents[0])) {
+      return 'tpps_report_' . implode('_', $parents) . '_' . $name;
+    }
+    else {
+      // Outdated reports.
+      return 'tpps_admin_' . $name . '_report';
+    }
+  }
+
+  /**
+   * Gets reports meta-data.
+   *
+   * See tpps_reports_overview_page() which builds list of report links.
+   * WARNING: Do not use 's' in the report's metadata.
+   *
+   * To add new item:
+   * 1. Insert item below.
+   * 2. Add variable name into tpps_reports_settings_form().
+   *
+   * @todo Use nested list instead of plain and remove 'url' item.
+   */
+  public static function getList() {
+    return [
+      // Files.
+      'missing_files' => [
+        'url' => 'missing-files',
+        'title' => variable_get('tpps_report_missing_files_title',
+          'Files missing in filesystem'
+        ),
+        'description' => t("List of all (including submission's) files missing "
+        . "in filesystem but present in DB table 'file_managed'."),
+        'admin_panel' => TRUE,
+      ],
+      // Misc.
+      'variable_list' => [
+        'url' => 'variable-list',
+        'title' => variable_get('tpps_report_variable_list_title',
+          'TPPS module variables'
+        ),
+        'description' => t("List of TPPS module's variables with prefix 'tpps'."),
+        'admin_panel' => FALSE,
+      ],
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Synonym.
+      'synonym' => [
+        'list' => [
+          'title' => variable_get('tpps_report_synonym_list_title',
+            'Phenotype Synonyms'),
+          'description' => t('List of all phenotype synonyms.'),
+          'admin_panel' => TRUE,
+        ],
+        'missing' => [
+          'title' => variable_get('tpps_report_synonym_missing_title',
+            'List of phenotypes without Synonyms'),
+          'description' => t('List of phenotypes without synonym.'),
+          'admin_panel' => TRUE,
+        ],
+        'unit_warning' => [
+          'title' => variable_get('tpps_report_synonym_unit_warning_title',
+          'Unit Warning (list of phenotypes which unit differs from Synonym)'
+          ),
+          'description' => t("List of Phenotypes which differs from Synonym's Unit."),
+          'admin_panel' => TRUE,
+        ],
+      ],
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Organism.
+      'organism' => [
+        'list' => [
+          'title' => variable_get('tpps_report_organism_list_title',
+            'Organism List'
+          ),
+          'description' => t('List of organisms per study.'),
+          'admin_panel' => FALSE,
+        ],
+        'new' => [
+          'title' => variable_get('tpps_report_organism_new_title', 'New Organisms'),
+          'description' => t('List of Studies with new organisms (missing in NCBI database).'),
+          'admin_panel' => TRUE,
+        ],
+        'order_family_not_exist' => [
+          'title' => variable_get('tpps_report_organism_order_family_not_exist_title',
+            'Order/Family not exist'),
+          'description' => t('Lists non-existing order/family.'),
+          'admin_panel' => TRUE,
+        ],
+        'ncbi' => [
+          'all' => [
+            'title' => variable_get('tpps_report_organism_ncbi_all_title',
+              'All Organisms and their NCBI Taxonomy Ids'),
+            'description' => t('List of all organisms and their NCBI Taxonomy Ids.'),
+            'admin_panel' => FALSE,
+          ],
+          'missing' => [
+            'title' => variable_get('tpps_report_organism_ncbi_missing_title',
+              'Organisms without  NCBI Taxonomy Ids'),
+            'description' => t('List of organisms which are missing NCBI Taxonomy Ids.'),
+            'admin_panel' => FALSE,
+          ],
+        ],
+      ],
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // DOI.
+      'doi' => [
+        'duplicates' => [
+          'title' => variable_get('tpps_report_doi_duplicates_title', 'DOI Duplicates'),
+          'description' => t('List of submissions with the same Publication DOI.'),
+          'admin_panel' => TRUE,
+        ],
+        'missing' => [
+          'title' => variable_get('tpps_report_doi_missing_title', 'Missing DOI'),
+          'description' => t('List of Studies without DOI attached.'),
+          'admin_panel' => TRUE,
+        ],
+      ],
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Zenodo.
+      'zenodo' => [
+        'deposition' => [
+          'title' => variable_get('tpps_report_zenodo_deposition_title', 'Zenodo Depositions'),
+          'description' => t('List of Zenodo Depositions related to current account.'),
+          'admin_panel' => TRUE,
+        ],
+      ],
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Submission.
+      'submission' => [
+        'imported' => [
+          'title' => variable_get('tpps_report_submission_imported_title', 'Imported Submissions'),
+          'description' => t('List of accession of imported submissions.'),
+          'admin_panel' => TRUE,
+        ],
+        'zenodo' => [
+          'title' => variable_get('tpps_report_submission_zenodo_title', 'Submissions with Zenodo Deposit'),
+          'description' => t('List of Submissions which has Zenodo Depositions.'),
+          'admin_panel' => TRUE,
+        ],
+        'file' => [
+          'all' => [
+            'title' => variable_get('tpps_report_submission_file_all_title',
+              "Submission's All Files"
+            ),
+            'description' => t('List of all (existing and missing) File Ids for ALL submissions'),
+            'admin_panel' => TRUE,
+          ],
+          'none' => [
+            'title' => variable_get('tpps_report_submission_file_none_title',
+              'Submissions without Files'),
+            'description' => t('List of submissions which has no files.'),
+            'admin_panel' => TRUE,
+          ],
+          'missing' => [
+            'title' => variable_get('tpps_report_submission_file_missing_title',
+              "Submission's Missing Files"
+            ),
+            'description' => t('List submissions which has files but those files '
+            . 'are missing in filesystem.'),
+            'admin_panel' => TRUE,
+          ],
+        ],
+      ],
+    ];
+  }
+
+  /**
+   * Builds single row of the report.
+   *
+   * @param mixed $name
+   *   Report name. E.g., 'all' for /admin/reports/tpps/submission/file/all.
+   * @param array $parents
+   *   Report's parents. E.g., ['submission', 'file'].
+   * @param array $context
+   *   Data necessary to build single row.
+   *
+   * @return array
+   *   Returns meta-data which could be used to theme single row.
+   */
+  public static function buildRow($name, array $parents, array $context = []) {
+    $file_name = str_replace('.inc', '', static::getFilePath($name, $parents));
+    module_load_include('inc', 'tpps', $file_name);
+    $callback = static::getCallbackName($name, $parents)
+      . '_build_single_row';
+
+    if (function_exists($callback)) {
+      return call_user_func($callback, $context);
+    }
+    else {
+      watchdog('tpps', 'Report callback @callback not found.',
+        ['@callback' => $callback], WATCHDOG_WARNING
+      );
+    }
+  }
+
+  /**
+   * Builds single row of the report.
+   *
+   * @param mixed $name
+   *   Report name. E.g., 'all' for /admin/reports/tpps/submission/file/all.
+   * @param array $parents
+   *   Report's parents. E.g., ['submission', 'file'].
+   * @param array $context
+   *   Data necessary to build single row.
+   *
+   * @return array
+   *   Returns meta-data which could be used to theme single row.
+   */
+  public static function themeRow($name, array $parents, array $context = []) {
+    $file_name = str_replace('.inc', '', static::getFilePath($name, $parents));
+    module_load_include('inc', 'tpps', $file_name);
+    $callback = static::getCallbackName($name, $parents)
+      . '_theme_single_row';
+    if (function_exists($callback)) {
+      return call_user_func($callback, $context);
+    }
+  }
+
+  /**
+   * Get Cache Key (cid) for report.
+   *
+   * @param string $name
+   *   Report name.
+   * @param array $parents
+   *   Parents of the report.
+   *
+   * @return string
+   *   Returns Cache Key which used to store data to build a report.
+   */
+  public static function getCacheKey($name, array $parents = []) {
+    if (empty($name)) {
+      return '';
+    }
+    $parent_string = (empty($parents) ? '' : implode('_', $parents) . '_');
+    return 'tpps_report_' . $parent_string . $name;
+  }
+
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// Examples.
+
+/**
+ * Builds data for single submission in 'submission_file' report.
+ *
+ * See Report::buildRow().
+ *
+ * @param array $context
+ *   Data to build single row of the report. Keys are:
+ *   'submission' - object. (optional when 'accession' is used).
+ *      TPPS Submission.
+ *   'reset' - bool. (optional).
+ *     When TRUE cache will be updated. Default is FALSE.
+ *   'accession' - string. (optional when 'submission' is used).
+ *     Study accession. E.g., 'TGDRxxxx'.
+ *
+ * @return array
+ *   Returns data to build single row in report 'Submisssion Files All'.
+ */
+function ___tpps_report_submission_file_all_build_single_row(array $context) {
+  $debug_mode = FALSE;
+
+  $submission = $context['submission'] ?? NULL;
+  if (empty($submission) && !empty($context['accession'])) {
+    $submission = new Submission($context['accession']);
+  }
+  $reset = $context['reset'] ?? FALSE;
+
+  $data = [];
+  $accession = $submission->accession;
+  if (empty($file_list = $submission->getFileIdList())) {
+    // When submission has no files it shouldn't be shown in the report.
+    return NULL;
+  }
+  if ($debug_mode ?? FALSE) {
+    dpm(print_r($file_list, 1), $submission->accession);
+  }
+
+  // List of files per group.
+  $file_row = [];
+  // Rendered lists of files.
+  $final_file_row = [];
+
+  // @todo Minor. Check 'vcf' and 'local vcf' in $file->uri.
+  // Process local VCF files.
+  for ($n = 1; $n <= $submission->getOrganismNumber(); $n++) {
+    if ($submission->hasLocalVcf($n)) {
+      $organism_name = $submission->getOrganismName($n);
+      $organism_label = check_plain($n . '. ' . $organism_name);
+      $file_row['other'][$organism_label]['local_vcf'] = $submission->getLocalVcf($n);
+    }
+  }
+
+  foreach ($file_list as $fid => $parents) {
+    $step = $parents[0];
+    // 3: 'tree-accession';
+    // 4: 'phenotype', 'genotype', '...'
+    switch ($step) {
+      case TPPS_PAGE_3:
+        $group = $parents[1];
+        $organism_index = str_replace('species-', '', $parents[2]);
+        break;
+
+      case TPPS_PAGE_4:
+        $group = $parents[2];
+        $organism_index = str_replace('organism-', '', $parents[1]);
+        break;
+
+      default:
+        $group = 'other';
+        $organism_index = NULL;
+        break;
+    }
+    $organism_name = $submission->getOrganismName($organism_index);
+
+    // Missing files goes to the 'other' group..
+    if (
+      // !in_array($fid, $existing_fid_list) ||
+      empty($file = file_load($fid))
+    ) {
+      $file_row['other'][] = $fid;
+      continue;
+    }
+    $organism_label = check_plain($organism_index . '. ' . $organism_name);
+    $field_name = check_plain(end($parents));
+    $file_row[$group][$organism_label][$field_name] = $fid;
+  }
+  $data = [
+    'uid' => $submission->uid,
+    'stage' => $submission->state['stage'],
+    'status' => $submission->getStatus(),
+    'file_row' => $file_row,
+  ];
+  $cid = Report::getCacheKey('all', ['submission', 'file']);
+  $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+  $cache = cache_get($cid, $cache_bin);
+  if ($reset || !isset($cache->data[$accession])) {
+    // Update cache.
+    $cache->data[$accession] = $data;
+    cache_set($cid, $cache->data, $cache_bin);
+  }
+  return $data;
+}

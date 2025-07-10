@@ -36,7 +36,7 @@ function tpps_submission_export_json($accession = '') {
   if ($submission->doesExist()) {
     tpps_submission_export_fixes($submission->state);
     // Files.
-    $fid_list = tpps_submission_file_get_id_list($submission->state);
+    $fid_list = array_keys($submission->getFileIdList());
     $submission->state['tpps_submission_export_files']
       = tpps_submission_export_get_files_info($fid_list);
     $submission->state['tpps_submission_export_site'] = $base_url;

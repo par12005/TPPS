@@ -8,10 +8,10 @@
 /**
  * Menu callback. Shows list of all phenotypes without synonym.
  */
-function tpps_admin_no_synonym_report() {
+function tpps_report_synonym_missing() {
   $table = 'chado.phenotype';
   $table_alias = str_replace('.', '', $table);
-  $page_title = variable_get('tpps_report_no_synonym_title');
+  $page_title = variable_get('tpps_report_synonym_missing_title');
 
   // Query to get Study name.
   $sub_query = db_select('chado.phenotype', 'cte')
@@ -52,11 +52,12 @@ function tpps_admin_no_synonym_report() {
   $base_query->groupBy('chadophenotype.name');
   $base_query->groupBy('chadophenotype_to_synonym.phenotype_synonyms_id');
 
-  return '<h2>' . $page_title . '</h2>' . easy_report([
-    'formatter' => 'tpps_admin_no_synonym_report_formatter',
+  return '<h2>' . $page_title . '</h2>' . Report::print([
+    'formatter' => 'tpps_report_synonym_missing_formatter',
     'debug_mode' => FALSE,
     'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
     'page_title' => $page_title,
+    'items_per_page' => variable_get('tpps_report_items_per_page', 15),
     'table_attributes' => ['class' => ['view' , 'tpps_table']],
     'header' => [
       [
@@ -79,7 +80,7 @@ function tpps_admin_no_synonym_report() {
 }
 
 /**
- * Values formatter for 'easy_report()'.
+ * Values formatter for 'Report::print()'.
  *
  * @param string $name
  *   Required. Field name.
@@ -96,7 +97,7 @@ function tpps_admin_no_synonym_report() {
  *   Returns formatted value.
  *   Empty value will not be formatted and returned as is.
  */
-function tpps_admin_no_synonym_report_formatter(string $name, $value, array &$row) {
+function tpps_report_synonym_missing_formatter(string $name, $value, array &$row) {
   $formatted = check_plain($value);
   // $name values are:
   // name

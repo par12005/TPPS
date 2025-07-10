@@ -326,33 +326,56 @@ function tpps_get_ajax_value(array &$state, array $parents, $default = NULL, $fi
  *
  * This function is usually only called from tpps_main().
  *
+ * Restores items in $form_state (or Submission::state) when study
+ * opened for edition (for example /tppsc/:accession).
+ *
  * @param array $new
  *   The new form state to be populated.
  * @param array $old
  *   The old form state with the old information.
+ *
+ * @todo Minor. Move code to 'Submission' class.
  */
 function tpps_form_state_info(array &$new, array &$old) {
-  $new['saved_values'] = $old['saved_values'];
-  $new['stage'] = $old['stage'];
-  $new['accession'] = $old['accession'];
-  $new['dbxref_id'] = $old['dbxref_id'];
-  $new['stats'] = $old['stats'] ?? NULL;
-  $new['ids'] = $old['ids'] ?? NULL;
-  $new['tpps_type'] = $old['tpps_type'] ?? NULL;
-  $new['file_info'] = $old['file_info'] ?? NULL;
-  $new['status'] = $old['status'] ?? NULL;
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Required. Those items must be present in any submission.
+  $required = [
+    'saved_values',
+    'stage',
+    'accession',
+    'dbxref_id',
+  ];
+  foreach ($required as $key) {
+    $new[$key] = $old[$key];
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Optional. Those items could appear after pipeline processing.
+  $optional = [
+    'stats',
+    'ids',
+    'tpps_type',
+    'file_info',
+    'status',
+    'created',
+    'approved',
+    'completed',
+    'loaded',
+    'submitting_uid',
+    'job_id',
+    'revised_files',
+    'admin_comments',
+    'alternative_accessions',
+    'data',
+    'zenodo_id',
+    'zenodo_conceptrecid',
+  ];
+  foreach ($optional as $key) {
+    $new[$key] = $old[$key] ?? NULL;
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Special processing.
   // Note: REQUEST_TIME couldn't be used because used from CLI (submit_all.php).
   $new['updated'] = $old['updated'] ?? time();
-  $new['created'] = $old['created'] ?? NULL;
-  $new['approved'] = $old['approved'] ?? NULL;
-  $new['completed'] = $old['completed'] ?? NULL;
-  $new['loaded'] = $old['loaded'] ?? NULL;
-  $new['submitting_uid'] = $old['submitting_uid'] ?? NULL;
-  $new['job_id'] = $old['job_id'] ?? NULL;
-  $new['revised_files'] = $old['revised_files'] ?? NULL;
-  $new['admin_comments'] = $old['admin_comments'] ?? NULL;
-  $new['alternative_accessions'] = $old['alternative_accessions'] ?? NULL;
-  $new['data'] = $old['data'] ?? NULL;
 }
 
 /**
@@ -371,7 +394,6 @@ function tpps_form_state_info(array &$new, array &$old) {
  */
 function tpps_preserve_valid_file(array &$form_state, $fid, $org_num = NULL, $prefix = NULL) {
   if (!form_get_errors() && $file = tpps_file_load($fid)) {
-    file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
     if (!empty($org_num) and !empty($prefix)) {
       $species = implode('_', explode(' ',
         $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']

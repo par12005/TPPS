@@ -428,8 +428,8 @@
               Drupal.tpps.doiFill(data);
             }
             else {
-              var url = Drupal.settings.basePath + Drupal.settings.tpps.ajaxUrl
-                + '/get_doi';
+              let url = Drupal.settings.basePath
+                + Drupal.settings.tpps.ajaxUrl + '/get_doi';
               // Remove existing messages.
               Drupal.tpps.clearMessages(doiMessageBox);
               $.ajax({

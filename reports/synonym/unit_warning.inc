@@ -8,7 +8,7 @@
 /**
  * Menu callback. Shows simple report of 'tpps_phenotype_unit_warning' table.
  */
-function tpps_admin_unit_warning_report() {
+function tpps_report_synonym_unit_warning() {
   $table = 'public.tpps_phenotype_unit_warning';
   $table_alias = str_replace('.', '', $table);
   $page_title = variable_get(
@@ -36,9 +36,9 @@ function tpps_admin_unit_warning_report() {
       'study_name',
     ]);
 
-  return '<h2>' . $page_title . '</h2>' . easy_report([
+  return '<h2>' . $page_title . '</h2>' . Report::print([
     'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
-    'formatter' => 'tpps_admin_unit_warning_report_formatter',
+    'formatter' => 'tpps_report_synonym_unit_warning_formatter',
     'page_title' => $page_title,
     'table_attributes' => ['class' => ['view' , 'tpps_table']],
     'items_per_page' => variable_get('tpps_report_items_per_page', 15),
@@ -51,7 +51,7 @@ function tpps_admin_unit_warning_report() {
 }
 
 /**
- * Values formatter for 'tpps_admin_unit_warning_report'.
+ * Values formatter for 'tpps_report_synonym_unit_warning' report.
  *
  * @param string $name
  *   Required. Field name.
@@ -68,7 +68,7 @@ function tpps_admin_unit_warning_report() {
  *   Returns formatted value.
  *   Empty value will not be formatted and returned as is.
  */
-function tpps_admin_unit_warning_report_formatter(string $name, $value, array &$row) {
+function tpps_report_synonym_unit_warning_formatter(string $name, $value, array &$row) {
   $formatted = check_plain($value);
   if (empty($name) || empty($value)) {
     return $formatted;

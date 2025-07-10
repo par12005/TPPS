@@ -29,7 +29,6 @@
  *   Returns all version's changes.
  */
 function tpps_submission_form_version_changes(array $form_state, $version = NULL) {
-  //dpm(print_r(debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 2), 1));
   $version_change_list = [
     // Version 1 is a initial version.
     // Submission Interface is a version 1 without some unnecessary elements.

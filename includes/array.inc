@@ -273,7 +273,7 @@ function tpps_array_move(array &$array, array $action_data) {
             : ''
           ),
           '@direction' => (!empty($array['saved_values'][1]['doi']) ? 'upgrade' : 'downgrade'),
-          '@form_version' => $array['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY],
+          '@form_version' => $array['saved_values'][Submission::FORM_VERSION_KEY],
         ];
         tpps_message($message, $params, 'debug');
       }
@@ -295,6 +295,10 @@ function tpps_array_move(array &$array, array $action_data) {
  * To get value by reference use:
  * $ref = &tpps_array_get_value($array, $parents);
  *
+ * To update value:
+ * $ref = &tpps_array_get_value($array, $parents);
+ * $ref = 'new value';
+ *
  * Shortcut for function drupal_array_get_nested_value() with default value.
  * See
  * https://api.drupal.org/api/drupal/includes%21common.inc/function/drupal_array_get_nested_value/7.x#.
@@ -304,8 +308,9 @@ function tpps_array_move(array &$array, array $action_data) {
  * specific. It does much more and works with 'values' and 'complete form'
  * elements of given arrays.
  *
- * @param array $array
- *   Array to search.
+ * @param mixed $array
+ *   Array to search within.
+ *   When empty then there will be no error but NULL will be returned.
  * @param array $parents
  *   List of the element's parents (including element name).
  *   When empty array then original $array will be returned.
@@ -315,8 +320,11 @@ function tpps_array_move(array &$array, array $action_data) {
  *   Returns $default if element wasn't found in given array but not reference.
  *   Returns $array when $parents is an empty array.
  */
-function &tpps_array_get_value(array &$array, array $parents = []) {
-  $value = &drupal_array_get_nested_value($array, $parents, $key_exists);
+function &tpps_array_get_value(&$array = [], array $parents = []) {
+  $key_exists = FALSE;
+  if (!empty($array) && is_array($array)) {
+    $value = &drupal_array_get_nested_value($array, $parents, $key_exists);
+  }
   if ($key_exists) {
     return $value;
   }
@@ -343,4 +351,65 @@ function &tpps_array_get_value(array &$array, array $parents = []) {
  */
 function tpps_array_set_value(array &$array, array $parents, $value = NULL) {
   drupal_array_set_nested_value($array, $parents, $value);
+}
+
+/**
+ * Dumps array using item list.
+ *
+ * WARNING: Be sure to use check_plain() for data in the $list before call.
+ * Note: uses recursion.
+ *
+ * @param array $list
+ *   Array with data.
+ *
+ * @return string
+ *   Returns rendered HTML list.
+ *
+ *   @todo move to TppsArray class.
+ */
+function tpps_array_print_list(array $list = []) {
+  $items = [];
+  foreach ($list as $key => $value) {
+    if (is_array($value)) {
+      $value = tpps_array_print_list($value);
+    }
+    else {
+      // Using check_plain() blocks HTML Links in the lists.
+      // $value = check_plain($value);
+    }
+    $items[] = '<strong>' . check_plain($key) . ':</strong> ' . $value;
+  }
+  return theme('item_list', ['items' => $items]);
+}
+
+/**
+ * Gets path to the array element as a list of parents.
+ *
+ * $array = [
+ *   'a' => [
+ *     'b' => [
+ *       'c' => 1,
+ *      ],
+ *    ],
+ *  ];
+ *
+ *  Result: ['a', 'b', 'c'];
+ *
+ *
+ * @param array $array
+ *   Array to process.
+ *
+ * @return array
+ *   Returns parents of the element.
+ */
+function tpps_array_get_path($array) {
+  if (!is_array($array)) {
+    return FALSE;
+  }
+  foreach ($array as $key => $value) {
+    return array_merge(
+      [$key],
+      (is_array($value) ? tpps_array_get_path($value) : [])
+    );
+  }
 }

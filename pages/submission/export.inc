@@ -21,7 +21,7 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
   global $base_url;
   tpps_submission_list_validate_accession($accession);
 
-  $accession_list = tpps_submission_get_accession_list();
+  $accession_list = SubmissionCache::getAccessionList();
   $form['tpps_submission_accession'] = [
     '#type' => 'select',
     '#title' => t('Accession'),
@@ -39,11 +39,9 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
     drupal_set_message($message, 'warning');
     drupal_goto('tpps/submission');
   }
-
   tpps_submission_export_fixes($submission->state);
-
   // Files.
-  $fid_list = tpps_submission_file_get_id_list($submission->state, $form);
+  $fid_list = array_keys($submission->getFileIdList());
   $files = tpps_submission_export_get_files_info($fid_list);
   if (empty($form_state['input'])) {
     // This check allows to avoid double processing files when new accession
@@ -68,6 +66,7 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
   ];
   tpps_submission_list_add_buttons($form);
   tpps_form_autofocus($form, ['tpps_submission_export_state']);
+
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('submission_export', $form);
   tpps_add_css_js('theme', $form);
@@ -144,7 +143,7 @@ function tpps_submission_export_file_report(array &$fid_list = [], array &$files
       tpps_form_add_report($form, [
         'files_prepared_for_import' => [
           'title' => t('List of files prepared for import'),
-          'data' => t('<pre>@list</pre>', ['@list' => print_r($files, 1)]),
+          'data' => tpps_array_print_list($files),
         ],
       ]);
     }
