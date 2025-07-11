@@ -102,7 +102,6 @@ require_once 'includes/file_utils.inc';
 require_once 'includes/submit_email.inc';
 require_once 'includes/accession_coordinates.inc';
 module_load_include('inc', 'tpps', 'includes/submissions');
-require_once 'includes/zenodo.inc';
 require_once 'includes/match_trees.inc';
 require_once 'includes/ncbi_utils.inc';
 // All steps helper functions.
