@@ -368,28 +368,8 @@ function tpps_genotype_subform(array $form_bus) {
       ],
     ],
   ]);
-  // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
-  $fields[$snps_fieldset]['assay-citation'] = [
-    '#type' => 'textfield',
-    '#title' => t('Assay Design Citation (Optional):'),
-    '#description' => t('If your assay design file is from a different '
-    . 'paper, please include the citation for that paper here.'),
-    '#states' => [
-      'visible' => [
-        [
-          ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
-            . '][genotyping-type]"]'
-          => ['value' => TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY],
-        ],
-        'or',
-        [
-          ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
-            . '][file-type]"]' =>
-            ['value' => TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE],
-        ],
-      ],
-    ],
-  ];
+
+  tpps_page_4_add_assay_citation($form_bus);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   if (tpps_is_genotype_data_type($form_state)) {
@@ -709,7 +689,6 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
       [$id, 'genotype', $snps_fieldset, 'genotyping-design']
     ),
     '#weight' => -200,
-
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // GBS Type.
@@ -1205,4 +1184,126 @@ function tpps_page_4_genotype_ssrs(array $form_bus) {
       ],
     ],
   ]));
+}
+
+
+/**
+ * Adds 'Assay Citation' feature to the form.
+ *
+ * @param array $form_bus
+ *   Accosiative array with metadata.
+ *
+ *   Per study data:
+ *   'form' array
+ *     Reference to the Drupal Form Array.
+ *   'form_state' array
+ *     Drupal Form State Array.
+ *   'page1_values' => &$form_state['saved_values'][TPPS_PAGE_1] ?? [],
+ *   'page2_values' => &$form_state['saved_values'][TPPS_PAGE_2] ?? [],
+ *   'page3_values' => &$form_state['saved_values'][TPPS_PAGE_3] ?? [],
+ *   'page4_values' => &$form_state['saved_values'][TPPS_PAGE_4] ?? [],
+ *
+ *   Per organism data:
+ *   'organism_id' int 1
+ *     Organism number (or Id). E.g., 1. See 'organism_number'.
+ *   'type' string
+ *     Machine name of the data type. E.g., 'genotype'.
+ *   'type_name' string
+ *      Human readable data type name. E.g., 'Genotype'.
+ */
+function tpps_page_4_add_assay_citation(array &$form_bus) {
+  if (!isset($form_bus['organism_id']) || !isset($form_bus['type'])) {
+    return [];
+  }
+  $i = $form_bus['organism_id'];
+  $type = $form_bus['type'] ?? '';
+  $form_state = &$form_bus['form_state'];
+  $page4_values = &$form_state['saved_values'][TPPS_PAGE_4] ?? [];
+  $snps_fieldset = 'SNPs';
+
+  $organism_name = 'organism-' . $i;
+  $fields = &$form_bus['form'][$organism_name][$type];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $states = [
+    'visible' => [
+      [
+        ':input[name="' . $organism_name . '[' . implode('][',
+        [$type, $snps_fieldset, 'genotyping-type']) . ']"]' => [
+          'value' => TPPS_GENOTYPING_TYPE_GENOTYPING,
+        ],
+      ],
+    ],
+  ];
+  $existing_study_field_name = 'existing_study';
+  $existing_study_other_option_key = 'other';
+
+  $fieldset_name = 'assay-design-citation';
+
+  $fields[$snps_fieldset][$fieldset_name] = [
+    '#type' => 'fieldset',
+    '#title' => t('Assay Design Citation'),
+    '#states' => $states,
+  ];
+  $form_element = &$fields[$snps_fieldset][$fieldset_name];
+
+  $form_element[$existing_study_field_name] = [
+    '#type' => 'select',
+    '#title' => t('Existing studies with an “Assay design file”'),
+    '#options' => array_merge(
+      SubmissionCache::getAssayDesignList(),
+      [
+        $existing_study_other_option_key =>
+          t('The citation for my assay design is not in this list'),
+      ]
+    ),
+    '#default_value' => tpps_get_ajax_value(
+      $form_state,
+      [
+        $organism_name,
+        $type,
+        $snps_fieldset,
+        $fieldset_name,
+        $existing_study_field_name,
+      ]
+    ),
+  ];
+  $subelement_states = [
+    'visible' => [
+      [
+        ':input[name="' . $organism_name . '[' . implode('][',
+          [$type, $snps_fieldset, $fieldset_name, $existing_study_field_name]
+        ) . ']"]' => ['value' => $existing_study_other_option_key],
+      ],
+    ],
+  ];
+  // Instructions above the inputs.
+  $form_element['instructions'] = [
+    '#markup' => '<p>' . t('Provide a DOI referencing the original marker design, '
+      . 'if you did not design these markers. If your assay design is not '
+      . 'published, you will be expected to upload it.') . '</p>',
+    '#states' => $subelement_states,
+  ];
+  // Paper DOI – Preferred citation.
+  $form_element['paper-doi'] = [
+    '#type' => 'textfield',
+    '#title' => t('Paper DOI:'),
+    '#states' => $subelement_states,
+  ];
+  // Dataset DOI – Alternate if no paper.
+  $form_element['dataset-doi'] = [
+    '#type' => 'textfield',
+    '#title' => t('Dataset DOI:'),
+    '#states' => $subelement_states,
+  ];
+  // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
+  // Field was renamed & relocated (v.3).
+  // [$snps_fieldset]['assay-citation'] -> [$snps_fieldset]['assay-design-citation']['other'].
+  // But since this field wasn't in use v.3 wasn't created for this field only.
+  $form_element['other'] = [
+    '#type' => 'textfield',
+    '#title' => t('Assay Design Citation (Optional):'),
+    '#description' => t('If your assay design file is from a different '
+      . 'paper, please include the citation for that paper here.'),
+  ];
 }
