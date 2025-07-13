@@ -264,6 +264,24 @@ class SubmissionCache {
       ],
     ];
 
+    // List of 'Assay Design' files.
+    for ($n = 1; $n <= $submission->getOrganismNumber(); $n++) {
+      $assay_design_fid = tpps_array_get_value(
+        $submission->getSharedState(),
+        [
+          'saved_values',
+          TPPS_PAGE_4,
+          'organism-' . $n,
+          'genotype',
+          'files',
+          'assay-design',
+        ]
+      );
+      if (empty($assay_design_fid)) {
+        continue;
+      }
+      $data['files']['assay-design'][$n] = $assay_design_fid;
+    }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Zenodo.
     if ($deposit_id = $submission->getZenodoDepositId()) {
@@ -495,6 +513,58 @@ class SubmissionCache {
     }
     krsort($list, SORT_NATURAL);
     return $list;
+  }
+
+  /**
+   * Gets list of accessions which has (or doesn't have) 'Assay Design' file.
+   *
+   * @param bool $has
+   *   Filter which allows to get list of submissions which doesn't have
+   *   'Assay Design' file when set to FALSE. Default is TRUE.
+   * @param bool $reset
+   *   Flag is cache must be resetted. Default if FALSE.
+   *
+   * @return array
+   *   Returns list of accession as a key and shorten titles as a value.
+   */
+  public static function getAssayDesignList($has = TRUE, $reset = FALSE) {
+    $key = __METHOD__;
+    $static_cache = &drupal_static(__METHOD__);
+    if ($reset || !isset($static_cache[$key])) {
+
+      // Get value.
+      $cid = $key;
+      $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+      $cache = cache_get($cid, $cache_bin);
+      if ($reset || empty($cache) || !isset($cache->data[$key])) {
+        $cache->data[$key] = NULL;
+        // Get new data.
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        $data = static::get($reset);
+        $list = [];
+        foreach ($data as $accession => $cached_submission) {
+          $title = $cached_submission['publication']['title'] ?? t('No Title');
+          $title = (strlen($title) > 97) ? substr($title, 0, 97) . '...' : $title;
+          $item = $accession . ' - ' . $title;
+          if (empty($cached_submission['files']['assay-design'])) {
+            $list['has_not'][$accession] = $item;
+          }
+          else {
+            $list['has'][$accession] = $item;
+          }
+        }
+        $cache->data[$key] = $list;
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        cache_set($cid, $cache->data, $cache_bin);
+      }
+      $static_cache[$key] = $cache->data[$key] ?? NULL;
+    }
+    if ($has) {
+      return $static_cache[$key]['has'] ?? [];
+    }
+    else {
+      return $static_cache[$key]['has_not'] ?? [];
+    }
   }
 
 }
