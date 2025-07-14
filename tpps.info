@@ -15,6 +15,7 @@ files[] = src/SubmissionCache.class.inc
 files[] = src/Organism.class.inc
 files[] = src/ChadoDb.class.inc
 files[] = src/TppsFile.class.inc
+files[] = src/AssayDesignCitation.class.inc
 
 ; Misc
 files[] = src/RestAPI.class.inc

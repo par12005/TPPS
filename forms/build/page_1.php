@@ -159,7 +159,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#default_value' => tpps_get_ajax_value(
       $form_state, ['publication', 'publication_doi'], ''
     ),
-    '#description' => tpps_page_1_get_doi_examples(),
+    '#description' => tpps_form_get_doi_examples(),
     '#prefix' => '<div id="doi-message"></div>',
     '#states' => [
       'visible' => [
@@ -177,7 +177,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#default_value' => tpps_get_ajax_value(
       $form_state, ['publication', 'dataset_doi'], ''
     ),
-    '#description' => tpps_page_1_get_doi_examples(),
+    '#description' => tpps_form_get_doi_examples(),
     '#states' => [
       'visible' => [
         [':input[name="publication[status]"]' => ['value' => 'Published']],
