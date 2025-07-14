@@ -1451,3 +1451,21 @@ function tpps_form_add_fieldset_collapsed_state(array &$form, $form_id = NULL) {
   }
   return $is_exists;
 }
+
+/**
+ * Creates a list of DOI examples.
+ *
+ * This list will be used in field's description.
+ * Each DOI could be inserted into field by mouse click.
+ *
+ * @return string
+ *   Returns HTML string with list of DOI examples.
+ */
+function tpps_form_get_doi_examples() {
+  foreach (tpps_doi_get_examples_list() as $doi_suggestion) {
+    // @todo Use l().
+    $list[] = '<a href"#" class="tpps-suggestion">'
+      . $doi_suggestion . '</a>';
+  }
+  return 'Examples: <br />' . implode(', ', $list);
+}

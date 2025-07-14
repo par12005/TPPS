@@ -308,14 +308,19 @@ function tpps_js_debug_mode_get_features() {
  */
 function tpps_doi_get_examples_list() {
   return [
-    // Fake.
-    '10.1111/dryad.111',
-    // Real but used. No species.
+    // Fake. Valid, not in use. DOI Information is empty.
+    // '10.1111/dryad.111',
+    // Empty info:
+    // '10.5061/dryad.269126c',
+    '10.5061/dryad.588d7',
+    // No species:
     '10.5061/dryad.91mk9',
-    // Not used, no species.
-    '10.21267/IN.2016.6.2294',
-    // Real, not used, with species.
+    // 3 species:
     '10.5061/dryad.vk43j',
+    // Valid, empty.
+    // '10.1002/ece3.4216',
+    // Not used, no species.
+    // '10.21267/IN.2016.6.2294',
   ];
 }
 
