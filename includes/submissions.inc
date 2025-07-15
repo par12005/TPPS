@@ -12,7 +12,6 @@
  */
 
 module_load_include('inc', 'tpps', 'includes/submission_file');
-module_load_include('inc', 'tpps', 'includes/submission_form_version');
 
 /**
  * Menu API callback. Shows Submission State array in JSON format.
