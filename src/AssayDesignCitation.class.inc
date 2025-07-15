@@ -10,6 +10,11 @@
  *
  * TPPSc Form / Page 4 / Genotype / SNPs.
  *
+ * Submission Form Versions:
+ * This fieldset is missing in Form Version 1 and 2.
+ * But v1 and v2 had 'assay-design-citation' textfield which wasn't actually
+ * used anywhere and was replaced with this fieldset.
+ *
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
@@ -49,7 +54,7 @@ class AssayDesignCitation {
           [
             static::DATA_TYPE,
             static::SNPS_FIELDSET,
-            'genotyping-type'
+            'genotyping-type',
           ]) . ']"]' => ['value' => TPPS_GENOTYPING_TYPE_GENOTYPING],
         ],
       ],
@@ -132,7 +137,56 @@ class AssayDesignCitation {
    *   Drupal Form API State array.
    */
   public static function validate($organism_index, array &$form, array &$form_state) {
+    $parents = [
+      'organism-' . $organism_index,
+      static::DATA_TYPE,
+      static::SNPS_FIELDSET,
+    ];
+    $genotyping_type = tpps_array_get_value(
+      $form_state['values'], array_merge($parents, ['genotyping-type'])
+    );
+    if ($genotyping_type != TPPS_GENOTYPING_TYPE_GENOTYPING) {
+      return;
+    }
 
+    $existing_study = tpps_array_get_value(
+      $form_state['values'],
+      array_merge($parents, [static::PARENT_FIELDSET, 'existing_study'])
+    );
+    if ($existing_study == 'other') {
+      $paper_doi = tpps_array_get_value(
+        $form_state['values'],
+        array_merge($parents, [static::PARENT_FIELDSET, 'paper-doi'])
+      );
+      $dataset_doi = tpps_array_get_value(
+        $form_state['values'],
+        array_merge($parents, [static::PARENT_FIELDSET, 'dataset-doi'])
+      );
+      if (empty($paper_doi) && empty($dataset_doi)) {
+        $message = t('Please specify "Assay Design Citation / '
+          . 'Paper DOI" or "Assay Design Citation / Dataset DOI".');
+        $field_name = implode('][',
+          array_merge($parents, [static::PARENT_FIELDSET, 'paper-doi'])
+        );
+        form_set_error($field_name, $message);
+      }
+    }
+  }
+
+  /**
+   * Processes.
+   *
+   * Note: called from /forms/submit/submit_all.php script.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number on page.
+   * @param array $shared_state
+   *   Submission's Shared State.
+   * @param array $options
+   *   Necessary data.
+   *   WARNING: 'genotype_id' is required to store 'year' column on file.
+   */
+  public static function process($organism_index, array $shared_state, array &$options = []) {
   }
 
 }
