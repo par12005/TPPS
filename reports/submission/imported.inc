@@ -11,7 +11,6 @@
 function tpps_report_submission_imported() {
   module_load_include('inc', 'tpps', 'includes/imported_studies_list');
   module_load_include('inc', 'tpps', 'includes/submissions');
-  module_load_include('inc', 'tpps', 'includes/submission_form_version');
   // Get list of all imported submissions.
   // Keys are accessions for the new (imported) studies and values are
   // source submission accessions.

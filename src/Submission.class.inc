@@ -1113,9 +1113,7 @@ class Submission {
     $this->sharedState = $this->state;
     // We need to apply changes from 1st to $current version to have
     // incremental changes.
-    // @TODO Avoid this hard linking.
-    module_load_include('inc', 'tpps', 'includes/submission_form_version');
-    tpps_submission_form_version_downgrade_to_latest($this->state, $this->sharedState);
+    SubmissionVersion::downgradeToLatest($this->state, $this->sharedState);
     $this->purifySharedState();
     return $this->sharedState;
     // @TODO Change to allow chaining.
@@ -2933,7 +2931,7 @@ class Submission {
   /**
    * Gets Submission Form Version.
    *
-   * Former: tpps_submission_form_version_get().
+   * See: SubmissionVersion::get().
    *
    * @return int
    *   Returns Submission's Form version.
@@ -2956,7 +2954,7 @@ class Submission {
       if ($save_on_change) {
         $this->save();
       }
-      // 'tpps_submission_form_version_changed'';
+      // Hook 'tpps_submission_form_version_changed''.
       if (function_exists('module_invoke_all')) {
         module_invoke_all('submission_form_version_changed', [
           'previous_version' => $current_version,
