@@ -38,10 +38,6 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
     $study_type_list = [];
     foreach (['phenotype', 'genotype', 'environment'] as $item) {
       if (!function_exists('tpps_validate_' . $item)) {
-        // Dynamically built function names are:
-        // tpps_validate_phenotype(),
-        // tpps_validate_genotype(),
-        // tpps_validate_environment().
         watchdog('tpps', 'Validation function for @study_type not found.',
           ['@study_type' => $item], WATCHDOG_ERROR
         );
@@ -60,6 +56,10 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
         }
       }
       if (!empty($organism[$item])) {
+        // Dynamically built function names are:
+        // tpps_validate_phenotype(),
+        // tpps_validate_genotype(),
+        // tpps_validate_environment().
         call_user_func_array(
           'tpps_validate_' . $item,
           [&$organism[$item], $i, $form, &$form_state]
@@ -698,48 +698,7 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
       );
     }
   }
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Assay Design Citation.
-  if ($genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING) {
-    // @TODO Field 'assay-design-citation']
-    //
-    //
-    $parents = [
-      'values',
-      $id,
-      'genotype',
-      $snps_fieldset,
-      'assay-design-citation',
-    ];
-    $existing_study = tpps_array_get_value(
-      $form_state,
-      array_merge($parents, ['existing_study'])
-    );
-    if ($existing_study == 'other') {
-      // @TODO Fields Paper DOI and
-      $paper_doi = tpps_array_get_value(
-        $form_state,
-        array_merge($parents, ['paper-doi'])
-      );
-      $dataset_doi = tpps_array_get_value(
-        $form_state,
-        array_merge($parents, ['dataset-doi'])
-      );
-      if (empty($paper_doi) && empty($dataset_doi)) {
-        $message = t('Please specify "Assay Design Citation / '
-          . 'Paper DOI" or "Assay Design Citation / Dataset DOI".');
-        $field_name = implode('][', [
-          $id,
-          'genotype',
-          $snps_fieldset,
-          'assay-design-citation',
-          'paper-doi',
-        ]);
-        form_set_error($field_name, $message);
-      }
-    }
-  }
+  AssayDesignCitation::validate($org_num, $form, $form_state);
 }
 
 /**
