@@ -248,7 +248,6 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     // from temporaty to permanent to avoid it's automatic removement.
     $submission->setFileStatus(FILE_STATUS_PERMANENT, []);
   }
-
   drupal_goto('completed-submission/' . $accession);
 }
 

@@ -175,6 +175,7 @@ class SubmissionCache {
   public static function set(array $new_list) {
     $list = &drupal_static(static::CACHE_ID);
     $list = $new_list;
+    krsort($list, SORT_NATURAL);
     cache_set(static::CACHE_ID, $new_list, static::CACHE_BIN);
   }
 
