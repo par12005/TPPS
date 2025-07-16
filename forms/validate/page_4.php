@@ -679,25 +679,8 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
     }
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Assay Design File.
-  if (
-    $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
-    || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
-  ) {
-    $file_field_name = 'assay-design';
-    $file_field_value = drupal_array_get_nested_value(
-      $form_state, ['values', $id, 'genotype', $snps_fieldset, $file_field_name]
-    );
-    if ($file_field_value) {
-      // Preserve file if it is valid.
-      tpps_preserve_valid_file(
-        $form_state,
-        $snps[$file_field_name],
-        $org_num,
-        'Genotype_Assay_Design'
-      );
-    }
-  }
+  // Assay Design.
+  AssayDesign::validate($org_num, $form, $form_state);
   AssayDesignCitation::validate($org_num, $form, $form_state);
 }
 
