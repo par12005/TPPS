@@ -61,24 +61,25 @@ class PhenotypeIso extends TppsFile {
   /**
    * Builds form fields for Phenotype Data file.
    *
-   * @param int $id
-   *   Organism Id.
+   * @param int $organism_key
+   *   The HTML id of the organism fieldset being populated.
+   *   E.g., 'organism-1'.
    * @param array $form
    *   Drupal Form API Array.
    * @param array $form_state
    *   Drupal Form API State Array.
    */
-  public static function build($organism_index, array &$form, array $form_state) {
+  public static function build($organism_key, array &$form, array $form_state) {
     $allow_column_data_types = FALSE;
     $iso_check = tpps_get_ajax_value(
       $form_state,
-      [$organism_index, 'phenotype', static::CHECKBOX_NAME],
+      [$organism_key, 'phenotype', static::CHECKBOX_NAME],
       NULL
     );
     if (empty($iso_check)) {
       return;
     }
-    $form[$organism_index]['phenotype']['iso'] = [
+    $form[$organism_key]['phenotype']['iso'] = [
       '#type' => 'managed_file',
       '#title' => t('Phenotype Isotope/Mass Spectrometry file: *'),
       '#upload_location' => 'public://'
@@ -92,12 +93,12 @@ class PhenotypeIso extends TppsFile {
         . 'should contain isotope or mass spectrometry data.'),
     ];
     if ($allow_column_data_types) {
-      $form[$organism_index]['phenotype']['iso']['columns'] = [
+      $form[$organism_key]['phenotype']['iso']['columns'] = [
         '#description' => t('Please define which columns hold the required '
           . 'data: Plant Identifier, Clone Number, and Metabolomic Data.'
         ),
       ];
-      $form[$organism_index]['phenotype']['iso']['columns-options'] = [
+      $form[$organism_key]['phenotype']['iso']['columns-options'] = [
         '#type' => 'hidden',
         '#value' => static::getColumnOptions(),
       ];
@@ -125,9 +126,9 @@ class PhenotypeIso extends TppsFile {
       return;
     }
 
-    $id = 'organism-' . $organism_index;
-    $form_field_error_name = $id . '][phenotype][' . static::FIELD_NAME;
-    $file_element = $form[$id]['phenotype'][static::FIELD_NAME];
+    $organism_key = 'organism-' . $organism_index;
+    $form_field_error_name = $organism_key . '][phenotype][' . static::FIELD_NAME;
+    $file_element = $form[$organism_key]['phenotype'][static::FIELD_NAME];
 
     if (empty($fid = static::getFileId($organism_index, $form_state))) {
       $message = t("Phenotype Isotope/Mass Spectrometry File: field is required.");
