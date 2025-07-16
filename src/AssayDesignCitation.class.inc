@@ -100,28 +100,28 @@ class AssayDesignCitation {
         ],
       ],
     ];
-    // Instructions above the inputs.
     $form_element['instructions'] = [
-      '#markup' => '<p>' . t('Provide a DOI referencing the original marker design, '
+      '#type' => 'container',
+      '#states' => $subelement_states,
+      'message' => [
+        '#markup' => '<p>' . t('Provide a DOI referencing the original marker design, '
         . 'if you did not design these markers. If your assay design is not '
         . 'published, you will be expected to upload it.') . '</p>',
-      '#states' => $subelement_states,
+      ],
     ];
-    // Paper DOI – Preferred citation.
     $form_element['paper-doi'] = [
       '#type' => 'textfield',
       '#title' => t('Paper DOI:'),
-      '#states' => $subelement_states,
       '#description' => tpps_form_get_doi_examples(),
-      // @TODO Must be required when visible.
+      '#states' => $subelement_states,
+      // Optional.
     ];
-    // Dataset DOI – Alternate if no paper.
     $form_element['dataset-doi'] = [
       '#type' => 'textfield',
       '#title' => t('Dataset DOI:'),
       '#states' => $subelement_states,
       '#description' => tpps_form_get_doi_examples(),
-      // @TODO Must be required when 'Paper DOI' is empty.
+      // Optional.
     ];
     tpps_add_css_js('suggestion', $form);
   }
