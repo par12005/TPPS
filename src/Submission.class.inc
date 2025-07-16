@@ -944,27 +944,19 @@ class Submission {
   // Info.
 
   /**
-   * Checks if submission exists in database.
+   * Checks if submission was loaded into memory from database.
    *
-   * Only study accession is required to find record in database.
+   *
+   * WARNING:
+   * Do not use $this->load() because when methods doesExist() / doesNotExist()
+   * are called in the middle of the process then unsaved changes will be lost.
    *
    * @return bool
-   *   Returns TRUE if record in database exists and FALSE otherwise.
+   *   Returns TRUE if record in database exists.
+   *   Returns FALSE if there is no record in database.
    */
   public function doesExist() {
-    // WARNING:
-    // When doesExist() or doesNotExist() was called in the middle of the
-    // process previous changes will be lost because it reloads submission
-    // from database and overwrite this changes in memory.
-    // $this->load();
-    return (bool) (
-      !empty($this->accession)
-      && !empty($this->id)
-      && !empty($this->status)
-      && !empty($this->uid)
-      && !empty($this->dbxrefId)
-      && !empty($this->state)
-    );
+    return (bool) (!empty($this->accession) && !empty($this->state));
   }
 
   /**

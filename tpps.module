@@ -3870,8 +3870,8 @@ function tpps_submission_saved($submission) {
     // @todo Very slow because Submission::save() calls many times per single
     // request. Implement single save event before enable clearing cache.
     tpps_cache_clear_all();
-    SubmissionCache::updateSingle($submission);
   }
+  SubmissionCache::updateSingle($submission);
 }
 
 /**
