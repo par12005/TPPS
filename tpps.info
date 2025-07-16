@@ -17,6 +17,7 @@ files[] = src/Organism.class.inc
 files[] = src/ChadoDb.class.inc
 files[] = src/TppsFile.class.inc
 files[] = src/AssayDesignCitation.class.inc
+files[] = src/AssayDesign.class.inc
 
 ; Misc
 files[] = src/RestAPI.class.inc
