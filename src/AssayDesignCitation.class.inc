@@ -50,12 +50,9 @@ class AssayDesignCitation {
     $states = [
       'visible' => [
         [
-          ':input[name="' . $organism_name . '[' . implode('][',
-          [
-            static::DATA_TYPE,
-            static::SNPS_FIELDSET,
-            'genotyping-type',
-          ]) . ']"]' => ['value' => TPPS_GENOTYPING_TYPE_GENOTYPING],
+          ':input[name="' . $organism_name . '[' . implode('][', [
+            static::DATA_TYPE, 'does_study_include_snp_data'
+          ]) . ']"]' => ['value' => 'yes'],
         ],
       ],
     ];
