@@ -39,14 +39,45 @@ class AssayDesign {
   public static function build($organism_index, array &$form, array $form_state) {
     $organism_key = 'organism-' . $organism_index;
 
-    // @TODO
-    // Required only when the user selects Genotyping File Type : SNP Assay file and Assay design file
-    // @TODO Field was relocated. Credate new version.
+
+
+
+
+// @TODO Field was relocated. Credate new version.
+
+
+
 
 
     // Add file upload field.
     // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
-    //
+    $states = [
+      ':input[name="' . $organism_key . '[' . implode('][', [
+        AssayDesign::DATA_TYPE,
+        AssayDesign::SNPS_FIELDSET,
+        AssayDesign::PARENT_FIELDSET,
+        AssayDesignCitation::EXISTING_STUDY_FIELD_NAME,
+      ]) . ']"]' => [
+        'value' => AssayDesignCitation::EXISTING_STUDY_OTHER_OPTION_KEY,
+      ],
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // We should also check this field because when 'genotyping-type' set into
+      // 'Genotyping Array' field 'file-type' disapears with value which allows
+      // this field to be shown and required.
+      ':input[name="' . $organism_key . '[' . implode('][', [
+        AssayDesign::DATA_TYPE,
+        AssayDesign::SNPS_FIELDSET,
+        'genotyping-type',
+      ]) . ']"]' => ['value' => TPPS_GENOTYPING_TYPE_GENOTYPING],
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      ':input[name="' . $organism_key . '[' . implode('][', [
+        AssayDesign::DATA_TYPE,
+        AssayDesign::SNPS_FIELDSET,
+        'file-type',
+      ]) . ']"]' => [
+        'value' => TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE,
+      ],
+    ];
     tpps_form_build_file_field([
       'form' => &$form,
       'form_state' => $form_state,
@@ -61,32 +92,10 @@ class AssayDesign {
       'organism_name' => $organism_key,
       'type' => static::DATA_TYPE,
       'optional' => TRUE,
+      // Required when visible.
       'states' => [
-        'visible' => [
-          [
-            ':input[name="' . $organism_key . '[' . implode('][', [
-              AssayDesign::DATA_TYPE,
-              AssayDesign::SNPS_FIELDSET,
-              AssayDesign::PARENT_FIELDSET,
-              AssayDesignCitation::EXISTING_STUDY_FIELD_NAME,
-            ]) . ']"]' => [
-              'value' => AssayDesignCitation::EXISTING_STUDY_OTHER_OPTION_KEY,
-            ],
-          ],
-
-
-          // @TODO Create new class. Add to validate() method this check.
-          // Required only when the user selects Genotyping File Type :
-          // SNP Assay file and Assay design file
-
-          //'or',
-          //[
-          //  ':input[name="' . $organism_key . '[genotype][' . $snps_fieldset
-          //  . '][file-type]"]' => [
-          //    'value' => TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
-          //  ],
-          //],
-        ],
+        'visible' => $states,
+        'required' => $states,
       ],
     ]);
   }
