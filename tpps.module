@@ -1526,7 +1526,7 @@ function tpps_main_submit($form, &$form_state) {
     }
     else {
       $saved_values[Submission::FORM_VERSION_KEY]
-        = Submission::FORM_VERSION_CURRENT;
+        = SubmissionVersion::getLatest();
     }
   }
 

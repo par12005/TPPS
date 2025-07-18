@@ -1154,9 +1154,6 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   $form[Submission::FORM_VERSION_KEY] = [
     '#type' => 'hidden',
     '#value' => $form_state['saved_values'][Submission::FORM_VERSION_KEY] ?? 1,
-    // @TODO Minor.
-    // We could get verion by $accession.
-    // Submission::FORM_VERSION_CURRENT,
   ];
 
   // Upgrade to latest Submission Form Version.

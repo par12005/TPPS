@@ -199,20 +199,6 @@ class Submission {
   // https://developers.zenodo.org/?shell#representation
   const ZENODO_CONCEPT_RECORD_ID_KEY = 'zenodo_conceptrecid';
 
-  // Name of the key which stores Submission Form version.
-  const FORM_VERSION_KEY = 'submission_form_version';
-
-  // Number of the initial version of Form State Array.
-  // This value will be used to apply incremental changes (patches).
-  const FORM_VERSION_START = 1;
-
-  // Version of Submission Form State Array.
-  // See tpps_submission_form_get_change_list() for changes per version.
-  // Version 1: Only removed data which is useless for processing study.
-  // Version 2: #86ayw8a7k Page 4 Genotype Logic Adjustments.
-  // @TODO Minor. Rename to 'latest_version'?
-  const FORM_VERSION_CURRENT = 2;
-
   /**
    * Class constructor.
    *
@@ -1019,7 +1005,7 @@ class Submission {
       $import_meta['full_date'] .= (empty($import_meta['imported']) ? ''
         : ' [' . $import_meta['imported'] . ']');
     }
-    $import_meta['current_version'] = $this->state['saved_values'][Submission::FORM_VERSION_KEY];
+    $import_meta['current_version'] = $this->state['saved_values'][SubmissionVersion::FORM_KEY];
     return $import_meta;
   }
 
@@ -1105,7 +1091,7 @@ class Submission {
     $this->sharedState = $this->state;
     // We need to apply changes from 1st to $current version to have
     // incremental changes.
-    SubmissionVersion::downgradeToLatest($this->state, $this->sharedState);
+    SubmissionVersion::downgrade($this->state, $this->sharedState);
     $this->purifySharedState();
     return $this->sharedState;
     // @TODO Change to allow chaining.
@@ -1149,7 +1135,7 @@ class Submission {
         'tpps_submission_export_files',
         // @TODO Submission Form Version is useless for pipeline processing
         // but could be useful for debugging.
-        //['saved_values', Submission::FORM_VERSION_KEY],
+        //['saved_values', SubmissionVersion::FORM_KEY],
 
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // List of the fields which must be left.
@@ -2930,7 +2916,7 @@ class Submission {
    *   Returns 1 (default value) if version wasn't set.
    */
   public function getFormVersion() {
-    return $this->state['saved_values'][static::FORM_VERSION_KEY] ?? 1;
+    return $this->state['saved_values'][SubmissionVersion::FORM_KEY] ?? 1;
   }
 
   /**
@@ -2942,7 +2928,7 @@ class Submission {
   public function setFormVersion($version, $save_on_change = FALSE) {
     $current_version = $this->gerFormVersion();
     if ($current_version != $version) {
-      $this->state['saved_values'][static::FORM_VERSION_KEY] == $version;
+      $this->state['saved_values'][SubmissionVersion::FORM_KEY] == $version;
       if ($save_on_change) {
         $this->save();
       }
