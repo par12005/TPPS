@@ -21,6 +21,8 @@ class PhenotypeIso extends TppsFile {
   const DATA_TYPE_CLONE_NUMBER = 2;
   const DATA_TYPE_METABOLOMIC_DATA = 3;
 
+  // Name of the fieldset on PAGE 4.
+  const DATA_TYPE = 'phenotype';
 
   // Name of the checkbox which specifies that phenotype "isotope" data file
   // must be used. When This checkbox is checked the normal phenotype data
@@ -42,7 +44,11 @@ class PhenotypeIso extends TppsFile {
    *   Returns parents for the checkbox which makes this field required.
    */
   public static function getCheckboxParents($organism_index) {
-    return ['organism-' . $organism_index, 'phenotype', static::CHECKBOX_NAME];
+    return [
+      'organism-' . $organism_index,
+      static::DATA_TYPE,
+      static::CHECKBOX_NAME
+    ];
   }
 
   /**
@@ -55,7 +61,11 @@ class PhenotypeIso extends TppsFile {
    *   Returns parents for the checkbox which makes this field required.
    */
   public static function getParents($organism_index) {
-    return ['organism-' . $organism_index, 'phenotype', static::FIELD_NAME];
+    return [
+      'organism-' . $organism_index,
+      static::DATA_TYPE,
+      static::FIELD_NAME,
+    ];
   }
 
   /**
@@ -73,13 +83,17 @@ class PhenotypeIso extends TppsFile {
     $allow_column_data_types = FALSE;
     $iso_check = tpps_get_ajax_value(
       $form_state,
-      [$organism_key, 'phenotype', static::CHECKBOX_NAME],
+      [
+        $organism_key,
+        static::DATA_TYPE,
+        static::CHECKBOX_NAME
+      ],
       NULL
     );
     if (empty($iso_check)) {
       return;
     }
-    $form[$organism_key]['phenotype']['iso'] = [
+    $form[$organism_key][static::DATA_TYPE]['iso'] = [
       '#type' => 'managed_file',
       '#title' => t('Phenotype Isotope/Mass Spectrometry file: *'),
       '#upload_location' => 'public://'
@@ -93,12 +107,12 @@ class PhenotypeIso extends TppsFile {
         . 'should contain isotope or mass spectrometry data.'),
     ];
     if ($allow_column_data_types) {
-      $form[$organism_key]['phenotype']['iso']['columns'] = [
+      $form[$organism_key][static::DATA_TYPE]['iso']['columns'] = [
         '#description' => t('Please define which columns hold the required '
           . 'data: Plant Identifier, Clone Number, and Metabolomic Data.'
         ),
       ];
-      $form[$organism_key]['phenotype']['iso']['columns-options'] = [
+      $form[$organism_key][static::DATA_TYPE]['iso']['columns-options'] = [
         '#type' => 'hidden',
         '#value' => static::getColumnOptions(),
       ];
@@ -126,9 +140,10 @@ class PhenotypeIso extends TppsFile {
       return;
     }
 
-    $organism_key = 'organism-' . $organism_index;
-    $form_field_error_name = $organism_key . '][phenotype][' . static::FIELD_NAME;
-    $file_element = $form[$organism_key]['phenotype'][static::FIELD_NAME];
+    $parents = static::getParents($organism_index);
+    // @TODO Create a separate method to hide implementation.
+    $form_field_error_name = implode('][', $parents);
+    $file_element = tpps_array_get_value($form, $parents);
 
     if (empty($fid = static::getFileId($organism_index, $form_state))) {
       $message = t("Phenotype Isotope/Mass Spectrometry File: field is required.");
@@ -159,7 +174,6 @@ class PhenotypeIso extends TppsFile {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Validate number of 'Metabolomic data' columns.
     $headers = static::getHeader($organism_index, $form_state);
-
 
     // Will be 'A' for 1st column.
     $id_col_name = key($headers);
