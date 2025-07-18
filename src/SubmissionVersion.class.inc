@@ -12,11 +12,11 @@ module_load_include('inc', 'tpps', 'includes/submission_form_version_changes');
  * Overview.
  *
  * We need to have version of the Submission's Form to be able to convert
- * Form State Array into Submission Interface used by pipeline processing
+ * Form State Array into SharedState used by pipeline processing
  * (see form/submit/submit_all.php script).
  *
  * ----------------------------------------------------------------------------
- * What is Submission Form Version?
+ * What is Submission Version?
  * 1. Versions are integers and start from '1' which is
  *    defined as constant TPPS_SUBMISSION_INTERFACE_START_VERSION.
  * 2. Each version changes must be listed in function
@@ -72,6 +72,7 @@ module_load_include('inc', 'tpps', 'includes/submission_form_version_changes');
  *             (not original) array.
  * 3. 'rename' = move where target has new field name (last element).
  *
+ * ----------------------------------------------------------------------------
  * What is changelist?
  *
  * Change List for each version is a list of data to perform actions
@@ -79,6 +80,14 @@ module_load_include('inc', 'tpps', 'includes/submission_form_version_changes');
  * including field which must be removed).
  * For 'move' it will be 'source' (where to get) and 'target' (where to put).
  *
+ * ----------------------------------------------------------------------------
+ * When new version must be created?
+ *
+ * 1. Existing field relocated/renamed.
+ *
+ * No version for:
+ * 1. New fields.
+ * 2. Removed fields.
  * ----------------------------------------------------------------------------
  * @todo Minor. If number of versions will be big enough and there is
  *       no old versions left we could remove those versions from
