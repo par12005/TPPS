@@ -8,6 +8,11 @@
 /**
  * How to use?
  * module_load_include('inc', 'tpps', 'includes/submission_form_version_changes');
+ *
+ * $version = NULL;
+ * $a = 'TGDR1126';
+ * $s = new Submission($a);
+ * dpm(tpps_submission_form_version_changes($s->state, $version));
  */
 
 /**
@@ -27,6 +32,11 @@
  *   Returns list of changes for particular version or NULL if there is no
  *   changes for given version number.
  *   Returns all version's changes.
+ *
+ * @TODO Get rid of 'organism-N' and use lower level items to make list of
+ *   changes independent from the $form_state.
+ * @TODO Move to the file-specific classes into methods like
+ *   'AssayDesign::getParents()'.
  */
 function tpps_submission_form_version_changes(array $form_state, $version = NULL) {
   $version_change_list = [
@@ -162,6 +172,35 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
     }
   }
   // End of Verion 2 Dynamic Changes.
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Version 3. Dynamyc changes.
+  // Assay Design.
+  if (!empty($form_state['saved_values'][TPPS_PAGE_1])) {
+    $page1_values = $form_state['saved_values'][TPPS_PAGE_1];
+    $organism_number = $page1_values['organism']['number'] ?? 1;
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    for ($i = 1; $i <= $organism_number; $i++) {
+      $genotype_parents = [
+        'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype',
+      ];
+      // Move 'Assay Design File' field into sub-fieldset.
+      // See 'AssayDesignCitation::PARENT_FIELDSET'.
+      $version_change_list['3']['move'][AssayDesign::FIELD_NAME] = [
+        'source' => array_merge(
+          $genotype_parents,
+          [AssayDesign::SNPS_FIELDSET, AssayDesign::FIELD_NAME]
+        ),
+        'target' => array_merge($genotype_parents,
+          [
+            AssayDesign::SNPS_FIELDSET,
+            AssayDesign::PARENT_FIELDSET,
+            AssayDesign::FIELD_NAME,
+          ]
+        ),
+      ];
+    }
+  }
+  // End of Verion 3 Dynamic Changes.
 
   return ($version ? ($version_change_list[$version] ?? NULL) : $version_change_list);
 }
