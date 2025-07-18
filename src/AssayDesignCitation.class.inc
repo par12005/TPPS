@@ -20,18 +20,18 @@
  */
 class AssayDesignCitation {
 
+  // Name of the fieldset on PAGE 4.
+  const DATA_TYPE = 'genotype';
+  // Machine name of the 'SNPs' fieldset (parent of the parent).
+  const SNPS_FIELDSET = 'SNPs';
+  // Machine name of the parent fieldset on form.
+  const PARENT_FIELDSET = 'assay-design-citation';
   // Machine name of the field which allow to select one of existing study
   // which has 'Assay Design' file. See SubmissionCache::getAssayDesignList().
   const EXISTING_STUDY_FIELD_NAME = 'existing_study';
-  // Machine name of the 'SNPs' fieldset (parent of the parent).
-  const SNPS_FIELDSET = 'SNPs';
   // Key of the option which allows to specify Paper DOI or Dataset DOI when
   // existing study couldn't be used.
   const EXISTING_STUDY_OTHER_OPTION_KEY = 'other';
-  // Machine name of the parent fieldset on form.
-  const PARENT_FIELDSET = 'assay-design-citation';
-  // Name of the fieldset on PAGE 4.
-  const DATA_TYPE = 'genotype';
 
   /**
    * Builds set of form fields for 'Assay Design Citation' feature.
@@ -134,6 +134,7 @@ class AssayDesignCitation {
    *   Drupal Form API State array.
    */
   public static function validate($organism_index, array &$form, array &$form_state) {
+    // All fields are optional.
     $parents = [
       'organism-' . $organism_index,
       static::DATA_TYPE,
@@ -160,12 +161,13 @@ class AssayDesignCitation {
         array_merge($parents, [static::PARENT_FIELDSET, 'dataset-doi'])
       );
       if (empty($paper_doi) && empty($dataset_doi)) {
-        $message = t('Please specify "Assay Design Citation / '
-          . 'Paper DOI" or "Assay Design Citation / Dataset DOI".');
-        $field_name = implode('][',
-          array_merge($parents, [static::PARENT_FIELDSET, 'paper-doi'])
-        );
-        form_set_error($field_name, $message);
+        // At least one field is required.
+        //$message = t('Please specify "Assay Design Citation / '
+        //  . 'Paper DOI" or "Assay Design Citation / Dataset DOI".');
+        //$field_name = implode('][',
+        //  array_merge($parents, [static::PARENT_FIELDSET, 'paper-doi'])
+        //);
+        //form_set_error($field_name, $message);
       }
     }
   }
