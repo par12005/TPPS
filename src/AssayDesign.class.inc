@@ -51,11 +51,12 @@ class AssayDesign {
 
     // Add file upload field.
     // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
+    // @TODO Get parents from the AssayDesignCitation class.
     $states = [
       ':input[name="' . $organism_key . '[' . implode('][', [
         AssayDesign::DATA_TYPE,
         AssayDesign::SNPS_FIELDSET,
-        AssayDesign::PARENT_FIELDSET,
+        AssayDesignCitation::PARENT_FIELDSET,
         AssayDesignCitation::EXISTING_STUDY_FIELD_NAME,
       ]) . ']"]' => [
         'value' => AssayDesignCitation::EXISTING_STUDY_OTHER_OPTION_KEY,
@@ -117,24 +118,41 @@ class AssayDesign {
     $snps = tpps_array_get_value(
       $form_state['values'],
       [
-        'organism-' . $organism_index,
-        static::SNPS_FIELDSET
+        $organism_key,
+        static::DATA_TYPE,
+        static::SNPS_FIELDSET,
       ]
     );
+
     // Get values of selectors.
     $file_type = $snps['file-type'] ?? NULL;
     $genotyping_type = $snps['genotyping-type'] ?? NULL;
+    $existing_study = tpps_array_get_value($form_state['values'],
+    [
+      $organism_key,
+      AssayDesignCitation::DATA_TYPE,
+      AssayDesignCitation::SNPS_FIELDSET,
+      AssayDesignCitation::PARENT_FIELDSET,
+      AssayDesignCitation::EXISTING_STUDY_FIELD_NAME,
+    ]);
+
+//dpm($file_type, 'file_type');
+//dpm($genotyping_type, 'genotyping_type');
+//dpm($existing_study, 'exitsitn');
 
     if (
       $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
-      || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
+      && $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING
+      && $existing_study == AssayDesignCitation::EXISTING_STUDY_OTHER_OPTION_KEY
     ) {
+      //dpm('required');
       $fid = tpps_array_get_value(
         $form_state['values'],
         [
           $organism_key,
           static::DATA_TYPE,
           static::SNPS_FIELDSET,
+          AssayDesignCitation::EXISTING_STUDY_FIELD_NAME,
           static::FIELD_NAME,
         ]
       );
@@ -164,6 +182,54 @@ class AssayDesign {
    *   WARNING: 'genotype_id' is required to store 'year' column on file.
    */
   public static function process($organism_index, array $shared_state, array &$options = []) {
+  }
+
+  /**
+   * Gets parents of the field.
+   *
+   * @param int $organism_index
+   *   Ordinal number on form.
+   * @param int $version
+   *   Submission Form Version.
+   *   Default is lates version (higher number).
+   *
+   * @return array
+   *   Returns parents for the checkbox which makes this field required.
+   */
+  public static function getParents($organism_index, $version = NULL) {
+    $organism_key = 'organism-' . $organism_index;
+
+    switch ($version) {
+      case 1:
+        $parents = [
+          $organism_key,
+          static::DATA_TYPE,
+          'files',
+          static::FIELD_NAME,
+        ];
+        break;
+
+      case 2:
+        $parents = [
+          $organism_key,
+          static::DATA_TYPE,
+          static::SNPS_FIELDSET,
+          static::FIELD_NAME,
+        ];
+        break;
+
+      case 3:
+      default:
+        $parents = [
+          $organism_key,
+          static::DATA_TYPE,
+          static::SNPS_FIELDSET,
+          static::PARENT_FIELDSET,
+          static::FIELD_NAME,
+        ];
+        break;
+    }
+    return $parents;
   }
 
 }

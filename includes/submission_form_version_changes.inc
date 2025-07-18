@@ -19,7 +19,7 @@
  * Gets specific version or all version's changes.
  *
  * Note:
- * Version 1 just converts $form_state into Submission Interface by
+ * Version 1 just converts $form_state into SharedState by
  * removing elements useless for pipeline processing.
  * Next versions are about change order of fields at form and could be used
  * to update old versions of $form_state to latest version.
@@ -174,7 +174,7 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
   // End of Verion 2 Dynamic Changes.
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Version 3. Dynamyc changes.
-  // Assay Design.
+  // Assay Design. v2 -> v3.
   if (!empty($form_state['saved_values'][TPPS_PAGE_1])) {
     $page1_values = $form_state['saved_values'][TPPS_PAGE_1];
     $organism_number = $page1_values['organism']['number'] ?? 1;
