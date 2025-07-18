@@ -174,6 +174,7 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
   // End of Verion 2 Dynamic Changes.
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Version 3. Dynamyc changes.
+  $version_change_list['3'] = [];
   // Assay Design. v2 -> v3.
   if (!empty($form_state['saved_values'][TPPS_PAGE_1])) {
     $page1_values = $form_state['saved_values'][TPPS_PAGE_1];

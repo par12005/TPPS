@@ -224,7 +224,7 @@ class SubmissionCache {
       'status' => $submission->getStatus(),
       'stage' => $submission->getCurrentStage(),
       'project_id' => $submission->get(['ids', 'project_id']),
-      Submission::FORM_VERSION_KEY => $submission->getFormVersion(),
+      SubmissionVersion::FORM_KEY => $submission->getFormVersion(),
       'publication' => [
         'status' => tpps_array_get_value($page1_values,
           ['publication', 'status']
