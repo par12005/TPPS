@@ -24,6 +24,10 @@
  * Next versions are about change order of fields at form and could be used
  * to update old versions of $form_state to latest version.
  *
+ * Downgrade:
+ * v2 is about how to upgrade from v1 to v2.
+ * To downgrade from v2 to v1 we need to revert v2 changes.
+ *
  * @param int $version
  *   Version of the Submission Form.
  *   This version will be used to create Submission Interface.
@@ -39,6 +43,9 @@
  *   'AssayDesign::getParents()'.
  */
 function tpps_submission_form_version_changes(array $form_state, $version = NULL) {
+  if ($debug_mode ?? FALSE) {
+    dpm($version, __FUNCTION__ . ' version');
+  }
   $version_change_list = [
     // Version 1 is a initial version.
     // Submission Interface is a version 1 without some unnecessary elements.
