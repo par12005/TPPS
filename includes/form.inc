@@ -1157,7 +1157,7 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   ];
 
   // Upgrade to latest Submission Form Version.
-  SubmissionVersion::upgradeToLatest($form_state, $form_state);
+  SubmissionVersion::upgrade($form_state, $form_state);
   // Note:
   // Saving changes $form_state items and we need to get those changes back.
   $submission = tpps_submission()->setState($form_state)->save();
