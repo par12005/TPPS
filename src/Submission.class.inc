@@ -1091,7 +1091,7 @@ class Submission {
     $this->sharedState = $this->state;
     // We need to apply changes from 1st to $current version to have
     // incremental changes.
-    SubmissionVersion::downgrade($this->state, $this->sharedState);
+    $this->sharedState = SubmissionVersion::downgrade($this->state);
     $this->purifySharedState();
     return $this->sharedState;
     // @TODO Change to allow chaining.

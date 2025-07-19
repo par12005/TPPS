@@ -1535,7 +1535,7 @@ function tpps_main_submit($form, &$form_state) {
   // If this form was submitted after import we need to upgrade version.
   // Note: If form version is up-to-date then nothing will be done.
   $new_form_state = $form_state;
-  SubmissionVersion::upgrade($form_state, $new_form_state);
+  $new_form_state = SubmissionVersion::upgrade($form_state);
   $form_state = $new_form_state;
 
   // Works:
@@ -3946,15 +3946,8 @@ function tpps_submission_purged($submission) {
  *   Necessary data. Required keys are: 'to_version', 'from_version', 'accession'.
  */
 function tpps_submission_version_downgraded($context) {
-  if ($context['success']) {
-    $message = 'Downgraded submission "@accession" from @from_version '
-      . 'to @to_version version.';
-  }
-  else {
-    $message = 'Failed to downgrade study "@accession" from @from_version '
-      . 'to @to_version version.';
-    // @TODO Add more details to troubleshoot issue.
-  }
+  $message = 'Downgraded submission "@accession" from @from_version '
+    . 'to @to_version version.';
   tpps_message($message,
     [
       '@from_version' => $context['from_version'],
@@ -3974,15 +3967,8 @@ function tpps_submission_version_downgraded($context) {
  *   Necessary data. Required keys are: 'to_version', 'from_version', 'accession'.
  */
 function tpps_submission_version_upgraded($context) {
-  if ($context['success']) {
-    $message = 'Upgraded submission "@accession" from @from_version '
-      . 'to @to_version version.';
-  }
-  else {
-    $message = 'Failed to upgrade study "@accession" from @from_version '
-      . 'to @to_version version.';
-    // @TODO Add more details to troubleshoot issue.
-  }
+  $message = 'Upgraded submission "@accession" from @from_version '
+    . 'to @to_version version.';
   tpps_message($message,
     [
       '@from_version' => $context['from_version'],
