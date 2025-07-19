@@ -205,7 +205,6 @@ class SubmissionVersion {
    * To downgrade from current version to 1st (initial) version:
    *   SubmissionVersion::downgrade($form_state, $result);
    * To downgrade to specific versions (4 to 3):
-   *   $current_version = SubmissionVersion::get($form_state);
    *   $desired_version = SubmissionVersion::VERSION_1;
    *   SubmissionVersion::downgrade($form_state, $result, $desired_version);
    *
@@ -215,13 +214,13 @@ class SubmissionVersion {
    *   Resulting array.
    * @param int $final_version
    *   Desired version.
-   *   When empty then 1st version will be used.
    *
    * @return bool
    *   Returns TRUE when all downgrade iterations completed successfully.
    *   Returns FALSE otherwise.
    */
-  public static function downgrade(array $form_state, array &$result, $final_version = 1) {
+  public static function downgrade(array $form_state, array &$result, $final_version = NULL) {
+    $final_version = $final_version ?? static::VERSION_1;
     $form_version = static::get($result);
     if ($form_version == static::VERSION_1) {
       return TRUE;
@@ -252,8 +251,9 @@ class SubmissionVersion {
   }
 
   /**
-   * Upgrades one step Form State/Submission Interface to given version.
+   * Upgrades Submission Form Version to latest.
    *
+   * WARNING: Submission and DB won't be updated.
    * Note:
    * - Direction is from lower version to higher.
    * - Submsision Form Version 1 = Submission Interface.
@@ -263,77 +263,44 @@ class SubmissionVersion {
    * Usage:
    *
    * To upgrade to the latest version:
-   *   static::upgradeToLatest($form_state, $result);
-   *
+   *   SubmissionVersion::upgrade($form_state, $result);
    * To upgrade to specific versions (from 3 to 4):
-   *   $start_version = static::VERSION_1;
-   *   $desired_version = static::get($form_state);
-   *   for ($i = $start_version; $i <= $desired_version; $i++) {
-   *     static::upgrade($form_state, $i, $interface);
-   *   }
-   *
-   * @param array $form_state
-   *   Submission Form State. Used to build dynamic mapping.
-   * @param int $version
-   *   Desired version.
-   * @param array $result
-   *   Resulting array.
-   *
-   * @return bool
-   *   Returns TRUE in case of success and FALSE otherwise.
-   *
-   * @TODO Merge with static::downgrade().
-   */
-  public static function upgrade(array $form_state, $version, array &$result) {
-    $form_version = static::get($result);
-    if ($form_version == $version) {
-      return FALSE;
-    }
-    $direction = 'upgrade';
-    $success = static::migrate($form_state, $version, $result, $direction);
-    if (static::isDebugMode()) {
-      tpps_message(
-        'Study @accession was @directiond from @from_version to @to_version '
-          . 'version: @status',
-        [
-          '@from_version' => $form_version,
-          '@to_version' => $version,
-          '@direction' => $direction,
-          '@accession' => tpps_form_get_accession($result),
-          '@status'  => ($success ? 'Success' : 'Failed'),
-        ]
-      );
-    }
-    return $success;
-  }
-
-  /**
-   * Upgrades Submission Form Version to latest.
-   *
-   * WARNING:
-   * $result will be updated but not saved to database.
+   *   $desired_version = SubmissionVersion::get($form_state);
+   *   SubmissionVersion::upgrade($form_state, $result, $i);
    *
    * @param array $form_state
    *   Submission Form State array.
    * @param array $result
    *   Resulting array.
+   * @param int $final_version
+   *   Desired version.
    *
    * @return bool
    *   Returns TRUE in case of success and FALSE otherwise.
    */
-  public static function upgradeToLatest(array $form_state, array &$result) {
+  public static function upgrade(array $form_state, array &$result, $final_version = NULL) {
+    $final_version = $final_version ?? static::getLatest();
     $form_version = static::get($result);
     // Skip 1st version because it's empty. 1st version is initial state which
     // do not require any updates.
     $start_version = ($form_version == static::VERSION_1) ? 2 : $form_version;
-    $latest_version = static::getLatest();
-    if ($start_version > $latest_version) {
+    if ($start_version > $final_version) {
       return FALSE;
     }
     $success = TRUE;
-    for ($version = $start_version; $version <= $latest_version; $version++) {
+    for ($version = $start_version; $version <= $final_version; $version++) {
       // Note: $version is a next version.
-      $success = static::upgrade($form_state, $version, $result) && $success;
+      $direction = 'upgrade';
+      $success = static::migrate($form_state, $version, $result, $direction);
+      // tpps_submission_version_upgraded().
+      if (function_exists('module_invoke_all')) {
+        module_invoke_all('submission_version_upgraded', [
+          'from_version' => $version - 1,
+          'to_version' => $version,
+          'accession' => tpps_form_get_accession($result),
+          'status'  => $success,
+        ]);
+      }
     }
     // Returns TRUE only if each calls of the function in the loop was successful.
     return $success;
@@ -344,7 +311,7 @@ class SubmissionVersion {
    *
    * @param array $form_state
    *   Submission Form State. Used to build dynamic mapping.
-   * @param int $version
+   * @param int $final_version
    *   Desired version.
    * @param array $result
    *   Resulting array. It could be a Submission Interface or Form State array.
@@ -358,16 +325,18 @@ class SubmissionVersion {
    * @return bool
    *   Returns TRUE in case of success and FALSE otherwise.
    */
-  public static function migrate(array $form_state, $version, array &$result, $direction = 'upgrade') {
-    // Downgrade with the same version must be processed. It's a magic of versions.
+  public static function migrate(array $form_state, $final_version, array &$result, $direction = 'upgrade') {
     if (
+      // Downgrade with the same version must be processed.
+      // It's a magic of versions.
       $direction == 'upgrade'
-      && $version == static::get($result)
+      // Check if final and current versions are the same.
+      && $final_version == static::get($result)
     ) {
       return TRUE;
     }
 
-    $change_list = tpps_submission_form_version_changes($form_state, $version);
+    $change_list = tpps_submission_form_version_changes($form_state, $final_version);
     if (empty($change_list)) {
       return FALSE;
     }
@@ -401,15 +370,21 @@ class SubmissionVersion {
     }
     tpps_array_apply_changes($change_list, $result);
 
-    if ($direction == 'upgrade') {
-      $result['saved_values'][static::FORM_KEY] = $version;
+    switch ($direction) {
+      case 'upgrade':
+        $version = $final_version;
+        break;
+
+      case 'downgrade':
+        // @TODO Minor. Remove after testing those extra check
+        // cause it's overkill but left to be sure.
+        $version = static::VERSION_1;
+        if ($final_version > static::VERSION_1) {
+          $version = $final_version - 1;
+        }
+        break;
     }
-    elseif ($direction == 'downgrade') {
-      // @TODO Minor. Remove after testing those extra check
-      // cause it's overkill but left to be sure.
-      $result['saved_values'][static::FORM_KEY]
-        = (($version > static::VERSION_1) ? ($version - 1) : static::VERSION_1);
-    }
+    $result['saved_values'][static::FORM_KEY] = $version;
     return TRUE;
   }
 

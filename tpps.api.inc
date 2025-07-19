@@ -592,5 +592,26 @@ function hook_submission_version_downgraded($context) {
       '@accession' => $context['accession'],
     ]
   );
+}
 
+/**
+ * Implements hook 'submission_version_upgraded'.
+ *
+ * Adds status message to watchdog.
+ * Note: Upgrade doesn't mean update db records.
+ *
+ * @param mixed $context
+ *   Necessary data.
+ *   Required keys are: 'to_version', 'from_version', 'accession'.
+ */
+function hook_submission_version_upgraded($context) {
+  $message = 'Upgraded submission "@accession" from @from_version '
+    . 'to @to_version version.';
+  tpps_message($message,
+    [
+      '@from_version' => $context['from_version'],
+      '@to_version' => $context['to_version'],
+      '@accession' => $context['accession'],
+    ]
+  );
 }

@@ -220,7 +220,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
 
   if ($upgrade_version) {
     // Upgrade to latest Submission Form Version.
-    SubmissionVersion::upgradeToLatest($submission->state, $submission->state);
+    SubmissionVersion::upgrade($submission->state, $submission->state);
     drupal_set_message(t('Submission Form Version was upgraded.'));
     // Note: SharedState will be stored to db.
     $submission->generateSharedState();
