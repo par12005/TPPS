@@ -88,10 +88,6 @@ module_load_include('inc', 'tpps', 'includes/submission_form_version_changes');
  * No version for:
  * 1. New fields.
  * 2. Removed fields.
- * ----------------------------------------------------------------------------
- * @todo Minor. If number of versions will be big enough and there is
- *       no old versions left we could remove those versions from
- *       processing to speed-up interface creation.
  *
  * ----------------------------------------------------------------------------
  *  Versions:
@@ -99,6 +95,12 @@ module_load_include('inc', 'tpps', 'includes/submission_form_version_changes');
  *  Version 1: Only removed data which is useless for processing study.
  *  Version 2: #86ayw8a7k Page 4 Genotype Logic Adjustments.
  *  Version 3: Relocated 'Assay Design File' field.
+ * ----------------------------------------------------------------------------
+ * @todo Minor. If number of versions will be big enough and there is
+ *       no old versions left we could remove those versions from
+ *       processing to speed-up interface creation.
+ * @todo downgrade()/upgrade() returns result of the processing now but it's
+ * better to use hooks for logging and return resulting array instead.
  */
 
 /**
@@ -187,31 +189,25 @@ class SubmissionVersion {
     }
   }
 
-
   /**
    * Downgrades Submission Form Version.
    *
-   * WARNING:
-   * $result will be updated but not saved to database.
-   *
-   * Note; v1 is  Submission SharedState.
-   * But Submission SharedState is missing some elements which not used by
-   * pipeline processing script.
+   * From current version to given (or 1st version if $version wan't specified).
+   * WARNING: Submission won't be updated.
    *
    * Note:
-   * - Direction is from higher version to lower.
-   * - v1 = Submission SharedState.
+   * - v1 is SharedState.
+   * - SharedState is missing some elements which not used by pipeline processing script.
    *
    * ----------------------------------------------------------------------------
    * Usage:
    *
-   * To downgrade from latest version to 1st (initial) version:
+   * To downgrade from current version to 1st (initial) version:
    *   SubmissionVersion::downgrade($form_state, $result);
-   *
    * To downgrade to specific versions (4 to 3):
    *   $current_version = SubmissionVersion::get($form_state);
    *   $desired_version = SubmissionVersion::VERSION_1;
-   *   static::downgrade($form_state, $result, $desired_version);
+   *   SubmissionVersion::downgrade($form_state, $result, $desired_version);
    *
    * @param array $form_state
    *   Submission Form State array.
@@ -240,19 +236,15 @@ class SubmissionVersion {
         // collect result of each iteration. Success will be only when all
         // iterations compete with success.
         && $sucess;
-      if (static::isDebugMode()) {
-        tpps_message(
-          'Study @accession was @directiond from @from_version to @to_version '
-            . 'version: @status',
-          [
-            // Downgrade to version 1 but use change list for update to version 2.
-            '@from_version' => $version,
-            '@to_version' => $version - 1,
-            '@direction' => $direction,
-            '@accession' => tpps_form_get_accession($result),
-            '@status'  => ($success ? 'Success' : 'Failed'),
-          ]
-        );
+
+      // tpps_submission_version_downgraded().
+      if (function_exists('module_invoke_all')) {
+        module_invoke_all('submission_version_downgraded', [
+          'from_version' => $version,
+          'to_version' => $version - 1,
+          'accession' => tpps_form_get_accession($result),
+          'status'  => $success,
+        ]);
       }
     }
     // Returns TRUE only if each calls of the function in the loop was successful.
