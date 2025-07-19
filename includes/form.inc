@@ -1151,9 +1151,9 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   // Set version for 'Submission Interface' feature.
   // Note: We need to set version before 'update' version.
   // Create a hidden form field to store  Submission Form Version.
-  $form[Submission::FORM_VERSION_KEY] = [
+  $form[SubmissionVersion::FORM_KEY] = [
     '#type' => 'hidden',
-    '#value' => $form_state['saved_values'][Submission::FORM_VERSION_KEY] ?? 1,
+    '#value' => $form_state['saved_values'][SubmissionVersion::FORM_KEY] ?? 1,
   ];
 
   // Upgrade to latest Submission Form Version.

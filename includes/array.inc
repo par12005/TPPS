@@ -273,7 +273,7 @@ function tpps_array_move(array &$array, array $action_data) {
             : ''
           ),
           '@direction' => (!empty($array['saved_values'][1]['doi']) ? 'upgrade' : 'downgrade'),
-          '@form_version' => $array['saved_values'][Submission::FORM_VERSION_KEY],
+          '@form_version' => $array['saved_values'][SubmissionVersion::FORM_KEY],
         ];
         tpps_message($message, $params, 'debug');
       }

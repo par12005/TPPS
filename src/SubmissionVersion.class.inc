@@ -216,17 +216,24 @@ class SubmissionVersion {
    *   Returns form state array upgraded/downgrated to desired version.
    */
   public static function downgrade(array $form_state, $final_version = NULL) {
+    $debug_mode = 1;
     $result = $form_state;
     $accession = tpps_form_get_accession($result);
 
     $final_version = $final_version ?? static::VERSION_1;
-    $form_version = static::get($result);
-    if ($form_version == static::VERSION_1) {
+    $current_version = static::get($result);
+
+    // Check if we on 1st version.
+    if ($current_version == static::VERSION_1) {
       return $result;
+    }
+    if ($debug_mode ?? FALSE) {
+      dpm($current_version, __METHOD__ . ': current_version');
+      dpm($final_version, __METHOD__ . ': final_version');
     }
 
     // Note: We use '>' (not '>=') because version 1 has no changes.
-    for ($version = $form_version; $version >= $final_version; $version--) {
+    for ($version = $current_version; $version >= $final_version; $version--) {
       $direction = 'downgrade';
       $result = static::migrate($form_state, $version, $direction);
       // tpps_submission_version_downgraded().
@@ -312,6 +319,14 @@ class SubmissionVersion {
    *   Returns form state array upgraded/downgrated to desired version.
    */
   public static function migrate(array $form_state, $final_version, $direction = 'upgrade') {
+    $debug_mode = 1;
+    if ($debug_mode) {
+      dpm(__METHOD__ . print_r([
+        'direction' => $direction,
+        'final_version' => $final_version,
+      ], 1));
+    }
+
     $result = $form_state;
     $accession = tpps_form_get_accession($result);
     if (
@@ -325,7 +340,7 @@ class SubmissionVersion {
     }
 
     $change_list = tpps_submission_form_version_changes($form_state, $final_version);
-    if (empty($change_list)) {
+    if (is_null($change_list)) {
       $message = 'SubmissionVersion: Got empty change list.';
       throw new Exception($message);
     }
@@ -355,6 +370,9 @@ class SubmissionVersion {
       }
     }
     if (!empty($change_list)) {
+      if ($debug_mode) {
+        //dpm(__METHOD__ . print_r(['change_list' => $change_list], 1));
+      }
       tpps_array_apply_changes($change_list, $result);
       switch ($direction) {
         case 'upgrade':
@@ -369,6 +387,9 @@ class SubmissionVersion {
             $version = $final_version - 1;
           }
           break;
+      }
+      if ($debug_mode) {
+        dpm(__METHOD__ . print_r(['new version' => $version], 1));
       }
       $result['saved_values'][static::FORM_KEY] = $version;
     }

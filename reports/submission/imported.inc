@@ -75,7 +75,7 @@ function tpps_report_submission_imported() {
       ),
       $data[$local]['status'] ?? NULL,
       $data[$local]['tripal_job']['status'] ?? '-',
-      $import_meta[Submission::FORM_VERSION_KEY] ?? NULL,
+      $import_meta[SubmissionVersion::FORM_KEY] ?? NULL,
       $import_meta['current_version'] ?? NULL,
       $data[$local]['submitter']['uid'] ?? NULL,
       $import_meta['full_date'] ?? NULL,

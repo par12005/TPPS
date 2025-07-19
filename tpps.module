@@ -1516,21 +1516,21 @@ function tpps_main_submit($form, &$form_state) {
   module_load_include('inc', 'tpps', 'includes/submission_file');
 
   // Get Submission Form Version.
-  $saved_values[Submission::FORM_VERSION_KEY] =
-    $saved_values[Submission::FORM_VERSION_KEY]
-      ?? ($values[Submission::FORM_VERSION_KEY] ?? NULL);
-  if (empty($saved_values[Submission::FORM_VERSION_KEY])) {
+  $saved_values[SubmissionVersion::FORM_KEY] =
+    $saved_values[SubmissionVersion::FORM_KEY]
+      ?? ($values[SubmissionVersion::FORM_KEY] ?? NULL);
+  if (empty($saved_values[SubmissionVersion::FORM_KEY])) {
     if ($submission->accession) {
-      $saved_values[Submission::FORM_VERSION_KEY]
+      $saved_values[SubmissionVersion::FORM_KEY]
         = $submission->getFormVersion();
     }
     else {
-      $saved_values[Submission::FORM_VERSION_KEY]
+      $saved_values[SubmissionVersion::FORM_KEY]
         = SubmissionVersion::getLatest();
     }
   }
 
-  unset($values[Submission::FORM_VERSION_KEY]);
+  unset($values[SubmissionVersion::FORM_KEY]);
 
   // If this form was submitted after import we need to upgrade version.
   // Note: If form version is up-to-date then nothing will be done.
@@ -3237,10 +3237,10 @@ function theme_submission_accession_link(array $variables) {
 
   // Extra data.
   if ($show_version) {
-    if (!empty($data[$accession][Submission::FORM_VERSION_KEY])) {
+    if (!empty($data[$accession][SubmissionVersion::FORM_KEY])) {
       $output .= ' {<span class="tpps-study-form-version-number" title="'
         .  t('Submission Form Version Number') . '">'
-        . $data[$accession][Submission::FORM_VERSION_KEY] . '</span>}';
+        . $data[$accession][SubmissionVersion::FORM_KEY] . '</span>}';
     }
   }
   if ($path) {
