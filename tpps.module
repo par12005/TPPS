@@ -1534,12 +1534,7 @@ function tpps_main_submit($form, &$form_state) {
 
   // If this form was submitted after import we need to upgrade version.
   // Note: If form version is up-to-date then nothing will be done.
-  $new_form_state = $form_state;
-  $new_form_state = SubmissionVersion::upgrade($form_state);
-  $form_state = $new_form_state;
-
-  // Works:
-  $submission->state = $form_state;
+  $submission->state = SubmissionVersion::upgrade($form_state);
   // Doesn't work because used $form_state as reference and $form_state will
   // be switched below which blocks form state saving.
   // $submission->setState($form_state);
@@ -3237,10 +3232,11 @@ function theme_submission_accession_link(array $variables) {
 
   // Extra data.
   if ($show_version) {
-    if (!empty($data[$accession][SubmissionVersion::FORM_KEY])) {
+    $submission_version = $data[$accession][SubmissionVersion::FORM_KEY] ?? NULL;
+    if (!empty($submission_version)) {
       $output .= ' {<span class="tpps-study-form-version-number" title="'
-        .  t('Submission Form Version Number') . '">'
-        . $data[$accession][SubmissionVersion::FORM_KEY] . '</span>}';
+        .  t('Submission Form Version Number')
+        . '">' . $submission_version . '</span>}';
     }
   }
   if ($path) {

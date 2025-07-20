@@ -551,12 +551,12 @@ function hook_submission_dataset_doi_updated(array $data) {
 }
 
 /**
- * Implements 'submission_form_version_changed'.
+ * Implements 'submission_form_version_set'.
  *
  * @param array $context
  *   Keys are: 'previous_version' and 'new_version'.
  */
-function hook_submission_form_version_changed(array $context) {
+function hook_submission_form_version_set(array $context) {
   $old = $context['previous_version'];
   $new = $context['new_version'];
 }

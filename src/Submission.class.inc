@@ -1005,7 +1005,7 @@ class Submission {
       $import_meta['full_date'] .= (empty($import_meta['imported']) ? ''
         : ' [' . $import_meta['imported'] . ']');
     }
-    $import_meta['current_version'] = $this->state['saved_values'][SubmissionVersion::FORM_KEY];
+    $import_meta['current_version'] = $this->getFormVersion();
     return $import_meta;
   }
 
@@ -2932,9 +2932,11 @@ class Submission {
       if ($save_on_change) {
         $this->save();
       }
-      // Hook 'tpps_submission_form_version_changed''.
+      // Hook 'tpps_submission_form_version_set''.
+      // See also 'hook_submission_version_upgraded' and
+      // 'hook_submission_version_downgraded'.
       if (function_exists('module_invoke_all')) {
-        module_invoke_all('submission_form_version_changed', [
+        module_invoke_all('submission_form_version_set', [
           'previous_version' => $current_version,
           'new_version' => $version,
         ]);
