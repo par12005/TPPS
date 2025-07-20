@@ -216,26 +216,23 @@ class SubmissionVersion {
    *   Returns form state array upgraded/downgrated to desired version.
    */
   public static function downgrade(array $form_state, $final_version = NULL) {
-    $debug_mode = 1;
-    $result = $form_state;
-    $accession = tpps_form_get_accession($result);
-
-    $final_version = $final_version ?? static::VERSION_1;
-    $current_version = static::get($result);
-
-    // Check if we on 1st version.
+    // Skip if current version is '1'.
+    $current_version = static::get($form_state);
     if ($current_version == static::VERSION_1) {
-      return $result;
+      return $form_state;
     }
-    if ($debug_mode ?? FALSE) {
-      dpm($current_version, __METHOD__ . ': current_version');
-      dpm($final_version, __METHOD__ . ': final_version');
-    }
+
+    $accession = tpps_form_get_accession($form_state);
+    $final_version = $final_version ?? static::VERSION_1;
+    $result = $form_state;
 
     // Note: We use '>' (not '>=') because version 1 has no changes.
-    for ($version = $current_version; $version >= $final_version; $version--) {
-      $direction = 'downgrade';
-      $result = static::migrate($form_state, $version, $direction);
+    // and we use $version+1 changes in reverse to downgrade.
+    for ($version = $current_version; $version > $final_version; $version--) {
+      if ($version == static::VERSION_1) {
+        break;
+      }
+      $result = static::migrate($result, $version, 'downgrade');
       // tpps_submission_version_downgraded().
       if (function_exists('module_invoke_all')) {
         module_invoke_all('submission_version_downgraded', [
@@ -275,20 +272,22 @@ class SubmissionVersion {
    *   Returns form state array upgraded/downgrated to desired version.
    */
   public static function upgrade(array $form_state, $final_version = NULL) {
-    $result = $form_state;
-    $accession = tpps_form_get_accession($result);
-    $final_version = $final_version ?? static::getLatest();
-    $form_version = static::get($result);
-    // Skip 1st version because it's empty. 1st version is initial state which
-    // do not require any updates.
-    $start_version = ($form_version == static::VERSION_1) ? 2 : $form_version;
-    if ($start_version > $final_version) {
-      return $result;
+    $current_version = static::get($form_state);
+    // Skip 1st version because it's initial state and doesn't require updates.
+    if ($current_version == static::VERSION_1) {
+      $current_version = 2;
     }
-    for ($version = $start_version; $version <= $final_version; $version++) {
+    $final_version = $final_version ?? static::getLatest();
+    if ($current_version > $final_version) {
+      // @TODO Log that version wasn't updated because $final_version lower.
+      return $form_state;
+    }
+
+    $accession = tpps_form_get_accession($form_state);
+    $result = $form_state;
+    for ($version = $current_version + 1; $version <= $final_version; $version++) {
       // Note: $version is a next version.
-      $direction = 'upgrade';
-      $result = static::migrate($form_state, $version, $direction);
+      $result = static::migrate($result, $version, 'upgrade');
       // tpps_submission_version_upgraded().
       if (function_exists('module_invoke_all')) {
         module_invoke_all('submission_version_upgraded', [
@@ -319,25 +318,15 @@ class SubmissionVersion {
    *   Returns form state array upgraded/downgrated to desired version.
    */
   public static function migrate(array $form_state, $final_version, $direction = 'upgrade') {
-    $debug_mode = 1;
-    if ($debug_mode) {
-      dpm(__METHOD__ . print_r([
-        'direction' => $direction,
-        'final_version' => $final_version,
-      ], 1));
+    // Upgrade to the same version must be skipped.
+    // Note: Downgrade to the same version must be processed because we use
+    // previous version's changes in reverse.
+    if ($direction == 'upgrade' && $final_version == static::get($form_state)) {
+      return $form_state;
     }
 
+    $accession = tpps_form_get_accession($form_state);
     $result = $form_state;
-    $accession = tpps_form_get_accession($result);
-    if (
-      // Downgrade with the same version must be processed.
-      // It's a magic of versions.
-      $direction == 'upgrade'
-      // Check if final and current versions are the same.
-      && $final_version == static::get($result)
-    ) {
-      return $result;
-    }
 
     $change_list = tpps_submission_form_version_changes($form_state, $final_version);
     if (is_null($change_list)) {
@@ -370,9 +359,6 @@ class SubmissionVersion {
       }
     }
     if (!empty($change_list)) {
-      if ($debug_mode) {
-        //dpm(__METHOD__ . print_r(['change_list' => $change_list], 1));
-      }
       tpps_array_apply_changes($change_list, $result);
       switch ($direction) {
         case 'upgrade':
@@ -388,10 +374,7 @@ class SubmissionVersion {
           }
           break;
       }
-      if ($debug_mode) {
-        dpm(__METHOD__ . print_r(['new version' => $version], 1));
-      }
-      $result['saved_values'][static::FORM_KEY] = $version;
+      static::set($result, $version, $overwrite = TRUE);
     }
     return $result;
   }
