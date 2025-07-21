@@ -249,7 +249,7 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
   // File fields:
   $vcf = $snps['vcf'] ?? 0;
   $snps_assay = $snps['snps-assay'] ?? 0;
-  $assay_design = $snps['assay-design'] ?? 0;
+  $assay_design = AssayDesign::get($org_num, $form_state);
   $assoc_file = $snps['snps-association'] ?? 0;
 
   $page3 = $form_state['saved_values'][TPPS_PAGE_3];

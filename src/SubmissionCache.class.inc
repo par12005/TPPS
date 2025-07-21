@@ -60,6 +60,9 @@ class SubmissionCache {
   // VALUE will be CACHE_BIN.
   const RESET_KEY = 'reset';
 
+  // Name of the container of the files data in single item.
+  const FILES_CONTAINER = 'files';
+
   /**
    * Updates cached list of Submissions.
    */
@@ -271,6 +274,7 @@ class SubmissionCache {
 
     // List of 'Assay Design' files.
     for ($n = 1; $n <= $submission->getOrganismNumber(); $n++) {
+      // @TODO Use AssayDesign::get() if possible.
       $assay_design_fid = tpps_array_get_value(
         $submission->getSharedState(),
         [
@@ -278,6 +282,7 @@ class SubmissionCache {
           TPPS_PAGE_4,
           'organism-' . $n,
           'genotype',
+          // Not static::FILES_CONTAINER but fieldset name.
           'files',
           'assay-design',
         ]
@@ -285,7 +290,7 @@ class SubmissionCache {
       if (empty($assay_design_fid)) {
         continue;
       }
-      $data['files']['assay-design'][$n] = $assay_design_fid;
+      $data[static::FILES_CONTAINER]['assay-design'][$n] = $assay_design_fid;
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Zenodo.
@@ -555,7 +560,7 @@ class SubmissionCache {
           $title = $cached_submission['publication']['title'] ?? t('No Title');
           $title = (strlen($title) > 97) ? substr($title, 0, 97) . '...' : $title;
           $item = $accession . ' - ' . $title;
-          if (empty($cached_submission['files']['assay-design'])) {
+          if (empty($cached_submission[static::FILES_CONTAINER]['assay-design'])) {
             $list['has_not'][$accession] = $item;
           }
           else {
