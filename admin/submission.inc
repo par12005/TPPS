@@ -79,5 +79,22 @@ function tpps_submission_settings_form(array $form, array &$form_state) {
     '#description' => t('Recreation of the SubmissionCache takes about 1 '
       . 'minute. Log each time cache was cleared and rebuilded from scratch.'),
   ];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Submission Cache.
+  $form['version'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Submission Version'),
+  ];
+  $form['version']['tpps_submission_version_log_downgrade'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Log downgrade of the Submission version.'),
+    '#default_value' => variable_get('tpps_submission_version_log_downgrade'),
+  ];
+  $form['version']['tpps_submission_version_log_upgrade'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Log upgrade of the Submission version.'),
+    '#default_value' => variable_get('tpps_submission_version_log_upgrade'),
+  ];
+
   return system_settings_form($form);
 }

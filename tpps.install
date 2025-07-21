@@ -66,8 +66,12 @@ function tpps_get_variable_list() {
     'tpps_dump_max_len_sharedState' => 300000,
     'tpps_submission_export_exclude_data' => TRUE,
     'tpps_submission_export_exclude_tree_info' => TRUE,
+    // Submission/Cache.
     'tpps_submission_cache_log_single_update' => FALSE,
     'tpps_submission_cache_log_full_update' => FALSE,
+    // Submission/Version.
+    'tpps_submission_version_log_upgrade' => FALSE,
+    'tpps_submission_version_log_downgrade' => FALSE,
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Form. Main settings.
     'tpps_theme' => 'default',
@@ -2463,4 +2467,6 @@ function tpps_update_7129() {
 function tpps_update_7130() {
   variable_set('tpps_submission_cache_log_single_update', FALSE);
   variable_set('tpps_submission_cache_log_full_update', FALSE);
+  variable_set('tpps_submission_version_log_upgrade', FALSE);
+  variable_set('tpps_submission_version_log_downgrade', FALSE);
 }
