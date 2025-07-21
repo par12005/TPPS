@@ -11,9 +11,9 @@
  * TPPSc Form / Page 4 / Genotype / SNPs.
  *
  * Field was relocated.
- * v1: ['files', 'assay-design'].
- * v2: -> ['SNPs', 'assay-design'].
- * v3: -> ['SNPs', 'assay-design-citation', 'assay-design'].
+ * v1: ['genotype', 'files', 'assay-design'].
+ * v2: -> ['genotype', 'SNPs', 'assay-design'].
+ * v3: -> ['genotype', 'SNPs', 'assay-design-citation', 'assay-design'].
  *
  * Submission Form Versions:
  *
@@ -30,6 +30,8 @@ class AssayDesign {
   // HTML name of the field.
   const FIELD_NAME = 'assay-design';
   const FIELD_TITLE = 'Assay Design File';
+  // Integer Form Page number.
+  const PAGE = TPPS_PAGE_4;
 
   /**
    * Builds set of form fields for 'Assay Design Citation' feature.
@@ -172,6 +174,24 @@ class AssayDesign {
   }
 
   /**
+   * Gets field's value.
+   *
+   * @param int $organism_index
+   *   Ordinal number on form.
+   * @param array $form_state
+   *   Drupal Form State array.
+   *
+   * @return mixed
+   *   Returns integer File Id.
+   *   Returns NULL if field wasn't found.
+   *   Returns string '0' if field wasn't set (file wasn't uploaded).
+   */
+  public static function get($organism_index, array $form_state) {
+    $parents = static::getParents($organism_index, $form_state);
+    return tpps_array_get_value($form_state['values'], $parents);
+  }
+
+  /**
    * Gets parents of the field.
    *
    * @param int $organism_index
@@ -220,15 +240,17 @@ class AssayDesign {
   /**
    * Removes field's file by File Id.
    *
+   * WARNING: for validation only.
+   *
    * @param int $organism_index
    *   Ordinal number of organism at page.
    * @param array $form_state
    *   Drupal Form State array.
    */
   public static function removeFile($organism_index, array &$form_state) {
-    $parents = static::getParents($organism_index, $form_state);
-    $fid = tpps_array_get_value($form_state['values'], $parents);
+    $fid = static::get($organism_index, $form_state);
     if (tpps_file_remove($fid)) {
+      $parents = static::getParents($organism_index, $form_state);
       tpps_array_set_value($form_state['values'], $parents, $value = 0);
     }
   }

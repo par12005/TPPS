@@ -696,8 +696,7 @@ function tpps_get_assay_design_file_markers(array $form_state, $i) {
     // Page 4 not yet submitted.
     return [];
   }
-  $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
-  $fid = $genotype['SNPs']['assay-design'] ?? NULL;
+  $fid = AssayDesign::get($i, $form_state);
   if (!$fid) {
     // Empty field.
     return [];
