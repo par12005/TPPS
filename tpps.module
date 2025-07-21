@@ -1021,7 +1021,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
   $page = $form_state['stage'] ?? TPPS_PAGE_3;
   $parents = $element['#parents'];
   $field_name = $parents[0];
-  // Note: if this include removed "no-header" fieature doesn't update
+  // Note: if this includes removed "no-header" feature then doesn't update
   // columns table. Better to just load this file on each request but
   // only this function requires this file. So let's just leave it here.
   require_once 'ajax/tpps_ajax.php';
@@ -1072,6 +1072,13 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
         $parents
       );
     }
+    // Note: to have 'required_when_visible' feature for file-fields we must
+    // remove 'required' sub-element from the '#states' item because 'no-header'
+    // element must not be required.
+    $no_header_states = $element['#states'] ?? NULL;
+    if (!empty($no_header_states['required'])) {
+      unset($no_header_states['required']);
+    }
     $element['no-header'] = [
       '#type' => 'select',
       '#title' => 'Does your file have a header row?',
@@ -1093,7 +1100,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
         'wrapper' => $wrapper,
         'callback' => 'tpps_no_header_callback',
       ],
-      '#states' => $element['#states'] ?? NULL,
+      '#states' => $no_header_states,
       '#default_value' => $no_header ?? 0,
       '#weight' => 50,
     ];
