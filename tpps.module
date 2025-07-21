@@ -3942,6 +3942,9 @@ function tpps_submission_purged($submission) {
  *   Necessary data. Required keys are: 'to_version', 'from_version', 'accession'.
  */
 function tpps_submission_version_downgraded($context) {
+  if (!variable_get('tpps_submission_version_log_downgrade', FALSE)) {
+    return;
+  }
   $message = 'Downgraded submission "@accession" from @from_version '
     . 'to @to_version version.';
   tpps_message($message,
@@ -3963,6 +3966,9 @@ function tpps_submission_version_downgraded($context) {
  *   Necessary data. Required keys are: 'to_version', 'from_version', 'accession'.
  */
 function tpps_submission_version_upgraded($context) {
+  if (!variable_get('tpps_submission_version_log_upgrade', FALSE)) {
+    return;
+  }
   $message = 'Upgraded submission "@accession" from @from_version '
     . 'to @to_version version.';
   tpps_message($message,
