@@ -65,6 +65,10 @@ class SubmissionCache {
    */
   public static function update() {
     static::get($reset = TRUE);
+    // 'tpps_submission_cache_updated';
+    if (function_exists('module_invoke_all')) {
+      module_invoke_all('submission_cache_updated');
+    }
   }
 
   /**
@@ -403,6 +407,10 @@ class SubmissionCache {
     $list = static::get();
     $list[$submission->accession] = static::buildSingle($submission);
     static::set($list);
+    // 'tpps_submission_cache_single_updated';
+    if (function_exists('module_invoke_all')) {
+      module_invoke_all('submission_cache_single_updated', $submission->accession);
+    }
   }
 
   /**
