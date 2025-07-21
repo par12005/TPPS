@@ -61,7 +61,7 @@ class SubmissionCache {
   const RESET_KEY = 'reset';
 
   // Name of the container of the files data in single item.
-  const FILES_CONTAINER = 'files';
+  const FILES_CONTAINER = 'file';
 
   /**
    * Updates cached list of Submissions.
@@ -258,7 +258,7 @@ class SubmissionCache {
       'tags' => tpps_submission_get_tags($submission->accession),
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Files.
-      'file' => [
+      static::FILES_CONTAINER => [
         'grouped_list' => [
           'tree-accession' => [],
           'phenotype' => [],
