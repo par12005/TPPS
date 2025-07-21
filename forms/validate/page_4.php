@@ -109,9 +109,7 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
         if (tpps_file_remove($genotype[$snps_fieldset]['snps-assay'])) {
           $genotype[$snps_fieldset]['snps-assay'] = 0;
         }
-        if (tpps_file_remove($genotype[$snps_fieldset]['assay-design'])) {
-          $genotype[$snps_fieldset]['assay-design'] = 0;
-        }
+        AssayDesign::removeFile($i, $form_state);
       }
       else {
 
