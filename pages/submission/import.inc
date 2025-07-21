@@ -62,7 +62,7 @@ function tpps_submission_import_form(array $form, array &$form_state, $accession
   $form['tpps_submission_import_upgrade_version'] = [
     '#type' => 'checkbox',
     // @TODO Minor. Allow to select version.
-    '#title' => t('Upgrade Version of the Submission Form'),
+    '#title' => t('Upgrade Submission Form Version'),
     '#default_value' => $form_state['input']['tpps_submission_import_upgrade_version'] ?? TRUE,
     '#description' => t('Default is checked.'
       . '<br /> Whech checked Submission Form Version will be upgraded to latest.'
@@ -223,9 +223,9 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     $submission->state = SubmissionVersion::upgrade($submission->state);
     drupal_set_message(t('Submission Form Version was upgraded.'));
     // Note: SharedState will be stored to db.
-    $submission->generateSharedState();
-    $submission->save();
   }
+  $submission->generateSharedState();
+  $submission->save();
 
   if ($submit_form) {
     // Recreate Submission.
