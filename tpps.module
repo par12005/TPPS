@@ -3973,3 +3973,32 @@ function tpps_submission_version_upgraded($context) {
     ]
   );
 }
+
+/**
+ * Implements hook 'submission_cache_updated'.
+ */
+function tpps_submission_cache_updated() {
+  if (variable_get('tpps_submission_cache_log_full_update', FALSE)) {
+    $message = 'Submission Cache was fully updated. !stack';
+    $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 10);
+    $params = [
+      '!stack' => tpps_array_print_list($stack),
+    ];
+    watchdog('tpps', $message, $params, WATCHDOG_NOTICE);
+  }
+}
+
+/**
+ * Implements hook 'submission_cache_single_updated'.
+ */
+function tpps_submission_cache_single_updated($accession) {
+  if (variable_get('tpps_submission_cache_log_single_update', FALSE)) {
+    $message = 'Updated single item in Submission Cache: @accession. !stack';
+    $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 10);
+    $params = [
+      '@accession' => $accession,
+      '!stack' => tpps_array_print_list($stack),
+    ];
+    watchdog('tpps', $message, $params, WATCHDOG_NOTICE);
+  }
+}

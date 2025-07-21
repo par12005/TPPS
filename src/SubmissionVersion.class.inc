@@ -392,7 +392,6 @@ class SubmissionVersion {
   public static function getLatest() {
     $form_state = [];
     $change_list = tpps_submission_form_version_changes($form_state);
-    dpm($change_list);
     return count($change_list);
   }
 
