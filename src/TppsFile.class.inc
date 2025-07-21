@@ -20,14 +20,16 @@ class TppsFile {
    *
    * @param int $organism_index
    *   Ordinal number of organism at page.
+   * @param array $form_state
+   *   Drupal Form State array.
    *
    * @return array
-   *   Returns list of paretns.
+   *   Returns list of parents.
    *
    * @throws Exception
    *   When child class doesn't overwrite this method.
    */
-  public static function getParents($organism_index) {
+  public static function getParents($organism_index, array $form_state) {
     if (static::getClassName() == 'TppsFile') {
       $message = t('Class must implement @method', ['@method' => __METHOD__]);
       throw new Exception($message);
