@@ -3954,13 +3954,12 @@ function tpps_submission_version_downgraded($context) {
   }
   $message = 'Downgraded submission "@accession" from @from_version '
     . 'to @to_version version.';
-  tpps_message($message,
-    [
-      '@from_version' => $context['from_version'],
-      '@to_version' => $context['to_version'],
-      '@accession' => $context['accession'],
-    ]
-  );
+  $params = [
+    '@from_version' => $context['from_version'],
+    '@to_version' => $context['to_version'],
+    '@accession' => $context['accession'],
+  ];
+  watchdog('tpps', $message, $params, WATCHDOG_NOTICE);
 }
 
 /**
@@ -3978,13 +3977,12 @@ function tpps_submission_version_upgraded($context) {
   }
   $message = 'Upgraded submission "@accession" from @from_version '
     . 'to @to_version version.';
-  tpps_message($message,
-    [
-      '@from_version' => $context['from_version'],
-      '@to_version' => $context['to_version'],
-      '@accession' => $context['accession'],
-    ]
-  );
+  $params = [
+    '@from_version' => $context['from_version'],
+    '@to_version' => $context['to_version'],
+    '@accession' => $context['accession'],
+  ];
+  watchdog('tpps', $message, $params, WATCHDOG_NOTICE);
 }
 
 /**
