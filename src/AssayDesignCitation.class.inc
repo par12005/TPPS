@@ -34,6 +34,30 @@ class AssayDesignCitation {
   const EXISTING_STUDY_OTHER_OPTION_KEY = 'other';
 
   /**
+   * Gets value of the Existing Study field.
+   *
+   * @param int $organism_index
+   *   Ordinal number on form.
+   * @param array $form_state
+   *   Drupal Form State array.
+   *
+   * @return string
+   *   Returns value of the field EXISTING_STUDY_FIELD_NAME.
+   */
+  public static function getExistingStudy($organism_index, array $form_state) {
+    $organism_key = 'organism-' . $organism_index;
+    $value = tpps_array_get_value($form_state['values'],
+    [
+      $organism_key,
+      static::DATA_TYPE,
+      static::SNPS_FIELDSET,
+      static::PARENT_FIELDSET,
+      static::EXISTING_STUDY_FIELD_NAME,
+    ]);
+    return $value;
+  }
+
+  /**
    * Builds set of form fields for 'Assay Design Citation' feature.
    *
    * @param int $organism_index

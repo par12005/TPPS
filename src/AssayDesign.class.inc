@@ -10,6 +10,11 @@
  *
  * TPPSc Form / Page 4 / Genotype / SNPs.
  *
+ * Field was relocated.
+ * v1: ['files', 'assay-design'].
+ * v2: -> ['SNPs', 'assay-design'].
+ * v3: -> ['SNPs', 'assay-design-citation', 'assay-design'].
+ *
  * Submission Form Versions:
  *
  * @package tpps
@@ -38,20 +43,8 @@ class AssayDesign {
    */
   public static function build($organism_index, array &$form, array $form_state) {
     $organism_key = 'organism-' . $organism_index;
-
-
-
-
-
-// @TODO Field was relocated. Credate new version.
-
-
-
-
-
-    // Add file upload field.
-    // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
-    // @TODO Get parents from the AssayDesignCitation class.
+    // @TODO Get parents from classes using getParents() method to respect
+    // Submission's form version.
     $states = [
       ':input[name="' . $organism_key . '[' . implode('][', [
         AssayDesign::DATA_TYPE,
@@ -79,6 +72,7 @@ class AssayDesign {
         'value' => TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE,
       ],
     ];
+    // Add file upload field.
     tpps_form_build_file_field([
       'form' => &$form,
       'form_state' => $form_state,
@@ -127,14 +121,7 @@ class AssayDesign {
     // Get values of selectors.
     $file_type = $snps['file-type'] ?? NULL;
     $genotyping_type = $snps['genotyping-type'] ?? NULL;
-    $existing_study = tpps_array_get_value($form_state['values'],
-    [
-      $organism_key,
-      AssayDesignCitation::DATA_TYPE,
-      AssayDesignCitation::SNPS_FIELDSET,
-      AssayDesignCitation::PARENT_FIELDSET,
-      AssayDesignCitation::EXISTING_STUDY_FIELD_NAME,
-    ]);
+    $existing_study = AssayDesignCitation::getExistingStudy($organism_index, $form_state);
 
 //dpm($file_type, 'file_type');
 //dpm($genotyping_type, 'genotyping_type');
@@ -189,17 +176,15 @@ class AssayDesign {
    *
    * @param int $organism_index
    *   Ordinal number on form.
-   * @param int $version
-   *   Submission Form Version.
-   *   Default is lates version (higher number).
+   * @param array $form_state
+   *   Drupal Form State array.
    *
    * @return array
    *   Returns parents for the checkbox which makes this field required.
    */
-  public static function getParents($organism_index, $version = NULL) {
+  public static function getParents($organism_index, array $form_state) {
     $organism_key = 'organism-' . $organism_index;
-
-    switch ($version) {
+    switch (SubmissionVersion::get($form_state)) {
       case 1:
         $parents = [
           $organism_key,
@@ -230,6 +215,22 @@ class AssayDesign {
         break;
     }
     return $parents;
+  }
+
+  /**
+   * Removes field's file by File Id.
+   *
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   * @param array $form_state
+   *   Drupal Form State array.
+   */
+  public static function removeFile($organism_index, array &$form_state) {
+    $parents = static::getParents($organism_index, $form_state);
+    $fid = tpps_array_get_value($form_state['values'], $parents);
+    if (tpps_file_remove($fid)) {
+      tpps_array_set_value($form_state['values'], $parents, $value = 0);
+    }
   }
 
 }
