@@ -56,16 +56,27 @@ class PhenotypeIso extends TppsFile {
    *
    * @param int $organism_index
    *   Ordinal number on form.
+   * @param array $form_state
+   *   Drupal Form State array.
    *
    * @return array
    *   Returns parents for the checkbox which makes this field required.
    */
-  public static function getParents($organism_index) {
-    return [
-      'organism-' . $organism_index,
-      static::DATA_TYPE,
-      static::FIELD_NAME,
-    ];
+  public static function getParents($organism_index, array $form_state) {
+    $organism_key = 'organism-' . $organism_index;
+    switch (SubmissionVersion::get($form_state)) {
+      case 1:
+      case 2:
+      case 3:
+      default:
+        $parents = [
+          $organism_key,
+          static::DATA_TYPE,
+          static::FIELD_NAME,
+        ];
+        break;
+    }
+    return $parents;
   }
 
   /**
