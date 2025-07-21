@@ -1535,15 +1535,15 @@ function tpps_main_submit($form, &$form_state) {
   // If this form was submitted after import we need to upgrade version.
   // Note: If form version is up-to-date then nothing will be done.
   $submission->state = SubmissionVersion::upgrade($form_state);
-  // Doesn't work because used $form_state as reference and $form_state will
-  // be switched below which blocks form state saving.
-  // $submission->setState($form_state);
 
   if (!empty($form_state['accession'])) {
     $submission->accession = $form_state['accession'];
     $submission->status = $form_state['status'] ?? TPPS_SUBMISSION_STATUS_INCOMPLETE;
-    // @TODO Save only once.
-    $submission->save();
+    // When 'Save' button was clicked that $submission->save() called twice
+    // so we check clicked button here.
+    if ($triggering_element != 'Save') {
+      $submission->save();
+    }
   }
 
   if ($submission->isTppsc()) {
