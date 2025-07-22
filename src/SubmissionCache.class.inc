@@ -273,6 +273,7 @@ class SubmissionCache {
     ];
 
     // List of 'Assay Design' files.
+    $reset_assay_design_list = FALSE;
     for ($n = 1; $n <= $submission->getOrganismNumber(); $n++) {
       // @TODO Use AssayDesign::get() if possible.
       $assay_design_fid = tpps_array_get_value(
@@ -290,8 +291,16 @@ class SubmissionCache {
       if (empty($assay_design_fid)) {
         continue;
       }
-      $data[static::FILES_CONTAINER]['assay-design'][$n] = $assay_design_fid;
+      if ($assay_design_fid != ($data[static::FILES_CONTAINER]['assay-design'][$n] ?? NULL)) {
+        $data[static::FILES_CONTAINER]['assay-design'][$n] = $assay_design_fid;
+        $reset_assay_design_list = TRUE;
+      }
     }
+    // Rebuild list of studies which has Assay Desigin Files.
+    if ($reset_assay_design_list) {
+      SubmissionCache::clearAssayDesignList();
+    }
+
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Zenodo.
     if ($deposit_id = $submission->getZenodoDepositId()) {
@@ -530,6 +539,24 @@ class SubmissionCache {
   }
 
   /**
+   * Clears cached list of studies which has AssayDesign files.
+   */
+  public static function clearAssayDesignList() {
+    $key = 'SubmissionCache::getAssayDesignList';
+    // Clear cache in db.
+    $cid = $key;
+    $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+    $cache = cache_get($cid, $cache_bin);
+    if (!empty($cache)) {
+      $cache->data[$key] = NULL;
+      cache_set($cid, $cache->data, $cache_bin);
+    }
+    // Clear static cache.
+    $static_cache = &drupal_static($key);
+    $static_cache[$key] = NULL;
+  }
+
+  /**
    * Gets list of accessions which has (or doesn't have) 'Assay Design' file.
    *
    * @param bool $has
@@ -543,7 +570,7 @@ class SubmissionCache {
    */
   public static function getAssayDesignList($has = TRUE, $reset = FALSE) {
     $key = __METHOD__;
-    $static_cache = &drupal_static(__METHOD__);
+    $static_cache = &drupal_static($key);
     if ($reset || !isset($static_cache[$key])) {
 
       // Get value.
