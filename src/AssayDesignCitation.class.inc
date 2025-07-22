@@ -27,7 +27,7 @@ class AssayDesignCitation {
   // Machine name of the parent fieldset on form.
   const PARENT_FIELDSET = 'assay-design-citation';
   // Machine name of the field which allow to select one of existing study
-  // which has 'Assay Design' file. See SubmissionCache::getAssayDesignList().
+  // which has 'Assay Design' file. See AssayDesign::getSubmissionList().
   const EXISTING_STUDY_FIELD_NAME = 'existing_study';
   // Key of the option which allows to specify Paper DOI or Dataset DOI when
   // existing study couldn't be used.
@@ -93,7 +93,7 @@ class AssayDesignCitation {
       '#type' => 'select',
       '#title' => t('Existing studies with an “Assay design file”'),
       '#options' => array_merge(
-        SubmissionCache::getAssayDesignList(),
+        AssayDesign::getSubmissionList(),
         [static::EXISTING_STUDY_OTHER_OPTION_KEY => $other_option_title]
       ),
       '#default_value' => tpps_get_ajax_value(

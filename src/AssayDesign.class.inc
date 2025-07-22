@@ -255,4 +255,73 @@ class AssayDesign {
     }
   }
 
+  /**
+   * Clears cached list of studies which has AssayDesign files.
+   */
+  public static function clearSubmissionList() {
+    $key = 'AssayDesign::getSubmissionList';
+    // Clear cache in db.
+    $cid = $key;
+    $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+    $cache = cache_get($cid, $cache_bin);
+    if (!empty($cache)) {
+      $cache->data[$key] = NULL;
+      cache_set($cid, $cache->data, $cache_bin);
+    }
+    // Clear static cache.
+    $static_cache = &drupal_static($key);
+    $static_cache[$key] = NULL;
+  }
+
+  /**
+   * Gets list of accessions which has (or doesn't have) 'Assay Design' file.
+   *
+   * @param bool $has
+   *   Filter which allows to get list of submissions which doesn't have
+   *   'Assay Design' file when set to FALSE. Default is TRUE.
+   * @param bool $reset
+   *   Flag is cache must be resetted. Default if FALSE.
+   *
+   * @return array
+   *   Returns list of accession as a key and shorten titles as a value.
+   */
+  public static function getSubmissionList($has = TRUE, $reset = FALSE) {
+    $key = __METHOD__;
+    $static_cache = &drupal_static($key);
+    if ($reset || !isset($static_cache[$key])) {
+      // Get value.
+      $cid = $key;
+      $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+      $cache = cache_get($cid, $cache_bin);
+      if ($reset || empty($cache) || !isset($cache->data[$key])) {
+        $cache->data[$key] = NULL;
+        // Get new data.
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        $data = SubmissionCache::get($reset);
+        $list = [];
+        foreach ($data as $accession => $cached_submission) {
+          $title = $cached_submission['publication']['title'] ?? t('No Title');
+          $title = (strlen($title) > 97) ? substr($title, 0, 97) . '...' : $title;
+          $item = $accession . ' - ' . $title;
+          if (empty($cached_submission[SubmissionCache::FILES_CONTAINER][static::FIELD_NAME])) {
+            $list['has_not'][$accession] = $item;
+          }
+          else {
+            $list['has'][$accession] = $item;
+          }
+        }
+        $cache->data[$key] = $list;
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        cache_set($cid, $cache->data, $cache_bin);
+      }
+      $static_cache[$key] = $cache->data[$key] ?? NULL;
+    }
+    if ($has) {
+      return $static_cache[$key]['has'] ?? [];
+    }
+    else {
+      return $static_cache[$key]['has_not'] ?? [];
+    }
+  }
+
 }
