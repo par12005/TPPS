@@ -157,7 +157,7 @@ function tpps_array_apply_changes(array $change_list, &$result) {
 }
 
 /**
- * Submission Interface Action 'unset'.
+ * Array modification 'unset'.
  *
  * Given list of fields will be removed/unset in given array.
  *
@@ -395,21 +395,39 @@ function tpps_array_print_list(array $list = []) {
  *
  *  Result: ['a', 'b', 'c'];
  *
- *
  * @param array $array
  *   Array to process.
  *
  * @return array
  *   Returns parents of the element.
  */
-function tpps_array_get_path($array) {
-  if (!is_array($array)) {
-    return FALSE;
-  }
+function tpps_array_get_path(array $array) {
   foreach ($array as $key => $value) {
     return array_merge(
       [$key],
       (is_array($value) ? tpps_array_get_path($value) : [])
     );
   }
+}
+
+/**
+ * Submission Version action 'create'.
+ *
+ * Given list of fields created in a new version.
+ *
+ * @param array $array
+ *   Array to be modified.
+ * @param array $action_data
+ *   Data required for this action.
+ *   See tpps_submission_form_get_change_list().
+ *   Each item is path to the single field.
+ *
+ * @return bool
+ *   Returns TRUE if action was successfully applied.
+ *   Returns FALSE otherwise.
+ */
+function tpps_array_create(array &$array, array $action_data) {
+  // @TODO Some fields in v2 could be set into correct values.
+  // Note: v3. New fields couldn't be created from v1 and v2.
+  return TRUE;
 }

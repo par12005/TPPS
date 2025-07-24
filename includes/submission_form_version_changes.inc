@@ -206,6 +206,28 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
           ]
         ),
       ];
+      // New fields.
+      $version_change_list['3']['create'] = [
+        [
+          'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype', 'SNPs',
+          'assay-design-citation', 'paper-doi'
+        ],
+        [
+          'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype', 'SNPs',
+          'assay-design-citation', 'dataset-doi'
+        ],
+        [
+          'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype', 'SNPs',
+          'assay-design-citation', 'existing_study'
+        ],
+      ];
+      // @TODO Rename into 'remove'?
+      $version_change_list['3']['unset'] = [
+        [
+          'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype', 'SNPs',
+          'assay-design-citation', 'assay-design-citation'
+        ],
+      ];
     }
   }
   // End of Verion 3 Dynamic Changes.
