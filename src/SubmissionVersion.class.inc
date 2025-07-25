@@ -338,23 +338,30 @@ class SubmissionVersion {
     if ($direction == 'downgrade') {
       // Revert data for 'downgrade'.
       foreach ($change_list as $action => $action_data) {
-        if ($action == 'unset') {
-          continue;
-        }
-        if ($action == 'move') {
-          foreach ($action_data as $key => $item) {
-            $new_change_list[$action][$key] = [
-              'source' => $item['target'],
-              'target' => $item['source'],
-            ];
-          }
-          // @TODO Try to avoid extra array here.
-          $change_list = $new_change_list;
-        }
-        else {
-          $message = 'Reverted action data is required for @action.';
-          tpps_message($message, [], 'error');
-          continue;
+        switch ($action) {
+          case 'unset':
+            break;
+
+          case 'create':
+            // @TODO Minor. We could remove those fields ('unset').
+            break;
+
+          case 'move':
+            foreach ($action_data as $key => $item) {
+              $new_change_list[$action][$key] = [
+                'source' => $item['target'],
+                'target' => $item['source'],
+              ];
+            }
+            // @TODO Try to avoid extra array here.
+            $change_list = $new_change_list;
+            break;
+
+          default:
+            $message = 'Reverted action is required for "@action" action to '
+              . 'downgrade Submission Version.';
+            tpps_message($message, ['@action' => $action], 'error');
+            break;
         }
       }
     }
