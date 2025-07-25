@@ -83,7 +83,8 @@ function tpps_message($message, array $params = [], $type = 'info') {
   }
   $watchdog_type = constant('WATCHDOG_' . strtoupper($type)) ?? WATCHDOG_NOTICE;
   watchdog('tpps', $message, $params, $watchdog_type);
-  if ($type != 'debug' || (tpps_is_debug_mode() && $type == 'debug')) {
+  $debug_mode = variable_get('tpps_debug_mode', FALSE);
+  if ($type != 'debug' || ($debug_mode && $type == 'debug')) {
     $type = ($type == 'info') ? 'status' : $type;
     drupal_set_message(t($message, $params), $type);
   }
