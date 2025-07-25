@@ -250,7 +250,8 @@ function tpps_array_move(array &$array, array $action_data) {
     }
 
     $target_field_value = $target['parent_element'][$target['field_name']] ?? NULL;
-    if (!empty($target_field_value)) {
+    $source_field_value = $source['parent_element'][$source['field_name']] ?? NULL;
+    if (!empty($target_field_value) && !empty($source_field_value)) {
       if ($target['field_name'] == 'doi' || $source['field_name'] == 'doi') {
         $message = 'Array modification "move": '
           . 'target field is not empty and will be overwritten.<br />'
@@ -264,9 +265,7 @@ function tpps_array_move(array &$array, array $action_data) {
           '@key' => $key,
           '@meta' => var_export($item, 1),
           '@field_value' => var_export($target_field_value, 1),
-          '@source_field_value' => var_export(
-            $source['parent_element'][$source['field_name']] ?? NULL, 1
-          ),
+          '@source_field_value' => var_export($source_field_value, 1),
           '@saved_values' => (
             $target['field_name'] == 'doi'
             ? var_export($array['saved_values'][1]['publication'] ?? NULL, 1)
