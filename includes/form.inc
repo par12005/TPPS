@@ -1289,7 +1289,7 @@ function tpps_form_validate_required_field($element, $form_state) {
     return;
   }
 
-  $logic = NULL;
+  $is_required = $logic = NULL;
   foreach ($element['#states']['required'] as $trigger => $condition) {
     if (is_numeric($trigger)) {
       if (is_string($condition)) {
@@ -1299,21 +1299,28 @@ function tpps_form_validate_required_field($element, $form_state) {
       // There could be 'and', 'or' and 'xor' grouping.
       // https://www.drupal.org/docs/drupal-apis/form-api/conditional-form-fields#s-combine-multiple-fields-or-values
       foreach ($condition as $key => $value) {
-        $current_result = tpps_form_check_state_trigger(
+        $condition_status = tpps_form_check_state_trigger(
           $key, $value, $form_state
         );
         // Note: There could be more than 2 conditions and they could
         // have different grouping.
-        $is_required = (empty($is_required)) ? $current_result
-          : tpps_logical_opeation($is_required, $current_result, $logic);
+        $is_required = (is_null($is_required)) ? $condition_status
+          : tpps_logical_opeation($is_required, $condition_status, $logic);
       }
     }
     else {
-      $current_result = tpps_form_check_state_trigger(
+      // Examples
+      // $trigger:
+      // ':input[name="organism-1[genotype][SNPs][file-type]"]'.
+      // $condition:
+      // ['value' => 'SNP Assay file and Assay design file'].
+      //
+      // Check if condition is TRUE.
+      $condition_status = tpps_form_check_state_trigger(
         $trigger, $condition, $form_state
       );
-      $is_required = (empty($is_required)) ? $current_result
-        : tpps_logical_opeation($is_required, $current_result, 'and');
+      $is_required = (is_null($is_required)) ? $condition_status
+        : tpps_logical_opeation($is_required, $condition_status, 'and');
     }
   }
   if ($is_required) {
