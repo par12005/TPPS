@@ -15,9 +15,6 @@ files[] = src/SubmissionCache.class.inc
 files[] = src/SubmissionVersion.class.inc
 files[] = src/Organism.class.inc
 files[] = src/ChadoDb.class.inc
-files[] = src/TppsFile.class.inc
-files[] = src/AssayDesignCitation.class.inc
-files[] = src/AssayDesign.class.inc
 
 ; Misc
 files[] = src/RestAPI.class.inc
@@ -33,8 +30,14 @@ files[] = src/zenodo/ZenodoFilesWidget.class.inc
 files[] = src/zenodo/ZenodoHost.class.inc
 ; files[] = src/zenodo/ZenodoRecords.class.inc
 
-files[] = src/PhenotypeManual.class.inc
-files[] = src/PhenotypeMeta.class.inc
-files[] = src/PhenotypeData.class.inc
-files[] = src/PhenotypeIso.class.inc
-files[] = src/SnpAssociation.class.inc
+; File Fields
+files[] = src/file_field/TppsFile.class.inc
+; File Fields / Phenotype
+files[] = src/file_field/PhenotypeManual.class.inc
+files[] = src/file_field/PhenotypeMeta.class.inc
+files[] = src/file_field/PhenotypeData.class.inc
+files[] = src/file_field/PhenotypeIso.class.inc
+; //File Fields / Genotype
+files[] = src/file_field/AssayDesignCitation.class.inc
+files[] = src/file_field/AssayDesign.class.inc
+files[] = src/file_field/SnpAssociation.class.inc
