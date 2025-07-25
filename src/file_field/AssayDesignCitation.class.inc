@@ -190,7 +190,7 @@ class AssayDesignCitation {
         if (!tpps_is_valid('doi', $value)) {
           $field_title = 'Assay Design Citation / ' . ucwords(
             str_replace('-', ' ', str_replace('doi', 'DOI', $field_name))
-          ));
+          );
           $message = $field_title . ': '
             . t('Field is optional but DOI format is invalid.'
             . '<br />Example of valid DOI: "10.1111/dryad.111".'
