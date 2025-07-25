@@ -41,7 +41,7 @@
                   }
                   else {
                     Drupal.tpps.showMessages($(this), {
-                      'errors': [Drupal.t('DOI format is invalid.')]
+                      'errors': [Drupal.t('DOI format is invalid. Example: "10.1111/dryad.111".')],
                     });
                   }
                 });
