@@ -1146,17 +1146,11 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   if (!isset($form_state['dbxref_id']) or !isset($form_state['accession'])) {
     tpps_init_project($form_state);
   }
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Submission Form Versions.
-  // Set version for 'Submission Interface' feature.
-  // Note: We need to set version before 'update' version.
   // Create a hidden form field to store  Submission Form Version.
   $form[SubmissionVersion::FORM_KEY] = [
     '#type' => 'hidden',
-    '#value' => $form_state['saved_values'][SubmissionVersion::FORM_KEY] ?? 1,
+    '#value' => SubmissionVersion::get($form_state),
   ];
-
   // Upgrade to latest Submission Form Version.
   $form_state = SubmissionVersion::upgrade($form_state);
 
