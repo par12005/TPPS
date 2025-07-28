@@ -115,6 +115,8 @@ function tpps_array_dump(array $array, $sticky = TRUE) {
 /**
  * Applys given list of changes to the array.
  *
+ * Note: no version numbers here.
+ *
  * @param array $change_list
  *   List of changes. Format is:
  *   <action> => [ <action's data>]
@@ -125,14 +127,14 @@ function tpps_array_dump(array $array, $sticky = TRUE) {
  *       'temporary',
  *       'programmed',
  *     ],
- *   ];
- *   Note: no version numbers here.
- * @param mixed $result
+ *   ].
+ * @param mixed $array
  *   Array which must be changed.
  *
- * @TODO Minor. Return TRUE if all actions applied with success.
+ * @return array
+ *   Return modified array.
  */
-function tpps_array_apply_changes(array $change_list, &$result) {
+function tpps_array_apply_changes(array $change_list, $array) {
   foreach ($change_list as $action => $action_data) {
     // Note: $action_data is a list of all actions (not single action).
     $function = 'tpps_array_' . $action;
@@ -151,9 +153,11 @@ function tpps_array_apply_changes(array $change_list, &$result) {
     // Call an action-function.
     // 1. tpps_array_unset();
     // 2. tpps_array_move().
+    // 3. tpps_array_create().
     // Note: $action_data also couldn't be empty here.
-    call_user_func_array($function, [&$result, $action_data]);
+    call_user_func_array($function, [&$array, $action_data]);
   }
+  return $array;
 }
 
 /**
@@ -249,10 +253,20 @@ function tpps_array_move(array &$array, array $action_data) {
       continue;
     }
 
+    // @TODO Minor. Use tpps_array_get_value().
     $target_field_value = $target['parent_element'][$target['field_name']] ?? NULL;
     $source_field_value = $source['parent_element'][$source['field_name']] ?? NULL;
-    if (!empty($target_field_value) && !empty($source_field_value)) {
-      if ($target['field_name'] == 'doi' || $source['field_name'] == 'doi') {
+    if (empty($target_field_value)) {
+      // Target has no value - do the move.
+      $target['parent_element'][$target['field_name']] = $source_field_value;
+      unset($source['parent_element'][$source['field_name']]);
+    }
+    else {
+      // Target has value. Switch to backup existing value.
+      if (
+        !empty($source_field_value)
+        && ($target['field_name'] == 'doi' || $source['field_name'] == 'doi')
+      ) {
         $message = 'Array modification "move": '
           . 'target field is not empty and will be overwritten.<br />'
           . 'Direction: @direction. <br />'
@@ -275,15 +289,21 @@ function tpps_array_move(array &$array, array $action_data) {
           '@form_version' => $array['saved_values'][SubmissionVersion::FORM_KEY],
         ];
         tpps_message($message, $params, 'debug');
+        // Skip this because field already exists.
+        // @TODO Minor. Check also value of the target field.
+        continue;
       }
-      // Skip this because field already exists.
-      // @TODO Minor. Check also value of the target field.
-      continue;
+      if (variable_get('tpps_submission_version_switch_values', FALSE)) {
+        // Switch values to store existing value for later.
+        $temp = $target['parent_element'][$target['field_name']];
+        $target['parent_element'][$target['field_name']] = $source_field_value;
+        $source['parent_element'][$source['field_name']] = $temp;
+      }
+      else {
+        $target['parent_element'][$target['field_name']] = $source_field_value;
+        unset($source['parent_element'][$source['field_name']]);
+      }
     }
-    // Action!
-    $target['parent_element'][$target['field_name']]
-      = $source['parent_element'][$source['field_name']];
-    unset($source['parent_element'][$source['field_name']]);
   }
   return TRUE;
 }
@@ -426,6 +446,11 @@ function tpps_array_get_path(array $array) {
  *   Returns FALSE otherwise.
  */
 function tpps_array_create(array &$array, array $action_data) {
+
+
+// @TODO Add 'create' action to v2 for 'yes/no' new fields.
+
+
   // @TODO Some fields in v2 could be set into correct values.
   // Note: v3. New fields couldn't be created from v1 and v2.
   return TRUE;
