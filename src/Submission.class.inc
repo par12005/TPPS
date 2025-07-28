@@ -622,7 +622,6 @@ class Submission {
     if (function_exists('module_invoke_all')) {
       module_invoke_all('submission_saved', $this);
     }
-
     return $this;
   }
 
@@ -2914,7 +2913,9 @@ class Submission {
    *   Returns 1 (default value) if version wasn't set.
    */
   public function getFormVersion() {
-    return $this->state['saved_values'][SubmissionVersion::FORM_KEY] ?? 1;
+    // @TODO Should lastest version be the default?
+    return $this->state['saved_values'][SubmissionVersion::FORM_KEY]
+      ?? SubmissionVersion::VERSION_1;
   }
 
   /**
