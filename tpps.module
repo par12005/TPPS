@@ -1626,14 +1626,11 @@ function tpps_main_submit($form, &$form_state) {
         $form_state['stage'] = TPPS_PAGE_4;
       }
       else {
-        // Complete button.
+        // 'Complete' button was clicked.
         $submission->setStatus(TPPS_SUBMISSION_STATUS_PENDING_APPROVAL);
         $submission->set(['completed'], time());
         $submission->setFileStatus(FILE_STATUS_PERMANENT, []);
-        // Save Submission Info.
-        $submission->generateSharedState();
-        $submission->save();
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        $submission->generateSharedState()->save();
         tpps_submit_email($form_state);
         drupal_goto('completed-submission/' . $submission->accession);
       }

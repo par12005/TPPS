@@ -387,9 +387,6 @@ class Submission {
    *   $submission->state = $state;
    *   but not:
    *   $submission->state[$element] = $value;
-   *
-   * @param array $state
-   *   Submission State Array.
    */
   public function setState(array &$state) {
     // @TODO Remove reference because it limit direct usage of ->setState()
@@ -1073,25 +1070,13 @@ class Submission {
    * This method don't update record in database to have ability to get
    * Shared State for processing and for temporary use.
    * Use Submission::save() to store in DB.
-   *
-   * @param array $state
-   *   Drupal Form State array.
-   *
-   * @return mixed
-   *   Returns array with datastructure prepared for TPPS pipeline
-   *   (submit_all.php script).
-   *   Returns empty array if $form_state is empty too.
    */
-  public function generateSharedState(array $state = []) {
-    $this->state = !empty($state) ? $state : $this->state;
-
-    $this->sharedState = $this->state;
+  public function generateSharedState() {
     // We need to apply changes from 1st to $current version to have
-    // incremental changes.
+    // incremental hanges.
     $this->sharedState = SubmissionVersion::downgrade($this->state);
     $this->purifySharedState();
-    return $this->sharedState;
-    // @TODO Change to allow chaining.
+    return $this;
   }
 
   /**
@@ -1193,7 +1178,7 @@ class Submission {
     }
 
     module_load_include('inc', 'tpps', 'includes/array');
-    tpps_array_apply_changes($change_list, $this->sharedState);
+    $this->sharedState = tpps_array_apply_changes($change_list, $this->sharedState);
     return $this;
   }
 
