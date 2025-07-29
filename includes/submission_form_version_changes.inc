@@ -92,6 +92,7 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
     // List of relocated genotype fields from 'files' to 'SNPs' fieldset.
     // ['files'] -> ['SNPs'].
     $snps_fieldset = 'SNPs';
+    // 'files' ---> 'SNPs'.
     $files_to_snps_fields = [
       'genotyping-type',
       'file-type',
@@ -254,12 +255,12 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       // @TODO Minor. Rename into 'remove'?
       $version_change_list[$v]['unset'] = [
         [
-          'field_name' => 'assay-design-citation',
+          'field_name' => 'assay-citation',
+          // Field was replaced with 'Assay Desigin Citation' fieldset.
           'parents' => [
             'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype', 'SNPs',
-            'assay-design-citation', 'assay-design-citation',
+            'assay-citation',
           ],
-          // Field was replaced with 'Assay Desigin Citation' fieldset.
         ],
       ];
     }
