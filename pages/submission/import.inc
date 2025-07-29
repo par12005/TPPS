@@ -181,7 +181,8 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   // Store original accession.
   // @TODO Minor. Remove 'saved_values' but be sure to restore those values
   // when submission reopened using '/tppsc' form.
-  $submission_version = $submission->state['saved_values'][SubmissionVersion::FORM_KEY] ?? 1;
+  $submission_version = $submissivn->state['saved_values'][SubmissionVersion::FORM_KEY]
+    ?? SubmissionVersion::VERSION_1;
   $submission->state['saved_values']['tpps_submission_import'] = [
     'original_accession' => $submission->accession,
     'imported' => REQUEST_TIME,
@@ -371,6 +372,7 @@ function tpps_submission_import_state_mods(array &$state, $new_accession) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Store imported (original) Submission Form Version.
   // Set Submission Form Version.
+  // @TODO Minor. Use SubmissionVersion::get($state);
   $saved_values[SubmissionVersion::FORM_KEY]
     = $state['saved_values'][SubmissionVersion::FORM_KEY]
     ?? SubmissionVersion::VERSION_1;
