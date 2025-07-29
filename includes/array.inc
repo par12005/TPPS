@@ -447,11 +447,28 @@ function tpps_array_get_path(array $array) {
  */
 function tpps_array_create(array &$array, array $action_data) {
 
-
+  // Version 2. Was added several helper fields.
 // @TODO Add 'create' action to v2 for 'yes/no' new fields.
+//dpm($action_data, 'action_data');
+  $marker_type_field_list = [
+    'does_study_include_snp_data',
+    'does_study_include_ssr_cpssr_data',
+    'does_study_include_other_genotypic_data',
+  ];
+  foreach ($action_data as $item) {
+    if (!in_array($item['field_name'], $marker_type_field_list)) {
+      continue;
+    }
 
 
-  // @TODO Some fields in v2 could be set into correct values.
-  // Note: v3. New fields couldn't be created from v1 and v2.
+// @TODO Critical. Set values if subfields was set or not empty.
+
+
+    // We could set default values for those fields based on other field's values.
+//dpm($item['parents']);
+  }
+
+  // Note: v3. Values of the new fields couldn't be created based on existings
+  // fields values because they are totally new.
   return TRUE;
 }
