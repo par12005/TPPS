@@ -165,6 +165,9 @@ function tpps_array_apply_changes(array $change_list, $array) {
  *
  * Given list of fields will be removed/unset in given array.
  *
+ * See also Submission::purifySharedState() where 'unset' action used to
+ * reduce size of the SharedState array.
+ *
  * @param array $array
  *   Array to be modified.
  * @param array $action_data
@@ -183,7 +186,7 @@ function tpps_array_unset(array &$array, array $action_data) {
       '@key' => ($item['field_name'] ?? $key),
       '@item' => print_r($item, 1),
     ];
-    if (empty($item['parents'])) {
+    if (!isset($item['parents'])) {
       $message = 'Array modification "unset" #@key failed. Missing "parents" '
         . 'element. <pre>@item</pre>.';
       tpps_message($message, $params, 'error');
@@ -191,10 +194,12 @@ function tpps_array_unset(array &$array, array $action_data) {
     }
     $target = &tpps_form_get_path($array, $item['parents']);
     if (empty($target['parent_element']) || empty($target['field_name'])) {
-      // It's not an error because field would be not used in this submission.
-      $message = "Array modification 'unset' can't find element for #@key."
-        . '<br />Value: <pre>@item</pre>. ';
-      watchdog('tpps', $message, $params, WATCHDOG_DEBUG);
+      if (variable_get('tpps_debug_mode', FALSE)) {
+        // It's not an error because field would be not used in this submission.
+        $message = "Array modification 'unset' can't find element for #@key."
+          . '<br />Value: <pre>@item</pre>.';
+        watchdog('tpps', $message, $params, WATCHDOG_DEBUG);
+      }
       continue;
     }
     // Note:

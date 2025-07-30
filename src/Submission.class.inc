@@ -1086,68 +1086,75 @@ class Submission {
    */
   public function purifySharedState() {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Remove useless elemLnts to reduce size.
+    // Remove useless elements to reduce size.
     $change_list = [
       // We unset not used items instead of copy required items from
       // $form_state because if new elements will be found they will be
       // left for sure. It's safer.
       'unset' => [
-        // List of path to the items in $interface at the top (1st) level.
-        'build_info',
-        'temporary',
-        'programmed',
-        'programmed_bypass_access_check',
-        'cache',
-        'rebuild',
-        'rebuild_info',
-        'redirect',
-        'submitted',
-        'executed',
-        'method',
-        'groups',
-        'buttons',
-        'input',
-        'values',
-        'complete form',
-        'process_input',
-        'invalid_token',
-        'triggering_element',
-        'clicked_button',
-        ['saved_values', 'form_build_id'],
-        'tpps_submission_export_files',
-        // @TODO Submission Form Version is useless for pipeline processing
-        // but could be useful for debugging.
-        //['saved_values', SubmissionVersion::FORM_KEY],
-
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        // List of the fields which must be left.
-        // Required by submit_all() and tpps_table_display() and sub-functions.
-        // 'saved_values',
-        // 'dbxref_id',
-        // 'created',
-        // 'accession',
-        // 'status',
-        // 'stats', // Belongs to Submission State.
-        // 'ids',
-        // 'tpps_type',
-        // 'file_info',
-        // 'updated',
-        // 'approved',
-        // 'completed',
-        // 'loaded',
-        // 'submitting_uid',
-        // 'job_id',
-        // 'revised_files',
-        // 'admin_comments',
-        // 'alternative_accessions',
-        // 'data',
-        // Stores tree id and coordinates to show google map on study details page.
-        // 'tree_info'.
-        //
-        //  Probably could be unset:
-        // 'stage',
+        [
+          'field_name' => 'form_build_id',
+          'parents' => ['saved_values', 'form_build_id'],
+        ],
       ],
     ];
+    // List of fields on the 1st level of sharedState array.
+    $field_list = [
+      'build_info',
+      'temporary',
+      'programmed',
+      'programmed_bypass_access_check',
+      'cache',
+      'rebuild',
+      'rebuild_info',
+      'redirect',
+      'submitted',
+      'executed',
+      'method',
+      'groups',
+      'buttons',
+      'input',
+      'values',
+      'complete form',
+      'process_input',
+      'invalid_token',
+      'triggering_element',
+      'clicked_button',
+      'tpps_submission_export_files',
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // List of the fields which must be left.
+      // Required by submit_all() and tpps_table_display() and sub-functions.
+      // 'saved_values',
+      // 'dbxref_id',
+      // 'created',
+      // 'accession',
+      // 'status',
+      // 'stats', // Belongs to Submission State.
+      // 'ids',
+      // 'tpps_type',
+      // 'file_info',
+      // 'updated',
+      // 'approved',
+      // 'completed',
+      // 'loaded',
+      // 'submitting_uid',
+      // 'job_id',
+      // 'revised_files',
+      // 'admin_comments',
+      // 'alternative_accessions',
+      // 'data',
+      // Stores tree id and coordinates to show google map on study details page.
+      // 'tree_info'.
+      //
+      //  Probably could be unset:
+      // 'stage',
+    ];
+    foreach ($field_list as $field) {
+      $change_list['unset'][] = [
+        'field_name' => $field,
+        'parents' => [$field],
+      ];
+    }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Dynamic (repeated) changes.
@@ -1173,7 +1180,10 @@ class Submission {
     ];
     foreach ($page_list as $page) {
       foreach ($drupal_internal_fields as $field) {
-        $change_list['unset'][] = ['saved_values', $page, $field];
+        $change_list['unset'][] = [
+          'field_name' => $field,
+          'parents' => ['saved_values', $page, $field],
+        ];
       }
     }
 
@@ -2899,6 +2909,7 @@ class Submission {
    */
   public function getFormVersion() {
     // @TODO Should lastest version be the default?
+    // @todo Could SubmissionVersion::get() be used here?
     return $this->state['saved_values'][SubmissionVersion::FORM_KEY]
       ?? SubmissionVersion::VERSION_1;
   }
@@ -2906,8 +2917,13 @@ class Submission {
   /**
    * Sets Submission Form Version.
    *
+   * To upgrade/downgrade Submission's version:
+   *   SubmissionVersion::set($submission_state, $version);
+   *
    * @return bool
    *   Returns TRUE if version was changed and FALSE otherwise.
+   *
+   * @todo Should we upgrade/downgrade in this case?
    */
   public function setFormVersion($version, $save_on_change = FALSE) {
     $current_version = $this->gerFormVersion();
