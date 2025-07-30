@@ -179,19 +179,22 @@ function tpps_array_apply_changes(array $change_list, $array) {
 function tpps_array_unset(array &$array, array $action_data) {
   module_load_include('inc', 'tpps', 'includes/form');
   foreach ($action_data as $key => $item) {
-    if (empty($item)) {
-      $message = 'Array modification "unset" #@key failed. One of the required '
-        . 'fields is empty.<br />Value: <pre>@item</pre>.';
-      $params = ['@key' => $key, '@item' => print_r($item, 1)];
-      tpps_message($message, $params, 'debug');
+    $params = [
+      '@key' => ($item['field_name'] ?? $key),
+      '@item' => print_r($item, 1),
+    ];
+    if (empty($item['parents'])) {
+      $message = 'Array modification "unset" #@key failed. Missing "parents" '
+        . 'element. <pre>@item</pre>.';
+      tpps_message($message, $params, 'error');
       continue;
     }
-    $target = &tpps_form_get_path($array, $item);
+    $target = &tpps_form_get_path($array, $item['parents']);
     if (empty($target['parent_element']) || empty($target['field_name'])) {
+      // It's not an error because field would be not used in this submission.
       $message = "Array modification 'unset' can't find element for #@key."
         . '<br />Value: <pre>@item</pre>. ';
-      $params = ['@key' => $key, '@item' => print_r($item, 1)];
-      tpps_message($message, $params, 'debug');
+      watchdog('tpps', $message, $params, WATCHDOG_DEBUG);
       continue;
     }
     // Note:
@@ -254,45 +257,32 @@ function tpps_array_move(array &$array, array $action_data) {
     }
 
     // @TODO Minor. Use tpps_array_get_value().
-    $target_field_value = $target['parent_element'][$target['field_name']] ?? NULL;
     $source_field_value = $source['parent_element'][$source['field_name']] ?? NULL;
+    $target_field_value = $target['parent_element'][$target['field_name']] ?? NULL;
     if (empty($target_field_value)) {
       // Target has no value - do the move.
       $target['parent_element'][$target['field_name']] = $source_field_value;
       unset($source['parent_element'][$source['field_name']]);
     }
     else {
-      // Target has value. Switch to backup existing value.
-      if (
-        !empty($source_field_value)
-        && ($target['field_name'] == 'doi' || $source['field_name'] == 'doi')
-      ) {
-        $message = 'Array modification "move": '
-          . 'target field is not empty and will be overwritten.<br />'
-          . 'Direction: @direction. <br />'
-          . 'Form Version: @form_version. <br />'
-          . "Target's field value: <pre>@field_value</pre>"
-          . "Source's field value: <pre>@source_field_value</pre>"
-          . "Action's meta-data: <pre>@meta</pre>"
-          . "Saved Values: <pre>@saved_values</pre>";
-        $params = [
-          '@key' => $key,
-          '@meta' => var_export($item, 1),
-          '@field_value' => var_export($target_field_value, 1),
-          '@source_field_value' => var_export($source_field_value, 1),
-          '@saved_values' => (
-            $target['field_name'] == 'doi'
-            ? var_export($array['saved_values'][1]['publication'] ?? NULL, 1)
-            : ''
-          ),
-          '@direction' => (!empty($array['saved_values'][1]['doi']) ? 'upgrade' : 'downgrade'),
-          '@form_version' => $array['saved_values'][SubmissionVersion::FORM_KEY],
-        ];
-        tpps_message($message, $params, 'debug');
-        // Skip this because field already exists.
-        // @TODO Minor. Check also value of the target field.
-        continue;
-      }
+      // Target field is not empty.
+      // This should never happen so it's a strange case which we should log.
+      // Switch to backup existing value.
+      $message = 'Array modification "move": target field is not empty.<br />'
+        . 'Direction: @direction. <br />'
+        . 'Form Version: @form_version. <br />'
+        . "Target's field value: <pre>@field_value</pre>"
+        . "Source's field value: <pre>@source_field_value</pre>"
+        . "Action's meta-data: <pre>@meta</pre>";
+      $params = [
+        '@key' => $key,
+        '@meta' => var_export($item, 1),
+        '@field_value' => var_export($target_field_value, 1),
+        '@source_field_value' => var_export($source_field_value, 1),
+        '@direction' => (!empty($array['saved_values'][1]['doi']) ? 'upgrade' : 'downgrade'),
+        '@form_version' => $array['saved_values'][SubmissionVersion::FORM_KEY],
+      ];
+      watchdog('tpps', $message, $params, WATCHDOG_DEBUG);
       if (variable_get('tpps_submission_version_switch_values', FALSE)) {
         // Switch values to store existing value for later.
         $temp = $target['parent_element'][$target['field_name']];
@@ -459,7 +449,18 @@ function tpps_array_create(array &$array, array $action_data) {
     if (!in_array($item['field_name'], $marker_type_field_list)) {
       continue;
     }
-
+    // We have a hidden field 'Marker type' which was left for
+    // backward compatibility and it's value is set using JS on client side
+    // when user select those new fields.
+    //$marker_type_parents = $item['parents'];
+    //array_pop($marker_type_parents);
+    //$marker_type = tpps_array_get_value($array, $marker_type_parents);
+//does_study_include_snp_data: "no",
+//does_study_include_ssr_cpssr_data: "yes",
+//does_study_include_other_genotypic_data: "no",
+//marker-type: {
+//SSRs/cpSSRs: "SSRs/cpSSRs"
+//},
 
 // @TODO Critical. Set values if subfields was set or not empty.
 

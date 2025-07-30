@@ -930,8 +930,13 @@ function &tpps_form_get_path(array &$array = NULL, $path = NULL) {
       $result['parent_element'] = &drupal_array_get_nested_value($array, $path);
       $debug_mode = variable_get('tpps_debug_mode', FALSE);
       if (empty($result['parent_element']) && $debug_mode) {
-        tpps_message(
-          'Empty parent element. @path.', ['@path' => print_r($path, 1)]
+        watchddog('tpps', 'Empty parent element. @path.<hr />@stack',
+          [
+            '@path' => print_r($path, 1),
+            '@stack' => print_r(debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT
+              | DEBUG_BACKTRACE_IGNORE_ARGS, 10), 1),
+          ],
+          WATCHDOG_ERROR
         );
       }
     }
