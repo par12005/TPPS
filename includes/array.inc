@@ -438,35 +438,26 @@ function tpps_array_get_path(array $array) {
 function tpps_array_create(array &$array, array $action_data) {
 
   // Version 2. Was added several helper fields.
-// @TODO Add 'create' action to v2 for 'yes/no' new fields.
-//dpm($action_data, 'action_data');
   $marker_type_field_list = [
-    'does_study_include_snp_data',
-    'does_study_include_ssr_cpssr_data',
-    'does_study_include_other_genotypic_data',
+    'does_study_include_snp_data' => 'SNPs',
+    'does_study_include_ssr_cpssr_data' => 'SSRs/cpSSRs',
+    'does_study_include_other_genotypic_data' => 'Other',
   ];
   foreach ($action_data as $item) {
-    if (!in_array($item['field_name'], $marker_type_field_list)) {
+    $key = $marker_type_field_list[$item['field_name']] ?? NULL;
+    if (empty($key)) {
       continue;
     }
     // We have a hidden field 'Marker type' which was left for
     // backward compatibility and it's value is set using JS on client side
     // when user select those new fields.
-    //$marker_type_parents = $item['parents'];
-    //array_pop($marker_type_parents);
-    //$marker_type = tpps_array_get_value($array, $marker_type_parents);
-//does_study_include_snp_data: "no",
-//does_study_include_ssr_cpssr_data: "yes",
-//does_study_include_other_genotypic_data: "no",
-//marker-type: {
-//SSRs/cpSSRs: "SSRs/cpSSRs"
-//},
-
-// @TODO Critical. Set values if subfields was set or not empty.
-
-
-    // We could set default values for those fields based on other field's values.
-//dpm($item['parents']);
+    $marker_type_parents = $item['parents'];
+    array_pop($marker_type_parents);
+    $marker_type_parents[] = 'marker-type';
+    $marker_type_values = tpps_array_get_value($array, $marker_type_parents);
+    if (!empty($marker_type_values[$key])) {
+      tpps_array_set_value($array, $item['parents'], 'yes');
+    }
   }
 
   // Note: v3. Values of the new fields couldn't be created based on existings
