@@ -388,12 +388,10 @@ class Submission {
    *   but not:
    *   $submission->state[$element] = $value;
    */
-  public function setState(array &$state) {
-    // @TODO Remove reference because it limit direct usage of ->setState()
-    //  method and direct setting of the property 'state'.
+  public function setState(array $state) {
     // See tpps_main_submit(). Be sure to update all calls and test.
-    $this->state = &$state;
-    // Accession.
+    $this->state = $state;
+    // Get submission's accession.
     if (!empty($this->state['accession'])) {
       $this->accession = $this->state['accession'];
     }
@@ -885,6 +883,23 @@ class Submission {
   /**
    * Checks if form type is 'tppsc'.
    *
+   * Note: this is static method to be used in form building/validation.
+   * See dynamic method: isTppsc().
+   * See also tpps_is_admin_or_curation() which checks user role/permissions.
+   *
+   * @return bool
+   *   Returns TRUE if form Id is 'tppsc_main' and FALSE otherwise.
+   */
+  public static function isCurationForm(array $submission_state) {
+    $form_id = $submission_state['saved_values']['frontpage']['form_id']
+      ?? $submission_state['build_info']['form_id']
+      ?? 'tpps_main';
+    return $form_id == 'tppsc_main';
+  }
+
+  /**
+   * Checks if form type is 'tppsc'.
+   *
    * WARNING: $submission->isTppsc() checks form_id which is not always set.
    * See: tpps_is_admin_or_curation().
    *
@@ -911,6 +926,7 @@ class Submission {
    * Get TPPS Form Id.
    *
    * See tpps_form_get_id();
+   *
    * @return string
    *   Returns 'tpps_main' or 'tppsc_main'.
    */
