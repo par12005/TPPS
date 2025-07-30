@@ -186,13 +186,11 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
         'does_study_include_other_genotypic_data',
       ];
       foreach ($marker_type_field_list as $field_name) {
-        $version_change_list[$v]['create'] = [
-          [
-            'parents' => [
-              'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype',
-              $field_name,
-            ],
-            'field_name' => $field_name,
+        $version_change_list[$v]['create'][] = [
+          'field_name' => $field_name,
+          'parents' => [
+            'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype',
+            $field_name,
           ],
         ];
       }
