@@ -25,9 +25,7 @@ require_once 'page_1_ajax.php';
  *   The completed Publication/Species Information form.
  */
 function tpps_page_1_create_form(array &$form, array &$form_state) {
-  $submission = new Submission();
-  $submission->state = $form_state;
-  if ($submission->isTppsc()) {
+  if (Submission::isCurationForm($form_state)) {
     // TPPSc form provides more features for Curation Team.
     tpps_page_1_create_curation_form($form, $form_state);
   }

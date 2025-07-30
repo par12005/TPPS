@@ -3822,7 +3822,6 @@ function tpps_form_tppsc_main_alter($form, $form_state) {
   // Add usage to avoid validation issues.
   $submission = new Submission();
   $submission->setState($form_state);
-  $is_tppsc = $submission->isTppsc();
   $file_list = $submission->getFileIdList();
   if (!empty($file_list)) {
     foreach (array_keys($file_list) as $fid) {

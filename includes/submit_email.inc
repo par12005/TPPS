@@ -22,10 +22,7 @@
 function tpps_submit_email(array &$form_state) {
   global $user;
 
-  $submission = new Submission();
-  $submission->state = $form_state;
-  $is_tppsc = $submission->isTppsc();
-
+  $is_tppsc = Submission::isCurationForm($form_state);
   $page1_values = $form_state['saved_values'][TPPS_PAGE_1] ?? NULL;
   $page2_values = $form_state['saved_values'][TPPS_PAGE_2] ?? NULL;
   $from = variable_get('site_mail', '');

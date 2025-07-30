@@ -14,12 +14,9 @@
  *   The state of the form that is being validated.
  */
 function tpps_page_2_validate_form(array &$form, array &$form_state) {
-  $submission = new Submission();
-  $submission->state = $form_state;
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Curation form.
-  if ($submission->isTppsc()) {
+  if (Submission::isCurationForm($form_state)) {
     if ($form_state['submitted'] == '1') {
       if (!$form_state['values']['data_type']) {
         form_set_error('data_type', 'Data Type: field is required.');
