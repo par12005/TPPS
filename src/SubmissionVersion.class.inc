@@ -88,6 +88,8 @@ module_load_include('inc', 'tpps', 'includes/submission_form_version_changes');
  *    SubmissionVersion::set($submission_state, $version);
  * To set version (without upgrade/downgrade):
  *    SubmissionVersion::set($submission_state, $version, $no_migration = TRUE);
+ *    or
+ *    $submission->setFormVersion($version);
  *
  * ----------------------------------------------------------------------------
  * Predefined actions:
@@ -192,7 +194,8 @@ class SubmissionVersion {
    * Sets Submission Form Version.
    *
    * Note: Form State in database won't be updated.
-   * See Submission::setFormVersion().
+   * To set version without upgrade/downgrade: 
+   *   $submission->setFormVersion($version);
    *
    * @param array $submission_state
    *   Submission Form State array.
@@ -376,10 +379,9 @@ class SubmissionVersion {
       foreach ($change_list as $action => $action_data) {
         switch ($action) {
           case 'unset':
-            break;
-
           case 'create':
-            // @TODO Minor. We could remove those fields ('unset').
+            // @todo For 'create' we could revert and unset field.
+            unset($change_list[$action]);
             break;
 
           case 'move':

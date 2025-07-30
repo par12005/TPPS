@@ -251,6 +251,8 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
         ],
       ];
       // @TODO Minor. Rename into 'remove'?
+      // See also Submission::purifySharedState() where 'unset' action used to
+      // reduce size of the SharedState array.
       $version_change_list[$v]['unset'] = [
         [
           'field_name' => 'assay-citation',
