@@ -270,24 +270,6 @@ function tpps_array_move(array &$array, array $action_data) {
       unset($source['parent_element'][$source['field_name']]);
     }
     else {
-      // Target field is not empty.
-      // This should never happen so it's a strange case which we should log.
-      // Switch to backup existing value.
-      $message = 'Array modification "move": target field is not empty.<br />'
-        . 'Direction: @direction. <br />'
-        . 'Form Version: @form_version. <br />'
-        . "Target's field value: <pre>@field_value</pre>"
-        . "Source's field value: <pre>@source_field_value</pre>"
-        . "Action's meta-data: <pre>@meta</pre>";
-      $params = [
-        '@key' => $key,
-        '@meta' => var_export($item, 1),
-        '@field_value' => var_export($target_field_value, 1),
-        '@source_field_value' => var_export($source_field_value, 1),
-        '@direction' => (!empty($array['saved_values'][1]['doi']) ? 'upgrade' : 'downgrade'),
-        '@form_version' => $array['saved_values'][SubmissionVersion::FORM_KEY],
-      ];
-      watchdog('tpps', $message, $params, WATCHDOG_DEBUG);
       if (variable_get('tpps_submission_version_switch_values', FALSE)) {
         // Switch values to store existing value for later.
         $temp = $target['parent_element'][$target['field_name']];
@@ -295,6 +277,25 @@ function tpps_array_move(array &$array, array $action_data) {
         $source['parent_element'][$source['field_name']] = $temp;
       }
       else {
+        // Target field is not empty.
+        // This should never happen so it's a strange case which we should log.
+        // Switch to backup existing value.
+        $message = 'Array modification "move": target field is not empty.<br />'
+          . 'Direction: @direction. <br />'
+          . 'Form Version: @form_version. <br />'
+          . "Target's field value: <pre>@field_value</pre>"
+          . "Source's field value: <pre>@source_field_value</pre>"
+          . "Action's meta-data: <pre>@meta</pre>";
+        $params = [
+          '@key' => $key,
+          '@meta' => var_export($item, 1),
+          '@field_value' => var_export($target_field_value, 1),
+          '@source_field_value' => var_export($source_field_value, 1),
+          '@direction' => (!empty($array['saved_values'][1]['doi']) ? 'upgrade' : 'downgrade'),
+          '@form_version' => $array['saved_values'][SubmissionVersion::FORM_KEY],
+        ];
+        watchdog('tpps', $message, $params, WATCHDOG_DEBUG);
+
         $target['parent_element'][$target['field_name']] = $source_field_value;
         unset($source['parent_element'][$source['field_name']]);
       }
