@@ -274,20 +274,18 @@ class SubmissionCache {
 
     // List of 'Assay Design' files.
     $reset_assay_design_list = FALSE;
+    $shared_state = $submission->sharedState;
     for ($n = 1; $n <= $submission->getOrganismNumber(); $n++) {
       // @TODO Use AssayDesign::get() if possible.
-      $assay_design_fid = tpps_array_get_value(
-        $submission->getSharedState(),
-        [
-          'saved_values',
-          TPPS_PAGE_4,
-          'organism-' . $n,
-          'genotype',
-          // Not static::FILES_CONTAINER but fieldset name.
-          'files',
-          'assay-design',
-        ]
-      );
+      $assay_design_fid = tpps_array_get_value($shared_state, [
+        'saved_values',
+        TPPS_PAGE_4,
+        'organism-' . $n,
+        'genotype',
+        // Not static::FILES_CONTAINER but fieldset name.
+        'files',
+        'assay-design',
+      ]);
       if (empty($assay_design_fid)) {
         continue;
       }

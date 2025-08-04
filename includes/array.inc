@@ -135,6 +135,7 @@ function tpps_array_dump(array $array, $sticky = TRUE) {
  *   Return modified array.
  */
 function tpps_array_apply_changes(array $change_list, $array) {
+  $result = $array;
   foreach ($change_list as $action => $action_data) {
     // Note: $action_data is a list of all actions (not single action).
     $function = 'tpps_array_' . $action;
@@ -155,9 +156,9 @@ function tpps_array_apply_changes(array $change_list, $array) {
     // 2. tpps_array_move().
     // 3. tpps_array_create().
     // Note: $action_data also couldn't be empty here.
-    call_user_func_array($function, [&$array, $action_data]);
+    call_user_func_array($function, [$result, $action_data]);
   }
-  return $array;
+  return $result;
 }
 
 /**
@@ -175,12 +176,12 @@ function tpps_array_apply_changes(array $change_list, $array) {
  *   See tpps_submission_form_get_change_list().
  *   Each item is path to the single field.
  *
- * @return bool
- *   Returns TRUE if action was successfully applied.
- *   Returns FALSE otherwise.
+ * @return array
+ *   Returns modified array.
  */
-function tpps_array_unset(array &$array, array $action_data) {
+function tpps_array_unset(array $array, array $action_data) {
   module_load_include('inc', 'tpps', 'includes/form');
+  $result = $array;
   foreach ($action_data as $key => $item) {
     $params = [
       '@key' => ($item['field_name'] ?? $key),
@@ -192,7 +193,7 @@ function tpps_array_unset(array &$array, array $action_data) {
       tpps_message($message, $params, 'error');
       continue;
     }
-    $target = &tpps_form_get_path($array, $item['parents']);
+    $target = &tpps_form_get_path($result, $item['parents']);
     if (empty($target['parent_element']) || empty($target['field_name'])) {
       if (variable_get('tpps_debug_mode', FALSE)) {
         // It's not an error because field would be not used in this submission.
@@ -207,7 +208,7 @@ function tpps_array_unset(array &$array, array $action_data) {
     // Action!
     unset($target['parent_element'][$target['field_name']]);
   }
-  return TRUE;
+  return $result;
 }
 
 /**
@@ -226,12 +227,12 @@ function tpps_array_unset(array &$array, array $action_data) {
  *   'source' is a real element path. 'target' is a new (but actually it's
  *   location in verion 1).
  *
- * @return bool
- *   Returns TRUE if action was successfully applied.
- *   Returns FALSE otherwise.
+ * @return array
+ *   Returns modified array.
  */
-function tpps_array_move(array &$array, array $action_data) {
+function tpps_array_move(array $array, array $action_data) {
   module_load_include('inc', 'tpps', 'includes/form');
+  $result = $array;
   foreach ($action_data as $key => $item) {
     if (empty($item['source']) || empty($item['target'])) {
       continue;
@@ -239,8 +240,8 @@ function tpps_array_move(array &$array, array $action_data) {
     // Note:
     // 'parent_element' is not a list of parents but a reference to element.
     // To get value use 'field_name' as key inside 'parent_element'.
-    $source = &tpps_form_get_path($array, $item['source']);
-    $target = &tpps_form_get_path($array, $item['target']);
+    $source = &tpps_form_get_path($result, $item['source']);
+    $target = &tpps_form_get_path($result, $item['target']);
     if (
       empty($source['parent_element']) || empty($source['field_name'])
       || empty($target['parent_element']) || empty($target['field_name'])
@@ -252,7 +253,7 @@ function tpps_array_move(array &$array, array $action_data) {
       continue;
     }
     // Note: $source['parent_element'] and $target['parent_element']
-    // are a references to the elements inside $array.
+    // are a references to the elements inside $result.
     if (!array_key_exists($source['field_name'], $source['parent_element'])) {
       $message = 'Array modification "move" #@key failed. Source field not found.'
         . '<br />Value: <pre>@item</pre>.';
@@ -291,8 +292,8 @@ function tpps_array_move(array &$array, array $action_data) {
           '@meta' => var_export($item, 1),
           '@field_value' => var_export($target_field_value, 1),
           '@source_field_value' => var_export($source_field_value, 1),
-          '@direction' => (!empty($array['saved_values'][1]['doi']) ? 'upgrade' : 'downgrade'),
-          '@form_version' => $array['saved_values'][SubmissionVersion::FORM_KEY],
+          '@direction' => (!empty($result['saved_values'][1]['doi']) ? 'upgrade' : 'downgrade'),
+          '@form_version' => $result['saved_values'][SubmissionVersion::FORM_KEY],
         ];
         watchdog('tpps', $message, $params, WATCHDOG_DEBUG);
 
@@ -301,7 +302,7 @@ function tpps_array_move(array &$array, array $action_data) {
       }
     }
   }
-  return TRUE;
+  return $result;
 }
 
 /**
@@ -437,11 +438,11 @@ function tpps_array_get_path(array $array) {
  *   See tpps_submission_form_get_change_list().
  *   Each item is path to the single field.
  *
- * @return bool
- *   Returns TRUE if action was successfully applied.
- *   Returns FALSE otherwise.
+ * @return array
+ *   Returns modified array.
  */
-function tpps_array_create(array &$array, array $action_data) {
+function tpps_array_create(array $array, array $action_data) {
+  $result = $array;
 
   // Version 2. Was added several helper fields.
   $marker_type_field_list = [
@@ -460,13 +461,13 @@ function tpps_array_create(array &$array, array $action_data) {
     $marker_type_parents = $item['parents'];
     array_pop($marker_type_parents);
     $marker_type_parents[] = 'marker-type';
-    $marker_type_values = tpps_array_get_value($array, $marker_type_parents);
+    $marker_type_values = tpps_array_get_value($result, $marker_type_parents);
     if (!empty($marker_type_values[$key])) {
-      tpps_array_set_value($array, $item['parents'], 'yes');
+      tpps_array_set_value($result, $item['parents'], 'yes');
     }
   }
 
   // Note: v3. Values of the new fields couldn't be created based on existings
   // fields values because they are totally new.
-  return TRUE;
+  return $result;
 }

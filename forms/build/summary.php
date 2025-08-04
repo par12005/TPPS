@@ -21,7 +21,7 @@
  *   The populated form.
  */
 function tpps_summary_create_form(array &$form, array $form_state) {
-  $summary_values = &$form_state['saved_values']['summarypage'] ?? [];
+  $summary_values = $form_state['saved_values']['summarypage'] ?? [];
   // @TODO Update top navigation bar.
   $supplemental_upload_location = 'public://'
     . variable_get('tpps_supplemental_files_dir', 'tpps_supplemental');
@@ -32,7 +32,6 @@ function tpps_summary_create_form(array &$form, array $form_state) {
   $submission = new Submission();
   $submission->state = $form_state;
   $submission->generateSharedState();
-
   $form['table_display'] = [
     '#markup' => tpps_table_display($submission->sharedState),
   ];
@@ -139,9 +138,9 @@ function tpps_summary_create_form(array &$form, array $form_state) {
     ];
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  $page1_values = &$form_state['saved_values'][TPPS_PAGE_1] ?? [];
+  $page1_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
   $org_number = $page1_values['organism']['number'];
-  $new_species = array();
+  $new_species = [];
   for ($i = 1; $i <= $org_number; $i++) {
     $org = $page1_values['organism'][$i]['name'];
     $parts = explode(" ", $org);
