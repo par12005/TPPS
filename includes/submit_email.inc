@@ -44,12 +44,12 @@ function tpps_submit_email(array &$form_state) {
   for ($i = 1; $i <= $page1_values['organism']['number']; $i++) {
     $params['organism_list'][$i] = $page1_values['organism'][$i]['name'];
   }
-  $params['organism_number'] = $page1_values['organism']['number'];
-  $params['author'] = $page1_values['primaryAuthor'];
-  $params['title'] = $page1_values['publication']['title'];
-  $params['journal'] = $page1_values['publication']['journal'];
-  $params['data_type'] = $page2_values['data_type'];
-  $params['accession'] = $form_state['accession'];
+  $params['organism_number'] = $page1_values['organism']['number'] ?? NULL;
+  $params['author'] = $page1_values['primaryAuthor'] ?? NULL;
+  $params['title'] = $page1_values['publication']['title'] ?? NULL;
+  $params['journal'] = $page1_values['publication']['journal'] ?? NULL;
+  $params['data_type'] = $page2_values['data_type'] ?? NULL;
+  $params['accession'] = $form_state['accession'] ?? NULL;
   $params['body'] = '';
   $send = TRUE;
 
