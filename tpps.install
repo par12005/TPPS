@@ -72,6 +72,7 @@ function tpps_get_variable_list() {
     // Submission/Version.
     'tpps_submission_version_log_upgrade' => FALSE,
     'tpps_submission_version_log_downgrade' => FALSE,
+    'tpps_submission_version_switch_values' => TRUE,
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Form. Main settings.
     'tpps_theme' => 'default',
@@ -2469,4 +2470,5 @@ function tpps_update_7130() {
   variable_set('tpps_submission_cache_log_full_update', FALSE);
   variable_set('tpps_submission_version_log_upgrade', FALSE);
   variable_set('tpps_submission_version_log_downgrade', FALSE);
+  variable_set('tpps_submission_version_switch_values', TRUE);
 }

@@ -80,21 +80,39 @@ function tpps_submission_settings_form(array $form, array &$form_state) {
       . 'minute. Log each time cache was cleared and rebuilded from scratch.'),
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Submission Cache.
+  // Submission Version.
   $form['version'] = [
     '#type' => 'fieldset',
     '#title' => t('Submission Version'),
   ];
-  $form['version']['tpps_submission_version_log_downgrade'] = [
-    '#type' => 'checkbox',
-    '#title' => t('Log downgrade of the Submission version.'),
-    '#default_value' => variable_get('tpps_submission_version_log_downgrade'),
+  $name_list = [
+    [
+      'name' => 'tpps_submission_version_log_downgrade',
+      'title' => 'Log downgrade of the Submission version',
+      'description' => '',
+    ],
+    [
+      'name' => 'tpps_submission_version_log_upgrade',
+      'title' => 'Log upgrade of the Submission version',
+      'description' => '',
+    ],
+    [
+      'name' => 'tpps_submission_version_switch_values',
+      'title' => 'Switch values when target field not empty',
+      'description' => 'When checked and "move" array modification have to '
+        . 'update field which has value it will be swiched with source field '
+        . 'value to avoid data loss.',
+    ],
   ];
-  $form['version']['tpps_submission_version_log_upgrade'] = [
-    '#type' => 'checkbox',
-    '#title' => t('Log upgrade of the Submission version.'),
-    '#default_value' => variable_get('tpps_submission_version_log_upgrade'),
-  ];
-
+  foreach ($name_list as $item) {
+    $form['version'][$item['name']] = [
+      '#type' => 'checkbox',
+      '#title' => t($item['title']),
+      // Note: There is no default value to avoid misunderstanding when value
+      // shown but not actually set.
+      '#default_value' => variable_get($item['name']),
+      '#description' => t($item['description']),
+    ];
+  }
   return system_settings_form($form);
 }
