@@ -1092,9 +1092,18 @@ class Submission {
    * Use Submission::save() to store in DB.
    */
   public function generateSharedState() {
-    // We need to apply changes from 1st to $current version to have
-    // incremental hanges.
-    $this->sharedState = SubmissionVersion::downgrade($this->state);
+    // WARNING:
+    // This extra step is required to break link between sharedState and state
+    // properties of current Submission object.
+    // Problem: when 'summarypage' step submitted 'state' downgraded
+    // to version 1.
+    // Here we create new (independent) submission which will never be saved
+    // to DB and it used only to create SharedState.
+    $temp_submission = new Submission($this->accession);
+    $state = $temp_submission->state;
+    unset($temp_submission);
+
+    $this->sharedState = SubmissionVersion::downgrade($state);
     $this->purifySharedState();
     return $this;
   }
