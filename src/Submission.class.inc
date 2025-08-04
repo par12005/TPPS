@@ -253,7 +253,7 @@ class Submission {
    * @return mixed
    *   Returns property value.
    */
-  public function &__get($name) {
+  public function __get($name) {
     // Allow to overwrite magic with custom getter.
     $func = 'get' . ucfirst($name);
     if (method_exists($this, $func)) {
@@ -355,7 +355,7 @@ class Submission {
    * @return mixed
    *   Returns reference to the sub-element of the $state.
    */
-  public function &get(array $parents = []) {
+  public function get(array $parents = []) {
     $key_exists = FALSE;
     $element = drupal_array_get_nested_value($this->state, $parents, $key_exists);
     if ($key_exists) {
@@ -553,7 +553,7 @@ class Submission {
    * @return array
    *   Returns an reference to the Submission's State.
    */
-  public function &getState(bool $reset = FALSE) {
+  public function getState(bool $reset = FALSE) {
     if ($reset || (empty($this->state) && !empty($this->accession))) {
       $this->load();
     }
@@ -650,7 +650,9 @@ class Submission {
       module_invoke_all('submission_deleted', $this->accession);
     }
     // Be sure to unset at the very end.
-    $this->accession = $this->state = $this->sharedState = NULL;
+    $this->accession = NULL;
+    $this->state = NULL;
+    $this->sharedState = NULL;
 
     // Do not allow chaining methods because object destroyed.
     return NULL;
@@ -703,7 +705,9 @@ class Submission {
     // Update cached data.
     SubmissionCache::remove($this->accession);
     // Unset current instance (in memory).
-    $this->accession = $this->state = $this->sharedState = NULL;
+    $this->accession = NULL;
+    $this->state = NULL;
+    $this->sharedState = NULL;
     if (function_exists('module_invoke_all')) {
       // 'tpps_submission_purged().
       module_invoke_all('submission_purged', $this);
@@ -1044,7 +1048,7 @@ class Submission {
    * @return array
    *   Returns an reference to the Submission's SharedState.
    */
-  public function &getSharedState(bool $reset = FALSE) {
+  public function getSharedState(bool $reset = FALSE) {
     if ($reset || (empty($this->sharedState) && !empty($this->accession))) {
       $this->load();
     }
@@ -1061,7 +1065,7 @@ class Submission {
    * @return string
    *   Returns Submission's status
    */
-  public function &getStatus(bool $reset = FALSE) {
+  public function getStatus(bool $reset = FALSE) {
     if (empty($this->status) && !empty($this->accession)) {
       $this->load();
     }

@@ -632,9 +632,13 @@ class PhenotypeData extends TppsFile {
    *   data type keys (see current class constants).
    */
   public static function getColumns($organism_index, $submission) {
-    $shared_state = $submission->getSharedState();
-    return $shared_state['saved_values'][TPPS_PAGE_4]['organism-'
-      . $organism_index]['phenotype']['file-columns'] ?? NULL;
+    return tpps_array_get_value($submission->sharedState, [
+      'saved_values',
+      TPPS_PAGE_4,
+      'organism-' . $organism_index,
+      'phenotype',
+      'file-columns',
+    ]);
   }
 
   /**

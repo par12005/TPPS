@@ -194,7 +194,7 @@ class SubmissionVersion {
    * Sets Submission Form Version.
    *
    * Note: Form State in database won't be updated.
-   * To set version without upgrade/downgrade: 
+   * To set version without upgrade/downgrade:
    *   $submission->setFormVersion($version);
    *
    * @param array $submission_state
@@ -264,18 +264,21 @@ class SubmissionVersion {
    */
   public static function downgrade(array $submission_state, $final_version = NULL) {
     // Skip if current version is '1'.
+    $result = $submission_state;
     $current_version = static::get($submission_state);
     $final_version = $final_version ?? static::VERSION_1;
-    $result = $submission_state;
 
     if ($current_version == $final_version) {
       return $result;
     }
     $accession = $result['accession'] ?? NULL;
-
     // Note: We use '>' (not '>=') because version 1 has no changes.
     // and we use $version+1 changes in reverse to downgrade.
     for ($version = $current_version; $version > $final_version; $version--) {
+      // Problem:
+      // Line below updates not only SharedState array but 'state' property
+      // of Submission object which called generateSharedState() method.
+      // So $submission->state became downgraded to 1st version.
       $result = static::migrate($result, $version, 'downgrade');
       if (function_exists('module_invoke_all')) {
         // tpps_submission_version_downgraded().
@@ -356,18 +359,19 @@ class SubmissionVersion {
    *   Returns form state array upgraded/downgrated to desired version.
    */
   public static function migrate(array $submission_state, $final_version, $direction = 'upgrade') {
+    $result = $submission_state;
     // Upgrade to the same version must be skipped.
     // Note: Downgrade to the same version must be processed because we use
     // previous version's changes in reverse.
-    $current_version = static::get($submission_state);
+    $current_version = static::get($result);
     if ($direction == 'upgrade' && $final_version == $current_version) {
       // @TODO Check if we should skip processing if it's 'downgrade' direction.
-      return $submission_state;
+      return $result;
     }
 
-    $accession = $submission_state['accession'] ?? NULL;
+    $accession = $result['accession'] ?? NULL;
 
-    $change_list = tpps_submission_form_version_changes($submission_state, $final_version);
+    $change_list = tpps_submission_form_version_changes($result, $final_version);
     if (is_null($change_list)) {
       $message = 'SubmissionVersion: Got empty change list.';
       throw new Exception($message);
@@ -404,11 +408,8 @@ class SubmissionVersion {
       }
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    if (empty($change_list)) {
-      $result = $submission_state;
-    }
-    else {
-      $result = tpps_array_apply_changes($change_list, $submission_state);
+    if (!empty($change_list)) {
+      $result = tpps_array_apply_changes($change_list, $result);
       switch ($direction) {
         case 'upgrade':
           $version = $final_version;
@@ -423,7 +424,7 @@ class SubmissionVersion {
           }
           break;
       }
-      $result = static::set($result, $version, $migrate = FALSE);
+      $result['saved_values'][static::FORM_KEY] = $version;
     }
     return $result;
   }
