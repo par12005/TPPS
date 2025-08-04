@@ -1151,13 +1151,13 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   if (!isset($form_state['dbxref_id']) or !isset($form_state['accession'])) {
     tpps_init_project($form_state);
   }
+  // Upgrade to latest Submission Form Version.
+  $form_state = SubmissionVersion::upgrade($form_state);
   // Create a hidden form field to store  Submission Form Version.
   $form[SubmissionVersion::FORM_KEY] = [
     '#type' => 'hidden',
     '#value' => SubmissionVersion::get($form_state),
   ];
-  // Upgrade to latest Submission Form Version.
-  $form_state = SubmissionVersion::upgrade($form_state);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Must be after tpps_init_project() which sets accession for new studies.
@@ -1202,10 +1202,8 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   }
   elseif ($is_tppsc) {
     $form_state['tpps_type'] = 'tppsc';
-
     $submission->state = $form_state;
     $submission->save();
-
     if (variable_get('tpps_top_bar', 'status') == 'status') {
       module_load_include('inc', 'tpps', 'includes/status_bar');
       tpps_status_bar($form, $form_state);

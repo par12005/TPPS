@@ -16,17 +16,16 @@
  * @return string
  *   The TPPS Submission formatted in an HTML table.
  */
-function tpps_table_display(array &$state, array $options = []) {
+function tpps_table_display(array $state, array $options = []) {
   $accession = $state['accession'] ?? NULL;
   $submission = new Submission($accession);
-  if ($submission->doesNotExist()) {
-    return;
+  if ($submission->isEmpty()) {
+    return '';
   }
   // Note: $state could be modified version of original sharedState received
   // by accession so we use it here without saving/updating original study.
   // @TODO Check if this code could be merged (and cached) with Submission::flatten().
   $submission->sharedState = $state;
-
   $flat = $submission->flatten();
 
   $rows = [];
@@ -250,9 +249,8 @@ function tpps_completed_display($accession = NULL) {
   global $base_url;
   global $user;
   $output = '';
-
   $submission = new Submission($accession);
-  if ($submission->doesNotExist()) {
+  if ($submission->isEmpty()) {
     drupal_set_message(t('Study "@accession" not found.',
       ['@accession' => $accession]), 'error');
     drupal_goto('tpps-admin-panel');
@@ -334,7 +332,7 @@ function tpps_tab_create($uid) {
   foreach ($submission_list as $accession => $submission) {
     $prefix = !empty($submission->state['tpps_type'])
       ? $submission->state['tpps_type'] : 'tpps';
-    $page_1 = &$submission->state['saved_values'][TPPS_PAGE_1];
+    $page_1 = $submission->state['saved_values'][TPPS_PAGE_1];
     $title = $abstract = $accession_cell = NULL;
 
     if (isset($page_1['publication']['title'])) {
@@ -410,7 +408,7 @@ function tpps_tab_create($uid) {
 
   $rows = [];
   foreach ($submission_list as $accession => $submission) {
-    $page_1 = &$submission->state['saved_values'][TPPS_PAGE_1];
+    $page_1 = $submission->state['saved_values'][TPPS_PAGE_1];
     $title = $abstract = NULL;
 
     if (isset($page_1['publication']['title'])) {

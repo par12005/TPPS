@@ -133,7 +133,7 @@ function tpps_details_main($accession = NULL) {
       );
     }
 
-    $page1_values = &$submission->state['saved_values'][TPPS_PAGE_1];
+    $page1_values = $submission->state['saved_values'][TPPS_PAGE_1];
     if (
       $page1_values['publication']['status'] != 'Published'
       && $submission->isCreator()
@@ -173,9 +173,6 @@ function tpps_details_main($accession = NULL) {
  *   HTML for the details tabs.
  */
 function tpps_details_tab_list($submission) {
-  $state = &$submission->state;
-  $page4 = $state['saved_values'][TPPS_PAGE_4] ?? NULL;
-
   $tab_items = [];
   $content = [];
   // Required tabs.

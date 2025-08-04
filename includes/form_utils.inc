@@ -501,8 +501,12 @@ function tpps_compare_accession_file_vs_vcf_file_tree_ids($accession = NULL, $i 
     $submission->state, $i
   );
 
-  $page4_values = &$submission->state['saved_values'][TPPS_PAGE_4];
-  $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+  $genotype = tpps_array_get_value($submission->state, [
+    'saved_values',
+    TPPS_PAGE_4,
+    "organism-$i",
+    'genotype',
+  ]);
   // Note: returns array['status','location'].
   $vcf_location = tpps_vcf_location($submission->state, $i);
   $results_vcf_file_tree_ids = [];
@@ -953,7 +957,7 @@ function tpps_pre_validate($accession, $fid, $org_num, $job = NULL) {
   $job->logMessage("[INFO] VCF File Location: {$vcf_file->uri}");
 
   $submission = new Submission($accession);
-  $page3_values = &$submission->state['saved_values'][TPPS_PAGE_3];
+  $page3_values = $submission->state['saved_values'][TPPS_PAGE_3];
   if (empty($page3_values['tree-accession']['check'])) {
     $species_index = 'species-1';
   }

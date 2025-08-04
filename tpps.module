@@ -1630,7 +1630,10 @@ function tpps_main_submit($form, &$form_state) {
         $submission->setStatus(TPPS_SUBMISSION_STATUS_PENDING_APPROVAL);
         $submission->set(['completed'], time());
         $submission->setFileStatus(FILE_STATUS_PERMANENT, []);
-        $submission->generateSharedState()->save();
+
+        // WARNING:
+        // Line below downgrades $submission->state to 1st version.
+        $submission->generateSharedState($submission)->save();
         tpps_submit_email($form_state);
         drupal_goto('completed-submission/' . $submission->accession);
       }
