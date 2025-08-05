@@ -613,7 +613,7 @@ class Submission {
       ->condition('accession', $this->accession)
       ->execute();
 
-    // 'tpps_submission_saved'';
+    // tpps_submission_saved().
     if (function_exists('module_invoke_all')) {
       module_invoke_all('submission_saved', $this);
     }

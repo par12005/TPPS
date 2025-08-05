@@ -62,8 +62,11 @@ function tpps_get_variable_list() {
 
     // Submission.
     'tpps_submission_secret_key' => '',
+    // Submission/Common
+    'tpps_submission_log_save_event' => FALSE,
     'tpps_dump_max_len_state' => 300000,
     'tpps_dump_max_len_sharedState' => 300000,
+    // Submission/Export
     'tpps_submission_export_exclude_data' => TRUE,
     'tpps_submission_export_exclude_tree_info' => TRUE,
     // Submission/Cache.
@@ -2471,4 +2474,5 @@ function tpps_update_7130() {
   variable_set('tpps_submission_version_log_upgrade', FALSE);
   variable_set('tpps_submission_version_log_downgrade', FALSE);
   variable_set('tpps_submission_version_switch_values', TRUE);
+  variable_set('tpps_submission_log_save_event', FALSE);
 }

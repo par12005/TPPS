@@ -194,7 +194,7 @@ class SubmissionVersion {
    * Sets Submission Form Version.
    *
    * Note: Form State in database won't be updated.
-   * To set version without upgrade/downgrade: 
+   * To set version without upgrade/downgrade:
    *   $submission->setFormVersion($version);
    *
    * @param array $submission_state
@@ -263,6 +263,8 @@ class SubmissionVersion {
    *   Returns form state array downgrated to desired version.
    */
   public static function downgrade(array $submission_state, $final_version = NULL) {
+    $debug_mode = FALSE;
+
     // Skip if current version is '1'.
     $current_version = static::get($submission_state);
     $final_version = $final_version ?? static::VERSION_1;
@@ -285,6 +287,17 @@ class SubmissionVersion {
           'accession' => $accession,
         ]);
       }
+    }
+    if ($debug_mode ?? FALSE) {
+      $message = 'Submission "@accession" was downgraded to @version. !stack';
+      $params = [
+        '!stack' => tpps_array_print_list(
+          debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 10)
+        ),
+        '@accession' => $submission_state['accession'],
+        '@version' => $final_version,
+      ];
+      watchdog('tpps', $message, $params);
     }
     return $result;
   }

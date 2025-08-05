@@ -1201,10 +1201,12 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
     }
   }
   elseif ($is_tppsc) {
-    $form_state['tpps_type'] = 'tppsc';
-
-    $submission->state = $form_state;
-    $submission->save();
+    if (($form_state['tpps_type'] ?? NULL) != 'tppsc') {
+      // This happens only once when 1st welcome page of TPPSc form submitted.
+      $form_state['tpps_type'] = 'tppsc';
+      $submission->state = $form_state;
+      $submission->save();
+    }
 
     if (variable_get('tpps_top_bar', 'status') == 'status') {
       module_load_include('inc', 'tpps', 'includes/status_bar');
