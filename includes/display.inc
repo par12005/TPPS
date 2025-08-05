@@ -239,15 +239,10 @@ function tpps_table_display(array &$state, array $options = []) {
 /**
  * Creates a details page for a completed TPPS Submission.
  *
- * @global string $base_url
- *   The base url of the site.
- *
  * @return string
  *   The rendered page.
  */
 function tpps_completed_display($accession = NULL) {
-  global $base_url;
-  global $user;
   $output = '';
   $submission = new Submission($accession);
   if ($submission->isEmpty()) {

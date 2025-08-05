@@ -745,7 +745,6 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
  */
 function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   global $user;
-  $uid = $user->uid;
 
   $snps_fieldset = 'SNPs';
 
@@ -861,7 +860,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
 
   $class = 'FASTAImporter';
   tripal_load_include_importer_class($class);
-  $tripal_upload_location = "public://tripal/users/$uid";
+  $tripal_upload_location = "public://tripal/users/" . $user->uid;
 
   $fasta = tripal_get_importer_form(array(), $form_state, $class);
   $fasta['#type'] = 'fieldset';

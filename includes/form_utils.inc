@@ -413,6 +413,7 @@ function tpps_preserve_valid_file(array &$form_state, $fid, $org_num = NULL, $pr
  *   The accession of the submission to pre-validate.
  */
 function tpps_pre_validate_init($accession = NULL) {
+  global $user;
   $params = drupal_get_query_parameters(NULL, []);
   $vcfs = $params['vcfs'] ?? NULL;
   if (!is_array($vcfs) || empty($vcfs)) {
@@ -425,7 +426,6 @@ function tpps_pre_validate_init($accession = NULL) {
     return;
   }
 
-  global $user;
   $submission->state['vcf_replace'] = [];
   foreach ($vcfs as $org_num => $fid) {
     // @TODO Minor. Rename $fid because it's not always File Id.

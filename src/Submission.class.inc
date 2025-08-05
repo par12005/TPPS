@@ -1150,7 +1150,7 @@ class Submission {
         ],
       ],
     ];
-    // List of fields on the 1st level of sharedState array.
+    // List of 1st level items to be removed from the 'sharedState' array.
     $field_list = [
       'build_info',
       'temporary',
@@ -2773,7 +2773,7 @@ class Submission {
     if ($this->isEmpty()) {
       return NULL;
     }
-    return $this->get(['submitting_uid']) ?? NULL;
+    return $this->get(['submitting_uid']) ?? $this->uid ?? NULL;
   }
 
   /**
