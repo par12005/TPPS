@@ -65,10 +65,10 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
     drupal_goto('tpps-admin-panel');
   }
 
-  $page1_values = &$submission->sharedState['saved_values'][TPPS_PAGE_1] ?? NULL;
-  $page2_values = &$submission->sharedState['saved_values'][TPPS_PAGE_2] ?? NULL;
-  $page3_values = &$submission->sharedState['saved_values'][TPPS_PAGE_3] ?? NULL;
-  $page4_values = &$submission->sharedState['saved_values'][TPPS_PAGE_4] ?? NULL;
+  $page1_values = $submission->sharedState['saved_values'][TPPS_PAGE_1] ?? NULL;
+  $page2_values = $submission->sharedState['saved_values'][TPPS_PAGE_2] ?? NULL;
+  $page3_values = $submission->sharedState['saved_values'][TPPS_PAGE_3] ?? NULL;
+  $page4_values = $submission->sharedState['saved_values'][TPPS_PAGE_4] ?? NULL;
 
   if (empty($submission->sharedState['status'])) {
     $submission->save($submission->status);
@@ -226,11 +226,15 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
     && preg_match('/P/', $submission->sharedState['saved_values'][TPPS_PAGE_2]['data_type'])
   ) {
     $new_cvterms = array();
-    $page4 = &$submission->sharedState['saved_values'][TPPS_PAGE_4];
-    for ($i = 1; $i <= $submission->sharedState['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
+    $page4 = $submission->sharedState['saved_values'][TPPS_PAGE_4];
+    for ($i = 1; $i <= $submission->getOrganismNumber(); $i++) {
       // @TODO Could we just skip when it's checked?
-      $phenotype = (!empty($page4["organism-$i"]['phenotype-repeat-check']))
-        ? $page4["organism-1"]['phenotype'] : $page4["organism-$i"]['phenotype'];
+      $phenotype = $page4["organism-1"]['phenotype'];
+      if (empty($page4["organism-$i"]['phenotype-repeat-check'])) {
+        $phenotype = $page4["organism-$i"]['phenotype'];
+      }
+
+
       for ($j = 1; $j <= $phenotype['phenotypes-meta']['number']; $j++) {
         if ($phenotype['phenotypes-meta'][$j]['structure'] === 'other') {
           $new_cvterms[] = $phenotype['phenotypes-meta'][$j]['struct-other'];

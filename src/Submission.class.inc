@@ -650,7 +650,9 @@ class Submission {
       module_invoke_all('submission_deleted', $this->accession);
     }
     // Be sure to unset at the very end.
-    $this->accession = $this->state = $this->sharedState = NULL;
+    $this->accession = NULL;
+    $this->state = NULL;
+    $this->sharedState = NULL;
 
     // Do not allow chaining methods because object destroyed.
     return NULL;
@@ -703,7 +705,9 @@ class Submission {
     // Update cached data.
     SubmissionCache::remove($this->accession);
     // Unset current instance (in memory).
-    $this->accession = $this->state = $this->sharedState = NULL;
+    $this->accession = NULL;
+    $this->state = NULL;
+    $this->sharedState = NULL;
     if (function_exists('module_invoke_all')) {
       // 'tpps_submission_purged().
       module_invoke_all('submission_purged', $this);
