@@ -31,13 +31,13 @@ files[] = src/zenodo/ZenodoHost.class.inc
 ; files[] = src/zenodo/ZenodoRecords.class.inc
 
 ; File Fields
-files[] = src/file_field/TppsFile.class.inc
+files[] = src/TppsFile.class.inc
 ; File Fields / Phenotype
-files[] = src/file_field/PhenotypeManual.class.inc
-files[] = src/file_field/PhenotypeMeta.class.inc
-files[] = src/file_field/PhenotypeData.class.inc
-files[] = src/file_field/PhenotypeIso.class.inc
+files[] = src/phenotype/PhenotypeManual.class.inc
+files[] = src/phenotype/PhenotypeMeta.class.inc
+files[] = src/phenotype/PhenotypeData.class.inc
+files[] = src/phenotype/PhenotypeIso.class.inc
 ; //File Fields / Genotype
-files[] = src/file_field/AssayDesignCitation.class.inc
-files[] = src/file_field/AssayDesign.class.inc
-files[] = src/file_field/SnpAssociation.class.inc
+files[] = src/genotype/AssayDesignCitation.class.inc
+files[] = src/genotype/AssayDesign.class.inc
+files[] = src/genotype/SnpAssociation.class.inc
