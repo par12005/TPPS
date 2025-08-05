@@ -751,8 +751,14 @@ class Submission {
    * instead of 3 requests if data loaded separately.
    *
    * To avoid reload the same study use global $submission object.
+   *
+   * @param mixed $generate_shared_state
+   *   When TRUE and 'sharedState' property is empty after loading from DB then
+   *   it will be generated.
+   *   This could create ethernal loop when record in DB has not 'sharedState'.
+   *   Default is TRUE.
    */
-  public function load() {
+  public function load($generate_shared_state = TRUE) {
     global $user;
     if (empty($this->accession)) {
       throw new Exception(t('Study accession is empty.'));
@@ -814,8 +820,10 @@ class Submission {
         ?? TPPS_SUBMISSION_STATUS_INCOMPLETE;
 
       // Generate sharedState if it's really empty.
-      if (empty($this->sharedState) || empty($this->sharedState['accession'])) {
-        $this->generateSharedState();
+      if ($generate_shared_state) {
+        if (empty($this->sharedState) || empty($this->sharedState['accession'])) {
+          $this->generateSharedState();
+        }
       }
     }
     return $this;
@@ -1092,6 +1100,16 @@ class Submission {
    * Use Submission::save() to store in DB.
    */
   public function generateSharedState() {
+    if (
+      variable_get('tpps_submission_save_before_shared_state_generation', FALSE)
+    ) {
+      // WARNING: Do not remove!
+      // If 'sharedState' is empty this will cause errors.
+      $this->sharedState = [TRUE];
+      // Note: This takes about 20 msec and Shared State generation performed
+      // every time TPPSc form submits.
+      $this->save();
+    }
     // WARNING:
     // This extra step is required to break link between sharedState and state
     // properties of current Submission object.
@@ -1099,7 +1117,12 @@ class Submission {
     // to version 1.
     // Here we create new (independent) submission which will never be saved
     // to DB and it used only to create SharedState.
-    $temp_submission = new Submission($this->accession);
+    $temp_submission = new Submission();
+    $temp_submission->accession = $this->accession;
+    // We can't use __construct() because it will attempt to generate missing
+    // sharedState and create ethernal loop.
+    $temp_submission->accession = $this->accession;
+    $temp_submission->load($generate_shared_state = FALSE);
     $state = $temp_submission->state;
     unset($temp_submission);
 
