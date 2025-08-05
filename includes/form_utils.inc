@@ -700,7 +700,7 @@ function tpps_get_assay_design_file_markers(array $form_state, $i) {
     // Page 4 not yet submitted.
     return [];
   }
-  $fid = AssayDesign::get($i, $form_state);
+  $fid = AssayDesign::getFileId($i, $form_state);
   if (!$fid) {
     // Empty field.
     return [];

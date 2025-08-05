@@ -10,12 +10,10 @@
  *
  * TPPSc Form / Page 4 / Genotype / SNPs.
  *
- * Field was relocated.
+ * Field relocation history:
  * v1: ['genotype', 'files', 'assay-design'].
  * v2: -> ['genotype', 'SNPs', 'assay-design'].
  * v3: -> ['genotype', 'SNPs', 'assay-design-citation', 'assay-design'].
- *
- * Submission Form Versions:
  *
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
@@ -124,11 +122,6 @@ class AssayDesign {
     $file_type = $snps['file-type'] ?? NULL;
     $genotyping_type = $snps['genotyping-type'] ?? NULL;
     $existing_study = AssayDesignCitation::getExistingStudy($organism_index, $form_state);
-
-//dpm($file_type, 'file_type');
-//dpm($genotyping_type, 'genotyping_type');
-//dpm($existing_study, 'exitsitn');
-
     if (
       $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
       && $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING
@@ -186,9 +179,18 @@ class AssayDesign {
    *   Returns NULL if field wasn't found.
    *   Returns string '0' if field wasn't set (file wasn't uploaded).
    */
-  public static function get($organism_index, array $form_state) {
+  public static function getValue($organism_index, array $form_state) {
     $parents = static::getParents($organism_index, $form_state);
     return tpps_array_get_value($form_state['values'], $parents);
+  }
+
+  /**
+   * Alias for getValue() method.
+   *
+   * @todo Move to TppsFile class.
+   */
+  public static function getFileId($organism_index, array $form_state) {
+    return static::getValue($organism_index, $form_state);
   }
 
   /**
