@@ -27,7 +27,7 @@ function tpps_submission_settings_form(array $form, array &$form_state) {
     [
       'name' => 'tpps_submission_log_save_event',
       'title' => 'Log each submission save event',
-      'description' => '',
+      'description' => 'Log study accession and caller functions stack.',
     ],
   ];
   foreach ($name_list as $item) {
