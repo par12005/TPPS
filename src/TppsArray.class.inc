@@ -19,6 +19,55 @@
 class TppsArray {
 
   /**
+   * Checks if values of two arrays are equal.
+   *
+   * WARNING: Can't be used for multidimentional arrays. Only simple lists!
+   *
+   * Note:
+   * 1. Values could be in random order.
+   * 2. Order of arrays doesn't matter.
+   * 3. Duplicate items won't be removed.
+   * 4. Two empty arrays are equal.
+   *
+   * @param array $array1
+   *   Array #1.
+   * @param array $array2
+   *   Array #2.
+   *
+   * @return bool
+   *   Returns TRUE when arrays are equal and FALSE otherwise.
+   */
+  public static function isEqual(array $array1, array $array2) {
+    return (
+      empty(array_diff($array1, $array2))
+      && empty(array_diff($array2, $array1))
+    );
+  }
+
+  /**
+   * Checks if the Array #2 includes all values of the Array #2.
+   *
+   * WARNING: Can't be used for multidimentional arrays. Only simple lists!
+   *
+   * @param array $array1
+   *   Array #1.
+   * @param array $array2
+   *   Array #2.
+   *
+   * @return bool
+   *   Returns TRUE when Array #2 includes all values of the Array #1.
+   *   Returns FALSE otherwise.
+   */
+  public static function contains(array $array1, array $array2) {
+    // Items which both arrays has.
+    $intersection = array_intersect($array1, $array2);
+    // If Array #1 and $intersections are the same then Array #2 includes
+    // all values of the Array #1.
+    return self::isEqual($intersection, $array1);
+  }
+
+
+  /**
    * Replaces $old with $new in array's values and keys.
    *
    * @param array $array
