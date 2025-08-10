@@ -293,7 +293,7 @@ Drupal.tpps = Drupal.tpps || {};
       // details page on server side. URL example: /tpps-admin-panel/TGDRxxx.
       || Drupal.settings.tpps.accession_files || {};
 
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get Columns metadata from managed file field if possible.
     if (typeof Drupal.tpps.accession_files[fid] == 'undefined') {
       dog('Columns Metata not found found under '
@@ -308,7 +308,7 @@ Drupal.tpps = Drupal.tpps || {};
       dog('No column\'s metadata under Drupal.tpps.accession_files[' + fid + ']');
       return;
     }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Validate Columns metadata.
     dog('Columns Metata for File Id was found. Let\'s validate properties.');
     dog(Drupal.tpps.accession_files[fid]);
@@ -345,7 +345,7 @@ Drupal.tpps = Drupal.tpps || {};
       $mapWrapper.hide();
       return;
     }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get data from server.
     var request = $.post(
       '/tpps-accession',
@@ -406,7 +406,7 @@ Drupal.tpps = Drupal.tpps || {};
         continue;
       }
       dog('Found managed file field. "organismId": ' + organismId);
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Get fid from managed file field.
       var organismFileId = $fileIdField.val();
       var $fileWrapper = $fileIdField.parent('.form-managed-file');
@@ -447,7 +447,7 @@ Drupal.tpps = Drupal.tpps || {};
         //continue;
       }
       dog('Managed file field has fid: ' + organismFileId);
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
       // Get column's metadata from field.
       Drupal.tpps['accession_files'] = [];

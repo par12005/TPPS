@@ -639,12 +639,20 @@ function tpps_form_build_file_field(array $form_bus) {
     $parent_element[$field_name]['#states']['required'] = $states['visible'];
   }
 
-  // dpm(print_r($parents, 1), 'parents of ' . $field_name);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Customization.
   // @TODO Minor. Think about using elements with leading '#' to use them as
   // defaults for fields.
   if (!empty($extra_elements)) {
+    // Create default column's description.
+    if (empty($extra_elements['columns']['#description'])) {
+      $columns_options = $extra_elements['columns-options']['#value']
+        ?? $extra_elements['columns-options']['#value'] ?? [];
+      $extra_elements['columns']['#description'] = t(
+        'Please define which columns hold the required data: @option_list.',
+        ['@option_list' => implode(', ', $columns_options)]
+      );
+    }
     $parent_element[$field_name] = array_merge(
       $parent_element[$field_name], $extra_elements
     );
@@ -697,9 +705,6 @@ function tpps_form_build_file_field(array $form_bus) {
         . "contain plant identifiers which match the plant identifiers "
         . "you provided in your plant accession file, and all of the "
         . "remaining columns should contain SNP data."),
-
-// @TODO Update relocated fields #names.
-
       '#states' => [
         'visible' => [
           ':input[name="' . $organism_name . '[genotype][SNPs][genotyping-type]"]'

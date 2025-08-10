@@ -5,7 +5,6 @@
  * Defines useful functions for file management.
  */
 
-
 /**
  * This function parses a file and returns an array of its content.
  *
@@ -23,13 +22,13 @@
  *   An array containing the content headers and content body.
  */
 function tpps_parse_file($fid, $max_rows = 0, $no_header = FALSE, $columns = NULL) {
-  $content = array();
-  $options = array(
+  $content = [];
+  $options = [
     'no_header' => $no_header,
     'columns' => $columns,
     'max_rows' => $max_rows,
     'content' => &$content,
-  );
+  ];
 
   tpps_file_iterator($fid, 'tpps_parse_file_helper', $options);
   $content['headers'] = tpps_file_headers($fid, $no_header);
@@ -456,11 +455,36 @@ function tpps_compare_files($fid_1, $fid_2, $file_1_id_name, $file_2_id_name, $f
  *   The state of the form that the file is part of.
  * @param array $required_groups
  *   The required column option groups for the file.
+ *   Example:
+ *   [
+ *     'SNP ID' => ['id' => [1]],
+ *     'Scaffold' => ['scaffold' => [2]],
+ *     'Position' => ['position' => [3]],
+ *     'Allele' => ['allele' => [4]],
+ *     'Associated Trait' => ['trait' => [5]],
+ *     'Confidence Value' => ['confidence' => [6]],
+ *   ].
  * @param array $file_element
  *   The managed_file element of the file within the form.
  *
  * @return array
  *   The groups and the column option types that the file was valid for.
+ *
+ *   Example:
+ *   [
+ *     // <Name> => [
+ *     //   <id in the option's list> => <column index>,
+ *     //   '#type' => <key>
+ *     // ],
+ *     'SNP ID' => [1 => 'B', '#type' => 'id'],
+ *     'Scaffold' => [
+ *       '#type' => [], // < ---- Not found!
+ *     ],
+ *     'Position' => [3 => 'D', '#type' => 'position'],
+ *     'Allele' => [4 => 'E', '#type' => 'allele'],
+ *     'Associated Trait' => [5 => 'F', '#type' => 'trait'],
+ *     'Confidence Value' => [6 => 'G', '#type' => 'confidence'],
+ *   ];
  */
 function tpps_file_validate_columns(array &$form_state, array $required_groups, array $file_element) {
 
@@ -478,7 +502,7 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
     return [];
   }
 
-  $cols = $file_element['#value']['columns'] ?? NULL;
+  $selected_columns = $file_element['#value']['columns'] ?? NULL;
   $parents = $file_element['#parents'];
   $new_end_columns = end($parents) . "-columns";
   $new_end_no_header = end($parents) . "-no-header";
@@ -507,13 +531,13 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
     }
   }
 
-  if ($cols) {
-    // Note: $cols will be empty when user just added file (not clicked 'Upload'
+  if ($selected_columns) {
+    // Note: $selected_columns will be empty when user just added file (not clicked 'Upload'
     // button and submitted form (clicked 'Next' button).
     // Probably columns could be detected automatically because they are shown
     // at page and so we could use default values here.
     // @TODO Get default set of columns.
-    foreach ($cols as $name => $type) {
+    foreach ($selected_columns as $name => $type) {
       $state_column_values[$name] = $type;
       foreach ($required_groups_flat as $group => $types) {
         if (in_array($type, $types)) {
@@ -559,6 +583,17 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
     }
   }
 
+  // Replaces list of column names with a single value when was found only one. Instead of this:
+  // [
+  //   'Flank sequence' => [
+  //     '4' => ['0' => 'B'],
+  //     '#type' => ['0' => 'sequence'],
+  //   ]
+  // ];
+  // we will get this:
+  // [
+  //   'Flank sequence' => ['4' => 'B', '#type' => 'sequence'],
+  // ];
   foreach ($groups as $key => $group) {
     foreach ($group as $opt_num => $col_names) {
       if (count($col_names) == 1) {
@@ -575,7 +610,8 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
 /**
  * Saves file column selections to the values of the form_state.
  *
- * Note: called of 'Save' button also.
+ * Note: also called on 'Save' button. See tpps_main_form_validate().
+ * Note: Stores columns into 'values' (not 'saved_values').
  *
  * This function is called before the form is validated so that the column
  * options can be saved whenever the user makes a selection.
@@ -616,6 +652,8 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
       $field_name_list = [
         $snp_fieldset => [
           'snps-association',
+          // 'snp-assay' has no data type selection for columns.
+          'assay-design',
         ],
         $other_fieldset => [
           'other_marker',
@@ -1013,7 +1051,15 @@ function tpps_get_archive_files($archive) {
  *   Whether or not the no_header option has been set for the file.
  *
  * @return array
- *   An array of headers for the file.
+ *   An array of headers for the file
+ *   Examples of format:
+ *   $no_header = TRUE | $no_header = FALSE
+ *   [                 | [
+ *     'A' => 0,       |   'A' => 'SNP ID',
+ *     'B' => 1,       |   'B' => 'Scaffold',
+ *     'C' => 2,       |   'C' => 'Position',
+ *     'D' => 3,       |   'D' => 'Flank sequence',
+ *   ];                | ].
  */
 function tpps_file_headers($fid, $no_header = FALSE) {
   $headers = array();
