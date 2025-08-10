@@ -265,10 +265,6 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
   $file_type = $snps['file-type'] ?? NULL;
   // File fields:
   $vcf = $snps['vcf'] ?? 0;
-  $snps_assay = $snps['snps-assay'] ?? 0;
-  $assay_design = AssayDesign::getFileId($org_num, $form_state);
-  $assoc_file = $snps['snps-association'] ?? 0;
-
   $page3 = $form_state['saved_values'][TPPS_PAGE_3];
 
   // [VS]
@@ -583,120 +579,13 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
       tpps_preserve_valid_file($form_state, $vcf, $org_num, "Genotype_VCF");
     }
   }
-
-
-  if (
-    $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
-    || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
-  ) {
-    if (!$snps_assay) {
-      tpps_form_error_required($form_state,
-        [$id, 'genotype', $snps_fieldset, 'snps-assay']
-      );
-    }
-    else {
-      $headers = tpps_file_headers($snps_assay);
-      $id_col_name = key($headers);
-      while (($k = array_search(NULL, $headers))) {
-        $message = t('Following header column is Null which needs to be fixed. '
-          . '%data', ['%data' => $k]);
-        drupal_set_message($message, 'error');
-        unset($headers[$k]);
-      }
-      $num_columns = tpps_file_width($snps_assay) - 1;
-      $num_unique_columns = count(array_unique($headers)) - 1;
-      if ($num_unique_columns != $num_columns) {
-        $duplicates = array_diff_assoc($headers, array_unique($headers));
-        if (!empty($duplicates)) {
-          drupal_set_message(
-            t('Following header values are duplicate in provided snp file. %data',
-            array('%data' => implode(',', $duplicates))),
-          'error'
-          );
-        }
-        form_set_error("$id][genotype][$snps_fieldset][snps-assay",
-          t("SNPs Assay file: some columns in the file you provided are "
-            . "missing or have duplicate header values. Please either enter "
-            . "valid header values for those columns or remove those columns, "
-            . "then reupload your file."
-          )
-        );
-      }
-
-      // #86782z4xu Skip this check if we reuse files from existing study.
-      // @todo Minor. Maybe better to get new list of trees and use it in
-      // all other checks to be sure we have the same list in other files.
-      if (!form_get_errors() && empty($page3['existing_trees'])) {
-        $acc_no_header = $page3['tree-accession'][$species_index]['file-no-header'];
-        $missing_trees = tpps_compare_files(
-          $snps_assay,
-          $tree_accession_file,
-          $id_col_name,
-          $id_col_accession_name,
-          FALSE,
-          $acc_no_header
-        );
-        if ($missing_trees !== []) {
-          form_set_error("$id][genotype][$snps_fieldset][snps-assay",
-            t(
-              "SNPs Assay file: We detected Plant Identifiers that were "
-              . "not in your Plant Accession file. Please either remove these "
-              . "plants from your Genotype file, or add them to your "
-              . "Plant Accession file. "
-              . "The Plant Identifiers we found were: @tree_id_str",
-              ['@tree_id_str' => implode(', ', $missing_trees)]
-            )
-          );
-        }
-      }
-      // Preserve file if it is valid.
-      tpps_preserve_valid_file($form_state, $snps_assay, $org_num, "Genotype_SNPs_Assay");
-
-      SnpAssociation::validate($org_num, $form, $form_state);
-
-      if (!form_get_errors()) {
-        if (
-          $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
-          && ($snps['snps-association'] ?? 0)
-        ) {
-          // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-          // SNPs Population Structure file.
-          if (
-            $snps['upload_snp_population'] == 'Yes'
-            && !tpps_is_required_field_empty($form_state,
-              [$id, 'genotype', $snps_fieldset, 'snps-pop-struct']
-            )
-          ) {
-            // Preserve file if it is valid.
-            tpps_preserve_valid_file(
-              $form_state,
-              $snps['snps-pop-struct'],
-              $org_num,
-              'SNPs_Population_Structure'
-            );
-          }
-          // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-          // SNPs Kinship File.
-          if ($snps['upload_snp_kinship'] == 'Yes'
-            && !tpps_is_required_field_empty(
-              $form_state, [$id, 'genotype', $snps_fieldset, 'snps-kinship'])
-          ) {
-            // Preserve file if it is valid.
-            tpps_preserve_valid_file(
-              $form_state,
-              $snps['snps-kinship'],
-              $org_num,
-              'SNPs_Kinship'
-            );
-          }
-        }
-      }
-    }
-  }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Assay Design.
+  SnpAssay::validate($org_num, $form, $form_state);
+  SnpAssociation::validate($org_num, $form, $form_state);
+  // AssayDesign file requires 'SNP Association' and 'SNP Assay' files.
   AssayDesign::validate($org_num, $form, $form_state);
-  AssayDesignCitation::validate($org_num, $form, $form_state);
+  SnpsPopulationStructure::validate($org_num, $form, $form_state);
+  SnpsKinship::validate($org_num, $form, $form_state);
 }
 
 /**
@@ -1093,8 +982,9 @@ function tpps_validate_genotype_other(array &$genotype, $organism_index, array $
   }
 
   if (!form_get_errors()) {
+    // @TODO Reuse SnpAssay::validateTrees();
     $acc_no_header = $page3_values['tree-accession'][$species_index]['file-no-header'];
-    // Note: Seems this field is now missing on form.
+    // Note: Field 'no-header' is now removed from the form.
     $other_no_header = $genotype[$other_fieldset]['other_marker-no-header'] ?? FALSE;
     $missing_trees = tpps_compare_files(
       $other_file,
