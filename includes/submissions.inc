@@ -843,15 +843,15 @@ function tpps_submission_clear_db($accession) {
 
   // @TODO Execute $stocks_sql and use plain list of ids instead of query.
   $stocks_sql = "SELECT stock_id FROM chado.project_stock WHERE project_id = $project_id";
-  echo $stocks_sql . "\n";
+  tpps_log($stocks_sql);
   chado_query("UPDATE chado.project_dbxref SET is_current = FALSE WHERE project_id = $project_id");
 
   tpps_project_clear_db($project_id);
 
   chado_query("DELETE FROM chado.phenotype_cvterm WHERE phenotype_id IN (SELECT phenotype_id from chado.stock_phenotype WHERE stock_id in ($stocks_sql))");
-  echo "DELETE chado.phenotype_to_synonym values for project...\n";
+  tpps_log('DELETE chado.phenotype_to_synonym values for project...');
   chado_query("DELETE FROM chado.phenotype_to_synonym WHERE phenotype_id IN (SELECT phenotype_id FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql))");
-  echo "DELETE chado.phenotype values for project...\n";
+  tpps_log('DELETE chado.phenotype values for project...');
   chado_query("DELETE FROM chado.phenotype WHERE phenotype_id IN (SELECT phenotype_id FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql))");
 
   $table_list = [
@@ -860,22 +860,22 @@ function tpps_submission_clear_db($accession) {
   ];
   foreach ($table_list as $table) {
     if (db_table_exists($table)) {
-      echo "DELETE $table values for accession $accession...\n";
+      tpps_log('DELETE $table values for accession $accession...');
       chado_query("DELETE FROM $table WHERE study_accession = '" . strtoupper($accession) . "';");
     }
   }
   tpps_log('DELETE chado.stock_genotype values for project...');
   chado_query("DELETE FROM chado.stock_genotype WHERE stock_id IN ($stocks_sql)");
-  echo "DELETE chado.stock_phenotype values for project...\n";
+  tpps_log('DELETE chado.stock_phenotype values for project...');
   chado_query("DELETE FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql)");
-  echo "DELETE chado.stock values for project...\n";
+  tpps_log('DELETE chado.stock values for project...');
   chado_query("DELETE FROM chado.stock WHERE stock_id IN ($stocks_sql)");
-  echo "DELETE chado.phenotype values for project...\n";
+  tpps_log('DELETE chado.phenotype values for project...');
   chado_query("DELETE FROM chado.phenotype WHERE uniquename LIKE '" . $accession . "-%';");
 
-  echo "FINISHED DB CLEAR DELETES\n";
+  tpps_log('FINISHED DB CLEAR DELETES');
   $time_end = time();
-  echo "Time taken to delete records: " . ($time_end - $time_start) . "\n";
+  tpps_log('Time taken to delete records: @time.', ['@time' => $time_end - $time_start]);
 
   // Force delete stock just in case by study accession name.
   // Make sure to ensure $accession is properly populated before doing this.
