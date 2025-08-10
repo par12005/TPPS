@@ -36,19 +36,19 @@ class SnpAssociation {
    */
   public static function getColumnOptions() {
     return [
-      self::DATA_TYPE_SNP_ID => 'SNP ID',
-      self::DATA_TYPE_SCAFFOLD => 'Scaffold',
-      self::DATA_TYPE_POSITION => 'Position',
-      self::DATA_TYPE_ALLELE => 'Allele',
-      self::DATA_TYPE_ASSOCIATED_TRAIT => 'Associated Trait',
-      self::DATA_TYPE_CONFIDENCE_VALUE => 'Confidence Value',
-      self::DATA_TYPE_GENE_ID => 'Gene ID',
-      self::DATA_TYPE_ANNOTATION => 'Annotation',
+      static::DATA_TYPE_SNP_ID => 'SNP ID',
+      static::DATA_TYPE_SCAFFOLD => 'Scaffold',
+      static::DATA_TYPE_POSITION => 'Position',
+      static::DATA_TYPE_ALLELE => 'Allele',
+      static::DATA_TYPE_ASSOCIATED_TRAIT => 'Associated Trait',
+      static::DATA_TYPE_CONFIDENCE_VALUE => 'Confidence Value',
+      static::DATA_TYPE_GENE_ID => 'Gene ID',
+      static::DATA_TYPE_ANNOTATION => 'Annotation',
       // Option 'year' must be shown only when Phenotype data file has 'year'
       // column. Since phenotype data file could be added/removed at the same
       // page beside 'SNP Association' file field we add this option at
       // server side and will add/remove it on client's side (in browser).
-      self::DATA_TYPE_YEAR => 'Year',
+      static::DATA_TYPE_YEAR => 'Year',
     ];
   }
 
@@ -63,7 +63,158 @@ class SnpAssociation {
    *   Drupal Form API State Array.
    */
   public static function build($id, array &$form, array $form_state) {
-    $page4_values = $form_state['saved_values'][TPPS_PAGE_4];
+    if (!tpps_is_genotype_data_type($form_state)) {
+      return;
+    }
+    $organism_name = 'organism-' . $organism_index;
+    $sub_form = &$form[$organism_name][static::DATA_TYPE];
+
+    $sub_form[static::FORM_PARENT_FIELDSET]['upload_snp_association'] = [
+      '#type' => 'select',
+      '#title' => t('Would you like to upload a SNP association file?'),
+      '#options' => [
+        0 => t('- Select -'),
+        TPPS_YES => t('Yes'),
+        TPPS_NO => t('No'),
+      ],
+      '#default_value' => tpps_get_ajax_value($form_state, [
+        $organism_name,
+        static::DATA_TYPE,
+        static::FORM_PARENT_FIELDSET,
+        'upload_snp_association',
+      ]),
+    ];
+    // SNP Association File.
+    $file_field_name = 'snps-association';
+    $title = t('SNP Association File');
+    // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
+    tpps_form_build_file_field([
+      'form' => &$form,
+      'form_state' => $form_state,
+      'parents' => [$organism_name, static::DATA_TYPE, static::FORM_PARENT_FIELDSET],
+      'field_name' => static::FIELD_NAME,
+      'title' => t(static::getFieldTitle()),
+      'organism_name' => $organism_name,
+      'type' => static::DATA_TYPE,
+
+      'description' => t('Please upload a spreadsheet file containing '
+        . 'SNPs Association data. When your file is uploaded, you will '
+        . 'be shown a table with your column header names, several '
+        . 'drop-downs, and the first few rows of your file. You will be '
+        . 'asked to define the data type for each column, using the '
+        . 'drop-downs provided to you. If a column data type does not '
+        . 'fit any of the options in the drop-down menu, you may set that '
+        . 'drop-down menu to "N/A". Your file must contain columns with '
+        . 'the SNP ID, Scaffold, Position (formatted like "start:stop"), '
+        . 'Allele (formatted like "major:minor"), Associated Trait Name '
+        . '(must match a phenotype from the above section), and '
+        . 'Confidence Value. Optionally, you can also specify a Gene ID '
+        . '(which should match the gene reference) and '
+        . 'a SNP Annotation (non synonymous, coding, etc).'),
+      '#tree' => TRUE,
+      'optional' => TRUE,
+      'states' => [
+        'visible' => [
+          static::getStateName($organism_index,
+            [static::FORM_PARENT_FIELDSET, 'upload_snp_association']
+          ) => ['value' => TPPS_YES],
+        ],
+      ],
+      'extra_elements' => [
+        'empty' => [
+          '#default_value' => TppsArray::getValue($form_state,
+            [
+              'saved_values',
+              static::FORM_STEP,
+              $organism_name,
+              static::DATA_TYPE,
+              static::FORM_PARENT_FIELDSET,
+              $file_field_name,
+              'empty',
+            ]) ?? 'NA',
+        ],
+        'columns' => [
+          '#description' => t('Please define which columns hold the '
+            . 'required data: SNP ID, Scaffold, Position, Allele, '
+            . 'Associated Trait, Confidence Value.'),
+        ],
+        'columns-options' => [
+          '#type' => 'hidden',
+          '#value' => SnpAssociation::getColumnOptions(),
+        ],
+        'no-header' => [],
+      ],
+    ]);
+    tpps_add_css_js('page_4_snp_association', $form);
+    // Send Option Id of the 'Year' data type to browser to enable/disable this
+    // option when Phenotype Data file has/hasn't 'Year' column.
+    $form['#attached']['js'][] = [
+      'type' => 'setting',
+      'data' => [
+        'tpps' => [
+          'snpAssociation' => ['dataTypeYear' => SnpAssociation::DATA_TYPE_YEAR],
+          'phenotypeData' => ['dataTypeYear' => PhenotypeData::DATA_TYPE_YEAR],
+        ],
+      ],
+      'scope' => 'footer',
+    ];
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
+    // This field must be optional to not block submission but later will be
+    // moved to new page5.
+    $field_name = 'snps-association-type';
+    $sub_form[static::FORM_PARENT_FIELDSET][$field_name] = [
+      '#type' => 'select',
+      '#title' => t('Confidence Value Type: *'),
+      '#options' => [
+        0 => t('- Select -'),
+        'P value' => t('P value'),
+        'Genomic Inflation Factor (GIF)' => t('Genomic Inflation Factor (GIF)'),
+        'P-adjusted (FDR) / Q value' => t('P-adjusted (FDR) / Q value'),
+        'P-adjusted (FWE)' => t('P-adjusted (FWE)'),
+        'P-adjusted (Bonferroni)' => t('P-adjusted (Bonferroni)'),
+      ],
+      '#states' => [
+        'visible' => [
+          static::getStateName($organism_index,
+            [static::FORM_PARENT_FIELDSET, 'upload_snp_association']
+          ) => ['value' => TPPS_YES],
+          static::getStateName($organism_index,
+            ['does_study_include_snp_data']
+          ) => ['value' => 'yes'],
+        ],
+      ],
+    ];
+
+    // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
+    // Field is optional.
+    $field_name = 'snps-association-tool';
+    $sub_form[static::FORM_PARENT_FIELDSET][$field_name] = [
+      '#type' => 'select',
+      '#title' => t('Association Analysis Tool: *'),
+      '#options' => [
+        0 => t('- Select -'),
+        'GEMMA' => t('GEMMA'),
+        'EMMAX' => t('EMMAX'),
+        'Plink' => t('Plink'),
+        'Tassel' => t('Tassel'),
+        'Sambada' => t('Sambada'),
+        'Bayenv' => t('Bayenv'),
+        'BayeScan' => t('BayeScan'),
+        'LFMM' => t('LFMM'),
+      ],
+      '#states' => [
+        'visible' => [
+          static::getStateName($organism_index,
+            [static::FORM_PARENT_FIELDSET, 'upload_snp_association']
+          ) => ['value' => TPPS_YES],
+          static::getStateName($organism_index,
+            ['does_study_include_snp_data']
+          ) => ['value' => 'yes'],
+        ],
+      ],
+    ];
   }
 
   /**
@@ -97,12 +248,12 @@ class SnpAssociation {
     // @todo Minor. Implement ability to run this code when study was already
     // submitted (on processing step).
     $required_groups = [
-      'SNP ID' => ['id' => [self::DATA_TYPE_SNP_ID]],
-      'Scaffold' => ['scaffold' => [self::DATA_TYPE_SCAFFOLD]],
-      'Position' => ['position' => [self::DATA_TYPE_POSITION]],
-      'Allele' => ['allele' => [self::DATA_TYPE_ALLELE]],
-      'Associated Trait' => ['trait' => [self::DATA_TYPE_ASSOCIATED_TRAIT]],
-      'Confidence Value' => ['confidence' => [self::DATA_TYPE_CONFIDENCE_VALUE]],
+      'SNP ID' => ['id' => [static::DATA_TYPE_SNP_ID]],
+      'Scaffold' => ['scaffold' => [static::DATA_TYPE_SCAFFOLD]],
+      'Position' => ['position' => [static::DATA_TYPE_POSITION]],
+      'Allele' => ['allele' => [static::DATA_TYPE_ALLELE]],
+      'Associated Trait' => ['trait' => [static::DATA_TYPE_ASSOCIATED_TRAIT]],
+      'Confidence Value' => ['confidence' => [static::DATA_TYPE_CONFIDENCE_VALUE]],
       // Optional.
       // 7 => 'Gene ID',
       // 8 => 'Annotation',
@@ -111,7 +262,7 @@ class SnpAssociation {
     ];
 
     if (PhenotypeData::isDataTypeSet($form_state, $org_num, PhenotypeData::DATA_TYPE_YEAR)) {
-      $required_groups['Year'] = ['year' => [self::DATA_TYPE_YEAR]];
+      $required_groups['Year'] = ['year' => [static::DATA_TYPE_YEAR]];
     }
 
     // Note: File id stored in $form (!) but not stored in $form_state.
@@ -123,7 +274,7 @@ class SnpAssociation {
     }
 
     // Check that SNP IDs match Genotype Assay.
-    $snps_id_col = $groups['SNP ID'][self::DATA_TYPE_SNP_ID];
+    $snps_id_col = $groups['SNP ID'][static::DATA_TYPE_SNP_ID];
     $assoc_no_header = $snps['snps-association-no-header'] ?? FALSE;
 
     $assay_snps = tpps_file_headers($snps_assay);
@@ -141,7 +292,7 @@ class SnpAssociation {
     }
 
     // Check that Phenotype names match phenotype metadata section.
-    $trait_id_col = $groups['Associated Trait'][self::DATA_TYPE_ASSOCIATED_TRAIT];
+    $trait_id_col = $groups['Associated Trait'][static::DATA_TYPE_ASSOCIATED_TRAIT];
     $association_phenotypes = tpps_parse_file_column(
       $fid, $trait_id_col, $assoc_no_header
     );
@@ -173,7 +324,7 @@ class SnpAssociation {
     }
 
     // Check that position values are correctly formatted.
-    $position_col = $groups['Position'][self::DATA_TYPE_POSITION];
+    $position_col = $groups['Position'][static::DATA_TYPE_POSITION];
     $positions = tpps_parse_file_column($fid, $position_col, $assoc_no_header);
     foreach ($positions as $position) {
       if (
@@ -225,7 +376,7 @@ class SnpAssociation {
     }
 
     // While $row has values, $named_row has keys for each value.
-    $named_row = self::getNamedRow($row, $options);
+    $named_row = static::getNamedRow($row, $options);
     if ($named_row['id'] != $name[1]) {
       // This is another genotype.
       return;
@@ -272,7 +423,7 @@ class SnpAssociation {
     $query->join('chado.cvterm', 'ct', 'ct.cvterm_id = ps.attribute_id');
     // 'Associated trait' column from SNP Association file).
     $query->condition('ct.name', $named_row['trait']);
-    $query->condition('ct.cv_id', self::CV_ID_PATO);
+    $query->condition('ct.cv_id', static::CV_ID_PATO);
     $phenotype_synonyms_id = $query->range(0, 1)->execute()->fetchField();
     if (empty($phenotype_synonyms_id)) {
       // Synonym wasn't found.
@@ -309,7 +460,7 @@ class SnpAssociation {
    */
   public static function validateRow($row, array &$options = []) {
     $name = $options['id'] . '][genotype][snps-association';
-    self::getNamedRow($row, $options);
+    static::getNamedRow($row, $options);
     $associations = $options['associations'];
     $column_list = $options['column_list'];
     $groups = $options['associations_groups'];
@@ -319,15 +470,15 @@ class SnpAssociation {
     ];
 
     // Check if required columns has non-empty fields (values).
-    $non_empty_column_list['required'] = self::getColumnOptions();
+    $non_empty_column_list['required'] = static::getColumnOptions();
     // Note: optional 'Gene Id' and 'Annotation' columns could have empty
     // values or be missing in file at all so we don't check them.
-    unset($non_empty_column_list['required'][self::DATA_TYPE_GENE_ID]);
-    unset($non_empty_column_list['required'][self::DATA_TYPE_ANNOTATION]);
+    unset($non_empty_column_list['required'][static::DATA_TYPE_GENE_ID]);
+    unset($non_empty_column_list['required'][static::DATA_TYPE_ANNOTATION]);
     // Conditional.
-    $non_empty_column_list['conditional'][self::DATA_TYPE_YEAR]
-      = $non_empty_column_list['required'][self::DATA_TYPE_YEAR];
-    unset($non_empty_column_list['required'][self::DATA_TYPE_YEAR]);
+    $non_empty_column_list['conditional'][static::DATA_TYPE_YEAR]
+      = $non_empty_column_list['required'][static::DATA_TYPE_YEAR];
+    unset($non_empty_column_list['required'][static::DATA_TYPE_YEAR]);
     foreach ($non_empty_column_list as $type => $item) {
       foreach ($item as $column_key => $column_title) {
         $column_index = array_search($column_key, $column_list);
@@ -336,7 +487,7 @@ class SnpAssociation {
             $type == 'conditional'
             // Do not show error if column wasn't found in the list of required
             // columns which means it's not required not (conditions wasn't met).
-            && empty($groups['Year'][self::DATA_TYPE_YEAR])
+            && empty($groups['Year'][static::DATA_TYPE_YEAR])
           ) {
             continue;
           }
@@ -380,7 +531,7 @@ class SnpAssociation {
       return;
     }
 
-    $id = $row[($groups['SNP ID'][self::DATA_TYPE_SNP_ID] ?? NULL)] ?? NULL;
+    $id = $row[($groups['SNP ID'][static::DATA_TYPE_SNP_ID] ?? NULL)] ?? NULL;
     $position = $row[$groups['Position'][3]];
     $trait = $row[$groups['Associated Trait'][5]];
 
@@ -399,8 +550,8 @@ class SnpAssociation {
       //'trait_attr' => $options['phenotype_meta'][strtolower($trait)]['attr_id'],
       //'trait_obs' => $options['phenotype_meta'][strtolower($trait)]['struct_id'] ?? NULL,
       // Optional.
-      'gene_id' => $row[($groups['Gene ID'][self::DATA_TYPE_GENE_ID] ?? NULL)] ?? NULL,
-      'annotation' => $row[($groups['Annotation'][self::DATA_TYPE_ANNOTATION] ?? NULL)] ?? NULL,
+      'gene_id' => $row[($groups['Gene ID'][static::DATA_TYPE_GENE_ID] ?? NULL)] ?? NULL,
+      'annotation' => $row[($groups['Annotation'][static::DATA_TYPE_ANNOTATION] ?? NULL)] ?? NULL,
       // Conditional.
       'year' => $row[$groups['Year'][9]] ?? NULL,
     ];
@@ -422,7 +573,7 @@ class SnpAssociation {
     }
     return $associations[$id];
   }
-  
+
   /**
    * Gets File Id from Shared State array.
    *
@@ -461,7 +612,7 @@ class SnpAssociation {
    *   WARNING: 'genotype_id' is required to store 'year' column on file.
    */
   public static function process($organism_index, array $shared_state, array &$options = []) {
-    if (empty($fid = self::getFileId($organism_index, $shared_state))) {
+    if (empty($fid = static::getFileId($organism_index, $shared_state))) {
       return;
     }
 
@@ -485,8 +636,8 @@ class SnpAssociation {
     if (empty($options['genotype_name'])) {
       return;
     }
-    self::getNamedRow($row, $options);
-    self::storeYear($row, $options);
+    static::getNamedRow($row, $options);
+    static::storeYear($row, $options);
   }
 
   /**
