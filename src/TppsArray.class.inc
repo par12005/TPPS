@@ -66,7 +66,6 @@ class TppsArray {
     return self::isEqual($intersection, $array1);
   }
 
-
   /**
    * Replaces $old with $new in array's values and keys.
    *
@@ -172,7 +171,7 @@ class TppsArray {
   }
 
   /**
-   * Applys given list of changes to the array.
+   * Applies given list of changes to the array.
    *
    * Note: no version numbers here.
    *
@@ -198,7 +197,7 @@ class TppsArray {
       // Note: $action_data is a list of all actions (not single action).
       $method = 'TppsArray::' . $action;
       $params = ['@function_name' => $method, '@action' => $action];
-      if (!function_exists($method)) {
+      if (!method_exists('TppsArray', $action) && !function_exists($function)) {
         $message = "Function @function_name wan't found.";
         tpps_message($message, $params, 'error');
         continue;
@@ -388,17 +387,16 @@ class TppsArray {
    * @param array $parents
    *   List of the element's parents (including element name).
    *   When empty array then original $array will be returned.
+   * @param mixed $key_exists
+   *   If given, an already defined variable that is altered by reference.
    *
    * @return mixed
    *   Returns the reference (!) to the value of the element of the array.
    *   Returns $default if element wasn't found in given array but not reference.
    *   Returns $array when $parents is an empty array.
    */
-  public static function &getValue(&$array = [], array $parents = []) {
-    $key_exists = FALSE;
-    if (!empty($array) && is_array($array)) {
-      $value = &drupal_array_get_nested_value($array, $parents, $key_exists);
-    }
+  public static function &getValue(array &$array, array $parents = [], &$key_exists = NULL) {
+    $value = &drupal_array_get_nested_value($array, $parents, $key_exists);
     if ($key_exists) {
       return $value;
     }
