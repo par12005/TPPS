@@ -24,6 +24,7 @@ files[] = src/ImportedSubmissionList.class.inc
 files[] = src/Report.class.inc
 files[] = src/FormState.class.inc
 files[] = src/TppsConfiguration.class.inc
+files[] = src/TppsArray.class.inc
 
 ; Zenodo API.
 files[] = src/zenodo/Zenodo.class.inc
