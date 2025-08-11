@@ -36,6 +36,8 @@ class PhenotypeData extends TppsFile {
   const FIELD_NAME = 'file';
   // Name of the fieldset on PAGE 4.
   const DATA_TYPE = 'phenotype';
+  // Form step where field is used.
+  const FORM_STEP = 4;
 
   /**
    * Gets parents of the field.
@@ -566,11 +568,10 @@ class PhenotypeData extends TppsFile {
    *   Returns TRUE if data type was set and FALSE otherwise.
    */
   public static function isDataTypeSet(array $form_state, $organism_index, $data_type_id) {
-    $selected_columns = drupal_array_get_nested_value(
-      $form_state['input'],
+    $selected_columns = TppsArray::getValue($form_state['input'],
       ['organism-' . $organism_index, 'phenotype', static::FIELD_NAME, 'columns']
     );
-    return in_array($data_type_id, $selected_columns);
+    return !empty($selected_columns) && in_array($data_type_id, $selected_columns);
   }
 
   /**

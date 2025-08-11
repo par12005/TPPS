@@ -17,6 +17,9 @@
  */
 class PhenotypeMeta {
 
+  // Form step where field is used.
+  const FORM_STEP = 4;
+
   // Keys for Phenotype Metadata file columns (data types) options.
   // See PhenotypeMeta::getColumnOptions().
   const DATA_TYPE_IDENTIFIER = 1;
