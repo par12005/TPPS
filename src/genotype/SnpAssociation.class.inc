@@ -3,6 +3,14 @@
 /**
  * @file
  * Contains 'SnpAssociation' class.
+ *
+ * Submission Version changes:
+ * Field was relocated (v.2). ['files'] -> [$snps_fieldset].
+ *
+ * Note:
+ * build() works with $form (and $form_state).
+ * validate() works with $form_state.
+ * process() works with $shared_state.
  */
 
 /**
@@ -11,9 +19,31 @@
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class SnpAssociation {
++class SnpAssociation extends FileField {
 
-  // Data types for 'SNP Association' field columns.
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Common settings.
+  //
+  const TITLE = 'SNPs Association';
+  // Name of the form field.
+  const FIELD_NAME = 'snps-association';
+  // Name of the parent fieldset on form (!) not shared form state.
+  // static::FORM_PARENT_FIELDSET.
+  const FORM_PARENT_FIELDSET = 'SNPs';
+  // Name of the parent element in shared state array.
+  // Note: Differs if field was relocated. See versions in function
+  // tpps_submission_form_version_changes().
+  const SHARED_STATE_PARENT_FIELDSET = 'files';
+  // Type of the data.
+  // Could be 'phenotype', 'genotype' or 'environmental'.
+  const DATA_TYPE = 'genotype';
+  // Form step where field is used.
+  const FORM_STEP = 4;
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Custom settings.
+  //
+  // Data types for field columns.
   const DATA_TYPE_SNP_ID = 1;
   const DATA_TYPE_SCAFFOLD = 2;
   const DATA_TYPE_POSITION = 3;
@@ -85,13 +115,14 @@ class SnpAssociation {
       ]),
     ];
     // SNP Association File.
-    $file_field_name = 'snps-association';
-    $title = t('SNP Association File');
-    // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
     tpps_form_build_file_field([
       'form' => &$form,
       'form_state' => $form_state,
-      'parents' => [$organism_name, static::DATA_TYPE, static::FORM_PARENT_FIELDSET],
+      'parents' => [
+        $organism_name,
+        static::DATA_TYPE,
+        static::FORM_PARENT_FIELDSET,
+      ],
       'field_name' => static::FIELD_NAME,
       'title' => t(static::getFieldTitle()),
       'organism_name' => $organism_name,
@@ -129,7 +160,7 @@ class SnpAssociation {
               $organism_name,
               static::DATA_TYPE,
               static::FORM_PARENT_FIELDSET,
-              $file_field_name,
+              static::FIELD_NAME,
               'empty',
             ]) ?? 'NA',
         ],
@@ -220,29 +251,38 @@ class SnpAssociation {
   /**
    * Validates file field.
    *
-   * @param int $org_num
+   * @param int $organism_index
    *   Ordinal organism number on page.
    * @param array $form
    *   Drupal Form API array.
    * @param array $form_state
    *   Drupal Form API State array.
    */
-  public static function validate($org_num, array &$form, array &$form_state) {
-    $genotype = &$form_state['values']["organism-$org_num"]['genotype'] ?? NULL;
-    $snps_fieldset = 'SNPs';
-    $snps = &$genotype[$snps_fieldset] ?? NULL;
+  public static function validate($organism_index, array &$form, array &$form_state) {
+    // @TOdO Rename $id into $organism_key.
+    $id = 'organism-' . $organism_index;
+    $fid = static::getFileId($organism_index, $form_state);
+    $genotype = &$form_state['values'][$id][static::DATA_TYPE] ?? NULL;
+    $snps = &$genotype[static::FORM_PARENT_FIELDSET] ?? NULL;
     $snps_assay = $snps['snps-assay'] ?? 0;
-    $fid = $snps['snps-association'] ?? 0;
     $file_type = $snps['file-type'] ?? NULL;
-    $id = "organism-$org_num";
 
-    if (
-      form_get_errors()
-      || $file_type != TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
-      // No file uploaded.
-      || empty($fid)
-    ) {
-      return;
+    if (form_get_errors()) {
+      // Do not validate if any errors already found.
+      return FALSE;
+    }
+    static::validateRequired($organism_index, $form_state, (
+      // Requirement conditions:
+      (
+        $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
+        || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
+      )
+      && !empty($snps['snps-assay'])
+      && TppsArray::getValue($snps, ['upload_snp_association']) == TPPS_YES
+    ));
+    // Do NOT allow empty field validation.
+    if (form_get_errors()) {
+      return FALSE;
     }
 
     // @todo Minor. Implement ability to run this code when study was already
@@ -257,38 +297,61 @@ class SnpAssociation {
       // Optional.
       // 7 => 'Gene ID',
       // 8 => 'Annotation',
-      // Conditional. Required when Phenotype data file has 'Year'column.
+      // Conditional.
+      // Required when Phenotype data file exists and has 'Year'column.
       // 9 => 'Year'.
     ];
 
-    if (PhenotypeData::isDataTypeSet($form_state, $org_num, PhenotypeData::DATA_TYPE_YEAR)) {
+    if (
+      static::isPhenotypeStudy($form_state)
+      && PhenotypeData::isDataTypeSet($form_state, $organism_index, PhenotypeData::DATA_TYPE_YEAR)
+    ) {
       $required_groups['Year'] = ['year' => [static::DATA_TYPE_YEAR]];
     }
+    // @todo Minor. We exclude 'Year' column data type when it's not
+    // a Phenotypestudy or column 'Year' is missing in Phenotype Data file.
+    // But also we could show warning message and ask user to upload
+    // SNP Association file without 'Year' column.
+    $groups = tpps_file_validate_columns(
+      $form_state,
+      $required_groups,
+      // Note: This is file id stored in $form!
+      $form[$id]['genotype'][static::FORM_PARENT_FIELDSET][static::FIELD_NAME]
+    );
 
-    // Note: File id stored in $form (!) but not stored in $form_state.
-    $file_id = $form[$id]['genotype'][$snps_fieldset]['snps-association'];
-    $groups = tpps_file_validate_columns($form_state, $required_groups, $file_id);
-
+    if (form_get_errors()) {
+      return;
+    }
+    // Do not allow the same data type for multiple columns.
+    static::allowColumnDataTypeUseOnce($organism_index, $groups);
     if (form_get_errors()) {
       return;
     }
 
     // Check that SNP IDs match Genotype Assay.
     $snps_id_col = $groups['SNP ID'][static::DATA_TYPE_SNP_ID];
-    $assoc_no_header = $snps['snps-association-no-header'] ?? FALSE;
+    // For search purpose: 'snps-association-no-header'.
+    $assoc_no_header = $snps[static::FIELD_NAME . '-no-header'] ?? FALSE;
 
     $assay_snps = tpps_file_headers($snps_assay);
     unset($assay_snps[key($assay_snps)]);
     $assoc_snps = tpps_parse_file_column($fid, $snps_id_col, $assoc_no_header);
     $missing_snps = array_diff($assoc_snps, $assay_snps);
 
+    // @todo Re-use FileField::matchColumnValues().
     if (!empty($missing_snps)) {
-      form_set_error("$id][genotype][$snps_fieldset][snps-association",
-        t("SNP Association File: We detected SNP IDs that were not in "
-        . "your Genotype Assay. Please either remove these SNPs from "
-        . "your Association file, or add them to your Genotype Assay. "
-        . "The SNP Identifiers we found were: @list",
-        ['@list' => implode(', ', $missing_snps)]));
+      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+        . 'We detected SNP IDs that were not in your SNP Assay. '
+        . 'Please either remove these SNPs from your Association file, '
+        . 'or add them to your SNP Assay. '
+        . '<br />The SNP Identifiers we found were: @list',
+        [
+          '@field_title' => t(static::getFieldTitle()),
+          '@oidx' => $organism_index,
+          '@list' => implode(', ', $missing_snps),
+        ]
+      );
+      form_set_error(static::getFormErrorName($organism_index), $error_message);
     }
 
     // Check that Phenotype names match phenotype metadata section.
@@ -297,30 +360,39 @@ class SnpAssociation {
       $fid, $trait_id_col, $assoc_no_header
     );
 
-    $phenotype = $form_state['values'][$id]['phenotype'];
-    $phenotype_meta = $phenotype['metadata'];
-    $phenotype_number = $phenotype['phenotypes-meta']['number'];
-
-    $phenotype_meta_names = [];
-    $phenotype_name_col = PhenotypeData::getPhenotypeNameColumn($org_num, $form_state);
-    if (isset($phenotype_name_col)) {
-      $phenotype_meta_names = tpps_parse_file_column($phenotype_meta, $phenotype_name_col);
-    }
-
-    for ($i = 1; $i <= $phenotype_number; $i++) {
-      $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
-    }
-
-    $missing_phenotypes = array_diff($association_phenotypes, $phenotype_meta_names);
-    if (!empty($missing_phenotypes)) {
-      form_set_error("$id][genotype][$snps_fieldset][snps-association",
-        t("SNP Association File: We detected Associated Traits that were "
-        . "not specified in the Phenotype Metadata Section. Please "
-        . "either remove these Traits from your Association file, "
-        . "or add them to your Phenotype Metadata section. The Trait "
-        . "names we foud were: @list",
-        ['@list' => implode(', ', $missing_phenotypes)])
+    if (static::isPhenotypeStudy($form_state)) {
+      $phenotype = $form_state['values'][$id]['phenotype'];
+      $phenotype_metadata_fid = $phenotype['metadata'];
+      $phenotype_number = $phenotype['phenotypes-meta']['number'];
+      $phenotype_meta_names = [];
+      $phenotype_name_col = PhenotypeData::getPhenotypeNameColumn(
+        $organism_index,
+        $form_state
       );
+      if (isset($phenotype_name_col)) {
+        $phenotype_meta_names = tpps_parse_file_column(
+          $phenotype_metadata_fid,
+          $phenotype_name_col
+        );
+      }
+      for ($i = 1; $i <= $phenotype_number; $i++) {
+        $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
+      }
+      $missing_phenotypes = array_diff($association_phenotypes, $phenotype_meta_names);
+      if (!empty($missing_phenotypes)) {
+        $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+          . 'We detected Associated Traits that were not specified in the '
+          . 'Phenotype Metadata Section. Please either remove these Traits '
+          . 'from your Association file, or add them to your Phenotype '
+          . 'Metadata section. <br />The Trait names we foud were: @list',
+          [
+            '@field_title' => t(static::getFieldTitle()),
+            '@oidx' => $organism_index,
+            '@list' => implode(', ', $missing_phenotypes),
+          ]
+        );
+        form_set_error(static::getFormErrorName($organism_index), $error_message);
+      }
     }
 
     // Check that position values are correctly formatted.
@@ -335,13 +407,16 @@ class SnpAssociation {
       ) {
         continue;
       }
-      form_set_error("$id][genotype][$snps_fieldset][snps-association",
-        t('SNP Association File: We detected SNP positions that do '
-          . 'not match the required format: @position.'
-          . '<br />The correct format is: "start:stop" or integer.',
-          ['@position' => $position]
-        )
+      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+        . 'We detected SNP positions that do not match the required format: '
+        . '@position. <br />The correct format is: "start:stop" or integer.',
+        [
+          '@field_title' => t(static::getFieldTitle()),
+          '@oidx' => $organism_index,
+          '@position' => $position,
+        ]
       );
+      form_set_error(static::getFormErrorName($organism_index), $error_message);
       break;
     }
     if (form_get_errors()) {
@@ -350,12 +425,10 @@ class SnpAssociation {
     $options = [
       'associations_groups' => $groups,
       'id' => $id,
-      'column_list' => $snps['snps-association-columns'],
+      'column_list' => $snps[static::FIELD_NAME . '-columns'],
     ];
     tpps_file_iterator($fid, 'SnpAssociation::validateRow', $options);
-
-    // Preserve file if it is valid.
-    tpps_preserve_valid_file($form_state, $fid, $org_num, "SNPs_Association");
+    static::preserveValidFile($organism_index, $form_state);
   }
 
   /**
@@ -459,7 +532,6 @@ class SnpAssociation {
    *   'id' - string e.g., 'organism-1'.
    */
   public static function validateRow($row, array &$options = []) {
-    $name = $options['id'] . '][genotype][snps-association';
     static::getNamedRow($row, $options);
     $associations = $options['associations'];
     $column_list = $options['column_list'];
@@ -492,9 +564,15 @@ class SnpAssociation {
             continue;
           }
           else {
-            $params['@column_title'] = t($column_title);
-            form_set_error($name, t('@field_title: Empty "@column_title" '
-              . 'column is not allowed.<br />Row: @list.', $params));
+            $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+              . 'Empty "@column_title" column is not allowed.',
+              [
+                '@field_title' => t(static::getFieldTitle()),
+                '@oidx' => $organism_index,
+                '@column_title' => t($column_title),
+              ]
+            );
+            form_set_error(static::getFormErrorName($organism_index), $error_message);
           }
         }
       }
@@ -525,25 +603,25 @@ class SnpAssociation {
    *   Returns associated array where keys are column name and values are
    *   values from the $row. Note: $options['associations'] also updated.
    */
-  public static function getNamedRow($row, array &$options = []) {
+  public static function getNamedRow(array $row, array &$options = []) {
     $groups = $options['associations_groups'];
     if (empty($groups)) {
       return;
     }
 
     $id = $row[($groups['SNP ID'][static::DATA_TYPE_SNP_ID] ?? NULL)] ?? NULL;
-    $position = $row[$groups['Position'][3]];
-    $trait = $row[$groups['Associated Trait'][5]];
+    $position = $row[$groups['Position'][static::DATA_TYPE_POSITION]];
+    $trait = $row[$groups['Associated Trait'][static::DATA_TYPE_ASSOCIATED_TRAIT]];
+    $confidence = $row[$groups['Confidence Value'][static::DATA_TYPE_CONFIDENCE_VALUE]];
 
-    $confidence = $row[$groups['Confidence Value'][6]];
     $associations = &$options['associations'];
     $associations[$id] = [
       // Required.
       'id' => $id,
-      'scaffold' => $row[$groups['Scaffold'][2]],
+      'scaffold' => $row[$groups['Scaffold'][static::DATA_TYPE_SCAFFOLD]],
       'start' => $position,
       'stop' => $position,
-      'allele' => $row[$groups['Allele'][4]],
+      'allele' => $row[$groups['Allele'][static::DATA_TYPE_ALLELE]],
       'trait' => $trait,
       'confidence' => $confidence,
       // Extra.
@@ -581,30 +659,6 @@ class SnpAssociation {
   }
 
   /**
-   * Gets File Id from Shared State array.
-   *
-   * @param int $organism_index
-   *   Ordinal organism number on page.
-   * @param array $shared_state
-   *   Submission's Shared State.
-   *
-   * @todo See TppsFile::getFileId() but there is no Form Versions support.
-   */
-  public static function getValue($organism_index, array $shared_state) {
-    return $shared_state['saved_values'][TPPS_PAGE_4]["organism-$organism_index"]
-      ['genotype']['files']['snps-association'] ?? NULL;
-  }
-
-  /**
-   * Alias for getValue() method.
-   *
-   * @todo Move to TppsFile class.
-   */
-  public static function getFileId($organism_index, array $form_state) {
-    return static::getValue($organism_index, $form_state);
-  }
-
-  /**
    * Processes a file.
    *
    * Note: called from /forms/submit/submit_all.php script.
@@ -622,10 +676,10 @@ class SnpAssociation {
       return;
     }
 
-    tpps_log('Processing "SNP Association" file data...', [], TRIPAL_INFO);
+    tpps_log('Started: Processing "SNP Association" file data.');
     // Note: Full class name must be used (not 'self').
     tpps_file_iterator($fid, 'SnpAssociation::processRow', $options);
-    tpps_log('Done.', [], TRIPAL_INFO);
+    tpps_log('Complete: Processing "SNP Association" file data.');
   }
 
   /**
