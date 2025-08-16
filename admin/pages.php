@@ -71,7 +71,7 @@ function tpps_admin_files_diagnostics_page($accession = NULL) {
       // [TPPS_PAGE_4, $organism_key, 'genotype','files', $fieldset = 'other'].
     ];
     foreach ($parents as $parent) {
-      if ($value = drupal_array_get_nested_value($saved_values, $parent)) {
+      if ($value = TppsArray::getValue($saved_values, $parent)) {
         array_push($file_ids, $value);
       }
     }

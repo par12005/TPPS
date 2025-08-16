@@ -1044,7 +1044,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
     if (!empty($form_state['saved_values'][$page])) {
       // @TODO Remove this if possible.
       // When form wasn't yet submitted or saved then there is no value.
-      $empty_field_parent = drupal_array_get_nested_value(
+      $empty_field_parent = TppsArray::getValue(
         $form_state['saved_values'][$page], $parents
       );
       $empty_field_default_value = $empty_field_parent[$field_name]['other'] ?? NULL;
@@ -1063,7 +1063,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // "No Header" checkbox.
-    $no_header = drupal_array_get_nested_value(
+    $no_header = TppsArray::getValue(
       $form_state['complete form'],
       array_merge($element['#parents'], ['#value', 'no-header'])
     );
@@ -1072,7 +1072,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
     if (!$no_header && ($callback != 'tpps_no_header_callback')) {
       $end = array_pop($parents);
       $parents[] = $end . '-no-header';
-      $no_header = drupal_array_get_nested_value(
+      $no_header = TppsArray::getValue(
         $form_state['saved_values'][$form_state['stage']],
         $parents
       );
@@ -1123,7 +1123,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
       array_pop($item_parents);
       $item_parents[] = end($element['#parents']) . '-columns';
       $item_parents[] = $key;
-      $default = drupal_array_get_nested_value($saved_vals, $item_parents);
+      $default = TppsArray::getValue($saved_vals, $item_parents);
       if (!isset($default)) {
         foreach ($options as $k => $val) {
           similar_text(strtolower($val), strtolower($item), $percent);

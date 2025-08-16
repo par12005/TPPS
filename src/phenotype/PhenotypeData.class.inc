@@ -544,9 +544,9 @@ class PhenotypeData extends TppsFile {
       // This value will always be '1' for 'Phenotype Id'.
       '1',
     ];
-    return drupal_array_get_nested_value($form_state['input'], $parents)
-      ?? drupal_array_get_nested_value($form_state['values'], $parents)
-      ?? drupal_array_get_nested_value(
+    return TppsArray::getValue($form_state['input'], $parents)
+      ?? TppsArray::getValue($form_state['values'], $parents)
+      ?? TppsArray::getValue(
         $form_state['saved_values'][TPPS_PAGE_4],
         $parents
       ) ?? NULL;

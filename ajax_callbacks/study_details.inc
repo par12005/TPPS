@@ -835,7 +835,7 @@ function _tpps_details_tab_build_table($query, $total, $submission) {
         continue;
       }
       // @todo Get index of the year column in file.
-      $snp_association_file_columns = drupal_array_get_nested_value(
+      $snp_association_file_columns = TppsArray::getValue(
         $submission->sharedState,
         [
           'saved_values',

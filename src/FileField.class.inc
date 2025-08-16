@@ -532,7 +532,7 @@ abstract class FileField {
         static::FIELD_NAME,
       ];
     }
-    $element = drupal_array_get_nested_value($form_state, $parents, $key_exists);
+    $element = TppsArray::getValue($form_state, $parents, $key_exists);
     if ($key_exists === FALSE) {
       throw new Exception(t("Form element wasn't found for field @field_name. "
         . "Field parents: @field_parents.",
@@ -668,7 +668,7 @@ abstract class FileField {
     array_pop($parents);
     // Note: all column related meta-data will be added to to upper element
     // (beside file field value). So to get value just add suffix to the path.
-    $values = drupal_array_get_nested_value($form_state['values'], $parents);
+    $values = TppsArray::getValue($form_state['values'], $parents);
     // Initialize form column values in form state.
     $values[$new_end_columns] = [];
     // Hold onto the location of the columns in form state.
@@ -1000,14 +1000,14 @@ abstract class FileField {
     $file_element = self::getFormElement($organism_index, $form_state);
     $parents = $file_element['#parents'];
     array_pop($parents);
-    $values = drupal_array_get_nested_value($form_state['values'], $parents);
+    $values = TppsArray::getValue($form_state['values'], $parents);
     $values[static::FIELD_NAME . '-columns'] = $file_element['#value']['columns'] ?? NULL;
     $values[static::FIELD_NAME . '-no-header'] = $file_element['#value']['no-header'] ?? NULL;
     $values[static::FIELD_NAME . '-empty'] = $file_element['#value']['empty'] ?? NULL;
     // There is no need to store required groups because of different structure
     // and this class's method could be used to get data.
     //$values[static::FIELD_NAME . '-groups']] = [];
-    drupal_array_set_nested_value($form_state['values'], $parents, $values);
+    TppsArray::setValue($form_state['values'], $parents, $values);
   }
 
   /**

@@ -287,20 +287,21 @@ class Submission {
    *   Submision::setState or $submission->state = $state.
    * @param mixed $value
    *   Value to be set.
-   * @param bool $force
+   * @param bool $update_shared_state
    *   Default is FALSE.
-   *   When TRUE then $sharedState property will be updated and element will
-   *   be set even if it doesn't exist.
+   *   When TRUE then sharedState will be updated.
+   *   Note that value under $sharedState will always be updated when value
+   *   was  found under $state.
    */
-  public function set(array $parents, $value, $force = FALSE) {
-    drupal_array_set_nested_value($this->state, $parents, $value);
+  public function set(array $parents, $value, $update_shared_state = FALSE) {
+    TppsArray::setValue($this->state, $parents, $value);
     // Update sharedState only if this value was there before.
     $key_exists = FALSE;
-    drupal_array_get_nested_value($this->sharedState, $parents, $key_exists);
-    // @TODO Shared State could have different $parents because of Form Versions.
-    // See tpps_submission_local_vcf_get_parents().
-    if ($key_exists || $force) {
-      drupal_array_set_nested_value($this->sharedState, $parents, $value);
+    TppsArray::getValue($this->sharedState, $parents, $key_exists);
+    // @todo Implement correct $parents for shared_state.
+    // Shared State could have different $parents cause field was relocated.
+    if ($key_exists || $update_shared_state) {
+      TppsArray::setValue($this->sharedState, $parents, $value);
     }
     return $this;
   }
@@ -327,17 +328,17 @@ class Submission {
     // State.
     // Check if there is a list of parents.
     if (count($parents) >= 1) {
-      $parent_element = &drupal_array_get_nested_value($this->state, $parents);
+      $parent_element = &TppsArray::getValue($this->state, $parents);
     }
     if (!empty($parent_element) && !empty($field_name)) {
       unset($parent_element[$field_name]);
     }
     // sharedState.
     $key_exists = FALSE;
-    drupal_array_get_nested_value($this->sharedState, $parents, $key_exists);
+    TppsArray::getValue($this->sharedState, $parents, $key_exists);
     if ($key_exists) {
       if (count($parents) >= 1) {
-        $parent_element = &drupal_array_get_nested_value($this->sharedState, $parents);
+        $parent_element = &TppsArray::getValue($this->sharedState, $parents);
       }
       if (!empty($parent_element) && !empty($field_name)) {
         unset($parent_element[$field_name]);
@@ -357,7 +358,7 @@ class Submission {
    */
   public function &get(array $parents = []) {
     $key_exists = FALSE;
-    $element = drupal_array_get_nested_value($this->state, $parents, $key_exists);
+    $element = TppsArray::getValue($this->state, $parents, $key_exists);
     if ($key_exists) {
       return $element;
     }
@@ -1239,8 +1240,7 @@ class Submission {
       }
     }
 
-    module_load_include('inc', 'tpps', 'includes/array');
-    $this->sharedState = tpps_array_apply_changes($change_list, $this->sharedState);
+    $this->sharedState = TppsArray::applyChanges($change_list, $this->sharedState);
     return $this;
   }
 
@@ -1271,7 +1271,7 @@ class Submission {
       // Value.
       if (is_array($this->$name) && !empty($parents)) {
         $title = $name . '[' . implode('][', $parents) . ']';
-        $value = drupal_array_get_nested_value($this->$name, $parents);
+        $value = TppsArray::getValue($this->$name, $parents);
       }
       else {
         $title = $name;

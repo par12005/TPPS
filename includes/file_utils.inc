@@ -513,7 +513,7 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
   // 'metadata-groups'
   // @TODO Only validate and don't touch existing data. Collect data on submit.
   $group_path = array_pop($parents) . "-groups";
-  $values = drupal_array_get_nested_value($form_state['values'], $parents);
+  $values = TppsArray::getValue($form_state['values'], $parents);
   // Initialize form column values in form state.
   $values[$new_end_columns] = [];
   // Hold onto the location of the columns in form state.
@@ -603,7 +603,7 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
   }
 
   $values[$group_path] = $groups;
-  drupal_array_set_nested_value($form_state['values'], $parents, $values);
+  TppsArray::setValue($form_state['values'], $parents, $values);
   return $groups;
 }
 

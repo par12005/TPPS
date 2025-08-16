@@ -129,7 +129,7 @@ class TppsFile {
     $parents = static::getCheckboxParents($organism_index);
     $key_exists = NULL;
     if (!empty($form_state['values'])) {
-      $value = drupal_array_get_nested_value(
+      $value = TppsArray::getValue(
         $form_state['values'],
         $parents,
         $key_exists
@@ -139,7 +139,7 @@ class TppsFile {
       }
     }
     if (!empty($form_state['saved_values'][TPPS_PAGE_4])) {
-      $value = drupal_array_get_nested_value(
+      $value = TppsArray::getValue(
         $form_state['saved_values'][TPPS_PAGE_4],
         $parents,
         $key_exists
@@ -178,7 +178,7 @@ class TppsFile {
     $parents = static::getParents($organism_index, $form_state);
     $key_exists = NULL;
     if (!empty($form_state['values'])) {
-      $value = drupal_array_get_nested_value(
+      $value = TppsArray::getValue(
         $form_state['values'],
         $parents,
         $key_exists
@@ -189,7 +189,7 @@ class TppsFile {
     }
 
     if (!empty($form_state['saved_values'][TPPS_PAGE_4])) {
-      $value = drupal_array_get_nested_value(
+      $value = TppsArray::getValue(
         $form_state['saved_values'][TPPS_PAGE_4],
         $parents,
         $key_exists

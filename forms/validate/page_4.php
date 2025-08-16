@@ -1036,7 +1036,7 @@ function tpps_validate_genotype_ssr(array &$genotype, $org_num, array $form, arr
     tpps_is_required_field_empty($form_state,
       [$id, 'genotype', $ssrs_fieldset, $field_name]
     );
-    $field_value = drupal_array_get_nested_value($genotype,
+    $field_value = TppsArray::getValue($genotype,
       [$ssrs_fieldset, $field_name]
     );
 
@@ -1072,8 +1072,8 @@ function tpps_validate_restore_file_field_on_form_rebuild(array &$form, array &$
   $debug_mode = FALSE;
   $key_exists = NULL;
   $new_key_exists = NULL;
-  $element = &drupal_array_get_nested_value($form, $parents, $key_exists);
-  $new_element = &drupal_array_get_nested_value($new_form, $parents, $new_key_exists);
+  $element = &TppsArray::getValue($form, $parents, $key_exists);
+  $new_element = &TppsArray::getValue($new_form, $parents, $new_key_exists);
   if (!$key_exists || empty($element) || !$new_key_exists || empty($new_element)) {
     return;
   }
