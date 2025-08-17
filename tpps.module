@@ -3843,11 +3843,11 @@ function tpps_form_tppsc_main_alter($form, $form_state) {
   }
   // File was removed from page using 'Remove' button.
   $parents = tpps_array_get_path($form_state['values']);
-  $fid = tpps_array_get_value($form, array_merge($parents, ['#default_value']));
+  $fid = TppsArray::getValue($form, array_merge($parents, ['#default_value']));
   $file = tpps_file_load($fid);
   if (
     !(empty($fid)) && !empty($file)
-    && empty(tpps_array_get_value($form_state['input'], array_merge($parents, ['fid'])))
+    && empty(TppsArray::getValue($form_state['input'], array_merge($parents, ['fid'])))
   ) {
     $accession = $form_state['input']['accession'];
     Submission::deleteFileUsage($file, $accession);

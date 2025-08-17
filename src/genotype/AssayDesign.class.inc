@@ -3,6 +3,15 @@
 /**
  * @file
  * Contains 'AssayDesign' class.
+ *
+ * Specific implementation:
+ *
+ * This fiels uses more then one group (set) of required columns.
+ * Also it extends FileField (not TppsFile) class.
+ * Instead of $options['file_columns'] class uses $options['selected_columns']
+ *   which comes directly from 'assay-design-columns' element which holds
+ *   user's selection. Other fields are using very complex method of getting
+ *   this data which is overkill for this task.
  */
 
 /**
@@ -18,7 +27,7 @@
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class AssayDesign {
+class AssayDesign extends FileField {
 
   // Machine name of the 'SNPs' fieldset (parent of the parent).
   const SNPS_FIELDSET = 'SNPs';
@@ -34,24 +43,24 @@ class AssayDesign {
 // @TODO Review.
   // From VS/assay_design_file_columns branch.
   if (0) {
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Unique common settings.
-  //
-  const TITLE = 'Assay Design';
-  // Name of the form field.
-  const FIELD_NAME = 'assay-design';
-  // Name of the parent fieldset on form (!) not shared form state.
-  // self::FORM_PARENT_FIELDSET.
-  const FORM_PARENT_FIELDSET = 'SNPs';
-  // Name of the parent element in shared state array.
-  // Note: Differs if field was relocated. See versions in function
-  // tpps_submission_form_version_changes().
-  const SHARED_STATE_PARENT_FIELDSET = 'files';
-  // Type of the data.
-  // Could be 'phenotype', 'genotype' or 'environmental'.
-  const DATA_TYPE = 'genotype';
-  // Form step where field is used.
-  const FORM_STEP = 4;
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Unique common settings.
+    //
+    const TITLE = 'Assay Design';
+    // Name of the form field.
+    const FIELD_NAME = 'assay-design';
+    // Name of the parent fieldset on form (!) not shared form state.
+    // static::FORM_PARENT_FIELDSET.
+    const FORM_PARENT_FIELDSET = 'SNPs';
+    // Name of the parent element in shared state array.
+    // Note: Differs if field was relocated. See versions in function
+    // tpps_submission_form_version_changes().
+    const SHARED_STATE_PARENT_FIELDSET = 'files';
+    // Type of the data.
+    // Could be 'phenotype', 'genotype' or 'environmental'.
+    const DATA_TYPE = 'genotype';
+    // Form step where field is used.
+    const FORM_STEP = 4;
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Custom settings.
@@ -61,12 +70,13 @@ class AssayDesign {
   const DATA_TYPE_SCAFFOLD = 2;
   const DATA_TYPE_POSITION = 3;
   const DATA_TYPE_FLANK_SEQUENCE = 4;
+  const DATA_TYPE_REVERSE_FLANK_SEQUENCE => 5;
 
   /**
    * Builds set of form fields for 'Assay Design Citation' feature.
    *
    * @param int $organism_index
-   *   Ordinal organism number on page.
+   *   Ordinal organism number at page.
    * @param array $form
    *   Drupal Form API Array.
    * @param array $form_state
@@ -140,11 +150,35 @@ class AssayDesign {
         'visible' => $states,
         //'required' => $states,
       ],
+      'extra_elements' => [
+        'empty' => [
+          '#default_value' => TppsArray::getValue($form_state,
+            [
+              'saved_values',
+              static::FORM_STEP,
+              $organism_name,
+              static::DATA_TYPE,
+              static::FORM_PARENT_FIELDSET,
+              static::FIELD_NAME,
+              'empty',
+            ]
+          ) ?? 'NA',
+        ],
+        'columns' => [
+          '#description' => t('Please define which columns hold the '
+            . 'required data: SNP ID, Scaffold, Position, Allele, '
+            . 'Associated Trait, Confidence Value.'),
+        ],
+        'columns-options' => [
+          '#type' => 'hidden',
+          '#value' => static::getColumnOptions(),
+        ],
+        'no-header' => [],
     ]);
   }
 
   /**
-   * Validates set of form fields for 'Assay Design Citation' feature.
+   * Validates file field.
    *
    * @param int $organism_index
    *   Ordinal organism number on page.
@@ -157,7 +191,7 @@ class AssayDesign {
     $organism_key = 'organism-' . $organism_index;
 
     // Get 'SNPs' fieldset.
-    $snps = tpps_array_get_value(
+    $snps = TppsArray::getValue(
       $form_state['values'],
       [
         $organism_key,
@@ -169,34 +203,127 @@ class AssayDesign {
     // Get values of selectors.
     $file_type = $snps['file-type'] ?? NULL;
     $genotyping_type = $snps['genotyping-type'] ?? NULL;
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Check if field is required.
     $existing_study = AssayDesignCitation::getExistingStudy($organism_index, $form_state);
-    if (
+    static::validateRequired($organism_index, $form_state, (
+      // Requirement conditions:
       $existing_study == AssayDesignCitation::EXISTING_STUDY_OTHER_OPTION_KEY
       || (
         $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING
         && $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
       )
-    ) {
-      $fid = tpps_array_get_value(
-        $form_state['values'],
+    ));
+    // Do NOT allow further validation.
+    if (form_get_errors()) {
+      return FALSE;
+    }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Check if other required files was uploaded.
+    if (empty($snps['snps-association'])) {
+      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+        . 'File "SNP Association" is required.',
         [
-          $organism_key,
-          static::DATA_TYPE,
-          static::SNPS_FIELDSET,
-          AssayDesignCitation::EXISTING_STUDY_FIELD_NAME,
-          static::FIELD_NAME,
+          '@field_title' => t(static::getFieldTitle()),
+          '@oidx' => $organism_index,
         ]
       );
-      if ($fid) {
-        // Preserve file if it is valid.
-        tpps_preserve_valid_file(
-          $form_state,
-          $fid,
-          $organism_index,
-          'Genotype_Assay_Design'
+      form_set_error(static::getFormErrorName($organism_index), $error_message);
+    }
+    // Do NOT allow further validation.
+    if (form_get_errors()) {
+      return FALSE;
+    }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Check if required data types for columns was set.
+    // Note: Assay Design has more then one group of required columns.
+    if (static::hasColumns($organism_index, $form_state)) {
+      $error_name = static::getFormErrorName($organism_index);
+      if (empty($assoc_file = $snps['snps-association'])) {
+        // @todo Minor. Highlight 'SNP Association' file.
+        $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+          . 'Requires "SNP Association" file.',
+            '@field_title' => t(static::getFieldTitle()),
+            '@oidx' => $organism_index,
+          ]
         );
+        form_set_error(static::getFormErrorName($organism_index), $error_message);
+      }
+      if (empty($snps_assay = $snps['snps-assay'])) {
+        // @todo Minor. Highlight 'SNP Assay' file.
+        $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+          . 'Requires "SNP Assay" file.',
+          [
+            '@field_title' => t(static::getFieldTitle()),
+            '@oidx' => $organism_index,
+        form_set_error(static::getFormErrorName($organism_index), $error_message);
+      }
+      // Validate column data types.
+      static::validateColumns($organism_index, $form_state);
+      if (form_get_errors()) {
+        return;
+      }
+
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Match SNP Ids in current file and 'SNPs Assay' file (header).
+      static::matchColumnValues([
+        'organism_index' => $organism_index,
+        'form_state' => $form_state,
+        // Current file.
+        'no_header' => static::getSubFieldValue(
+          $organism_index,
+          $form_state,
+          'no-header'
+        ),
+        'column_letter' => static::getSelectedColumns(
+           $organism_index,
+          $form_state
+        )[static::DATA_TYPE_SNP_ID],
+        // Target file.
+        'target_column_letter' => NULL,
+        'target_form_element' => SnpAssay::getFormElement($organism_index, $form_state),
+        'target_no_header' => NULL,
+      ]);
+      if (form_get_errors()) {
+        return;
+      }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Match SNP Ids in current file and 'SNP Association' file (column).
+      static::matchColumnValues([
+        'organism_index' => $organism_index,
+        'form_state' => $form_state,
+        // Curent file.
+        'no_header' => $snps[static::FIELD_NAME . '-no-header'] ?? FALSE,
+        'column_letter' => static::getSelectedColumns(
+          $organism_index,
+          $form_state
+        )[static::DATA_TYPE_SNP_ID],
+        // Target file.
+        'target_form_element' => SnpAssociation::getFormElement(
+          $organism_index,
+          $form_state
+        ),
+        'target_column_letter' => SnpAssociation::getSelectedColumns(
+          $organism_index,
+          $form_state
+        )[SnpAssociation::DATA_TYPE_SNP_ID],
+        'target_no_header' => SnpAssociation::getSubFieldValue(
+          $organism_index,
+          $form_state,
+          'no-header'
+        ),
+      ]);
+      if (form_get_errors()) {
+        return;
       }
     }
+
+    // Create new '-columns', '-no-header' and '-empty' fields in 'saved_values'.
+    static::storeSubFields($organism_index, $form_state);
+    static::preserveValidFile($organism_index, $form_state);
   }
 
   /**
@@ -269,78 +396,53 @@ class AssayDesign {
     $options['records']['featureprop'] = [];
     $options['headers'] = tpps_file_headers($fid);
     tpps_log("HEADERS:\n@headers\n",
-      ['@headers' => print_r($options['headers'], 1)], TRIPAL_DEBUG
+      ['@headers' => print_r($options['headers'], 1)],
+      TRIPAL_DEBUG
     );
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // WARNING: new simple format of the selected columns are in use.
+    // WARNING:
+    // New simple format of the selected columns are in use.
     $selected_columns = TppsArray::getValue($shared_state, [
       'saved_values',
       static::FORM_STEP,
       'organism-' . $organism_index,
       static::DATA_TYPE,
       static::FORM_PARENT_FIELDSET,
-      // For searching purposes: 'assay-design-columns'
-      static::FIELD_NAME . '-columns'
+      // For searching purposes: 'assay-design-columns'.
+      static::FIELD_NAME . '-columns',
     ]);
     if ($debug_mode) {
       tpps_log_line();
       tpps_log($selected_columns, 'selected_columns');
-      //tpps_log($required_columns, 'required_columns');
-      //tpps_log($options['headers'], 'header');
     }
     $options['selected_columns'] = $selected_columns;
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-// @TODO Review this code. It was in submit_all.php but was missing in
-// VS/assay_design_file_columns branch. Maybe in processRow()?
-    if (0) {
-      // Find the marker name header.
-      $options['file_columns'] = [];
-      foreach ($options['headers'] as $column => $column_name) {
-        $column_name = strtolower(trim($column_name));
-        tpps_log("Spreadsheet column name:" . $column_name . " column: $column",
-          [], TRIPAL_DEBUG);
-        switch ($column_name) {
-          case 'chr':
-            $options['file_columns']['chr'] = $column;
-            break;
+    // Mapping of the old column names with new options.
+    // - 'chr' = 'Scaffold'
+    // - 'Position' = 'position'
+    // - 'SNP ID' = 'marker name'
+    // - 'forward sequence' = 'Flank sequence'
+    // - 'reverse sequence' = 'Reverse Flank Sequence'.
+    // Extra items which uses
+    // 'snp': $options['file_columns']['snp']; ? Is it 'SNP ID'?
 
-          case 'forward sequence':
-            $options['file_columns']['forward_sequence'] = $column;
-            break;
-
-          case 'reverse sequence':
-            $options['file_columns']['reverse_sequence'] = $column;
-            break;
-
-          case 'snp':
-            $options['file_columns']['snp'] = $column;
-            break;
-        }
-        if (strpos($column_name, 'position') !== FALSE) {
-          $options['file_columns']['position'] = $column;
-        }
-        elseif (strpos($column_name, 'marker name') !== FALSE) {
-          $options['file_columns']['marker_name'] = $column;
-        }
-        tpps_log(print_r($options['file_columns'], 1), [], TRIPAL_DEBUG);
-      }
-    }
-
-
-    // We want to process this Genotype SNP Assay Design file before
-    // we add it as a project file.
+    // We want to process this file before we add it as a project file.
     tpps_log('Processing "Assay Design" file data...');
     tpps_file_iterator($fid, 'AssayDesign::processRow', $options);
     tpps_log('Done.');
 
+
+
+
     tpps_log('Inserting "Assay Design" data into database using insert_multi...');
 
-
-// @TODO Insert data. Was no code here.
-
+   // @TODO Insert data into DB. Was no code here in submit_all.php script.
 
     tpps_log('Done.');
+
+
+
+
     // Reset options[records] with empty records arrays.
     $options['records'] = [
       'feature' => [],
@@ -374,34 +476,26 @@ class AssayDesign {
    */
   public static function processRow($row, array &$options = []) {
     $debug_mode = FALSE;
-    // Format: keys are data type keys and values are column letters.
+    // Needed to lookup source features.
+    $analysis_id = $options['analysis_id'];
+    $headers = &$options['headers'];
+    $records = &$options['records'];
+    $organism_index = $options['organism_index'];
+    $seq_var_cvterm = $options['seq_var_cvterm'];
+
+    // Format of the $columns array:
+    // - key is the data type key (not name),
+    // - value is the column letter.
     $columns = array_flip($options['selected_columns']);
     if ($debug_mode) {
       tpps_log($columns, static::TITLE . " file selected column's data types");
     }
-
-    $line_rows = $row;
-    // Needed to lookup source features:
-    $analysis_id = $options['analysis_id'];
-    $headers = &$options['headers'];
-    $records = &$options['records'];
-    $columns = $options['file_columns'];
-    $organism_index = $options['organism_index'];
-    $seq_var_cvterm = $options['seq_var_cvterm'];
-    if ($debug_mode ?? FALSE) {
-      print_r("File columns: ");
-      print_r($columns);
-      print_r("\n");
-      print_r("Data in row:");
-      print_r($line_rows);
-      print_r("\n");
-    }
-
-    // $chr_name = $line_rows[$columns['chr']];
-    $chr_name = $row[static::DATA_TYPE_SCAFFOLD];
+    $chr_name = $row[$columns[self::DATA_TYPE_SCAFFOLD]];
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // If the scaffold is only the number then append scaffold_ to it (TGDR665).
     // Note: This code was commented out in submit_all.php.
+    // Disabled by default.
     $use_scaffold_prefix = FALSE;
     if ($use_scaffold_prefix) {
       if (is_numeric($chr_name)) {
@@ -413,12 +507,9 @@ class AssayDesign {
         $chr_name = str_replace('chr', 'scaffold_', $chr_name);
       }
     }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-    $marker_name_raw = $line_rows[$columns['marker_name']];
-    //$position = intval($rows[$columns['position']]);
-    $position = intval($row[static::DATA_TYPE_POSITION]);
-    $marker_type = $options['marker_type']; // we could force 'SNP' here
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    $position = intval($row[$columns[self::DATA_TYPE_POSITION]]);
 
     // RISH NOTES: This addition uses the organism_id based on the
     // organism order of the fourth page (we likely have to pass the
@@ -458,8 +549,7 @@ class AssayDesign {
       ['@name' => $chr_name, '@id' => $srcfeature_id]
     );
 
-    // $row[$columns[static::DATA_TYPE_SNP_ID]]  = $line_rows[$columns['marker_name']];
-    $marker_name = $row[$columns[static::DATA_TYPE_SNP_ID]] . $marker_type;
+    $marker_name = $row[$columns[static::DATA_TYPE_SNP_ID]] . $options['marker_type'];
 
     // We need to find the current marker_name in the feature table.
     // @TODO Ask if we could safely insert without extra checks.
@@ -487,53 +577,49 @@ class AssayDesign {
         ->range(0, 1)
         ->execute()
         ->fetchField();
-      if (empty($feature_id)) {
-        tpps_log("Marker name '@marker_name' wasn't found in table "
-          . "'chado.feature' after insert.", ['@marker_name' => $marker_name],
-          TRIPAL_ERROR
-        );
-        return;
-      }
     }
     if (empty($feature_id)) {
-      tpps_log("Marker name $marker_name feature_id could not be found.", [], TRIPAL_ERROR);
+      tpps_log("Marker name '@marker_name' wasn't found in table "
+        . "'chado.feature' after insert.", ['@marker_name' => $marker_name],
+        TRIPAL_ERROR
+      );
       return;
     }
 
     tpps_log("Marker '$marker_name' has feature_id: '$feature_id'.");
 
-    // Before we add a new featureloc record, check to make sure one does not already exist
-    // in the featureloc table since we don't currently delete previous featurelocs on
-    // study reloads.
-    $featureloc_results = chado_query('SELECT count(*) as c1 FROM chado.featureloc
-      WHERE feature_id = :feature_id AND srcfeature_id = :srcfeature_id;', [
-        ':feature_id' => $feature_id,
-        ':srcfeature_id' => $srcfeature_id
-      ]
-    );
-    $featureloc_count = 0;
-    foreach ($featureloc_results as $row) {
-      $featureloc_count = $row->c1;
-    }
+    // Before we add a new featureloc record, check to make sure one
+    // does not already exist in the featureloc table since we don't
+    // currently delete previous featurelocs on study reloads.
+    $featureloc_id = db_select('chado.featureloc', 'cfl')
+      ->fields('cfl', 'featureloc_id')
+      ->condition('feature_id', $feature_id)
+      ->condition('srcfeature_id', $srcfeature_id)
+      ->range(0, 1)->execute()->fetchField();
+
     // This means no featureloc exists, so insert it.
-    if ($featureloc_count == 0) {
+    if (!empty($featureloc_id)) {
+      tpps_log("[GOOD ALTERNATIVE] Featureloc record already exists, no need to add.");
+    }
+    elseif (!empty($rows[$columns[static::DATA_TYPE_SNP_ID]])) {
       // Check for indels (longer than 1 reads)
-      $snp = trim($line_rows[$columns['snp']]);
+      $snp = trim($rows[$columns[static::DATA_TYPE_SNP_ID]]);
       $snp_possible_reads = explode('/', $snp);
-      $read_length = 0; // default for non-indels
+      // Default for non-indels.
+      $read_length = 0;
       foreach ($snp_possible_reads as $read) {
         $tmp_read_length = strlen($read);
-        if ($tmp_read_length > 1) { // only for indels, we need a read_length of more than 0
+        // Only for indels, we need a read_length of more than 0.
+        if ($tmp_read_length > 1) {
           if ($tmp_read_length > $read_length) {
             $read_length = $tmp_read_length;
           }
         }
       }
-
-      // TODO: if read_length is more than 1, it is an indel, change marker type
-      // Also check code in tpps_process_genotype_sheet to check this or else
-      // these 2 things will cause a submit failure - after conference (6/15/2023)
-
+      // @todo If read_length is more than 1, it is an indel, change marker type.
+      // Also check code in tpps_process_genotype_sheet to check this
+      // or else these 2 things will cause a submit failure - after
+      // conference (6/15/2023).
       $records['featureloc'][$marker_name] = [
         'fmin' => $position,
         'fmax' => ($position + $read_length),
@@ -541,9 +627,6 @@ class AssayDesign {
         'feature_id' => $feature_id,
       ];
       print_r($records['featureloc'][$marker_name]);
-    }
-    else {
-      tpps_log("[GOOD ALTERNATIVE] Featureloc record already exists, no need to add");
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -563,21 +646,19 @@ class AssayDesign {
         $records['featureprop'][$feature_id . $forward_sequence_cvterm_id] = [
           'feature_id' => $feature_id,
           'type_id' => $forward_sequence_cvterm_id,
-          // 'value' => $rows[$columns['forward_sequence']],
-          'value' => $row[$columns[self::DATA_TYPE_FLANK_SEQUENCE]],
+          'value' => $row[$columns[static::DATA_TYPE_FLANK_SEQUENCE]],
         ];
       }
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Add only when column is not empty and exists.
-    // @TODO Minor. Update 'reverse_sequence' with actual column data type.
-    if (!empty($row[$columns['reverse_sequence']])) {
+    if (!empty($row[$columns[static::DATA_TYPE_REVERSE_FLANK_SEQUENCE]])) {
       // Check if reverse sequence information has been added.
       // Value: 1825.
       $reverse_sequence_cvterm_id = tpps_load_cvterm('three_prime_flanking_region')->cvterm_id;
       // Check if record already exists.
       $featureprop_id = db_select('chado.featureprop', 'cfp')
-        ->fields('cfp', 'featureprop_id')
+        ->fields('cfp', ['featureprop_id'])
         ->condition('feature_id', $feature_id)
         ->condition('type_id', $reverse_sequence_cvterm_id)
         ->range(0, 1)->execute()->fetchField();
@@ -587,38 +668,10 @@ class AssayDesign {
         $records['featureprop'][$feature_id . $reverse_sequence_cvterm_id] = [
           'feature_id' => $feature_id,
           'type_id' => $reverse_sequence_cvterm_id,
-          // @TODO Use class' constant.
-          'value' => $row[$columns['reverse_sequence']],
+          'value' => $row[$columns[static::DATA_TYPE_REVERSE_FLANK_SEQUENCE]],
         ];
       }
     }
-  }
-
-  /**
-   * Gets field's value.
-   *
-   * @param int $organism_index
-   *   Ordinal number on form.
-   * @param array $form_state
-   *   Drupal Form State array.
-   *
-   * @return mixed
-   *   Returns integer File Id.
-   *   Returns NULL if field wasn't found.
-   *   Returns string '0' if field wasn't set (file wasn't uploaded).
-   */
-  public static function getValue($organism_index, array $form_state) {
-    $parents = static::getParents($organism_index, $form_state);
-    return tpps_array_get_value($form_state['values'], $parents);
-  }
-
-  /**
-   * Alias for getValue() method.
-   *
-   * @todo Move to TppsFile class.
-   */
-  public static function getFileId($organism_index, array $form_state) {
-    return static::getValue($organism_index, $form_state);
   }
 
   /**
@@ -668,22 +721,58 @@ class AssayDesign {
   }
 
   /**
-   * Removes field's file by File Id.
+   * Gets list of column data types.
    *
-   * WARNING: for validation only.
+   * Note:
+   * To get name by key: (static::getColumnOptions()[$data_type_key] ?? NULL).
    *
-   * @param int $organism_index
-   *   Ordinal number of organism at page.
-   * @param array $form_state
-   *   Drupal Form State array.
+   * @return array
+   *   Returns list of options with column data types.
    */
-  public static function removeFile($organism_index, array &$form_state) {
-    $fid = static::get($organism_index, $form_state);
-    if (tpps_file_remove($fid)) {
-      $parents = static::getParents($organism_index, $form_state);
-      tpps_array_set_value($form_state['values'], $parents, $value = 0);
-    }
+  public static function getColumnOptions() {
+    // List of data types to be used in the dropdown list from Meghan.
+    // https://plantcompgenomics.slack.com/archives/C05R396U4QK/p1730737064312679?thread_ts=1730430961.236099&cid=C05R396U4QK
+    return [
+      0 => t('N/A'),
+      static::DATA_TYPE_SNP_ID => t('SNP ID'),
+      static::DATA_TYPE_SCAFFOLD => t('Scaffold'),
+      static::DATA_TYPE_POSITION => t('Position'),
+      static::DATA_TYPE_FLANK_SEQUENCE => t('Flank sequence'),
+      self::DATA_TYPE_REVERSE_FLANK_SEQUENCE => t('Reverse Flank sequence'),
+    ];
   }
+
+  /**
+   * Gets required columns.
+   *
+   * Valid only sets of columns:
+   *   1. SNP ID, scaffold, position.
+   *   2. SNP ID, Flank sequence.
+   *
+   * @return array
+   *   Returns list of groups of the required columns.
+   */
+  public static function getRequiredColumns() {
+    return [
+      'case 1' => [
+        static::DATA_TYPE_SNP_ID,
+        static::DATA_TYPE_SCAFFOLD,
+        static::DATA_TYPE_POSITION,
+      ],
+      'case 2' => [
+        static::DATA_TYPE_SNP_ID,
+        static::DATA_TYPE_FLANK_SEQUENCE,
+      ],
+      'case 3' => [
+        self::DATA_TYPE_SNP_ID,
+        self::DATA_TYPE_REVERSE_FLANK_SEQUENCE,
+      ],
+    ];
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // List of Submissions which has 'Assay Design' file.
+  // This list used by 'Assay Design Citation' feature.
 
   /**
    * Clears cached list of studies which has AssayDesign files.

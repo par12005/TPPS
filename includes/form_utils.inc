@@ -501,7 +501,7 @@ function tpps_compare_accession_file_vs_vcf_file_tree_ids($accession = NULL, $i 
     $submission->state, $i
   );
 
-  $genotype = tpps_array_get_value($submission->state, [
+  $genotype = TppsArray::getValue($submission->state, [
     'saved_values',
     TPPS_PAGE_4,
     "organism-$i",

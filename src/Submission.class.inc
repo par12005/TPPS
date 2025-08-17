@@ -2375,7 +2375,7 @@ class Submission {
     foreach ($parent_list as $step => $step_list) {
       foreach ($step_list as $parents) {
         $new_parents = array_merge([$step], $parents);
-        $fid = (int) tpps_array_get_value($saved_values, $new_parents);
+        $fid = (int) TppsArray::getValue($saved_values, $new_parents);
         if (empty($fid)) {
           continue;
         }
@@ -2620,7 +2620,7 @@ class Submission {
   public static function getFileUsage($file, $accession) {
     $key = str_replace('TGDR', '', $accession);
     $usage = file_usage_list($file, 'tpps', 'tpps_project', $key);
-    return tpps_array_get_value($usage, ['tpps', 'tpps_project', $key]);
+    return TppsArray::getValue($usage, ['tpps', 'tpps_project', $key]);
   }
 
   /**
@@ -2680,7 +2680,7 @@ class Submission {
       default:
         $parents = ['saved_values', TPPS_PAGE_1, 'dataset_doi'];
     }
-    return tpps_array_get_value($this->state, $parents);
+    return TppsArray::getValue($this->state, $parents);
   }
 
   /**
@@ -2708,21 +2708,21 @@ class Submission {
         $parents = ['saved_values', TPPS_PAGE_1, 'dataset_doi'];
     }
     // State.
-    $state_value = tpps_array_get_value($this->state, $parents);
+    $state_value = TppsArray::getValue($this->state, $parents);
     if ($state_value != $value) {
       $was_updated = TRUE;
-      tpps_array_set_value($this->state, $parents, $value);
+      TppsArray::setValue($this->state, $parents, $value);
     }
 
     // Shared State.
     $shared_state_parents = ['saved_values', TPPS_PAGE_1, 'dataset_doi'];
-    $shared_state_value = tpps_array_get_value(
+    $shared_state_value = TppsArray::getValue(
       $this->sharedState,
       $shared_state_parents
     );
     if ($shared_state_value != $value) {
       $was_updated = TRUE;
-      tpps_array_set_value($this->sharedState, $shared_state_parents, $value);
+      TppsArray::setValue($this->sharedState, $shared_state_parents, $value);
     }
     // Save changes.
     if ($save_on_change && $was_updated) {

@@ -49,7 +49,7 @@ class AssayDesignCitation {
    */
   public static function getExistingStudy($organism_index, array $form_state) {
     $organism_key = 'organism-' . $organism_index;
-    $value = tpps_array_get_value($form_state['values'],
+    $value = TppsArray::getValue($form_state['values'],
     [
       $organism_key,
       static::DATA_TYPE,
@@ -164,7 +164,7 @@ class AssayDesignCitation {
    *   Drupal Form API State array.
    */
   public static function validate($organism_index, array &$form, array &$form_state) {
-    $existing_studies_value = tpps_array_get_value($form_state['values'], [
+    $existing_studies_value = TppsArray::getValue($form_state['values'], [
       'organism-' . $organism_index,
       static::DATA_TYPE,
       static::SNPS_FIELDSET,
@@ -180,7 +180,7 @@ class AssayDesignCitation {
       // Paper DOI and Dataset DOI are visible.
       // Validate DOI format if fields not empty because they are optional.
       foreach (['paper-doi', 'dataset-doi'] as $field_name) {
-        $value = trim(tpps_array_get_value(
+        $value = trim(TppsArray::getValue(
           $form_state['values'],
           array_merge($parents, [static::PARENT_FIELDSET, $field_name])
         ));

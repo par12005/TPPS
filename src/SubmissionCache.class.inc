@@ -233,10 +233,10 @@ class SubmissionCache {
       'project_id' => $submission->get(['ids', 'project_id']),
       SubmissionVersion::FORM_KEY => $submission->getFormVersion(),
       'publication' => [
-        'status' => tpps_array_get_value($page1_values,
+        'status' => TppsArray::getValue($page1_values,
           ['publication', 'status']
         ),
-        'title' => tpps_array_get_value($page1_values,
+        'title' => TppsArray::getValue($page1_values,
           ['publication', 'title']
         ),
         'publication_doi' => $submission->getPublicationDOI(),
@@ -276,7 +276,7 @@ class SubmissionCache {
     $reset_assay_design_list = FALSE;
     for ($n = 1; $n <= $submission->getOrganismNumber(); $n++) {
       // @TODO Use AssayDesign::getValue() if possible.
-      $assay_design_fid = tpps_array_get_value(
+      $assay_design_fid = TppsArray::getValue(
         $submission->sharedState,
         [
           'saved_values',
@@ -514,7 +514,7 @@ class SubmissionCache {
             continue;
           }
           $operation = $condition[2] ?? '=';
-          $existing_value = tpps_array_get_value($cached_submission, $parents);
+          $existing_value = TppsArray::getValue($cached_submission, $parents);
           if ($operation == '=') {
             $match[] = ($existing_value == $value);
           }

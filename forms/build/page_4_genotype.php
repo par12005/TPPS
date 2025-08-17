@@ -283,7 +283,7 @@ function tpps_genotype_subform(array $form_bus) {
   if ($is_tppsc) {
     $snps_fieldset_name = ':input[name="' . $organism_name . '[genotype]['
       . $snps_fieldset . ']';
-    tpps_array_set_value(
+    TppsArray::setValue(
       $form_bus['form'],
       [$organism_name, 'genotype', $snps_fieldset, $file_field_name, '#states'],
       [

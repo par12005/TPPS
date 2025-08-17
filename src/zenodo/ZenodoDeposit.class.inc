@@ -381,7 +381,7 @@ class ZenodoDeposit extends Zenodo {
           }
         }
         // Link DOI to doi.org.
-        $doi = &tpps_array_get_value($deposition,
+        $doi = &TppsArray::getValue($deposition,
           ['metadata', 'prereserve_doi', 'doi']
         );
         $doi = l($doi, 'https://doi.org/' . $doi);

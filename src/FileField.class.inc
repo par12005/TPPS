@@ -23,7 +23,7 @@ abstract class FileField {
   // Example: 'snps-assay'.
   const FIELD_NAME = '';
   // Name of the parent fieldset on form (!) not shared form state.
-  // Use in classes: self::FORM_PARENT_FIELDSET.
+  // Use in classes: static::FORM_PARENT_FIELDSET.
   // Use here: static::FORM_PARENT_FIELDSET.
   // Example: 'SNPs'.
   const FORM_PARENT_FIELDSET = '';
@@ -38,6 +38,7 @@ abstract class FileField {
   const DATA_TYPE = '';
   // Form step where field is used.
   const FORM_STEP = '';
+
   /**
    * Gets lit of required columns for validation.
    *
@@ -48,13 +49,20 @@ abstract class FileField {
    *   Returns list of groups of required columns.
    *   See AssayDesign::getRequiredColumns() for the structure example.
    */
-  public static function getRequiredColumns() {
-    $message = t("Class '@class' must implement method 'getRequiredColumns'.",
-      ['@class' => get_called_class()]
-    );
-    throw new Exception($message);
-    return [];
-  }
+  abstract public static function getRequiredColumns();
+
+  /**
+   * Gets parents of the field.
+   *
+   * @param int $organism_index
+   *   Ordinal number on form.
+   * @param array $form_state
+   *   Drupal Form State array.
+   *
+   * @return array
+   *   Returns parents for the checkbox which makes this field required.
+   */
+  abstract public static function getParents($organism_index, array $form_state);
 
   /**
    * Gets name of the field for form_set_error().
@@ -127,7 +135,7 @@ abstract class FileField {
    *   Returns field name.
    */
   public static function getStateName($organism_index, array $parents = []) {
-    return ':input[name="' . self::getDomName($organism_index, $parents) . '"]';
+    return ':input[name="' . static::getDomName($organism_index, $parents) . '"]';
   }
 
   /**
@@ -147,7 +155,7 @@ abstract class FileField {
    *   Returns File Id or NULL.
    */
   public static function getFileId($organism_index, array $form_state) {
-    return self::getValue($organism_index, $form_state);
+    return static::getValue($organism_index, $form_state);
   }
 
   /**
@@ -165,7 +173,9 @@ abstract class FileField {
    *   process() works with $shared_state.
    *
    * @return mixed
-   *   Returns field's value or NULL.
+   *   Returns integer File Id.
+   *   Returns NULL if field wasn't found.
+   *   Returns string '0' if field wasn't set (file wasn't uploaded).
    *
    * @todo Minor. Detect validation/processing and if $form_state contains
    * State or Shared State.
@@ -173,55 +183,30 @@ abstract class FileField {
   public static function getValue($organism_index, array $form_state) {
     // For validation.
     $value = $key_exists = NULL;
-    $parent_list = [
-      // For validation.
-      // Note: 'saved_values' doesn't have value until validation passed. Why?
-      // Because 'no-header' is a part of complex file field.
-      'input' => [
-        'input',
-        'organism-' . $organism_index,
-        static::DATA_TYPE,
-        static::FORM_PARENT_FIELDSET,
-        static::FIELD_NAME,
-        'fid',
-      ],
-      // Get value under 'saved_values'.
-      // Submission State.
-      'state_saved_values' => [
-        'saved_values',
-        static::FORM_STEP,
-        'organism-' . $organism_index,
-        static::DATA_TYPE,
-        static::FORM_PARENT_FIELDSET,
-        static::FIELD_NAME,
-      ],
-      'shared_state_saved_values' => [
-        'saved_values',
-        static::FORM_STEP,
-        'organism-' . $organism_index,
-        static::DATA_TYPE,
-        // Parent fieldset could be different for Shared state.
-        static::SHARED_STATE_PARENT_FIELDSET,
-        static::FIELD_NAME,
-      ],
-    ];
-    foreach ($parent_list as $name => $parents) {
-      $value = TppsArray::getValue($form_state, $parents, $key_exists);
-      if ($key_exists !== FALSE) {
-        break;
-      }
-    }
+    // Note: List of parents depends from current version of $form_state.
+    $parents = static::getParents($organism_index, $form_state);
 
+    // To always get most recent and up-to-date value we check first recenlty
+    // submitted data stored in $form_state['input'] instead of using value
+    // stored under $form_state['saved_values'].
+    //
+    // Any class which extends 'FileField' is a file field so we could get file
+    // id for validation (when form not yet submitted) from $form_state['input']
+    // using 'fid' hidden sub-element of 'managed_file' element.
+    $input_parents = array_merge($parents, ['fid']);
+    $value = TppsArray::getValue($form_state['input'], $input_parents, $key_exists);
+    if ($key_exists === FALSE) {
+      $value = TppsArray::getValue($form_state['saved_values'], $parents, $key_exists);
+    }
     // Nothing was found.
     // It's not an error and there is no sence to throw an exception.
     if ($key_exists === FALSE) {
-      watchdog('tpps', 'Organism #@oidx / @field_title: Value not found.',
-        [
-          '@field_title' => self::getFieldTitle(),
+      $message = 'Organism #@oidx / @field_title: Value not found.';
+      $params = [
+          '@field_title' => static::getFieldTitle(),
           '@oidx' => $organism_index,
-        ],
-        WATCHDOG_WARNING
-      );
+        ];
+      watchdog('tpps', $message, $params, WATCHDOG_WARNING);
     }
     return $value;
   }
@@ -233,7 +218,7 @@ abstract class FileField {
    *
    * Optional fields do NOT need this check.
    * For required fields use form_get_error() to check if validation passed:
-   *   self::validateRequired($organism_index, $form_state, $condition);
+   *   static::validateRequired($organism_index, $form_state, $condition);
    *   if (form_get_errors()) {
    *     return;
    *   }
@@ -246,16 +231,16 @@ abstract class FileField {
    *   Condition when field is required.
    */
   public static function validateRequired($organism_index, array $form_state, $condition = FALSE) {
-    if ($condition && empty(self::getValue($organism_index, $form_state))) {
+    if ($condition && empty(static::getValue($organism_index, $form_state))) {
       // Field is required but empty. Show error.
       $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
         . 'field is required.',
         [
-          '@field_title' => self::getFieldTitle(),
+          '@field_title' => static::getFieldTitle(),
           '@oidx' => $organism_index,
         ]
       );
-      form_set_error(self::getFormErrorName($organism_index), $error_message);
+      form_set_error(static::getFormErrorName($organism_index), $error_message);
     }
   }
 
@@ -305,7 +290,7 @@ abstract class FileField {
    *   Returns TRUE in case of success and FALSE otherwise.
    */
   public static function preserveValidFile($organism_index, array &$form_state) {
-    $fid = self::getFileId($organism_index, $form_state);
+    $fid = static::getFileId($organism_index, $form_state);
     if (empty($fid) || form_get_errors()) {
       return FALSE;
     }
@@ -313,7 +298,7 @@ abstract class FileField {
       $form_state,
       $fid,
       $organism_index,
-      self::getFilePrefix()
+      static::getFilePrefix()
     );
     return TRUE;
   }
@@ -333,7 +318,7 @@ abstract class FileField {
     if (form_get_errors()) {
       return;
     }
-    if (empty($fid = self::getFileId($organism_index, $form_state))) {
+    if (empty($fid = static::getFileId($organism_index, $form_state))) {
       return;
     }
 
@@ -362,7 +347,7 @@ abstract class FileField {
         key($headers),
         // Get column which holds Tree Ids.
         $species_fieldset['file-groups']['Tree Id']['1'],
-        self::getSubFieldValue($organism_index, $form_state, 'no-header'),
+        static::getSubFieldValue($organism_index, $form_state, 'no-header'),
         // Note: Accession file uses non-standard ['file-no-header'] field name
         // instead of nested ['file']['no-header'].
         $species_fieldset['file-no-header']
@@ -374,12 +359,12 @@ abstract class FileField {
           . 'Genotype file, or add them to your Plant Accession file. '
           . 'The Plant Identifiers we found were: @tree_id_str',
           [
-            '@field_title' => t(self::getFieldTitle()),
+            '@field_title' => t(static::getFieldTitle()),
             '@oidx' => $organism_index,
             '@tree_id_str' => implode(', ', $missing_trees),
           ]
         );
-        form_set_error(self::getFormErrorName($organism_index), $error_message);
+        form_set_error(static::getFormErrorName($organism_index), $error_message);
       }
     }
   }
@@ -472,7 +457,7 @@ abstract class FileField {
       // It's not an error and there is no sence to throw an exception.
       watchdog('tpps', 'Organism #@oidx / @field_title: Value was NOT found for @sub_field.',
         [
-          '@field_title' => self::getFieldTitle(),
+          '@field_title' => static::getFieldTitle(),
           '@oidx' => $organism_index,
           '@sub_field' => $name,
         ],
@@ -494,7 +479,7 @@ abstract class FileField {
    *   Returns TRUE if field has columns and FALSE otherwise.
    */
   public static function hasColumns($organism_index, array &$form_state) {
-    $form_element = self::getFormElement($organism_index, $form_state);
+    $form_element = static::getFormElement($organism_index, $form_state);
     return !empty($form_element['columns']);
   }
 
@@ -609,13 +594,13 @@ abstract class FileField {
       return [];
     }
     $required_cases = static::getRequiredColumns();
-    $file_element = self::getFormElement($organism_index, $form_state);
+    $file_element = static::getFormElement($organism_index, $form_state);
     // Check if file has zero length (empty).
     if (empty($file_element['#file']->filesize)) {
       $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
         . 'File is empty.',
         [
-          '@field_title' => self::getFieldTitle(),
+          '@field_title' => static::getFieldTitle(),
           '@oidx' => $organism_index,
         ]
       );
@@ -642,17 +627,17 @@ abstract class FileField {
       $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
         . "Data types for columns wasn't specified.",
         [
-          '@field_title' => t(self::getFieldTitle()),
+          '@field_title' => t(static::getFieldTitle()),
           '@oidx' => $organism_index,
         ]
       );
-      form_set_error(self::getFormErrorName($organism_index), $error_message);
+      form_set_error(static::getFormErrorName($organism_index), $error_message);
       return [];
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Check if the same data type not used twice.
-    self::allowColumnDataTypeUseOnce($organism_index, $selected_columns);
+    static::allowColumnDataTypeUseOnce($organism_index, $selected_columns);
     if (form_get_errors()) {
       return [];
     }
@@ -699,13 +684,13 @@ abstract class FileField {
         . "<br />Selected data types are: <strong>!selected_columns</strong>"
         . "<br />Independent groups of the required data types are: <strong>!required_cases</strong>",
         [
-          '@field_title' => t(self::getFieldTitle()),
+          '@field_title' => t(static::getFieldTitle()),
           '@oidx' => $organism_index,
           '!selected_columns' => implode(', ', static::getDataType($selected_columns)),
           '!required_cases' => theme('item_list', ['items' => $required_print_list]),
         ]
       );
-      form_set_error(self::getFormErrorName($organism_index), $error_message);
+      form_set_error(static::getFormErrorName($organism_index), $error_message);
     }
 
     // See tpps_file_validate_columns().
@@ -735,7 +720,7 @@ abstract class FileField {
    *   E.g., ['1' => 'A', '4' => 'B'].
    */
   public static function getSelectedColumns($organism_index, array &$form_state) {
-    $file_element = self::getFormElement($organism_index, $form_state);
+    $file_element = static::getFormElement($organism_index, $form_state);
     return array_flip($file_element['#value']['columns'] ?? []);
   }
 
@@ -785,7 +770,7 @@ abstract class FileField {
   public static function matchColumnValues(array $data) {
     // Current file.
     $item_list = tpps_parse_file_column(
-      self::getFileId($data['organism_index'], $data['form_state']),
+      static::getFileId($data['organism_index'], $data['form_state']),
       // Column's letter.
       $data['column_letter'],
       $data['no_header']
@@ -832,7 +817,7 @@ abstract class FileField {
         ]
       );
       form_set_error(
-        self::getFormErrorName($data['organism_index']),
+        static::getFormErrorName($data['organism_index']),
         $error_message
       );
       return FALSE;
@@ -850,7 +835,7 @@ abstract class FileField {
    * C extends B extends A
    *
    * static::class  // MyNamespace\ClassC when run in A
-   * self::class    // MyNamespace\ClassA when run in A
+   * static::class    // MyNamespace\ClassA when run in A
    * parent::class  // MyNamespace\ClassB when run in C
    * MyClass::class // MyNamespace\MyClass
    *
@@ -900,7 +885,7 @@ abstract class FileField {
    *   Returns TRUE for phenotype study and FALSE otherwise.
    */
   public static function isPhenotypeStudy(array $form_state) {
-    return self::matchStudyDataType($form_state, 'Phenotype');
+    return static::matchStudyDataType($form_state, 'Phenotype');
   }
 
   /**
@@ -913,7 +898,7 @@ abstract class FileField {
    *   Returns TRUE for genotypestudy and FALSE otherwise.
    */
   public static function isGenotypeStudy(array $form_state) {
-    return self::matchStudyDataType($form_state, 'Genotype');
+    return static::matchStudyDataType($form_state, 'Genotype');
   }
 
   /**
@@ -946,14 +931,14 @@ abstract class FileField {
             . 'columns. Please either remove the column "@column" '
             . 'from file or use different data type.',
             [
-              '@field_title' => t(self::getFieldTitle()),
+              '@field_title' => t(static::getFieldTitle()),
               '@oidx' => $organism_index,
               '@data_type' => (static::getColumnOptions()[$data_type_key] ?? NULL),
               '@column' => $column_letter,
               // @todo Minor. Show not duplicate only but original letter.
             ]
           );
-          form_set_error(self::getFormErrorName($organism_index), $error_message);
+          form_set_error(static::getFormErrorName($organism_index), $error_message);
         }
         return FALSE;
       }
@@ -973,13 +958,13 @@ abstract class FileField {
               . 'columns. Please either remove one of the columns (@column_list) '
               . 'from file or use different data type.',
               [
-                '@field_title' => t(self::getFieldTitle()),
+                '@field_title' => t(static::getFieldTitle()),
                 '@oidx' => $organism_index,
                 '@data_type' => check_plain($name),
                 '@column_list' => implode(', ', $value),
               ]
             );
-            form_set_error(self::getFormErrorName($organism_index), $error_message);
+            form_set_error(static::getFormErrorName($organism_index), $error_message);
             return FALSE;
           }
         }
@@ -997,7 +982,7 @@ abstract class FileField {
    *   Drupal Form API State Array.
    */
   public static function storeSubFields($organism_index, array &$form_state) {
-    $file_element = self::getFormElement($organism_index, $form_state);
+    $file_element = static::getFormElement($organism_index, $form_state);
     $parents = $file_element['#parents'];
     array_pop($parents);
     $values = TppsArray::getValue($form_state['values'], $parents);
@@ -1036,9 +1021,27 @@ abstract class FileField {
     $result = db_select('tpps_project_file_managed', 't')
       ->fields('t', ['project_id'])
       ->condition('project_id', $project_id)
-      ->condition('fid', self::getFileId($organism_index, $shared_state))
+      ->condition('fid', static::getFileId($organism_index, $shared_state))
       ->range(0, 1)->execute()->fetchField();
     return (bool) !empty($result);
+  }
+
+  /**
+   * Removes field's file by File Id.
+   *
+   * WARNING: for validation only.
+   *
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   * @param array $form_state
+   *   Drupal Form State array.
+   */
+  public static function removeFile($organism_index, array &$form_state) {
+    $fid = static::getFileId($organism_index, $form_state);
+    if (tpps_file_remove($fid)) {
+      $parents = static::getParents($organism_index, $form_state);
+      TppsArray::setValue($form_state['values'], $parents, $value = 0);
+    }
   }
 
 }
