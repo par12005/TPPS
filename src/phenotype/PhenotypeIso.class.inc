@@ -30,9 +30,8 @@ class PhenotypeIso extends TppsFile {
   // Note: there is also 'normal-check' checkbox.
   const CHECKBOX_NAME = 'iso-check';
 
-  // Name of the file field.
-  // Value is file id.
-  const FIELD_NAME = 'iso';
+  // HTML name of the field.
+  const DOM_NAME = 'iso';
 
   /**
    * Gets parents for checkbox which makes field required.
@@ -73,7 +72,7 @@ class PhenotypeIso extends TppsFile {
         $parents = [
           $organism_key,
           static::DATA_TYPE,
-          static::FIELD_NAME,
+          static::DOM_NAME,
         ];
         break;
     }

@@ -19,22 +19,71 @@ class SnpAssay extends FileField {
   const TITLE = 'SNP Assay';
   // Name of the form field.
   // WARNING: Extra 's'!
-  const FIELD_NAME = 'snps-assay';
+  const DOM_NAME = 'snps-assay';
   // Name of the parent fieldset on form (!) not shared form state.
-  // static::FORM_PARENT_FIELDSET.
-  const FORM_PARENT_FIELDSET = 'SNPs';
+  // static::SNPS_FIELDSET.
+  const SNPS_FIELDSET = 'SNPs';
   // Name of the parent element in shared state array.
   // Note: Differs if field was relocated. See versions in function
   // tpps_submission_form_version_changes().
   //
   //
-// @TODO Use Submission Version.
-  const SHARED_STATE_PARENT_FIELDSET = 'files';
   // Type of the data.
   // Could be 'phenotype', 'genotype' or 'environmental'.
   const DATA_TYPE = 'genotype';
   // Form step where field is used.
   const FORM_STEP = 4;
+
+  /**
+   * Gets lit of required columns for validation.
+   *
+   * Note:
+   * File class must overwrite this method of column validation is required.
+   *
+   * @return array
+   *   Returns list of groups of required columns.
+   *   See AssayDesign::getRequiredColumns() for the structure example.
+   */
+  public static function getRequiredColumns() {
+    return [];
+  }
+
+  /**
+   * Gets parents of the field.
+   *
+   * @param int $organism_index
+   *   Ordinal number on form.
+   * @param array $form_state
+   *   Drupal Form State array.
+   *
+   * @return array
+   *   Returns parents for the checkbox which makes this field required.
+   */
+  public static function getParents($organism_index, array $form_state) {
+    $organism_key = 'organism-' . $organism_index;
+    switch (SubmissionVersion::get($form_state)) {
+      case 1:
+        $parents = [
+          $organism_key,
+          static::DATA_TYPE,
+          'files',
+          static::DOM_NAME,
+        ];
+        break;
+
+      case 2:
+      case 3:
+      default:
+        $parents = [
+          $organism_key,
+          static::DATA_TYPE,
+          static::SNPS_FIELDSET,
+          static::DOM_NAME,
+        ];
+        break;
+    }
+    return $parents;
+  }
 
   /**
    * Builds file field.
@@ -56,9 +105,9 @@ class SnpAssay extends FileField {
       'parents' => [
         $organism_key,
         static::DATA_TYPE,
-        static::FORM_PARENT_FIELDSET
+        static::SNPS_FIELDSET
       ],
-      'field_name' => static::FIELD_NAME,
+      'field_name' => static::DOM_NAME,
       'title' => t(static::getFieldTitle()),
       'organism_name' => $organism_key,
       'type' => static::DATA_TYPE,
@@ -77,13 +126,13 @@ class SnpAssay extends FileField {
         'visible' => [
           [
             static::getStateName($organism_index,
-              [static::FORM_PARENT_FIELDSET, 'genotyping-type']
+              [static::SNPS_FIELDSET, 'genotyping-type']
             ) => ['value' => TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY],
           ],
           'or',
           [
             static::getStateName($organism_index,
-              [static::FORM_PARENT_FIELDSET, 'file-type']
+              [static::SNPS_FIELDSET, 'file-type']
             ) => ['value' => TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE],
           ],
         ],
@@ -104,12 +153,11 @@ class SnpAssay extends FileField {
   public static function validate($organism_index, array &$form, array &$form_state) {
     $organism_key = 'organism-' . $organism_index;
     $genotype = &$form_state['values'][$organism_key][static::DATA_TYPE] ?? NULL;
-    $snps = &$genotype[static::FORM_PARENT_FIELDSET] ?? NULL;
+    $snps = &$genotype[static::SNPS_FIELDSET] ?? NULL;
     // Fields.
     $file_type = $snps['file-type'] ?? NULL;
     $genotyping_type = $snps['genotyping-type'] ?? NULL;
     $fid = static::getFileId($organism_index, $form_state);
-
     static::validateRequired($organism_index, $form_state, (
       // Requirement conditions:
       (

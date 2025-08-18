@@ -152,7 +152,7 @@ function tpps_report_submission_file_all_theme_single_row(array $context) {
           }
         }
       }
-      $final_file_row[] = tpps_array_print_list($value['file']['grouped_list'][$group]);
+      $final_file_row[] = TppsArray::printList($value['file']['grouped_list'][$group]);
     }
   }
   elseif ($context['report_filter'] == Report::MISSING_FILES) {

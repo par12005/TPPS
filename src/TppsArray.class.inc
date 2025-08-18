@@ -395,7 +395,11 @@ class TppsArray {
    *   Returns $default if element wasn't found in given array but not reference.
    *   Returns $array when $parents is an empty array.
    */
-  public static function &getValue(array &$array, array $parents = [], &$key_exists = NULL) {
+  public static function &getValue(&$array = NULL, array $parents = [], &$key_exists = NULL) {
+    if (is_null($array)) {
+      $null = NULL;
+      return $null;
+    }
     $value = &drupal_array_get_nested_value($array, $parents, $key_exists);
     if ($key_exists) {
       return $value;

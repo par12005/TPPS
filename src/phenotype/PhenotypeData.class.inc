@@ -31,9 +31,10 @@ class PhenotypeData extends TppsFile {
   // Note: there is also 'iso-check' checkbox.
   const CHECKBOX_NAME = 'normal-check';
 
+
   // Name of the file field.
   // Value is file id.
-  const FIELD_NAME = 'file';
+  const DOM_NAME = 'file';
   // Name of the fieldset on PAGE 4.
   const DATA_TYPE = 'phenotype';
   // Form step where field is used.
@@ -63,7 +64,7 @@ class PhenotypeData extends TppsFile {
         $parents = [
           $organism_key,
           static::DATA_TYPE,
-          static::FIELD_NAME,
+          static::DOM_NAME,
         ];
         break;
     }
@@ -116,7 +117,7 @@ class PhenotypeData extends TppsFile {
         ':input[name="' . $organism_key . '[phenotype][check]"]'
         => ['checked' => FALSE],
       ];
-      $form[$organism_key]['phenotype'][static::FIELD_NAME] = [
+      $form[$organism_key]['phenotype'][static::DOM_NAME] = [
         '#type' => 'managed_file',
         '#title' => t('Phenotype file: Please upload a file containing '
           . 'columns for Plant Identifier, Phenotype Data: *'),
@@ -126,7 +127,7 @@ class PhenotypeData extends TppsFile {
         '#states' => ['invisible' => $states],
         'empty' => [
           '#default_value' => $page4_values[$organism_key]['phenotype']
-            [static::FIELD_NAME]['empty'] ?? t('NA'),
+            [static::DOM_NAME]['empty'] ?? t('NA'),
         ],
         'columns' => [
           '#description' => t('Please define which columns hold the required '
@@ -134,14 +135,14 @@ class PhenotypeData extends TppsFile {
           ),
         ],
       ];
-      $form[$organism_key]['phenotype'][static::FIELD_NAME]['columns-options'] = [
+      $form[$organism_key]['phenotype'][static::DOM_NAME]['columns-options'] = [
         '#type' => 'hidden',
         '#value' => PhenotypeData::getColumnOptions(),
       ];
       // Ability to use file without header was disabled to make validation
       // simplier and to avoid problems with processing those files.
       // File without header will not pass validation.
-      //$form[$organism_key]['phenotype'][static::FIELD_NAME]['no-header'] = [];
+      //$form[$organism_key]['phenotype'][static::DOM_NAME]['no-header'] = [];
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -183,15 +184,15 @@ class PhenotypeData extends TppsFile {
     $page3_values = $form_state['saved_values'][TPPS_PAGE_3] ?? NULL;
     // The form_state values of the phenotype fieldset for organism $id.
     // @TODO Minor. Rename to $file_form_element.
-    $file_element = $form[$organism_key]['phenotype'][static::FIELD_NAME];
+    $file_element = $form[$organism_key]['phenotype'][static::DOM_NAME];
     $fid = static::getFileId($organism_index, $form_state);
     $metadata_file_id = $phenotype['metadata'];
-    $form_field_error_name = $organism_key . '][phenotype][' . static::FIELD_NAME;
+    $form_field_error_name = $organism_key . '][phenotype][' . static::DOM_NAME;
 
     $phenotype_number = $phenotype['phenotypes-meta']['number'];
     // File Id of metadata file.
     $phenotype_meta = $phenotype['metadata'];
-    $fid = $phenotype[static::FIELD_NAME];
+    $fid = $phenotype[static::DOM_NAME];
 
     if (empty($fid)) {
       form_set_error($form_field_error_name,
@@ -577,7 +578,7 @@ class PhenotypeData extends TppsFile {
   public static function isDataTypeSet(array $form_state, $organism_index, $data_type_id) {
     $organism_key = 'organism-' . $organism_index;
     $selected_columns = TppsArray::getValue($form_state['input'],
-      [$organism_key, 'phenotype', static::FIELD_NAME, 'columns']
+      [$organism_key, 'phenotype', static::DOM_NAME, 'columns']
     );
     return !empty($selected_columns) && in_array($data_type_id, $selected_columns);
   }

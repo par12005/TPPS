@@ -29,39 +29,24 @@
  */
 class AssayDesign extends FileField {
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Required constants.
+  //
+  // Name of the fieldset on PAGE 4.
+  // Could be 'phenotype', 'genotype' or 'environmental'.
+  const DATA_TYPE = 'genotype';
+  // HTML name of the field.
+  const DOM_NAME = 'assay-design';
+  const TITLE = 'Assay Design File';
+  // Integer Form Page number.
+  const FORM_STEP = TPPS_PAGE_4;
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Optional constants. Class specific.
+  //
   // Machine name of the 'SNPs' fieldset (parent of the parent).
   const SNPS_FIELDSET = 'SNPs';
-  // Name of the fieldset on PAGE 4.
-  const DATA_TYPE = 'genotype';
+  // Direct parent element DOM-name.
   const PARENT_FIELDSET = AssayDesignCitation::PARENT_FIELDSET;
-  // HTML name of the field.
-  const FIELD_NAME = 'assay-design';
-  const FIELD_TITLE = 'Assay Design File';
-  // Integer Form Page number.
-  const PAGE = TPPS_PAGE_4;
-
-// @TODO Review.
-  // From VS/assay_design_file_columns branch.
-  if (0) {
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Unique common settings.
-    //
-    const TITLE = 'Assay Design';
-    // Name of the form field.
-    const FIELD_NAME = 'assay-design';
-    // Name of the parent fieldset on form (!) not shared form state.
-    // static::FORM_PARENT_FIELDSET.
-    const FORM_PARENT_FIELDSET = 'SNPs';
-    // Name of the parent element in shared state array.
-    // Note: Differs if field was relocated. See versions in function
-    // tpps_submission_form_version_changes().
-    const SHARED_STATE_PARENT_FIELDSET = 'files';
-    // Type of the data.
-    // Could be 'phenotype', 'genotype' or 'environmental'.
-    const DATA_TYPE = 'genotype';
-    // Form step where field is used.
-    const FORM_STEP = 4;
-  }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Custom settings.
   //
@@ -70,7 +55,7 @@ class AssayDesign extends FileField {
   const DATA_TYPE_SCAFFOLD = 2;
   const DATA_TYPE_POSITION = 3;
   const DATA_TYPE_FLANK_SEQUENCE = 4;
-  const DATA_TYPE_REVERSE_FLANK_SEQUENCE => 5;
+  const DATA_TYPE_REVERSE_FLANK_SEQUENCE = 5;
 
   /**
    * Builds set of form fields for 'Assay Design Citation' feature.
@@ -140,8 +125,8 @@ class AssayDesign extends FileField {
         static::SNPS_FIELDSET,
         static::PARENT_FIELDSET,
       ],
-      'field_name' => static::FIELD_NAME,
-      'title' => t(static::FIELD_TITLE),
+      'field_name' => static::DOM_NAME,
+      'title' => t(static::TITLE),
       'organism_name' => $organism_key,
       'type' => static::DATA_TYPE,
       'optional' => TRUE,
@@ -156,10 +141,10 @@ class AssayDesign extends FileField {
             [
               'saved_values',
               static::FORM_STEP,
-              $organism_name,
+              $organism_key,
               static::DATA_TYPE,
-              static::FORM_PARENT_FIELDSET,
-              static::FIELD_NAME,
+              static::SNPS_FIELDSET,
+              static::DOM_NAME,
               'empty',
             ]
           ) ?? 'NA',
@@ -174,6 +159,7 @@ class AssayDesign extends FileField {
           '#value' => static::getColumnOptions(),
         ],
         'no-header' => [],
+      ],
     ]);
   }
 
@@ -246,6 +232,7 @@ class AssayDesign extends FileField {
         // @todo Minor. Highlight 'SNP Association' file.
         $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
           . 'Requires "SNP Association" file.',
+          [
             '@field_title' => t(static::getFieldTitle()),
             '@oidx' => $organism_index,
           ]
@@ -259,6 +246,8 @@ class AssayDesign extends FileField {
           [
             '@field_title' => t(static::getFieldTitle()),
             '@oidx' => $organism_index,
+          ]
+        );
         form_set_error(static::getFormErrorName($organism_index), $error_message);
       }
       // Validate column data types.
@@ -296,7 +285,7 @@ class AssayDesign extends FileField {
         'organism_index' => $organism_index,
         'form_state' => $form_state,
         // Curent file.
-        'no_header' => $snps[static::FIELD_NAME . '-no-header'] ?? FALSE,
+        'no_header' => $snps[static::DOM_NAME . '-no-header'] ?? FALSE,
         'column_letter' => static::getSelectedColumns(
           $organism_index,
           $form_state
@@ -409,9 +398,9 @@ class AssayDesign extends FileField {
       static::FORM_STEP,
       $organism_key,
       static::DATA_TYPE,
-      static::FORM_PARENT_FIELDSET,
+      static::SNPS_FIELDSET,
       // For searching purposes: 'assay-design-columns'.
-      static::FIELD_NAME . '-columns',
+      static::DOM_NAME . '-columns',
     ]);
     if ($debug_mode) {
       tpps_log_line();
@@ -432,17 +421,11 @@ class AssayDesign extends FileField {
     tpps_file_iterator($fid, 'AssayDesign::processRow', $options);
     tpps_log('Done.');
 
-
-
-
-    tpps_log('Inserting "Assay Design" data into database using insert_multi...');
-
-   // @TODO Insert data into DB. Was no code here in submit_all.php script.
-
-    tpps_log('Done.');
-
-
-
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Process data from Assay Design file field.
+    //
+    // There is no need to insert Assay Design file's data into database
+    // because this file will be used to build VCF file.
 
     // Reset options[records] with empty records arrays.
     $options['records'] = [
@@ -694,7 +677,7 @@ class AssayDesign extends FileField {
           $organism_key,
           static::DATA_TYPE,
           'files',
-          static::FIELD_NAME,
+          static::DOM_NAME,
         ];
         break;
 
@@ -703,7 +686,7 @@ class AssayDesign extends FileField {
           $organism_key,
           static::DATA_TYPE,
           static::SNPS_FIELDSET,
-          static::FIELD_NAME,
+          static::DOM_NAME,
         ];
         break;
 
@@ -714,7 +697,7 @@ class AssayDesign extends FileField {
           static::DATA_TYPE,
           static::SNPS_FIELDSET,
           static::PARENT_FIELDSET,
-          static::FIELD_NAME,
+          static::DOM_NAME,
         ];
         break;
     }
@@ -823,7 +806,7 @@ class AssayDesign extends FileField {
           $title = $cached_submission['publication']['title'] ?? t('No Title');
           $title = (strlen($title) > 97) ? substr($title, 0, 97) . '...' : $title;
           $item = $accession . ' - ' . $title;
-          if (empty($cached_submission[SubmissionCache::FILES_CONTAINER][static::FIELD_NAME])) {
+          if (empty($cached_submission[SubmissionCache::FILES_CONTAINER][static::DOM_NAME])) {
             $list['has_not'][$accession] = $item;
           }
           else {

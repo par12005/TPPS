@@ -1187,7 +1187,7 @@ function tpps_file_iterator($fid, $function, array &$options = []) {
  * @return Generator|array
  *   The generator for the file.
  */
-function tpps_file_generator($fid, array $options = array()) {
+function tpps_file_generator($fid, array $options = []) {
   $file = tpps_file_load($fid);
   $location = tpps_get_location($file->uri);
   $extension = tpps_get_path_extension($location);

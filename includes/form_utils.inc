@@ -262,7 +262,7 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
  * can also pass the file name in order to find saved_values such as
  * 'file-columns', or 'file-no-header'.
  *
- * See tpps_array_get/set_value() for more common solution.
+ * See TppsArray::get|setValue() for more common solution.
  *
  * @param array $state
  *   The state of the form.

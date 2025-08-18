@@ -14,30 +14,20 @@
 abstract class FileField {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Common settings.
+  // Required Constants.
   //
   // File field title.
   // Example: 'SNP Assay'.
   const TITLE = '';
-  // Name of the form field.
+  // HTML name of the form field used in DOM.
   // Example: 'snps-assay'.
-  const FIELD_NAME = '';
-  // Name of the parent fieldset on form (!) not shared form state.
-  // Use in classes: static::FORM_PARENT_FIELDSET.
-  // Use here: static::FORM_PARENT_FIELDSET.
-  // Example: 'SNPs'.
-  const FORM_PARENT_FIELDSET = '';
-  // Name of the parent element in shared state array.
-  // Note: Differs if field was relocated. See versions in function
-  // tpps_submission_form_version_changes().
-  // Example: 'files'.
-  const SHARED_STATE_PARENT_FIELDSET = '';
+  const DOM_NAME = '';
   // Type of the data.
   // Could be 'phenotype', 'genotype' or 'environmental'.
   // Example: 'genotype'.
   const DATA_TYPE = '';
   // Form step where field is used.
-  const FORM_STEP = '';
+  const PAGE = '';
 
   /**
    * Gets lit of required columns for validation.
@@ -89,7 +79,7 @@ abstract class FileField {
    */
   public static function getFormErrorName($organism_index, array $parents = []) {
     if (empty($parents)) {
-      $parents = [static::FORM_PARENT_FIELDSET, static::FIELD_NAME];
+      $parents = [static::SNPS_FIELDSET, static::DOM_NAME];
     }
     $organism_key = 'organism-' . $organism_index;
     $parents = array_merge([$organism_key, static::DATA_TYPE], $parents);
@@ -113,7 +103,7 @@ abstract class FileField {
    */
   public static function getDomName($organism_index, array $parents = []) {
     if (empty($parents)) {
-      $parents = [static::FORM_PARENT_FIELDSET, static::FIELD_NAME];
+      $parents = [static::SNPS_FIELDSET, static::DOM_NAME];
     }
     $parents = array_merge([static::DATA_TYPE], $parents);
     $organism_key = 'organism-' . $organism_index;
@@ -262,7 +252,7 @@ abstract class FileField {
    *   Returns prefix.
    */
   public static function getFilePrefix() {
-    if (static::FIELD_NAME == 'snps-assay') {
+    if (static::DOM_NAME == 'snps-assay') {
       // Note: field's title is 'SNP Assay' but prefix has extra 's' after 'SNP'.
       return 'Genotype_SNPs_Assay';
     }
@@ -412,8 +402,8 @@ abstract class FileField {
         'input',
         $organism_key,
         static::DATA_TYPE,
-        static::FORM_PARENT_FIELDSET,
-        static::FIELD_NAME,
+        static::SNPS_FIELDSET,
+        static::DOM_NAME,
         $name,
       ],
       // @todo MInor. Probably it's useless step and could be removed.
@@ -421,8 +411,8 @@ abstract class FileField {
         'values',
         $organism_key,
         static::DATA_TYPE,
-        static::FORM_PARENT_FIELDSET,
-        static::FIELD_NAME,
+        static::SNPS_FIELDSET,
+        static::DOM_NAME,
         $name,
       ],
       // Processing.
@@ -433,8 +423,8 @@ abstract class FileField {
         static::FORM_STEP,
         $organism_key,
         static::DATA_TYPE,
-        static::FORM_PARENT_FIELDSET,
-        static::FIELD_NAME . '-' . $name,
+        static::SNPS_FIELDSET,
+        static::DOM_NAME . '-' . $name,
       ],
       'shared_state_saved_values' => [
         'saved_values',
@@ -442,8 +432,12 @@ abstract class FileField {
         $organism_key,
         static::DATA_TYPE,
         // Parent fieldset could be different for Shared state.
-        static::SHARED_STATE_PARENT_FIELDSET,
-        static::FIELD_NAME . '-' . $name,
+
+// @todo UPDATE! Use getParents().
+
+
+        'files',
+        static::DOM_NAME . '-' . $name,
       ],
     ];
     foreach ($parent_list as $name => $parents) {
@@ -493,37 +487,24 @@ abstract class FileField {
    *   Ordinal organism number at page.
    * @param array $form_state
    *   Drupal Form API State Array.
-   * @param array $parents
-   *   List of parent elements including desired element in the end.
-   *   When empty then list of parents will be built automatically using
-   *   field's properties.
    *
    * @return mixed
    *   Returns form element or NULL if it wasn't found.
    */
-  public static function getFormElement($organism_index, array &$form_state, array $parents = []) {
+  public static function getFormElement($organism_index, array &$form_state) {
     if (empty($form_state['complete form'])) {
       $message = t("Form wasn't found under \$form_state['complete form'].");
       throw new Exception($message);
     }
     $organism_key = 'organism-' . $organism_index;
     $element = $key_exists = NULL;
-    if (empty($parents)) {
-      // Build parents for current file field.
-      $parents = [
-        'complete form',
-        $organism_key,
-        static::DATA_TYPE,
-        static::FORM_PARENT_FIELDSET,
-        static::FIELD_NAME,
-      ];
-    }
-    $element = TppsArray::getValue($form_state, $parents, $key_exists);
+    $parents = static::getParents($organism_index, $form_state);
+    $element = TppsArray::getValue($form_state['complete form'], $parents, $key_exists);
     if ($key_exists === FALSE) {
       throw new Exception(t("Form element wasn't found for field @field_name. "
         . "Field parents: @field_parents.",
         [
-          '@field_name' => static::FIELD_NAME,
+          '@field_name' => static::DOM_NAME,
           '@field_parents' => implode(', ', $parents),
         ]
       ));
@@ -646,10 +627,10 @@ abstract class FileField {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get some useful values.
     $parents = $file_element['#parents'];
-    $new_end_columns = static::FIELD_NAME . "-columns";
-    $new_end_no_header = static::FIELD_NAME . "-no-header";
-    $new_end_empty = static::FIELD_NAME . "-empty";
-    $group_path = static::FIELD_NAME . "-groups";
+    $new_end_columns = static::DOM_NAME . "-columns";
+    $new_end_no_header = static::DOM_NAME . "-no-header";
+    $new_end_empty = static::DOM_NAME . "-empty";
+    $group_path = static::DOM_NAME . "-groups";
     // Remove last element from list of parents.
     array_pop($parents);
     // Note: all column related meta-data will be added to to upper element
@@ -919,7 +900,7 @@ abstract class FileField {
    *   Returns TRUE
    */
   public static function allowColumnDataTypeUseOnce($organism_index, array $selected_columns) {
-    if (static::FIELD_NAME == 'assay-design') {
+    if (static::DOM_NAME == 'assay-design') {
       // For Assay Design file.
       $diff = array_unique(array_diff_assoc(
         $selected_columns,
@@ -987,12 +968,12 @@ abstract class FileField {
     $parents = $file_element['#parents'];
     array_pop($parents);
     $values = TppsArray::getValue($form_state['values'], $parents);
-    $values[static::FIELD_NAME . '-columns'] = $file_element['#value']['columns'] ?? NULL;
-    $values[static::FIELD_NAME . '-no-header'] = $file_element['#value']['no-header'] ?? NULL;
-    $values[static::FIELD_NAME . '-empty'] = $file_element['#value']['empty'] ?? NULL;
+    $values[static::DOM_NAME . '-columns'] = $file_element['#value']['columns'] ?? NULL;
+    $values[static::DOM_NAME . '-no-header'] = $file_element['#value']['no-header'] ?? NULL;
+    $values[static::DOM_NAME . '-empty'] = $file_element['#value']['empty'] ?? NULL;
     // There is no need to store required groups because of different structure
     // and this class's method could be used to get data.
-    //$values[static::FIELD_NAME . '-groups']] = [];
+    //$values[static::DOM_NAME . '-groups']] = [];
     TppsArray::setValue($form_state['values'], $parents, $values);
   }
 

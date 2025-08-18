@@ -291,7 +291,7 @@ class SubmissionVersion {
     if ($debug_mode ?? FALSE) {
       $message = 'Submission "@accession" was downgraded to @version. !stack';
       $params = [
-        '!stack' => tpps_array_print_list(
+        '!stack' => TppsArray::printList(
           debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 10)
         ),
         '@accession' => $submission_state['accession'],
@@ -421,7 +421,7 @@ class SubmissionVersion {
       $result = $submission_state;
     }
     else {
-      $result = tpps_array_apply_changes($change_list, $submission_state);
+      $result = TppsArray::applyChanges($change_list, $submission_state);
       switch ($direction) {
         case 'upgrade':
           $version = $final_version;

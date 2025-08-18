@@ -219,16 +219,16 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       ];
       // Move 'Assay Design File' field into sub-fieldset.
       // See 'AssayDesignCitation::PARENT_FIELDSET'.
-      $version_change_list[$v]['move'][AssayDesign::FIELD_NAME] = [
+      $version_change_list[$v]['move'][AssayDesign::DOM_NAME] = [
         'source' => array_merge(
           $genotype_parents,
-          [AssayDesign::SNPS_FIELDSET, AssayDesign::FIELD_NAME]
+          [AssayDesign::SNPS_FIELDSET, AssayDesign::DOM_NAME]
         ),
         'target' => array_merge($genotype_parents,
           [
             AssayDesign::SNPS_FIELDSET,
             AssayDesign::PARENT_FIELDSET,
-            AssayDesign::FIELD_NAME,
+            AssayDesign::DOM_NAME,
           ]
         ),
       ];

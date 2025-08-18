@@ -364,7 +364,7 @@ function tpps_submission_import_state_mods(array &$state, $new_accession) {
   // Check also $form_state['input'] and $form_state['completed_form'].
   // Update accession value in $form_state.
   $old_accession = $state['saved_values']['frontpage']['accession'];
-  $state = tpps_array_replace($state, $old_accession, $new_accession);
+  $state = TppsArray::replace($state, $old_accession, $new_accession);
   $saved_values = &$state['saved_values'];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -428,7 +428,7 @@ function tpps_submission_import_process_files(array &$state, $new_accession, arr
       }
       Submission::addFileUsage($new_file, $new_accession);
       // Change File ID in submission state.
-      $state = tpps_array_replace($state, $fid, $new_file->fid);
+      $state = TppsArray::replace($state, $fid, $new_file->fid);
 
       // Report.
       $message = t(

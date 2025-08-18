@@ -97,7 +97,7 @@ function tpps_report_zenodo_deposition() {
         else {
           $output = ZenodoDeposit::printDeposition($response, 'table');
           // Show also 'files', 'metadata' and 'links' items.
-          $output .= tpps_array_print_list($response);
+          $output .= TppsArray::printList($response);
         }
       }
       catch (Exception $e) {

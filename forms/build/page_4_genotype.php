@@ -80,7 +80,7 @@ function tpps_genotype_subform(array $form_bus) {
   );
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Only for 1st organism.
-  if ($i == 1 && $organism_number > 1) {
+  if ($organism_index == 1 && $organism_number > 1) {
     tpps_form_add_yesno_field(array_merge($form_bus,
       [
         'parents' => [$organism_key, $type],

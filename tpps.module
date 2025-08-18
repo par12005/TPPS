@@ -21,6 +21,8 @@ define('TPPS_PAGE_1', 1);
 define('TPPS_PAGE_2', 2);
 define('TPPS_PAGE_3', 3);
 define('TPPS_PAGE_4', 4);
+define('TPPS_YES', 'Yes');
+define('TPPS_NO', 'No');
 define('RESET_CACHE', TRUE);
 
 define("TPPS_TEMP_XLSX", "temporary://tpps_xlsx");
@@ -3602,7 +3604,7 @@ function tpps_rest_api_request_complete(array $context = []) {
     unset($context['Response']);
   }
   $message = 'Rest API Request Complete. !context';
-  $params = ['!context' => tpps_array_print_list($context)];
+  $params = ['!context' => TppsArray::printList($context)];
   watchdog('tpps', $message, $params, WATCHDOG_WARNING);
 }
 
@@ -3842,7 +3844,7 @@ function tpps_form_tppsc_main_alter($form, $form_state) {
     return;
   }
   // File was removed from page using 'Remove' button.
-  $parents = tpps_array_get_path($form_state['values']);
+  $parents = TppsArray::getPath($form_state['values']);
   $fid = TppsArray::getValue($form, array_merge($parents, ['#default_value']));
   $file = tpps_file_load($fid);
   if (
@@ -3869,7 +3871,7 @@ function tpps_submission_saved($submission) {
   if (variable_get('tpps_submission_log_save_event', FALSE)) {
     $message = 'Submission "@accession" was saved. !stack';
     $params = [
-      '!stack' => tpps_array_print_list(
+      '!stack' => TppsArray::printList(
         debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 10)
       ),
       '@accession' => $submission->accession,
@@ -4001,7 +4003,7 @@ function tpps_submission_cache_updated() {
     $message = 'Submission Cache was fully updated. !stack';
     $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 10);
     $params = [
-      '!stack' => tpps_array_print_list($stack),
+      '!stack' => TppsArray::printList($stack),
     ];
     watchdog('tpps', $message, $params, WATCHDOG_NOTICE);
   }
@@ -4016,7 +4018,7 @@ function tpps_submission_cache_single_updated($accession) {
     $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 10);
     $params = [
       '@accession' => $accession,
-      '!stack' => tpps_array_print_list($stack),
+      '!stack' => TppsArray::printList($stack),
     ];
     watchdog('tpps', $message, $params, WATCHDOG_NOTICE);
   }

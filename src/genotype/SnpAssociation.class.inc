@@ -19,26 +19,22 @@
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-+class SnpAssociation extends FileField {
+class SnpAssociation extends FileField {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Common settings.
   //
   const TITLE = 'SNPs Association';
   // Name of the form field.
-  const FIELD_NAME = 'snps-association';
+  const DOM_NAME = 'snps-association';
   // Name of the parent fieldset on form (!) not shared form state.
-  // static::FORM_PARENT_FIELDSET.
-  const FORM_PARENT_FIELDSET = 'SNPs';
-  // Name of the parent element in shared state array.
-  // Note: Differs if field was relocated. See versions in function
-  // tpps_submission_form_version_changes().
-  const SHARED_STATE_PARENT_FIELDSET = 'files';
+  // static::SNPS_FIELDSET.
+  const SNPS_FIELDSET = 'SNPs';
   // Type of the data.
   // Could be 'phenotype', 'genotype' or 'environmental'.
   const DATA_TYPE = 'genotype';
   // Form step where field is used.
-  const FORM_STEP = 4;
+  const FORM_STEP = TPPS_PAGE_4;
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Custom settings.
@@ -57,6 +53,57 @@
   // CV if of the 'PATO'.
   // @todo Get it dynamically.
   const CV_ID_PATO = 105;
+
+  /**
+   * Gets lit of required columns for validation.
+   *
+   * Note:
+   * File class must overwrite this method of column validation is required.
+   *
+   * @return array
+   *   Returns list of groups of required columns.
+   *   See AssayDesign::getRequiredColumns() for the structure example.
+   */
+  public static function getRequiredColumns() {
+    return [];
+  }
+
+  /**
+   * Gets parents of the field.
+   *
+   * @param int $organism_index
+   *   Ordinal number on form.
+   * @param array $form_state
+   *   Drupal Form State array.
+   *
+   * @return array
+   *   Returns parents for the checkbox which makes this field required.
+   */
+  public static function getParents($organism_index, array $form_state) {
+    $organism_key = 'organism-' . $organism_index;
+    switch (SubmissionVersion::get($form_state)) {
+      case 1:
+        $parents = [
+          $organism_key,
+          static::DATA_TYPE,
+          'files',
+          static::DOM_NAME,
+        ];
+        break;
+
+      case 2:
+      case 3:
+      default:
+        $parents = [
+          $organism_key,
+          static::DATA_TYPE,
+          static::SNPS_FIELDSET,
+          static::DOM_NAME,
+        ];
+        break;
+    }
+    return $parents;
+  }
 
   /**
    * Gets list of column data types.
@@ -85,21 +132,21 @@
   /**
    * Builds form fields for Phenotype Data file.
    *
-   * @param int $id
-   *   Organism Id.
+   * @param int $organism_index
+   *   Ordinal number of the organism at page.
    * @param array $form
    *   Drupal Form API Array.
    * @param array $form_state
    *   Drupal Form API State Array.
    */
-  public static function build($id, array &$form, array $form_state) {
+  public static function build($organism_index, array &$form, array $form_state) {
     if (!tpps_is_genotype_data_type($form_state)) {
       return;
     }
     $organism_key = 'organism-' . $organism_index;
     $sub_form = &$form[$organism_key][static::DATA_TYPE];
 
-    $sub_form[static::FORM_PARENT_FIELDSET]['upload_snp_association'] = [
+    $sub_form[static::SNPS_FIELDSET]['upload_snp_association'] = [
       '#type' => 'select',
       '#title' => t('Would you like to upload a SNP association file?'),
       '#options' => [
@@ -110,7 +157,7 @@
       '#default_value' => tpps_get_ajax_value($form_state, [
         $organism_key,
         static::DATA_TYPE,
-        static::FORM_PARENT_FIELDSET,
+        static::SNPS_FIELDSET,
         'upload_snp_association',
       ]),
     ];
@@ -121,9 +168,9 @@
       'parents' => [
         $organism_key,
         static::DATA_TYPE,
-        static::FORM_PARENT_FIELDSET,
+        static::SNPS_FIELDSET,
       ],
-      'field_name' => static::FIELD_NAME,
+      'field_name' => static::DOM_NAME,
       'title' => t(static::getFieldTitle()),
       'organism_name' => $organism_key,
       'type' => static::DATA_TYPE,
@@ -147,7 +194,7 @@
       'states' => [
         'visible' => [
           static::getStateName($organism_index,
-            [static::FORM_PARENT_FIELDSET, 'upload_snp_association']
+            [static::SNPS_FIELDSET, 'upload_snp_association']
           ) => ['value' => TPPS_YES],
         ],
       ],
@@ -159,8 +206,8 @@
               static::FORM_STEP,
               $organism_key,
               static::DATA_TYPE,
-              static::FORM_PARENT_FIELDSET,
-              static::FIELD_NAME,
+              static::SNPS_FIELDSET,
+              static::DOM_NAME,
               'empty',
             ]) ?? 'NA',
         ],
@@ -195,7 +242,7 @@
     // This field must be optional to not block submission but later will be
     // moved to new page5.
     $field_name = 'snps-association-type';
-    $sub_form[static::FORM_PARENT_FIELDSET][$field_name] = [
+    $sub_form[static::SNPS_FIELDSET][$field_name] = [
       '#type' => 'select',
       '#title' => t('Confidence Value Type: *'),
       '#options' => [
@@ -209,7 +256,7 @@
       '#states' => [
         'visible' => [
           static::getStateName($organism_index,
-            [static::FORM_PARENT_FIELDSET, 'upload_snp_association']
+            [static::SNPS_FIELDSET, 'upload_snp_association']
           ) => ['value' => TPPS_YES],
           static::getStateName($organism_index,
             ['does_study_include_snp_data']
@@ -221,7 +268,7 @@
     // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
     // Field is optional.
     $field_name = 'snps-association-tool';
-    $sub_form[static::FORM_PARENT_FIELDSET][$field_name] = [
+    $sub_form[static::SNPS_FIELDSET][$field_name] = [
       '#type' => 'select',
       '#title' => t('Association Analysis Tool: *'),
       '#options' => [
@@ -238,7 +285,7 @@
       '#states' => [
         'visible' => [
           static::getStateName($organism_index,
-            [static::FORM_PARENT_FIELDSET, 'upload_snp_association']
+            [static::SNPS_FIELDSET, 'upload_snp_association']
           ) => ['value' => TPPS_YES],
           static::getStateName($organism_index,
             ['does_study_include_snp_data']
@@ -262,7 +309,7 @@
     $organism_key = 'organism-' . $organism_index;
     $fid = static::getFileId($organism_index, $form_state);
     $genotype = &$form_state['values'][$organism_key][static::DATA_TYPE] ?? NULL;
-    $snps = &$genotype[static::FORM_PARENT_FIELDSET] ?? NULL;
+    $snps = &$genotype[static::SNPS_FIELDSET] ?? NULL;
     $snps_assay = $snps['snps-assay'] ?? 0;
     $file_type = $snps['file-type'] ?? NULL;
 
@@ -315,7 +362,7 @@
       $form_state,
       $required_groups,
       // Note: This is file id stored in $form!
-      $form[$organism_key]['genotype'][static::FORM_PARENT_FIELDSET][static::FIELD_NAME]
+      $form[$organism_key]['genotype'][static::SNPS_FIELDSET][static::DOM_NAME]
     );
 
     if (form_get_errors()) {
@@ -330,7 +377,7 @@
     // Check that SNP IDs match Genotype Assay.
     $snps_id_col = $groups['SNP ID'][static::DATA_TYPE_SNP_ID];
     // For search purpose: 'snps-association-no-header'.
-    $assoc_no_header = $snps[static::FIELD_NAME . '-no-header'] ?? FALSE;
+    $assoc_no_header = $snps[static::DOM_NAME . '-no-header'] ?? FALSE;
 
     $assay_snps = tpps_file_headers($snps_assay);
     unset($assay_snps[key($assay_snps)]);
@@ -424,7 +471,7 @@
     $options = [
       'associations_groups' => $groups,
       'organism_index' => $organism_index,
-      'column_list' => $snps[static::FIELD_NAME . '-columns'],
+      'column_list' => $snps[static::DOM_NAME . '-columns'],
     ];
     tpps_file_iterator($fid, 'SnpAssociation::validateRow', $options);
     static::preserveValidFile($organism_index, $form_state);

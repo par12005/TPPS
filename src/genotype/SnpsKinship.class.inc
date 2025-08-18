@@ -18,19 +18,66 @@ class SnpsKinship extends FileField {
   //
   const TITLE = 'SNPs Kinship';
   // Name of the form field.
-  const FIELD_NAME = 'snps-kinship';
+  const DOM_NAME = 'snps-kinship';
   // Name of the parent fieldset on form (!) not shared form state.
-  // static::FORM_PARENT_FIELDSET.
-  const FORM_PARENT_FIELDSET = 'SNPs';
-  // Name of the parent element in shared state array.
-  // Note: Differs if field was relocated. See versions in function
-  // tpps_submission_form_version_changes().
-  const SHARED_STATE_PARENT_FIELDSET = 'files';
+  // static::SNPS_FIELDSET.
+  const SNPS_FIELDSET = 'SNPs';
   // Type of the data.
   // Could be 'phenotype', 'genotype' or 'environmental'.
   const DATA_TYPE = 'genotype';
   // Form step where field is used.
   const FORM_STEP = 4;
+
+  /**
+   * Gets lit of required columns for validation.
+   *
+   * Note:
+   * File class must overwrite this method of column validation is required.
+   *
+   * @return array
+   *   Returns list of groups of required columns.
+   *   See AssayDesign::getRequiredColumns() for the structure example.
+   */
+  public static function getRequiredColumns() {
+    return [];
+  }
+
+  /**
+   * Gets parents of the field.
+   *
+   * @param int $organism_index
+   *   Ordinal number on form.
+   * @param array $form_state
+   *   Drupal Form State array.
+   *
+   * @return array
+   *   Returns parents for the checkbox which makes this field required.
+   */
+  public static function getParents($organism_index, array $form_state) {
+    $organism_key = 'organism-' . $organism_index;
+    switch (SubmissionVersion::get($form_state)) {
+      case 1:
+        $parents = [
+          $organism_key,
+          static::DATA_TYPE,
+          'files',
+          static::DOM_NAME,
+        ];
+        break;
+
+      case 2:
+      case 3:
+      default:
+        $parents = [
+          $organism_key,
+          static::DATA_TYPE,
+          static::SNPS_FIELDSET,
+          static::DOM_NAME,
+        ];
+        break;
+    }
+    return $parents;
+  }
 
   /**
    * Validates file field.
@@ -45,7 +92,7 @@ class SnpsKinship extends FileField {
   public static function validate($organism_index, array &$form, array &$form_state) {
     $organism_key = 'organism-' . $organism_index;
     $genotype = &$form_state['values'][$organism_key][static::DATA_TYPE] ?? NULL;
-    $snps = &$genotype[static::FORM_PARENT_FIELDSET] ?? NULL;
+    $snps = &$genotype[static::SNPS_FIELDSET] ?? NULL;
     // Fields.
     $file_type = $snps['file-type'] ?? NULL;
     $genotyping_type = $snps['genotyping-type'] ?? NULL;
@@ -87,7 +134,7 @@ class SnpsKinship extends FileField {
     $sub_form = &$form[$organism_key][static::DATA_TYPE];
     // Would you like to upload a SNPs Kinship File?
     // Relocated in v2. ['genotype', 'files'] -> ['genotype', 'SNPs'].
-    $sub_form[static::FORM_PARENT_FIELDSET]['upload_snp_kinship'] = [
+    $sub_form[static::SNPS_FIELDSET]['upload_snp_kinship'] = [
       '#type' => 'select',
       '#title' => t('Would you like to upload a SNPs Kinship File?'),
       '#options' => [
@@ -99,7 +146,7 @@ class SnpsKinship extends FileField {
         [
           $organism_key,
           static::DATA_TYPE,
-          static::FORM_PARENT_FIELDSET,
+          static::SNPS_FIELDSET,
           'upload_snp_kinship'
         ],
         'Yes'
@@ -113,9 +160,9 @@ class SnpsKinship extends FileField {
       'parents' => [
         $organism_key,
         static::DATA_TYPE,
-        static::FORM_PARENT_FIELDSET
+        static::SNPS_FIELDSET
       ],
-      'field_name' => static::FIELD_NAME,
+      'field_name' => static::DOM_NAME,
       'title' => t(static::getFieldTitle()),
       'organism_name' => $organism_key,
       'type' => static::DATA_TYPE,
@@ -125,7 +172,7 @@ class SnpsKinship extends FileField {
         'visible' => [
           static::getStateName($organism_index,
             // WARNING: No 's' in field name!
-            [static::FORM_PARENT_FIELDSET, 'upload_snp_kinship']
+            [static::SNPS_FIELDSET, 'upload_snp_kinship']
           ) => ['value' => TPPS_YES],
         ],
       ],
