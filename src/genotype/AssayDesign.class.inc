@@ -88,7 +88,6 @@ class AssayDesign extends FileField {
         ]) . ']"]' => [
           'value' => AssayDesignCitation::EXISTING_STUDY_OTHER_OPTION_KEY,
         ],
-      ],
       'or',
       [
         // 'does_study_include_snp_data': 'yes'.
@@ -115,6 +114,7 @@ class AssayDesign extends FileField {
         ],
       ],
     ];
+
     // Add file upload field.
     tpps_form_build_file_field([
       'form' => &$form,
