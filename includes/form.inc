@@ -530,6 +530,7 @@ function tpps_form_add_report(array &$form, array $meta) {
  *     Machine field name.
  *   'parents' array
  *     List of parents of the field.
+ *     Note: List of the parents could optionally include field name.
  *
  *   Example:
  *   tpps_form_build_file_field([
@@ -576,6 +577,11 @@ function tpps_form_build_file_field(array $form_bus) {
   $organism_key = $form_bus['organism_name'];
   $allow_file_reuse = $form_bus['allow_file_reuse'] ?? FALSE;
   $parents = $form_bus['parents'] ?? [];
+  // If list of parent include field's DOM name we must remove it.
+  if (TppsArray::isLast($parents, $form_bus['field_name'])) {
+    // Don't remove in the middle of the array. Only last one.
+    unset($parents[$form_bus['field_name']]);
+  }
 
   // @TODO Minor. Add page id to $form_bus['parents'].
   $page = $form_bus['page'] ?? TPPS_PAGE_4;

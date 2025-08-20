@@ -165,11 +165,7 @@ class SnpAssociation extends FileField {
     tpps_form_build_file_field([
       'form' => &$form,
       'form_state' => $form_state,
-      'parents' => [
-        $organism_key,
-        static::DATA_TYPE,
-        static::SNPS_FIELDSET,
-      ],
+      'parents' => static::getParents($organism_index, $form_state),
       'field_name' => static::DOM_NAME,
       'title' => t(static::getFieldTitle()),
       'organism_name' => $organism_key,
