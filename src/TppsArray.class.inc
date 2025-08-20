@@ -532,4 +532,48 @@ class TppsArray {
     return TRUE;
   }
 
+  /**
+   * Gets index of array element by it's key.
+   *
+   * Problem:
+   * If an array is an indexed array (where keys are sequential integers
+   * starting from 0), the "index" of an element is its key. If it's an
+   * associative array (where keys are strings or non-sequential integers),
+   * there isn't a direct "index" in the same sense as an indexed array.
+   *
+   * Supports mixed arrays.
+   * See https://stackoverflow.com/a/54704110
+   *
+   * @param array $array
+   *   Array to be searched.
+   * @param string $key
+   *   Key to be found.
+   *
+   * @return int
+   *   Returns index of the element.
+   */
+  public static function getIndex(array $array, $key) {
+    return array_search($key, array_keys($array), $key);
+  }
+
+  /**
+   * Checks if given value is the very last element of the array.
+   *
+   * To get public static function getIndex(array $array, $key) {
+   *
+   * @param array $array
+   *   Array to be searched.
+   * @param mixed $value
+   *   Element's value.
+   *
+   * @return bool
+   *   Returns TRUE when give value is the last element of the array.
+   *   Returns FALSE otherwise.
+   */
+  public static function isLast(array $array, $value) {
+    // getIndex() allows to search also mixed array (not indexed).
+    $index = static::getIndex($array, array_search($value, $array));
+    return (($index + 1) == count($array));
+  }
+
 }
