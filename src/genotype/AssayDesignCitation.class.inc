@@ -21,7 +21,7 @@
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class AssayDesignCitation {
+class AssayDesignCitation extends FileField {
 
   // Name of the fieldset on PAGE 4.
   const DATA_TYPE = 'genotype';
@@ -29,12 +29,25 @@ class AssayDesignCitation {
   const SNPS_FIELDSET = 'SNPs';
   // Machine name of the parent fieldset on form.
   const PARENT_FIELDSET = 'assay-design-citation';
+  // Integer Form Page number.
+  const FORM_STEP = TPPS_PAGE_4;
+
   // Machine name of the field which allow to select one of existing study
   // which has 'Assay Design' file. See AssayDesign::getSubmissionList().
   const EXISTING_STUDY_FIELD_NAME = 'existing_study';
   // Key of the option which allows to specify Paper DOI or Dataset DOI when
   // existing study couldn't be used.
   const EXISTING_STUDY_OTHER_OPTION_KEY = 'other';
+
+  /**
+   * Gets required columns.
+   *
+   * @return array
+   *   Returns list of groups of the required columns.
+   */
+  public static function getRequiredColumns() {
+    return [];
+  }
 
   /**
    * Gets value of the Existing Study field.
@@ -71,13 +84,13 @@ class AssayDesignCitation {
    * @param array $form_state
    *   Drupal Form State array.
    * @param string $dom_name
-   *   DOM-name of the subfield.
-   *   See static::EXISTING_STUDY_FIELD_NAME.
+   *   When empty then list of the parents will have static::DOM_NAME
+   *   as a last element and given DOM-name otherwise.
    *
    * @return string
    *   Returns value of the field EXISTING_STUDY_FIELD_NAME.
    */
-  public static function getParents($organism_index, array $form_state, $dom_name) {
+  public static function getParents($organism_index, array $form_state, $dom_name = NULL) {
     $organism_key = 'organism-' . $organism_index;
     $submission_form_version = SubmissionVersion::get($form_state);
 
@@ -103,33 +116,6 @@ class AssayDesignCitation {
     $message = 'Requested list of the parents for not yet defined field "@dom_name".';
     $params = ['@dom_name' => $dom_name];
     throw new Exception($message);
-  }
-
-  /**
-   * Builds DOM field name.
-   *
-   * @param int $organism_index
-   *   Ordinal number on form.
-   * @param array $form_state
-   *   Drupal Form State array.
-   * @param string $dom_name
-   *   DOM-name of the subfield.
-   *   See static::EXISTING_STUDY_FIELD_NAME.
-   *
-   * @return string
-   *   Returns field name used in DOM.
-   *   Example:
-   *   "organism-1[organism-1][genotype][SNPs][assay-design-citation][existing_study]"
-   */
-  public static function buildDomName($organism_index, array $form_state, $dom_name) {
-    $organism_key = 'organism-' . $organism_index;
-    $parent_list = static::getParents($organism_index, $form_state, $dom_name);
-    if (empty($parent_list)) {
-      $message = 'List of the parents is empty for field "@field".';
-      $params = ['@dom_name' => $dom_name];
-      throw new Exception(t($message, $params));
-    }
-    return $organism_key . '[' . implode('][', $parent_list) . ']';
   }
 
   /**

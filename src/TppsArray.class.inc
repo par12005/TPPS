@@ -576,4 +576,42 @@ class TppsArray {
     return (($index + 1) == count($array));
   }
 
+  /**
+   * Removes first element of the given array.
+   *
+   * WARNING: given array will be updated but not returned back.
+   *
+   * Idea: https://stackoverflow.com/a/18577136.
+   *
+   * @param array $array
+   *   Array which will be updated.
+   *
+   * @return mixed
+   *   Returns value of the removed first element.
+   */
+  public static function removeFirst(array &$array) {
+    // Make sure to reset the array's current index.
+    reset($array);
+    $key = key($array);
+    $first_element = $array[$key];
+    unset($array[$key]);
+    return $first_element;
+  }
+
+  /**
+   * Removes last element of the given array.
+   *
+   * WARNING: given array will be updated but not returned back.
+   *
+   * @param array $array
+   *   Array which will be updated.
+   *
+   * @return mixed
+   *   Returns value of the removed last element.
+   */
+  public static function removeLast(array &$array) {
+    $last_element = array_pop($array);
+    return $last_element;
+  }
+
 }

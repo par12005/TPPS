@@ -577,10 +577,20 @@ function tpps_form_build_file_field(array $form_bus) {
   $organism_key = $form_bus['organism_name'];
   $allow_file_reuse = $form_bus['allow_file_reuse'] ?? FALSE;
   $parents = $form_bus['parents'] ?? [];
-  // If list of parent include field's DOM name we must remove it.
-  if (TppsArray::isLast($parents, $form_bus['field_name'])) {
+
+  // Fields converted into classes use list of parents which includes field
+  // name so here we should remove this last element to have backward
+  // compatibility with not yet updated fields.
+  // @todo Update this code when all fields be converted into classes.
+  if (
+    TppsArray::isLast($parents, $form_bus['field_name'])
+    // EXCEPTION: Field's DOM-name is the same as parent fieldset has.
+    // @todo Change field name or parent fieldset name to have unique name.
+    // Tag: other/other.
+    && $form_bus['field_name'] != 'other'
+  ) {
     // Don't remove in the middle of the array. Only last one.
-    unset($parents[$form_bus['field_name']]);
+    TppsArray::removeLast($parents);
   }
 
   // @TODO Minor. Add page id to $form_bus['parents'].

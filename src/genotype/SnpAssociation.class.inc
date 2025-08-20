@@ -75,11 +75,14 @@ class SnpAssociation extends FileField {
    *   Ordinal number on form.
    * @param array $form_state
    *   Drupal Form State array.
+   * @param string $dom_name
+   *   When empty then list of the parents will have static::DOM_NAME
+   *   as a last element and given DOM-name otherwise.
    *
    * @return array
    *   Returns parents for the checkbox which makes this field required.
    */
-  public static function getParents($organism_index, array $form_state) {
+  public static function getParents($organism_index, array $form_state, $dom_name = NULL) {
     $organism_key = 'organism-' . $organism_index;
     switch (SubmissionVersion::get($form_state)) {
       case 1:
@@ -189,9 +192,11 @@ class SnpAssociation extends FileField {
       'optional' => TRUE,
       'states' => [
         'visible' => [
-          static::getStateName($organism_index,
-            [static::SNPS_FIELDSET, 'upload_snp_association']
-          ) => ['value' => TPPS_YES],
+          static::buildCustomStateName($organism_index, [
+            static::DATA_TYPE,
+            static::SNPS_FIELDSET,
+            'upload_snp_association'
+          ]) => ['value' => TPPS_YES],
         ],
       ],
       'extra_elements' => [
@@ -240,7 +245,8 @@ class SnpAssociation extends FileField {
     $field_name = 'snps-association-type';
     $sub_form[static::SNPS_FIELDSET][$field_name] = [
       '#type' => 'select',
-      '#title' => t('Confidence Value Type: *'),
+      '#title' => t('SNP Association Confidence Value Type: *'),
+      '#weight' => -110,
       '#options' => [
         0 => t('- Select -'),
         'P value' => t('P value'),
@@ -250,13 +256,17 @@ class SnpAssociation extends FileField {
         'P-adjusted (Bonferroni)' => t('P-adjusted (Bonferroni)'),
       ],
       '#states' => [
+        // @todo Use required_when_visible feature.
         'visible' => [
-          static::getStateName($organism_index,
-            [static::SNPS_FIELDSET, 'upload_snp_association']
-          ) => ['value' => TPPS_YES],
-          static::getStateName($organism_index,
-            ['does_study_include_snp_data']
-          ) => ['value' => 'yes'],
+          static::buildCustomStateName($organism_index, [
+            static::DATA_TYPE,
+            static::SNPS_FIELDSET,
+            'upload_snp_association',
+          ]) => ['value' => TPPS_YES],
+          static::buildCustomStateName($organism_index, [
+            static::DATA_TYPE,
+            'does_study_include_snp_data',
+          ]) => ['value' => 'yes'],
         ],
       ],
     ];
@@ -266,7 +276,8 @@ class SnpAssociation extends FileField {
     $field_name = 'snps-association-tool';
     $sub_form[static::SNPS_FIELDSET][$field_name] = [
       '#type' => 'select',
-      '#title' => t('Association Analysis Tool: *'),
+      '#title' => t('SNP Association Analysis Tool: *'),
+      '#weight' => -130,
       '#options' => [
         0 => t('- Select -'),
         'GEMMA' => t('GEMMA'),
@@ -279,13 +290,17 @@ class SnpAssociation extends FileField {
         'LFMM' => t('LFMM'),
       ],
       '#states' => [
+        // @todo Use required_when_visible feature.
         'visible' => [
-          static::getStateName($organism_index,
-            [static::SNPS_FIELDSET, 'upload_snp_association']
-          ) => ['value' => TPPS_YES],
-          static::getStateName($organism_index,
-            ['does_study_include_snp_data']
-          ) => ['value' => 'yes'],
+          static::buildCustomStateName($organism_index, [
+            static::DATA_TYPE,
+            static::SNPS_FIELDSET,
+            'upload_snp_association',
+          ]) => ['value' => TPPS_YES],
+          static::buildCustomStateName($organism_index, [
+            static::DATA_TYPE,
+            'does_study_include_snp_data',
+          ]) => ['value' => 'yes'],
         ],
       ],
     ];

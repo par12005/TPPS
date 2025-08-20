@@ -55,11 +55,14 @@ class SnpAssay extends FileField {
    *   Ordinal number on form.
    * @param array $form_state
    *   Drupal Form State array.
+   * @param string $dom_name
+   *   When empty then list of the parents will have static::DOM_NAME
+   *   as a last element and given DOM-name otherwise.
    *
    * @return array
    *   Returns parents for the checkbox which makes this field required.
    */
-  public static function getParents($organism_index, array $form_state) {
+  public static function getParents($organism_index, array $form_state, $dom_name = NULL) {
     $organism_key = 'organism-' . $organism_index;
     switch (SubmissionVersion::get($form_state)) {
       case 1:
@@ -121,15 +124,19 @@ class SnpAssay extends FileField {
       'states' => [
         'visible' => [
           [
-            static::getStateName($organism_index,
-              [static::SNPS_FIELDSET, 'genotyping-type']
-            ) => ['value' => TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY],
+            static::buildCustomStateName($organism_index, [
+              static::DATA_TYPE,
+              static::SNPS_FIELDSET,
+              'genotyping-type',
+            ]) => ['value' => TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY],
           ],
           'or',
           [
-            static::getStateName($organism_index,
-              [static::SNPS_FIELDSET, 'file-type']
-            ) => ['value' => TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE],
+            static::buildCustomStateName($organism_index, [
+              static::DATA_TYPE,
+              static::SNPS_FIELDSET,
+              'file-type',
+            ]) => ['value' => TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE],
           ],
         ],
       ],

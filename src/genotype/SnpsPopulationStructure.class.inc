@@ -49,11 +49,14 @@ class SnpsPopulationStructure extends FileField {
    *   Ordinal number on form.
    * @param array $form_state
    *   Drupal Form State array.
+   * @param string $dom_name
+   *   When empty then list of the parents will have static::DOM_NAME
+   *   as a last element and given DOM-name otherwise.
    *
    * @return array
    *   Returns parents for the checkbox which makes this field required.
    */
-  public static function getParents($organism_index, array $form_state) {
+  public static function getParents($organism_index, array $form_state, $dom_name = NULL) {
     $organism_key = 'organism-' . $organism_index;
     switch (SubmissionVersion::get($form_state)) {
       case 1:
@@ -162,13 +165,14 @@ class SnpsPopulationStructure extends FileField {
       'title' => t(static::getFieldTitle()),
       'organism_name' => $organism_key,
       'type' => static::DATA_TYPE,
-
       'optional' => TRUE,
       'states' => [
         'visible' => [
-          static::getStateName($organism_index,
-            [static::SNPS_FIELDSET, 'upload_snp_population']
-          ) => ['value' => TPPS_YES],
+          static::buildCustomStateName($organism_index, [
+            static::DATA_TYPE,
+            static::SNPS_FIELDSET,
+            'upload_snp_population',
+          ]) => ['value' => TPPS_YES],
         ],
       ],
     ]);

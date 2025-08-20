@@ -27,7 +27,7 @@ abstract class FileField {
   // Example: 'genotype'.
   const DATA_TYPE = '';
   // Form step where field is used.
-  const PAGE = '';
+  const FORM_STEP = '';
 
   /**
    * Gets lit of required columns for validation.
@@ -48,11 +48,15 @@ abstract class FileField {
    *   Ordinal number on form.
    * @param array $form_state
    *   Drupal Form State array.
+   * @param string $dom_name
+   *   When empty then static::DOM_NAME will be used.
+   *   When non-empty it's a DOM-name of the subfield. For example:
+   *   static::EXISTING_STUDY_FIELD_NAME.
    *
    * @return array
    *   Returns parents for the checkbox which makes this field required.
    */
-  abstract public static function getParents($organism_index, array $form_state);
+  abstract public static function getParents($organism_index, array $form_state, $dom_name = NULL);
 
   /**
    * Gets name of the field for form_set_error().
@@ -62,8 +66,8 @@ abstract class FileField {
    * Difference:
    * getFormErrorName(): "organism-1][genotype][SNPs][snps-association".
    *                                ^                                 ^
-   * getDomName(): "organism-1[genotype][SNPs][snps-association]".
-   *                         ^                                 ^
+   * buildDomName(): "organism-1[genotype][SNPs][snps-association]".
+   *                           ^                                 ^
    * See https://api.drupal.org/api/drupal/includes%21form.inc/function/form_set_error/7.x
    *
    * @param int $organism_index
@@ -87,27 +91,40 @@ abstract class FileField {
   }
 
   /**
-   * Gets DOM name of the field.
-   *
-   * Note: could be used for Drupal Form State API.
+   * Builds DOM field name.
    *
    * @param int $organism_index
-   *   Ordinal number of the organism at page.
-   * @param array $parents
-   *   Optional. Path to field (including field name) from
-   *   $form[$organism_key][static::DATA_TYPE].
-   *   When empty path to the current field will be used.
+   *   Ordinal number on form.
+   * @param array $form_state
+   *   Drupal Form State array.
+   * @param string $dom_name
+   *   When empty then list of the parents will have static::DOM_NAME
+   *   as a last element and given DOM-name otherwise.
    *
    * @return string
-   *   Returns field name. E.g., 'organism-1[genotype][SNPs][assay-design]'.
+   *   Returns field name used in DOM.
+   *   Example: 'organism-1[genotype][SNPs][assay-design]'.
    */
-  public static function getDomName($organism_index, array $parents = []) {
-    if (empty($parents)) {
-      $parents = [static::SNPS_FIELDSET, static::DOM_NAME];
+  public static function buildDomName($organism_index, array $form_state, $dom_name = NULL) {
+    switch (static::FORM_STEP) {
+      case TPPS_PAGE_4:
+        $organism_key = 'organism-' . $organism_index;
+        $parents = static::getParents($organism_index, $form_state, $dom_name);
+        TppsArray::removeFirst($parents);
+        if (empty($parents)) {
+          $message = 'List of the parents is empty for field "@field".';
+          $params = ['@dom_name' => $dom_name];
+          throw new Exception(t($message, $params));
+        }
+        $name = $organism_key . '[' . implode('][', $parents) . ']';
+        break;
+
+      default:
+        $message = 'DOM name was NOT defined for @step".';
+        $params = ['@step' => static::FORM_STEP];
+        throw new Exception($message);
     }
-    $parents = array_merge([static::DATA_TYPE], $parents);
-    $organism_key = 'organism-' . $organism_index;
-    return $organism_key . '[' . implode('][', $parents) . ']';
+    return $name;
   }
 
   /**
@@ -124,7 +141,8 @@ abstract class FileField {
    *   Returns field name.
    */
   public static function getStateName($organism_index, array $parents = []) {
-    return ':input[name="' . static::getDomName($organism_index, $parents) . '"]';
+    $dom_name = static::buildDomName($organism_index, $parents);
+    return ':input[name="' . $dom_name . '"]';
   }
 
   /**
@@ -1024,6 +1042,23 @@ abstract class FileField {
       $parents = static::getParents($organism_index, $form_state);
       TppsArray::setValue($form_state['values'], $parents, $value = 0);
     }
+  }
+
+  /**
+   * Builds field's name for Drupal State rule for custom field.
+   *
+   * @param mixed $organism_index
+   *   Ordinal organism number at page.
+   * @param array $parents
+   *   List of the parents including field name.
+   *
+   * @return sting
+   *   Returns name to be used in Drupal State rules.
+   */
+  public static function buildCustomStateName($organism_index, array $parents) {
+    $organism_key = 'organism-' . $organism_index;
+    return ':input[name="' . $organism_key . '['
+      . implode('][', $parents) . ']"]';
   }
 
 }

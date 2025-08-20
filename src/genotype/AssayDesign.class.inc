@@ -69,8 +69,6 @@ class AssayDesign extends FileField {
    */
   public static function build($organism_index, array &$form, array $form_state) {
     $organism_key = 'organism-' . $organism_index;
-    // @TODO Get parents from classes using getParents() method to respect
-    // Submission's form version.
     $states = [
       // Existing studies with an "Assay design file":
       // 'The citation for my assay design is not in this list'.
@@ -660,11 +658,14 @@ class AssayDesign extends FileField {
    *   Ordinal number on form.
    * @param array $form_state
    *   Drupal Form State array.
+   * @param string $dom_name
+   *   When empty then list of the parents will have static::DOM_NAME
+   *   as a last element and given DOM-name otherwise.
    *
    * @return array
    *   Returns parents for the checkbox which makes this field required.
    */
-  public static function getParents($organism_index, array $form_state) {
+  public static function getParents($organism_index, array $form_state, $dom_name = NULL) {
     $organism_key = 'organism-' . $organism_index;
     switch (SubmissionVersion::get($form_state)) {
       case 1:
