@@ -338,7 +338,8 @@ class SnpAssociation extends FileField {
       && TppsArray::getValue($snps, ['upload_snp_association']) == TPPS_YES
     ));
     // Do NOT allow empty field validation.
-    if (form_get_errors()) {
+    $fid = static::getFileId($organism_index, $form_state);
+    if (form_get_errors() || empty($fid)) {
       return FALSE;
     }
 

@@ -194,8 +194,9 @@ class AssayDesign extends FileField {
         && $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
       )
     ));
-    // Do NOT allow further validation.
-    if (form_get_errors()) {
+    // Do NOT allow empty field validation.
+    $fid = static::getFileId($organism_index, $form_state);
+    if (form_get_errors() || empty($fid)) {
       return FALSE;
     }
 

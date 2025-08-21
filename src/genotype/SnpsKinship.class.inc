@@ -112,7 +112,8 @@ class SnpsKinship extends FileField {
       && $snps['upload_snp_kinship'] == 'Yes'
     ));
     // Do NOT allow empty field validation.
-    if (form_get_errors()) {
+    $fid = static::getFileId($organism_index, $form_state);
+    if (form_get_errors() || empty($fid)) {
       return FALSE;
     }
     static::preserveValidFile($organism_index, $form_state);
