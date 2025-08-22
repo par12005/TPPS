@@ -10,6 +10,8 @@
  *
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
+ *
+ * @todo Extend more common class 'TppsField'.
  */
 abstract class FileField {
 
@@ -43,6 +45,9 @@ abstract class FileField {
 
   /**
    * Gets parents of the field.
+   *
+   * WARNING: No page number to reuse for $form_state['input'].
+   * See AssayDesign::getParents() for example.
    *
    * @param int $organism_index
    *   Ordinal number on form.
@@ -193,6 +198,9 @@ abstract class FileField {
     // Note: List of parents depends from current version of $form_state.
     $parents = static::getParents($organism_index, $form_state);
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Currently submitted form (validation).
+    //
     // To always get most recent and up-to-date value we check first recenlty
     // submitted data stored in $form_state['input'] instead of using value
     // stored under $form_state['saved_values'].
@@ -202,17 +210,24 @@ abstract class FileField {
     // using 'fid' hidden sub-element of 'managed_file' element.
     $input_parents = array_merge($parents, ['fid']);
     $value = TppsArray::getValue($form_state['input'], $input_parents, $key_exists);
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Saved Values.
     if ($key_exists === FALSE) {
-      $value = TppsArray::getValue($form_state['saved_values'], $parents, $key_exists);
+      $value = TppsArray::getValue(
+        $form_state['saved_values'][static::FORM_STEP],
+        $parents,
+        $key_exists
+      );
     }
     // Nothing was found.
     // It's not an error and there is no sence to throw an exception.
     if ($key_exists === FALSE) {
       $message = 'Organism #@oidx / @field_title: Value not found.';
       $params = [
-          '@field_title' => static::getFieldTitle(),
-          '@oidx' => $organism_index,
-        ];
+        '@field_title' => static::getFieldTitle(),
+        '@oidx' => $organism_index,
+      ];
       watchdog('tpps', $message, $params, WATCHDOG_WARNING);
     }
     return $value;

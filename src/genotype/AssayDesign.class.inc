@@ -668,7 +668,8 @@ class AssayDesign extends FileField {
    */
   public static function getParents($organism_index, array $form_state, $dom_name = NULL) {
     $organism_key = 'organism-' . $organism_index;
-    switch (SubmissionVersion::get($form_state)) {
+    $version = SubmissionVersion::get($form_state);
+    switch ($version) {
       case 1:
         $parents = [
           $organism_key,

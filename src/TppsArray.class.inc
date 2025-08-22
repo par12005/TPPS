@@ -392,11 +392,13 @@ class TppsArray {
    *
    * @return mixed
    *   Returns the reference (!) to the value of the element of the array.
-   *   Returns $default if element wasn't found in given array but not reference.
    *   Returns $array when $parents is an empty array.
    */
   public static function &getValue(&$array = NULL, array $parents = [], &$key_exists = NULL) {
     if (is_null($array)) {
+      // $array could be a sub-element of the array (e.g., $form_state['input']
+      // and be empty (doesn't exists) so needed element also doesn't exist.
+      $key_exists = FALSE;
       $null = NULL;
       return $null;
     }
@@ -405,6 +407,7 @@ class TppsArray {
       return $value;
     }
     else {
+      $key_exists = FALSE;
       $null = NULL;
       return $null;
     }
