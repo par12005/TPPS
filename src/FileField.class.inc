@@ -20,6 +20,7 @@ abstract class FileField {
   //
   // File field title.
   // Example: 'SNP Assay'.
+  // WARNING: DO NOT use ' File' suffix.
   const TITLE = '';
   // HTML name of the form field used in DOM.
   // Example: 'snps-assay'.

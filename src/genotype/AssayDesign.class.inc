@@ -37,7 +37,7 @@ class AssayDesign extends FileField {
   const DATA_TYPE = 'genotype';
   // HTML name of the field.
   const DOM_NAME = 'assay-design';
-  const TITLE = 'Assay Design File';
+  const TITLE = 'Assay Design';
   // Integer Form Page number.
   const FORM_STEP = TPPS_PAGE_4;
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

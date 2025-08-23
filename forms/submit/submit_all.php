@@ -9526,7 +9526,7 @@ function tpps_log_header($message) {
  */
 function tpps_log_line($char = '-') {
   $string_length = 80;
-  tpps_log("\n" . str_repeat($char, $string_length) . "\n");
+  tpps_log(str_repeat($char, $string_length) . "\n");
 }
 
 /**

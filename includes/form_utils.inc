@@ -640,7 +640,6 @@ function tpps_vcf_markers($accession = NULL, $i = 1) {
   $submission = new Submission($accession);
   $page4_values = $submission->state['saved_values'][TPPS_PAGE_4];
   $organism_key = 'organism-' . $i;
-  $genotype = $page4_values[$organism_key]['genotype'] ?? NULL;
   // Note: returns array['status','location'].
   $vcf_location = tpps_vcf_location($submission->state, $i);
   $output = [];
