@@ -501,10 +501,11 @@ function tpps_compare_accession_file_vs_vcf_file_tree_ids($accession = NULL, $i 
     $submission->state, $i
   );
 
+  $organism_key = 'organism-' . $i;
   $genotype = TppsArray::getValue($submission->state, [
     'saved_values',
     TPPS_PAGE_4,
-    "organism-$i",
+    $organism_key,
     'genotype',
   ]);
   // Note: returns array['status','location'].
@@ -617,7 +618,8 @@ function tpps_vcf_tree_ids($accession = NULL, $i = 1) {
 
   $submission = new Submission($accession);
   $page4_values = $submission->state['saved_values'][TPPS_PAGE_4];
-  $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+  $organism_key = 'organism-' . $i;
+  $genotype = $page4_values[$organism_key]['genotype'] ?? NULL;
   // Returns array['status','location'].
   $vcf_location = tpps_vcf_location($submission->state, $i);
   $output = [];
@@ -637,7 +639,8 @@ function tpps_vcf_markers($accession = NULL, $i = 1) {
 
   $submission = new Submission($accession);
   $page4_values = $submission->state['saved_values'][TPPS_PAGE_4];
-  $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+  $organism_key = 'organism-' . $i;
+  $genotype = $page4_values[$organism_key]['genotype'] ?? NULL;
   // Note: returns array['status','location'].
   $vcf_location = tpps_vcf_location($submission->state, $i);
   $output = [];
@@ -774,7 +777,8 @@ function tpps_compare_vcf_markers_vs_snps_assay_markers_results_array($accession
   // VCF markers.
   $submission = new Submission($accession);
   $page4_values = $submission->state['saved_values'][TPPS_PAGE_4];
-  $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+  $organism_key = 'organism-' . $i;
+  $genotype = $page4_values[$organism_key]['genotype'] ?? NULL;
   // Note: returns array['status','location'].
   $vcf_location = tpps_vcf_location($form_state, $i);
   $results_vcf_markers = [
@@ -828,7 +832,8 @@ function tpps_vcf_tree_validation($accession = NULL) {
   $organism_number = $firstpage['organism']['number'];
 
   for ($i = 1; $i <= $organism_number; $i++) {
-    $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+    $organism_key = 'organism-' . $i;
+    $genotype = $page4_values[$organism_key]['genotype'] ?? NULL;
 
     // Check the type of VCF file (uploaded or in the cluser)
     // Get file location.

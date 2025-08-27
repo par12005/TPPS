@@ -275,13 +275,14 @@ class SubmissionCache {
     // List of 'Assay Design' files.
     $reset_assay_design_list = FALSE;
     for ($n = 1; $n <= $submission->getOrganismNumber(); $n++) {
+      $organism_key = 'organism-' . $n;
       // @TODO Use AssayDesign::getValue() if possible.
       $assay_design_fid = TppsArray::getValue(
         $submission->sharedState,
         [
           'saved_values',
           TPPS_PAGE_4,
-          'organism-' . $n,
+          $organism_key,
           'genotype',
           // Not static::FILES_CONTAINER but fieldset name.
           'files',

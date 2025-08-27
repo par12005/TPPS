@@ -80,7 +80,7 @@ abstract class FileField {
    *   Ordinal number of the organism at page.
    * @param array $parents
    *   Optional. Path to field (including field name) from
-   *   $form['organism-' . $organism_index][static::DATA_TYPE].
+   *   $form[$organism_key][static::DATA_TYPE].
    *   When empty path to the current field will be used.
    *
    * @return string
@@ -91,10 +91,8 @@ abstract class FileField {
     if (empty($parents)) {
       $parents = [static::FORM_PARENT_FIELDSET, static::FIELD_NAME];
     }
-    $parents = array_merge(
-      ['organism-' . $organism_index, static::DATA_TYPE],
-      $parents
-    );
+    $organism_key = 'organism-' . $organism_index;
+    $parents = array_merge([$organism_key, static::DATA_TYPE], $parents);
     return implode('][', $parents);
   }
 
@@ -107,7 +105,7 @@ abstract class FileField {
    *   Ordinal number of the organism at page.
    * @param array $parents
    *   Optional. Path to field (including field name) from
-   *   $form['organism-' . $organism_index][static::DATA_TYPE].
+   *   $form[$organism_key][static::DATA_TYPE].
    *   When empty path to the current field will be used.
    *
    * @return string
@@ -118,7 +116,8 @@ abstract class FileField {
       $parents = [static::FORM_PARENT_FIELDSET, static::FIELD_NAME];
     }
     $parents = array_merge([static::DATA_TYPE], $parents);
-    return 'organism-' . $organism_index . '[' . implode('][', $parents) . ']';
+    $organism_key = 'organism-' . $organism_index;
+    return $organism_key . '[' . implode('][', $parents) . ']';
   }
 
   /**
@@ -128,7 +127,7 @@ abstract class FileField {
    *   Ordinal number of the organism at page.
    * @param array $parents
    *   Optional. Path to field (including field name) from
-   *   $form['organism-' . $organism_index][static::DATA_TYPE].
+   *   $form[$organism_key][static::DATA_TYPE].
    *   When empty path to the current field will be used.
    *
    * @return string
@@ -404,13 +403,14 @@ abstract class FileField {
    */
   public static function getSubFieldValue($organism_index, array &$form_state, $name) {
     $value = $key_exists = NULL;
+    $organism_key = 'organism-' . $organism_index;
     $parent_list = [
       // For validation.
       // Note: 'saved_values' doesn't have value until validation passed. Why?
       // Because 'no-header' is a part of complex file field.
       'input' => [
         'input',
-        'organism-' . $organism_index,
+        $organism_key,
         static::DATA_TYPE,
         static::FORM_PARENT_FIELDSET,
         static::FIELD_NAME,
@@ -419,7 +419,7 @@ abstract class FileField {
       // @todo MInor. Probably it's useless step and could be removed.
       'values' => [
         'values',
-        'organism-' . $organism_index,
+        $organism_key,
         static::DATA_TYPE,
         static::FORM_PARENT_FIELDSET,
         static::FIELD_NAME,
@@ -431,7 +431,7 @@ abstract class FileField {
       $parents = [
         'saved_values',
         static::FORM_STEP,
-        'organism-' . $organism_index,
+        $organism_key,
         static::DATA_TYPE,
         static::FORM_PARENT_FIELDSET,
         static::FIELD_NAME . '-' . $name,
@@ -439,7 +439,7 @@ abstract class FileField {
       'shared_state_saved_values' => [
         'saved_values',
         static::FORM_STEP,
-        'organism-' . $organism_index,
+        $organism_key,
         static::DATA_TYPE,
         // Parent fieldset could be different for Shared state.
         static::SHARED_STATE_PARENT_FIELDSET,
@@ -506,12 +506,13 @@ abstract class FileField {
       $message = t("Form wasn't found under \$form_state['complete form'].");
       throw new Exception($message);
     }
+    $organism_key = 'organism-' . $organism_index;
     $element = $key_exists = NULL;
     if (empty($parents)) {
       // Build parents for current file field.
       $parents = [
         'complete form',
-        'organism-' . $organism_index,
+        $organism_key,
         static::DATA_TYPE,
         static::FORM_PARENT_FIELDSET,
         static::FIELD_NAME,

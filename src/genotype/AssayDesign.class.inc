@@ -337,6 +337,7 @@ class AssayDesign extends FileField {
    *   Options for processing. Could be used to return processing results.
    */
   public static function process($organism_index, array $shared_state, array &$options = []) {
+    $organism_key = 'organism-' . $organism_index;
 
     $debug_mode = FALSE;
     if ($debug_mode) {
@@ -365,7 +366,7 @@ class AssayDesign extends FileField {
     $genotype = TppsArray::getValue($shared_state, [
       'saved_values',
       static::FORM_STEP,
-      'organism-' . $organism_index,
+      $organism_key,
       static::DATA_TYPE,
     ]);
 
@@ -406,7 +407,7 @@ class AssayDesign extends FileField {
     $selected_columns = TppsArray::getValue($shared_state, [
       'saved_values',
       static::FORM_STEP,
-      'organism-' . $organism_index,
+      $organism_key,
       static::DATA_TYPE,
       static::FORM_PARENT_FIELDSET,
       // For searching purposes: 'assay-design-columns'.

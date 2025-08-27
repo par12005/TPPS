@@ -228,10 +228,11 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
     $new_cvterms = array();
     $page4 = $submission->sharedState['saved_values'][TPPS_PAGE_4];
     for ($i = 1; $i <= $submission->getOrganismNumber(); $i++) {
+      $organism_key = 'organism-' . $i;
       // @TODO Could we just skip when it's checked?
       $phenotype = $page4["organism-1"]['phenotype'];
-      if (empty($page4["organism-$i"]['phenotype-repeat-check'])) {
-        $phenotype = $page4["organism-$i"]['phenotype'];
+      if (empty($page4[$organism_key]['phenotype-repeat-check'])) {
+        $phenotype = $page4[$organism_key]['phenotype'];
       }
 
 
@@ -436,10 +437,11 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
     $orgamism_num = $page1_values['organism']['number'];
     $show_layers = FALSE;
     for ($i = 1; $i <= $orgamism_num; $i++) {
-      if (!empty($page4_values["organism-$i"]['environment'])) {
-        foreach ($page4_values["organism-$i"]['environment']['env_layers'] as $layer => $layer_id) {
+      $organism_key = 'organism-' . $i;
+      if (!empty($page4_values[$organism_key]['environment'])) {
+        foreach ($page4_values[$organism_key]['environment']['env_layers'] as $layer => $layer_id) {
           if (!empty($layer_id)) {
-            foreach ($page4_values["organism-$i"]['environment']['env_params'][$layer] as $param_id) {
+            foreach ($page4_values[$organism_key]['environment']['env_params'][$layer] as $param_id) {
               if (!empty($param_id)) {
                 $type = variable_get("tpps_param_{$param_id}_type", NULL);
                 if (empty($type)) {

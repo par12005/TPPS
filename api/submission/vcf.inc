@@ -26,8 +26,9 @@ function tpps_api_submission_vcf_files_list($submission) {
       'organism_number' => $organism_number,
     ];
     for ($i = 1; $i <= $submission->getOrganismNumber(); $i++) {
-      $output['vcf'][$i] = $page4_values['organism-' . $i]['genotype']['files']['vcf'] ?? NULL;
-      $output['ref-genome'][$i] = $page4_values['organism-' . $i]['genotype']['ref-genome'] ?? NULL;
+      $organism_key = 'organism-' . $i;
+      $output['vcf'][$i] = $page4_values[$organism_key]['genotype']['files']['vcf'] ?? NULL;
+      $output['ref-genome'][$i] = $page4_values[$organism_key]['genotype']['ref-genome'] ?? NULL;
     }
   }
   return $output;

@@ -71,13 +71,13 @@ class AssayDesignCitation {
    *   Drupal Form API State Array.
    */
   public static function build($organism_index, array &$form, array $form_state) {
-    $organism_name = 'organism-' . $organism_index;
-    $fields = &$form[$organism_name][static::DATA_TYPE];
+    $organism_key = 'organism-' . $organism_index;
+    $fields = &$form[$organism_key][static::DATA_TYPE];
 
     $states = [
       'visible' => [
         [
-          ':input[name="' . $organism_name . '[' . implode('][', [
+          ':input[name="' . $organism_key . '[' . implode('][', [
             static::DATA_TYPE, 'does_study_include_snp_data'
           ]) . ']"]' => ['value' => 'yes'],
         ],
@@ -102,7 +102,7 @@ class AssayDesignCitation {
       '#default_value' => tpps_get_ajax_value(
         $form_state,
         [
-          $organism_name,
+          $organism_key,
           static::DATA_TYPE,
           static::SNPS_FIELDSET,
           static::PARENT_FIELDSET,
@@ -113,7 +113,7 @@ class AssayDesignCitation {
     $subelement_states = [
       'visible' => [
         [
-          ':input[name="' . $organism_name . '[' . implode('][',
+          ':input[name="' . $organism_key . '[' . implode('][',
           [
             static::DATA_TYPE,
             static::SNPS_FIELDSET,
@@ -164,8 +164,9 @@ class AssayDesignCitation {
    *   Drupal Form API State array.
    */
   public static function validate($organism_index, array &$form, array &$form_state) {
+    $organism_key = 'organism-' . $organism_index;
     $existing_studies_value = TppsArray::getValue($form_state['values'], [
-      'organism-' . $organism_index,
+      $organism_key,
       static::DATA_TYPE,
       static::SNPS_FIELDSET,
       static::PARENT_FIELDSET,
@@ -173,7 +174,7 @@ class AssayDesignCitation {
     ]);
     if ($existing_studies_value == static::EXISTING_STUDY_OTHER_OPTION_KEY) {
       $parents = [
-        'organism-' . $organism_index,
+        $organism_key,
         static::DATA_TYPE,
         static::SNPS_FIELDSET,
       ];

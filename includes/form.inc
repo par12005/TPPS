@@ -107,9 +107,10 @@ function tpps_form_add_buttons(array $form_bus) {
               => ['value' => TPPS_GENOTYPING_FILE_TYPE_VCF],
             ];
             for ($i = 2; $i <= $form_bus['organism_number']; $i++) {
+              $organism_key = 'organism-' . $i;
               $pre_valid_states[] = 'or';
               $pre_valid_states[] = [
-                '[name="organism-' . $i . '[genotype][SNPs][file-type]"]'
+                '[name="' . $organism_key . '[genotype][SNPs][file-type]"]'
                 => ['value' => TPPS_GENOTYPING_FILE_TYPE_VCF],
               ];
             }
@@ -443,9 +444,7 @@ function tpps_form_add_yesno_field(array $form_bus) {
     return;
   }
   $field_name = $form_bus['field_name'];
-  $i = $form_bus['organism_id'];
-
-  $organism_name = 'organism-' . $i;
+  $organism_key = 'organism-' . $form_bus['organism_id'];
 
   // $form_state is optional and used for default value only.
   $form_state = &$form_bus['form_state'] ?? [];
@@ -535,9 +534,9 @@ function tpps_form_add_report(array &$form, array $meta) {
  *   Example:
  *   tpps_form_build_file_field([
  *     'form' => &$form,
- *     'parents' => [$organism_name, 'genotype', 'files'],
+ *     'parents' => [$organism_key, 'genotype', 'files'],
  *     'form_state' => $form_state,
- *     'organism_name' => $id,
+ *     'organism_name' => $organism_key,
  *     'field_name' => $file_field_name,
  *     'optional' => TRUE,
  *     'title' => $title,
@@ -574,7 +573,7 @@ function tpps_form_build_file_field(array $form_bus) {
   // Map from the $form_bus.
   $form = &$form_bus['form'];
   $form_state = $form_bus['form_state'] ?? [];
-  $organism_name = $form_bus['organism_name'];
+  $organism_key = $form_bus['organism_name'];
   $allow_file_reuse = $form_bus['allow_file_reuse'] ?? FALSE;
   $parents = $form_bus['parents'] ?? [];
 
@@ -711,10 +710,10 @@ function tpps_form_build_file_field(array $form_bus) {
         . "remaining columns should contain SNP data."),
       '#states' => [
         'visible' => [
-          ':input[name="' . $organism_name . '[genotype][SNPs][genotyping-type]"]'
+          ':input[name="' . $organism_key . '[genotype][SNPs][genotyping-type]"]'
             => ['!value' => TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY],
           // &&
-          ':input[name="' . $organism_name . '[genotype][SNPs][file-type]"]'
+          ':input[name="' . $organism_key . '[genotype][SNPs][file-type]"]'
             => ['!value' => TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE],
         ],
       ],

@@ -88,16 +88,16 @@ class PhenotypeMeta {
    *   Drupal Form API State array.
    */
   public static function validate($organism_index, array &$form, array &$form_state) {
-    $organism = &$form_state['values']["organism-$organism_index"] ?? NULL;
-    $phenotype = &$organism['phenotype'] ?? NULL;
     $organism_key = 'organism-' . $organism_index;
+    $organism = &$form_state['values'][$organism_key] ?? NULL;
+    $phenotype = &$organism['phenotype'] ?? NULL;
 
     $phenotype_number = $phenotype['phenotypes-meta']['number'];
     // File Id of metadata file.
     $meta_fid = $phenotype['metadata'];
     $data_fid = $phenotype['file'];
     if (empty($data_fid)) {
-      form_set_error("$organism_key][phenotype][file",
+      form_set_error($organism_key . "][phenotype][file",
         t('Phenotype File: field is required.')
       );
     }
@@ -113,7 +113,7 @@ class PhenotypeMeta {
       // $phenotype['metadata'] holds File Id of Phenotype Metadata file.
       // @TODO Use:
       // tpps_form_error_required($form_state, [$organism_key, 'phenotype', 'metadata']);
-      form_set_error("$organism_key][phenotype][metadata",
+      form_set_error($organism_key . "][phenotype][metadata",
         t('Phenotype Metadata File: field is required.')
       );
     }
@@ -142,7 +142,7 @@ class PhenotypeMeta {
 
     $groups = $phenotype['metadata-groups'] ?? NULL;
     if (empty($groups)) {
-      form_set_error("$organism_key][phenotype][metadata",
+      form_set_error($organism_key . "][phenotype][metadata",
         t("Phenotype Metadata File: No groups found.")
       );
     }

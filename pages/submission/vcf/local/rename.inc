@@ -33,12 +33,13 @@ function tpps_submission_local_vcf_rename_form(array $form, array &$form_state, 
   $exists = FALSE;
   $organism_number = $submission->getOrganismNumber();
   for ($index = 1; $index <= $organism_number; $index++) {
+    $organism_key = 'organism-' . $index;
     $parents = tpps_submission_local_vcf_get_parents(
       $submission,
       $index,
       'local_vcf'
     );
-    $form['organism-' . $index] = [
+    $form[$organism_key] = [
       '#type' => 'fieldset',
       '#title' => t('Organism @index', ['@index' => $index]),
       '#tree' => TRUE,
@@ -50,16 +51,16 @@ function tpps_submission_local_vcf_rename_form(array $form, array &$form_state, 
     $repeat_check = $submission->get([
       'saved_values',
       TPPS_PAGE_4,
-      'organism-' . $index,
+      $organism_key,
       'genotype-repeat-check',
     ]);
     if ($repeat_check) {
-      $form['organism-' . $index]['notice'] = [
+      $form[$organism_key]['notice'] = [
         '#markup' => '<p>' . t('Note: file the same as for organism 1.') . '</p>',
       ];
     }
     else {
-      $form['organism-' . $index]['path'] = [
+      $form[$organism_key]['path'] = [
         '#type' => 'textfield',
         '#title' => t('Local VCF File Path'),
         '#default_value' => $file_path,
@@ -109,7 +110,8 @@ function tpps_submission_local_vcf_rename_form_submit(array $form, array &$form_
   $organism_number = $submission->getOrganismNumber();
   $updated = FALSE;
   for ($index = 1; $index <= $organism_number; $index++) {
-    $file_path = $form_state['values']['organism-' . $index]['path'] ?? NULL;
+    $organism_key = 'organism-' . $i;
+    $file_path = $form_state['values'][$organism_key]['path'] ?? NULL;
     $file_path = trim($file_path);
     if (is_null($file_path)) {
       continue;
@@ -168,6 +170,7 @@ function tpps_submission_local_vcf_rename_form_submit(array $form, array &$form_
  */
 function tpps_submission_local_vcf_get_parents($submission, $organism_index, $field_name, $version = NULL) {
   $version = $version ?? $submission->getFormVersion();
+  $organism_key = 'organism-' . $organism_index;
   if ($field_name == 'local_vcf') {
     switch ($version) {
       case 1:
@@ -185,7 +188,7 @@ function tpps_submission_local_vcf_get_parents($submission, $organism_index, $fi
     $parents = [
       'saved_values',
       TPPS_PAGE_4,
-      'organism-' . $organism_index,
+      $organism_key,
       'genotype',
       $parent_fieldset,
       $field_name,

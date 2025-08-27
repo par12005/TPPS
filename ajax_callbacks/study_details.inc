@@ -261,7 +261,8 @@ function tpps_ajax_get_environmental_details_tab(array $data) {
   $files = [];
 
   for ($i = 1; $i <= $submission->getOrganismNumber(); $i++) {
-    if (!empty($layers = $state['saved_values'][TPPS_PAGE_4]["organism-$i"]['environment']['env_layers'])) {
+    $organism_key = 'organism-' . $i;
+    if (!empty($layers = $state['saved_values'][TPPS_PAGE_4][$organism_key]['environment']['env_layers'])) {
       foreach ($layers as $layer_name => $layer) {
         $rows[] = ['Environmental Layer', $layer_name];
       }
@@ -828,6 +829,7 @@ function _tpps_details_tab_build_table($query, $total, $submission) {
     // Status: development not completed (works but requires more testing).
     // @todo Minor. Move to the SnpAssociation class.
     for ($i = 1; $i <= $organism_number; $i++) {
+      $organism_key = 'organism-' . $i;
       if (
         empty($fid = SnpAssociation::getFileId($i, $shared_state))
         || empty($file = tpps_file_load($fid))
@@ -840,7 +842,7 @@ function _tpps_details_tab_build_table($query, $total, $submission) {
         [
           'saved_values',
           TPPS_PAGE_4,
-          'organism-' . $i,
+          $organism_key,
           'genotype',
           'files',
           'snps-association-columns',

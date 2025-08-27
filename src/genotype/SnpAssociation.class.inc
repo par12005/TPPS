@@ -96,8 +96,8 @@
     if (!tpps_is_genotype_data_type($form_state)) {
       return;
     }
-    $organism_name = 'organism-' . $organism_index;
-    $sub_form = &$form[$organism_name][static::DATA_TYPE];
+    $organism_key = 'organism-' . $organism_index;
+    $sub_form = &$form[$organism_key][static::DATA_TYPE];
 
     $sub_form[static::FORM_PARENT_FIELDSET]['upload_snp_association'] = [
       '#type' => 'select',
@@ -108,7 +108,7 @@
         TPPS_NO => t('No'),
       ],
       '#default_value' => tpps_get_ajax_value($form_state, [
-        $organism_name,
+        $organism_key,
         static::DATA_TYPE,
         static::FORM_PARENT_FIELDSET,
         'upload_snp_association',
@@ -119,13 +119,13 @@
       'form' => &$form,
       'form_state' => $form_state,
       'parents' => [
-        $organism_name,
+        $organism_key,
         static::DATA_TYPE,
         static::FORM_PARENT_FIELDSET,
       ],
       'field_name' => static::FIELD_NAME,
       'title' => t(static::getFieldTitle()),
-      'organism_name' => $organism_name,
+      'organism_name' => $organism_key,
       'type' => static::DATA_TYPE,
 
       'description' => t('Please upload a spreadsheet file containing '
@@ -157,7 +157,7 @@
             [
               'saved_values',
               static::FORM_STEP,
-              $organism_name,
+              $organism_key,
               static::DATA_TYPE,
               static::FORM_PARENT_FIELDSET,
               static::FIELD_NAME,
@@ -259,10 +259,9 @@
    *   Drupal Form API State array.
    */
   public static function validate($organism_index, array &$form, array &$form_state) {
-    // @TOdO Rename $id into $organism_key.
-    $id = 'organism-' . $organism_index;
+    $organism_key = 'organism-' . $organism_index;
     $fid = static::getFileId($organism_index, $form_state);
-    $genotype = &$form_state['values'][$id][static::DATA_TYPE] ?? NULL;
+    $genotype = &$form_state['values'][$organism_key][static::DATA_TYPE] ?? NULL;
     $snps = &$genotype[static::FORM_PARENT_FIELDSET] ?? NULL;
     $snps_assay = $snps['snps-assay'] ?? 0;
     $file_type = $snps['file-type'] ?? NULL;
@@ -316,7 +315,7 @@
       $form_state,
       $required_groups,
       // Note: This is file id stored in $form!
-      $form[$id]['genotype'][static::FORM_PARENT_FIELDSET][static::FIELD_NAME]
+      $form[$organism_key]['genotype'][static::FORM_PARENT_FIELDSET][static::FIELD_NAME]
     );
 
     if (form_get_errors()) {
@@ -361,7 +360,7 @@
     );
 
     if (static::isPhenotypeStudy($form_state)) {
-      $phenotype = $form_state['values'][$id]['phenotype'];
+      $phenotype = $form_state['values'][$organism_key]['phenotype'];
       $phenotype_metadata_fid = $phenotype['metadata'];
       $phenotype_number = $phenotype['phenotypes-meta']['number'];
       $phenotype_meta_names = [];
@@ -424,7 +423,7 @@
     }
     $options = [
       'associations_groups' => $groups,
-      'id' => $id,
+      'organism_index' => $organism_index,
       'column_list' => $snps[static::FIELD_NAME . '-columns'],
     ];
     tpps_file_iterator($fid, 'SnpAssociation::validateRow', $options);
@@ -529,13 +528,14 @@
    *   Additional options set when calling tpps_file_iterator().
    *   Required keys:
    *   'groups' - list of required columns.
-   *   'id' - string e.g., 'organism-1'.
+   *   'organism_index' - int, ordinal number of organism on page. E.g., 1.
    */
   public static function validateRow($row, array &$options = []) {
     static::getNamedRow($row, $options);
     $associations = $options['associations'];
     $column_list = $options['column_list'];
     $groups = $options['associations_groups'];
+    $organism_index = $options['organism_index'];
     $params = [
       '@field_title' => t('SNP Association File'),
       '@list' => implode(', ', $row),

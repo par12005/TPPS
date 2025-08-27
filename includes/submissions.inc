@@ -948,7 +948,8 @@ function tpps_submission_update_stats(array &$form_state) {
       $form_state['stats']['phenotype_count'] = 0;
       $form_state['stats']['unique_phenotypes'] = 0;
       for ($i = 1; $i <= $form_state['stats']['species_count']; $i++) {
-        $phenotype = $form_state['values']["organism-$i"]['phenotype'] ?? NULL;
+        $organism_key = 'organism-' . $i;
+        $phenotype = $form_state['values'][$organism_key]['phenotype'] ?? NULL;
         $form_state['stats']['unique_phenotypes'] += $phenotype['phenotypes-meta']['number'] ?? 0;
         // Note: both 'Normal' and 'Iso' files could be used at the same time.
         if (PhenotypeData::isSelected($i, $form_state)) {

@@ -43,7 +43,8 @@ class SnpsKinship extends FileField {
    *   Drupal Form API State array.
    */
   public static function validate($organism_index, array &$form, array &$form_state) {
-    $genotype = &$form_state['values']['organism-' . $organism_index][static::DATA_TYPE] ?? NULL;
+    $organism_key = 'organism-' . $organism_index;
+    $genotype = &$form_state['values'][$organism_key][static::DATA_TYPE] ?? NULL;
     $snps = &$genotype[static::FORM_PARENT_FIELDSET] ?? NULL;
     // Fields.
     $file_type = $snps['file-type'] ?? NULL;
@@ -82,8 +83,8 @@ class SnpsKinship extends FileField {
     if (!tpps_is_genotype_data_type($form_state)) {
       return;
     }
-    $organism_name = 'organism-' . $organism_index;
-    $sub_form = &$form[$organism_name][static::DATA_TYPE];
+    $organism_key = 'organism-' . $organism_index;
+    $sub_form = &$form[$organism_key][static::DATA_TYPE];
     // Would you like to upload a SNPs Kinship File?
     // Relocated in v2. ['genotype', 'files'] -> ['genotype', 'SNPs'].
     $sub_form[static::FORM_PARENT_FIELDSET]['upload_snp_kinship'] = [
@@ -96,7 +97,7 @@ class SnpsKinship extends FileField {
       ],
       '#default_value' => tpps_get_ajax_value($form_state,
         [
-          $organism_name,
+          $organism_key,
           static::DATA_TYPE,
           static::FORM_PARENT_FIELDSET,
           'upload_snp_kinship'
@@ -110,13 +111,13 @@ class SnpsKinship extends FileField {
       'form' => &$form,
       'form_state' => $form_state,
       'parents' => [
-        $organism_name,
+        $organism_key,
         static::DATA_TYPE,
         static::FORM_PARENT_FIELDSET
       ],
       'field_name' => static::FIELD_NAME,
       'title' => t(static::getFieldTitle()),
-      'organism_name' => $organism_name,
+      'organism_name' => $organism_key,
       'type' => static::DATA_TYPE,
 
       'optional' => TRUE,

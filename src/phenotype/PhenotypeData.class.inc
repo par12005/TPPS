@@ -83,34 +83,40 @@ class PhenotypeData extends TppsFile {
    *   When child class doesn't overwrite this method.
    */
   public static function getCheckboxParents($organism_index) {
-    return ['organism-' . $organism_index, 'phenotype', static::CHECKBOX_NAME];
+    $organism_key = 'organism-' . $organism_index;
+    return [
+      $organism_key,
+      'phenotype',
+      static::CHECKBOX_NAME
+    ];
   }
 
   /**
    * Builds form fields for Phenotype Data file.
    *
-   * @param int $id
-   *   Organism Id.
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
    * @param array $form
    *   Drupal Form API Array.
    * @param array $form_state
    *   Drupal Form API State Array.
    */
-  public static function build($id, array &$form, array $form_state) {
+  public static function build($organism_index, array &$form, array $form_state) {
+    $organism_key = 'organism-' . $organism_index;
     $page4_values = $form_state['saved_values'][TPPS_PAGE_4] ?? NULL;
     $phenotype_dir = variable_get('tpps_phenotype_files_dir', 'tpps_phenotype');
     $normal_check = tpps_get_ajax_value(
-      $form_state, ["organism-$id", 'phenotype', static::CHECKBOX_NAME],
+      $form_state, [$organism_key, 'phenotype', static::CHECKBOX_NAME],
       TRUE
     );
     if (!empty($normal_check)) {
       $states = [
-        ':input[name="organism-' . $id . '[phenotype][phenotypes-meta][number]"]'
+        ':input[name="' . $organism_key . '[phenotype][phenotypes-meta][number]"]'
         => ['value' => '0'],
-        ':input[name="organism-' . $id . '[phenotype][check]"]'
+        ':input[name="' . $organism_key . '[phenotype][check]"]'
         => ['checked' => FALSE],
       ];
-      $form["organism-$id"]['phenotype'][static::FIELD_NAME] = [
+      $form[$organism_key]['phenotype'][static::FIELD_NAME] = [
         '#type' => 'managed_file',
         '#title' => t('Phenotype file: Please upload a file containing '
           . 'columns for Plant Identifier, Phenotype Data: *'),
@@ -119,7 +125,7 @@ class PhenotypeData extends TppsFile {
         '#tree' => TRUE,
         '#states' => ['invisible' => $states],
         'empty' => [
-          '#default_value' => $page4_values["organism-$id"]['phenotype']
+          '#default_value' => $page4_values[$organism_key]['phenotype']
             [static::FIELD_NAME]['empty'] ?? t('NA'),
         ],
         'columns' => [
@@ -128,21 +134,21 @@ class PhenotypeData extends TppsFile {
           ),
         ],
       ];
-      $form["organism-$id"]['phenotype'][static::FIELD_NAME]['columns-options'] = [
+      $form[$organism_key]['phenotype'][static::FIELD_NAME]['columns-options'] = [
         '#type' => 'hidden',
         '#value' => PhenotypeData::getColumnOptions(),
       ];
       // Ability to use file without header was disabled to make validation
       // simplier and to avoid problems with processing those files.
       // File without header will not pass validation.
-      //$form["organism-$id"]['phenotype'][static::FIELD_NAME]['no-header'] = [];
+      //$form[$organism_key]['phenotype'][static::FIELD_NAME]['no-header'] = [];
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // This will check if there are Time Phenotypes saved from the
     // saved values and use this to re-check the checkboxes on the form.
-    if (isset($page4_values["organism-$id"]['phenotype']['time']['time_phenotypes'])) {
-      $time_phenotypes = $page4_values["organism-$id"]['phenotype']['time']['time_phenotypes'] ?? [];
+    if (isset($page4_values[$organism_key]['phenotype']['time']['time_phenotypes'])) {
+      $time_phenotypes = $page4_values[$organism_key]['phenotype']['time']['time_phenotypes'] ?? [];
       $count_time_phenotypes = count($time_phenotypes);
       if ($count_time_phenotypes > 0) {
         foreach ($time_phenotypes as $time_phenotype) {
@@ -150,7 +156,7 @@ class PhenotypeData extends TppsFile {
           // and phenotype value would be the same, so not 0.
           if ($time_phenotype != "0") {
             // Adjust the checkbox element on the form to TRUE (checkbox).
-            $form["organism-$id"]['phenotype']['time']['time_phenotypes']
+            $form[$organism_key]['phenotype']['time']['time_phenotypes']
               [$time_phenotype]['#default_value'] = TRUE;
           }
         }
@@ -172,15 +178,15 @@ class PhenotypeData extends TppsFile {
     if (empty(static::isSelected($organism_index, $form_state))) {
       return;
     }
-    $id = 'organism-' .$organism_index;
-    $phenotype = &$form_state['values'][$id]['phenotype'] ?? NULL;
+    $organism_key = 'organism-' . $organism_index;
+    $phenotype = &$form_state['values'][$organism_key]['phenotype'] ?? NULL;
     $page3_values = $form_state['saved_values'][TPPS_PAGE_3] ?? NULL;
     // The form_state values of the phenotype fieldset for organism $id.
     // @TODO Minor. Rename to $file_form_element.
-    $file_element = $form[$id]['phenotype'][static::FIELD_NAME];
+    $file_element = $form[$organism_key]['phenotype'][static::FIELD_NAME];
     $fid = static::getFileId($organism_index, $form_state);
     $metadata_file_id = $phenotype['metadata'];
-    $form_field_error_name = $id . '][phenotype][' . static::FIELD_NAME;
+    $form_field_error_name = $organism_key . '][phenotype][' . static::FIELD_NAME;
 
     $phenotype_number = $phenotype['phenotypes-meta']['number'];
     // File Id of metadata file.
@@ -210,11 +216,11 @@ class PhenotypeData extends TppsFile {
           $synonym_name = $current_phenotype['synonym_name'];
           $synonym_description = $current_phenotype['synonym_description'];
           if ($synonym_name == '') {
-            form_set_error("$id][phenotype][phenotypes-meta][$i][synonym_name",
+            form_set_error($organism_key . "][phenotype][phenotypes-meta][$i][synonym_name",
               "Phenotype $i Name: field is required.");
           }
           if ($synonym_description == '') {
-            form_set_error("$id][phenotype][phenotypes-meta][$i][synonym_description",
+            form_set_error($organism_key . "][phenotype][phenotypes-meta][$i][synonym_description",
               "Phenotype $i Description: field is required.");
           }
           if (!empty($current_phenotype['synonym_id'])) {
@@ -229,7 +235,7 @@ class PhenotypeData extends TppsFile {
         $description = $current_phenotype['description'];
         if ($name == '') {
           form_set_error(
-            $id . '][phenotype][phenotypes-meta][' . $i . '][name',
+            $organism_key . '][phenotype][phenotypes-meta][' . $i . '][name',
             t(
               'Phenotype @phenotype_id Name: field is required.',
               ['@phenotype_id' => $i]
@@ -238,7 +244,7 @@ class PhenotypeData extends TppsFile {
         }
         if ($description == '') {
           form_set_error(
-            $id . '][phenotype][phenotypes-meta][' . $i . '][description',
+            $organism_key . '][phenotype][phenotypes-meta][' . $i . '][description',
             t('Phenotype @phenotype_id Description: field is required.',
               ['@phenotype_id' => $i]
             )
@@ -258,13 +264,13 @@ class PhenotypeData extends TppsFile {
                 '@column_list' => implode(', ', $file_header),
               ]
             );
-            form_set_error("$id][phenotype][phenotypes-meta][$i][name", $message);
+            form_set_error($organism_key . "][phenotype][phenotypes-meta][$i][name", $message);
           }
         }
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Validate 'Attribute'.
         if (!$current_phenotype['attribute']) {
-          form_set_error("$id][phenotype][phenotypes-meta][$i][attribute",
+          form_set_error($organism_key . "][phenotype][phenotypes-meta][$i][attribute",
             "Phenotype $i Attribute: field is required.");
         }
         $condition = (
@@ -272,18 +278,18 @@ class PhenotypeData extends TppsFile {
           && $current_phenotype['attr-other'] == ''
         );
         if ($condition) {
-          form_set_error("$id][phenotype][phenotypes-meta][$i][attr-other",
+          form_set_error($organism_key . "][phenotype][phenotypes-meta][$i][attr-other",
             "Phenotype $i Custom Attribute: field is required.");
         }
         // [VS]
         $unit = $current_phenotype['unit'];
         if ($unit == '') {
-          form_set_error("$id][phenotype][phenotypes-meta][$i][unit",
+          form_set_error($organism_key . "][phenotype][phenotypes-meta][$i][unit",
             "Phenotype $i Unit: field is required.");
         }
         elseif ($unit == 'other') {
           if ($current_phenotype['unit-other'] == '') {
-            form_set_error("$id][phenotype][phenotypes-meta][$i][unit-other",
+            form_set_error($organism_key . "][phenotype][phenotypes-meta][$i][unit-other",
               "Phenotype $i Custom Unit: field is required.");
           }
           else {
@@ -301,14 +307,14 @@ class PhenotypeData extends TppsFile {
           && $current_phenotype['struct-other'] == ''
         );
         if ($condition) {
-          form_set_error("$id][phenotype][phenotypes-meta][$i][struct-other",
+          form_set_error($organism_key . "][phenotype][phenotypes-meta][$i][struct-other",
             "Phenotype $i Custom Structure: field is required.");
         }
       }
     }
 
     if ($phenotype['time']['time-check']) {
-      $time = &$form_state['values'][$id]['phenotype']['time'];
+      $time = &$form_state['values'][$organism_key]['phenotype']['time'];
       foreach ($phenotype['time']['time_phenotypes'] as $key => $val) {
         if (!$val) {
           unset($time['time_phenotypes'][$key]);
@@ -316,7 +322,7 @@ class PhenotypeData extends TppsFile {
         }
       }
       if (empty($time['time_phenotypes'])) {
-        form_set_error("$id][phenotype][time][time_phenotypes",
+        form_set_error($organism_key . "][phenotype][time][time_phenotypes",
           t("Time-based Phenotypes: field is required.")
         );
       }
@@ -527,8 +533,8 @@ class PhenotypeData extends TppsFile {
   /**
    * Gets index of the Phenotype Name column.
    *
-   * @param int $id
-   *   Organism ordinal number.
+   * @param int $organism_index
+   *   Organism ordinal number at page.
    * @param array $form_state
    *   Drupal Form API State array.
    *
@@ -536,8 +542,9 @@ class PhenotypeData extends TppsFile {
    *   Returns index of the column which holds phenotype name. E.g., "A".
    */
   public static function getPhenotypeNameColumn($organism_index, array $form_state) {
+    $organism_key = 'organism-' . $organism_index;
     $parents = [
-      'organism-' . $organism_index, 'phenotype', 'metadata-groups',
+      $organism_key, 'phenotype', 'metadata-groups',
       // 'Phenotype Id' is name of the column (not option's name or index)
       // which created on server side during validation.
       'Phenotype Id',
@@ -568,8 +575,9 @@ class PhenotypeData extends TppsFile {
    *   Returns TRUE if data type was set and FALSE otherwise.
    */
   public static function isDataTypeSet(array $form_state, $organism_index, $data_type_id) {
+    $organism_key = 'organism-' . $organism_index;
     $selected_columns = TppsArray::getValue($form_state['input'],
-      ['organism-' . $organism_index, 'phenotype', static::FIELD_NAME, 'columns']
+      [$organism_key, 'phenotype', static::FIELD_NAME, 'columns']
     );
     return !empty($selected_columns) && in_array($data_type_id, $selected_columns);
   }
@@ -632,8 +640,9 @@ class PhenotypeData extends TppsFile {
    *   data type keys (see current class constants).
    */
   public static function getColumns($organism_index, $submission) {
-    return $submission->sharedState['saved_values'][TPPS_PAGE_4]['organism-'
-      . $organism_index]['phenotype']['file-columns'] ?? NULL;
+    $organism_key = 'organism-' . $organism_index;
+    return $submission->sharedState['saved_values'][TPPS_PAGE_4]
+      [$organism_key]['phenotype']['file-columns'] ?? NULL;
   }
 
   /**

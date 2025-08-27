@@ -274,11 +274,13 @@ function tpps_nextflow_new_study_pipeline(array &$form_state) {
   $study_accession = $form_state['saved_values'][1]['accession'];
   $vcf = NULL;
   try {
+    // @TODO Process all organisms in study. Not only 1st one.
     $vcf = $form_state['saved_values'][4]['organism-1']['genotype']['files']['local_vcf'];
     tpps_log('Local VCF detected: ' . $vcf . PHP_EOL);
   } catch (Exception $ex) { }
   if ($vcf == null || $vcf == NULL || $vcf == '') {
     try {
+      // @TODO Process all organisms in study. Not only 1st one.
       $vcf = $form_state['saved_values'][4]['organism-1']['genotype']['files']['vcf'];
       // Lookup file_managed table
       $file_results = chado_query('SELECT * FROM public.file_managed WHERE fid = :fid', [':fid' => $vcf]);
@@ -293,6 +295,7 @@ function tpps_nextflow_new_study_pipeline(array &$form_state) {
   }
   $ref_genome = NULL;
   try {
+    // @TODO Process all organisms in study. Not only 1st one.
     $ref_genome = $form_state['saved_values'][4]['organism-1']['genotype']['ref-genome'];
   } catch (Exception $ex) { }
 
@@ -1533,7 +1536,9 @@ function tpps_submit_page_4(array &$shared_state, TripalJob &$job = NULL) {
   }
   $organism_count = $page1_values['organism']['number'];
   for ($i = 1; $i <= $organism_count; $i++) {
-    $genotype_design_key = $shared_state['saved_values'][TPPS_PAGE_4]['organism-' . $i]['genotype']['SNPs']['genotyping-design'];
+    $organism_key = 'organism-' . $i;
+    $genotype_design_key = $shared_state['saved_values'][TPPS_PAGE_4]
+      [$organism_key]['genotype']['SNPs']['genotyping-design'];
     $genotype_design_value = tpps_form_get_genotyping_design_field_options($genotype_design_key);
     if ($genotype_design_key > 0) {
       tpps_log("Genotype design $genotype_design_value added to projectprop\n");
@@ -1552,6 +1557,7 @@ function tpps_submit_page_4(array &$shared_state, TripalJob &$job = NULL) {
 
 
   for ($i = 1; $i <= $organism_number; $i++) {
+    $organism_key = 'organism-' . $i;
     // Get species codes.
     // DEPRECATED 8/12/2024 due to breaking changes made by Vlad
     // $species_codes[$shared_state['ids']['organism_ids'][$i]] = current(
@@ -1569,15 +1575,15 @@ function tpps_submit_page_4(array &$shared_state, TripalJob &$job = NULL) {
     // )->value;
 
     // Submit importer jobs.
-    if (isset($page4_values["organism-$i"]['genotype'])) {
-      $ref_genome = $page4_values["organism-$i"]['genotype']['ref-genome'];
+    if (isset($page4_values[$organism_key]['genotype'])) {
+      $ref_genome = $page4_values[$organism_key]['genotype']['ref-genome'];
 
       if ($ref_genome === 'url' or $ref_genome === 'manual' or $ref_genome === 'manual2') {
         // Create job for tripal fasta importer.
         $class = 'FASTAImporter';
         tripal_load_include_importer_class($class);
 
-        $fasta = $page4_values["organism-$i"]['genotype']['tripal_fasta'];
+        $fasta = $page4_values[$organism_key]['genotype']['tripal_fasta'];
 
         $file_upload = isset($fasta['file']['file_upload']) ? trim($fasta['file']['file_upload']) : 0;
         $file_existing = isset($fasta['file']['file_upload_existing']) ? trim($fasta['file']['file_upload_existing']) : 0;
@@ -1632,7 +1638,7 @@ function tpps_submit_page_4(array &$shared_state, TripalJob &$job = NULL) {
         }
       }
       elseif ($ref_genome === 'bio') {
-        $eutils = $page4_values["organism-$i"]['genotype']['tripal_eutils'];
+        $eutils = $page4_values[$organism_key]['genotype']['tripal_eutils'];
         $class = 'EutilsImporter';
         tripal_load_include_importer_class($class);
 
@@ -1703,7 +1709,8 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
   tpps_log('Submitting phenotype data...', [], TRIPAL_INFO);
   $page1_values = $shared_state['saved_values'][TPPS_PAGE_1];
   $page4_values = $shared_state['saved_values'][TPPS_PAGE_4];
-  $phenotype = $page4_values["organism-$i"]['phenotype'] ?? NULL;
+  $organism_key = 'organism-' . $i;
+  $phenotype = $page4_values[$organism_key]['phenotype'] ?? NULL;
   if (empty($phenotype)) {
     return;
   }
@@ -1985,7 +1992,8 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
   // Pages data.
   $page1_values = $shared_state['saved_values'][TPPS_PAGE_1];
   $page4_values = $shared_state['saved_values'][TPPS_PAGE_4];
-  $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+  $organism_key = 'organism-' . $i;
+  $genotype = $page4_values[$organism_key]['genotype'] ?? NULL;
   // Project id is how this study is recorded in chado tables instead of TGDRXXXX
   $project_id = $shared_state['ids']['project_id'];
   // This record_group variable is the number of records in a batch
@@ -3143,7 +3151,8 @@ function tpps_genotypes_to_flat_file($form_state, $shared_state, array $species_
   $page4_values = $shared_state['saved_values'][TPPS_PAGE_4];
   // print_r("Page 4 values\n");
   // print_r($page4_values);
-  $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+  $organism_key = 'organism-' . $i;
+  $genotype = $page4_values[$organism_key]['genotype'] ?? NULL;
 
   if ($insert_mode == '') {
     throw new Exception('VCF processing insert mode was empty - it should have a value of either hybrid or inserts.');
@@ -5261,7 +5270,7 @@ function tpps_genotype_vcf_processing_batch_some_features_insert(&$settings, $cu
  * @param array $form_state
  * @param array $species_codes
  * @param mixed $i
- *   Ordinal organism number of page.
+ *   Ordinal organism number on page.
  * @param TripalJob $job
  * @param string $insert_mode
  */
@@ -5273,10 +5282,8 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
   // Get values from the TPPS form state (this is the user/curation entered data)
   $page1_values = $form_state['saved_values'][TPPS_PAGE_1];
   $page4_values = $form_state['saved_values'][TPPS_PAGE_4];
-  //print_r($page4_values);
-  //print_r("Organism $i page 4 values:\n");
-  //print_r($page4_values["organism-$i"]);
-  $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+  $organism_key = 'organism-' . $i;
+  $genotype = $page4_values[$organism_key]['genotype'] ?? NULL;
 
 
 
@@ -6564,7 +6571,8 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
     for ($i = 1; $i <= $organism_number; $i++) {
       $organism_name = $page1_values['organism'][$i]['name'];
       echo "Organism name: $organism_name\n";
-      $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+      $organism_key = 'organism-' . $i;
+      $genotype = $page4_values[$organism_key]['genotype'] ?? NULL;
       // Note: Value of this field is string (not array). Correct check:
       //if ($genotype['files']['file-type'] == TPPS_GENOTYPING_FILE_TYPE_VCF) {
       if (empty($genotype['files']['file-type']['VCF'])) {
@@ -6635,7 +6643,7 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
         echo "File managed location: " . $file->uri . "\n";
         echo "Real managed real path: " . tpps_realpath($file->uri) . "\n";
         // We could store this in the submit_state - TODO if we need this
-        // $form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype']['vcf_sample_list'] = $file->fid;
+        // $form_state['saved_values'][TPPS_PAGE_4][$organism_key]['genotype']['vcf_sample_list'] = $file->fid;
         // print_r($sample_list_data);
       } // end else
     } // end for
@@ -6953,7 +6961,8 @@ function tpps_submit_vcf_render_genotype_combination($raw_value, $ref, $alt) {
 function tpps_submit_environment(array &$form_state, $i, TripalJob &$job = NULL) {
   tpps_log('Submitting environment data...', [], TRIPAL_INFO);
   $page4_values = $form_state['saved_values'][TPPS_PAGE_4];
-  $environment = $page4_values["organism-$i"]['environment'] ?? NULL;
+  $organism_key = 'organism-' . $i;
+  $environment = $page4_values[$organism_key]['environment'] ?? NULL;
   if (empty($environment)) {
     return;
   }
@@ -9011,7 +9020,8 @@ function tpps_get_species_codes($genus, $species) {
  */
 function tpps_vcf_exists($form_state, $i) {
   $page4_values = $form_state['saved_values'][TPPS_PAGE_4];
-  $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+  $organism_key = 'organism-' . $i;
+  $genotype = $page4_values[$organism_key]['genotype'] ?? NULL;
   if (!isset($genotype)) {
     return false;
   }
@@ -9043,7 +9053,8 @@ function tpps_snps_assay_location($form_state, $i) {
     'fid' => 0,
   ];
   $page4_values = $form_state['saved_values'][TPPS_PAGE_4];
-  $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+  $organism_key = 'organism-' . $i;
+  $genotype = $page4_values[$organism_key]['genotype'] ?? NULL;
   $snp_fid = $genotype['files']['snps-assay'];
   $results['fid'] = $snp_fid;
   if ($snp_fid > 0) {
@@ -9066,7 +9077,7 @@ function tpps_assay_design_location($form_state, $i) {
     'fid' => 0,
   ];
   $page4_values = $form_state['saved_values'][TPPS_PAGE_4];
-  $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+  $genotype = $page4_values[$organism_key]['genotype'] ?? NULL;
   $snp_fid = $genotype['files']['assay-design'];
   $results['fid'] = $snp_fid;
   if ($snp_fid > 0) {
@@ -9089,7 +9100,8 @@ function tpps_assay_design_location($form_state, $i) {
  */
 function tpps_genotype_initial_checks($form_state, $i, $job) {
   $page4_values = $form_state['saved_values'][TPPS_PAGE_4];
-  $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+  $organism_key = 'organism-' . $i;
+  $genotype = $page4_values[$organism_key]['genotype'] ?? NULL;
   if (!isset($genotype)) {
     $str = "[INITIAL CHECK] Genotype data could not be found for this study.";
     tpps_job_logger_write($str);
@@ -9222,7 +9234,8 @@ function tpps_vcf_location($form_state, $i) {
     'location' => NULL,
   ];
   $page4_values = $form_state['saved_values'][TPPS_PAGE_4];
-  $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+  $organism_key = 'organism-' . $i;
+  $genotype = $page4_values[$organism_key]['genotype'] ?? NULL;
   if (!isset($genotype)) {
     return false;
   }

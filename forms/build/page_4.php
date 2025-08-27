@@ -35,9 +35,10 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
   }
   $form['#tree'] = TRUE;
   for ($i = 1; $i <= tpps_form_bus_get($form_bus, 'organism_number'); $i++) {
+    $organism_key = 'organism-' . $i;
     $form_bus['organism_id'] = $i;
     $name = tpps_form_bus_get($form_bus, 'organism_name', $i);
-    $form["organism-$i"] = [
+    $form[$organism_key] = [
       '#type' => 'fieldset',
       '#title' => t(strtoupper($name)),
       '#tree' => TRUE,
@@ -160,7 +161,7 @@ function tpps_add_curation_tool(array $form_bus) {
  */
 function tpps_page4_add_data_type(array $form_bus) {
   $i = $form_bus['organism_id'] ?? 0;
-  $organism_name = 'organism-' . $i;
+  $organism_key = 'organism-' . $i;
   $form = &$form_bus['form'] ?? [];
   $form_state = &$form_bus['form_state'] ?? [];
 
@@ -179,13 +180,13 @@ function tpps_page4_add_data_type(array $form_bus) {
     $function_name = 'tpps_' . $type;
     // @TODO Rename all functions to have suffix '_subform'.
     if ($type == 'environment') {
-      $args = [&$form, &$form_state, $organism_name];
+      $args = [&$form, &$form_state, $organism_key];
     }
     elseif ($type == 'phenotype') {
-      $args = [&$form, &$form_state, $form_bus['page4_values'], $organism_name];
+      $args = [&$form, &$form_state, $form_bus['page4_values'], $organism_key];
     }
     $field = call_user_func_array($function_name, $args);
-    $form[$organism_name][$type] = $field;
+    $form[$organism_key][$type] = $field;
   }
   else {
     $message = t('Unsupported data type: @type.', ['@type' => $type]);
@@ -195,7 +196,7 @@ function tpps_page4_add_data_type(array $form_bus) {
   // Main fields.
   // Repeat check.
   if ($i > 1) {
-    $form[$organism_name][$type . '-repeat-check'] = [
+    $form[$organism_key][$type . '-repeat-check'] = [
       '#type' => 'checkbox',
       '#title' => t('@type_name information for <strong>@current_organism_name'
         . '</strong> is the same as @type_lower_name information for <strong>'
@@ -207,11 +208,11 @@ function tpps_page4_add_data_type(array $form_bus) {
           '@prev_organism_name' => tpps_form_bus_get($form_bus, 'organism_name', ($i - 1)),
         ]
       ),
-      '#default_value' => ($form_bus['page4_values'][$organism_name][$type . '-repeat-check'] ?? 1),
+      '#default_value' => ($form_bus['page4_values'][$organism_key][$type . '-repeat-check'] ?? 1),
     ];
-    $form[$organism_name][$type]['#states'] = [
+    $form[$organism_key][$type]['#states'] = [
       'invisible' => [
-        ':input[name="' . $organism_name
+        ':input[name="' . $organism_key
         . '[' . $type . '-repeat-check]"]' => ['checked' => TRUE],
       ],
     ];

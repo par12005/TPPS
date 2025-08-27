@@ -44,8 +44,9 @@ class PhenotypeIso extends TppsFile {
    *   Returns parents for the checkbox which makes this field required.
    */
   public static function getCheckboxParents($organism_index) {
+    $organism_key = 'organism-' . $organism_index;
     return [
-      'organism-' . $organism_index,
+      $organism_key,
       static::DATA_TYPE,
       static::CHECKBOX_NAME
     ];

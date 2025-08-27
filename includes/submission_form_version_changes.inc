@@ -147,8 +147,9 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
     ];
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     for ($i = 1; $i <= $organism_number; $i++) {
+      $organism_key = 'organism-' . $i;
       $genotype_parents = [
-        'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype',
+        'saved_values', TPPS_PAGE_4, $organism_key, 'genotype',
       ];
       // Single 'ref-genome' ("Reference Assembly used:") field.
       $field_name = 'ref-genome';
@@ -194,7 +195,7 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
         $version_change_list[$v]['create'][] = [
           'field_name' => $field_name,
           'parents' => [
-            'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype',
+            'saved_values', TPPS_PAGE_4, $organism_key, 'genotype',
             $field_name,
           ],
         ];
@@ -212,8 +213,9 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
     $organism_number = $page1_values['organism']['number'] ?? 1;
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     for ($i = 1; $i <= $organism_number; $i++) {
+      $organism_key = 'organism-' . $i;
       $genotype_parents = [
-        'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype',
+        'saved_values', TPPS_PAGE_4, $organism_key, 'genotype',
       ];
       // Move 'Assay Design File' field into sub-fieldset.
       // See 'AssayDesignCitation::PARENT_FIELDSET'.
@@ -248,21 +250,21 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
         [
           'field_name' => 'paper-doi',
           'parents' => [
-            'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype', 'SNPs',
+            'saved_values', TPPS_PAGE_4, $organism_key, 'genotype', 'SNPs',
             'assay-design-citation', 'paper-doi',
           ],
         ],
         [
           'field_name' => 'dataset-doi',
           'parents' => [
-            'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype', 'SNPs',
+            'saved_values', TPPS_PAGE_4, $organism_key, 'genotype', 'SNPs',
             'assay-design-citation', 'dataset-doi',
           ],
         ],
         [
           'field_name' => 'existing_study',
           'parents' => [
-            'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype', 'SNPs',
+            'saved_values', TPPS_PAGE_4, $organism_key, 'genotype', 'SNPs',
             'assay-design-citation', 'existing_study',
           ],
         ],
@@ -275,7 +277,7 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
           'field_name' => 'assay-citation',
           // Field was replaced with 'Assay Desigin Citation' fieldset.
           'parents' => [
-            'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype', 'SNPs',
+            'saved_values', TPPS_PAGE_4, $organism_key, 'genotype', 'SNPs',
             'assay-citation',
           ],
         ],

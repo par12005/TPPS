@@ -1592,8 +1592,9 @@ class Submission {
     }
     if (!empty($data['#number_organisms'])) {
       for ($i = 1; $i <= $data['#number_organisms']; $i++) {
-        if (isset($page_4["organism-$i"])) {
-          $org = &$page_4["organism-$i"];
+        $organism_key = 'organism-' . $i;
+        if (isset($page_4[$organism_key])) {
+          $org = &$page_4[$organism_key];
           $org_name = isset($data["Species $i"]) ? $data["Species $i"] : NULL;
 
           if (isset($org['phenotype'])) {
@@ -1990,11 +1991,12 @@ class Submission {
   public function hasPhenotypeData() {
     $this->getState();
     for ($i = 1; $i <= $this->getOrganismNumber(); $i++) {
+      $organism_key = 'organism-' . $i;
       if (
         // Phenotype medatadata file could be missing when data added manually
         // but data file is required.
         !empty($this->state['saved_values'][TPPS_PAGE_4]
-        ["organism-$i"]['phenotype']['file'])
+        [$organism_key]['phenotype']['file'])
       ) {
         return TRUE;
       }
@@ -2014,9 +2016,10 @@ class Submission {
   public function hasEnvironmentalData() {
     $this->getState();
     for ($i = 1; $i <= $this->getOrganismNumber(); $i++) {
+      $organism_key = 'organism-' . $i;
       if (
         !empty($this->state['saved_values'][TPPS_PAGE_4]
-        ["organism-$i"]['environment'])
+        [$organism_key]['environment'])
       ) {
         return TRUE;
       }
@@ -2033,9 +2036,10 @@ class Submission {
   public function hasMassSpectrometryData() {
     $this->getState();
     for ($i = 1; $i <= $this->getOrganismNumber(); $i++) {
+      $organism_key = 'organism-' . $i;
       if (
         !empty($this->state['saved_values'][TPPS_PAGE_4]
-        ["organism-$i"]['phenotype']['iso-check'])
+        [$organism_key]['phenotype']['iso-check'])
       ) {
         return TRUE;
       }
@@ -2056,8 +2060,9 @@ class Submission {
     $this->getState();
     $page4 = $this->state['saved_values'][TPPS_PAGE_4] ?? NULL;
     for ($i = 1; $i <= $this->getOrganismNumber(); $i++) {
+      $organism_key = 'organism-' . $i;
       if (!empty($page4)
-        && !empty($genotype = $page4["organism-$i"]['genotype'] ?? NULL)
+        && !empty($genotype = $page4[$organism_key]['genotype'] ?? NULL)
         && (
           ($genotype['does_study_include_snp_data'] ?? NULL) == "yes"
           || ($genotype['does_study_include_ssr_cpssr_data'] ?? NULL) == "yes"
@@ -2081,12 +2086,13 @@ class Submission {
    */
   public function hasLocalVcf($organism_index = 1) {
     $this->getSharedState();
+    $organism_key = 'organism-' . $organism_index;
     if (
       ($this->sharedState['saved_values'][TPPS_PAGE_4]
-        ['organism-' . $organism_index]['genotype']['files']
+        [$organism_key]['genotype']['files']
         ['vcf_file-location'] ?? NULL) == 'remote'
       && !empty($this->sharedState['saved_values'][TPPS_PAGE_4]
-        ['organism-' . $organism_index]['genotype']['files']['local_vcf'])
+        [$organism_key]['genotype']['files']['local_vcf'])
     ) {
       return TRUE;
     }
@@ -2104,11 +2110,12 @@ class Submission {
    *   Returns NULL if study has no local VCF file.
    */
   public function getLocalVcf($organism_index = 1) {
+    $organism_key = 'organism-' . $organism_index;
     if (!$this->hasLocalVcf($organism_index)) {
       return NULL;
     }
     return $this->sharedState['saved_values'][TPPS_PAGE_4]
-      ['organism-' . $organism_index]['genotype']['files']['local_vcf'];
+      [$organism_key]['genotype']['files']['local_vcf'];
   }
 
   /**
@@ -2442,7 +2449,7 @@ class Submission {
     $result[TPPS_PAGE_3] = [];
     $result[TPPS_PAGE_4] = [];
     for ($i = 1; $i <= $this->getOrganismNumber(); $i++) {
-      $organism_id = 'organism-' . $i;
+      $organism_key = 'organism-' . $i;
       $species_id = 'species-' . $i;
       // Page 3. Accession file.
       $result[TPPS_PAGE_3] = array_merge(
@@ -2456,26 +2463,26 @@ class Submission {
         $result[TPPS_PAGE_4],
         [
           // Phenotype.
-          [$organism_id, 'phenotype', 'iso'],
-          [$organism_id, 'phenotype', 'file'],
-          [$organism_id, 'phenotype', 'metadata'],
+          [$organism_key, 'phenotype', 'iso'],
+          [$organism_key, 'phenotype', 'file'],
+          [$organism_key, 'phenotype', 'metadata'],
           // Genotype.
-          [$organism_id, 'genotype', 'files', 'snps-assay'], // Shared State.
-          [$organism_id, 'genotype', 'files', 'assay-design'],
-          [$organism_id, 'genotype', 'files', 'snps-association'],
-          [$organism_id, 'genotype', 'files', 'snps-pop-struct'],
-          [$organism_id, 'genotype', 'files', 'snps-kinship'],
+          [$organism_key, 'genotype', 'files', 'snps-assay'], // Shared State.
+          [$organism_key, 'genotype', 'files', 'assay-design'],
+          [$organism_key, 'genotype', 'files', 'snps-association'],
+          [$organism_key, 'genotype', 'files', 'snps-pop-struct'],
+          [$organism_key, 'genotype', 'files', 'snps-kinship'],
           // SSR.
-          [$organism_id, 'genotype', 'files', 'ssrs'],
-          [$organism_id, 'genotype', 'files', 'ssrs_extra'],
-          [$organism_id, 'genotype', 'files', 'indels'],
-          [$organism_id, 'genotype', 'files', 'vcf'],
+          [$organism_key, 'genotype', 'files', 'ssrs'],
+          [$organism_key, 'genotype', 'files', 'ssrs_extra'],
+          [$organism_key, 'genotype', 'files', 'indels'],
+          [$organism_key, 'genotype', 'files', 'vcf'],
           // Other.
-          [$organism_id, 'genotype', 'files', 'other'],
+          [$organism_key, 'genotype', 'files', 'other'],
           // Fasta.
-          [$organism_id, 'genotype', 'tripal_fasta', 'file', 'file_upload'],
+          [$organism_key, 'genotype', 'tripal_fasta', 'file', 'file_upload'],
           // @TODO Check this field:
-          // [$organism_id, 'genotype', 'tripal_fasta', 'file_upload_existing'],
+          // [$organism_key, 'genotype', 'tripal_fasta', 'file_upload_existing'],
         ]
       );
     }
@@ -2550,7 +2557,7 @@ class Submission {
           foreach ($deposition['files'] as $file) {
             ZenodoFile::delete([
               'deposit_id' => $deposit_id,
-              'file_id' => $file['id']
+              'file_id' => $file['id'],
             ]);
           }
           break;
