@@ -186,7 +186,7 @@
               // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
               // Change name of the other file-field when dropdown changes.
               let otherMarkerSelector = '[name="organism-' + i
-                + '[genotype][other][other-marker]';
+                + '[genotype][other][other_marker_type]';
               $(otherMarkerSelector).change(function() {
                 let name = $(this).val();
                 let $label = $('#edit-organism-' + i

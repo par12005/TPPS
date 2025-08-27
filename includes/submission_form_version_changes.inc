@@ -225,6 +225,18 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
           ]
         ),
       ];
+      // Rename 'other/other' field.
+      $version_change_list[$v]['move']['other_other'] = [
+        'source' => array_merge($genotype_parents, ['other', 'other']),
+        'target' => array_merge($genotype_parents, ['other', 'other_marker']),
+      ];
+      $version_change_list[$v]['move']['other_other_marker_type'] = [
+        'source' => array_merge($genotype_parents, ['other', 'other-marker']),
+        'target' => array_merge(
+          $genotype_parents,
+          ['other', 'other_marker_type']
+        ),
+      ];
       // New fields.
       // Format: field_name => full path including field name.
       $version_change_list[$v]['create'] = [

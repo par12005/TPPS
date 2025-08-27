@@ -618,14 +618,15 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
           'snps-association',
         ],
         $other_fieldset => [
-          'other',
+          'other_marker',
         ],
       ];
       for ($i = 1; $i <= $organism_number; $i++) {
+        $organism_key = 'organism-' . $i;
         foreach ($field_name_list as $fieldset => $item) {
           foreach ($item as $field_name) {
-            $genotype = &$form_state['values']["organism-$i"]['genotype'] ?? '';
-            $genotype_form_element = &$form["organism-$i"]['genotype'] ?? '';
+            $genotype = &$form_state['values'][$organism_key]['genotype'] ?? '';
+            $genotype_form_element = &$form[$organism_key]['genotype'] ?? '';
             if ($file = tpps_file_load($genotype[$fieldset][$field_name] ?? '')) {
               $genotype[$fieldset][$field_name . '-columns'] = [];
               $column_list = $genotype_form_element[$fieldset][$field_name]
@@ -644,8 +645,9 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
     // Phenotype.
     if (isset($form['organism-1']['phenotype'])) {
       for ($i = 1; $i <= $organism_number; $i++) {
-        $phenotype = &$form_state['values']["organism-$i"]['phenotype'] ?? '';
-        $phenotype_form_element = &$form["organism-$i"]['phenotype'] ?? '';
+        $organism_key = 'organism-' . $i;
+        $phenotype = &$form_state['values'][$organism_key]['phenotype'] ?? '';
+        $phenotype_form_element = &$form[$organism_key]['phenotype'] ?? '';
 
         if (!empty($phenotype['normal-check'])) {
           $field_name_list = ['file', 'metadata'];

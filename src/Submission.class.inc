@@ -2418,8 +2418,7 @@ class Submission {
   /**
    * Gets hardcoded list of file field parents.
    *
-   * WARNING:
-   * Use Submission Shajred State (v.1 not Submission State).
+   * WARNING: Uses Submission Form Version 1 (AKA Submission Shared State).
    *
    * @return array
    *   Returns empty array if number of organisms is zero.

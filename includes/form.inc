@@ -207,7 +207,7 @@ function tpps_form_error_required(array $form_state, array $parents) {
  *
  * @param array $form_state
  *   Drupal Form API array with submitted values.
- * @param array $path
+ * @param array $parents
  *   Path to field from $form_state['complete form'].
  *   (The same will be from $form). Using fields configuration data we could
  *   get all necessary data.
@@ -220,11 +220,11 @@ function tpps_form_error_required(array $form_state, array $parents) {
  * @param string $message
  *   Error message text.
  */
-function tpps_form_error(array $form_state, array $path, $message) {
-  $field = drupal_array_get_nested_value($form_state['complete form'], $path);
+function tpps_form_error(array $form_state, array $parents, $message) {
+  $field = drupal_array_get_nested_value($form_state['complete form'], $parents);
   if (empty($field['#title'])) {
-    $message = t("Field didn't found at form. Path: @path",
-      ['@path' => implode(' / ', $path)]
+    $message = t("Field didn't found at form. Parents: @parents",
+      ['@parents' => implode(' / ', $parents)]
     );
     watchdog('tpps', $message, NULL, WATCHDOG_ERROR);
     // drupal_set_message($message, 'error');
@@ -235,15 +235,11 @@ function tpps_form_error(array $form_state, array $path, $message) {
 
   // Since we update title of the field using JS in browser we could update
   // title of the field which failed validation here.
-  if ($field['#name'] == 'organism-1[genotype][other][other]') {
-    $new_path = $path;
+  if ($field['#name'] == 'organism-1[genotype][other][other_marker]') {
+    $new_path = $parents;
     array_pop($new_path);
-    $new_path[] = 'other-marker';
-    $new_name = drupal_array_get_nested_value(
-      //$form_state['input'][TPPS_PAGE_4],
-      $form_state['input'],
-      $new_path
-    );
+    $new_path[] = 'other_marker_type';
+    $new_name = drupal_array_get_nested_value($form_state['input'], $new_path);
     $title = str_replace('Other', $new_name, $title);
   }
   form_set_error(implode('][', $field['#array_parents']),
@@ -564,7 +560,7 @@ function tpps_form_add_report(array &$form, array $meta) {
  *     'snps-kinship',
  *     'indels', // was removed.
  *     'vcf',
- *     'other'.
+ *     'other_marker'.
  */
 function tpps_form_build_file_field(array $form_bus) {
   if (empty($field_name = $form_bus['field_name'])) {

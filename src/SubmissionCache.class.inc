@@ -260,15 +260,15 @@ class SubmissionCache {
       // Files.
       static::FILES_CONTAINER => [
         'grouped_list' => [
-          'tree-accession' => [],
-          'phenotype' => [],
-          'genotype' => [],
+          Report::TREE_ACCESSION_FILES => [],
+          Report::PHENOTYPE_FILES => [],
+          Report::GENOTYPE_FILES => [],
           // Files are missing in file system.
           // Files which doesn't belong to any group.
-          'other' => [],
+          Report::OTHER_FILES => [],
         ],
-        'missing' => [],
-        'id_list' => [],
+        Report::MISSING_FILES => [],
+        Report::FILE_ID_LIST => [],
       ],
     ];
 
@@ -322,7 +322,7 @@ class SubmissionCache {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Files.
     $file_list = $submission->getFileIdList();
-    $data['file']['id_list'] = array_keys($file_list);
+    $data['file'][Report::FILE_ID_LIST] = array_keys($file_list);
 
     if (!empty($file_list)) {
       // List of files per group.
@@ -358,22 +358,22 @@ class SubmissionCache {
 
           case 'frontpage':
           case 'summarypage':
-            $group = 'other';
+            $group = Report::OTHER_FILES;
             $organism_index = NULL;
             $organism_label = $step;
             break;
 
           default:
-            $group = 'other';
+            $group = Report::OTHER_FILES;
             $organism_index = NULL;
             $organism_label = 'Other';
             break;
         }
 
-        // Missing files goes to the 'other' group and will have no hyperlink
+        // Missing files goes to the 'missing' group and will have NO hyperlink
         // to 'File Info' API page.
         if (empty($file = tpps_file_load($fid))) {
-          $data['file']['missing'][] = $fid;
+          $data['file'][Report::MISSING_FILES][] = $fid;
         }
         $field_name = check_plain(end($parents));
         $file_row[$group][$organism_label][$field_name] = $fid;

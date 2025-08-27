@@ -562,9 +562,11 @@ function tpps_genotype_subform(array $form_bus) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Other Fieldset.
   $other_fieldset = 'other';
-  // Relocated in v2: [] -> ['other'].
+  // Versions:
   // v1: This field was a textfield.
-  $fields[$other_fieldset]['other-marker'] = [
+  // v2: [] -> ['other'].
+  // v3: ['other', 'other-marker'] -> ['other', 'other_marker_type'].
+  $fields[$other_fieldset]['other_marker_type'] = [
     '#type' => 'select',
     '#title' => t('Other marker type: *'),
     '#options' => [
@@ -573,8 +575,10 @@ function tpps_genotype_subform(array $form_bus) {
     ],
   ];
 
-  // Field was relocated (v.2). ['files', 'other] -> ['other', 'other'].
-  $file_field_name = 'other';
+  // Versions:
+  // v2: ['files', 'other] -> ['other', 'other'].
+  // v3: ['other', 'other'] -> ['other', 'other_marker'].
+  $file_field_name = 'other_marker';
   $title = t('Other spreadsheet: '
     . '<br />please provide a spreadsheet with columns for the Plant ID '
     . 'of genotypes used in this study');
@@ -594,48 +598,6 @@ function tpps_genotype_subform(array $form_bus) {
     'type' => $form_bus['type'],
     'description' => $description,
   ]));
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Other Columns.
-  // Field [$other_fieldset]['other']['dynamic'].
-  if (0) {
-    // NOTE:
-    // Those fields was disabled because they are misssing on Meghan's Mockups,
-    // seems didn't work correctly for a long time and uses AJAX.
-    $default_dynamic = !empty($page4_values[$organism_name]['genotype'][$other_fieldset]['other-columns']);
-    // Field was relocated (v.2). ['files'] -> ['other'].
-    $fields[$other_fieldset]['dynamic'] = [
-      '#type' => 'checkbox',
-      '#title' => t('This file needs dynamic dropdown options for column data type specification'),
-      '#ajax' => [
-        // @TODO Check if this element exists on page.
-        // Reloads whole fieldset to show dynamic fields.
-        'wrapper' => "edit-$organism_name-genotype-$other_fieldset",
-        'callback' => 'tpps_page_4_file_dynamic',
-        'effect' => 'slide',
-      ],
-      '#default_value' => $default_dynamic,
-    ];
-    $dynamic = tpps_get_ajax_value($form_state,
-      [$organism_name, 'genotype', $other_fieldset, 'dynamic'],
-      $default_dynamic,
-      'other'
-    );
-
-    // @TODO Show this fields using '#states'.
-    if ($dynamic) {
-      $fields[$other_fieldset]['columns'] = [
-        '#description' => t('Please define which columns hold the required data: '
-          . '<br />Plant Identifier, Genotype Data'
-        ),
-      ];
-      $fields[$other_fieldset]['columns-options'] = [
-        '#type' => 'hidden',
-        '#value' => ['Genotype Data', 'Plant Identifier', 'N/A'],
-      ];
-    }
-    $fields[$other_fieldset]['no-header'] = [];
-  }
 
   return $fields;
 }

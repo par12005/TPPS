@@ -13,6 +13,14 @@
  */
 class Report {
 
+  // Names of the file groups (and columns in reports).
+  const TREE_ACCESSION_FILES = 'tree-accession';
+  const PHENOTYPE_FILES = 'phenotype';
+  const GENOTYPE_FILES = 'genotype';
+  const OTHER_FILES = 'other';
+
+  const MISSING_FILES = 'missing';
+  const FILE_ID_LIST = 'id_list';
   /**
    * Generates report based on given DB Query.
    *
@@ -581,7 +589,8 @@ function ___tpps_report_submission_file_all_build_single_row(array $context) {
     if ($submission->hasLocalVcf($n)) {
       $organism_name = $submission->getOrganismName($n);
       $organism_label = check_plain($n . '. ' . $organism_name);
-      $file_row['other'][$organism_label]['local_vcf'] = $submission->getLocalVcf($n);
+      $file_row[Report::OTHER_FILES][$organism_label]['local_vcf']
+        = $submission->getLocalVcf($n);
     }
   }
 
@@ -601,18 +610,18 @@ function ___tpps_report_submission_file_all_build_single_row(array $context) {
         break;
 
       default:
-        $group = 'other';
+        $group = Report::OTHER_FILES;
         $organism_index = NULL;
         break;
     }
     $organism_name = $submission->getOrganismName($organism_index);
 
-    // Missing files goes to the 'other' group..
+    // Missing files goes to the static::OTHER_FILES group..
     if (
       // !in_array($fid, $existing_fid_list) ||
       empty($file = file_load($fid))
     ) {
-      $file_row['other'][] = $fid;
+      $file_row[Report::OTHER_FILES][] = $fid;
       continue;
     }
     $organism_label = check_plain($organism_index . '. ' . $organism_name);
