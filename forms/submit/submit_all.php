@@ -7555,7 +7555,8 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
   $type = $options['type'];
   $organism_index = $options['organism_index'];
   $records = &$options['records'];
-  $records2 = &$options['records2']; // hybrid / copy such as genotype_call records
+  // Hybrid / copy such as genotype_call records.
+  $records2 = &$options['records2'];
   $headers = $options['headers'];
 
   $tree_info = &$options['tree_info'];
@@ -7563,12 +7564,6 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
   $genotype_count = &$options['genotype_count'];
   $project_id = $options['project_id'];
   $marker = $options['marker'];
-  // print_r("row\n");
-  // print_r($row);
-  // print_r("tree_info\n");
-  // print_r($tree_info);
-  // print_r("\n");
-  // Marker adjustment [RISH: 8/1/2023]
   if ($marker == 'SSRs') {
     $marker = 'SSR';
   }
@@ -7579,7 +7574,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
   $type_cvterm = $options['type_cvterm'];
   $seq_var_cvterm = $options['seq_var_cvterm'];
   $multi_insert_options = $options['multi_insert'];
-  $associations = $options['associations'] ?? array();
+  $associations = $options['associations'] ?? [];
   $vcf_processing_completed = $options['vcf_processing_completed'];
   // $analysis_id = $options['analysis_id'];
   // echo "Analysis ID: $analysis_id\n";
@@ -7604,10 +7599,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
     if (empty($headers[$key])) {
       continue;
     }
-
-    // This $val is different from the $val later on
-    // so order is important
-
+    // This $val is different from the $val later on so order is important.
     if (!isset($stock_id)) {
       // Set the tree_id
       $tree_id = trim($val);
@@ -7621,12 +7613,14 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
     $genotype_count++;
     echo "Stock ID: $stock_id, Current ID: $current_id, Genotype_count: $genotype_count\n";
 
-
     echo "Header before alterations:" . $headers[$key] . "\n";
 
     $header_length = strlen($headers[$key]);
     // Cater for Diploids [Rish: 8/3/2023].
-    if (($options['ploidy'] ?? NULL) == 'Diploid' && substr($headers[$key], $header_length - 2, 2) == "_A") {
+    if (
+      ($options['ploidy'] ?? NULL) == 'Diploid'
+      && substr($headers[$key], $header_length - 2, 2) == "_A"
+    ) {
       // Remove the _A from the first diploid header
       // and allow the below code to continue to be processed so the SSR can be imported in
       $headers[$key] = substr($headers[$key], 0, $header_length - 2);
@@ -7669,15 +7663,16 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
       ($options['ploidy'] ?? NULL) == 'Polyploid'
       && $options['polyploid_header'] != $header_without_polyploid_index
     ) {
-      // Remove the _1 from the first diploid header
-      // and allow the below code to continue to be processed so the SSR can be imported in
+      // Remove the _1 from the first diploid header and allow the below
+      // code to continue to be processed so the SSR can be imported in.
       $headers[$key] = $header_without_polyploid_index;
       $options['polyploid_header'] = $headers[$key];
       $options['polyploid_val'] = $val;
-      // Save this header for use in a later iteration when _B gets called
-      // This reason for this is we want _A and _B values recorded
+      // Save this header for use in a later iteration when _B gets called.
+      // This reason for this is we want _A and _B values recorded.
       echo "Polyploid first header reset to: " . $headers[$key] . "\n";
-      // This will skip processing iteration by ONE iteration if _1 (SSR diploid detected)
+      // This will skip processing iteration by ONE iteration if _1
+      // (SSR diploid detected).
       continue;
     }
 
@@ -7699,24 +7694,33 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
       ($options['ploidy'] ?? NULL) == 'Polyploid'
       && $options['polyploid_header'] == $header_without_polyploid_index
     ) {
-      $options['polyploid_val'] .= ',' . $val; // append the new value to what was already there
+      // Append the new value to what was already there.
+      $options['polyploid_val'] .= ',' . $val;
 
-      // Check if the next header does not match current header (this would mean next header starts a new SSR polyploid) OR
-      // if the next header is NULL (this means end of headers of the file)
-      // so we need to allow the rest of code below to happen to insert this current SRR polyploid
-      if (($header_without_polyploid_index != $header_next_without_polyploid_index) || $header_next == NULL) { // NULL happens if end of all headers
-        // we have found that $headers[$key] is the last polyploid column for the current SSR
-        // so reset to these new values for insertion into the database later on
+      // Check if the next header does not match current header (this would
+      // mean next header starts a new SSR polyploid) OR if the next header
+      // is NULL (this means end of headers of the file) so we need to allow
+      // the rest of code below to happen to insert this current SRR polyploid.
+      if (
+        ($header_without_polyploid_index != $header_next_without_polyploid_index)
+        // NULL happens if end of all headers.
+        || $header_next == NULL
+      ) {
+        // We have found that $headers[$key] is the last polyploid column
+        // for the current SSR so reset to these new values for insertion
+        // into the database later on.
         $headers[$key] = $options['polyploid_header'];
         $val = $options['polyploid_val'];
         echo "Polyploid val: $val for insertion using SSR marker" . $headers[$key] . "\n";
       }
       else {
+        // This will skip insertion (below code) until all values for the
+        // current SSR polyploid is found.
         echo "Skipping insert\n";
-        continue; // this will skip insertion (below code) until all values for the current SSR polyploid is found
+        continue;
       }
     }
-    // End of catering for polyploids
+    // End of catering for polyploids.
     echo "Processing the insert\n";
 
     if ($type == 'ssrs' and !empty($options['empty']) and $val == $options['empty']) {
@@ -7727,17 +7731,19 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
       $val = "NA";
     }
 
-    // RISH NOTES: This addition uses the organism_id based on the organism order
-    // of the fourth page (we likely have to pass the i from previous function here)
-    // THIS TECHNICALLY OVERRIDES PETER'S LOGIC ABOVE. TO BE DETERMINED IF RISH'S WAY IS CORRECT
-    // OR NOT [6/22/2023]
-    // THIS WAS AN ISSUE BROUGHT UP BY EMILY REGARDING SNPS NOT BEING ASSOCIATED WITH POP TRICH (665 STUDY)
-    $species_code = null;
-    $organism_id = null;
+    // RISH NOTES: This addition uses the organism_id based on the organism
+    // order of the fourth page (we likely have to pass the i from previous
+    // function here)
+    // THIS TECHNICALLY OVERRIDES PETER'S LOGIC ABOVE. TO BE DETERMINED IF
+    // RISH'S WAY IS CORRECT OR NOT [6/22/2023]
+    // THIS WAS AN ISSUE BROUGHT UP BY EMILY REGARDING SNPS NOT BEING
+    // ASSOCIATED WITH POP TRICH (665 STUDY)
+    $species_code = NULL;
+    $organism_id = NULL;
     $count_tmp = 0;
     foreach ($species_codes as $organism_id_tmp => $species_code_tmp) {
-      $count_tmp = $count_tmp + 1; // increment
-      // Check if count_tmp matches $organism_index
+      $count_tmp = $count_tmp + 1;
+      // Check if count_tmp matches $organism_index.
       if ($count_tmp == $organism_index) {
         $species_code = $species_code_tmp;
         $organism_id = $organism_id_tmp;
@@ -7750,32 +7756,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
     $genotype_name_without_call = "$marker-$variant_name-$species_code";
     $genotype_name = "$marker-$variant_name-$species_code-$val";
 
-    // echo "Variant Name: $variant_name\n";
-    // echo "Marker Name: $marker_name\n";
-    // echo "Genotype name: $genotype_name\n";
-
-    // THIS IS SUPER SLOW EVEN FOR TESTING PURPOSES
-    // if (isset($options['test'])) {
-    //   // DELETE marker_name feature if it already exists
-    //   chado_query("DELETE FROM chado.feature WHERE uniquename = :marker_name", [
-    //     ':marker_name' => $marker_name
-    //   ]);
-
-    //   // DELETE marker_name feature if it already exists
-    //   chado_query("DELETE FROM chado.feature WHERE uniquename = :variant_name", [
-    //     ':variant_name' => $variant_name
-    //   ]);
-    // }
-
-    // [RISH] 07/06/2023 - REMOVED SO WE CAN INSERT TO GET FEATURE ID
-    // $records['feature'][$marker_name] = array(
-    //   // 'organism_id' => $current_id, // PETER's original code
-    //   'organism_id' => $organism_id, // RISH code override 6/22/2023
-    //   'uniquename' => $marker_name,
-    //   'type_id' => $seq_var_cvterm,
-    // );
-
-    // Check if feature exists, if not insert
+    // Check if feature exists, if not insert.
     $sql = 'SELECT count(*) as c1 FROM chado.feature WHERE uniquename = :marker_name';
     $feature_check_results = chado_query($sql, [':marker_name' => $marker_name]);
     $feature_check_count = $feature_check_results->fetchObject()->c1;
@@ -7794,19 +7775,11 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
     foreach ($results as $row) {
       $marker_name_id = $row->feature_id;
     }
-
-    // [RISH] 07/06/2023 - REMOVED SO WE CAN INSERT TO GET FEATURE ID
-    // $records['feature'][$variant_name] = array(
-    //   // 'organism_id' => $current_id, // PETER's original code
-    //   'organism_id' => $organism_id, // RISH code override 6/22/2023
-    //   'uniquename' => $variant_name,
-    //   'type_id' => $seq_var_cvterm,
-    // );
-
-    // Check if feature exists, if not insert
-    $feature_check_results = chado_query('SELECT count(*) as c1 FROM chado.feature WHERE uniquename = :variant_name',[
-      ':variant_name' => $variant_name
-    ]);
+    // Check if feature exists, if not insert.
+    $feature_check_results = chado_query(
+      'SELECT count(*) as c1 FROM chado.feature WHERE uniquename = :variant_name',
+      [':variant_name' => $variant_name]
+    );
     $feature_check_count = $feature_check_results->fetchObject()->c1;
 
     if ($feature_check_count <= 0) {
@@ -7814,16 +7787,14 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
         'name' => $variant_name,
         'organism_id' => $organism_id,
         'uniquename' => $variant_name,
-        'type_id' => $seq_var_cvterm
+        'type_id' => $seq_var_cvterm,
       ]);
     }
 
-    // Lookup the variant_name_id
+    // Lookup the variant_name_id.
     $results = chado_query("SELECT feature_id FROM chado.feature
-      WHERE uniquename = :uniquename", [
-        ':uniquename' => $variant_name,
-        // ':organism_id' => $organism_id
-    ]);
+      WHERE uniquename = :uniquename", [':uniquename' => $variant_name]
+    );
     $variant_name_id = NULL;
     foreach ($results as $row) {
       $variant_name_id = $row->feature_id;
@@ -7833,65 +7804,52 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
     if (!empty($associations) and !empty($associations[$variant_name])) {
       $association = $associations[$variant_name];
       $assoc_feature_name = "{$variant_name}-{$options['associations_type']}-{$association['trait']}";
-
       echo "Association data for this row is being processed\n";
-      $records['feature'][$association['scaffold']] = array(
+      $records['feature'][$association['scaffold']] = [
         'organism_id' => $current_id,
         'uniquename' => $association['scaffold'],
         'type_id' => $options['scaffold_cvterm'],
-      );
-
-      $records['feature'][$assoc_feature_name] = array(
+      ];
+      $records['feature'][$assoc_feature_name] = [
         'organism_id' => $current_id,
         'uniquename' => $assoc_feature_name,
         'type_id' => $seq_var_cvterm,
-      );
-
+      ];
       if (!empty($association['trait_attr'])) {
-        $records['feature_cvterm'][$assoc_feature_name] = array(
+        $records['feature_cvterm'][$assoc_feature_name] = [
           'cvterm_id' => $association['trait_attr'],
           'pub_id' => $options['pub_id'],
-          '#fk' => array(
-            'feature' => $assoc_feature_name,
-          ),
-        );
-
+          '#fk' => ['feature' => $assoc_feature_name],
+        ];
         if (!empty($association['trait_obs'])) {
-          $records['feature_cvtermprop'][$assoc_feature_name] = array(
+          $records['feature_cvtermprop'][$assoc_feature_name] = [
             'type_id' => $association['trait_obs'],
-            '#fk' => array(
-              'feature_cvterm' => $assoc_feature_name,
-            ),
-          );
+            '#fk' => ['feature_cvterm' => $assoc_feature_name],
+          ];
         }
       }
-
-      $records['featureprop'][$assoc_feature_name] = array(
+      $records['featureprop'][$assoc_feature_name] = [
         'type_id' => $options['associations_type'],
-        '#fk' => array(
-          'feature' => $assoc_feature_name,
-        ),
-      );
-
-      // PETER's code - which doesn't connect to analysis
-      $records['featureloc'][$variant_name] = array(
+        '#fk' => ['feature' => $assoc_feature_name],
+      ];
+      // PETER's code - which doesn't connect to analysis.
+      $records['featureloc'][$variant_name] = [
         'fmin' => $association['start'],
         'fmax' => $association['stop'],
         'residue_info' => $association['allele'],
-        '#fk' => array(
+        '#fk' => [
           'feature' => $variant_name,
           'srcfeature' => $association['scaffold'],
-        ),
-      );
-
-      $records['feature_relationship'][$assoc_feature_name] = array(
+        ],
+      ];
+      $records['feature_relationship'][$assoc_feature_name] = [
         'type_id' => $options['associations_type'],
         'value' => $association['confidence'],
-        '#fk' => array(
+        '#fk' => [
           'subject' => $variant_name,
           'object' => $assoc_feature_name,
-        ),
-      );
+        ],
+      ];
     }
 
     // RISH 7/17/2023
@@ -7906,7 +7864,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
     // }
     // else {}
 
-    $process_genotype_assay_new_naming = true;
+    $process_genotype_assay_new_naming = TRUE;
     if ($process_genotype_assay_new_naming) {
       // [RISH] 07/06/2023 - REMOVED SO WE CAN INSERT TO GET ID
       // $records['genotype'][$genotype_name] = array(
@@ -7934,20 +7892,16 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
         'description' => $val,
         'type_id' => $type_cvterm,
       ]);
-
-
       // @TODO Use data returned by chado_insert_record() to get genotype_id.
       // https://tripal.readthedocs.io/en/latest/dev_guide/chado.html
       // On success this function returns the inserted record with the new primary
       // keys added to the returned array. On failure, it returns FALSE.
       $genotype_id = tpps_submitall_get_genotype_id($genotype_name);
-      // 4.
       $options = array_merge($options, [
         'genotype_id' => $genotype_id,
         'genotype_name' => $genotype_name,
       ]);
       SnpAssociation::process($organism_index, $options['shared_state'], $options);
-
       tpps_safe_chado_insert_record('feature_genotype', [
         'feature_id' => $variant_name_id,
         'genotype_id' => $genotype_id,
@@ -7956,78 +7910,14 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
         'cgroup' => 0,
         'cvterm_id' => $type_cvterm,
       ]);
-      // tpps_log("feature_id: $variant_name_id, genotype_id: $genotype_id");
-
-      // [RISH] 07/06/2023 - REMOVED SO WE CAN USE HYBRID COPY SYSTEM
-      // $records['genotype_call']["$stock_id-$genotype_name"] = array(
-      //   'project_id' => $project_id,
-      //   'stock_id' => $stock_id,
-      //   '#fk' => array(
-      //     'genotype' => $genotype_name,
-      //     'variant' => $variant_name,
-      //     'marker' => $marker_name,
-      //   ),
-      // );
       tpps_log("Genotype_call key: @key", ['@key' => $stock_id . '-' . $genotype_name]);
       if (isset($records2['genotype_call']["$stock_id-$genotype_name"])) {
         tpps_log("This genotype_call key is already set (so uniqueness is maybe broken?");
       }
-
-      // [RISH] Removed on 02/26/2024 in favor of new genotype_reads_per_plant
-      // $records2['genotype_call']["$stock_id-$genotype_name"] = array(
-      //   'project_id' => $project_id,
-      //   'stock_id' => $stock_id,
-      //   'genotype_id' => $genotype_id,
-      //   'variant_id' => $variant_name_id,
-      //   'marker_id' => $marker_name_id,
-      // );
-
-      // [RISH] 02/26/2024
-      // Insert genotype reads into chado.genotype_reads_per_plant
-      // We need plant name, study, marker_name
-      // $options['tree_id'], $options['study_accession'], $marker_name
-      // Check if a record already exists, if not, create initial record
-
-      // RISH: 3/27/2025 - We don't use genotype_reads_per_plant anymore
-      // $per_plant_results = chado_query('
-      // SELECT COUNT(*) as c1 FROM chado.genotype_reads_per_plant
-      // WHERE tree_acc = :tree_id AND study_accession = :study_accession
-      // ', [
-      // ':tree_id' => $tree_id,
-      // ':study_accession' => $study_accession
-      // ]);
-      // $per_plant_records_count = $per_plant_results->fetchObject()->c1;
-      // if ($per_plant_records_count == 0) {
-      //   // CREATE AN EMPTY RECORD IN TABLE
-      //   chado_query("
-      //     INSERT INTO chado.genotype_reads_per_plant
-      //     (tree_acc, study_accession, marker_array, read_array)
-      //     VALUES
-      //     ('$tree_id', '$study_accession', ARRAY[]::text[], ARRAY[]::text[])
-      //   ");
-      // }
-      // // So now we have a record in the table for the plant, so append the new value
-      // chado_query("
-      //   UPDATE chado.genotype_reads_per_plant
-      //   set marker_array = array_append(marker_array, '$variant_name')
-      //   WHERE tree_acc = '$tree_id' AND study_accession = '$study_accession'
-      // ");
-      // chado_query("
-      //   UPDATE chado.genotype_reads_per_plant
-      //   set read_array = array_append(read_array, '$val')
-      //   WHERE tree_acc = '$tree_id' AND study_accession = '$study_accession'
-      // ");
-
-      // $records['stock_genotype']["$stock_id-$genotype_name"] = array(
-      //   'stock_id' => $stock_id,
-      //   '#fk' => array(
-      //     'genotype' => $genotype_name,
-      //   ),
-      // );
-      $records['stock_genotype']["$stock_id-$genotype_name"] = array(
+      $records['stock_genotype']["$stock_id-$genotype_name"] = [
         'stock_id' => $stock_id,
-        'genotype_id' => $genotype_id
-      );
+        'genotype_id' => $genotype_id,
+      ];
     }
 
     if ($genotype_count >= $record_group) {
@@ -8039,26 +7929,25 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
       tpps_log('Inserting data into database using insert_hybrid...', [], TRIPAL_INFO);
       tpps_chado_insert_hybrid($records2, $multi_insert_options);
       tpps_log('Done.', [], TRIPAL_INFO);
-      $records = array(
-        'feature' => array(),
-        'genotype' => array(),
-        'genotype_call' => array(),
-        'stock_genotype' => array(),
-      );
+      $records = [
+        'feature' => [],
+        'genotype' => [],
+        'genotype_call' => [],
+        'stock_genotype' => [],
+      ];
       // Do this for the hybrid (COPY) command.
-      $records2 = array(
-        'genotype_call' => array(),
-      );
+      $records2 = [
+        'genotype_call' => [],
+      ];
       if (!empty($associations)) {
-        $records['featureloc'] = array();
-        $records['featureprop'] = array();
+        $records['featureloc'] = [];
+        $records['featureprop'] = [];
       }
       $options['genotype_total'] += $genotype_count;
       tpps_log('Genotypes inserted:' . $options['genotype_total'], [], TRIPAL_INFO);
       $genotype_count = 0;
     }
   }
-  // throw new Exception("DEBUG");
 }
 
 /**
