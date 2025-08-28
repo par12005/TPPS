@@ -246,6 +246,8 @@
     else {
       let url = Drupal.settings.basePath + Drupal.settings.tpps.ajaxUrl
         + '/get_ncbi_taxonomy_id';
+      // Disable button 'Next' because organism fields won't pass validation.
+      $('input.next-button').attr('disabled','disabled');
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Requiest NCBI id for organism.
       $.ajax({
@@ -286,6 +288,8 @@
           }
           Drupal.tpps.showMessages(fieldSelector, data);
           Drupal.tpps.fieldEnable(fieldSelector);
+          // Make button 'Next' active again.
+          $('input.next-button').removeAttr('disabled');
         }
       });
     }
