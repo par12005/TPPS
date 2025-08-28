@@ -2125,6 +2125,17 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
 
     $options['type'] = 'snp';
     $options['headers'] = tpps_file_headers($snp_fid);
+    $options['headers_assay'] = tpps_file_headers($snp_fid);
+    echo "Headers Assay:\n";
+    print_r($options['headers_assay']);
+    echo "\n";
+    $file_assay = tpps_file_load($snp_fid);
+    $location_assay = tpps_get_location($file_assay->uri);
+    $options['path_assay'] = $location_assay;
+    echo "Path Assay:\n";
+    print_r($options['path_assay']);
+    echo "\n";
+
     $options['marker'] = 'SNP';
     $options['type_cvterm'] = tpps_load_cvterm('snp')->cvterm_id;
     $options['ref-genome'] = $genotype['ref-genome'];
@@ -2224,7 +2235,15 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
     echo "Tree Info:\n";
     print_r($options['tree_info']);
     $options['shared_state'] = $shared_state;
-    tpps_file_iterator($snp_fid, 'tpps_process_genotype_spreadsheet', $options);
+    // Do not process the spreadsheet file if there is an assay design file since we'll convert to VCF and process the vcf
+    if (!empty($genotype['files']['assay-design'])) {
+      // We will generate the vcf
+      tpps_log('Bypassing processing SNP genotype_spreadsheet file data...', [], TRIPAL_INFO);
+    }
+    else {
+      tpps_log('Continue processing SNP genotype_spreadsheet file data...', [], TRIPAL_INFO);
+      tpps_file_iterator($snp_fid, 'tpps_process_genotype_spreadsheet', $options);
+    }
     tpps_log('Done.', [], TRIPAL_INFO);
 
     tpps_log('Inserting SNP genotype_spreadsheet data into database using insert_multi...', [], TRIPAL_INFO);
@@ -2262,13 +2281,66 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
     $options['type_cvterm'] = tpps_load_cvterm('snp')->cvterm_id;
     $options['ref-genome'] = $genotype['ref-genome'];
     $ref_genome = $genotype['ref-genome'];
+    
     echo "Ref-genome: $ref_genome\n";
+
     // Lookup analysis id from reference genome and add it to options array.
     $options['analysis_id'] = tpps_get_analysis_id_from_ref_genome($ref_genome);
+
+
+
     tpps_log("ANALYSIS ID: " . $options['analysis_id'], [], TRIPAL_DEBUG);
+    $options['headers_assay_design'] = tpps_file_headers($design_fid);
+    echo "Headers Assay Design:\n";
+    print_r($options['headers_assay_design']);
+    echo "\n";
+    $file_assay_design = tpps_file_load($design_fid);
+    $location_assay_design = tpps_get_location($file_assay_design->uri);
+    $options['path_assay_design'] = $location_assay_design;
+    echo "Path Assay Design:\n";
+    print_r($options['path_assay_design']);
+    echo "\n";
 
     // We must have an analysis_id to tie back to the srcfeature.
     if ($options['analysis_id'] != NULL) {
+
+      // Ref Genome details
+      $ref_genome_parts = explode(" ", $ref_genome);
+      echo "Ref Genome Parts:\n";
+      print_r($ref_genome_parts);
+      echo "\n";
+      $ref_genome_parts_count = count($ref_genome_parts);
+      // Get ref genome version
+      if (stripos($ref_genome_parts[$ref_genome_parts_count - 1], 'v') !== FALSE) {
+        $options['ref-genome-version'] = trim($ref_genome_parts[$ref_genome_parts_count - 1]);
+      }
+      echo "Ref Genome Version:\n";
+      print_r($options['ref-genome-version']);
+      echo "\n";
+      // Generate the species name
+      $ref_genome_species = '';
+      for ($rgp_i = 0; $rgp_i < ($ref_genome_parts_count -1); $rgp_i++) {
+        if (stripos($ref_genome_parts[$rgp_i], 'assembly') === FALSE 
+        and stripos($ref_genome_parts[$rgp_i], 'genome') === FALSE 
+        ) {
+          if ($rgp_i > 0) {
+            $ref_genome_species .= ' ';
+          }
+          echo 'Adding: ' . $ref_genome_parts[$rgp_i] . "\n";
+          $ref_genome_species .= $ref_genome_parts[$rgp_i];
+        }
+      }
+      $options['ref-genome-species'] = $ref_genome_species;
+      echo "Ref Genome Species:\n";
+      print_r($options['ref-genome-species']);
+      echo "\n";
+
+      // Get four letter codes
+      $species_codes = tpps_generate_species_codes_array_from_shared_state($shared_state);
+      $options['ref-genome-species-codes'] = $species_codes;
+      echo "Ref Genome Species Codes:\n";
+      print_r($options['ref-genome-species-codes']);
+      echo "\n";
       // Initialize new records with featureloc array to store records.
       $options['records']['featureloc'] = [];
       $options['records']['featureprop'] = [];
@@ -2311,9 +2383,16 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
 
       // We want to process this Genotype SNP Assay Design file before
       // we add it as a project file.
-      tpps_log('Processing genotype_snp_assay_design file data...', [], TRIPAL_INFO);
-      tpps_file_iterator($design_fid, 'tpps_process_genotype_snp_assay_design', $options);
-      tpps_log('Done.', [], TRIPAL_INFO);
+      // if (empty($genotype['files']['snps-association'])) {
+      // If there is no assay file, we will process the assay design file independently (without VCF creation option)
+      if (empty($genotype['files']['snps-assay'])) {
+        tpps_log('Processing genotype_snp_assay_design file data...', [], TRIPAL_INFO);
+        // tpps_file_iterator($design_fid, 'tpps_process_genotype_snp_assay_design', $options);
+        tpps_log('Done.', [], TRIPAL_INFO);
+      }
+      else {
+        // Perform the VCF creation later on using the assay file and assay design file
+      }
 
       tpps_log('Inserting genotype_snp_assay_design_spreadsheet data into '
         . 'database using insert_multi...', [], TRIPAL_INFO);
@@ -2327,7 +2406,15 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
         [], TRIPAL_ERROR
       );
     }
+
+    if ($options['analysis_id'] != NULL and $options['path_assay'] != NULL and $options['path_assay_design'] != NULL) {
+      // Generate the VCF file from assay and assay design files.
+      tpps_generate_vcf_from_assay_and_assay_design($options, $shared_state);
+    }
+
+    
   }
+  
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // 'SSRs' and 'cpSSR' fields.
   foreach (['ssrs', 'ssrs_extra'] as $ssr_field_name) {
@@ -2399,11 +2486,268 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
 
   tpps_log('VCF IMPORT MODE is ' . $vcf_import_mode, [], TRIPAL_INFO);
   if ($vcf_processing_completed == FALSE) {
+    tpps_log('Processing VCF since it was not yet processed...', [], TRIPAL_INFO);
     tpps_genotype_vcf_processing($shared_state, $species_codes, $i, $job, $vcf_import_mode, $options);
   }
   else {
     tpps_log('VCF was already processed!', [], TRIPAL_INFO);
   }
+  // throw new Exception("BACKUP DEBUG");
+}
+
+/**
+ * Generates VCF from assay and assay design files.
+ *
+ * This function will generate a VCF file from the assay and assay design files
+ * for the new study pipeline.
+ *
+ * @param array $options
+ *   Options array containing:
+ *   - study_accession: The accession of the study.
+ */
+function tpps_generate_vcf_from_assay_and_assay_design(array &$options, array &$form_state) {
+  echo "Generating VCF from assay and assay design files...\n";
+  // Variables needed by the nextflow command
+  $study_accession = $options['study_accession'];
+  $assay_path = $options['path_assay'];
+  $assay_design_path = $options['path_assay_design'];
+  $ref_genome = $options['ref-genome'];
+  $assembly_version = $options['ref-genome-version'];
+  $species = $options['ref-genome-species'];
+  $four_letter_code = '';
+  
+  foreach ($options['ref-genome-species-codes'] as $key => $code) {
+    $four_letter_code = $code;
+  }
+
+
+  // Get column number from assay file for snp_id
+  $assay_snp_name_col = 0;
+  $assay_snp_name_col_found = FALSE;
+  foreach ($options['headers_assay'] as $key => $value) {
+    if (stripos($value, 'snp_id') !== FALSE) {
+      $assay_snp_name_col_found = TRUE;
+      break;
+    }
+    $assay_snp_name_col = $assay_snp_name_col + 1;
+  }
+  if ($assay_snp_name_col_found == FALSE) {
+    throw new Exception("ASSAY + ASSAY DESIGN TO VCF: SNP ID column not found in assay file. (required)");
+  }
+
+  $assay_design_snp_name_col = 'NA';
+  $assay_design_snp_name_col_found = FALSE;
+  $assay_design_snp_flank_col = 'NA'; // flanking sequence
+  $assay_design_snp_flank_col_found = FALSE;
+  $assay_design_snp_base_pos_col = 'NA'; // position
+  $assay_design_snp_base_pos_col_found = FALSE;
+  $assay_design_qual_col = 'NA';
+  $assay_design_qual_col_found = FALSE;
+  $assay_design_snp_chrom_col = 'NA'; // scaffold
+  $assay_design_snp_chrom_col_found = FALSE;
+
+
+
+  $count = 0;
+  foreach ($options['headers_assay_design'] as $key => $value) {
+    if (stripos($value, 'snp_id') !== FALSE) {
+      $assay_design_snp_name_col = $count;
+      $assay_design_snp_name_col_found = TRUE;
+    }
+    else if (stripos($value, 'sequence') !== FALSE) {
+      $assay_design_snp_flank_col = $count;
+      $assay_design_snp_flank_col_found = TRUE;
+    }
+    else if (stripos($value, 'chrom') !== FALSE) {
+      $assay_design_snp_chrom_col = $count;
+      $assay_design_snp_chrom_col_found = TRUE;
+    }
+    else if (stripos($value, 'position') !== FALSE || stripos($value, 'pos') !== FALSE) {
+      $assay_design_snp_base_pos_col = $count;
+      $assay_design_snp_base_pos_col_found = TRUE;
+    }
+    else if (stripos($value, 'qual') !== FALSE) {
+      $assay_design_qual_col = $count;
+      $assay_design_qual_col_found = TRUE;
+    }
+    $count = $count + 1;
+  }
+
+  // SNP ID (required)
+  // Scaffold + Position (required or)
+  // the flanking sequence (required)
+  if ($assay_design_snp_name_col_found == FALSE) {
+    throw new Exception("ASSAY + ASSAY DESIGN TO VCF: SNP ID column not found in assay design file. (required)");
+  }
+  if (($assay_design_snp_chrom_col_found == TRUE and $assay_design_snp_base_pos_col_found == TRUE) or ($assay_design_snp_flank_col_found == TRUE)) {
+    // required columns for assay design file are found
+  }
+  else {
+    throw new Exception("ASSAY + ASSAY DESIGN TO VCF: Either (Chromosome + Position) or (Flanking Sequence) columns not found in assay design file. (at least one is required)");
+  }
+
+
+  $store_directory = '/isg/treegenes/nextflow_workflows/' . $study_accession . '/new-study-pipeline/tpps-submitall/assay-to-vcf';
+  $vcf_file_location = $store_directory . '/assay_sort.vcf.gz';
+  $vcf_tbi_file_location = $store_directory . '/assay_sort.vcf.gz.tbi';
+  // If VCF FILE AND TBI FILE DO NOT EXIST, we will run the nextflow command to generate them.
+  if (file_exists($vcf_file_location) == false and file_exists($vcf_tbi_file_location) == false) {
+    if (!file_exists($store_directory)) {
+      mkdir($store_directory, 0755, TRUE);
+    }
+
+
+    $store_directory = str_ireplace('..', '', $store_directory);
+    exec('rm ' . $store_directory . '/*.log');
+
+    $output = [];
+    $result_code = 0;
+    // $SCRIPT_LOCATION='/home/FCAM/tg-nginx/simple_test.sh';
+    //   #SBATCH --qos=general
+$run_code = "#!/bin/bash
+#SBATCH --job-name=tpps_assay_and_assay_design_to_vcf
+#SBATCH -N 1
+#SBATCH -n 1
+#SBATCH -c 1
+#SBATCH --partition=general
+#SBATCH --qos=general
+#SBATCH --mail-type=END
+#SBATCH --mem=10G
+#SBATCH --mail-user=tg-nginx@cam.uchc.edu
+#SBATCH -o $store_directory/new_study_pipeline_%j.out
+#SBATCH -e $store_directory/new_study_pipeline_%j.err
+
+
+module load nextflow
+mkdir -p /scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
+export TMPDIR=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
+export NXF_TEMP=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
+export NXF_WORK=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
+export NXF_OPTS='-Xms5G -Xmx10G'
+export TZ='America/New_York'
+cd $store_directory
+echo \$SLURM_JOB_ID > $store_directory/slurm_job_id.txt
+
+rm -rf ~/.nextflow/assets/TreeGenes/new-study-pipeline
+/home/FCAM/tg-nginx/nextflow pull TreeGenes/new-study-pipeline -hub gitlab -r chado
+/home/FCAM/tg-nginx/nextflow run TreeGenes/new-study-pipeline -r chado -profile xanadu --assay_path '$assay_path'   --assay_design_path '$assay_design_path'   --species '$species'   --four_letter_code '$four_letter_code'   --assembly_version '$assembly_version'   --assay_design_snp_name_col '$assay_design_snp_name_col'   --assay_design_snp_chrom_col '$assay_design_snp_chrom_col'   --assay_design_snp_base_pos_col '$assay_design_snp_base_pos_col'   --assay_design_snp_flank_col '$assay_design_snp_flank_col'   --assay_design_qual_col '$assay_design_qual_col'   --assay_snp_name_col '$assay_snp_name_col' --ref_genome '$ref_genome' --vcfmaker true --workflow '[]' --type 'assay' --tgdr $study_accession --outdir $store_directory
+";
+// -r main
+// -profile singularity
+
+
+    $SCRIPT_LOCATION = $store_directory . '/run_script.sh';
+    tpps_log(
+      'NEXTFLOW NEW STUDY PIPELINE SCRIPT LOCATION: @location',
+      ['@location' => $SCRIPT_LOCATION]
+    );
+    echo "Script location: $SCRIPT_LOCATION\n";
+    file_put_contents($SCRIPT_LOCATION, $run_code);
+    chmod($SCRIPT_LOCATION, 0755);
+
+// THIS IS FOR THE CLUSTER BUT WE ARE CURRENTLY RUNNING ON TREEGENESDEV
+// SO SBATCH COMMAND WILL NOT WORK.
+exec("
+ssh tg-nginx@login.hpc.cam.uchc.edu << EOF
+sbatch $SCRIPT_LOCATION
+EOF
+", $output, $result_code);
+
+    print_r("Output: \n");
+    print_r($output);
+    print_r("Result code: $result_code\n");
+
+    print_r("Waiting 20 seconds to make sure the job is submitted...\n");
+    // sleep(20); // Wait for 10 seconds to ensure the job is submitted
+
+    while(!file_exists($store_directory . '/slurm_job_id.txt')) {
+      print_r("Waiting for slurm_job_id.txt file to be created...\n");
+      sleep(10); // Wait for 10 seconds before checking again
+    }
+
+    if (file_exists($store_directory . '/slurm_job_id.txt')) {
+      // @TODO Check why this varible not used.
+      $slurm_job_id = file_get_contents($store_directory . '/slurm_job_id.txt');
+    }
+    print_r("SLURM JOB ID: " . $slurm_job_id . "\n");
+
+    // Wait for job to complete
+    $job_status = 'running';
+while ($job_status == 'running') {
+  $output = [];
+  print_r("Checking job status...\n");
+  exec("
+ssh -oStrictHostKeyChecking=no tg-nginx@login.hpc.cam.uchc.edu << EOF
+echo 'check-job-status'
+squeue -u tg-nginx | grep $slurm_job_id
+EOF
+", $output, $result_code);
+  print_r($output);
+  print_r("Result code: $result_code\n");
+  $curr_line_number = 0;
+  $total_lines = count($output);
+  foreach ($output as $line) {
+    $curr_line_number = $curr_line_number + 1;
+    if (stripos($line, 'check-job-status') !== FALSE) {
+      if ($curr_line_number == $total_lines) {
+        // There is no job listed in the queue
+        $job_status = 'completed';
+        $options['assay_and_assay_design_vcf_completed'] = TRUE;
+        print_r("Assay and Assay Design to VCF job is completed.\n");
+      }
+      else {
+        // There is a job listed in the queue
+        $job_status = 'running';
+        print_r("Assay and Assay Design to VCF job is still running...\n");
+      }
+      break;
+    }
+  }
+  sleep(10); // Wait for 10 seconds before checking again
+  if ($job_status == 'running') {
+    print_r("Waiting for 10 seconds to recheck whether job is completed\n");
+  }
+}
+print_r("\n");
+sleep(10); // Wait for 10 seconds to ensure the job is completed
+
+  }
+
+// TODO: Perform polling to see when job completes and check for vcf.gz file
+// and vcf.gz.tbi file.
+$vcf_file_location = $store_directory . '/assay_sort.vcf.gz';
+$vcf_tbi_file_location = $store_directory . '/assay_sort.vcf.gz.tbi';
+echo "Check to see if the VCF file was created at $vcf_file_location\n";
+echo "Check to see if the VCF TBI file was created at $vcf_tbi_file_location\n";
+$options['nextflow_vcf_maker_vcf_file_location'] = NULL;
+$options['nextflow_vcf_maker_success'] = FALSE; // Default to false
+if (file_exists($vcf_file_location) and file_exists($vcf_tbi_file_location)) {
+  tpps_log("VCF file location: $vcf_file_location", []);
+  echo "VCF file location: $vcf_file_location\n";
+  tpps_log("VCF TBI file location: $vcf_tbi_file_location", []);
+  echo "VCF TBI file location: $vcf_tbi_file_location\n";
+  echo "VCF file was created successfully.\n";
+  // Add the vcf file location to the shared state so that it can be processed by the vcf processing function.
+  
+  if (!isset($form_state['saved_values'][TPPS_PAGE_4]['organism-1']['genotype'])) {
+    $form_state['saved_values'][TPPS_PAGE_4]['organism-1']['genotype'] = [
+      'files' => [],
+    ];
+  }
+  $form_state['saved_values'][TPPS_PAGE_4]['organism-1']['genotype']['files']['file-type'] == TPPS_GENOTYPING_FILE_TYPE_VCF;
+  $form_state['saved_values'][TPPS_PAGE_4]['organism-1']['genotype']['files']['local_vcf'] = $vcf_file_location;
+  // print_r($form_state['saved_values'][TPPS_PAGE_4]);
+  $options['nextflow_vcf_maker_success'] = TRUE;
+  $options['nextflow_vcf_maker_vcf_file_location'] = $vcf_file_location;
+}
+else {
+  throw new Exception("FATAL: No valid files were created during VCF generation script created at $SCRIPT_LOCATION. "
+  . "Please run it manually on the cluster to generate the VCF file.");
+}
+
+// TODO: Add vcf file location to the shared state so that it can be processed by the vcf processing function.
+
+// TODO: Alter the vcf processiong function to detect overlaps and create synonyms (use ingestion docs)
 }
 
 /**
@@ -4625,7 +4969,7 @@ function tpps_genotype_vcf_processing_batch_all_features_insert($current_id, $se
 }
 
 // RISH: This is much less memory intensive and should not fail due to memory issues on most decent size machines
-function tpps_genotype_vcf_processing_batch_some_features_insert($current_id, $seq_var_cvterm, $analysis_id, &$features_variant_data, &$src_feature_data, $last_set = false) {
+function tpps_genotype_vcf_processing_batch_some_features_insert(&$settings, $current_id, $seq_var_cvterm, $analysis_id, &$features_variant_data, &$src_feature_data, $last_set = false) {
   global $log_detailed;
   $record_features_group = 5000;
   $features_count = count($features_variant_data);
@@ -4641,6 +4985,68 @@ function tpps_genotype_vcf_processing_batch_some_features_insert($current_id, $s
       echo($lmsg);
       tpps_log($lmsg);
     }
+
+    // This seems counterintuitive, but we need to check if the nextflow_vcf_maker_success is TRUE
+    // and add the feature_synonym here and clear out features that are synonyms before then going to add new featurelocs etc
+    if ($settings['nextflow_vcf_maker_success'] == TRUE) {
+      // Get all src_feature_ids for $src_feature_data into an array
+      $src_feature_ids = [];
+      foreach ($src_feature_data as $src_feature_name => $src_feature_info) {
+        // we need this for the insert
+        $src_feature_id = $src_feature_info['src_feature_id'];
+        if (!empty($src_feature_id)) {
+          $src_feature_ids[] = $src_feature_id;
+        }
+      }
+
+      // Search for all featurelocs that match the src_feature_ids
+      $featureloc_matches_count = 0;
+      if (!empty($src_feature_ids)) {
+        $src_feature_ids_csv = implode(',', $src_feature_ids); // explain this line
+        
+        $results = db_query("SELECT f.feature_id as feature_id, srcfeature_id, fmin, fmax
+          FROM chado.featureloc fl
+          INNER JOIN chado.feature f ON fl.feature_id = f.feature_id
+          WHERE fl.srcfeature_id IN ($src_feature_ids_csv) AND f.type_id = 1491
+        ", []);
+
+        $sql = 'INSERT INTO chado.feature_synonym (feature_id, synonym) VALUES ';
+        foreach ($results as $fl_row) {
+          $feature_id = $fl_row->feature_id;
+          $src_feature_id = $fl_row->srcfeature_id;
+          $fmin = $fl_row->fmin;
+          // $fmax = $fl_row->fmax; // Not needed
+
+          // How do I determine that the found featureloc matches vcf line (variant)
+          // based on the fmin
+          $synonym_variant_names = [];
+          foreach ($features_variant_data as $variant_name => $feature_data) {
+            if ($feature_data['fmin'] == $fmin) {
+              // We have a match, so we can insert the featureloc
+              print_r("Match found for feature_id: $feature_id, src_feature_id: $src_feature_id, fmin: $fmin with variant_name: $variant_name\n");
+              $sql .= "($feature_id, '$variant_name'),";
+              $featureloc_matches_count = $featureloc_matches_count + 1;
+              $synonym_variant_names[] = $variant_name; // Store the synonym variant name
+            }
+          }
+
+          // Remove all found synonym variant names from the features_variant_data array
+          foreach ($synonym_variant_names as $synonym_variant_name) {
+            unset($features_variant_data[$synonym_variant_name]);
+          }
+          // Empty synonym_variant_names array
+          $synonym_variant_names = [];
+          unset($synonym_variant_names);
+        }
+        // Remove the last comma
+        $sql = rtrim($sql, ',');
+        if (!empty($sql)) {
+          // $sql .= " ON CONFLICT (feature_id, synonym) DO NOTHING";
+          db_query($sql);
+        }
+      }
+      echo "Feature_synonym detections - Featureloc matches found: $featureloc_matches_count\n";
+    }   
 
     $sql = 'INSERT INTO chado.feature (name, organism_id, uniquename, type_id) VALUES ';
     $variant_index = 0;
@@ -4673,6 +5079,8 @@ function tpps_genotype_vcf_processing_batch_some_features_insert($current_id, $s
       echo($lmsg);
       tpps_log($lmsg);
     }
+
+
 
     $featureloc_index = 0;
     $sql = 'INSERT INTO chado.featureloc (feature_id, srcfeature_id, fmin, fmax) VALUES ';
@@ -4819,11 +5227,23 @@ function tpps_genotype_vcf_processing_batch_some_features_insert($current_id, $s
 function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, $i, TripalJob &$job = NULL, $insert_mode = 'hybrid', array &$options) {
   // Set organism_index which is a better variable name
   $organism_index = $i;
+  print_r("Organism index: $organism_index\n");
 
   // Get values from the TPPS form state (this is the user/curation entered data)
   $page1_values = $form_state['saved_values'][TPPS_PAGE_1];
   $page4_values = $form_state['saved_values'][TPPS_PAGE_4];
+  //print_r($page4_values);
+  //print_r("Organism $i page 4 values:\n");
+  //print_r($page4_values["organism-$i"]);
   $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+
+  
+
+  print_r("Genotype values:\n");
+  print_r($genotype);
+
+  
+  
 
   // Insert mode is a mandatory requirement for this function to work so perform check
   if ($insert_mode == '') {
@@ -4873,6 +5293,10 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
     ),
   );
 
+  // Check if nextflow_vcf_maker_success is set to TRUE, add it to the new $options array
+  $nextflow_vcf_maker_success = $options['nextflow_vcf_maker_success'] ?? FALSE;
+  $nextflow_vcf_maker_vcf_file_location = $options['nextflow_vcf_maker_vcf_file_location'] ?? NULL;
+
   $options = array(
     'records' => $records,
     'tree_info' => $form_state['tree_info'],
@@ -4883,7 +5307,9 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
     'seq_var_cvterm' => $seq_var_cvterm,
     'multi_insert' => &$multi_insert_options,
     'job' => &$job,
-    'study_accession' => $form_state['saved_values'][1]['accession']
+    'study_accession' => $form_state['saved_values'][1]['accession'],
+    'nextflow_vcf_maker_success' => $nextflow_vcf_maker_success,
+    'nextflow_vcf_maker_vcf_file_location' => $nextflow_vcf_maker_vcf_file_location,
   );
 
   // Get whether disable_vcf_importing is enabled or disabled
@@ -4894,6 +5320,24 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
   tpps_log('Status of "Disable VCF Import": @status',
     ['@status' => ($disable_vcf_import ? 'ignore import' : 'allow import')]
   );
+
+  print_r('Disable VCF Import: ' . $disable_vcf_import . "\n");
+  print_r($genotype);
+
+  print_r("Genotype Files:\n");
+  print_r($genotype['files']);
+
+
+  
+  // For some reason, even after generating a VCF from assay and assay design, the file-type is not set to VCF
+  // So we manually set it here if local_vcf is set.
+  // This is a temporary fix until we can figure out why the file-type is not being set properly.
+  if (isset($genotype['files']['local_vcf'])) {
+    $genotype['files']['file-type'] = 'VCF';
+  }
+
+  print_r('Genotype File Type: ' . $genotype['files']['file-type'] . "\n");
+  
 
   if ($genotype['files']['file-type'] == TPPS_GENOTYPING_FILE_TYPE_VCF) {
     // Check to make sure vcf import is ENABLED
@@ -4918,6 +5362,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
       $n_sample_cvterm = tpps_load_cvterm('number_samples')->cvterm_id;
 
       // This means it was uploaded
+      echo "VCF_ID: $vcf_fid\n";
       if ($vcf_fid > 0) {
         $vcf_file = file_load($vcf_fid);
         $location = tpps_get_location($vcf_file->uri);
@@ -5068,7 +5513,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           // * Load data from the columns of the VCF file
           $chromosome = explode(" ",$vcf_line[0])[0]; // use first part if it is space delimited (8/13/2024 RISH discussion with Emily)
           $position = &$vcf_line[1];                  // position of the variant which is feature_loc fmin
-          $variant_name = &$vcf_line[2];              // marker_name
+          $variant_name = &$vcf_line[2];              // marker_name (ID COLUMN)
           $ref = &$vcf_line[3];
           $alt = &$vcf_line[4];
           $qual = &$vcf_line[5];
@@ -5331,7 +5776,9 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           // Perform the additional features + featurelocs inserts using the optimized batch function
           $mode_features_and_analysis_checks_inserts_bulk_some = true;
           if ($mode_features_and_analysis_checks_inserts_bulk_some == true) {
-            tpps_genotype_vcf_processing_batch_some_features_insert($current_id, $seq_var_cvterm, $analysis_id, $features_variant_data, $src_feature_data, false);
+            $settings = [];
+            $settings['nextflow_vcf_maker_success'] = $nextflow_vcf_maker_success;
+            tpps_genotype_vcf_processing_batch_some_features_insert($settings, $current_id, $seq_var_cvterm, $analysis_id, $features_variant_data, $src_feature_data, false);
           }
         }
         // Use the matched line to get the format information from the VCF file
@@ -5392,13 +5839,15 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
       // This will finish off all features and chromosome inserts if inserts_bulk_some is used
       if ($mode_features_and_analysis_checks_inserts_bulk_some == true) {
-        tpps_genotype_vcf_processing_batch_some_features_insert($current_id, $seq_var_cvterm, $analysis_id, $features_variant_data, $src_feature_data, true);
+        $settings = [];
+        $settings['nextflow_vcf_maker_success'] = $nextflow_vcf_maker_success;
+        tpps_genotype_vcf_processing_batch_some_features_insert($settings, $current_id, $seq_var_cvterm, $analysis_id, $features_variant_data, $src_feature_data, true);
       }
 
 
       $mode_features_and_analysis_checks_inserts_bulk_all = false;
       if ($mode_features_and_analysis_checks_inserts_bulk_all == true) {
-        tpps_genotype_vcf_processing_batch_all_features_insert($current_id, $seq_var_cvterm, $analysis_id, $features_variant_data, $src_feature_data);
+        tpps_genotype_vcf_processing_batch_all_features_insert($settings, $current_id, $seq_var_cvterm, $analysis_id, $features_variant_data, $src_feature_data);
       }
 
       // Recreate the indexes.
@@ -5415,6 +5864,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
     }
   }
+  // throw new Exception('Debug stop - remove this line to continue');
 }
 
 function tpps_genotype_vcf_processing_features_and_analysis_checks_and_inserts_deprecated() {
