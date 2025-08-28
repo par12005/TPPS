@@ -432,7 +432,8 @@ function tpps_compare_files($fid_1, $fid_2, $file_1_id_name, $file_2_id_name, $f
 /**
  * This function validates that the file contains all of the required groups.
  *
- * See improved version: FileField::validateRequiredColumns().
+ * See improved version: FileField::validateRequiredColumns() which allows
+ * multiple sets of required columns (not only single set).
  *
  * A "required group" is a column type that must be present within the file for
  * the file to be considered valid. For instance, a required group for a plant

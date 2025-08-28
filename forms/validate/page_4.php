@@ -204,7 +204,7 @@ function tpps_validate_genotype(array &$genotype, $organism_index, array $form, 
   // Validate SSR/cpSSR fieldset fields.
   tpps_validate_genotype_ssr($genotype, $organism_index, $form, $form_state);
   // Validate 'Other' fieldset fields.
-  tpps_validate_genotype_other($genotype, $organism_index, $form, $form_state);
+  OtherMarker::validate($organism_index, $form, $form_state);
 
   $snps_fieldset = 'SNPs';
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -933,93 +933,6 @@ function tpps_validate_metafile_phenotype_names($row, array $options = []) {
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 // Genotype sub-sections.
-
-/**
- * Validates the genotype/other section of the 4th page of the form.
- *
- * @param array $genotype
- *   The form_state values of the genotype fieldset for $organism_index.
- *   $form_state['values'][$organism_key]['genotype'].
- * @param int $organism_index
- *   Ordinal number of organism at page.
- * @param array $form
- *   The form being validated.
- * @param array $form_state
- *   The state of the form being validated.
- */
-function tpps_validate_genotype_other(array &$genotype, $organism_index, array $form, array &$form_state) {
-  if (($genotype['does_study_include_other_genotypic_data'] ?? NULL) == 'no') {
-    return;
-  }
-  $other_fieldset = 'other';
-  $organism_key = 'organism-' . $organism_index;
-
-  if (tpps_is_required_field_empty(
-    $form_state, [$organism_key, 'genotype', $other_fieldset, 'other_marker']
-  )) {
-    // Validation failed and no need to do extra checks.
-    return;
-  }
-  $other_file = $genotype[$other_fieldset]['other_marker'] ?? 0;
-  $page3_values = $form_state['saved_values'][TPPS_PAGE_3];
-  $species_index = empty($page3_values['tree-accession']['check'])
-    ? 'species-1' : 'species-' . $organism_index;
-  $tree_accession_file = $page3_values['tree-accession'][$species_index]['file'];
-  $organism_key_col_accession_name = $page3_values['tree-accession'][$species_index]
-    ['file-groups']['Tree Id']['1'];
-
-  // ? [VS] Should $form_state be used instead of $form here?
-  if (array_key_exists('columns', $form[$organism_key]['genotype'][$other_fieldset]['other_marker'])) {
-    $required_groups = [
-      'Tree Id' => ['id' => [1]],
-      'Genotype Data' => ['data' => [0]],
-    ];
-    $file_element = $form[$organism_key]['genotype'][$other_fieldset]['other_marker'];
-    $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
-    // Get Plant Id column name.
-    if (!form_get_errors()) {
-      $organism_key_col_genotype_name = $groups['Tree Id']['1'];
-    }
-  }
-  if (!array_key_exists('columns', $form[$organism_key]['genotype'][$other_fieldset]['other_marker'])) {
-    $headers = tpps_file_headers($genotype[$other_fieldset]['other_marker']);
-    if (!form_get_errors()) {
-      $organism_key_col_genotype_name = key($headers);
-    }
-  }
-
-  if (!form_get_errors()) {
-    // @TODO Reuse SnpAssay::validateTrees();
-    $acc_no_header = $page3_values['tree-accession'][$species_index]['file-no-header'];
-    // Note: Field 'no-header' is now removed from the form.
-    $other_no_header = $genotype[$other_fieldset]['other_marker-no-header'] ?? FALSE;
-    $missing_trees = tpps_compare_files(
-      $other_file,
-      $tree_accession_file,
-      $organism_key_col_genotype_name,
-      $organism_key_col_accession_name,
-      $other_no_header,
-      $acc_no_header
-    );
-    if ($missing_trees !== []) {
-      $tree_id_str = implode(', ', $missing_trees);
-      form_set_error($organism_key. "][genotype][$other_fieldset][other_marker",
-        "Other Marker Genotype Spreadsheet: "
-        . "We detected Plant Identifiers that were not in your "
-        . "Plant Accession file. Please either remove these plants "
-        . "from your Genotype file, or add them to your Plant Accession "
-        . "file. The Plant Identifiers we found were: $tree_id_str"
-      );
-    }
-  }
-  // Preserve file if it is valid.
-  tpps_preserve_valid_file(
-    $form_state,
-    $other_file,
-    $organism_index,
-    'Genotype_Other_Marker_Spreadsheet'
-  );
-}
 
 /**
  * Validates the genotype/ssr section of the fourth page of the form.

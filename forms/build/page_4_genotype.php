@@ -191,22 +191,13 @@ function tpps_genotype_subform(array $form_bus) {
     '#type' => 'fieldset',
     '#title' => t('OTHER INFORMATION:'),
     '#collapsible' => TRUE,
-    // This element used to update whole fieldset by AJAX-request but this
-    // feature is disabled for now because is missing on mockups.
-    //'#prefix' => "<div id='$organism_key-genotype-$other_fieldset'>",
-    //'#suffix' => '</div>',
-    //
-    //
-    //
-// @TODO Check if disabled fields are in use by submit_all.php script.
-    //
     '#states' => [
       'visible' => [
         ':input[name="' . $organism_key . '[genotype]'
         . '[does_study_include_other_genotypic_data]"]' => ['value' => 'yes'],
       ],
     ],
-    // After related yes/no selector.
+    // Show after related 'yes/no'-selector.
     '#weight' => 350,
   ];
   tpps_page_4_ref($fields, $form_state, $organism_key);
@@ -323,29 +314,7 @@ function tpps_genotype_subform(array $form_bus) {
     ],
   ];
 
-  // Versions:
-  // v2: ['files', 'other] -> ['other', 'other'].
-  // v3: ['other', 'other'] -> ['other', 'other_marker'].
-  $file_field_name = 'other_marker';
-  $title = t('Other spreadsheet: '
-    . '<br />please provide a spreadsheet with columns for the Plant ID '
-    . 'of genotypes used in this study');
-  $description = t('Please upload a spreadsheet file containing '
-    . 'Genotype data. When your file is uploaded, you will be shown '
-    . 'a table with your column header names, several drop-downs, '
-    . 'and the first few rows of your file. You will be asked to define '
-    . 'the data type for each column, using the drop-downs provided to you. '
-    . 'If a column data type does not fit any of the options in the '
-    . 'drop-down menu, you may set that drop-down menu to "N/A". '
-    . 'Your file must contain one column with the Plant Identifier.');
-  tpps_form_build_file_field(array_merge($form_bus, [
-    'parents' => [$organism_key, 'genotype', $other_fieldset],
-    'field_name' => $file_field_name,
-    'title' => $title,
-    'organism_name' => $organism_key,
-    'type' => $form_bus['type'],
-    'description' => $description,
-  ]));
+  OtherMarker::build($organism_index, $form, $form_state);
 
   return $fields;
 }

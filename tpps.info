@@ -47,6 +47,7 @@ files[] = src/phenotype/PhenotypeIso.class.inc
 files[] = src/genotype/AssayDesign.class.inc
 files[] = src/genotype/AssayDesignCitation.class.inc
 files[] = src/genotype/SnpAssay.class.inc
+files[] = src/genotype/OtherMarker.class.inc
 files[] = src/genotype/SnpAssociation.class.inc
 files[] = src/genotype/SnpsKinship.class.inc
 files[] = src/genotype/SnpsPopulationStructure.class.inc

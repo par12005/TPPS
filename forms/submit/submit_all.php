@@ -2476,45 +2476,10 @@ if (0) {
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Other.
-  if (!empty($genotype['files']['other'])) {
-    $other_fid = $genotype['files']['other'];
-    tpps_add_project_file($shared_state, $other_fid);
 
-    $options['headers'] = tpps_file_headers($other_fid);
-    if (!empty($genotype['files']['other-groups'])) {
-      $groups = $genotype['files']['other-groups'];
-      $options['headers'] = tpps_other_marker_headers($other_fid, $groups['Genotype Data'][0]);
-      $options['tree_id'] = $groups['Tree Id'][1];
-    }
+  OtherMarker::process($organism_index, $shared_state, &$options);
 
-    // DROP INDEXES FROM GENOTYPE_CALL TABLE
-    // tpps_drop_genotype_call_indexes($job);
-
-    $options['type'] = 'other';
-    $options['marker'] = $genotype['other-marker'];
-    $options['type_cvterm'] = tpps_load_cvterm('genetic_marker')->cvterm_id;
-
-    tpps_log('Processing OTHER MARKER genotype_spreadsheet file data...', [], TRIPAL_INFO);
-    echo "trace 5\n";
-    $options['shared_state'] = $shared_state;
-    tpps_file_iterator($other_fid, 'tpps_process_genotype_spreadsheet', $options);
-    tpps_log('Done.', [], TRIPAL_INFO);
-
-    tpps_log('Inserting data into database using insert_multi...', [], TRIPAL_INFO);
-    tpps_chado_insert_multi($options['records'], $multi_insert_options);
-
-    tpps_log('Inserting data into database using insert_hybrid...', [], TRIPAL_INFO);
-    tpps_chado_insert_hybrid($options['records2'], $multi_insert_options);
-    tpps_log('Done.', [], TRIPAL_INFO);
-
-    // CREATE INDEXES FROM GENOTYPE_CALL TABLE.
-    // tpps_create_genotype_call_indexes();
-
-    $options['records'] = $records;
-    $genotype_count = 0;
-  }
-
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   tpps_log('VCF IMPORT MODE is ' . $vcf_import_mode, [], TRIPAL_INFO);
   if ($vcf_processing_completed == FALSE) {
     tpps_log('Processing VCF since it was not yet processed...', [], TRIPAL_INFO);
@@ -7631,30 +7596,6 @@ function tpps_ssrs_headers($fid, $ploidy) {
     }
   }
 
-  return $results;
-}
-
-/**
- * This function formats headers for the "other" type genotype markers.
- *
- * The headers for the "other" genotype marker types are set by the users, so
- * we need to return the names of the headers they have indicated, rather than
- * the values provided in the file-groups array.
- *
- * @param int $fid
- *   The Drupal managed file id of the file.
- * @param array $cols
- *   An array of columns indicating which of the columns contain genotype data.
- *
- * @return array
- *   The array of standardized headers for the spreadsheet.
- */
-function tpps_other_marker_headers($fid, array $cols) {
-  $headers = tpps_file_headers($fid);
-  $results = array();
-  foreach ($cols as $col) {
-    $results[$col] = $headers[$col];
-  }
   return $results;
 }
 

@@ -177,7 +177,7 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
           ),
         ];
       }
-      // ['genotype'] -> ['genotype', 'other']
+      // ['files', 'other'] -> ['other', 'other']
       foreach ($to_other_fieldset as $item) {
         $version_change_list[$v]['move'][] = [
           'source' => array_merge($genotype_parents, $item),
