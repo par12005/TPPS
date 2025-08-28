@@ -422,7 +422,7 @@ class SnpAssociation {
     }
     return $associations[$id];
   }
-
+  
   /**
    * Gets File Id from Shared State array.
    *
@@ -433,9 +433,18 @@ class SnpAssociation {
    *
    * @todo See TppsFile::getFileId() but there is no Form Versions support.
    */
-  public static function getFileId($organism_index, array $shared_state) {
+  public static function getValue($organism_index, array $shared_state) {
     return $shared_state['saved_values'][TPPS_PAGE_4]["organism-$organism_index"]
       ['genotype']['files']['snps-association'] ?? NULL;
+  }
+
+  /**
+   * Alias for getValue() method.
+   *
+   * @todo Move to TppsFile class.
+   */
+  public static function getFileId($organism_index, array $shared_state) {
+    return static::getValue($organism_index, $form_state);
   }
 
   /**

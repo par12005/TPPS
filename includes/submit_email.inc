@@ -22,10 +22,7 @@
 function tpps_submit_email(array &$form_state) {
   global $user;
 
-  $submission = new Submission();
-  $submission->state = $form_state;
-  $is_tppsc = $submission->isTppsc();
-
+  $is_tppsc = Submission::isCurationForm($form_state);
   $page1_values = $form_state['saved_values'][TPPS_PAGE_1] ?? NULL;
   $page2_values = $form_state['saved_values'][TPPS_PAGE_2] ?? NULL;
   $from = variable_get('site_mail', '');
@@ -47,12 +44,12 @@ function tpps_submit_email(array &$form_state) {
   for ($i = 1; $i <= $page1_values['organism']['number']; $i++) {
     $params['organism_list'][$i] = $page1_values['organism'][$i]['name'];
   }
-  $params['organism_number'] = $page1_values['organism']['number'];
-  $params['author'] = $page1_values['primaryAuthor'];
-  $params['title'] = $page1_values['publication']['title'];
-  $params['journal'] = $page1_values['publication']['journal'];
-  $params['data_type'] = $page2_values['data_type'];
-  $params['accession'] = $form_state['accession'];
+  $params['organism_number'] = $page1_values['organism']['number'] ?? NULL;
+  $params['author'] = $page1_values['primaryAuthor'] ?? NULL;
+  $params['title'] = $page1_values['publication']['title'] ?? NULL;
+  $params['journal'] = $page1_values['publication']['journal'] ?? NULL;
+  $params['data_type'] = $page2_values['data_type'] ?? NULL;
+  $params['accession'] = $form_state['accession'] ?? NULL;
   $params['body'] = '';
   $send = TRUE;
 

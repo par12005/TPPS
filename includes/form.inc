@@ -207,7 +207,7 @@ function tpps_form_error_required(array $form_state, array $parents) {
  *
  * @param array $form_state
  *   Drupal Form API array with submitted values.
- * @param array $path
+ * @param array $parents
  *   Path to field from $form_state['complete form'].
  *   (The same will be from $form). Using fields configuration data we could
  *   get all necessary data.
@@ -220,11 +220,11 @@ function tpps_form_error_required(array $form_state, array $parents) {
  * @param string $message
  *   Error message text.
  */
-function tpps_form_error(array $form_state, array $path, $message) {
-  $field = drupal_array_get_nested_value($form_state['complete form'], $path);
+function tpps_form_error(array $form_state, array $parents, $message) {
+  $field = drupal_array_get_nested_value($form_state['complete form'], $parents);
   if (empty($field['#title'])) {
-    $message = t("Field didn't found at form. Path: @path",
-      ['@path' => implode(' / ', $path)]
+    $message = t("Field didn't found at form. Parents: @parents",
+      ['@parents' => implode(' / ', $parents)]
     );
     watchdog('tpps', $message, NULL, WATCHDOG_ERROR);
     // drupal_set_message($message, 'error');
@@ -235,15 +235,11 @@ function tpps_form_error(array $form_state, array $path, $message) {
 
   // Since we update title of the field using JS in browser we could update
   // title of the field which failed validation here.
-  if ($field['#name'] == 'organism-1[genotype][other][other]') {
-    $new_path = $path;
+  if ($field['#name'] == 'organism-1[genotype][other][other_marker]') {
+    $new_path = $parents;
     array_pop($new_path);
-    $new_path[] = 'other-marker';
-    $new_name = drupal_array_get_nested_value(
-      //$form_state['input'][TPPS_PAGE_4],
-      $form_state['input'],
-      $new_path
-    );
+    $new_path[] = 'other_marker_type';
+    $new_name = drupal_array_get_nested_value($form_state['input'], $new_path);
     $title = str_replace('Other', $new_name, $title);
   }
   form_set_error(implode('][', $field['#array_parents']),
@@ -564,7 +560,7 @@ function tpps_form_add_report(array &$form, array $meta) {
  *     'snps-kinship',
  *     'indels', // was removed.
  *     'vcf',
- *     'other'.
+ *     'other_marker'.
  */
 function tpps_form_build_file_field(array $form_bus) {
   if (empty($field_name = $form_bus['field_name'])) {
@@ -928,9 +924,15 @@ function &tpps_form_get_path(array &$array = NULL, $path = NULL) {
     // Check if there is a list of parents.
     if (count($path) >= 1) {
       $result['parent_element'] = &drupal_array_get_nested_value($array, $path);
-      if (empty($result['parent_element']) && tpps_is_debug_mode()) {
-        tpps_message(
-          'Empty parent element. @path.', ['@path' => print_r($path, 1)]
+      $debug_mode = variable_get('tpps_debug_mode', FALSE);
+      if (empty($result['parent_element']) && $debug_mode) {
+        watchddog('tpps', 'Empty parent element. @path.<hr />@stack',
+          [
+            '@path' => print_r($path, 1),
+            '@stack' => print_r(debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT
+              | DEBUG_BACKTRACE_IGNORE_ARGS, 10), 1),
+          ],
+          WATCHDOG_ERROR
         );
       }
     }
@@ -1145,25 +1147,13 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   if (!isset($form_state['dbxref_id']) or !isset($form_state['accession'])) {
     tpps_init_project($form_state);
   }
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Submission Form Versions.
-  // Set version for 'Submission Interface' feature.
-  // Note: We need to set version before 'update' version.
   // Create a hidden form field to store  Submission Form Version.
-  $form[Submission::FORM_VERSION_KEY] = [
+  $form[SubmissionVersion::FORM_KEY] = [
     '#type' => 'hidden',
-    '#value' => $form_state['saved_values'][Submission::FORM_VERSION_KEY] ?? 1,
-    // @TODO Minor.
-    // We could get verion by $accession.
-    // Submission::FORM_VERSION_CURRENT,
+    '#value' => SubmissionVersion::get($form_state),
   ];
-
   // Upgrade to latest Submission Form Version.
-  tpps_submission_form_version_upgrade_to_latest($form_state, $form_state);
-  // Note:
-  // Saving changes $form_state items and we need to get those changes back.
-  $submission = tpps_submission()->setState($form_state)->save();
+  $form_state = SubmissionVersion::upgrade($form_state);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Must be after tpps_init_project() which sets accession for new studies.
@@ -1207,10 +1197,12 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
     }
   }
   elseif ($is_tppsc) {
-    $form_state['tpps_type'] = 'tppsc';
-
-    $submission->state = $form_state;
-    $submission->save();
+    if (($form_state['tpps_type'] ?? NULL) != 'tppsc') {
+      // This happens only once when 1st welcome page of TPPSc form submitted.
+      $form_state['tpps_type'] = 'tppsc';
+      $submission->state = $form_state;
+      $submission->save();
+    }
 
     if (variable_get('tpps_top_bar', 'status') == 'status') {
       module_load_include('inc', 'tpps', 'includes/status_bar');
@@ -1295,7 +1287,7 @@ function tpps_form_validate_required_field($element, $form_state) {
     return;
   }
 
-  $logic = NULL;
+  $is_required = $logic = NULL;
   foreach ($element['#states']['required'] as $trigger => $condition) {
     if (is_numeric($trigger)) {
       if (is_string($condition)) {
@@ -1305,21 +1297,28 @@ function tpps_form_validate_required_field($element, $form_state) {
       // There could be 'and', 'or' and 'xor' grouping.
       // https://www.drupal.org/docs/drupal-apis/form-api/conditional-form-fields#s-combine-multiple-fields-or-values
       foreach ($condition as $key => $value) {
-        $current_result = tpps_form_check_state_trigger(
+        $condition_status = tpps_form_check_state_trigger(
           $key, $value, $form_state
         );
         // Note: There could be more than 2 conditions and they could
         // have different grouping.
-        $is_required = (empty($is_required)) ? $current_result
-          : tpps_logical_opeation($is_required, $current_result, $logic);
+        $is_required = (is_null($is_required)) ? $condition_status
+          : tpps_logical_opeation($is_required, $condition_status, $logic);
       }
     }
     else {
-      $current_result = tpps_form_check_state_trigger(
+      // Examples
+      // $trigger:
+      // ':input[name="organism-1[genotype][SNPs][file-type]"]'.
+      // $condition:
+      // ['value' => 'SNP Assay file and Assay design file'].
+      //
+      // Check if condition is TRUE.
+      $condition_status = tpps_form_check_state_trigger(
         $trigger, $condition, $form_state
       );
-      $is_required = (empty($is_required)) ? $current_result
-        : tpps_logical_opeation($is_required, $current_result, 'and');
+      $is_required = (is_null($is_required)) ? $condition_status
+        : tpps_logical_opeation($is_required, $condition_status, 'and');
     }
   }
   if ($is_required) {
@@ -1450,4 +1449,22 @@ function tpps_form_add_fieldset_collapsed_state(array &$form, $form_id = NULL) {
     }
   }
   return $is_exists;
+}
+
+/**
+ * Creates a list of DOI examples.
+ *
+ * This list will be used in field's description.
+ * Each DOI could be inserted into field by mouse click.
+ *
+ * @return string
+ *   Returns HTML string with list of DOI examples.
+ */
+function tpps_form_get_doi_examples() {
+  foreach (tpps_doi_get_examples_list() as $doi_suggestion) {
+    // @todo Use l().
+    $list[] = '<a href"#" class="tpps-suggestion">'
+      . $doi_suggestion . '</a>';
+  }
+  return 'Examples: <br />' . implode(', ', $list);
 }

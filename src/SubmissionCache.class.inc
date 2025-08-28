@@ -60,11 +60,18 @@ class SubmissionCache {
   // VALUE will be CACHE_BIN.
   const RESET_KEY = 'reset';
 
+  // Name of the container of the files data in single item.
+  const FILES_CONTAINER = 'file';
+
   /**
    * Updates cached list of Submissions.
    */
   public static function update() {
     static::get($reset = TRUE);
+    // 'tpps_submission_cache_updated';
+    if (function_exists('module_invoke_all')) {
+      module_invoke_all('submission_cache_updated');
+    }
   }
 
   /**
@@ -175,6 +182,7 @@ class SubmissionCache {
   public static function set(array $new_list) {
     $list = &drupal_static(static::CACHE_ID);
     $list = $new_list;
+    krsort($list, SORT_NATURAL);
     cache_set(static::CACHE_ID, $new_list, static::CACHE_BIN);
   }
 
@@ -223,7 +231,7 @@ class SubmissionCache {
       'status' => $submission->getStatus(),
       'stage' => $submission->getCurrentStage(),
       'project_id' => $submission->get(['ids', 'project_id']),
-      Submission::FORM_VERSION_KEY => $submission->getFormVersion(),
+      SubmissionVersion::FORM_KEY => $submission->getFormVersion(),
       'publication' => [
         'status' => tpps_array_get_value($page1_values,
           ['publication', 'status']
@@ -250,19 +258,48 @@ class SubmissionCache {
       'tags' => tpps_submission_get_tags($submission->accession),
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Files.
-      'file' => [
+      static::FILES_CONTAINER => [
         'grouped_list' => [
-          'tree-accession' => [],
-          'phenotype' => [],
-          'genotype' => [],
+          Report::TREE_ACCESSION_FILES => [],
+          Report::PHENOTYPE_FILES => [],
+          Report::GENOTYPE_FILES => [],
           // Files are missing in file system.
           // Files which doesn't belong to any group.
-          'other' => [],
+          Report::OTHER_FILES => [],
         ],
-        'missing' => [],
-        'id_list' => [],
+        Report::MISSING_FILES => [],
+        Report::FILE_ID_LIST => [],
       ],
     ];
+
+    // List of 'Assay Design' files.
+    $reset_assay_design_list = FALSE;
+    for ($n = 1; $n <= $submission->getOrganismNumber(); $n++) {
+      // @TODO Use AssayDesign::getValue() if possible.
+      $assay_design_fid = tpps_array_get_value(
+        $submission->sharedState,
+        [
+          'saved_values',
+          TPPS_PAGE_4,
+          'organism-' . $n,
+          'genotype',
+          // Not static::FILES_CONTAINER but fieldset name.
+          'files',
+          'assay-design',
+        ]
+      );
+      if (empty($assay_design_fid)) {
+        continue;
+      }
+      if ($assay_design_fid != ($data[static::FILES_CONTAINER]['assay-design'][$n] ?? NULL)) {
+        $data[static::FILES_CONTAINER]['assay-design'][$n] = $assay_design_fid;
+        $reset_assay_design_list = TRUE;
+      }
+    }
+    // Rebuild list of studies which has Assay Desigin Files.
+    if ($reset_assay_design_list) {
+      AssayDesign::clearSubmissionList();
+    }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Zenodo.
@@ -285,7 +322,7 @@ class SubmissionCache {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Files.
     $file_list = $submission->getFileIdList();
-    $data['file']['id_list'] = array_keys($file_list);
+    $data['file'][Report::FILE_ID_LIST] = array_keys($file_list);
 
     if (!empty($file_list)) {
       // List of files per group.
@@ -321,22 +358,22 @@ class SubmissionCache {
 
           case 'frontpage':
           case 'summarypage':
-            $group = 'other';
+            $group = Report::OTHER_FILES;
             $organism_index = NULL;
             $organism_label = $step;
             break;
 
           default:
-            $group = 'other';
+            $group = Report::OTHER_FILES;
             $organism_index = NULL;
             $organism_label = 'Other';
             break;
         }
 
-        // Missing files goes to the 'other' group and will have no hyperlink
+        // Missing files goes to the 'missing' group and will have NO hyperlink
         // to 'File Info' API page.
         if (empty($file = tpps_file_load($fid))) {
-          $data['file']['missing'][] = $fid;
+          $data['file'][Report::MISSING_FILES][] = $fid;
         }
         $field_name = check_plain(end($parents));
         $file_row[$group][$organism_label][$field_name] = $fid;
@@ -384,6 +421,10 @@ class SubmissionCache {
     $list = static::get();
     $list[$submission->accession] = static::buildSingle($submission);
     static::set($list);
+    // 'tpps_submission_cache_single_updated';
+    if (function_exists('module_invoke_all')) {
+      module_invoke_all('submission_cache_single_updated', $submission->accession);
+    }
   }
 
   /**

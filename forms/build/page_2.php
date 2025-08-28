@@ -23,9 +23,7 @@ require_once 'page_2_helper.php';
  *   The completed Study Design form.
  */
 function tpps_page_2_create_form(array &$form, array $form_state) {
-  $submission = new Submission();
-  $submission->state = $form_state;
-  if (!$submission->isTppsc()) {
+  if (!Submission::isCurationForm($form_state)) {
     tpps_study_date('Starting', $form, $form_state);
     tpps_study_date('Ending', $form, $form_state);
   }
@@ -37,7 +35,11 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
     'Genotype x Phenotype' => 'Genotype x Phenotype (and/or manual environmental data)',
   );
 
-  if (module_exists('cartogratree') and db_table_exists('cartogratree_groups') and db_table_exists('cartogratree_layers')) {
+  if (
+    module_exists('cartogratree')
+    and db_table_exists('cartogratree_groups')
+    and db_table_exists('cartogratree_layers')
+  ) {
     $options = array(
       0 => '- Select -',
       'Genotype' => 'Genotype',
@@ -63,7 +65,7 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
     '#title' => t('Study Type: *'),
     '#options' => tpps_form_get_study_type(),
   ];
-  if (!$submission->isTppsc()) {
+  if (!Submission::isCurationForm($form_state)) {
     $form['study_type']['#ajax'] = [
       'wrapper' => 'study_info',
       'callback' => 'tpps_study_type_callback',

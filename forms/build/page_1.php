@@ -25,9 +25,7 @@ require_once 'page_1_ajax.php';
  *   The completed Publication/Species Information form.
  */
 function tpps_page_1_create_form(array &$form, array &$form_state) {
-  $submission = new Submission();
-  $submission->state = $form_state;
-  if ($submission->isTppsc()) {
+  if (Submission::isCurationForm($form_state)) {
     // TPPSc form provides more features for Curation Team.
     tpps_page_1_create_curation_form($form, $form_state);
   }
@@ -159,7 +157,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#default_value' => tpps_get_ajax_value(
       $form_state, ['publication', 'publication_doi'], ''
     ),
-    '#description' => tpps_page_1_get_doi_examples(),
+    '#description' => tpps_form_get_doi_examples(),
     '#prefix' => '<div id="doi-message"></div>',
     '#states' => [
       'visible' => [
@@ -177,7 +175,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#default_value' => tpps_get_ajax_value(
       $form_state, ['publication', 'dataset_doi'], ''
     ),
-    '#description' => tpps_page_1_get_doi_examples(),
+    '#description' => tpps_form_get_doi_examples(),
     '#states' => [
       'visible' => [
         [':input[name="publication[status]"]' => ['value' => 'Published']],

@@ -20,14 +20,16 @@ class TppsFile {
    *
    * @param int $organism_index
    *   Ordinal number of organism at page.
+   * @param array $form_state
+   *   Drupal Form State array.
    *
    * @return array
-   *   Returns list of paretns.
+   *   Returns list of parents.
    *
    * @throws Exception
    *   When child class doesn't overwrite this method.
    */
-  public static function getParents($organism_index) {
+  public static function getParents($organism_index, array $form_state) {
     if (static::getClassName() == 'TppsFile') {
       $message = t('Class must implement @method', ['@method' => __METHOD__]);
       throw new Exception($message);
@@ -150,6 +152,14 @@ class TppsFile {
   }
 
   /**
+   * Alias for getValue() method.
+   */
+  public static function getFileId($organism_index, array $form_state) {
+    // @TODO Only for 'managed_file' type fields.
+    return static::getValue($organism_index, $form_state);
+  }
+
+  /**
    * Gets file id.
    *
    * @param int $organism_index
@@ -160,10 +170,11 @@ class TppsFile {
    * @return mixed
    *   Returns File Id or NULL if file wasn't uploaded.
    *
+   * @todo Update to re-use for Page 4 fields.
    * @todo merge with isSelected().
-   * @todo Move to 'Submisison' class.
+   * @todo Move/combine with 'Submisison' class.
    */
-  public static function getFileId($organism_index, array $form_state) {
+  public static function getValue($organism_index, array $form_state) {
     $parents = static::getParents($organism_index);
     $key_exists = NULL;
     if (!empty($form_state['values'])) {
@@ -176,6 +187,7 @@ class TppsFile {
         return $value;
       }
     }
+
     if (!empty($form_state['saved_values'][TPPS_PAGE_4])) {
       $value = drupal_array_get_nested_value(
         $form_state['saved_values'][TPPS_PAGE_4],
@@ -187,16 +199,6 @@ class TppsFile {
       }
     }
     return NULL;
-
-    // Other way to get value:
-    if (0) {
-      // @TODO Review and remove if possible.
-      $normal_check = tpps_get_ajax_value(
-        $form_state,
-        ['organism-' . $organism_index, 'phenotype', static::FIELD_NAME],
-        TRUE
-      );
-    }
   }
 
   /**

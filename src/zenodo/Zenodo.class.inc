@@ -234,6 +234,8 @@ class Zenodo {
 
     // Note: When Deposit not found we stil need to remove it's id from Submission.
     if (function_exists('module_invoke_all')) {
+      // tpps_zenodo_deposit_deleted().
+      // tpps_zenodo_file_deleted().
       module_invoke_all(static::getHookName('deleted'), $data);
     }
   }
@@ -258,7 +260,8 @@ class Zenodo {
 
     if (function_exists('module_invoke_all')) {
       // Note: Zenodo Deposit Id will be stored in Submission in Drupal-hook:
-      // 'tpps_zenodo_deposit_before_create().
+      // tpps_zenodo_deposit_before_create().
+      // tpps_zenodo_file_before_create().
       module_invoke_all(static::getHookName('before_create'), $data);
     }
 

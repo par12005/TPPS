@@ -62,7 +62,7 @@ function tpps_submission_import_form(array $form, array &$form_state, $accession
   $form['tpps_submission_import_upgrade_version'] = [
     '#type' => 'checkbox',
     // @TODO Minor. Allow to select version.
-    '#title' => t('Upgrade Version of the Submission Form'),
+    '#title' => t('Upgrade Submission Form Version'),
     '#default_value' => $form_state['input']['tpps_submission_import_upgrade_version'] ?? TRUE,
     '#description' => t('Default is checked.'
       . '<br /> Whech checked Submission Form Version will be upgraded to latest.'
@@ -181,14 +181,12 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   // Store original accession.
   // @TODO Minor. Remove 'saved_values' but be sure to restore those values
   // when submission reopened using '/tppsc' form.
-  module_load_include('inc', 'tpps', 'includes/submission_form_version');
-  $submission_version = $submission->state['saved_values'][Submission::FORM_VERSION_KEY] ?? 1;
   $submission->state['saved_values']['tpps_submission_import'] = [
     'original_accession' => $submission->accession,
     'imported' => REQUEST_TIME,
     'imported_date' => format_date(REQUEST_TIME, 'custom', 'Y-m-d h:s:i O'),
     'site' => $submission->state['tpps_submission_export_site'] ?? 'https://treegenesdb.org',
-    Submission::FORM_VERSION_KEY => $submission_version,
+    SubmissionVersion::FORM_KEY => SubmissionVersion::get($submission->state),
   ];
   // Files.
   tpps_submission_import_process_files($submission->state, $accession, $form);
@@ -216,17 +214,16 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   // Update a list of imported studies.
   ImportedSubmissionList::add($accession, $submission->accession);
   // Clear cached list of studies to have new items at 'frontpage'.
-  SubmissionCache::updateSingle($submission);
   tpps_cache_clear_all(['tpps_submission_get_accession_list']);
 
   if ($upgrade_version) {
     // Upgrade to latest Submission Form Version.
-    tpps_submission_form_version_upgrade_to_latest($submission->state, $submission->state);
+    $submission->state = SubmissionVersion::upgrade($submission->state);
     drupal_set_message(t('Submission Form Version was upgraded.'));
     // Note: SharedState will be stored to db.
-    $submission->generateSharedState();
-    $submission->save();
   }
+  $submission->generateSharedState();
+  $submission->save();
 
   if ($submit_form) {
     // Recreate Submission.
@@ -249,7 +246,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     // from temporaty to permanent to avoid it's automatic removement.
     $submission->setFileStatus(FILE_STATUS_PERMANENT, []);
   }
-
+  SubmissionCache::updateSingle($submission);
   drupal_goto('completed-submission/' . $accession);
 }
 
@@ -372,10 +369,11 @@ function tpps_submission_import_state_mods(array &$state, $new_accession) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Store imported (original) Submission Form Version.
-  module_load_include('inc', 'tpps', 'includes/submission_form_version');
   // Set Submission Form Version.
-  $saved_values[Submission::FORM_VERSION_KEY]
-    = $state['saved_values'][Submission::FORM_VERSION_KEY] ?? 1;
+  // @TODO Minor. Use SubmissionVersion::get($state);
+  $saved_values[SubmissionVersion::FORM_KEY]
+    = $state['saved_values'][SubmissionVersion::FORM_KEY]
+    ?? SubmissionVersion::VERSION_1;
   // @TODO Check if this is required.
   //unset($state['tpps_submission_export_site']);
 

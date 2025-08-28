@@ -17,8 +17,7 @@ function tpps_api_submission_vcf_files_list($submission) {
     'error' => 'Submission not found.',
     'organism_number' => $submission->getOrganismNumber(),
   ];
-  $shared_state = $submission->getSharedState();
-  $page4_values = $shared_state['saved_values'][TPPS_PAGE_4];
+  $page4_values = $submission->sharedState['saved_values'][TPPS_PAGE_4];
   $organism_number = $submission->getOrganismNumber();
   // Non-empty organism number means that submission exists.
   if ($organism_number) {

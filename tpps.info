@@ -12,9 +12,9 @@ dependencies[] = tripal_eutils
 ; Main
 files[] = src/Submission.class.inc
 files[] = src/SubmissionCache.class.inc
+files[] = src/SubmissionVersion.class.inc
 files[] = src/Organism.class.inc
 files[] = src/ChadoDb.class.inc
-files[] = src/TppsFile.class.inc
 
 ; Misc
 files[] = src/RestAPI.class.inc
@@ -30,8 +30,14 @@ files[] = src/zenodo/ZenodoFilesWidget.class.inc
 files[] = src/zenodo/ZenodoHost.class.inc
 ; files[] = src/zenodo/ZenodoRecords.class.inc
 
-files[] = src/PhenotypeManual.class.inc
-files[] = src/PhenotypeMeta.class.inc
-files[] = src/PhenotypeData.class.inc
-files[] = src/PhenotypeIso.class.inc
-files[] = src/SnpAssociation.class.inc
+; File Fields
+files[] = src/TppsFile.class.inc
+; File Fields / Phenotype
+files[] = src/phenotype/PhenotypeManual.class.inc
+files[] = src/phenotype/PhenotypeMeta.class.inc
+files[] = src/phenotype/PhenotypeData.class.inc
+files[] = src/phenotype/PhenotypeIso.class.inc
+; //File Fields / Genotype
+files[] = src/genotype/AssayDesignCitation.class.inc
+files[] = src/genotype/AssayDesign.class.inc
+files[] = src/genotype/SnpAssociation.class.inc
