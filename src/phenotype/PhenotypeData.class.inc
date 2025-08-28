@@ -34,14 +34,16 @@ class PhenotypeData extends TppsFile {
   // Name of the file field.
   // Value is file id.
   const FIELD_NAME = 'file';
+  // Name of the fieldset on PAGE 4.
+  const DATA_TYPE = 'phenotype';
 
   /**
    * Gets parents of the field.
    *
-   * WARNING: Must be overwritten by child class.
-   *
    * @param int $organism_index
    *   Ordinal number of organism at page.
+   * @param array $form_state
+   *   Drupal Form State array.
    *
    * @return array
    *   Returns list of paretns.
@@ -49,8 +51,21 @@ class PhenotypeData extends TppsFile {
    * @throws Exception
    *   When child class doesn't overwrite this method.
    */
-  public static function getParents($organism_index) {
-    return ['organism-' . $organism_index, 'phenotype', static::FIELD_NAME];
+  public static function getParents($organism_index, array $form_state) {
+    $organism_key = 'organism-' . $organism_index;
+    switch (SubmissionVersion::get($form_state)) {
+      case 1:
+      case 2:
+      case 3:
+      default:
+        $parents = [
+          $organism_key,
+          static::DATA_TYPE,
+          static::FIELD_NAME,
+        ];
+        break;
+    }
+    return $parents;
   }
 
   /**
@@ -617,8 +632,7 @@ class PhenotypeData extends TppsFile {
    *   data type keys (see current class constants).
    */
   public static function getColumns($organism_index, $submission) {
-    $shared_state = $submission->getSharedState();
-    return $shared_state['saved_values'][TPPS_PAGE_4]['organism-'
+    return $submission->sharedState['saved_values'][TPPS_PAGE_4]['organism-'
       . $organism_index]['phenotype']['file-columns'] ?? NULL;
   }
 

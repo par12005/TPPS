@@ -551,12 +551,12 @@ function hook_submission_dataset_doi_updated(array $data) {
 }
 
 /**
- * Implements 'submission_form_version_changed'.
+ * Implements 'submission_form_version_set'.
  *
  * @param array $context
  *   Keys are: 'previous_version' and 'new_version'.
  */
-function hook_submission_form_version_changed(array $context) {
+function hook_submission_form_version_set(array $context) {
   $old = $context['previous_version'];
   $new = $context['new_version'];
 }
@@ -570,4 +570,48 @@ function hook_submission_form_version_changed(array $context) {
 function hook_submission_deleted($accession) {
   $message = t('Removed study @accession.', ['@accession' => $accession]);
   drupal_set_message($message, 'warning');
+}
+
+/**
+ * Implements hook 'submission_version_downgraded'.
+ *
+ * Adds status message to watchdog.
+ * Note: Downgrade doesn't mean update db records.
+ *
+ * @param mixed $context
+ *   Necessary data.
+ *   Required keys are: 'to_version', 'from_version', 'accession'.
+ */
+function hook_submission_version_downgraded($context) {
+  $message = 'Downgraded submission "@accession" from @from_version '
+    . 'to @to_version version.';
+  tpps_message($message,
+    [
+      '@from_version' => $context['from_version'],
+      '@to_version' => $context['to_version'],
+      '@accession' => $context['accession'],
+    ]
+  );
+}
+
+/**
+ * Implements hook 'submission_version_upgraded'.
+ *
+ * Adds status message to watchdog.
+ * Note: Upgrade doesn't mean update db records.
+ *
+ * @param mixed $context
+ *   Necessary data.
+ *   Required keys are: 'to_version', 'from_version', 'accession'.
+ */
+function hook_submission_version_upgraded($context) {
+  $message = 'Upgraded submission "@accession" from @from_version '
+    . 'to @to_version version.';
+  tpps_message($message,
+    [
+      '@from_version' => $context['from_version'],
+      '@to_version' => $context['to_version'],
+      '@accession' => $context['accession'],
+    ]
+  );
 }

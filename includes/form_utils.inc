@@ -413,6 +413,7 @@ function tpps_preserve_valid_file(array &$form_state, $fid, $org_num = NULL, $pr
  *   The accession of the submission to pre-validate.
  */
 function tpps_pre_validate_init($accession = NULL) {
+  global $user;
   $params = drupal_get_query_parameters(NULL, []);
   $vcfs = $params['vcfs'] ?? NULL;
   if (!is_array($vcfs) || empty($vcfs)) {
@@ -425,7 +426,6 @@ function tpps_pre_validate_init($accession = NULL) {
     return;
   }
 
-  global $user;
   $submission->state['vcf_replace'] = [];
   foreach ($vcfs as $org_num => $fid) {
     // @TODO Minor. Rename $fid because it's not always File Id.
@@ -501,8 +501,12 @@ function tpps_compare_accession_file_vs_vcf_file_tree_ids($accession = NULL, $i 
     $submission->state, $i
   );
 
-  $page4_values = &$submission->state['saved_values'][TPPS_PAGE_4];
-  $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+  $genotype = tpps_array_get_value($submission->state, [
+    'saved_values',
+    TPPS_PAGE_4,
+    "organism-$i",
+    'genotype',
+  ]);
   // Note: returns array['status','location'].
   $vcf_location = tpps_vcf_location($submission->state, $i);
   $results_vcf_file_tree_ids = [];
@@ -696,8 +700,7 @@ function tpps_get_assay_design_file_markers(array $form_state, $i) {
     // Page 4 not yet submitted.
     return [];
   }
-  $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
-  $fid = $genotype['SNPs']['assay-design'] ?? NULL;
+  $fid = AssayDesign::getFileId($i, $form_state);
   if (!$fid) {
     // Empty field.
     return [];
@@ -954,7 +957,7 @@ function tpps_pre_validate($accession, $fid, $org_num, $job = NULL) {
   $job->logMessage("[INFO] VCF File Location: {$vcf_file->uri}");
 
   $submission = new Submission($accession);
-  $page3_values = &$submission->state['saved_values'][TPPS_PAGE_3];
+  $page3_values = $submission->state['saved_values'][TPPS_PAGE_3];
   if (empty($page3_values['tree-accession']['check'])) {
     $species_index = 'species-1';
   }

@@ -50,24 +50,25 @@ function tpps_admin_files_diagnostics_page($accession = NULL) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $file_ids = [];
   for ($j = 1; $j <= $saved_values[TPPS_PAGE_1]['organism']['number']; $j++) {
+    $organism_key = 'organism-' . $j;
     // WARNING: DO NOT UPDATE FIELDS!
     // It uses Submission Shared State (Form Version 1).
     $parents = [
       // Page 3. Accession file.
       [TPPS_PAGE_3, 'tree-accession', 'species-' . $j, 'file'],
       // Page 4. Phenotype files.
-      [TPPS_PAGE_4, 'organism-' . $j, 'phenotype', 'file'],
-      [TPPS_PAGE_4, 'organism-' . $j, 'phenotype', 'metadata'],
+      [TPPS_PAGE_4, $organism_key, 'phenotype', 'file'],
+      [TPPS_PAGE_4, $organism_key, 'phenotype', 'metadata'],
       // Page 4. Genotype files.
-      // @TODO Minor. Add other files.
-      [TPPS_PAGE_4, 'organism-' . $j, 'genotype', 'files', 'snps-assay'], // Shared State.
-      [TPPS_PAGE_4, 'organism-' . $j, 'genotype', 'files', 'assay-design'],
-      [TPPS_PAGE_4, 'organism-' . $j, 'genotype', 'files', 'snps-association'],
-      [TPPS_PAGE_4, 'organism-' . $j, 'genotype', 'files', 'vcf'],
-      [TPPS_PAGE_4, 'organism-' . $j, 'genotype', 'files', 'ssrs'],
-      [TPPS_PAGE_4, 'organism-' . $j, 'genotype', 'files', 'ssrs_extra'],
+      // @todo Minor. Add other files.
+      [TPPS_PAGE_4, $organism_key, 'genotype', 'files', 'snps-assay'],
+      [TPPS_PAGE_4, $organism_key, 'genotype', 'files', 'assay-design'],
+      [TPPS_PAGE_4, $organism_key, 'genotype', 'files', 'snps-association'],
+      [TPPS_PAGE_4, $organism_key, 'genotype', 'files', 'vcf'],
+      [TPPS_PAGE_4, $organism_key, 'genotype', 'files', 'ssrs'],
+      [TPPS_PAGE_4, $organism_key, 'genotype', 'files', 'ssrs_extra'],
       // Field Other spreadsheet wasn't there.
-      //[TPPS_PAGE_4, 'organism-' . $j, 'genotype', 'files', 'other'],
+      // [TPPS_PAGE_4, $organism_key, 'genotype','files', $fieldset = 'other'].
     ];
     foreach ($parents as $parent) {
       if ($value = drupal_array_get_nested_value($saved_values, $parent)) {

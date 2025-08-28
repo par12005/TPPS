@@ -28,15 +28,16 @@ function tpps_report_submission_file($filter = NULL) {
   }
   if ($filter == 'all' || $is_single) {
     $file_column_list = [
-      'tree-accession',
-      'phenotype',
-      'genotype',
-      // Group 'other' used for files whith has fid but not belong to any group.
-      'other',
+      Report::TREE_ACCESSION_FILES,
+      Report::PHENOTYPE_FILES,
+      Report::GENOTYPE_FILES,
+      // Group Report::OTHER_FILES (which is 'other') will be used for files
+      // which has fid but doesn't belong to any group.
+      Report::OTHER_FILES,
     ];
   }
-  elseif ($filter == 'missing') {
-    $file_column_list = ['missing'];
+  elseif ($filter == Report::MISSING_FILES) {
+    $file_column_list = [Report::MISSING_FILES];
   }
   elseif ($filter == 'none') {
     $file_column_list = [];
@@ -51,10 +52,10 @@ function tpps_report_submission_file($filter = NULL) {
     if ($filter == 'all') {
       $report_data = $data;
     }
-    elseif ($filter == 'missing') {
+    elseif ($filter == Report::MISSING_FILES) {
       $report_data = [];
       foreach (array_keys($data) as $accession) {
-        if (!empty($data[$accession]['file']['missing'])) {
+        if (!empty($data[$accession]['file'][Report::MISSING_FILES])) {
           $report_data[$accession] = $data[$accession];
         }
       }
@@ -62,7 +63,7 @@ function tpps_report_submission_file($filter = NULL) {
     elseif ($filter == 'none') {
       $report_data = [];
       foreach (array_keys($data) as $accession) {
-        if (empty($data[$accession]['file']['id_list'])) {
+        if (empty($data[$accession]['file'][Report::FILE_ID_LIST])) {
           $report_data[$accession] = $data[$accession];
         }
       }
@@ -135,7 +136,7 @@ function tpps_report_submission_file_all_theme_single_row(array $context) {
           continue;
         }
         foreach ($field as $field_name => $fid) {
-          if (in_array($fid, $value['file']['missing'])) {
+          if (in_array($fid, $value['file'][Report::MISSING_FILES])) {
             // File is missing in filesystem.
             $value['file']['grouped_list'][$group][$organism_label][$field_name]
               = check_plain($fid);
@@ -154,10 +155,10 @@ function tpps_report_submission_file_all_theme_single_row(array $context) {
       $final_file_row[] = tpps_array_print_list($value['file']['grouped_list'][$group]);
     }
   }
-  elseif ($context['report_filter'] == 'missing') {
-    if (!empty($value['file']['missing'])) {
+  elseif ($context['report_filter'] == Report::MISSING_FILES) {
+    if (!empty($value['file'][Report::MISSING_FILES])) {
       $final_file_row[] = theme('item_list',
-        ['items' => $value['file']['missing']]
+        ['items' => $value['file'][Report::MISSING_FILES]]
       );
     }
   }

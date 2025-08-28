@@ -199,20 +199,6 @@ class Submission {
   // https://developers.zenodo.org/?shell#representation
   const ZENODO_CONCEPT_RECORD_ID_KEY = 'zenodo_conceptrecid';
 
-  // Name of the key which stores Submission Form version.
-  const FORM_VERSION_KEY = 'submission_form_version';
-
-  // Number of the initial version of Form State Array.
-  // This value will be used to apply incremental changes (patches).
-  const FORM_VERSION_START = 1;
-
-  // Version of Submission Form State Array.
-  // See tpps_submission_form_get_change_list() for changes per version.
-  // Version 1: Only removed data which is useless for processing study.
-  // Version 2: #86ayw8a7k Page 4 Genotype Logic Adjustments.
-  // @TODO Minor. Rename to 'latest_version'?
-  const FORM_VERSION_CURRENT = 2;
-
   /**
    * Class constructor.
    *
@@ -401,16 +387,11 @@ class Submission {
    *   $submission->state = $state;
    *   but not:
    *   $submission->state[$element] = $value;
-   *
-   * @param array $state
-   *   Submission State Array.
    */
-  public function setState(array &$state) {
-    // @TODO Remove reference because it limit direct usage of ->setState()
-    //  method and direct setting of the property 'state'.
+  public function setState(array $state) {
     // See tpps_main_submit(). Be sure to update all calls and test.
-    $this->state = &$state;
-    // Accession.
+    $this->state = $state;
+    // Get submission's accession.
     if (!empty($this->state['accession'])) {
       $this->accession = $this->state['accession'];
     }
@@ -632,13 +613,10 @@ class Submission {
       ->condition('accession', $this->accession)
       ->execute();
 
-    SubmissionCache::updateSingle($this);
-
-    // 'tpps_submission_saved'';
+    // tpps_submission_saved().
     if (function_exists('module_invoke_all')) {
       module_invoke_all('submission_saved', $this);
     }
-
     return $this;
   }
 
@@ -672,7 +650,9 @@ class Submission {
       module_invoke_all('submission_deleted', $this->accession);
     }
     // Be sure to unset at the very end.
-    $this->accession = $this->state = $this->sharedState = NULL;
+    $this->accession = NULL;
+    $this->state = NULL;
+    $this->sharedState = NULL;
 
     // Do not allow chaining methods because object destroyed.
     return NULL;
@@ -725,7 +705,9 @@ class Submission {
     // Update cached data.
     SubmissionCache::remove($this->accession);
     // Unset current instance (in memory).
-    $this->accession = $this->state = $this->sharedState = NULL;
+    $this->accession = NULL;
+    $this->state = NULL;
+    $this->sharedState = NULL;
     if (function_exists('module_invoke_all')) {
       // 'tpps_submission_purged().
       module_invoke_all('submission_purged', $this);
@@ -769,8 +751,14 @@ class Submission {
    * instead of 3 requests if data loaded separately.
    *
    * To avoid reload the same study use global $submission object.
+   *
+   * @param mixed $generate_shared_state
+   *   When TRUE and 'sharedState' property is empty after loading from DB then
+   *   it will be generated.
+   *   This could create ethernal loop when record in DB has not 'sharedState'.
+   *   Default is TRUE.
    */
-  public function load() {
+  public function load($generate_shared_state = TRUE) {
     global $user;
     if (empty($this->accession)) {
       throw new Exception(t('Study accession is empty.'));
@@ -832,8 +820,10 @@ class Submission {
         ?? TPPS_SUBMISSION_STATUS_INCOMPLETE;
 
       // Generate sharedState if it's really empty.
-      if (empty($this->sharedState) || empty($this->sharedState['accession'])) {
-        $this->generateSharedState();
+      if ($generate_shared_state) {
+        if (empty($this->sharedState) || empty($this->sharedState['accession'])) {
+          $this->generateSharedState();
+        }
       }
     }
     return $this;
@@ -905,6 +895,23 @@ class Submission {
   /**
    * Checks if form type is 'tppsc'.
    *
+   * Note: this is static method to be used in form building/validation.
+   * See dynamic method: isTppsc().
+   * See also tpps_is_admin_or_curation() which checks user role/permissions.
+   *
+   * @return bool
+   *   Returns TRUE if form Id is 'tppsc_main' and FALSE otherwise.
+   */
+  public static function isCurationForm(array $submission_state) {
+    $form_id = $submission_state['saved_values']['frontpage']['form_id']
+      ?? $submission_state['build_info']['form_id']
+      ?? 'tpps_main';
+    return $form_id == 'tppsc_main';
+  }
+
+  /**
+   * Checks if form type is 'tppsc'.
+   *
    * WARNING: $submission->isTppsc() checks form_id which is not always set.
    * See: tpps_is_admin_or_curation().
    *
@@ -931,6 +938,7 @@ class Submission {
    * Get TPPS Form Id.
    *
    * See tpps_form_get_id();
+   *
    * @return string
    *   Returns 'tpps_main' or 'tppsc_main'.
    */
@@ -944,27 +952,19 @@ class Submission {
   // Info.
 
   /**
-   * Checks if submission exists in database.
+   * Checks if submission was loaded into memory from database.
    *
-   * Only study accession is required to find record in database.
+   *
+   * WARNING:
+   * Do not use $this->load() because when methods doesExist() / doesNotExist()
+   * are called in the middle of the process then unsaved changes will be lost.
    *
    * @return bool
-   *   Returns TRUE if record in database exists and FALSE otherwise.
+   *   Returns TRUE if record in database exists.
+   *   Returns FALSE if there is no record in database.
    */
   public function doesExist() {
-    // WARNING:
-    // When doesExist() or doesNotExist() was called in the middle of the
-    // process previous changes will be lost because it reloads submission
-    // from database and overwrite this changes in memory.
-    // $this->load();
-    return (bool) (
-      !empty($this->accession)
-      && !empty($this->id)
-      && !empty($this->status)
-      && !empty($this->uid)
-      && !empty($this->dbxrefId)
-      && !empty($this->state)
-    );
+    return (bool) (!empty($this->accession) && !empty($this->state));
   }
 
   /**
@@ -1027,7 +1027,7 @@ class Submission {
       $import_meta['full_date'] .= (empty($import_meta['imported']) ? ''
         : ' [' . $import_meta['imported'] . ']');
     }
-    $import_meta['current_version'] = $this->state['saved_values'][Submission::FORM_VERSION_KEY];
+    $import_meta['current_version'] = $this->getFormVersion();
     return $import_meta;
   }
 
@@ -1098,27 +1098,37 @@ class Submission {
    * This method don't update record in database to have ability to get
    * Shared State for processing and for temporary use.
    * Use Submission::save() to store in DB.
-   *
-   * @param array $state
-   *   Drupal Form State array.
-   *
-   * @return mixed
-   *   Returns array with datastructure prepared for TPPS pipeline
-   *   (submit_all.php script).
-   *   Returns empty array if $form_state is empty too.
    */
-  public function generateSharedState(array $state = []) {
-    $this->state = !empty($state) ? $state : $this->state;
+  public function generateSharedState() {
+    if (
+      variable_get('tpps_submission_save_before_shared_state_generation', FALSE)
+    ) {
+      // WARNING: Do not remove!
+      // If 'sharedState' is empty this will cause errors.
+      $this->sharedState = [TRUE];
+      // Note: This takes about 20 msec and Shared State generation performed
+      // every time TPPSc form submits.
+      $this->save();
+    }
+    // WARNING:
+    // This extra step is required to break link between sharedState and state
+    // properties of current Submission object.
+    // Problem: when 'summarypage' step submitted 'state' downgraded
+    // to version 1.
+    // Here we create new (independent) submission which will never be saved
+    // to DB and it used only to create SharedState.
+    $temp_submission = new Submission();
+    $temp_submission->accession = $this->accession;
+    // We can't use __construct() because it will attempt to generate missing
+    // sharedState and create ethernal loop.
+    $temp_submission->accession = $this->accession;
+    $temp_submission->load($generate_shared_state = FALSE);
+    $state = $temp_submission->state;
+    unset($temp_submission);
 
-    $this->sharedState = $this->state;
-    // We need to apply changes from 1st to $current version to have
-    // incremental changes.
-    // @TODO Avoid this hard linking.
-    module_load_include('inc', 'tpps', 'includes/submission_form_version');
-    tpps_submission_form_version_downgrade_to_latest($this->state, $this->sharedState);
+    $this->sharedState = SubmissionVersion::downgrade($state);
     $this->purifySharedState();
-    return $this->sharedState;
-    // @TODO Change to allow chaining.
+    return $this;
   }
 
   /**
@@ -1128,68 +1138,75 @@ class Submission {
    */
   public function purifySharedState() {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Remove useless elemLnts to reduce size.
+    // Remove useless elements to reduce size.
     $change_list = [
       // We unset not used items instead of copy required items from
       // $form_state because if new elements will be found they will be
       // left for sure. It's safer.
       'unset' => [
-        // List of path to the items in $interface at the top (1st) level.
-        'build_info',
-        'temporary',
-        'programmed',
-        'programmed_bypass_access_check',
-        'cache',
-        'rebuild',
-        'rebuild_info',
-        'redirect',
-        'submitted',
-        'executed',
-        'method',
-        'groups',
-        'buttons',
-        'input',
-        'values',
-        'complete form',
-        'process_input',
-        'invalid_token',
-        'triggering_element',
-        'clicked_button',
-        ['saved_values', 'form_build_id'],
-        'tpps_submission_export_files',
-        // @TODO Submission Form Version is useless for pipeline processing
-        // but could be useful for debugging.
-        //['saved_values', Submission::FORM_VERSION_KEY],
-
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        // List of the fields which must be left.
-        // Required by submit_all() and tpps_table_display() and sub-functions.
-        // 'saved_values',
-        // 'dbxref_id',
-        // 'created',
-        // 'accession',
-        // 'status',
-        // 'stats', // Belongs to Submission State.
-        // 'ids',
-        // 'tpps_type',
-        // 'file_info',
-        // 'updated',
-        // 'approved',
-        // 'completed',
-        // 'loaded',
-        // 'submitting_uid',
-        // 'job_id',
-        // 'revised_files',
-        // 'admin_comments',
-        // 'alternative_accessions',
-        // 'data',
-        // Stores tree id and coordinates to show google map on study details page.
-        // 'tree_info'.
-        //
-        //  Probably could be unset:
-        // 'stage',
+        [
+          'field_name' => 'form_build_id',
+          'parents' => ['saved_values', 'form_build_id'],
+        ],
       ],
     ];
+    // List of 1st level items to be removed from the 'sharedState' array.
+    $field_list = [
+      'build_info',
+      'temporary',
+      'programmed',
+      'programmed_bypass_access_check',
+      'cache',
+      'rebuild',
+      'rebuild_info',
+      'redirect',
+      'submitted',
+      'executed',
+      'method',
+      'groups',
+      'buttons',
+      'input',
+      'values',
+      'complete form',
+      'process_input',
+      'invalid_token',
+      'triggering_element',
+      'clicked_button',
+      'tpps_submission_export_files',
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // List of the fields which must be left.
+      // Required by submit_all() and tpps_table_display() and sub-functions.
+      // 'saved_values',
+      // 'dbxref_id',
+      // 'created',
+      // 'accession',
+      // 'status',
+      // 'stats', // Belongs to Submission State.
+      // 'ids',
+      // 'tpps_type',
+      // 'file_info',
+      // 'updated',
+      // 'approved',
+      // 'completed',
+      // 'loaded',
+      // 'submitting_uid',
+      // 'job_id',
+      // 'revised_files',
+      // 'admin_comments',
+      // 'alternative_accessions',
+      // 'data',
+      // Stores tree id and coordinates to show google map on study details page.
+      // 'tree_info'.
+      //
+      //  Probably could be unset:
+      // 'stage',
+    ];
+    foreach ($field_list as $field) {
+      $change_list['unset'][] = [
+        'field_name' => $field,
+        'parents' => [$field],
+      ];
+    }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Dynamic (repeated) changes.
@@ -1215,12 +1232,15 @@ class Submission {
     ];
     foreach ($page_list as $page) {
       foreach ($drupal_internal_fields as $field) {
-        $change_list['unset'][] = ['saved_values', $page, $field];
+        $change_list['unset'][] = [
+          'field_name' => $field,
+          'parents' => ['saved_values', $page, $field],
+        ];
       }
     }
 
     module_load_include('inc', 'tpps', 'includes/array');
-    tpps_array_apply_changes($change_list, $this->sharedState);
+    $this->sharedState = tpps_array_apply_changes($change_list, $this->sharedState);
     return $this;
   }
 
@@ -2398,8 +2418,7 @@ class Submission {
   /**
    * Gets hardcoded list of file field parents.
    *
-   * WARNING:
-   * Use Submission Shajred State (v.1 not Submission State).
+   * WARNING: Uses Submission Form Version 1 (AKA Submission Shared State).
    *
    * @return array
    *   Returns empty array if number of organisms is zero.
@@ -2750,10 +2769,10 @@ class Submission {
    *   Return submitter user id.
    */
   public function getSubmitter() {
-    if ($this->doesNotExist()) {
+    if ($this->isEmpty()) {
       return NULL;
     }
-    return $this->get(['submitting_uid']) ?? NULL;
+    return $this->get(['submitting_uid']) ?? $this->uid ?? NULL;
   }
 
   /**
@@ -2933,32 +2952,42 @@ class Submission {
   /**
    * Gets Submission Form Version.
    *
-   * Former: tpps_submission_form_version_get().
+   * See: SubmissionVersion::get().
    *
    * @return int
    *   Returns Submission's Form version.
    *   Returns 1 (default value) if version wasn't set.
    */
   public function getFormVersion() {
-    return $this->state['saved_values'][static::FORM_VERSION_KEY] ?? 1;
+    // @TODO Should lastest version be the default?
+    // @todo Could SubmissionVersion::get() be used here?
+    return $this->state['saved_values'][SubmissionVersion::FORM_KEY]
+      ?? SubmissionVersion::VERSION_1;
   }
 
   /**
    * Sets Submission Form Version.
    *
+   * To upgrade/downgrade Submission's version:
+   *   SubmissionVersion::set($submission_state, $version);
+   *
    * @return bool
    *   Returns TRUE if version was changed and FALSE otherwise.
+   *
+   * @todo Should we upgrade/downgrade in this case?
    */
   public function setFormVersion($version, $save_on_change = FALSE) {
     $current_version = $this->gerFormVersion();
     if ($current_version != $version) {
-      $this->state['saved_values'][static::FORM_VERSION_KEY] == $version;
+      $this->state['saved_values'][SubmissionVersion::FORM_KEY] == $version;
       if ($save_on_change) {
         $this->save();
       }
-      // 'tpps_submission_form_version_changed'';
+      // Hook 'tpps_submission_form_version_set''.
+      // See also 'hook_submission_version_upgraded' and
+      // 'hook_submission_version_downgraded'.
       if (function_exists('module_invoke_all')) {
-        module_invoke_all('submission_form_version_changed', [
+        module_invoke_all('submission_form_version_set', [
           'previous_version' => $current_version,
           'new_version' => $version,
         ]);

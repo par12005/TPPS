@@ -105,8 +105,8 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
 
     // RISH 7/18/2023 - Run some checks before going through most of the genotype
     // processing (this will error out if an issue is found to avoid long failing loads)
-    $page1_values = &$submission->sharedState['saved_values'][TPPS_PAGE_1];
-    $page4_values = &$submission->sharedState['saved_values'][TPPS_PAGE_4];
+    $page1_values = $submission->sharedState['saved_values'][TPPS_PAGE_1];
+    $page4_values = $submission->sharedState['saved_values'][TPPS_PAGE_4];
     $organism_number = $page1_values['organism']['number'];
     for ($i = 1; $i <= $organism_number; $i++) {
       // tpps_genotype_initial_checks($submission->sharedState, $i, $job);
@@ -5450,7 +5450,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           JOIN chado.analysisfeature af ON f.feature_id = af.feature_id
           JOIN chado.analysis a ON af.analysis_id = a.analysis_id
           WHERE a.analysis_id = :analysis_id
-        ", 
+        ",
         [
           ':analysis_id' => $analysis_id
         ]);
@@ -5459,7 +5459,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           $src_feature_data[$fa_row->feature_name]['src_feature_id'] = $fa_row->feature_id;
         }
         // Clear memory
-        unset ($results_srcfeatureids); 
+        unset ($results_srcfeatureids);
 
         $src_feature_ids_count = count(array_keys($src_feature_data));
         $lmsg = "SRCFeatures count: " . $src_feature_ids_count . "\n";
@@ -5477,7 +5477,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
       $while_mem_start = memory_get_usage();
 
       // Keeps track of variant_name connection to src_feature_name + featureloc
-      $features_variant_data = []; 
+      $features_variant_data = [];
       while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
         $file_progress_line_count++;
 
@@ -5760,7 +5760,6 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             if ($log_detailed) {
               tpps_log('Insert cumulative time: ' . $insert_cumulative_time . ' ms', [], TRIPAL_INFO);
             }
-            
             // After inserts, reset the $record array to begin loading more data to be batch inserted in next round
             $records = array(
               'feature' => array(),

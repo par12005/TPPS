@@ -51,6 +51,7 @@ function tpps_genotype_subform(array $form_bus) {
   // Map from the $form_bus.
   $form = &$form_bus['form'];
   $form_state = &$form_bus['form_state'];
+  // @TODO Minor. Rename $i into $organism_index.
   $i = $form_bus['organism_id'];
   $organism_number = $form_bus['organism_number'] ?? 1;
   //$organism_number = $form_bus['page1_values']['organism']['number'];
@@ -336,60 +337,10 @@ function tpps_genotype_subform(array $form_bus) {
     ],
   ]));
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Assay Design File.
-  $title = t('Assay Design File');
-  $file_field_name = 'assay-design';
-  // Add file upload field.
-  // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
-  tpps_form_build_file_field([
-    'form' => &$form,
-    'form_state' => $form_state,
-    'parents' => [$organism_name, 'genotype', $snps_fieldset],
-    'field_name' => $file_field_name,
-    'title' => $title,
-    'organism_name' => $organism_name,
-    'type' => $form_bus['type'],
-    'optional' => TRUE,
-    'states' => [
-      'visible' => [
-        [
-          ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
-          . '][genotyping-type]"]'
-          => ['value' => TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY],
-        ],
-        'or',
-        [
-          ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
-          . '][file-type]"]' =>
-            ['value' => TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE],
-        ],
-      ],
-    ],
-  ]);
-  // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
-  $fields[$snps_fieldset]['assay-citation'] = [
-    '#type' => 'textfield',
-    '#title' => t('Assay Design Citation (Optional):'),
-    '#description' => t('If your assay design file is from a different '
-    . 'paper, please include the citation for that paper here.'),
-    '#states' => [
-      'visible' => [
-        [
-          ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
-            . '][genotyping-type]"]'
-          => ['value' => TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY],
-        ],
-        'or',
-        [
-          ':input[name="' . $organism_name . '[genotype][' . $snps_fieldset
-            . '][file-type]"]' =>
-            ['value' => TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE],
-        ],
-      ],
-    ],
-  ];
+  // Assay Design.
+  $organism_index = $i;
+  AssayDesignCitation::build($organism_index, $form, $form_state);
+  AssayDesign::build($organism_index, $form, $form_state);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   if (tpps_is_genotype_data_type($form_state)) {
@@ -611,9 +562,11 @@ function tpps_genotype_subform(array $form_bus) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Other Fieldset.
   $other_fieldset = 'other';
-  // Relocated in v2: [] -> ['other'].
+  // Versions:
   // v1: This field was a textfield.
-  $fields[$other_fieldset]['other-marker'] = [
+  // v2: [] -> ['other'].
+  // v3: ['other', 'other-marker'] -> ['other', 'other_marker_type'].
+  $fields[$other_fieldset]['other_marker_type'] = [
     '#type' => 'select',
     '#title' => t('Other marker type: *'),
     '#options' => [
@@ -622,8 +575,10 @@ function tpps_genotype_subform(array $form_bus) {
     ],
   ];
 
-  // Field was relocated (v.2). ['files', 'other] -> ['other', 'other'].
-  $file_field_name = 'other';
+  // Versions:
+  // v2: ['files', 'other] -> ['other', 'other'].
+  // v3: ['other', 'other'] -> ['other', 'other_marker'].
+  $file_field_name = 'other_marker';
   $title = t('Other spreadsheet: '
     . '<br />please provide a spreadsheet with columns for the Plant ID '
     . 'of genotypes used in this study');
@@ -643,48 +598,6 @@ function tpps_genotype_subform(array $form_bus) {
     'type' => $form_bus['type'],
     'description' => $description,
   ]));
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Other Columns.
-  // Field [$other_fieldset]['other']['dynamic'].
-  if (0) {
-    // NOTE:
-    // Those fields was disabled because they are misssing on Meghan's Mockups,
-    // seems didn't work correctly for a long time and uses AJAX.
-    $default_dynamic = !empty($page4_values[$organism_name]['genotype'][$other_fieldset]['other-columns']);
-    // Field was relocated (v.2). ['files'] -> ['other'].
-    $fields[$other_fieldset]['dynamic'] = [
-      '#type' => 'checkbox',
-      '#title' => t('This file needs dynamic dropdown options for column data type specification'),
-      '#ajax' => [
-        // @TODO Check if this element exists on page.
-        // Reloads whole fieldset to show dynamic fields.
-        'wrapper' => "edit-$organism_name-genotype-$other_fieldset",
-        'callback' => 'tpps_page_4_file_dynamic',
-        'effect' => 'slide',
-      ],
-      '#default_value' => $default_dynamic,
-    ];
-    $dynamic = tpps_get_ajax_value($form_state,
-      [$organism_name, 'genotype', $other_fieldset, 'dynamic'],
-      $default_dynamic,
-      'other'
-    );
-
-    // @TODO Show this fields using '#states'.
-    if ($dynamic) {
-      $fields[$other_fieldset]['columns'] = [
-        '#description' => t('Please define which columns hold the required data: '
-          . '<br />Plant Identifier, Genotype Data'
-        ),
-      ];
-      $fields[$other_fieldset]['columns-options'] = [
-        '#type' => 'hidden',
-        '#value' => ['Genotype Data', 'Plant Identifier', 'N/A'],
-      ];
-    }
-    $fields[$other_fieldset]['no-header'] = [];
-  }
 
   return $fields;
 }
@@ -709,7 +622,6 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
       [$id, 'genotype', $snps_fieldset, 'genotyping-design']
     ),
     '#weight' => -200,
-
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // GBS Type.
@@ -795,7 +707,6 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
  */
 function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   global $user;
-  $uid = $user->uid;
 
   $snps_fieldset = 'SNPs';
 
@@ -911,7 +822,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
 
   $class = 'FASTAImporter';
   tripal_load_include_importer_class($class);
-  $tripal_upload_location = "public://tripal/users/$uid";
+  $tripal_upload_location = "public://tripal/users/" . $user->uid;
 
   $fasta = tripal_get_importer_form(array(), $form_state, $class);
   $fasta['#type'] = 'fieldset';
