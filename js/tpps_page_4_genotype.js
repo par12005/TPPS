@@ -3,6 +3,7 @@
     attach: function (context, settings) {
 
       var featureName = 'Drupal.behaviors.tpps_page_4_genotype';
+      const organismNumber = Drupal.settings.tpps.organismNumber;
 
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Attach event handlers only once.
@@ -19,20 +20,45 @@
           // changed we need to update all '*-repeat-check' genotype checkboxes.
           if (
             typeof(settings.tpps) != 'undefined'
-            && typeof(settings.tpps.organismNumber) != 'undefined'
+            && typeof(organismNumber) != 'undefined'
           ) {
+            // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+            // Validate DOI format for 'Paper DOI' and 'Dataset DOI' fields
+            // under 'Assay Design Citation' fieldset.
+            for (let organismId = 1; organismId <= organismNumber; organismId++) {
+              ['paper-doi', 'dataset-doi'].forEach(function (name) {
+                let selector = 'input[name="organism-' + organismId +
+                  '[genotype][SNPs][assay-design-citation]' + '[' + name + ']"]';
+                $(selector).blur(function() {
+                  Drupal.tpps.clearMessages($(this));
+                  if (!$.trim($(this).val())) {
+                    return;
+                  }
+                  if (Drupal.tpps.isValid('doi', $(this).val())) {
+                    Drupal.tpps.showMessages($(this), {
+                      'statuses': [Drupal.t('DOI format is valid.')]
+                    });
+                  }
+                  else {
+                    Drupal.tpps.showMessages($(this), {
+                      'errors': [Drupal.t('DOI format is invalid. Example: "10.1111/dryad.111".')],
+                    });
+                  }
+                });
+              });
+            }
 
-            if (settings.tpps.organismNumber > 1) {
+            if (organismNumber > 1) {
               // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
               // Check if genotype data is identical.
               repeatCounter = 1;
               // Note: 1st organism doesn't have checkbox 'genotype-repeat-check'.
-              for (let i = 2; i <= settings.tpps.organismNumber; i++) {
+              for (let i = 2; i <= organismNumber; i++) {
                 $repeatCheckBox = $('input[name="organism-' + i
                   + '[genotype-repeat-check]"]', $form);
                 repeatCounter = +repeatCounter + +$repeatCheckBox.prop('checked');
               }
-              if (settings.tpps.organismNumber == repeatCounter) {
+              if (organismNumber == repeatCounter) {
                 // Only when all organisms has the checkbox checked.
                 $('.form-select[name="organism-1[genotype]'
                   + '[are_genotype_markers_identical]"]', $form).val('yes');
@@ -47,7 +73,7 @@
                 + '[are_genotype_markers_identical]"]', $form)
                 .blur(function() {
                   let value = $(this).val();
-                  for (let i = 2; i <= settings.tpps.organismNumber; i++) {
+                  for (let i = 2; i <= organismNumber; i++) {
                     $repeatCheckBox = $('input[name="organism-' + i
                       + '[genotype-repeat-check]"]', $form);
                     if (value == 'yes') {
@@ -62,7 +88,7 @@
               // When manually disabled 'Repeat Check' for non-first genotype
               // then set to 'No' selectbox with title
               // "Are your genotype markers identical accross species?"
-              for (let i = 2; i <= settings.tpps.organismNumber; i++) {
+              for (let i = 2; i <= organismNumber; i++) {
                 let fieldName = 'genotype-repeat-check';
                 $('input[name="organism-' + i + '[' + fieldName + ']"]', $form)
                 .click(function() {
@@ -74,7 +100,7 @@
               }
             }
 
-            for (let i = 1; i <= settings.tpps.organismNumber; i++) {
+            for (let i = 1; i <= organismNumber; i++) {
               // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
               var featureName = 'genotypeMarkerType';
               // Replacement for selectbox 'Marker Type'.
@@ -129,12 +155,12 @@
           // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
           if (
             typeof(settings.tpps) != 'undefined'
-            && typeof(settings.tpps.organismNumber) != 'undefined'
+            && typeof(organismNumber) != 'undefined'
             && typeof(settings.tpps.ploidyDescriptions) != 'undefined'
           ) {
             // We can't use Drupal States API because it doesn't work with
             // multiple select form elements.
-            for (let i = 1; i <= settings.tpps.organismNumber; i++) {
+            for (let i = 1; i <= organismNumber; i++) {
               // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
               // Update 'Ploidy' field description.
               let ploidySelector = '[name="organism-' + i + '[genotype]['
@@ -160,7 +186,7 @@
               // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
               // Change name of the other file-field when dropdown changes.
               let otherMarkerSelector = '[name="organism-' + i
-                + '[genotype][other][other-marker]';
+                + '[genotype][other][other_marker_type]';
               $(otherMarkerSelector).change(function() {
                 let name = $(this).val();
                 let $label = $('#edit-organism-' + i

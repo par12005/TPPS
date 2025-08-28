@@ -19,14 +19,13 @@
 function tpps_table_display(array &$state, array $options = []) {
   $accession = $state['accession'] ?? NULL;
   $submission = new Submission($accession);
-  if ($submission->doesNotExist()) {
+  if ($submission->isEmpty()) {
     return;
   }
   // Note: $state could be modified version of original sharedState received
   // by accession so we use it here without saving/updating original study.
   // @TODO Check if this code could be merged (and cached) with Submission::flatten().
   $submission->sharedState = $state;
-
   $flat = $submission->flatten();
 
   $rows = [];
@@ -64,7 +63,7 @@ function tpps_table_display(array &$state, array $options = []) {
         $key_str = t('Submission Import Metadata');
         $import_meta = $submission->getImportMeta();
         if (!empty($import_meta)) {
-          $version = $import_meta[Submission::FORM_VERSION_KEY] ?? '-';
+          $version = $import_meta[SubmissionVersion::FORM_KEY] ?? '-';
           $val_str = theme('item_list', [
             'items' => [
               t('Original Accession: !url', ['!url' => $import_meta['accession_link']]),
@@ -77,7 +76,7 @@ function tpps_table_display(array &$state, array $options = []) {
           ]);
         }
       }
-      if ($key == Submission::FORM_VERSION_KEY) {
+      if ($key == SubmissionVersion::FORM_KEY) {
         // This is not Submission State Array but Submission Shared State which
         // version is always '1'. So we don't need to show this.
         continue;
@@ -240,19 +239,13 @@ function tpps_table_display(array &$state, array $options = []) {
 /**
  * Creates a details page for a completed TPPS Submission.
  *
- * @global string $base_url
- *   The base url of the site.
- *
  * @return string
  *   The rendered page.
  */
 function tpps_completed_display($accession = NULL) {
-  global $base_url;
-  global $user;
   $output = '';
-
   $submission = new Submission($accession);
-  if ($submission->doesNotExist()) {
+  if ($submission->isEmpty()) {
     drupal_set_message(t('Study "@accession" not found.',
       ['@accession' => $accession]), 'error');
     drupal_goto('tpps-admin-panel');
@@ -334,7 +327,7 @@ function tpps_tab_create($uid) {
   foreach ($submission_list as $accession => $submission) {
     $prefix = !empty($submission->state['tpps_type'])
       ? $submission->state['tpps_type'] : 'tpps';
-    $page_1 = &$submission->state['saved_values'][TPPS_PAGE_1];
+    $page_1 = $submission->state['saved_values'][TPPS_PAGE_1];
     $title = $abstract = $accession_cell = NULL;
 
     if (isset($page_1['publication']['title'])) {
@@ -410,7 +403,7 @@ function tpps_tab_create($uid) {
 
   $rows = [];
   foreach ($submission_list as $accession => $submission) {
-    $page_1 = &$submission->state['saved_values'][TPPS_PAGE_1];
+    $page_1 = $submission->state['saved_values'][TPPS_PAGE_1];
     $title = $abstract = NULL;
 
     if (isset($page_1['publication']['title'])) {

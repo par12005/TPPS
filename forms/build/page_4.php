@@ -23,8 +23,6 @@ require_once 'page_4_phenotype.php';
  *   The state of the form to be populated.
  */
 function tpps_page_4_create_form(array &$form, array &$form_state) {
-  global $user;
-
   // Store valueable data to the $form_bus.
   $form_bus = ['form' => &$form, 'form_state' => &$form_state];
   for ($i = 1; $i <= 4; $i++) {
@@ -87,7 +85,6 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
  *   'form', 'form_state'.
  */
 function tpps_add_curation_tool(array $form_bus) {
-  global $user;
   if (!tpps_is_admin_or_curation()) {
     return;
   }

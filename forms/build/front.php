@@ -28,9 +28,8 @@ function tpps_front_create_form(array &$form, array $form_state) {
   global $base_url;
   global $user;
 
-  $submission = tpps_submission()->setState($form_state);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  if ($submission->isTppsc()) {
+  if (Submission::isCurationForm($form_state)) {
     if (user_is_logged_in()) {
       // Logged in.
       $options = [

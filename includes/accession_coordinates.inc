@@ -19,7 +19,7 @@ function tpps_accession_coordinates() {
       'long_col' => $params['long_col'],
     ];
     $options = [
-      'no_header' => $params['no-header'],
+      'no_header' => $params['no-header'] ?? NULL,
       'columns' => $columns,
       'coords' => &$coordinates,
     ];
