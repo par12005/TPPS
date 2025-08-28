@@ -521,27 +521,58 @@ abstract class FileField {
    *   Ordinal organism number at page.
    * @param array $form_state
    *   Drupal Form API State Array.
+   * @param array $form
+   *   Optional Drupal Form array.
    *
    * @return mixed
    *   Returns form element or NULL if it wasn't found.
    */
-  public static function getFormElement($organism_index, array &$form_state) {
+  public static function getFormElement($organism_index, array &$form_state, array $form = NULL) {
+    $organism_key = 'organism-' . $organism_index;
+    $element = $key_exists = NULL;
+    $parents = static::getParents($organism_index, $form_state);
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Use $form first.
+    if (!empty($form)) {
+      $element = TppsArray::getValue($form, $parents, $key_exists);
+      if ($key_exists) {
+        return $element;
+      }
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Use $form_state['complete form'].
     if (empty($form_state['complete form'])) {
       $message = t("Form wasn't found under \$form_state['complete form'].");
       throw new Exception($message);
     }
-    $organism_key = 'organism-' . $organism_index;
-    $element = $key_exists = NULL;
-    $parents = static::getParents($organism_index, $form_state);
+
+    // Check if current field belongs to recently submitted form and we could
+    // get form element from $form_state['complete form'].
+    $complete_form_step = TppsArray::getValue(
+      $form_state['complete form'],
+      ['stage', '#value']
+    );
+    if (static::FORM_STEP != $complete_form_step) {
+      $message = "Step number of the submitted form (@complete_form_step) "
+        . "differs from step (@field_step) of the field '@field_name'.";
+      $params = [
+        '@field_name' => static::DOM_NAME,
+        '@field_step' => static::FORM_STEP,
+        '@complete_form_step' => $complete_form_step,
+      ];
+      throw new Exception(t($message, $params));
+    }
+    // Get form element.
     $element = TppsArray::getValue($form_state['complete form'], $parents, $key_exists);
     if ($key_exists === FALSE) {
-      throw new Exception(t("Form element wasn't found for field @field_name. "
-        . "Field parents: @field_parents.",
-        [
-          '@field_name' => static::DOM_NAME,
-          '@field_parents' => implode(', ', $parents),
-        ]
-      ));
+      $message = "Form element wasn't found for field @field_name. "
+        . "Field parents: @field_parents.";
+      $params = [
+        '@field_name' => static::DOM_NAME,
+        '@field_parents' => implode(', ', $parents),
+      ];
+      throw new Exception(t($message, $params));
     }
     return $element;
   }
