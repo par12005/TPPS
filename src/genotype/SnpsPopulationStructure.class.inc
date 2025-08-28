@@ -29,20 +29,6 @@ class SnpsPopulationStructure extends FileField {
   const FORM_STEP = 4;
 
   /**
-   * Gets lit of required columns for validation.
-   *
-   * Note:
-   * File class must overwrite this method of column validation is required.
-   *
-   * @return array
-   *   Returns list of groups of required columns.
-   *   See AssayDesign::getRequiredColumns() for the structure example.
-   */
-  public static function getRequiredColumns() {
-    return [];
-  }
-
-  /**
    * Gets parents of the field.
    *
    * @param int $organism_index

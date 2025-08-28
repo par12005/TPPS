@@ -33,18 +33,6 @@ abstract class FileField {
   const FORM_STEP = '';
 
   /**
-   * Gets lit of required columns for validation.
-   *
-   * Note:
-   * File class must overwrite this method of column validation is required.
-   *
-   * @return array
-   *   Returns list of groups of required columns.
-   *   See AssayDesign::getRequiredColumns() for the structure example.
-   */
-  abstract public static function getRequiredColumns();
-
-  /**
    * Gets parents of the field.
    *
    * WARNING: No page number to reuse for $form_state['input'].
