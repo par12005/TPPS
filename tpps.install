@@ -2475,4 +2475,19 @@ function tpps_update_7130() {
   variable_set('tpps_submission_version_log_downgrade', FALSE);
   variable_set('tpps_submission_version_switch_values', TRUE);
   variable_set('tpps_submission_log_save_event', FALSE);
+
+  // Some submissions could have NULL value of the 'shared_state' which cause
+  // ethernal loop when Submission->load() called so we fix this by setting
+  // non-empty value.
+  $list = db_select('tpps_submission', 's')
+    ->fields('s', ['accession'])
+    ->isNull('s.shared_state')
+    ->execute()
+    ->fetchCol('accession');
+  foreach ($list as $accession) {
+    db_update('tpps_submission')
+      ->fields(['shared_state' => serialize(['accession' => $accession])])
+      ->condition('accession', $accession)
+      ->execute();
+  }
 }
