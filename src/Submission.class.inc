@@ -1100,17 +1100,22 @@ class Submission {
    * Shared State for processing and for temporary use.
    * Use Submission::save() to store in DB.
    */
-  public function generateSharedState() {
-    if (
-      variable_get('tpps_submission_save_before_shared_state_generation', FALSE)
-    ) {
-      // WARNING: Do not remove!
-      // If 'sharedState' is empty this will cause errors.
-      $this->sharedState = [TRUE];
-      // Note: This takes about 20 msec and Shared State generation performed
-      // every time TPPSc form submits.
-      $this->save();
+  public function generateSharedState($force_presave = FALSE) {
+    // If submission has NULL in 'tpps_submission.shared_state' column it cause
+    // ethernal loop. To avoid this non-empty value of the 'shared_state' field
+    // must be created. See also tpps_update_7130().
+    // To fix submission run:
+    // $a = 'TGDRxxxx';
+    // $s = new Submission();
+    // $s->accession = $a;
+    // $s->generateSharedState(TRUE)->save();
+    if ($force_presave) {
+      db_update('tpps_submission')
+        ->fields(['shared_state' => serialize(['accession' => $this->accession])])
+        ->condition('accession', $this->accession)
+        ->execute();
     }
+
     // WARNING:
     // This extra step is required to break link between sharedState and state
     // properties of current Submission object.
