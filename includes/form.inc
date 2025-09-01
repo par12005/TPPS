@@ -157,27 +157,27 @@ function tpps_form_add_buttons(array $form_bus) {
  *
  * @param array $form_state
  *   Drupal Form API array with submitted values.
- * @param array $path
+ * @param array $parents
  *   Path to field form $form_state['complete form'] or $form.
- *   For example:
- *   ['organism-1', 'genotype', 'files', 'marker-type'].
+ *   Includes field name.
+ *   For example: ['organism-1', 'genotype', 'files', 'marker-type'].
  *
  * @return bool
  *   Returns TRUE if required field is empty and FALSE otherwise.
  */
-function tpps_is_required_field_empty(array $form_state, array $path) {
-  $field = TppsArray::getValue($form_state['complete form'], $path);
+function tpps_is_required_field_empty(array $form_state, array $parents) {
+  $field = TppsArray::getValue($form_state['complete form'], $parents);
   if (empty($field)) {
-    watchdog('tpps', "Field wasn't found in 'complete form'. Path: @path",
-      ['@path' => implode('/', $path)], WATCHDOG_ERROR
+    watchdog('tpps', "Field wasn't found in 'complete form'. Parents: @parents",
+      ['@parents' => implode('/', $parents)], WATCHDOG_ERROR
     );
     return FALSE;
   }
   $value = TppsArray::getValue(
-    $form_state['values'], tpps_get_field_path($field, $path)
+    $form_state['values'], tpps_get_field_path($field, $parents)
   );
   if (empty($value)) {
-    tpps_form_error_required($form_state, $path);
+    tpps_form_error_required($form_state, $parents);
     return TRUE;
   }
   return FALSE;
