@@ -715,14 +715,17 @@ abstract class FileField {
         $required_print_list[] = implode(', ', static::getDataType($case_data)) . '.';
       }
       $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
-        . "Not all required data types for columns wasn't set."
+        . "Minimal required data types for columns not set."
         . "<br />Selected data types are: <strong>!selected_columns</strong>"
-        . "<br />Independent groups of the required data types are: <strong>!required_cases</strong>",
+        . "<br /> There are @group_number possible minimal data type options; "
+        . "you must set at least columns containing all data types in one of "
+        . "the following groups: <strong>!required_cases</strong>",
         [
           '@field_title' => t(static::getFieldTitle()),
           '@oidx' => $organism_index,
           '!selected_columns' => implode(', ', static::getDataType($selected_columns)),
           '!required_cases' => theme('item_list', ['items' => $required_print_list]),
+          '@group_number' => static::countRequiredColumns(),
         ]
       );
       form_set_error(static::getFormErrorName($organism_index), $error_message);
@@ -938,6 +941,29 @@ abstract class FileField {
     }
     $required_cases = static::getRequiredColumns();
     return (bool) (is_array(reset($required_cases)));
+  }
+
+  /**
+   * Checks if multiple groups (sets) of required column data types is in use.
+   *
+   * @return bool
+   *   Returns TRUE if class uses newest format of the required columns.
+   *   Returns FALSE otherwise and if class doesn't have 'getRequiredColumns'
+   *   method (and doesn't use this feature and doesn't validate column's
+   *   data types).
+   */
+  public static function countRequiredColumns() {
+    if (!method_exists(static::class, 'getRequiredColumns')) {
+      $number = 0;
+    }
+    else {
+      $number = 1;
+      if (static::isMultipleRequiredColumns()) {
+        $required_cases = static::getRequiredColumns();
+        $number = count($required_cases);
+      }
+    }
+    return $number;
   }
 
   /**

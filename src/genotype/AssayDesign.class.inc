@@ -980,14 +980,17 @@ class AssayDesign extends FileField {
         $required_print_list[] = implode(', ', static::getDataType($case_data)) . '.';
       }
       $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
-        . "Not all required data types for columns wasn't set."
+        . "Minimal required data types for columns not set."
         . "<br />Selected data types are: <strong>!selected_columns</strong>"
-        . "<br />Independent groups of the required data types are: <strong>!required_cases</strong>",
+        . "<br /> There are @group_number possible minimal data type options; "
+        . "you must set at least columns containing all data types in one of "
+        . "the following groups: <strong>!required_cases</strong>",
         [
           '@field_title' => t(static::getFieldTitle()),
           '@oidx' => $organism_index,
           '!selected_columns' => implode(', ', static::getDataType($selected_columns)),
           '!required_cases' => theme('item_list', ['items' => $required_print_list]),
+          '@group_number' => static::countRequiredColumns(),
         ]
       );
       form_set_error(static::getFormErrorName($organism_index), $error_message);
