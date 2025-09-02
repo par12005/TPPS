@@ -825,4 +825,178 @@ class AssayDesign extends FileField {
     }
   }
 
+
+  /**
+   * This function validates that the file contains all of the required groups.
+   *
+   * Based on code from function tpps_file_validate_columns() but allows
+   * multiple sets of required columns.
+   * To use this method class must implement 'getRequiredColumns' method and
+   * allow multiple sets of required columns.
+   *
+   * WARNING:
+   * - Not compatible with tpps_file_validate_columns().
+   * - Allows multiple required groups.
+   * - Uses different structure in getColumnOptions().
+   * - Uses diferent output structure (1 level instead of 2).
+   *
+   * @param int $organism_index
+   *   Ordinal organism number at page.
+   * @param array $form_state
+   *   Drupal Form API State Array.
+   *
+   * @return array
+   *   The groups and the column option types that the file was valid for.
+   *   Example:
+   *   [
+   *     // <Name> => [
+   *     //   <id in the option's list> => <column index>,
+   *     //   '#type' => <key>
+   *     // ],
+   *     'SNP ID' => [1 => 'B', '#type' => 'id'],
+   *     'Scaffold' => [
+   *       '#type' => [], // < ---- Not found!
+   *     ],
+   *     'Position' => [3 => 'D', '#type' => 'position'],
+   *     'Allele' => [4 => 'E', '#type' => 'allele'],
+   *     'Associated Trait' => [5 => 'F', '#type' => 'trait'],
+   *     'Confidence Value' => [6 => 'G', '#type' => 'confidence'],
+   *   ];
+   *
+   * @todo Minor. Replace tpps_file_validate_columns() with this code to allow
+   * multiple groups of required columns.
+   */
+  public static function validateColumns($organism_index, array &$form_state, array $form = NULL) {
+    $debug_mode = TRUE;
+
+
+    // @todo Check if getValue() and getFileId() uses new strucutre.
+    // @todo Check if validation and processing uses new structure of the
+    // required columns and remove array_flip() if possible.
+
+    if (!method_exists(static::class, 'getRequiredColumns')) {
+      // Method shouldn't be called if there is no required columns so it's not
+      // an exception but probably method 'getRequiredColumns' wasn't implemented
+      // by mistake and watchdog-message is enough here.
+      $message = 'Method "getRequiredColumns" is required for method "@method".';
+      $params = ['@method' => __METHOD__];
+      watchdog('tpps', $message, $params);
+      return;
+    }
+    $required_cases = static::getRequiredColumns();
+    $parents = static::getParents($organism_index, $form_state);
+
+    $fid = TppsArray::getValue($form_state['input'],
+      array_merge($parents, ['fid'])
+    );
+    if (empty($fid) || empty($file = tpps_file_load($fid))) {
+      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+        . 'File is empty.',
+        [
+          '@field_title' => static::getFieldTitle(),
+          '@oidx' => $organism_index,
+        ]
+      );
+      // We highlight an empty value field because file field not visible
+      // when file was uploaded.
+      // $file_element['#name'] . '[empty]',
+      // There is no 'empty' element for file fields.
+      form_set_error(
+
+        // @todo change this.
+        static::getFormErrorName($organism_index),
+        $error_message
+      );
+      // No need to validate empty file.
+      return [];
+
+    }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Get user selected data types for columns.
+    // Example of structure: ['A' => '1', 'B' => '4',];
+    // Note: there is no sense to use FileField::getSelectedColumns() here
+    // because it uses different structure of output array.
+    $selected_columns = TppsArray::getValue(
+      $form_state['input'],
+      array_merge($parents, ['columns'])
+    );
+    if (empty($selected_columns)) {
+      // Note: $selected_columns will be empty when user just added file (not clicked 'Upload'
+      // button and submitted form (clicked 'Next' button).
+      // Probably columns could be detected automatically because they are shown
+      // at page and so we could use default values here.
+      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+        . "Data types for columns wasn't specified.",
+        [
+          '@field_title' => t(static::getFieldTitle()),
+          '@oidx' => $organism_index,
+
+        ]
+      );
+      form_set_error(static::getFormErrorName($organism_index), $error_message);
+      return [];
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // No need to storey list of options under $form_state['saved_values']
+    // because it's a constant and will not be changed.
+    $column_options = static::getColumnOptions();
+    // @todo Think if we should store list of options? If this list will be
+    // changed in future.
+
+    if ($debug_mode ?? FALSE) {
+      dpm(print_r($column_options, 1), 'options');
+      dpm(print_r($selected_columns, 1), 'selected');
+      dpm($fid, 'fid');
+    }
+    // Store under $form_state['saved_values'].
+    TppsArray::setValue(
+      $form_state['saved_values'],
+      $parents,
+      TppsArray::getValue($form_state['input'], $parents)
+    );
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Check if the same data type not used twice.
+    static::allowColumnDataTypeUseOnce($organism_index, $selected_columns);
+    if (form_get_errors()) {
+      return [];
+    }
+    $columns = [];
+    foreach ($required_cases as $case_name => $case_data) {
+
+      // Since file can contain extra columns we can't check if lists are equal
+      // but must check if $selected_columns list includes all required columns.
+      if (TppsArray::contains($case_data, $selected_columns)) {
+        // Values are equal.
+        $columns = $case_data;
+        break;
+      }
+    }
+
+    // Report about falied validation of the equired groups of the data types.
+    if (empty($columns)) {
+      foreach ($required_cases as $case_name => $case_data) {
+        $required_print_list[] = implode(', ', static::getDataType($case_data)) . '.';
+      }
+      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+        . "Not all required data types for columns wasn't set."
+        . "<br />Selected data types are: <strong>!selected_columns</strong>"
+        . "<br />Independent groups of the required data types are: <strong>!required_cases</strong>",
+        [
+          '@field_title' => t(static::getFieldTitle()),
+          '@oidx' => $organism_index,
+          '!selected_columns' => implode(', ', static::getDataType($selected_columns)),
+          '!required_cases' => theme('item_list', ['items' => $required_print_list]),
+        ]
+      );
+      form_set_error(static::getFormErrorName($organism_index), $error_message);
+    }
+
+    // See tpps_file_validate_columns().
+    // Format: ['1' => 'A', '4' => 'B'].
+    return array_flip($selected_columns);
+  }
+
+
 }
