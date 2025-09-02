@@ -924,6 +924,23 @@ abstract class FileField {
   }
 
   /**
+   * Checks if multiple groups (sets) of required column data types is in use.
+   *
+   * @return bool
+   *   Returns TRUE if class uses newest format of the required columns.
+   *   Returns FALSE otherwise and if class doesn't have 'getRequiredColumns'
+   *   method (and doesn't use this feature and doesn't validate column's
+   *   data types).
+   */
+  public static function isMultipleRequiredColumns() {
+    if (!method_exists(static::class, 'getRequiredColumns')) {
+      return FALSE;
+    }
+    $required_cases = static::getRequiredColumns();
+    return (bool) (is_array(reset($required_cases)));
+  }
+
+  /**
    * Checks if study data type contains 'Genotype'.
    *
    * @param array $form_state
