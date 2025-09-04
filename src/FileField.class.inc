@@ -33,6 +33,24 @@ abstract class FileField {
   const FORM_STEP = '';
 
   /**
+   * Gets list of column data types.
+
+   *
+   * WARNING:
+   * Do not change keys of the options because all previously created
+   * submissions became broken. Use new or create versioning system.
+   *
+   * Note:
+   * To get name by key: (static::getColumnOptions()[$data_type_key] ?? NULL).
+   *
+   * @return array
+   *   Returns list of options with column data types.
+   */
+  public static function getColumnOptions() {
+    return [];
+  }
+
+  /**
    * Gets parents of the field.
    *
    * WARNING: No page number to reuse for $form_state['input'].
