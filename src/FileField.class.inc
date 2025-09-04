@@ -843,18 +843,36 @@ abstract class FileField {
   /**
    * Checks if multiple groups (sets) of required column data types is in use.
    *
-   * @return bool
-   *   Returns TRUE if class uses newest format of the required columns.
-   *   Returns FALSE otherwise and if class doesn't have 'getRequiredColumns'
-   *   method (and doesn't use this feature and doesn't validate column's
-   *   data types).
+   * Note:
+   * - Uses static caching.
+   * - See method 'getRequiredColumns'.
+   * - Newer format it to use multiple groups of the column's data types.
+   *   This also means different format of the selected columns in method
+   *   'validateColumns'.
+   *
+   * @param bool $reset
+   *   Flag to reset cache.
+   *
+   * @return mixed
+   *   Returns TRUE when field used multiple groups of required columns.
+   *   Returns FALSE when field uses single group of required columns.
+   *   Returns NULL when field doesn't use columns.
    */
-  public static function isMultipleRequiredColumns() {
-    if (!method_exists(static::class, 'getRequiredColumns')) {
-      return FALSE;
+  public static function isMultipleRequiredColumns($reset = FALSE) {
+    $key = __METHOD__;
+    $static_cache = &drupal_static($key);
+    if ($reset || !isset($static_cache[$key])) {
+      // Get value.
+      if (!method_exists(static::class, 'getRequiredColumns')) {
+        // Class has no 'getRequiredColumns' method.
+        $value = NULL;
+      }
+      $required_cases = static::getRequiredColumns();
+      $value = (bool) (is_array(reset($required_cases)));
+      // Update static cache.
+      $static_cache[$key] = $value;
     }
-    $required_cases = static::getRequiredColumns();
-    return (bool) (is_array(reset($required_cases)));
+    return $static_cache[$key];
   }
 
   /**
