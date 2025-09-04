@@ -120,6 +120,7 @@ class OtherMarker extends FileField {
         'Genotype Data' => ['data' => [0]],
       ];
       $file_element = $form[$organism_key]['genotype'][static::OTHER_FIELDSET]['other_marker'];
+      // @todo Use FileField::validateColumns().
       $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
       // Get Plant Id column name.
       if (!form_get_errors()) {

@@ -74,6 +74,7 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
           ];
         }
 
+        // @todo Use FileField::validateColumns().
         $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
 
         if (gettype($values['pop-group']) === 'array') {

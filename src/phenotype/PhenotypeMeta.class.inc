@@ -120,6 +120,7 @@ class PhenotypeMeta {
     else {
       // Check if all required columns was set.
       $file_element = $form[$organism_key]['phenotype']['metadata'];
+      // @todo Use FileField::validateColumns().
       $groups = tpps_file_validate_columns(
         $form_state,
         PhenotypeMeta::getRequiredColumnList(),

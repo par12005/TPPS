@@ -345,6 +345,7 @@ class PhenotypeData extends TppsFile {
       'Tree Identifier' => ['id' => [self::DATA_TYPE_PLANT_IDENTIFIER]],
       'Phenotype Data' => ['phenotype-data' => [self::DATA_TYPE_PHENOTYPE_DATA]],
     ];
+    // @todo Use FileField::validateColumns().
     $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
     if (form_get_errors()) {
       return;

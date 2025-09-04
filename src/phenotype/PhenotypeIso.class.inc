@@ -176,6 +176,7 @@ class PhenotypeIso extends TppsFile {
           'clone_number' => [static::DATA_TYPE_CLONE_NUMBER]
         ];
       }
+      // @todo Use FileField::validateColumns().
       $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
       if (form_get_errors()) {
         return;

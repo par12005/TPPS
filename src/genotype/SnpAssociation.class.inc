@@ -356,6 +356,7 @@ class SnpAssociation extends FileField {
     // a Phenotypestudy or column 'Year' is missing in Phenotype Data file.
     // But also we could show warning message and ask user to upload
     // SNP Association file without 'Year' column.
+    // @todo Use FileField::validateColumns().
     $groups = tpps_file_validate_columns(
       $form_state,
       $required_groups,
