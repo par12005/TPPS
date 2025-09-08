@@ -85,7 +85,7 @@ class SubmissionCache {
   }
 
   /**
-   * Gets list of submissions.
+   * Gets list of the all cached submissions.
    *
    * Note: statically cached.
    *
@@ -98,10 +98,35 @@ class SubmissionCache {
    *   Flag is cache must be resetted. Default if FALSE.
    *
    * @return mixed
-   *   Returns cached list of Submissions.
-   *   Returns NULL if there is no submissions and nothing to cache.
+   *   Returns list of the cached submission's data.
    */
   public static function getAll($reset = FALSE) {
+    return static::get(NULL, $reset);
+  }
+
+  /**
+   * Gets single submission or list of the all submissions.
+   *
+   * Note: statically cached.
+   *
+   * Performance (550 studies):
+   * - Full cache recreation: 39334 msec (40 seconds)
+   * - DB cache: 40 msec
+   * - Static cache: 0.005 msec
+   *
+   * @param string $accession
+   *   Submission's accession. E.g., 'TGDRxxxx'.
+   *   When not set (NULL) then list of the all submissions will be returned.
+   * @param bool $reset
+   *   Flag is cache must be resetted. Default if FALSE.
+   *
+   * @return mixed
+   *   Returns list of the all cached submissions when $accession wasn't set.
+   *   Returns single cached submission when $accession was set and cached
+   *   version exists.
+   *   Return NULL if there is no cached submission for given $accession.
+   */
+  public static function get($accession = NULL, $reset = FALSE) {
     // Static caching.
     // Using static cache allows to avoid extra db query to get stored in db
     // cache and allows to update single items faster.
@@ -137,7 +162,18 @@ class SubmissionCache {
       }
       static::set($list);
     }
-    return $list;
+    // Output.
+    if (empty($accession)) {
+      return $list;
+    }
+    else {
+      if (isset($list[$accession])) {
+        return $list[$accession];
+      }
+      else {
+        return NULL;
+      }
+    }
   }
 
   /**
