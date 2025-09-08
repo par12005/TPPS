@@ -102,6 +102,10 @@
  */
 class Submission {
 
+
+  // Name of the DB table where Submissions are stored.
+  const TABLE = 'tpps_submission';
+
   /**
    * Submission accession.
    *
@@ -575,9 +579,9 @@ class Submission {
    *   public.tpps_submission.status column.
    */
   public function save($status = NULL) {
+    $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
     if (empty($this->accession)) {
       $message = 'Study accession is empty.';
-      $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
       // Function drupal_set_message escapes HTML tags.
       watchdog('tpps', $message . '<pre>@backtrace</pre>',
         ['@backtrace' => print_r($stack, 1)],
@@ -609,7 +613,7 @@ class Submission {
     if (!empty($this->uid)) {
       $fields['uid'] = $this->uid;
     }
-    db_update('tpps_submission')
+    db_update(static::TABLE)
       ->fields($fields)
       ->condition('accession', $this->accession)
       ->execute();
@@ -637,7 +641,7 @@ class Submission {
           ->execute();
       }
     }
-    db_delete('tpps_submission')
+    db_delete(static::TABLE)
       ->condition('accession', $this->accession)
       ->execute();
     // If this study was imported we need to remove it from the list.
@@ -690,7 +694,7 @@ class Submission {
       }
     }
     // Remove submission state from DB.
-    db_delete('tpps_submission')
+    db_delete(static::TABLE)
       ->condition('accession', $this->accession)
       ->execute();
     db_delete('chado.dbxref')
@@ -738,7 +742,7 @@ class Submission {
       'submission_state' => serialize($this->state),
       'shared_state' => serialize([]),
     ];
-    db_insert('tpps_submission')->fields($fields)->execute();
+    db_insert(static::TABLE)->fields($fields)->execute();
     // Add default tag.
     $tag = $this->isTppsc() ? 'TPPSc' : 'TPPS';
     tpps_submission_add_tag($this->accession, $tag);
@@ -767,8 +771,8 @@ class Submission {
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get data from DB.
-    $result = db_select('tpps_submission', 's')
-      ->fields('s')
+    $result = db_select(static::TABLE, 'ts')
+      ->fields('ts')
       ->condition('accession', $this->accession)
       ->range(0, 1)
       ->execute()
@@ -776,17 +780,17 @@ class Submission {
     // Backup option.
     if (!$result) {
       // Search for alternative accessions.
-      $query = db_select('tpps_submission', 's');
+      $query = db_select(static::TABLE, 'ts');
       $query->join(
         'tpps_submission_dbxref',
         's_dbx',
-        's.tpps_submission_id = s_dbx.tpps_submission_id');
+        'ts.tpps_submission_id = s_dbx.tpps_submission_id');
       $query->join(
         'chado.dbxref',
         'dbx',
         'dbx.dbxref_id = s_dbx.dbxref_id'
       );
-      $result = $query->fields('s')
+      $result = $query->fields('ts')
         ->condition('dbx.accession', $this->accession)
         ->range(0, 1)
         ->execute()
@@ -1085,7 +1089,7 @@ class Submission {
    * Removes Submission's Shared State.
    */
   public function removeSharedState() {
-    db_update('tpps_submission')
+    db_update(static::TABLE)
       ->fields(['shared_state' => 'a:0:{}'])
       ->condition('accession', $this->accession)
       ->execute();
@@ -1110,7 +1114,7 @@ class Submission {
     // $s->accession = $a;
     // $s->generateSharedState(TRUE)->save();
     if ($force_presave) {
-      db_update('tpps_submission')
+      db_update(static::TABLE)
         ->fields(['shared_state' => serialize(['accession' => $this->accession])])
         ->condition('accession', $this->accession)
         ->execute();
