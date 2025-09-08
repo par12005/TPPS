@@ -596,6 +596,30 @@ class Submission {
     $this->status = $status ?? $this->status;
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Update time.
+    //
+    // Let's check if submission in database wasn't updated after submission
+    // in memory was created. Since 'udpated' stored in serialized array and
+    // there is no special db table field for this. Let's use SubmissionCache
+    // class which updates every time submission is stored.
+    $memory_updated = $this->get(['updated']);
+    $cached_submission_list = SubmissionCache::get($reset = FALSE);
+    $db_record_updated = $cached_submission_list[$this->accession]['date']['updated'];
+
+    if ($db_record_updated > $memory_updated) {
+      // @todo Merge with submission from database somehow.
+      $message = 'Submission in database is newer than in memory.';
+      watchdog('tpps',
+        $message . 'DB: @db. Memory: @memory. <pre>@backtrace</pre>',
+        [
+          '@db' => $db_record_updated,
+          '@memory' => $memory_updated,
+          '@backtrace' => print_r($stack, 1),
+        ],
+        WATCHDOG_ERROR
+      );
+      throw new Exception($message . ' Check watchdog for more details.');
+    }
+
     // Note: REQUEST_TIME couldn't be used because called from CLI script and
     // processing could take long time from script call.
     $this->set(['updated'], time());
