@@ -602,7 +602,7 @@ class Submission {
     // there is no special db table field for this. Let's use SubmissionCache
     // class which updates every time submission is stored.
     $memory_updated = $this->get(['updated']);
-    $cached_submission_list = SubmissionCache::get($reset = FALSE);
+    $cached_submission_list = SubmissionCache::getAll($reset = FALSE);
     $db_record_updated = $cached_submission_list[$this->accession]['date']['updated'];
 
     if ($db_record_updated > $memory_updated) {

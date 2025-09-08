@@ -14,7 +14,7 @@ function tpps_report_doi_duplicates($reset = FALSE) {
   $rows = [];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $report_data = [];
-  foreach (SubmissionCache::get($reset) as $accession => $cached_submission) {
+  foreach (SubmissionCache::getAll($reset) as $accession => $cached_submission) {
     $publication_doi = $cached_submission['publication']['publication_doi'] ?? NULL;
     if (empty($publication_doi)) {
       continue;

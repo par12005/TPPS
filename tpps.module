@@ -3231,7 +3231,7 @@ function theme_submission_accession_link(array $variables) {
   if (empty($accession)) {
     return;
   }
-  $data = SubmissionCache::get();
+  $data = SubmissionCache::getAll();
   $number = str_replace('TGDR', '', ($accession));
   $output = '<span class="tpps-study-accession">TGDR</span>'
     . '<span class="tpps-study-accession-number" title="'

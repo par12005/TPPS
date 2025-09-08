@@ -19,7 +19,7 @@ function tpps_report_submission_file_all() {
 function tpps_report_submission_file($filter = NULL) {
   $debug_mode = FALSE;
 
-  $data = SubmissionCache::get();
+  $data = SubmissionCache::getAll();
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $options = ['query' => ['token' => variable_get('tpps_api_token')]];
   $accession = explode('/', $_GET['q'])[6] ?? NULL;

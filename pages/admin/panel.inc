@@ -57,7 +57,7 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
 
   $reset = $_GET['reset'] ?? $reset;
   tpps_admin_panel_reports($form);
-  $submission_list = SubmissionCache::get($reset);
+  $submission_list = SubmissionCache::getAll($reset);
 
   $output = [
     'unpublished_old' => [],

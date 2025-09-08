@@ -798,7 +798,7 @@ class AssayDesign extends FileField {
         $cache->data[$key] = NULL;
         // Get new data.
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        $data = SubmissionCache::get($reset);
+        $data = SubmissionCache::getAll($reset);
         $list = [];
         foreach ($data as $accession => $cached_submission) {
           $title = $cached_submission['publication']['title'] ?? t('No Title');

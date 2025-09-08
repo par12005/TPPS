@@ -81,7 +81,7 @@ class ZenodoFilesWidget {
     ];
     $widget = &$form[$widget_name];
 
-    $submission_cache = SubmissionCache::get();
+    $submission_cache = SubmissionCache::getAll();
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get content.
     $deposit_id = $submission_cache[$accession]['zenodo']['deposit_id'] ?? NULL;

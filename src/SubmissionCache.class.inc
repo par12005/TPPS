@@ -36,7 +36,9 @@
  *
  * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * Usage.
- *  $data = SubmissionCache::get($reset);
+ *
+ * Get all submissions:
+ *   $data = SubmissionCache::getAll($reset);
  */
 
 /**
@@ -99,7 +101,7 @@ class SubmissionCache {
    *   Returns cached list of Submissions.
    *   Returns NULL if there is no submissions and nothing to cache.
    */
-  public static function get($reset = FALSE) {
+  public static function getAll($reset = FALSE) {
     // Static caching.
     // Using static cache allows to avoid extra db query to get stored in db
     // cache and allows to update single items faster.
