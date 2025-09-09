@@ -5004,7 +5004,7 @@ function tpps_genotype_vcf_processing_batch_some_features_insert(&$settings, $cu
       if (!empty($src_feature_ids)) {
         $src_feature_ids_csv = implode(',', $src_feature_ids); // explain this line
         
-        $results = db_query("SELECT f.feature_id as feature_id, srcfeature_id, fmin, fmax
+        $results = db_query("SELECT f.feature_id as feature_id, f.uniquename as uniquename, srcfeature_id, fmin, fmax
           FROM chado.featureloc fl
           INNER JOIN chado.feature f ON fl.feature_id = f.feature_id
           WHERE fl.srcfeature_id IN ($src_feature_ids_csv) AND f.type_id = 1491
@@ -5015,13 +5015,14 @@ function tpps_genotype_vcf_processing_batch_some_features_insert(&$settings, $cu
           $feature_id = $fl_row->feature_id;
           $src_feature_id = $fl_row->srcfeature_id;
           $fmin = $fl_row->fmin;
+          $uniquename = $fl_row->uniquename;
           // $fmax = $fl_row->fmax; // Not needed
 
           // How do I determine that the found featureloc matches vcf line (variant)
           // based on the fmin
           $synonym_variant_names = [];
           foreach ($features_variant_data as $variant_name => $feature_data) {
-            if ($feature_data['fmin'] == $fmin) {
+            if ($feature_data['fmin'] == $fmin and $variant_name != $uniquename) {
               // We have a match, so we can insert the featureloc
               print_r("Match found for feature_id: $feature_id, src_feature_id: $src_feature_id, fmin: $fmin with variant_name: $variant_name\n");
               $sql .= "($feature_id, '$variant_name'),";
