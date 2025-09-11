@@ -664,10 +664,20 @@ class AssayDesign extends FileField {
   /**
    * Gets parents of the field.
    *
+   * Usage:
+   * To get parents for $form skip $organism_index.
+   *   $parents = AssayDesign::getParents();
+   * To get latest version or skip version detection - skip $form_state array.
+   *   $parents = AssayDesign::getParents($organism_index);
+   *
    * @param int $organism_index
    *   Ordinal number on form.
+   *   When empty list of parents will not include leading organism key element.
+   *   E.g., 'organism-N'.
    * @param array $form_state
    *   Drupal Form State array.
+   *   When empty latest version of the SubmissionForm will be used. When NOT
+   *   empty then $form_state will be searched for SubmissionForm version.
    * @param string $dom_name
    *   When empty then list of the parents will have static::DOM_NAME
    *   as a last element and given DOM-name otherwise.
@@ -675,13 +685,18 @@ class AssayDesign extends FileField {
    * @return array
    *   Returns parents for the checkbox which makes this field required.
    */
-  public static function getParents($organism_index, array $form_state, $dom_name = NULL) {
-    $organism_key = 'organism-' . $organism_index;
-    $version = SubmissionVersion::get($form_state);
+  public static function getParents($organism_index = NULL, array $form_state = NULL, $dom_name = NULL) {
+    // WARNING: Be sure to use 'default' key in switch block
+    // or explicitly set latest version number here.
+    $version = NULL;
+    if (!is_null($organism_index) && !is_null($form_state)) {
+      $version = SubmissionVersion::get($form_state);
+    }
+    $organism_key = NULL;
+
     switch ($version) {
       case 1:
         $parents = [
-          $organism_key,
           static::DATA_TYPE,
           'files',
           static::DOM_NAME,
@@ -690,7 +705,6 @@ class AssayDesign extends FileField {
 
       case 2:
         $parents = [
-          $organism_key,
           static::DATA_TYPE,
           static::SNPS_FIELDSET,
           static::DOM_NAME,
@@ -700,13 +714,17 @@ class AssayDesign extends FileField {
       case 3:
       default:
         $parents = [
-          $organism_key,
           static::DATA_TYPE,
           static::SNPS_FIELDSET,
           static::PARENT_FIELDSET,
           static::DOM_NAME,
         ];
         break;
+    }
+
+    if (!is_null($organism_index)) {
+      $organism_key = 'organism-' . $organism_index;
+      $parents = array_merge([$organism_key], $parents);
     }
     return $parents;
   }
