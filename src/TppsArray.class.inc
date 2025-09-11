@@ -602,9 +602,9 @@ class TppsArray {
   }
 
   /**
-   * Removes last element of the given array.
+   * Removes and return back the last element of the given array.
    *
-   * WARNING: given array will be updated but not returned back.
+   * WARNING: given array WILL BE updated by reference.
    *
    * @param array $array
    *   Array which will be updated.
@@ -615,6 +615,21 @@ class TppsArray {
   public static function removeLast(array &$array) {
     $last_element = array_pop($array);
     return $last_element;
+  }
+
+  /**
+   * Gets last element of the given array.
+   *
+   * Note: original array WON'T be modified.
+   *
+   * @param array $array
+   *   Array which will be updated.
+   *
+   * @return mixed
+   *   Returns value of the removed last element.
+   */
+  public static function getLast(array $array) {
+    return end($array);
   }
 
 }
