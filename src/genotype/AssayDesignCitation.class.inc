@@ -70,7 +70,17 @@ class AssayDesignCitation extends FileField {
   }
 
   /**
-   * Gets value of the Existing Study field.
+   * Gets parents of the field.
+   *
+   * Note: Currently implemented only 'Existing Study' field.
+   *
+   * Usage:
+   * To get parents for $form skip $organism_index.
+   *   $parents = AssayDesign::getParents();
+   * To get latest version or skip version detection - skip $form_state array.
+   *   $parents = AssayDesign::getParents($organism_index);
+   * To detect current version of the $form_state array:
+   *   $parents = AssayDesign::getParents($organism_index, $form_state);
    *
    * Usage example:
    * $parent_list = AssayDesignCitation::getParents(
@@ -81,21 +91,31 @@ class AssayDesignCitation extends FileField {
    *
    * @param int $organism_index
    *   Ordinal number on form.
+   *   When empty list of parents will not include leading organism key element.
+   *   E.g., 'organism-N'.
    * @param array $form_state
    *   Drupal Form State array.
+   *   When empty latest version of the SubmissionForm will be used. When NOT
+   *   empty then $form_state will be searched for SubmissionForm version.
    * @param string $dom_name
-   *   When empty then list of the parents will have static::DOM_NAME
-   *   as a last element and given DOM-name otherwise.
+   *   When empty then static::DOM_NAME will be used.
+   *   When non-empty it's a DOM-name of the subfield. For example:
+   *   static::EXISTING_STUDY_FIELD_NAME.
    *
-   * @return string
-   *   Returns value of the field EXISTING_STUDY_FIELD_NAME.
+   * @return array
+   *   Returns parents for the checkbox which makes this field required.
    */
-  public static function getParents($organism_index, array $form_state, $dom_name = NULL) {
-    $organism_key = 'organism-' . $organism_index;
-    $submission_form_version = SubmissionVersion::get($form_state);
+  public static function getParents($organism_index = NULL, array $form_state = NULL, $dom_name = NULL) {
+    // WARNING: Be sure to use 'default' key in switch block
+    // or explicitly set latest version number here.
+    $version = NULL;
+    if (!is_null($organism_index) && !is_null($form_state)) {
+      $version = SubmissionVersion::get($form_state);
+    }
+    $organism_key = NULL;
 
     if ($dom_name == static::EXISTING_STUDY_FIELD_NAME) {
-      switch ($submission_form_version) {
+      switch ($version) {
         case 1:
         case 2:
           // Field didn't exist.
@@ -111,11 +131,18 @@ class AssayDesignCitation extends FileField {
             static::EXISTING_STUDY_FIELD_NAME,
           ];
       }
-      return $parents;
     }
-    $message = 'Requested list of the parents for not yet defined field "@dom_name".';
-    $params = ['@dom_name' => $dom_name];
-    throw new Exception($message);
+    else {
+      $message = 'Requested list of the parents for not yet defined field "@dom_name".';
+      $params = ['@dom_name' => $dom_name];
+      throw new Exception($message);
+    }
+
+    if (!is_null($organism_index)) {
+      $organism_key = 'organism-' . $organism_index;
+      $parents = array_merge([$organism_key], $parents);
+    }
+    return $parents;
   }
 
   /**
