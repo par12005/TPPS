@@ -207,7 +207,7 @@ class FormState {
    *   Returns value or NULL.
    */
   public static function get(array $form_state, array $parents) {
-    return tpps_array_get_value($form_state, $parents);
+    return TppsArray::getValue($form_state, $parents);
   }
 
   /**
@@ -221,7 +221,7 @@ class FormState {
    *   Value of the element.
    */
   public static function set(array $form_state, array $parents, $value) {
-    return tpps_array_set_value($form_state, $parents, $value);
+    return TppsArray::setValue($form_state, $parents, $value);
   }
 
   /**

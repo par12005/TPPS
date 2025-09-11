@@ -1437,19 +1437,17 @@ function tpps_main_validate(&$form, &$form_state) {
   // If the user is going backwards or simply saving their data in the form,
   // make sure to save the column data for the managed_file elements. The rest
   // of the validation function does not need to be completed.
-  $triggering_element = $form_state['triggering_element']['#value'] ?? NULL;
+  $triggering_element = FormState::getTriggeringElement($form_state);
   if (in_array($triggering_element, ['Back', 'Save'])) {
     tpps_save_file_columns($form, $form_state);
     return;
   }
 
-  $form_id = TppsArray::getValue($form_state, ['build_info', 'form_id'])
-  $is_curation_form = ($form_id ?? 'tpps_main') == 'tppsc_main');
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   switch ($form_state['stage']) {
     case 'frontpage':
-      if ($is_curation_form) {
+      if (FormState::getFormId($form_state) == 'tppsc_main') {
+        // Curation Form.
         if (
           ($form_state['values']['use_old_tgdr'] ?? FALSE)
           and !$form_state['values']['old_tgdr']
@@ -1460,6 +1458,7 @@ function tpps_main_validate(&$form, &$form_state) {
         }
       }
       else {
+        // Regular User Form.
         require_once 'forms/validate/front.php';
         tpps_front_page_validate_form($form, $form_state);
       }

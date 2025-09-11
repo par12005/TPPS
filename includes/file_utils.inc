@@ -625,8 +625,7 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
  *   The state of the form being validated.
  */
 function tpps_save_file_columns(array &$form, array &$form_state) {
-  $accession = substr($form_state['accession'], 4);
-  $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] ?? NULL;
+  $organism_number = FormState::getOrganismNumber($form_state);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   if ($form_state['stage'] == TPPS_PAGE_3) {
     for ($i = 1; $i <= $form_state['stats']['species_count']; $i++) {
