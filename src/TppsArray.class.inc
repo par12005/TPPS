@@ -580,6 +580,19 @@ class TppsArray {
   }
 
   /**
+   * Gets first element of the given array.
+   *
+   * @param array $array
+   *   Array which will be updated.
+   *
+   * @return mixed
+   *   Returns value of the first element.
+   */
+  public static function getFirst(array &$array) {
+    return reset($array);
+  }
+
+  /**
    * Removes first element of the given array.
    *
    * WARNING: given array will be updated but not returned back.
