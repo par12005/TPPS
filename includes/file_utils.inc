@@ -646,93 +646,93 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   elseif ($form_state['stage'] == TPPS_PAGE_4) {
-    // Genotype.
-    if (isset($form['organism-1']['genotype'])) {
-      $other_fieldset = 'other';
-      $snp_fieldset = 'SNPs';
-      // @TODO Use FileField::getParents().
-      $field_name_list = [
-        // @TODO Add other fields with columns.
-        // 'snp-assay' has no data type selection for columns.
-        [
-           SnpAssociation::DATA_TYPE,
-           SnpAssociation::SNPS_FIELDSET,
-           SnpAssociation::DOM_NAME,
-        ],
-        [
-          // Note: no organism index so getParents() can't be used here.
-          AssayDesign::DATA_TYPE,
-          AssayDesign::SNPS_FIELDSET,
-          AssayDesign::PARENT_FIELDSET,
-          AssayDesign::DOM_NAME,
-        ],
-        ['genotype', $other_fieldset, 'other_marker'],
-      ];
+    // @todo Use FileField::getParents().
+    $field_name_list = [
+      // Page 3. Accession file.
+      // Page 4. Phenotype.
+      ['phenotype', 'file'],
+      ['phenotype', 'metadata'],
 
-      for ($i = 1; $i <= $organism_number; $i++) {
-        $organism_key = 'organism-' . $i;
-        foreach ($field_name_list as $parents) {
-          $column_list = TppsArray::getValue($form, array_merge(
-            [$organism_key], $parents, ['#value', 'columns']
-          ));
-          if (empty($column_list)) {
-            continue;
-          }
-          $fid = TppsArray::getValue($form_state, array_merge(
-            ['values', $organism_key], $parents
-          ));
-          if (empty($file = tpps_file_load($fid))) {
-            continue;
-          }
-          // Get field name.
-          $new_parents = $parents;
-          $field_name = TppsArray::removeLast($new_parents);
-          $new_parents = array_merge(
-              [$organism_key],
-              $new_parents,
-              [$field_name . '-columns']
-            );
-          TppsArray::setValue($form_state['values'], $new_parents, []);
-          foreach ($column_list as $key => $value) {
-            if ($key[0] == '#') {
+      // Page 4. Genotype.
+      // 'snp-assay' has no data type selection for columns.
+      // @todo Add other fields with columns.
+      [
+        SnpAssociation::DATA_TYPE,
+        SnpAssociation::SNPS_FIELDSET,
+        SnpAssociation::DOM_NAME,
+      ],
+      [
+        // Note: no organism index so getParents() can't be used here.
+        AssayDesign::DATA_TYPE,
+        AssayDesign::SNPS_FIELDSET,
+        AssayDesign::PARENT_FIELDSET,
+        AssayDesign::DOM_NAME,
+      ],
+      ['genotype', 'other', 'other_marker'],
+    ];
+
+    for ($i = 1; $i <= $organism_number; $i++) {
+      $organism_key = 'organism-' . $i;
+      foreach ($field_name_list as $parents) {
+        $column_list = TppsArray::getValue($form, array_merge(
+          [$organism_key], $parents, ['#value', 'columns']
+        ));
+        if (empty($column_list)) {
+          continue;
+        }
+        switch (TppsArray::getFirst($parents)) {
+          case 'genotype':
+            if (isset($form['organism-1']['genotype'])) {
               continue;
             }
-            TppsArray::setValue($form_state['values'],
-              array_merge($new_parents, [$key]),
-              $value
-            );
+            break;
+
+          case 'phenotype':
+            // @todo Minor. Probably this check could be removed because
+            // 'columns' element will be missing in this case and previous
+            // check will skip further processing.
+            // Left because it was in original code.
+            if (!FormState::hasAnyPhenotypeData($form_state, $i)) {
+              continue;
+            }
+            break;
+        }
+        $fid = TppsArray::getValue($form_state['values'],
+          array_merge([$organism_key], $parents)
+        );
+        if (empty($file = tpps_file_load($fid))) {
+          continue;
+        }
+        // Get field name.
+        $new_parents = $parents;
+        $field_name = TppsArray::removeLast($new_parents);
+
+        // @todo Could this check be removed? Left because it was in original code.
+        if (
+          !FormState::hasPhenotypeMetaDataFile($form_state, $i)
+          && $field_name == 'metadata'
+        ) {
+          continue;
+        }
+        // Set value.
+        $new_parents = array_merge(
+            [$organism_key],
+            $new_parents,
+            [$field_name . '-columns']
+          );
+        TppsArray::setValue($form_state['values'], $new_parents, []);
+        foreach ($column_list as $key => $value) {
+          if ($key[0] == '#') {
+            continue;
           }
+          TppsArray::setValue($form_state['values'],
+            array_merge($new_parents, [$key]),
+            $value
+          );
         }
       }
     }
 
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Phenotype.
-    if (isset($form['organism-1']['phenotype'])) {
-      for ($i = 1; $i <= $organism_number; $i++) {
-        $organism_key = 'organism-' . $i;
-        $phenotype = &$form_state['values'][$organism_key]['phenotype'] ?? '';
-        $phenotype_form_element = &$form[$organism_key]['phenotype'] ?? '';
-
-        if (!empty($phenotype['normal-check'])) {
-          $field_name_list = ['file', 'metadata'];
-          foreach ($field_name_list as $field_name) {
-            if ($field_name == 'metadata' && $phenotype['check'] == '0') {
-              continue;
-            }
-            $phenotype[$field_name . '-columns'] = [];
-            if (isset($phenotype_form_element[$field_name]['#value']['columns'])) {
-              $columns = $phenotype_form_element[$field_name]['#value']['columns'];
-              foreach ($columns as $col => $val) {
-                if ($col[0] != '#') {
-                  $phenotype[$field_name . '-columns'][$col] = $columns[$col];
-                }
-              }
-            }
-          }
-        }
-      }
-    }
   }
 }
 
