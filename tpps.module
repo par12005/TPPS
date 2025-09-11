@@ -996,7 +996,9 @@ function tpps_form_field_process(array $element, array &$form_state, array $form
 }
 
 /**
- * Extends the managed_file element type.
+ * Extends the managed_file form element.
+ *
+ * Called on form build but returns new elements (doesn't update $form).
  *
  * Provides options for users to define the columns in their file, as well as a
  * preview of the first 3 rows of the file.
@@ -1441,14 +1443,13 @@ function tpps_main_validate(&$form, &$form_state) {
     return;
   }
 
-  $submission = new Submission();
-  $submission->setState($form_state);
-  $is_tppsc = $submission->isTppsc();
+  $form_id = TppsArray::getValue($form_state, ['build_info', 'form_id'])
+  $is_curation_form = ($form_id ?? 'tpps_main') == 'tppsc_main');
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   switch ($form_state['stage']) {
     case 'frontpage':
-      if ($is_tppsc) {
+      if ($is_curation_form) {
         if (
           ($form_state['values']['use_old_tgdr'] ?? FALSE)
           and !$form_state['values']['old_tgdr']
@@ -1458,7 +1459,7 @@ function tpps_main_validate(&$form, &$form_state) {
           );
         }
       }
-      elseif (!$is_tppsc) {
+      else {
         require_once 'forms/validate/front.php';
         tpps_front_page_validate_form($form, $form_state);
       }
