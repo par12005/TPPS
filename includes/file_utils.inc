@@ -627,25 +627,48 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
 function tpps_save_file_columns(array &$form, array &$form_state) {
   $organism_number = FormState::getOrganismNumber($form_state);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  if ($form_state['stage'] == TPPS_PAGE_3) {
-    for ($i = 1; $i <= $form_state['stats']['species_count']; $i++) {
-      $form_state['values']['tree-accession']["species-$i"]['file-columns'] = [];
-      if (isset($form['tree-accession']["species-$i"]['file']['#value']['columns'])) {
-        foreach ($form['tree-accession']["species-$i"]['file']['#value']['columns'] as $col => $val) {
-          if ($col[0] != '#') {
-            $form_state['values']['tree-accession']["species-$i"]['file-columns'][$col]
-              = $form['tree-accession']["species-$i"]['file']['#value']['columns'][$col];
-          }
+  if (FormState::getPage($form_state) == TPPS_PAGE_3) {
+    // @todo Update. See code for genotype|phenotype fields.
+    $field_name = 'file';
+    for ($i = 1; $i <= FormState::getSpeciesNumber($form_state); $i++) {
+      $organism_key = 'species-' . $i;
+      $parents = ['tree-accession', $organism_key];
+      TppsArray::setValue($form_state['values'],
+        array_merge($parents, [$field_name . '-columns']),
+        []
+      );
+      $column_list = TppsArray::getValue($form,
+        array_merge($parents, [$field_name]['#value']['columns'])
+      );
+      if (empty($column_list)) {
+        continue;
+      }
+      $fid = TppsArray::getValue($form_state['values'],
+        array_merge([$organism_key], $parents)
+      );
+      if (empty($file = tpps_file_load($fid))) {
+        continue;
+      }
+      foreach ($column_list as $key => $value) {
+        if ($key[0] == '#') {
+          continue;
         }
+        TppsArray::setValue($form_state['values'],
+          array_merge($parents, [$field_name . '-columns', $key]),
+          $value
+        );
       }
 
-      if (empty($form_state['values']['tree-accession']['check'])) {
+      if (empty(
+        FormState::get($form_state, ['values', 'tree-accession', 'check'])
+      )) {
+        // Other species has the same settings.
         break;
       }
     }
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  elseif ($form_state['stage'] == TPPS_PAGE_4) {
+  elseif (FormState::getPage($form_state) == TPPS_PAGE_4) {
     // @todo Use FileField::getParents().
     $field_name_list = [
       // Page 3. Accession file.
@@ -732,7 +755,6 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
         }
       }
     }
-
   }
 }
 
