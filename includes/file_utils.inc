@@ -646,41 +646,66 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   elseif ($form_state['stage'] == TPPS_PAGE_4) {
-    $other_fieldset = 'other';
-    $snp_fieldset = 'SNPs';
     // Genotype.
     if (isset($form['organism-1']['genotype'])) {
-      // Format: Parent fieldset as a key and list of field names as a value.
+      $other_fieldset = 'other';
+      $snp_fieldset = 'SNPs';
+      // @TODO Use FileField::getParents().
       $field_name_list = [
-        $snp_fieldset => [
-          'snps-association',
-          // 'snp-assay' has no data type selection for columns.
-          'assay-design',
+        // @TODO Add other fields with columns.
+        // 'snp-assay' has no data type selection for columns.
+        [
+           SnpAssociation::DATA_TYPE,
+           SnpAssociation::SNPS_FIELDSET,
+           SnpAssociation::DOM_NAME,
         ],
-        $other_fieldset => [
-          'other_marker',
+        [
+          // Note: no organism index so getParents() can't be used here.
+          AssayDesign::DATA_TYPE,
+          AssayDesign::SNPS_FIELDSET,
+          AssayDesign::PARENT_FIELDSET,
+          AssayDesign::DOM_NAME,
         ],
+        ['genotype', $other_fieldset, 'other_marker'],
       ];
+
       for ($i = 1; $i <= $organism_number; $i++) {
         $organism_key = 'organism-' . $i;
-        foreach ($field_name_list as $fieldset => $item) {
-          foreach ($item as $field_name) {
-            $genotype = &$form_state['values'][$organism_key]['genotype'] ?? '';
-            $genotype_form_element = &$form[$organism_key]['genotype'] ?? '';
-            if ($file = tpps_file_load($genotype[$fieldset][$field_name] ?? '')) {
-              $genotype[$fieldset][$field_name . '-columns'] = [];
-              $column_list = $genotype_form_element[$fieldset][$field_name]
-                ['#value']['columns'] ?? [];
-              foreach ($column_list as $key => $value) {
-                if ($key[0] != '#') {
-                  $genotype[$fieldset][$field_name . '-columns'][$key] = $value;
-                }
-              }
+        foreach ($field_name_list as $parents) {
+          $column_list = TppsArray::getValue($form, array_merge(
+            [$organism_key], $parents, ['#value', 'columns']
+          ));
+          if (empty($column_list)) {
+            continue;
+          }
+          $fid = TppsArray::getValue($form_state, array_merge(
+            ['values', $organism_key], $parents
+          ));
+          if (empty($file = tpps_file_load($fid))) {
+            continue;
+          }
+          // Get field name.
+          $new_parents = $parents;
+          $field_name = TppsArray::removeLast($new_parents);
+          $new_parents = array_merge(
+              [$organism_key],
+              $new_parents,
+              [$field_name . '-columns']
+            );
+          TppsArray::setValue($form_state['values'], $new_parents, []);
+          foreach ($column_list as $key => $value) {
+            if ($key[0] == '#') {
+              continue;
             }
+            TppsArray::setValue($form_state['values'],
+              array_merge($new_parents, [$key]),
+              $value
+            );
           }
         }
       }
     }
+
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Phenotype.
     if (isset($form['organism-1']['phenotype'])) {
