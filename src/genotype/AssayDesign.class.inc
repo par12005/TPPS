@@ -323,16 +323,19 @@ class AssayDesign extends FileField {
     $organism_key = 'organism-' . $organism_index;
 
     $debug_mode = FALSE;
+    $params = ['@title' => static::TITLE];
     if ($debug_mode) {
-      tpps_log_header('Started Assay Design file procesing');
+      $message = t('"@title": Started file processing.', $params);
+      tpps_log_header($message);
     }
     // Check if file was already processed.
     // WARNING: This extra check was missing in submit_all.php script.
     if (static::wasProcessed($organism_index, $shared_state)) {
-      $message = '"@file_title" file was already processed.';
-      tpps_log($message, ['@file_title' => static::TITLE], TRIPAL_DEBUG);
+      $message = '"@title": File was already processed.';
+      tpps_log($message, $params, TRIPAL_DEBUG);
       return;
     }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // This if statement caters for the Genotype Assay Design file
     // (which holds extra data like positions etc)
     // This is usually also accompanied with the Genotype SNP Assay
@@ -342,6 +345,10 @@ class AssayDesign extends FileField {
     // The previous step took care of the SNPs insertion via the Genotype
     // SNP Assay (not to be confused with genotype SNP assay design file)
     if (empty($fid = static::getFileId($organism_index, $shared_state))) {
+      if ($debug_mode ?? FALSE) {
+        $message = '"@title": File Id is empty.';
+        tpps_log($message, $params, TRIPAL_DEBUG);
+      }
       return;
     }
     tpps_add_project_file($shared_state, $fid);
@@ -352,15 +359,16 @@ class AssayDesign extends FileField {
       $organism_key,
       static::DATA_TYPE,
     ]);
-
-    // Setup the options array which the tpps_file_iterator custom function
-    // will be able to access necessary details.
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Collect necessary data into $options array.
     $options['organism_index'] = $organism_index;
     $options['type'] = 'snp';
     $options['marker'] = 'SNP';
     $options['type_cvterm'] = tpps_load_cvterm('snp')->cvterm_id;
-    $options['ref-genome'] = $genotype['ref-genome'];
     $ref_genome = $genotype['ref-genome'];
+    $options['ref-genome'] = $ref_genome;
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
     tpps_log($ref_genome, 'Ref-genome');
     // Lookup analysis id from reference genome and add it to options array.
     if (!empty($ref_genome)) {
@@ -410,10 +418,9 @@ class AssayDesign extends FileField {
     // Extra items which uses
     // 'snp': $options['file_columns']['snp']; ? Is it 'SNP ID'?
 
-    // We want to process this file before we add it as a project file.
-    tpps_log('Processing "Assay Design" file data...');
+    tpps_log('"@title": Processing file data...', $params);
     tpps_file_iterator($fid, 'AssayDesign::processRow', $options);
-    tpps_log('Done.');
+    tpps_log('"@title": Done.', $params);
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Process data from Assay Design file field.
@@ -422,6 +429,7 @@ class AssayDesign extends FileField {
     // because this file will be used to build VCF file.
 
     // Reset options[records] with empty records arrays.
+    // @todo Check if this is really necessary and remove if possible.
     $options['records'] = [
       'feature' => [],
       'genotype' => [],
@@ -429,7 +437,8 @@ class AssayDesign extends FileField {
       'stock_genotype' => [],
     ];
     if ($debug_mode) {
-      tpps_log_header('Ended Assay Design file procesing');
+      $message = t('"@title": Complete file processing.', $params);
+      tpps_log_header($message);
     }
   }
 
@@ -727,6 +736,9 @@ class AssayDesign extends FileField {
   /**
    * Gets required columns.
    *
+   * This is newer version which allows a sets of columns
+   * (not only one flat list of the required columns).
+   *
    * Valid only sets of columns:
    *   1. SNP ID, scaffold, position.
    *   2. SNP ID, Flank sequence.
@@ -838,39 +850,29 @@ class AssayDesign extends FileField {
    * - Not compatible with tpps_file_validate_columns().
    * - Allows multiple required groups.
    * - Uses different structure in getColumnOptions().
-   * - Uses diferent output structure (1 level instead of 2).
+   * - Uses diferent output structure (single level instead of nested array).
    *
    * @param int $organism_index
    *   Ordinal organism number at page.
    * @param array $form_state
    *   Drupal Form API State Array.
+   * @param array $form
+   *   Drupal Form API Array.
    *
    * @return array
-   *   The groups and the column option types that the file was valid for.
-   *   Example:
-   *   [
-   *     // <Name> => [
-   *     //   <id in the option's list> => <column index>,
-   *     //   '#type' => <key>
-   *     // ],
-   *     'SNP ID' => [1 => 'B', '#type' => 'id'],
-   *     'Scaffold' => [
-   *       '#type' => [], // < ---- Not found!
-   *     ],
-   *     'Position' => [3 => 'D', '#type' => 'position'],
-   *     'Allele' => [4 => 'E', '#type' => 'allele'],
-   *     'Associated Trait' => [5 => 'F', '#type' => 'trait'],
-   *     'Confidence Value' => [6 => 'G', '#type' => 'confidence'],
-   *   ];
+   *   Returns mapping of the column letters (starting from A) as keys and
+   *   data type keys as values.
+   *   Example: ['A' => 1, 'B' => '2'].
    *
-   * @todo Minor. Replace tpps_file_validate_columns() with this code to allow
-   * multiple groups of required columns.
+   * @todo Merge with FileField::validateColumns().
    */
   public static function validateColumns($organism_index, array &$form_state, array $form = NULL) {
     $debug_mode = TRUE;
 
+    if (!static::isMultipleRequiredColumns()) {
+      return FileField::validateColumns($organism_index, $form_state, $form);
+    }
 
-    // @todo Check if getValue() and getFileId() uses new strucutre.
     // @todo Check if validation and processing uses new structure of the
     // required columns and remove array_flip() if possible.
 
@@ -889,12 +891,13 @@ class AssayDesign extends FileField {
     $fid = TppsArray::getValue($form_state['input'],
       array_merge($parents, ['fid'])
     );
-    if (empty($fid) || empty($file = tpps_file_load($fid))) {
-      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
-        . 'File is empty.',
+    if (empty($file = tpps_file_load($fid)) || empty($file->filesize)) {
+      $error_message = t(
+        'Organism #@oidx / "<strong>@field_title</strong>": @message',
         [
           '@field_title' => static::getFieldTitle(),
           '@oidx' => $organism_index,
+          '@message' => 'File is empty.',
         ]
       );
       // We highlight an empty value field because file field not visible
@@ -1000,6 +1003,5 @@ class AssayDesign extends FileField {
     // Format: ['1' => 'A', '4' => 'B'].
     return array_flip($selected_columns);
   }
-
 
 }
