@@ -2499,3 +2499,10 @@ function tpps_update_7130() {
 function tpps_update_7131() {
   variable_set('tpps_page_4_phenotype_metadata_validate_synonyms', TRUE);
 }
+
+/**
+ * Column data type selection for Assay Design file field.
+ */
+function tpps_update_7132() {
+  variable_set('tpps_exclude_hash_sign_from_column_list', FALSE);
+}

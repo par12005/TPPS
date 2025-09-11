@@ -638,19 +638,22 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
         []
       );
       $column_list = TppsArray::getValue($form,
-        array_merge($parents, [$field_name]['#value']['columns'])
+        array_merge($parents, [$field_name, '#value', 'columns'])
       );
       if (empty($column_list)) {
         continue;
       }
       $fid = TppsArray::getValue($form_state['values'],
-        array_merge([$organism_key], $parents)
+        array_merge($parents, [$field_name])
       );
       if (empty($file = tpps_file_load($fid))) {
         continue;
       }
       foreach ($column_list as $key => $value) {
-        if ($key[0] == '#') {
+        if (
+          variable_get('tpps_exclude_hash_sign_from_column_list', TRUE)
+          && $key[0] == '#'
+        ) {
           continue;
         }
         TppsArray::setValue($form_state['values'],
@@ -745,7 +748,10 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
           );
         TppsArray::setValue($form_state['values'], $new_parents, []);
         foreach ($column_list as $key => $value) {
-          if ($key[0] == '#') {
+          if (
+            variable_get('tpps_exclude_hash_sign_from_column_list', TRUE)
+            && $key[0] == '#'
+          ) {
             continue;
           }
           TppsArray::setValue($form_state['values'],
