@@ -1516,4 +1516,59 @@ abstract class FileField {
     }
   }
 
+  /**
+   * Gets file's header (1st row).
+   *
+   * @param int $organism_index
+   *   Ordinal organism number on page.
+   * @param array $form_state
+   *   Drupal Form API State array.
+   *
+   * @return array
+   *   Returns 1st row of file (header).
+   */
+  public static function getFileHeader($organism_index, array &$form_state) {
+    $header = [];
+    if ($fid = static::getFileId($organism_index, $form_state)) {
+      // @todo Use real value of the 'no-header' field.
+      $no_header = FALSE;
+      $header = tpps_file_headers($fid, $no_header);
+    }
+    return $header;
+  }
+
+  /**
+   * Matches column with given list of values.
+   *
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   * @param array $form_state
+   *   Drupal Form State.
+   * @param mixed $column
+   *   Letter of the column which will be matched.
+   *   'A' for 1st column, 'B' for second and so on.
+   * @param array $list
+   *   List of values with given $column must match.
+   *
+   * @return array
+   *   Returns list of the missing items in current file which present in
+   *   given $list.
+   */
+  public static function matchColumn($organism_index, array $form_state, $column, array $list) {
+    // For search purpose: 'snps-association-no-header'.
+    $parents = static::getParents($organism_index, $form_state,
+      static::DOM_NAME . '-no-header'
+    );
+    $no_header = TppsArray::getValue($form_state['values'], $parents);
+
+    // Match lists of SNPs from those 2 files.
+    $column_values = tpps_parse_file_column(
+      static::getFileId($organism_index, $form_state),
+      $column,
+      (empty($no_header) ?? FALSE)
+    );
+    $missing_items = array_diff($column_values, $list);
+    return $missing_items;
+  }
+
 }
