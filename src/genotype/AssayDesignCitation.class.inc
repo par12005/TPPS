@@ -124,7 +124,6 @@ class AssayDesignCitation extends FileField {
 
         case 3:
           $parents = [
-            $organism_key,
             static::DATA_TYPE,
             static::SNPS_FIELDSET,
             static::PARENT_FIELDSET,
