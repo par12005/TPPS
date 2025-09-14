@@ -643,13 +643,13 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
   // Note: Pages has different structure.
   // 3: 'tree-accession', 'species-N', 'file'.
   // 4: 'organism-N', 'genotype', 'SNPs', ... , 'assay-design'.
-  if (FormState::getPage($form_state) == TPPS_PAGE_3) {
+  if ($form_page == TPPS_PAGE_3) {
     // @todo Update. See code for genotype|phenotype fields.
     $parent_list = [
       ['file'],
     ];
   }
-  elseif (FormState::getPage($form_state) == TPPS_PAGE_4) {
+  elseif ($form_page == TPPS_PAGE_4) {
     // @todo Use FileField::getParents().
     $parent_list = [
       // Page 3. Accession file.
@@ -742,8 +742,9 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
         );
       }
 
-      if ($form_page == TPPS_PAGE_3
-        && empty(FormState::get($form_state['values'], ['tree-accession', 'check']))
+      if (
+        $form_page == TPPS_PAGE_3
+        && empty(FormState::getAccessionCheck($form_state))
       ) {
         // Other species has the same settings.
         break;
