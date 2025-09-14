@@ -626,6 +626,14 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
  */
 function tpps_save_file_columns(array &$form, array &$form_state) {
   $organism_number = FormState::getOrganismNumber($form_state);
+  $extra_field_list = [
+    'columns',
+    'no-header',
+    'empty',
+    // There is no need to store required groups because of different
+    // structure and this class's method could be used to get data.
+    // 'groups'.
+  ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   if (FormState::getPage($form_state) == TPPS_PAGE_3) {
     // @todo Update. See code for genotype|phenotype fields.
@@ -637,34 +645,27 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
       // WARNING: Differs from genotype/phenotype.
       $organism_key = 'species-' . $i;
       foreach ($parent_list as $parents) {
+
         // WARNING: Differs from genotype/phenotype.
         $parents = array_merge(['tree-accession', $organism_key], $parents);
+
         $fid = TppsArray::getValue($form_state['values'], $parents);
         if (empty($file = tpps_file_load($fid))) {
-          continue;
-        }
-        $column_list = TppsArray::getValue($form,
-          array_merge($parents, ['#value', 'columns'])
-        );
-        if (empty($column_list)) {
           continue;
         }
         // Get field name.
         $new_parents = $parents;
         $field_name = TppsArray::removeLast($new_parents);
         // Set value.
-        $new_parents = array_merge($new_parents, [$field_name . '-columns']);
-        TppsArray::setValue($form_state['values'], $new_parents, []);
-        foreach ($column_list as $key => $value) {
-          if (
-            variable_get('tpps_exclude_hash_sign_from_column_list', TRUE)
-            && $key[0] == '#'
-          ) {
-            continue;
-          }
+        foreach ($extra_field_list as $extra_name) {
           TppsArray::setValue($form_state['values'],
-            array_merge($new_parents, [$key]),
-            $value
+            array_merge(
+              $new_parents,
+              [$field_name . '-' . $extra_name]
+            ),
+            TppsArray::getValue($form, array_merge(
+              $parents, ['#value', $extra_name]
+            ))
           );
         }
       }
@@ -731,12 +732,6 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
         if (empty($file = tpps_file_load($fid))) {
           continue;
         }
-        $column_list = TppsArray::getValue($form, array_merge(
-          $parents, ['#value', 'columns']
-        ));
-        if (empty($column_list)) {
-          continue;
-        }
 
         // Get field name.
         $new_parents = $parents;
@@ -750,18 +745,15 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
           continue;
         }
         // Set value.
-        $new_parents = array_merge($new_parents, [$field_name . '-columns']);
-        TppsArray::setValue($form_state['values'], $new_parents, []);
-        foreach ($column_list as $key => $value) {
-          if (
-            variable_get('tpps_exclude_hash_sign_from_column_list', TRUE)
-            && $key[0] == '#'
-          ) {
-            continue;
-          }
+        foreach ($extra_field_list as $extra_name) {
           TppsArray::setValue($form_state['values'],
-            array_merge($new_parents, [$key]),
-            $value
+            array_merge(
+              $new_parents,
+              [$field_name . '-' . $extra_name]
+            ),
+            TppsArray::getValue($form, array_merge(
+              $parents, ['#value', $extra_name]
+            ))
           );
         }
       }
