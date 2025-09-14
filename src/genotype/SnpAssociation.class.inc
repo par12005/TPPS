@@ -95,7 +95,7 @@ class SnpAssociation extends FileField {
         $parents = [
           static::DATA_TYPE,
           'files',
-          static::DOM_NAME,
+          $dom_name ?? static::DOM_NAME,
         ];
         break;
 
@@ -105,7 +105,7 @@ class SnpAssociation extends FileField {
         $parents = [
           static::DATA_TYPE,
           static::SNPS_FIELDSET,
-          static::DOM_NAME,
+          $dom_name ?? static::DOM_NAME,
         ];
         break;
     }
@@ -116,7 +116,6 @@ class SnpAssociation extends FileField {
     }
     return $parents;
   }
-
 
   /**
    * Gets list of column data types.
@@ -319,6 +318,11 @@ class SnpAssociation extends FileField {
   /**
    * Validates file field.
    *
+   * Validation rules:
+   * 1. ‘SNP Association file’ will always be optional, so it should not be
+   * required to process ‘Assay Design’ file. However:
+   * the columns in a ‘SNP Association File’ do need to be validated.
+   *
    * @param int $organism_index
    *   Ordinal organism number on page.
    * @param array $form
@@ -332,8 +336,8 @@ class SnpAssociation extends FileField {
     $genotype = &$form_state['values'][$organism_key][static::DATA_TYPE] ?? NULL;
     $snps = &$genotype[static::SNPS_FIELDSET] ?? NULL;
     $snps_assay = $snps['snps-assay'] ?? 0;
-    $file_type = $snps['file-type'] ?? NULL;
 
+    $file_type = $snps['file-type'] ?? NULL;
     if (form_get_errors()) {
       // Do not validate if any errors already found.
       return FALSE;
@@ -397,18 +401,21 @@ class SnpAssociation extends FileField {
       return;
     }
 
-    // Check that SNP IDs match Genotype Assay.
-    $snps_id_col = $groups['SNP ID'][static::DATA_TYPE_SNP_ID];
-    // For search purpose: 'snps-association-no-header'.
-    $assoc_no_header = $snps[static::DOM_NAME . '-no-header'] ?? FALSE;
-
-    $assay_snps = tpps_file_headers($snps_assay);
-    unset($assay_snps[key($assay_snps)]);
-    $assoc_snps = tpps_parse_file_column($fid, $snps_id_col, $assoc_no_header);
-    $missing_snps = array_diff($assoc_snps, $assay_snps);
-
-    // @todo Re-use FileField::matchColumnValues().
-    if (!empty($missing_snps)) {
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Match SNP IDs in 'SNP Association' file and in 'SNP Assay' file.
+    //
+    // Rule: The column ‘SNP_ID’ should only contain values also present in the
+    // ‘SNP Assay file’ in column ‘SNP_ID’. The columns ‘Associated trait’
+    // should only contain values also present in the ‘Phenotype’ file.
+    // Trait names in a phenotype value are header values.
+    $missing_items = static::matchColumn(
+      $organism_index,
+      $form_state,
+      $groups['SNP ID'][static::DATA_TYPE_SNP_ID],
+      SnpAssay::getSnpList($organism_index, $form_state)
+    );
+    // @todo Move error message into matchColumn() method.
+    if (!empty($missing_items)) {
       $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
         . 'We detected SNP IDs that were not in your SNP Assay. '
         . 'Please either remove these SNPs from your Association file, '
@@ -417,19 +424,16 @@ class SnpAssociation extends FileField {
         [
           '@field_title' => t(static::getFieldTitle()),
           '@oidx' => $organism_index,
-          '@list' => implode(', ', $missing_snps),
+          '@list' => implode(', ', $missing_items),
         ]
       );
       form_set_error(static::getFormErrorName($organism_index), $error_message);
     }
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Check that Phenotype names match phenotype metadata section.
-    $trait_id_col = $groups['Associated Trait'][static::DATA_TYPE_ASSOCIATED_TRAIT];
-    $association_phenotypes = tpps_parse_file_column(
-      $fid, $trait_id_col, $assoc_no_header
-    );
-
     if (static::isPhenotypeStudy($form_state)) {
+      // Get list of phenotype names.
       $phenotype = $form_state['values'][$organism_key]['phenotype'];
       $phenotype_metadata_fid = $phenotype['metadata'];
       $phenotype_number = $phenotype['phenotypes-meta']['number'];
@@ -447,8 +451,16 @@ class SnpAssociation extends FileField {
       for ($i = 1; $i <= $phenotype_number; $i++) {
         $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
       }
-      $missing_phenotypes = array_diff($association_phenotypes, $phenotype_meta_names);
-      if (!empty($missing_phenotypes)) {
+      // Get missing items.
+      $missing_items = static::matchColumn(
+        $organism_index,
+        $form_state,
+        $groups['Associated Trait'][static::DATA_TYPE_ASSOCIATED_TRAIT],
+        $phenotype_meta_names
+      );
+      // Report.
+      // @todo Move error message into matchColumn() method.
+      if (!empty($missing_items)) {
         $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
           . 'We detected Associated Traits that were not specified in the '
           . 'Phenotype Metadata Section. Please either remove these Traits '
@@ -457,13 +469,14 @@ class SnpAssociation extends FileField {
           [
             '@field_title' => t(static::getFieldTitle()),
             '@oidx' => $organism_index,
-            '@list' => implode(', ', $missing_phenotypes),
+            '@list' => implode(', ', $missing_items),
           ]
         );
         form_set_error(static::getFormErrorName($organism_index), $error_message);
       }
     }
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Check that position values are correctly formatted.
     $position_col = $groups['Position'][static::DATA_TYPE_POSITION];
     $positions = tpps_parse_file_column($fid, $position_col, $assoc_no_header);

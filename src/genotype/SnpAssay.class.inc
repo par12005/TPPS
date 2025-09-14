@@ -233,7 +233,7 @@ class SnpAssay extends FileField {
   /**
    * Gets list of SNP names in file.
    *
-   * Note: 
+   * Note:
    * 1st row (header) must contain SNP names except 1st column which is SNP_ID.
    *
    * @param int $organism_index
@@ -250,7 +250,7 @@ class SnpAssay extends FileField {
     // Note: File field 'SnpAssay' has no data type selectors for columns so
     // 1st column must be a 'SNP_ID' column. Other columns will have SNP
     // names in the header (1st row).
-    TppsArray::removeFirst($list)
+    TppsArray::removeFirst($list);
     return $list;
   }
 
