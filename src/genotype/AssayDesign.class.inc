@@ -303,9 +303,6 @@ class AssayDesign extends FileField {
         return;
       }
     }
-
-    // Create new '-columns', '-no-header' and '-empty' fields in 'saved_values'.
-    static::storeSubFields($organism_index, $form_state);
     static::preserveValidFile($organism_index, $form_state);
   }
 

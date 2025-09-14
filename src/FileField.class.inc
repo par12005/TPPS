@@ -1004,28 +1004,6 @@ abstract class FileField {
   }
 
   /**
-   * Stores sub-fields to be used in 'saved_values'.
-   *
-   * @param int $organism_index
-   *   Ordinal organism number at page.
-   * @param array $form_state
-   *   Drupal Form API State Array.
-   */
-  public static function storeSubFields($organism_index, array &$form_state) {
-    $file_element = static::getFormElement($organism_index, $form_state);
-    $parents = $file_element['#parents'];
-    array_pop($parents);
-    $values = TppsArray::getValue($form_state['values'], $parents);
-    $values[static::DOM_NAME . '-columns'] = $file_element['#value']['columns'] ?? NULL;
-    $values[static::DOM_NAME . '-no-header'] = $file_element['#value']['no-header'] ?? NULL;
-    $values[static::DOM_NAME . '-empty'] = $file_element['#value']['empty'] ?? NULL;
-    // There is no need to store required groups because of different structure
-    // and this class's method could be used to get data.
-    //$values[static::DOM_NAME . '-groups']] = [];
-    TppsArray::setValue($form_state['values'], $parents, $values);
-  }
-
-  /**
    * Checks if file was already processed.
    *
    * Allows to avoid calling ::process() method more then once because it's
