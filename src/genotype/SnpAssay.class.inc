@@ -230,4 +230,28 @@ class SnpAssay extends FileField {
   public static function process($organism_index, array $shared_state, array &$options = []) {
   }
 
+  /**
+   * Gets list of SNP names in file.
+   *
+   * Note: 
+   * 1st row (header) must contain SNP names except 1st column which is SNP_ID.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number on page.
+   * @param array $form_state
+   *   Drupal Form State array.
+   *
+   * @return array
+   *   Returns list of SNP names in the file.
+   */
+  public static function getSnpList($organism_index, array $form_state) {
+    // Get header of the 'SNP Assay' file field.
+    $list = static::getFileHeader($organism_index, $form_state);
+    // Note: File field 'SnpAssay' has no data type selectors for columns so
+    // 1st column must be a 'SNP_ID' column. Other columns will have SNP
+    // names in the header (1st row).
+    TppsArray::removeFirst($list)
+    return $list;
+  }
+
 }
