@@ -669,6 +669,8 @@ class AssayDesign extends FileField {
    *   $parents = AssayDesign::getParents();
    * To get latest version or skip version detection - skip $form_state array.
    *   $parents = AssayDesign::getParents($organism_index);
+   * To detect current version of the $form_state array:
+   *   $parents = AssayDesign::getParents($organism_index, $form_state);
    *
    * @param int $organism_index
    *   Ordinal number on form.
@@ -679,8 +681,9 @@ class AssayDesign extends FileField {
    *   When empty latest version of the SubmissionForm will be used. When NOT
    *   empty then $form_state will be searched for SubmissionForm version.
    * @param string $dom_name
-   *   When empty then list of the parents will have static::DOM_NAME
-   *   as a last element and given DOM-name otherwise.
+   *   When empty then static::DOM_NAME will be used.
+   *   When non-empty it's a DOM-name of the subfield. For example:
+   *   static::EXISTING_STUDY_FIELD_NAME.
    *
    * @return array
    *   Returns parents for the checkbox which makes this field required.
@@ -923,14 +926,11 @@ class AssayDesign extends FileField {
       // $file_element['#name'] . '[empty]',
       // There is no 'empty' element for file fields.
       form_set_error(
-
-        // @todo change this.
         static::getFormErrorName($organism_index),
         $error_message
       );
       // No need to validate empty file.
       return [];
-
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
