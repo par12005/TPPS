@@ -53,13 +53,27 @@ abstract class FileField {
   /**
    * Gets parents of the field.
    *
-   * WARNING: No page number to reuse for $form_state['input'].
    * See AssayDesign::getParents() for example.
+   *
+   * WARNING: List of parents has no page number to allow use it under
+   * $form_state['input'].
+   *
+   * Usage:
+   * To get parents for $form skip $organism_index.
+   *   $parents = AssayDesign::getParents();
+   * To get latest version or skip version detection - skip $form_state array.
+   *   $parents = AssayDesign::getParents($organism_index);
+   * To detect current version of the $form_state array:
+   *   $parents = AssayDesign::getParents($organism_index, $form_state);
    *
    * @param int $organism_index
    *   Ordinal number on form.
+   *   When empty list of parents will not include leading organism key element.
+   *   E.g., 'organism-N'.
    * @param array $form_state
    *   Drupal Form State array.
+   *   When empty latest version of the SubmissionForm will be used. When NOT
+   *   empty then $form_state will be searched for SubmissionForm version.
    * @param string $dom_name
    *   When empty then static::DOM_NAME will be used.
    *   When non-empty it's a DOM-name of the subfield. For example:
@@ -432,6 +446,8 @@ abstract class FileField {
    * State or Shared State.
    */
   public static function getSubFieldValue($organism_index, array &$form_state, $name) {
+    $debug_mode = FALSE;
+
     $value = $key_exists = NULL;
     $organism_key = 'organism-' . $organism_index;
     $parent_list = [
@@ -486,17 +502,21 @@ abstract class FileField {
         break;
       }
     }
+
     // Nothing was found.
     if ($key_exists === FALSE) {
       // It's not an error and there is no sence to throw an exception.
-      watchdog('tpps', 'Organism #@oidx / @field_title: Value was NOT found for @sub_field.',
-        [
-          '@field_title' => static::getFieldTitle(),
-          '@oidx' => $organism_index,
-          '@sub_field' => $name,
-        ],
-        WATCHDOG_WARNING
-      );
+      $message = 'Organism #@oidx / @field_title: Value was NOT found for @sub_field. !stack';
+      if ($debug_mode ?? FALSE) {
+        $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 10);
+      }
+      $params = [
+        '@field_title' => static::getFieldTitle(),
+        '@oidx' => $organism_index,
+        '@sub_field' => implode('/', $parents),
+        '!stack' => $stack ? TppsArray::printList($stack) : NULL,
+      ];
+      watchdog('tpps', $message, $params, WATCHDOG_WARNING);
     }
     return $value;
   }
