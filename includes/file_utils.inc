@@ -625,6 +625,11 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
  *   The state of the form being validated.
  */
 function tpps_save_file_columns(array &$form, array &$form_state) {
+  $form_page = FormState::getPage($form_state);
+  if (!in_array($form_page, [TPPS_PAGE_3, TPPS_PAGE_4])) {
+    // Currently only file fields on this pages are supported.
+    return;
+  }
   $organism_number = FormState::getOrganismNumber($form_state);
   $extra_field_list = [
     'columns',
@@ -634,50 +639,16 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
     // structure and this class's method could be used to get data.
     // 'groups'.
   ];
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // List of parents.
+  // Note: Pages has different structure.
+  // 3: 'tree-accession', 'species-N', 'file'.
+  // 4: 'organism-N', 'genotype', 'SNPs', ... , 'assay-design'.
   if (FormState::getPage($form_state) == TPPS_PAGE_3) {
     // @todo Update. See code for genotype|phenotype fields.
     $parent_list = [
       ['file'],
     ];
-
-    for ($i = 1; $i <= FormState::getSpeciesNumber($form_state); $i++) {
-      // WARNING: Differs from genotype/phenotype.
-      $organism_key = 'species-' . $i;
-      foreach ($parent_list as $parents) {
-
-        // WARNING: Differs from genotype/phenotype.
-        $parents = array_merge(['tree-accession', $organism_key], $parents);
-
-        $fid = TppsArray::getValue($form_state['values'], $parents);
-        if (empty($file = tpps_file_load($fid))) {
-          continue;
-        }
-        // Get field name.
-        $new_parents = $parents;
-        $field_name = TppsArray::removeLast($new_parents);
-        // Set value.
-        foreach ($extra_field_list as $extra_name) {
-          TppsArray::setValue($form_state['values'],
-            array_merge(
-              $new_parents,
-              [$field_name . '-' . $extra_name]
-            ),
-            TppsArray::getValue($form, array_merge(
-              $parents, ['#value', $extra_name]
-            ))
-          );
-        }
-      }
-      if (empty(
-        FormState::get($form_state, ['values', 'tree-accession', 'check'])
-      )) {
-        // Other species has the same settings.
-        break;
-      }
-    }
   }
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   elseif (FormState::getPage($form_state) == TPPS_PAGE_4) {
     // @todo Use FileField::getParents().
     $parent_list = [
@@ -703,59 +674,79 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
       ],
       ['genotype', 'other', 'other_marker'],
     ];
+  }
 
-    for ($i = 1; $i <= $organism_number; $i++) {
-      // WARNING: Differs from accession file on Page 3.
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  for ($i = 1; $i <= $organism_number; $i++) {
+    if ($form_page == TPPS_PAGE_3) {
+      $organism_key = 'species-' . $i;
+    }
+    elseif ($form_page == TPPS_PAGE_4) {
       $organism_key = 'organism-' . $i;
-      foreach ($parent_list as $parents) {
-        switch (TppsArray::getFirst($parents)) {
-          case 'genotype':
-            if (isset($form['organism-1']['genotype'])) {
-              continue;
-            }
-            break;
+    }
 
-          case 'phenotype':
-            // @todo Minor. Probably this check could be removed because
-            // 'columns' element will be missing in this case and previous
-            // check will skip further processing.
-            // Left because it was in original code.
-            if (!FormState::hasAnyPhenotypeData($form_state, $i)) {
-              continue;
-            }
-            break;
-        }
-        // Update list of the parents.
-        // WARNING: Differs from accession file on Page 3.
+    foreach ($parent_list as $parents) {
+      switch (TppsArray::getFirst($parents)) {
+        case 'genotype':
+          if (isset($form['organism-1']['genotype'])) {
+            continue;
+          }
+          break;
+
+        case 'phenotype':
+          // @todo Minor. Probably this check could be removed because
+          // 'columns' element will be missing in this case and previous
+          // check will skip further processing.
+          // Left because it was in original code.
+          if (!FormState::hasAnyPhenotypeData($form_state, $i)) {
+            continue;
+          }
+          break;
+      }
+      // Update list of the parents.
+      if ($form_page == TPPS_PAGE_3) {
+        $parents = array_merge(['tree-accession', $organism_key], $parents);
+      }
+      elseif ($form_page == TPPS_PAGE_4) {
         $parents = array_merge([$organism_key], $parents);
-        $fid = TppsArray::getValue($form_state['values'], $parents);
-        if (empty($file = tpps_file_load($fid))) {
-          continue;
-        }
+      }
 
-        // Get field name.
-        $new_parents = $parents;
-        $field_name = TppsArray::removeLast($new_parents);
+      $fid = TppsArray::getValue($form_state['values'], $parents);
+      if (empty($file = tpps_file_load($fid))) {
+        continue;
+      }
 
-        // @todo Could this check be removed? Left because it was in original code.
+      // Get field name.
+      $new_parents = $parents;
+      $field_name = TppsArray::removeLast($new_parents);
+
+      // @todo Could this check be removed? Left because it was in original code.
+      if ($form_page == TPPS_PAGE_4) {
         if (
           !FormState::hasPhenotypeMetaDataFile($form_state, $i)
           && $field_name == 'metadata'
         ) {
           continue;
         }
-        // Set value.
-        foreach ($extra_field_list as $extra_name) {
-          TppsArray::setValue($form_state['values'],
-            array_merge(
-              $new_parents,
-              [$field_name . '-' . $extra_name]
-            ),
-            TppsArray::getValue($form, array_merge(
-              $parents, ['#value', $extra_name]
-            ))
-          );
-        }
+      }
+      // Set value.
+      foreach ($extra_field_list as $extra_name) {
+        TppsArray::setValue($form_state['values'],
+          array_merge(
+            $new_parents,
+            [$field_name . '-' . $extra_name]
+          ),
+          TppsArray::getValue($form, array_merge(
+            $parents, ['#value', $extra_name]
+          ))
+        );
+      }
+
+      if ($form_page == TPPS_PAGE_3
+        && empty(FormState::get($form_state['values'], ['tree-accession', 'check']))
+      ) {
+        // Other species has the same settings.
+        break;
       }
     }
   }
