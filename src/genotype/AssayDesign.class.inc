@@ -201,23 +201,6 @@ class AssayDesign extends FileField {
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Check if other required files was uploaded.
-    if (empty($snps['snps-association'])) {
-      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
-        . 'File "SNP Association" is required.',
-        [
-          '@field_title' => t(static::getFieldTitle()),
-          '@oidx' => $organism_index,
-        ]
-      );
-      form_set_error(static::getFormErrorName($organism_index), $error_message);
-    }
-    // Do NOT allow further validation.
-    if (form_get_errors()) {
-      return FALSE;
-    }
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Check if required data types for columns was set.
     // Note: Assay Design has more then one group of required columns.
     if (static::hasColumns($organism_index, $form_state)) {
