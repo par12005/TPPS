@@ -90,7 +90,7 @@ class SnpAssociation extends FileField {
     }
     $organism_key = NULL;
 
-    switch (SubmissionVersion::get($form_state)) {
+    switch ($version) {
       case 1:
         $parents = [
           static::DATA_TYPE,

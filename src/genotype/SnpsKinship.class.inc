@@ -64,12 +64,12 @@ class SnpsKinship extends FileField {
     }
     $organism_key = NULL;
 
-    switch (SubmissionVersion::get($form_state)) {
+    switch ($version) {
       case 1:
         $parents = [
           static::DATA_TYPE,
           'files',
-          static::DOM_NAME,
+          $dom_name ?? static::DOM_NAME,
         ];
         break;
 
@@ -79,7 +79,7 @@ class SnpsKinship extends FileField {
         $parents = [
           static::DATA_TYPE,
           static::SNPS_FIELDSET,
-          static::DOM_NAME,
+          $dom_name ?? static::DOM_NAME,
         ];
         break;
     }

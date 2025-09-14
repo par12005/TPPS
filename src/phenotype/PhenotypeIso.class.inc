@@ -87,14 +87,14 @@ class PhenotypeIso extends TppsFile {
     }
     $organism_key = NULL;
 
-    switch (SubmissionVersion::get($form_state)) {
+    switch ($version) {
       case 1:
       case 2:
       case 3:
       default:
         $parents = [
           static::DATA_TYPE,
-          static::DOM_NAME,
+          $dom_name ?? static::DOM_NAME,
         ];
         break;
     }

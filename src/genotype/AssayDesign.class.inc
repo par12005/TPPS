@@ -200,6 +200,11 @@ class AssayDesign extends FileField {
       return FALSE;
     }
 
+    // @todo Implement:
+    // Do not allow the same data type for multiple columns.
+    // static::allowColumnDataTypeUseOnce($organism_index, $groups);
+
+
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Check if required data types for columns was set.
     // Note: Assay Design has more then one group of required columns.
@@ -682,7 +687,7 @@ class AssayDesign extends FileField {
         $parents = [
           static::DATA_TYPE,
           'files',
-          static::DOM_NAME,
+          $dom_name ?? static::DOM_NAME,
         ];
         break;
 
@@ -690,7 +695,7 @@ class AssayDesign extends FileField {
         $parents = [
           static::DATA_TYPE,
           static::SNPS_FIELDSET,
-          static::DOM_NAME,
+          $dom_name ?? static::DOM_NAME,
         ];
         break;
 
@@ -700,7 +705,7 @@ class AssayDesign extends FileField {
           static::DATA_TYPE,
           static::SNPS_FIELDSET,
           static::PARENT_FIELDSET,
-          static::DOM_NAME,
+          $dom_name ?? static::DOM_NAME,
         ];
         break;
     }
