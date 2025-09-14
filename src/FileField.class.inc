@@ -33,8 +33,64 @@ abstract class FileField {
   const FORM_STEP = '';
 
   /**
-   * Gets list of column data types.
+   * Builds set of form fields for 'Assay Design Citation' feature.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number at page.
+   * @param array $form
+   *   Drupal Form API Array.
+   * @param array $form_state
+   *   Drupal Form API State Array.
+   */
+  public static function build($organism_index, array &$form, array $form_state) {}
 
+  /**
+   * Validates file field.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number on page.
+   * @param array $form
+   *   Drupal Form API array.
+   * @param array $form_state
+   *   Drupal Form API State array.
+   */
+  public static function validate($organism_index, array &$form, array &$form_state) {}
+
+  /**
+   * Processes a file.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number on page.
+   * @param array $shared_state
+   *   Submission's Shared State.
+   * @param array $options
+   *   Options for processing. Could be used to return processing results.
+   */
+  public static function process($organism_index, array $shared_state, array &$options = []) {}
+
+  /**
+   * Processes a single row of the file.
+   *
+   * Must be used with tpps_file_iterator().
+   * Processes genotype SNP design assay file.
+   * Initially done to get position data from the assay design file.
+   *
+   * @param mixed $row
+   *   The item yielded by the TPPS file generator.
+   *   Keys are column letters and value is a cell value. Example of structure:
+   *   [
+   *     [A] => SNP ID
+   *     [B] => Scaffold
+   *     [C] => Position
+   *     [D] => Flank sequence
+   *   ].
+   * @param array $options
+   *   Additional options set when calling tpps_file_iterator().
+   */
+  public static function processRow($row, array &$options = []) {}
+
+  /**
+   * Gets list of column data types.
    *
    * WARNING:
    * Do not change keys of the options because all previously created
@@ -244,12 +300,18 @@ abstract class FileField {
     // Nothing was found.
     // It's not an error and there is no sence to throw an exception.
     if ($key_exists === FALSE) {
-      $message = 'Organism #@oidx / @field_title: Value not found.';
+      $message = 'Organism #@oidx / @field_title: Value was NOT found for @sub_field. !stack';
+      if ($debug_mode ?? FALSE) {
+        $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 10);
+      }
       $params = [
         '@field_title' => static::getFieldTitle(),
         '@oidx' => $organism_index,
+        '@sub_field' => implode('/', $parents),
+        '!stack' => $stack ? TppsArray::printList($stack) : NULL,
       ];
       watchdog('tpps', $message, $params, WATCHDOG_WARNING);
+
     }
     return $value;
   }
