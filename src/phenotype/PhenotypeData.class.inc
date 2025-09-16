@@ -19,7 +19,7 @@
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class PhenotypeData extends TppsFile {
+class PhenotypeData extends FileField {
 
   const DATA_TYPE_PHENOTYPE_DATA = 0;
   const DATA_TYPE_PLANT_IDENTIFIER = 1;
@@ -449,17 +449,13 @@ class PhenotypeData extends TppsFile {
     foreach ($phenotype_file_name_cols as $column_index) {
       $phenotype_names[] = $headers[$column_index];
     }
-    $phenotype_meta_names = [];
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Check if phenotype names in data and metadata files matches.
     if ($is_metadata_file) {
-      // Check if phenotype names in data and metadata files matches.
-      $phenotype_name_col = self::getPhenotypeNameColumn($organism_index, $form_state);
-      if (isset($phenotype_name_col)) {
-        $phenotype_meta_names = tpps_parse_file_column(
-          $metadata_file_id,
-          $phenotype_name_col
-        );
-      }
+      $phenotype_meta_names = PhenotypeMeta::getPhenotypeNames(
+        $organism_index, $form_state
+      );
       $message = "Phenotype file: We detected "
         . "Phenotypes that were not in your Phenotype Metadata file. "
         . "Please either remove these phenotypes from your Phenotype file, "
@@ -468,9 +464,9 @@ class PhenotypeData extends TppsFile {
     }
     else {
       // Manual metadata.
-      for ($i = 1; $i <= $phenotype_number; $i++) {
-        $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
-      }
+      $phenotype_meta_names = PhenotypeManual::getPhenotypeNames(
+        $organism_index, $form_state
+      );
       // @todo Update massage for manually added phenotypes.
       $message = "Phenotype file: We detected "
         . "Phenotypes that are missing in your Phenotype data file. "
@@ -479,6 +475,12 @@ class PhenotypeData extends TppsFile {
         . "detected with missing definitions were: @list.";
     }
 
+    // Note: PhenotypeData::matchColumn() couldn't be used because phenotype
+    // names are in file's header.
+    // Note: phenotypes in Metadata file are in column.
+    // See SnpAssociation class which compares header and column.
+    // @todo Reuse existing code.
+    //
     $missing_phenotypes = array_diff($phenotype_names, $phenotype_meta_names);
     if (!empty($missing_phenotypes)) {
       form_set_error($form_field_error_name,
@@ -558,34 +560,6 @@ class PhenotypeData extends TppsFile {
     ];
   }
 
-  /**
-   * Gets index of the Phenotype Name column.
-   *
-   * @param int $organism_index
-   *   Organism ordinal number at page.
-   * @param array $form_state
-   *   Drupal Form API State array.
-   *
-   * @return string
-   *   Returns index of the column which holds phenotype name. E.g., "A".
-   */
-  public static function getPhenotypeNameColumn($organism_index, array $form_state) {
-    $organism_key = 'organism-' . $organism_index;
-    $parents = [
-      $organism_key, 'phenotype', 'metadata-groups',
-      // 'Phenotype Id' is name of the column (not option's name or index)
-      // which created on server side during validation.
-      'Phenotype Id',
-      // This value will always be '1' for 'Phenotype Id'.
-      '1',
-    ];
-    return TppsArray::getValue($form_state['input'], $parents)
-      ?? TppsArray::getValue($form_state['values'], $parents)
-      ?? TppsArray::getValue(
-        $form_state['saved_values'][TPPS_PAGE_4],
-        $parents
-      ) ?? NULL;
-  }
 
   /**
    * Checks if given DataType was set using column's widget.
@@ -709,6 +683,47 @@ class PhenotypeData extends TppsFile {
    *   Necessary data.
    */
   public static function process($organism_index, array $shared_state, array &$options = []) {
+  }
+
+  /**
+   * Checks if "Iso" checkbox was selected.
+   *
+   * Checkbox title:
+   * "My phenotypes include results from a mass spectrometry or isotope analysis".
+   *
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   * @param array $form_state
+   *   Drupal Form State array.
+   *
+   * @return mixed
+   *   Returns TRUE if checkbox was selected and FALSE otherwise.
+   *   Returns NULL if field wasn't found.
+   */
+  public static function isSelected($organism_index, array $form_state) {
+    $parents = static::getCheckboxParents($organism_index);
+    $key_exists = NULL;
+    if (!empty($form_state['values'])) {
+      $value = TppsArray::getValue(
+        $form_state['values'],
+        $parents,
+        $key_exists
+      );
+      if ($key_exists) {
+        return $value;
+      }
+    }
+    if (!empty($form_state['saved_values'][TPPS_PAGE_4])) {
+      $value = TppsArray::getValue(
+        $form_state['saved_values'][TPPS_PAGE_4],
+        $parents,
+        $key_exists
+      );
+      if ($key_exists) {
+        return $value;
+      }
+    }
+    return NULL;
   }
 
 }

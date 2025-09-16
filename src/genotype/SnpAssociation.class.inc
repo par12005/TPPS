@@ -433,30 +433,23 @@ class SnpAssociation extends FileField {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Check that Phenotype names match phenotype metadata section.
     if (static::isPhenotypeStudy($form_state)) {
-      // Get list of phenotype names.
-      $phenotype = $form_state['values'][$organism_key]['phenotype'];
-      $phenotype_metadata_fid = $phenotype['metadata'];
-      $phenotype_number = $phenotype['phenotypes-meta']['number'];
-      $phenotype_meta_names = [];
-      $phenotype_name_col = PhenotypeData::getPhenotypeNameColumn(
-        $organism_index,
-        $form_state
-      );
-      if (isset($phenotype_name_col)) {
-        $phenotype_meta_names = tpps_parse_file_column(
-          $phenotype_metadata_fid,
-          $phenotype_name_col
+      // Get missing items.
+      if (PhenotypeMeta::getFileId($organism_index, $form_state)) {
+        $phenotype_name_list = PhenotypeMeta::getPhenotypeNames(
+          $organism_index, $form_state
         );
       }
-      for ($i = 1; $i <= $phenotype_number; $i++) {
-        $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
+      else {
+        $phenotype_name_list = PhenotypeManual::getPhenotypeNames(
+          $organism_index, $form_state
+        );
       }
-      // Get missing items.
+
       $missing_items = static::matchColumn(
         $organism_index,
         $form_state,
         $groups['Associated Trait'][static::DATA_TYPE_ASSOCIATED_TRAIT],
-        $phenotype_meta_names
+        $phenotype_name_list
       );
       // Report.
       // @todo Move error message into matchColumn() method.

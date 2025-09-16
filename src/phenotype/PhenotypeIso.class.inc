@@ -14,24 +14,35 @@
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class PhenotypeIso extends TppsFile {
+class PhenotypeIso extends FileField {
 
-  // Data Type's Id.
-  const DATA_TYPE_PLANT_IDENTIFIER = 1;
-  const DATA_TYPE_CLONE_NUMBER = 2;
-  const DATA_TYPE_METABOLOMIC_DATA = 3;
-
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Required constants.
+  //
+  const TITLE = 'Phenotype Isotope/Mass Spectrometry';
+  // HTML name of the field.
+  const DOM_NAME = 'iso';
   // Name of the fieldset on PAGE 4.
   const DATA_TYPE = 'phenotype';
+  // Integer Form Page number.
+  const FORM_STEP = TPPS_PAGE_4;
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Optional constants. Class specific.
+  //
   // Name of the checkbox which specifies that phenotype "isotope" data file
   // must be used. When This checkbox is checked the normal phenotype data
   // file is required.
   // Note: there is also 'normal-check' checkbox.
   const CHECKBOX_NAME = 'iso-check';
 
-  // HTML name of the field.
-  const DOM_NAME = 'iso';
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Custom settings.
+  //
+  // Data Type's Id.
+  const DATA_TYPE_PLANT_IDENTIFIER = 1;
+  const DATA_TYPE_CLONE_NUMBER = 2;
+  const DATA_TYPE_METABOLOMIC_DATA = 3;
 
   /**
    * Gets parents for checkbox which makes field required.
@@ -212,7 +223,7 @@ class PhenotypeIso extends TppsFile {
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Validate number of 'Metabolomic data' columns.
-    $headers = static::getHeader($organism_index, $form_state);
+    $headers = static::getFileHeader($organism_index, $form_state);
 
     // Will be 'A' for 1st column.
     $id_col_name = key($headers);
@@ -310,7 +321,7 @@ class PhenotypeIso extends TppsFile {
     tpps_add_project_file($shared_state, $fid);
 
     $options['iso'] = TRUE;
-    $options['file_headers'] = static::getHeader($organism_index, $shared_state);
+    $options['file_headers'] = static::getFileHeader($organism_index, $shared_state);
     $options['meta'] = [
       'desc' => "Mass Spectrometry",
       // Unit name replaced with Unit Id (cvterm_id for 'chemical substance').
@@ -329,6 +340,47 @@ class PhenotypeIso extends TppsFile {
     // [VS]
     $id_list = tpps_chado_insert_multi($options['records'], ['fks' => 'phenotype']);
     tpps_log('Done.', [], TRIPAL_INFO);
+  }
+
+  /**
+   * Checks if "Iso" checkbox was selected.
+   *
+   * Checkbox title:
+   * "My phenotypes include results from a mass spectrometry or isotope analysis".
+   *
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   * @param array $form_state
+   *   Drupal Form State array.
+   *
+   * @return mixed
+   *   Returns TRUE if checkbox was selected and FALSE otherwise.
+   *   Returns NULL if field wasn't found.
+   */
+  public static function isSelected($organism_index, array $form_state) {
+    $parents = static::getCheckboxParents($organism_index);
+    $key_exists = NULL;
+    if (!empty($form_state['values'])) {
+      $value = TppsArray::getValue(
+        $form_state['values'],
+        $parents,
+        $key_exists
+      );
+      if ($key_exists) {
+        return $value;
+      }
+    }
+    if (!empty($form_state['saved_values'][TPPS_PAGE_4])) {
+      $value = TppsArray::getValue(
+        $form_state['saved_values'][TPPS_PAGE_4],
+        $parents,
+        $key_exists
+      );
+      if ($key_exists) {
+        return $value;
+      }
+    }
+    return NULL;
   }
 
 }

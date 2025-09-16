@@ -17,22 +17,28 @@
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class PhenotypeMeta {
+class PhenotypeMeta extends FileField {
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Name of the checkbox which specifies that phenotype "normal" data file
   // must be used. When This checkbox is checked the normal phenotype data
   // file is required.
   // Note: there is also 'iso-check' checkbox.
   const CHECKBOX_NAME = 'normal-check';
 
-  // Name of the file field.
-  // Value is file id.
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Common settings.
+  //
+  const TITLE = 'Phenotype Metadata';
+  // Name of the form field.
   const DOM_NAME = 'metadata';
-  // Name of the fieldset on PAGE 4.
+  // Type of the data.
+  // Could be 'phenotype', 'genotype' or 'environmental'.
   const DATA_TYPE = 'phenotype';
   // Form step where field is used.
-  const FORM_STEP = 4;
+  const FORM_STEP = TPPS_PAGE_4;
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Keys for Phenotype Metadata file columns (data types) options.
   // See PhenotypeMeta::getColumnOptions().
   const DATA_TYPE_IDENTIFIER = 1;
@@ -107,7 +113,7 @@ class PhenotypeMeta {
 
     $phenotype_number = $phenotype['phenotypes-meta']['number'];
     // File Id of metadata file.
-    $meta_fid = $phenotype['metadata'];
+    $fid = static::getFileId($organism_index, $form_state);
     $data_fid = $phenotype['file'];
     if (empty($data_fid)) {
       form_set_error($organism_key . "][phenotype][file",
@@ -173,7 +179,7 @@ class PhenotypeMeta {
         'id' => $organism_key,
         'selected' => static::getColumnDataTypes($form_state, $organism_index),
       ];
-      tpps_file_iterator($meta_fid, 'PhenotypeMeta::validateRow', $options);
+      tpps_file_iterator($fid, 'PhenotypeMeta::validateRow', $options);
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Validate if metafile matches phenotype file using columns.
       // Get Phenotype Data header which could have 'year' column.
@@ -181,8 +187,13 @@ class PhenotypeMeta {
       if ($datafile_header) {
         // $form_state['values'] has no value but $form_state['input']
         // has is so we will use it.
+        // WARNING: Data (not Meta).
         $datafile_no_header = $form_state['input'][$organism_key]['phenotype']
           ['file']['no-header'] ?? NULL;
+        // @todo Update.
+        // $phenotype_no_header = PhenotypeData::getNoHeaderValue(
+        //  $organism_index, $form_state
+        // );
         // Check if checkbox 'My file has no header row' wasn't checked.
         if ($datafile_no_header) {
           // @TODO Check if phenotype file could be without header?
@@ -205,7 +216,7 @@ class PhenotypeMeta {
             'column_name' => $columns['name'],
           ];
           tpps_file_iterator(
-            $meta_fid,
+            $fid,
             'tpps_validate_metafile_phenotype_names',
             $options
           );
@@ -479,6 +490,58 @@ class PhenotypeMeta {
       $parents = array_merge([$organism_key], $parents);
     }
     return $parents;
+  }
+
+  /**
+   * Gets index of the Phenotype Name column.
+   *
+   * @param int $organism_index
+   *   Organism ordinal number at page.
+   * @param array $form_state
+   *   Drupal Form API State array.
+   *
+   * @return string
+   *   Returns index of the column which holds phenotype name. E.g., "A".
+   */
+  public static function getPhenotypeNameColumn($organism_index, array $form_state) {
+    $organism_key = 'organism-' . $organism_index;
+    $parents = [$organism_key, 'phenotype', 'metadata-columns'];
+    $column_list = TppsArray::getValue($form_state['input'], $parents)
+      ?? TppsArray::getValue($form_state['values'], $parents)
+      ?? TppsArray::getValue(
+        $form_state['saved_values'][TPPS_PAGE_4],
+        $parents
+      ) ?? NULL;
+    return array_flip($column_list)[PhenotypeData::DATA_TYPE_PLANT_IDENTIFIER];
+  }
+
+  /**
+   * Gets list of phenotype names from the file.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number on page.
+   * @param array $form_state
+   *   Drupal Form State.
+   *
+   * @return array
+   *   Returns phenotype names or empty array if File Id wasn't found.
+   */
+  public static function getPhenotypeNames($organism_index, array $form_state) {
+    $organism_key = 'organism-' . $organism_index;
+
+    $list = [];
+    $fid = PhenotypeMeta::getFileId($organism_index, $form_state);
+    if (empty($fid)) {
+      return $list;
+    }
+    $phenotype_name_col = static::getPhenotypeNameColumn(
+      $organism_index,
+      $form_state
+    );
+    if (isset($phenotype_name_col)) {
+      $list = tpps_parse_file_column($fid, $phenotype_name_col);
+    }
+    return $list;
   }
 
 }

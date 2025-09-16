@@ -7,7 +7,7 @@
  * Specific implementation:
  *
  * This fiels uses more then one group (set) of required columns.
- * Also it extends FileField (not TppsFile) class.
+ * Also it extends FileField class.
  * Instead of $options['file_columns'] class uses $options['selected_columns']
  *   which comes directly from 'assay-design-columns' element which holds
  *   user's selection. Other fields are using very complex method of getting
@@ -32,12 +32,12 @@ class AssayDesign extends FileField {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Required constants.
   //
+  const TITLE = 'Assay Design';
   // Name of the fieldset on PAGE 4.
   // Could be 'phenotype', 'genotype' or 'environmental'.
   const DATA_TYPE = 'genotype';
   // HTML name of the field.
   const DOM_NAME = 'assay-design';
-  const TITLE = 'Assay Design';
   // Integer Form Page number.
   const FORM_STEP = TPPS_PAGE_4;
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

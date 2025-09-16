@@ -10,8 +10,6 @@
  *
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
- *
- * @todo Extend more common class 'TppsField'.
  */
 abstract class FileField {
 
@@ -31,6 +29,12 @@ abstract class FileField {
   const DATA_TYPE = '';
   // Form step where field is used.
   const FORM_STEP = '';
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Extra fields.
+  // DOM name of the checkbox with title 'Does your file have a header row?'.
+  // Note: 'saved values' will have new name static::DOM_NAME . '-no-header'.
+  const NO_HEADER = 'no-header';
 
   /**
    * Builds set of form fields for 'Assay Design Citation' feature.
@@ -151,6 +155,8 @@ abstract class FileField {
    * buildDomName(): "organism-1[genotype][SNPs][snps-association]".
    *                           ^                                 ^
    * See https://api.drupal.org/api/drupal/includes%21form.inc/function/form_set_error/7.x
+   *
+   * Note: it's not DOM name of the element but path. Drupal uses '#parents'.
    *
    * @param int $organism_index
    *   Ordinal number of the organism at page.
@@ -287,7 +293,10 @@ abstract class FileField {
     // using 'fid' hidden sub-element of 'managed_file' element.
     $input_parents = array_merge($parents, ['fid']);
     $value = TppsArray::getValue($form_state['input'], $input_parents, $key_exists);
-
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    if ($key_exists === FALSE) {
+      $value = TppsArray::getValue($form_state['values'], $parents, $key_exists);
+    }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Saved Values.
     if ($key_exists === FALSE) {
@@ -1544,7 +1553,7 @@ abstract class FileField {
    *   Ordinal number of organism at page.
    * @param array $form_state
    *   Drupal Form State.
-   * @param mixed $column
+   * @param string $column_letter
    *   Letter of the column which will be matched.
    *   'A' for 1st column, 'B' for second and so on.
    * @param array $list
@@ -1554,21 +1563,72 @@ abstract class FileField {
    *   Returns list of the missing items in current file which present in
    *   given $list.
    */
-  public static function matchColumn($organism_index, array $form_state, $column, array $list) {
-    // For search purpose: 'snps-association-no-header'.
-    $parents = static::getParents($organism_index, $form_state,
-      static::DOM_NAME . '-no-header'
-    );
-    $no_header = TppsArray::getValue($form_state['values'], $parents);
-
+  public static function matchColumn($organism_index, array $form_state, $column_letter, array $list) {
     // Match lists of SNPs from those 2 files.
     $column_values = tpps_parse_file_column(
       static::getFileId($organism_index, $form_state),
-      $column,
-      (empty($no_header) ?? FALSE)
+      $column_letter,
+      static::getNoHeaderValue($organism_index, $form_state)
     );
     $missing_items = array_diff($column_values, $list);
     return $missing_items;
+  }
+
+  /**
+   * Gets value of the 'no-header' field.
+   *
+   * Note: form element has inverted value.
+   * Checkbox title: 'Does your file have a header row?'
+   * Checked (1) means has header and unchecked (0) means no header.
+   *
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   * @param array $form_state
+   *   Drupal Form State.
+   *
+   * @return bool
+   *   Return TRUE when file has no header and FALSE otherwise.
+   */
+  public static function getNoHeaderValue($organism_index, array $form_state) {
+    $parents = static::getParents($organism_index, $form_state,
+      static::DOM_NAME . '-' . static::NO_HEADER
+    );
+    // For search purpose: 'snps-association-no-header'.
+    return (bool) (TppsArray::getValue($form_state['input'], $parents)
+      ?? TppsArray::getValue($form_state['values'], $parents)
+      ?? FALSE);
+  }
+
+  /**
+   * Gets number of columns in the file.
+   *
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   * @param array $form_state
+   *   Drupal Form State array.
+   *
+   * @return int
+   *   Returns number of columns (width) of the file.
+   */
+  public static function countColumns($organism_index, array $form_state) {
+    $fid = static::getFileId($organism_index, $form_state);
+    return tpps_file_width($fid);
+  }
+
+  /**
+   * Gets length of the file.
+   *
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   * @param array $form_state
+   *   Drupal Form State array.
+   *
+   * @return int
+   *   Returns length of the file.
+   */
+  public static function countRows($organism_index, array $form_state) {
+    $fid = static::getFileId($organism_index, $form_state);
+    return tpps_file_len($fid);
   }
 
 }

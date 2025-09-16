@@ -964,7 +964,7 @@ function tpps_submission_update_stats(array &$form_state) {
           }
         }
         if (PhenotypeIso::isSelected($i, $form_state)) {
-          $headers = PhenotypeIso::getHeader($i, $form_state);
+          $headers = PhenotypeIso::getFileHeader($i, $form_state);
           if (!empty($headers)) {
             while (($k = array_search(NULL, $headers))) {
               unset($headers[$k]);

@@ -411,4 +411,30 @@ class PhenotypeManual {
   public static function process($organism_index, array $shared_state, array &$options = []) {
   }
 
+  /**
+   * Gets list of phenotype names.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number on page.
+   * @param array $form_state
+   *   Drupal Form State.
+   *
+   * @return array
+   *   Returns phenotype names or empty array if File Id wasn't found.
+   */
+  public static function getPhenotypeNames($organism_index, array $form_state) {
+    $organism_key = 'organism-' . $organism_index;
+
+    $list = [];
+    $phenotype_number = TppsArray::getValue($form_state['values'],
+      [$organism_key, 'phenotype', 'phenotypes-meta', 'number']
+    );
+    for ($i = 1; $i <= $phenotype_number; $i++) {
+      $list[] = TppsArray::getValue($form_state['values'],
+        [$organism_key, 'phenotype', 'phenotypes-meta', $i, 'name']
+      );
+    }
+    return $list;
+  }
+
 }
