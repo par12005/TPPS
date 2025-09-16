@@ -637,7 +637,7 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
     'empty',
     // There is no need to store required groups because of different
     // structure and this class's method could be used to get data.
-    // 'groups'.
+    'groups',
   ];
   // List of parents.
   // Note: Pages has different structure.
