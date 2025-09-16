@@ -10,8 +10,36 @@
  *
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
+ *
+ * @todo Convert file /includes/file_utils.inc into methods.
  */
 class TppsFile {
+
+  /**
+   * Gets number of columns in the file.
+   *
+   * @param int $fid
+   *   Drupal managed file Id.
+   *
+   * @return int
+   *   Returns number of columns (width) of the file.
+   */
+  public static function countColumns($fid) {
+    return tpps_file_width($fid);
+  }
+
+  /**
+   * Gets length of the file.
+   *
+   * @param int $fid
+   *   Drupal managed file Id.
+   *
+   * @return int
+   *   Returns length of the file.
+   */
+  public static function countRows($fid) {
+    return tpps_file_len($fid);
+  }
 
   /**
    * Gets Class Name.
