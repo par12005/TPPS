@@ -646,33 +646,39 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
   if ($form_page == TPPS_PAGE_3) {
     // @todo Update. See code for genotype|phenotype fields.
     $parent_list = [
+      // Page 3. Accession file.
+      // ['tree-accession', 'species-1', 'file'].
+      // @todo Create separate class 'Accession'.
       ['file'],
     ];
   }
   elseif ($form_page == TPPS_PAGE_4) {
     // @todo Use FileField::getParents().
     $parent_list = [
-      // Page 3. Accession file.
-      // Page 4. Phenotype.
-      ['phenotype', 'file'],
-      ['phenotype', 'metadata'],
+      // ['phenotype', 'file'].
+      PhenotypeData::getParents(),
+      // ['phenotype', 'metadata'],
+      PhenotypeMeta::getParents(),
 
-      // Page 4. Genotype.
-      // 'snp-assay' has no data type selection for columns.
-      // @todo Add other fields with columns.
-      [
-        SnpAssociation::DATA_TYPE,
-        SnpAssociation::SNPS_FIELDSET,
-        SnpAssociation::DOM_NAME,
-      ],
-      [
-        // Note: no organism index so getParents() can't be used here.
-        AssayDesign::DATA_TYPE,
-        AssayDesign::SNPS_FIELDSET,
-        AssayDesign::PARENT_FIELDSET,
-        AssayDesign::DOM_NAME,
-      ],
-      ['genotype', 'other', 'other_marker'],
+      // ['genotype', 'SNPs', 'snps-association'].
+      SnpAssociation::getParents(),
+      // ['genotype', 'SNPs', 'assay-design-citation', 'assay-design'].
+      AssayDesign::getParents(),
+      // ['genotype', 'other', 'other_marker'].
+      OtherMarker::getParents(),
+
+      // File fields which doesn't have column data type selector:
+      // ['organism-1', 'genotype', 'SNPs', 'snps-assay'],
+      // SnpAssay::getParents(),
+      // ['organism-1', 'genotype', 'SNPs', 'snps-pop-struct'],
+      // SnpsPopulationStructure::getParents(),
+      // ['organism-1', 'genotype', 'SNPs', 'snps-kinship'],
+      // SnpsKinship::getParents(),
+
+      // ['organism-1', 'genotype', 'SNPs', 'vcf'],
+      // ['organism-1', 'genotype', 'ssrs_cpssrs', 'ssrs'],
+      // ['organism-1', 'genotype', 'ssrs_cpssrs', 'ssrs_extra'],
+      // ['organism-1', 'genotype', 'tripal_fasta', 'file', 'file_upload'].
     ];
   }
 
