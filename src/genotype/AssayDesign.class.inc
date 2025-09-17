@@ -159,6 +159,16 @@ class AssayDesign extends FileField {
   /**
    * Validates file field.
    *
+   * Validation rules:
+   *
+   * For ‘SNP Association' file:
+   * 1. Optional and shouldn't be required to process ‘Assay Design’ file.
+   * 2. Column 'SNP_ID' must match with 'SNP_ID' column in 'Assay Design' file.
+   *
+   * For ‘SNP Assay' file:
+   * 1. Required to process 'Assay Design' file.
+   * 2. Column 'SNP_ID' must match with column 'SNP_ID' in 'Assay Design' file.
+   *
    * @param int $organism_index
    *   Ordinal organism number on page.
    * @param array $form
@@ -204,65 +214,45 @@ class AssayDesign extends FileField {
     // Do not allow the same data type for multiple columns.
     // static::allowColumnDataTypeUseOnce($organism_index, $groups);
 
-
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Check if required data types for columns was set.
     // Note: Assay Design has more then one group of required columns.
-    if (static::hasColumns($organism_index, $form_state)) {
-      $error_name = static::getFormErrorName($organism_index);
-      if (empty($assoc_file = $snps['snps-association'])) {
-        // @todo Minor. Highlight 'SNP Association' file.
-        $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
-          . 'Requires "SNP Association" file.',
-          [
-            '@field_title' => t(static::getFieldTitle()),
-            '@oidx' => $organism_index,
-          ]
-        );
-        form_set_error(static::getFormErrorName($organism_index), $error_message);
-      }
-      if (empty($snps_assay = $snps['snps-assay'])) {
-        // @todo Minor. Highlight 'SNP Assay' file.
-        $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
-          . 'Requires "SNP Assay" file.',
-          [
-            '@field_title' => t(static::getFieldTitle()),
-            '@oidx' => $organism_index,
-          ]
-        );
-        form_set_error(static::getFormErrorName($organism_index), $error_message);
-      }
-      // Validate column data types.
-      static::validateColumns($organism_index, $form_state);
-      if (form_get_errors()) {
-        return;
-      }
+    if (!static::hasColumns($organism_index, $form_state)) {
+      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+        . 'Data types for columns must be set.',
+        [
+          '@field_title' => t(static::getFieldTitle()),
+          '@oidx' => $organism_index,
+        ]
+      );
+      form_set_error(static::getFormErrorName($organism_index), $error_message);
+      return FALSE;
+    }
 
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Match SNP Ids in current file and 'SNPs Assay' file (header).
-      static::matchColumnValues([
-        'organism_index' => $organism_index,
-        'form_state' => $form_state,
-        // Current file.
-        'no_header' => static::getSubFieldValue(
-          $organism_index,
-          $form_state,
-          'no-header'
-        ),
-        'column_letter' => static::getSelectedColumns(
-           $organism_index,
-          $form_state
-        )[static::DATA_TYPE_SNP_ID],
-        // Target file.
-        'target_column_letter' => NULL,
-        'target_form_element' => SnpAssay::getFormElement($organism_index, $form_state),
-        'target_no_header' => NULL,
-      ]);
-      if (form_get_errors()) {
-        return;
-      }
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Match SNP Ids in current file and 'SNP Association' file (column).
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // 'SNP Assay' is required.
+    if (empty(SnpAssay::getFileId($organism_index, $form_state))) {
+      // @todo Minor. Highlight 'SNP Assay' file.
+      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
+        . 'Requires "SNP Assay" file to be processed.',
+        [
+          '@field_title' => t(static::getFieldTitle()),
+          '@oidx' => $organism_index,
+        ]
+      );
+      form_set_error(static::getFormErrorName($organism_index), $error_message);
+    }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Validate column data types.
+    static::validateColumns($organism_index, $form_state);
+    if (form_get_errors()) {
+      return;
+    }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    if (SnpAssociation::getFileId($organism_index, $form_state)) {
+      // Match 'SNP_ID' column with 'SNP_ID' column in 'SNP Association' file.
       static::matchColumnValues([
         'organism_index' => $organism_index,
         'form_state' => $form_state,
@@ -290,6 +280,30 @@ class AssayDesign extends FileField {
       if (form_get_errors()) {
         return;
       }
+    }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Match SNP Ids in current file and 'SNPs Assay' file (header).
+    static::matchColumnValues([
+      'organism_index' => $organism_index,
+      'form_state' => $form_state,
+      // Current file.
+      'no_header' => static::getSubFieldValue(
+        $organism_index,
+        $form_state,
+        'no-header'
+      ),
+      'column_letter' => static::getSelectedColumns(
+         $organism_index,
+        $form_state
+      )[static::DATA_TYPE_SNP_ID],
+      // Target file.
+      'target_column_letter' => NULL,
+      'target_form_element' => SnpAssay::getFormElement($organism_index, $form_state),
+      'target_no_header' => NULL,
+    ]);
+    if (form_get_errors()) {
+      return;
     }
     static::preserveValidFile($organism_index, $form_state);
   }
@@ -873,7 +887,7 @@ class AssayDesign extends FileField {
    * @todo Merge with FileField::validateColumns().
    */
   public static function validateColumns($organism_index, array &$form_state, array $form = NULL) {
-    $debug_mode = TRUE;
+    $debug_mode = FALSE;
 
     if (!static::isMultipleRequiredColumns()) {
       return FileField::validateColumns($organism_index, $form_state, $form);

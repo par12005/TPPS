@@ -677,40 +677,25 @@ abstract class FileField {
   /**
    * This function validates that the file contains all of the required groups.
    *
-   * Based on code from function tpps_file_validate_columns().
+   * Based on code from function tpps_file_validate_columns() but allows
+   * multiple sets of required columns.
+   * To use this method class must implement 'getRequiredColumns' method and
+   * allow multiple sets of required columns.
    *
    * WARNING:
-   * Allows multiple required groups.
-   * Uses different structure in getColumnOptions().
-   * Uses diferent output structure (1 level instead of 2).
-   *
-   * Probably outdated: @TODO Review text below.
-   *
-   * A "required group" is a column type that must be present within the file for
-   * the file to be considered valid. For instance, a required group for a plant
-   * accession file would be the "Location" group. The required groups array
-   * should satisfy the structure:
-   *  array(
-   *    '<group name>' => array(
-   *      '<type>' => array(<column option index>[, <column option index>...])[,
-   *      '<type>' => array(<column option index>[, <column option index>...])...]
-   *    )[,
-   *    '<group name>' => array(
-   *      '<type>' => array(<column option index>[, <column option index>...])[,
-   *      '<type>' => array(<column option index>[, <column option index>...])...]
-   *    )...]
-   *  )
-   * where <group name> is the name of the required group, <type> is the name of
-   * the set of options that could satisfy the required group, and each of the
-   * <column option index>s is a key within the file element['column-options']
-   * field.
+   * - Not compatible with tpps_file_validate_columns().
+   * - Allows multiple required groups.
+   * - Uses different structure in getColumnOptions().
+   * - Uses diferent output structure (1 level instead of 2).
    *
    * @param int $organism_index
    *   Ordinal organism number at page.
    * @param array $form_state
-   *   Drupal Form API State Array.
+   *   Drupal Form State array.
+   * @param array $form
+   *   Drupal Form array.
    *
-   * @return array
+   * @return mixed
    *   The groups and the column option types that the file was valid for.
    *   Example:
    *   [
@@ -750,8 +735,7 @@ abstract class FileField {
    *
    * Note:
    * Result could have extra (not required) columns because it uses user's
-   * selection. Be sure to call validateColumns() first.
-
+   * selection. Be sure to call static::validateColumns() first.
    *
    * @param int $organism_index
    *   Ordinal organism number at page.
