@@ -151,7 +151,7 @@ class PhenotypeIso extends TppsFile {
       return;
     }
 
-    $parents = static::getParents($organism_index);
+    $parents = static::getParents($organism_index, $form_state);
     // @TODO Create a separate method to hide implementation.
     $form_field_error_name = implode('][', $parents);
     $file_element = tpps_array_get_value($form, $parents);

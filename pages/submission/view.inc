@@ -119,7 +119,7 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
 
     $data_len = strlen(json_encode($state));
     if ($data_len > $max_len) {
-      drupal_set_message(t('@data_type length: $len.',
+      drupal_set_message(t('@data_type length: @len.',
         ['@data_type' => $data_type, '@len' => $data_len])
       );
       $form[$data_type]['container'] = [

@@ -175,7 +175,7 @@ class TppsFile {
    * @todo Move/combine with 'Submisison' class.
    */
   public static function getValue($organism_index, array $form_state) {
-    $parents = static::getParents($organism_index);
+    $parents = static::getParents($organism_index, $form_state);
     $key_exists = NULL;
     if (!empty($form_state['values'])) {
       $value = drupal_array_get_nested_value(
