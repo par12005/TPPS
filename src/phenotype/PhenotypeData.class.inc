@@ -404,19 +404,19 @@ class PhenotypeData extends TppsFile {
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Check if phenotype names in data and metadata files matches.
-    if ($is_metadata_file) {
-      $phenotype_names = [];
-      // If there is only one column with data then it will be a string
-      // but we need an array.
-      $phenotype_file_name_cols = is_array($groups['Phenotype Data']['0'])
-        ? $groups['Phenotype Data']['0'] : [$groups['Phenotype Data']['0']];
-      $headers = tpps_file_headers($fid, !empty($phenotype['file-no-header']));
-      foreach ($phenotype_file_name_cols as $column_index) {
-        $phenotype_names[] = $headers[$column_index];
-      }
+    $phenotype_names = [];
+    // If there is only one column with data then it will be a string
+    // but we need an array.
+    $phenotype_file_name_cols = is_array($groups['Phenotype Data']['0'])
+      ? $groups['Phenotype Data']['0'] : [$groups['Phenotype Data']['0']];
+    $headers = tpps_file_headers($fid, !empty($phenotype['file-no-header']));
+    foreach ($phenotype_file_name_cols as $column_index) {
+      $phenotype_names[] = $headers[$column_index];
+    }
+    $phenotype_meta_names = [];
 
+    if ($is_metadata_file) {
       // Check if phenotype names in data and metadata files matches.
-      $phenotype_meta_names = [];
       $phenotype_name_col = self::getPhenotypeNameColumn($organism_index, $form_state);
       if (isset($phenotype_name_col)) {
         $phenotype_meta_names = tpps_parse_file_column(
@@ -432,15 +432,14 @@ class PhenotypeData extends TppsFile {
     }
     else {
       // Manual metadata.
-      $phenotype_meta_names = [];
       for ($i = 1; $i <= $phenotype_number; $i++) {
         $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
       }
       // @todo Update massage for manually added phenotypes.
       $message = "Phenotype file: We detected "
-        . "Phenotypes that were not in your Phenotype Metadata file. "
+        . "Phenotypes that are missing in your Phenotype data file. "
         . "Please either remove these phenotypes from your Phenotype file, "
-        . "or add them to your Phenotype Metadata file. The phenotypes we "
+        . "or add those Phenotypes manually. The phenotypes we "
         . "detected with missing definitions were: @list.";
     }
 
