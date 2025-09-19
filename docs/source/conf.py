@@ -28,8 +28,8 @@ subprocess.call('cd .. ; doxygen tpps_doxygen.config', shell=True)
 # -- Project information -----------------------------------------------------
 
 project = u'Tripal Plant PopGen Submit'
-copyright = u'2018, Peter Richter'
-author = u'Peter Richter'
+copyright = u'2025, TreeGenesDB Team'
+author = u'TreeGenesDB Team'
 
 # The short X.Y version
 version = u''
