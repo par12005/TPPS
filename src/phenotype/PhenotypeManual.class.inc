@@ -44,6 +44,13 @@ class PhenotypeManual {
     // phenotypes. but unit list is unique per phenotype and
     // will be obtained later because depends on selected synonym.
     $synonym_list = tpps_synonym_get_list();
+    // List of synonyms has not flat structure but separated by letter.
+    $first_synonym_key = NULL;
+    if (is_array($synonym_list)) {
+      $first_synonym_key = array_key_first(
+        $synonym_list[array_key_first($synonym_list)]
+      );
+    }
     $attr_options = $this->getAttributeOptionList();
     $struct_options = $this->getStructureOptionList();
     $field = [
@@ -71,7 +78,7 @@ class PhenotypeManual {
         // not relevant and would be confusing for the scientists using TPPS.
         '#title' => 'Phenotype: *',
         '#options' => $synonym_list,
-        '#default_value' => array_key_first($synonym_list) ?? NULL,
+        '#default_value' => $first_synonym_key,
         // Unit dropdown must be updated in each synonym field change.
         '#ajax' => [
           'callback' => 'tpps_unit_update_list',
@@ -145,7 +152,7 @@ class PhenotypeManual {
         '#title' => 'Phenotype !num Unit: *',
         // List of units depends on selected synonym. Will be populated later.
         // The same for default value.
-        '#options' => tpps_unit_get_list(array_key_first($synonym_list) ?? 'all'),
+        '#options' => tpps_unit_get_list($first_synonym_key ?? 'all'),
         '#prefix' => '<div id="unit-list-!num-wrapper">',
         '#suffix' => '</div>',
         '#validated' => TRUE,
