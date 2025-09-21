@@ -422,7 +422,7 @@ class SnpAssociation {
     }
     return $associations[$id];
   }
-  
+
   /**
    * Gets File Id from Shared State array.
    *
@@ -443,7 +443,7 @@ class SnpAssociation {
    *
    * @todo Move to TppsFile class.
    */
-  public static function getFileId($organism_index, array $shared_state) {
+  public static function getFileId($organism_index, array $form_state) {
     return static::getValue($organism_index, $form_state);
   }
 
