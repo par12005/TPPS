@@ -478,14 +478,14 @@ class Submission {
       $args = [$this->accession];
       $type = $this->state['tpps_type'] ?? 'tpps';
       $type_label = ($type == 'tpps') ? t('TPPS') : t('TPPSC');
-      $date = $this->state['saved_values']['summarypage']['release-date'] ?? NULL;
+      $date = $this->get(['saved_values', 'summarypage', 'release-date']);
       $release_time = ($date)
         ? strtotime("{$date['year']}-{$date['month']}-{$date['day']}")
         : NULL;
       if (
-        $this->state['saved_values']['summarypage']['release']
+        $this->get(['saved_values', 'summarypage', 'release'])
         || (
-          !$this->state['saved_values']['summarypage']['release']
+          !$this->get(['saved_values', 'summarypage', 'release'])
           && time() > $release_time
         )
       ) {
@@ -494,7 +494,7 @@ class Submission {
             ['@type_label' => $type_label, '@accession' => $this->accession]
           ),
           'tpps', 'tpps_submit_all',
-          $args, $this->state['submitting_uid'], 10, $includes, TRUE
+          $args, $this->get(['submitting_uid']), 10, $includes, TRUE
         );
         $this->set(['job_id'], $jid, TRUE);
       }
