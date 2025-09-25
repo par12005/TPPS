@@ -1327,8 +1327,8 @@ class Submission {
    * @return array
    *   The flattened array.
    *
-   * @TODO Store changes to $this->flat property and do not return result.
-   * @TODO Clean up code.
+   * @todo Convert into theme-function.
+   * @todo Clean up code.
    */
   public function flatten() {
     $state = $this->sharedState;
@@ -1337,13 +1337,17 @@ class Submission {
     }
     $data = $state['saved_values'];
 
-    unset($data['frontpage']);
-    unset($data['form_build_id']);
-
-    // Note: Seems 'dbxref_id' and 'status' didn't show before class
-    // Submission was implemented.
-    unset($data['status']);
-    unset($data['dbxref_id']);
+    $hide_list = [
+      // Note: Seems 'dbxref_id' and 'status' didn't show before class
+      // Submission was implemented.
+      'status',
+      'frontpage',
+      'form_build_id',
+      'dbxref_id',
+    ];
+    foreach ($hide_list as $item) {
+      unset($data[$item]);
+    }
 
     $page_1 = &$data[TPPS_PAGE_1];
     $pub = &$page_1['publication'];

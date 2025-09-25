@@ -48,11 +48,7 @@ function tpps_table_display(array &$state, array $options = []) {
         $val_str = $val;
       }
       elseif (is_array($val)) {
-        foreach ($val as $key => $value) {
-          $value = is_array($value) ? var_export($value) : $value;
-          $items[] = check_plain($key . ': ' . $value);
-        }
-        $val_str = theme('item_list', ['items' => ($items ?? [])]);
+        $val_str = tpps_array_print_list($val);
       }
       else {
         $val_str = filter_xss(check_plain($val));
