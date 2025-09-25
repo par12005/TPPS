@@ -19,7 +19,7 @@
 function tpps_table_display(array &$state, array $options = []) {
   // Note: $state could be modified version of original sharedState received
   // by accession so we use it here without saving/updating original study.
-  return theme('submission_flatten', [
+  return theme('submission_page', [
     'form_state' => $state,
     'options' => $options,
   ]);

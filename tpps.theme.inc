@@ -73,10 +73,17 @@ function tpps_theme() {
       'file' => 'theme/file.inc',
     ],
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    'submission_flatten' => [
+    // Submission Flatten.
+    'submission_page' => [
       'variables' => [
         'form_state' => NULL,
         'options' => NULL,
+      ],
+      'file' => 'theme/submission_flatten.inc',
+    ],
+    'submission_block' => [
+      'variables' => [
+        'data' => NULL,
       ],
       'file' => 'theme/submission_flatten.inc',
     ],
