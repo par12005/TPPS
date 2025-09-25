@@ -36,15 +36,15 @@ files[] = src/zenodo/ZenodoFilesWidget.class.inc
 files[] = src/zenodo/ZenodoHost.class.inc
 ; files[] = src/zenodo/ZenodoRecords.class.inc
 
-; File Fields
+; File Fields.
 files[] = src/TppsFile.class.inc
 files[] = src/FileField.class.inc
-; File Fields / Phenotype
+; File Fields / Phenotype.
 files[] = src/phenotype/PhenotypeManual.class.inc
 files[] = src/phenotype/PhenotypeMeta.class.inc
 files[] = src/phenotype/PhenotypeData.class.inc
 files[] = src/phenotype/PhenotypeIso.class.inc
-; //File Fields / Genotype
+; //File Fields / Genotype.
 files[] = src/genotype/AssayDesign.class.inc
 files[] = src/genotype/AssayDesignCitation.class.inc
 files[] = src/genotype/SnpAssay.class.inc
