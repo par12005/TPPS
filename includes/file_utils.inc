@@ -694,7 +694,7 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
     foreach ($parent_list as $parents) {
       switch (TppsArray::getFirst($parents)) {
         case 'genotype':
-          if (isset($form['organism-1']['genotype'])) {
+          if (!isset($form['organism-1']['genotype'])) {
             continue;
           }
           break;

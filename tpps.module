@@ -1433,13 +1433,14 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
 function tpps_main_validate(&$form, &$form_state) {
   global $user;
 
+  // Always save user selection of data types for columns and other subfields.
+  tpps_save_file_columns($form, $form_state);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // If the user is going backwards or simply saving their data in the form,
   // make sure to save the column data for the managed_file elements. The rest
   // of the validation function does not need to be completed.
   $triggering_element = FormState::getTriggeringElement($form_state);
   if (in_array($triggering_element, ['Back', 'Save'])) {
-    tpps_save_file_columns($form, $form_state);
     return;
   }
 

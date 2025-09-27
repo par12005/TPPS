@@ -971,7 +971,7 @@ class AssayDesign extends FileField {
     }
     // Store under $form_state['saved_values'].
     TppsArray::setValue(
-      $form_state['saved_values'],
+      $form_state['saved_values'][static::FORM_STEP],
       $parents,
       TppsArray::getValue($form_state['input'], $parents)
     );

@@ -6,7 +6,7 @@
  */
 
 /**
- * Common methods for file field classes.
+ * Common methods for file field form elemnts.
  *
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
