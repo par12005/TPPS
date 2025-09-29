@@ -552,7 +552,7 @@ class Submission {
       Submission::STATUS_INCOMPLETE,
       Submission::STATUS_PENDING_APPROVAL,
       Submission::STATUS_APPROVED,
-      TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING,
+      Submission::STATUS_SUBMISSION_JOB_RUNNING,
     ];
   }
 

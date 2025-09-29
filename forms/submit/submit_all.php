@@ -101,7 +101,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   }
 
   // Update 'updated' field with current time and 'status' field.
-  $submission->save(TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING);
+  $submission->save(Submission::STATUS_SUBMISSION_JOB_RUNNING);
   $transaction = db_transaction();
   try {
 

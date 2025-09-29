@@ -335,7 +335,7 @@ function tpps_report_admin_panel_theme_single_row($accession, array $row, array 
       break;
 
     case Submission::STATUS_APPROVED:
-    case TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING:
+    case Submission::STATUS_SUBMISSION_JOB_RUNNING:
     case Submission::STATUS_APPROVED_DELAYED:
 
       if ($row['status'] == Submission::STATUS_APPROVED) {
@@ -343,12 +343,12 @@ function tpps_report_admin_panel_theme_single_row($accession, array $row, array 
           ? "Approved - load completed on " . date("F j, Y, \a\\t g:i a",
           $row['date']['loaded']) : Submission::STATUS_APPROVED;
       }
-      elseif ($row['status'] == TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING) {
+      elseif ($row['status'] == Submission::STATUS_SUBMISSION_JOB_RUNNING) {
         $status_label = $status_label ?? (
           !empty($row['date']['approved'])
           ? ("Submission Job Running - job started on "
             . date("F j, Y, \a\t g:i a", $row['date']['approved']))
-          : TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING
+          : Submission::STATUS_SUBMISSION_JOB_RUNNING
         );
       }
       elseif ($row['status'] == Submission::STATUS_APPROVED_DELAYED) {
@@ -576,12 +576,12 @@ function ___old($context) {
           }
         }
 
-      case TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING:
+      case Submission::STATUS_SUBMISSION_JOB_RUNNING:
         $status_label = $status_label ?? (
           !empty($submission->state['approved'])
           ? ("Submission Job Running - job started on "
             . date("F j, Y, \a\t g:i a", $submission->state['approved']))
-          : TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING
+          : Submission::STATUS_SUBMISSION_JOB_RUNNING
         );
 
       case Submission::STATUS_APPROVED_DELAYED:

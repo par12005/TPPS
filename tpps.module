@@ -52,9 +52,6 @@ define('TPPS_COLUMN_SOURCE_PLANT_IDENTIFIER', 11);
 define('TPPS_COLUMN_POPULATION_GROUP', 12);
 define('TPPS_COLUMN_CLONE_NUMBER', 13);
 
-// Submission Statuses.
-define('TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING', 'Submission Job Running');
-
 // Values of the 'Define Experimental Design' field.
 define('TPPS_GENOTYPING_DESIGN_GBS', 1);
 define('TPPS_GENOTYPING_DESIGN_TARGETED_CAPTURE', 2);
