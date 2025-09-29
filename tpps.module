@@ -53,7 +53,6 @@ define('TPPS_COLUMN_POPULATION_GROUP', 12);
 define('TPPS_COLUMN_CLONE_NUMBER', 13);
 
 // Submission Statuses.
-define('TPPS_SUBMISSION_STATUS_INCOMPLETE', 'Incomplete');
 define('TPPS_SUBMISSION_STATUS_PENDING_APPROVAL', 'Pending Approval');
 define('TPPS_SUBMISSION_STATUS_APPROVED', 'Approved');
 define('TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING', 'Submission Job Running');
@@ -599,10 +598,7 @@ function tpps_access() {
       }
       else {
         // TPPS Form.
-        if (
-          $submission->isCreator()
-          && $submission->status == TPPS_SUBMISSION_STATUS_INCOMPLETE
-        ) {
+        if ($submission->isCreator() && $submission->isIncompleteStatus()) {
           return TRUE;
         }
       }
@@ -626,7 +622,7 @@ function tpps_access() {
       // Check if user submitted this study.
       $submission = new Submission($accession);
       return (bool) (
-        $submission->status != TPPS_SUBMISSION_STATUS_INCOMPLETE
+        !$submission->isIncompleteStatus()
         && $submission->isCreator()
       );
 
@@ -634,10 +630,7 @@ function tpps_access() {
     case 'tpps delete submission':
       $accession = $args[1] ?? NULL;
       $submission = new Submission($accession);
-      return (bool) (
-        $submission->status == TPPS_SUBMISSION_STATUS_INCOMPLETE
-        && $submission->isCreator()
-      );
+      return (bool) ($submission->isCreator() && $submission->isIncompleteStatus());
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     default:
@@ -1555,7 +1548,7 @@ function tpps_main_submit($form, &$form_state) {
   $submission->state = SubmissionVersion::upgrade($form_state);
 
   if ($submission->isTppsc()) {
-    $form_state['status'] = TPPS_SUBMISSION_STATUS_INCOMPLETE;
+    $form_state['status'] = Submission::STATUS_INCOMPLETE;
     // Use old TGDR.
     if (
       $form_state['stage'] == 'frontpage'

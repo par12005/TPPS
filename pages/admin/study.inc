@@ -1251,7 +1251,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'reject':
-      $submission->save(TPPS_SUBMISSION_STATUS_INCOMPLETE);
+      $submission->save(Submission::STATUS_INCOMPLETE);
       // Email notification.
       $lang = user_preferred_language($owner);
       drupal_mail('tpps', 'user_rejected', $to, $lang, $params, $from, TRUE);

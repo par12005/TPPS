@@ -43,7 +43,12 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
 }
 
 /**
- * Shows lists of studies with statue 'Pending', 'Approved', and 'Incomplete'.
+ * Shows lists of studies with different statuses.
+ *
+ * List of statuses:
+ * - 'Pending',
+ * - 'Approved',
+ * - Submission::STATUS_INCOMPLETE.
  *
  * @param array $form
  *   The form element of the TPPS admin panel page.

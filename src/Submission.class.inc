@@ -44,7 +44,8 @@
  * ----------------------------------------------------------------------------
  * Submision Common methods.
  *
- * create() - fills object's properties and creates record in DB. Status 'Incomplete'.
+ * create() - fills object's properties and creates record in DB with
+ *   Submission::STATUS_INCOMPLETE status.
  * save() - Sync object to DB.
  * load() - Sync DB to object.
  * delete() - remove from DB (old)
@@ -404,14 +405,14 @@ class Submission {
     // See tpps_main_submit(). Be sure to update all calls and test.
     $this->state = $state;
     // Get submission's accession.
-    if (!empty($this->state['accession'])) {
-      $this->accession = $this->state['accession'];
+    if (!empty($state['accession'])) {
+      $this->accession = $state['accession'];
     }
     // Status must be reset because when study is edited status became empty.
     // Status could be empty if Submission Object was created without $accession
     // and submission wasn't fully loaded.
     if (empty($this->status)) {
-      $this->status = $this->get(['status']) ?? TPPS_SUBMISSION_STATUS_INCOMPLETE;
+      $this->status = $state['status'] ?? Submission::STATUS_INCOMPLETE;
     }
 
     // @TODO Minor. Get also uid, dbxref_id from state and update them in save().
@@ -545,7 +546,7 @@ class Submission {
     // ('Approved - Delayed Submission Release')
     // We don't use it because it's rarely used.
     return [
-      TPPS_SUBMISSION_STATUS_INCOMPLETE,
+      Submission::STATUS_INCOMPLETE,
       TPPS_SUBMISSION_STATUS_PENDING_APPROVAL,
       TPPS_SUBMISSION_STATUS_APPROVED,
       TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING,
@@ -637,7 +638,7 @@ class Submission {
     }
 
     $fields = [
-      'status' => $this->status ?? TPPS_SUBMISSION_STATUS_INCOMPLETE,
+      'status' => $this->status ?? Submission::STATUS_INCOMPLETE,
       'submission_state' => serialize($this->state ?? []),
       'shared_state' => serialize($this->sharedState ?? []),
     ];
@@ -764,13 +765,13 @@ class Submission {
     global $user;
 
     $this->state = $state;
-    $this->accession = $this->state['accession'];
+    $this->accession = $state['accession'];
     $fields = [
       'uid' => $uid ?? $user->uid,
-      'status' => $this->state['status'] ?? TPPS_SUBMISSION_STATUS_INCOMPLETE,
-      'accession' => $this->state['accession'],
-      'dbxref_id' => $this->state['dbxref_id'],
-      'submission_state' => serialize($this->state),
+      'status' => $state['status'] ?? Submission::STATUS_INCOMPLETE,
+      'accession' => $state['accession'],
+      'dbxref_id' => $state['dbxref_id'],
+      'submission_state' => serialize($state),
       'shared_state' => serialize([]),
     ];
     db_insert(static::TABLE)->fields($fields)->execute();
@@ -853,7 +854,7 @@ class Submission {
       $this->status = $result['status']
         ?? $this->state['status']
         ?? $this->sharedState['status']
-        ?? TPPS_SUBMISSION_STATUS_INCOMPLETE;
+        ?? Submission::STATUS_INCOMPLETE;
 
       // Generate sharedState if it's really empty.
       if ($generate_shared_state) {
@@ -1131,10 +1132,11 @@ class Submission {
   }
 
   /**
-   * Checks if current status of submission is 'Incomplete'.
+   * Checks if current status of submission is Submission::STATUS_INCOMPLETE.
    *
    * @return bool
-   *   Returns TRUE if given status is 'Incomplete' and FALSE otherwise.
+   *   Returns TRUE if given status is Submission::STATUS_INCOMPLETE.
+   *   Returns FALSE otherwise.
    */
   public function isIncompleteStatus() {
     return $this->status == Submission::STATUS_INCOMPLETE;

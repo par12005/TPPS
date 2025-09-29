@@ -241,7 +241,7 @@ class SubmissionCache {
       return $data;
     }
     if (
-      ($submission->state['status'] ?? NULL) == TPPS_SUBMISSION_STATUS_INCOMPLETE
+      $submission->isIncompleteStatus()
       && ($submission->state['stage'] ?? NULL) == TPPS_PAGE_2
       && empty($submission->state['saved_values'][TPPS_PAGE_1])
       // @TODO Check if publication title is empty (not set).

@@ -107,7 +107,7 @@ function tpps_tab_create($uid) {
 
   $submission_list = tpps_load_submission_multiple(
     [
-      'status' => TPPS_SUBMISSION_STATUS_INCOMPLETE,
+      'status' => Submission::STATUS_INCOMPLETE,
       'uid' => $user->uid,
     ]
   );
