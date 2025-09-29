@@ -205,7 +205,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   // Having Submission::STATUS_INCOMPLETE status is safe if we then
   // programmatically submit form but this status requires a lot of
   // extra work to run Tripal job so better to have status
-  // TPPS_SUBMISSION_STATUS_PENDING_APPROVAL
+  // Submission::STATUS_PENDING_APPROVAL
   // or maybe even Submission::STATUS_APPROVED.
   if (in_array($submission_new_status, Submission::getStatusList())) {
     $submission->status = $submission_new_status;

@@ -244,7 +244,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     $transaction->rollback();
     // Restore status of study because processing failed.
     $submission = new Submission($accession);
-    $submission->save(TPPS_SUBMISSION_STATUS_PENDING_APPROVAL);
+    $submission->save(Submission::STATUS_PENDING_APPROVAL);
 
     tpps_log('Job failed', [], TRIPAL_ERROR);
     tpps_log('Error message: @msg', ['@msg' => $e->getMessage()], TRIPAL_ERROR);

@@ -550,7 +550,7 @@ class Submission {
     // We don't use it because it's rarely used.
     return [
       Submission::STATUS_INCOMPLETE,
-      TPPS_SUBMISSION_STATUS_PENDING_APPROVAL,
+      Submission::STATUS_PENDING_APPROVAL,
       Submission::STATUS_APPROVED,
       TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING,
     ];
@@ -1144,6 +1144,19 @@ class Submission {
   public function isIncompleteStatus() {
     return $this->status == Submission::STATUS_INCOMPLETE;
   }
+
+  /**
+   * Checks if current status is Submission::STATUS_PENDING_APPROVAL.
+   *
+   * @return bool
+   *   Returns TRUE if given status is Submission::STATUS_PENDING_APPROVAL.
+   *   Returns FALSE otherwise.
+   */
+  public function isPendingApprovalStatus() {
+    return $this->status == Submission::STATUS_PENDING_APPROVAL;
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   /**
    * Removes Submission's Shared State.

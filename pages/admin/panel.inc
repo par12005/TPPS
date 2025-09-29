@@ -323,7 +323,7 @@ function tpps_report_admin_panel_theme_single_row($accession, array $row, array 
   ]);
 
   switch ($row['status']) {
-    case TPPS_SUBMISSION_STATUS_PENDING_APPROVAL:
+    case Submission::STATUS_PENDING_APPROVAL:
       $output['pending'][$number] = [
         $view_link,
         theme('submission_submitter', $row),
@@ -495,7 +495,7 @@ function ___old($context) {
   ]);
   if ($submission->doesExist()) {
     switch ($submission->status) {
-      case TPPS_SUBMISSION_STATUS_PENDING_APPROVAL:
+      case Submission::STATUS_PENDING_APPROVAL:
         $row = [
           $view_link,
           $submitting_user,

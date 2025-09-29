@@ -189,7 +189,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
     }
   }
 
-  if ($submission->status == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
+  if ($submission->isPendingApprovalStatus()) {
     $options['files'] = [
       'revision_destination' => TRUE,
     ];
@@ -222,7 +222,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
   $display .= tpps_table_display($submission->sharedState, $options);
 
   if (
-    $submission->status == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL
+    $submission->isPendingApprovalStatus()
     && preg_match('/P/', $submission->sharedState['saved_values'][TPPS_PAGE_2]['data_type'])
   ) {
     $new_cvterms = array();
@@ -406,7 +406,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Reject/Approve and comments.
-  if ($submission->status == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
+  if ($submission->isPendingApprovalStatus()) {
 
     if ($page2_values['study_type'] != 1) {
       module_load_include('php', 'tpps', 'forms/build/page_3_helper');
@@ -546,7 +546,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
     '#prefix' => '<div id="tpps-admin-comments">',
     '#suffix' => '</div>',
   ];
-  if ($submission->status == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
+  if ($submission->isPendingApprovalStatus()) {
     $form['APPROVE'] = [
       '#type' => 'submit',
       '#value' => t('Approve'),
@@ -559,7 +559,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
     ];
   }
 
-  if ($submission->status != TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
+  if (!$submission->isPendingApprovalStatus()) {
     $form['SAVE_COMMENTS'] = [
       '#type' => 'button',
       '#value' => t('Save Comments'),

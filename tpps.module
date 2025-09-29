@@ -53,7 +53,6 @@ define('TPPS_COLUMN_POPULATION_GROUP', 12);
 define('TPPS_COLUMN_CLONE_NUMBER', 13);
 
 // Submission Statuses.
-define('TPPS_SUBMISSION_STATUS_PENDING_APPROVAL', 'Pending Approval');
 define('TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING', 'Submission Job Running');
 
 // Values of the 'Define Experimental Design' field.
@@ -1607,12 +1606,13 @@ function tpps_main_submit($form, &$form_state) {
         }
         else {
           // 'Complete' button was clicked.
-          $submission->setStatus(TPPS_SUBMISSION_STATUS_PENDING_APPROVAL);
+          $submission->setStatus(Submission::STATUS_PENDING_APPROVAL);
           $submission->set(['completed'], time());
           $submission->setFileStatus(FILE_STATUS_PERMANENT, []);
           $submission->generateSharedState();
           tpps_submit_email($form_state);
-          drupal_goto('completed-submission/' . $submission->accession);
+          // Redirect later to save submission first.
+          $goto = 'completed-submission/' . $submission->accession;
         }
         break;
 
@@ -1633,6 +1633,9 @@ function tpps_main_submit($form, &$form_state) {
   $submission->setState($form_state);
   if ($submission->accession) {
     $submission->save();
+  }
+  if (!empty($goto)) {
+    drupal_goto($goto);
   }
 }
 
