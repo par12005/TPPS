@@ -102,6 +102,13 @@
  */
 class Submission {
 
+  // Submission Statuses.
+  const STATUS_INCOMPLETE = 'Incomplete';
+  const STATUS_PENDING_APPROVAL = 'Pending Approval';
+  const STATUS_APPROVED = 'Approved';
+  const STATUS_SUBMISSION_JOB_RUNNING = 'Submission Job Running';
+  // Special statuses:
+  const STATUS_APPROVED_DELAYED = 'Approved - Delayed Submission Release';
 
   // Name of the DB table where Submissions are stored.
   const TABLE = 'tpps_submission';
