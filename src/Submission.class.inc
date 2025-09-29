@@ -1117,6 +1117,30 @@ class Submission {
   }
 
   /**
+   * Checks if current status of submission matches given name of the status.
+   *
+   * @param string $status
+   *   Submission's status. See constants in 'Submission' class.
+   *
+   * @return bool
+   *   Returns TRUE if given status name and current status of the submission
+   *   are the same. Returns FALSE otherwise.
+   */
+  public function isStatus($status) {
+    return $this->status == $status;
+  }
+
+  /**
+   * Checks if current status of submission is 'Incomplete'.
+   *
+   * @return bool
+   *   Returns TRUE if given status is 'Incomplete' and FALSE otherwise.
+   */
+  public function isIncompleteStatus() {
+    return $this->status == Submission::STATUS_INCOMPLETE;
+  }
+
+  /**
    * Removes Submission's Shared State.
    */
   public function removeSharedState() {
