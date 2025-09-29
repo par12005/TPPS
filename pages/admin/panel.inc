@@ -47,7 +47,7 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
  *
  * List of statuses:
  * - 'Pending',
- * - 'Approved',
+ * - Submission::STATUS_APPROVED,
  * - Submission::STATUS_INCOMPLETE.
  *
  * @param array $form
@@ -334,14 +334,14 @@ function tpps_report_admin_panel_theme_single_row($accession, array $row, array 
       ];
       break;
 
-    case TPPS_SUBMISSION_STATUS_APPROVED:
+    case Submission::STATUS_APPROVED:
     case TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING:
-    case TPPS_SUBMISSION_STATUS_APPROVED_DELAYED:
+    case Submission::STATUS_APPROVED_DELAYED:
 
-      if ($row['status'] == TPPS_SUBMISSION_STATUS_APPROVED) {
+      if ($row['status'] == Submission::STATUS_APPROVED) {
         $status_label = !empty($row['date']['loaded'])
           ? "Approved - load completed on " . date("F j, Y, \a\\t g:i a",
-          $row['date']['loaded']) : TPPS_SUBMISSION_STATUS_APPROVED;
+          $row['date']['loaded']) : Submission::STATUS_APPROVED;
       }
       elseif ($row['status'] == TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING) {
         $status_label = $status_label ?? (
@@ -351,7 +351,7 @@ function tpps_report_admin_panel_theme_single_row($accession, array $row, array 
           : TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING
         );
       }
-      elseif ($row['status'] == TPPS_SUBMISSION_STATUS_APPROVED_DELAYED) {
+      elseif ($row['status'] == Submission::STATUS_APPROVED_DELAYED) {
         $release = $row['date']['release'];
         $release = strtotime("{$release['day']}-{$release['month']}-{$release['year']}");
         $status_label = "Approved - Delayed Submission Release on "
@@ -508,10 +508,10 @@ function ___old($context) {
         $output['pending'][(int) substr($accession, 4)] = $row;
         break;
 
-      case TPPS_SUBMISSION_STATUS_APPROVED:
+      case Submission::STATUS_APPROVED:
         $status_label = $submission->isLoaded() ? "Approved - load completed on "
             . date("F j, Y, \a\\t g:i a", $submission->getLoadTime())
-          : TPPS_SUBMISSION_STATUS_APPROVED;
+          : Submission::STATUS_APPROVED;
         if ($submission->isLoaded()) {
           $days_since_load = (time() - $submission->getLoadTime()) / (60 * 60 * 24);
           $unpublished_threshold = variable_get('tpps_unpublished_days_threshold', 180);
@@ -584,7 +584,7 @@ function ___old($context) {
           : TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING
         );
 
-      case TPPS_SUBMISSION_STATUS_APPROVED_DELAYED:
+      case Submission::STATUS_APPROVED_DELAYED:
         if (empty($status_label)) {
           $release = $submission->state['saved_values']['summarypage']['release-date'] ?? NULL;
           $release = strtotime("{$release['day']}-{$release['month']}-{$release['year']}");

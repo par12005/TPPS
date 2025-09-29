@@ -232,7 +232,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     // Functions starting from tpps_submit_page_1() update $shared_state array
     // with new data so now we are going to update db record.
     $submission->setLoadTime(time());
-    $submission->save(TPPS_SUBMISSION_STATUS_APPROVED);
+    $submission->save(Submission::STATUS_APPROVED);
 
     // throw new Exception("DEBUG");
 

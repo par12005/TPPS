@@ -54,13 +54,7 @@ define('TPPS_COLUMN_CLONE_NUMBER', 13);
 
 // Submission Statuses.
 define('TPPS_SUBMISSION_STATUS_PENDING_APPROVAL', 'Pending Approval');
-define('TPPS_SUBMISSION_STATUS_APPROVED', 'Approved');
 define('TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING', 'Submission Job Running');
-// Special statuses:
-define(
-  'TPPS_SUBMISSION_STATUS_APPROVED_DELAYED',
-  'Approved - Delayed Submission Release'
-);
 
 // Values of the 'Define Experimental Design' field.
 define('TPPS_GENOTYPING_DESIGN_GBS', 1);

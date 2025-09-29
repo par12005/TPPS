@@ -54,7 +54,7 @@ function tpps_front_create_form(array &$form, array $form_state) {
       }
       if (variable_get('tpps_front_show_approved_status_mine', FALSE)) {
         $list = SubmissionCache::getAccessionList([
-          [['status'], TPPS_SUBMISSION_STATUS_APPROVED],
+          [['status'], Submission::STATUS_APPROVED],
           [['submitter', 'uid'], $user->uid],
         ]);
         if ($list) {

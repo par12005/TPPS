@@ -125,9 +125,9 @@ class SubmissionsTest extends TripalTestCase {
     $submisison->load();
     $this->assertGreaterThan($updated, $submission->state['updated']);
 
-    $submission->state['status'] = TPPS_SUBMISSION_STATUS_APPROVED;
+    $submission->state['status'] = Submission::STATUS_APPROVED;
     $submission->save();
-    $this->assertEquals(TPPS_SUBMISSION_STATUS_APPROVED, $submission->status);
+    $this->assertEquals(Submission::STATUS_APPROVED, $submission->status);
   }
 
   /**

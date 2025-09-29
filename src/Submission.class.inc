@@ -55,7 +55,11 @@
  * Submission's Status.
  *
  * To get: $submission->status;
- * To set: $submission->status = 'Approved';
+ * To set: $submission->status = Submission::STATUS_APPROVED;
+ * To check:
+ *   $submission->isStatus($status_name);
+ *   $submission->isIncompleteStatus();
+ *
  * Note: status is also stored in $state, $sharedState and those properties
  * will also be updated and no need to update them manually.
  *
@@ -460,7 +464,7 @@ class Submission {
   public function setStatus($status) {
     if (
       !in_array($status, $this->getStatusList())
-      && $status != TPPS_SUBMISSION_STATUS_APPROVED_DELAYED
+      && $status != Submission::STATUS_APPROVED_DELAYED
     ) {
       throw new Exception(
         t('Submission status @status is not allowed.', ['@status' => $status])
@@ -478,7 +482,7 @@ class Submission {
     // @TODO Implement this hook and reset cached lists of TPPS admin panel page.
     // This can't be done in save() method because not always status is changed.
 
-    if ($status == TPPS_SUBMISSION_STATUS_APPROVED) {
+    if ($status == Submission::STATUS_APPROVED) {
       module_load_include('php', 'tpps', 'forms/submit/submit_all');
       global $user;
       $this->set(['submitting_uid'], $user->uid, TRUE);
@@ -527,7 +531,7 @@ class Submission {
       $list = variable_get($var_name, []);
       $list[$this->accession] = $this->accession;
       variable_set($var_name, $list);
-      $this->status = TPPS_SUBMISSION_STATUS_APPROVED_DELAYED;
+      $this->status = Submission::STATUS_APPROVED_DELAYED;
     }
     return $this;
   }
@@ -542,13 +546,12 @@ class Submission {
    */
   public static function getStatusList() {
     // Special extra status:
-    // TPPS_SUBMISSION_STATUS_APPROVED_DELAYED
-    // ('Approved - Delayed Submission Release')
+    // Submission::STATUS_APPROVED_DELAYED
     // We don't use it because it's rarely used.
     return [
       Submission::STATUS_INCOMPLETE,
       TPPS_SUBMISSION_STATUS_PENDING_APPROVAL,
-      TPPS_SUBMISSION_STATUS_APPROVED,
+      Submission::STATUS_APPROVED,
       TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING,
     ];
   }

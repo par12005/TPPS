@@ -140,12 +140,12 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
 
   // @TODO First update accession in 'tpps_submission' then:
   // $submission->accession = $new_accession;
-  // $submission->status = TPPS_SUBMISSION_STATUS_APPROVED;
+  // $submission->status = Submission::STATUS_APPROVED;
   // $submission->save();
   $state['updated'] = time();
   db_update('tpps_submission')
     ->fields([
-      'status' => TPPS_SUBMISSION_STATUS_APPROVED,
+      'status' => Submission::STATUS_APPROVED,
       // Note: REQUEST_TIME couldn't be used because this function also
       // called from submit_all.php and time() != REQUEST_TIME.
       'submission_state' => serialize($submission->state),
@@ -1170,7 +1170,7 @@ function tpps_load_submission($accession, $state = TRUE) {
   $query->join('chado.dbxref', 'dbx', 'dbx.dbxref_id = s_dbx.dbxref_id');
   $query->fields('s');
   $query->condition('dbx.accession', $accession);
-  $query->condition('s.status', 'Approved');
+  $query->condition('s.status', Submission::STATUS_APPROVED);
   $query->range(0, 1);
   $query = $query->execute();
   $result = $query->fetchObject();

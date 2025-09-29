@@ -185,7 +185,7 @@ function tpps_tab_create($uid) {
   $submission_list = tpps_load_submission_multiple([
     'status' => [
       TPPS_SUBMISSION_STATUS_PENDING_APPROVAL,
-      TPPS_SUBMISSION_STATUS_APPROVED,
+      Submission::STATUS_APPROVED,
     ],
     'uid' => $user->uid,
   ]);

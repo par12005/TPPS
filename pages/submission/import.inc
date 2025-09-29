@@ -7,9 +7,9 @@
  * @TODO Minor. Implement ability to set accession number. Currently there is
  * no ability to specify accession. Only next one could be used
  * or existing one overritten.
- * @TODO Minor. Set 'Approved' status and do necessary changes.
- * Just setting 'Approved' status don't allow to run Tripal Job just
- * after import. Required more work with code.
+ * @TODO Minor. Set Submission::STATUS_APPROVED status and do necessary changes.
+ * Just setting Submission::STATUS_APPROVED status don't allow to run Tripal
+ * Job just after import. Required more work with code.
  */
 
 module_load_include('inc', 'tpps', 'pages/submission/list');
@@ -204,8 +204,9 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   //
   // Having Submission::STATUS_INCOMPLETE status is safe if we then
   // programmatically submit form but this status requires a lot of
-  // extra work to run Tripal job so better to have 'Pending Approval'
-  // status or maybe even 'Approved'.
+  // extra work to run Tripal job so better to have status
+  // TPPS_SUBMISSION_STATUS_PENDING_APPROVAL
+  // or maybe even Submission::STATUS_APPROVED.
   if (in_array($submission_new_status, Submission::getStatusList())) {
     $submission->status = $submission_new_status;
   }

@@ -580,7 +580,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
   if (!empty($date)) {
     $datestr = "{$date['day']}-{$date['month']}-{$date['year']}";
     if (
-      $submission->status != TPPS_SUBMISSION_STATUS_APPROVED
+      $submission->status != Submission::STATUS_APPROVED
       || strtotime($datestr) > time()
     ) {
       tpps_admin_panel_add_section($form, $section);
@@ -599,7 +599,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
     'key' => 'save_alternative_accessions',
     'title' => t('Save Alternative Accessions'),
   ];
-  if ($submission->status == TPPS_SUBMISSION_STATUS_APPROVED) {
+  if ($submission->status == Submission::STATUS_APPROVED) {
     tpps_admin_panel_add_section($form, $section);
     $form[$section['key']]['alternative_accessions'] = [
       '#type' => 'textfield',
@@ -1264,7 +1264,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
     case 'approve':
       module_load_include('php', 'tpps', 'forms/submit/submit_all');
       global $user;
-      $submission->status = TPPS_SUBMISSION_STATUS_APPROVED;
+      $submission->status = Submission::STATUS_APPROVED;
 
       // Email notification.
       $params['subject'] = "$type_label Submission Approved: "
