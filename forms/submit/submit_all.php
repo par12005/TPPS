@@ -2477,7 +2477,7 @@ if (0) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-  OtherMarker::process($organism_index, $shared_state, &$options);
+  OtherMarker::process($organism_index, $shared_state, $options);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   tpps_log('VCF IMPORT MODE is ' . $vcf_import_mode, [], TRIPAL_INFO);
