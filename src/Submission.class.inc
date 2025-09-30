@@ -451,7 +451,8 @@ class Submission {
    */
   public function setAccession($accession) {
     $this->accession = $accession;
-    $this->state['accession'] = $this->sharedState['accession'] = $accession;
+    $this->state['accession'] = $accession;
+    $this->sharedState['accession'] = $accession;
     return $this;
   }
 
@@ -478,10 +479,10 @@ class Submission {
       $this->set(['saved_values', 'status'], $status);
     }
 
-    // @TODO If status changed, then save and call hook_submission_status_changed()
-    // @TODO Implement this hook and reset cached lists of TPPS admin panel page.
+    // @todo If status changed, then save and call hook_submission_status_changed()
+    // @todo Implement this hook and reset cached lists of TPPS admin panel page.
     // This can't be done in save() method because not always status is changed.
-
+    // @todo Probably it should be a drupal hook?
     if ($status == Submission::STATUS_APPROVED) {
       module_load_include('php', 'tpps', 'forms/submit/submit_all');
       global $user;
@@ -1082,23 +1083,27 @@ class Submission {
   // which will be stored in 'public.tpps_submissions' database table.
 
   /**
-   * Get Submission's state.
-   *
-   * Caching:
-   *   Disabled (or cold cache): 12 msec
-   *   Drupal Cache Bin (warm cache): 4 msec.
-   *   Static Cache: 0.004 msec.
+   * Get Submission's Shared State.
    *
    * @param bool $reset
    *   Flag is cache must be resetted. Default if FALSE.
    *   RESET_CACHE could be used.
    *
    * @return array
-   *   Returns an reference to the Submission's SharedState.
+   *   Returns an reference to the Submission's Shared State.
    */
   public function &getSharedState(bool $reset = FALSE) {
-    if ($reset || (empty($this->sharedState) && !empty($this->accession))) {
-      $this->load();
+    if ($reset || empty($this->sharedState)) {
+      if (!empty($this->state)) {
+        $this->generateSharedState();
+      }
+      elseif (!empty($this->accession)) {
+        // WARNING:
+        // To generate Shared State data from DB will be used and all changes
+        // made in memory will be overwritten.
+        // But $this->state is empty so it will be probably 'status' and 'uid'.
+        $this->load($generate_shared_state = TRUE);
+      }
     }
     return $this->sharedState;
   }
@@ -1203,13 +1208,13 @@ class Submission {
     $temp_submission = new Submission();
     $temp_submission->accession = $this->accession;
     // We can't use __construct() because it will attempt to generate missing
-    // sharedState and create ethernal loop.
+    // sharedState and will create ethernal loop.
     $temp_submission->accession = $this->accession;
     $temp_submission->load($generate_shared_state = FALSE);
-    $state = $temp_submission->state;
+    $temp_state = $temp_submission->state;
     unset($temp_submission);
 
-    $this->sharedState = SubmissionVersion::downgrade($state);
+    $this->sharedState = SubmissionVersion::downgrade($temp_state);
     $this->purifySharedState();
     return $this;
   }

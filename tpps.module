@@ -1625,9 +1625,10 @@ function tpps_main_submit($form, &$form_state) {
     }
     $saved_values['form_build_id'] = $values['form_build_id'];
   }
-
-  $form_state['rebuild'] = TRUE;
-  $submission->setState($form_state);
+  if (empty($goto)) {
+    $form_state['rebuild'] = TRUE;
+    $submission->setState($form_state);
+  }
   if ($submission->accession) {
     $submission->save();
   }
