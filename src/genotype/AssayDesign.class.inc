@@ -46,30 +46,39 @@ class AssayDesign {
     // @TODO Get parents from classes using getParents() method to respect
     // Submission's form version.
     $states = [
-      ':input[name="' . $organism_key . '[' . implode('][', [
-        AssayDesign::DATA_TYPE,
-        AssayDesign::SNPS_FIELDSET,
-        AssayDesignCitation::PARENT_FIELDSET,
-        AssayDesignCitation::EXISTING_STUDY_FIELD_NAME,
-      ]) . ']"]' => [
-        'value' => AssayDesignCitation::EXISTING_STUDY_OTHER_OPTION_KEY,
+      // Existing studies with an "Assay design file":
+      // 'The citation for my assay design is not in this list'.
+      [
+        ':input[name="' . $organism_key . '[' . implode('][', [
+          AssayDesign::DATA_TYPE,
+          AssayDesign::SNPS_FIELDSET,
+          AssayDesignCitation::PARENT_FIELDSET,
+          AssayDesignCitation::EXISTING_STUDY_FIELD_NAME,
+        ]) . ']"]' => [
+          'value' => AssayDesignCitation::EXISTING_STUDY_OTHER_OPTION_KEY,
+        ],
       ],
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // We should also check this field because when 'genotyping-type' set into
-      // 'Genotyping Array' field 'file-type' disapears with value which allows
-      // this field to be shown and required.
-      ':input[name="' . $organism_key . '[' . implode('][', [
-        AssayDesign::DATA_TYPE,
-        AssayDesign::SNPS_FIELDSET,
-        'genotyping-type',
-      ]) . ']"]' => ['value' => TPPS_GENOTYPING_TYPE_GENOTYPING],
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      ':input[name="' . $organism_key . '[' . implode('][', [
-        AssayDesign::DATA_TYPE,
-        AssayDesign::SNPS_FIELDSET,
-        'file-type',
-      ]) . ']"]' => [
-        'value' => TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE,
+      'or',
+      [
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // 'Genotyping Type': 'Genotyping'
+        // We should also check this field because when 'genotyping-type' set into
+        // 'Genotyping Array' field 'file-type' disapears with value which allows
+        // this field to be shown and required.
+        ':input[name="' . $organism_key . '[' . implode('][', [
+          AssayDesign::DATA_TYPE,
+          AssayDesign::SNPS_FIELDSET,
+          'genotyping-type',
+        ]) . ']"]' => ['value' => TPPS_GENOTYPING_TYPE_GENOTYPING],
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // 'Genotyping file type': 'SNP Assay file and Assay design file'
+        ':input[name="' . $organism_key . '[' . implode('][', [
+          AssayDesign::DATA_TYPE,
+          AssayDesign::SNPS_FIELDSET,
+          'file-type',
+        ]) . ']"]' => [
+          'value' => TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE,
+        ],
       ],
     ];
     // Add file upload field.
@@ -123,11 +132,12 @@ class AssayDesign {
     $genotyping_type = $snps['genotyping-type'] ?? NULL;
     $existing_study = AssayDesignCitation::getExistingStudy($organism_index, $form_state);
     if (
-      $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
-      && $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING
-      && $existing_study == AssayDesignCitation::EXISTING_STUDY_OTHER_OPTION_KEY
+      $existing_study == AssayDesignCitation::EXISTING_STUDY_OTHER_OPTION_KEY
+      || (
+        $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING
+        && $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
+      )
     ) {
-      //dpm('required');
       $fid = tpps_array_get_value(
         $form_state['values'],
         [
