@@ -207,8 +207,8 @@ function theme_submission_page(array $variables) {
 
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       if ($key == 'tpps_submission_import') {
-        $key_str = t('Submission Import Metadata');
-        $import_meta = $submission->getImportMeta();
+        $key_str = t('Import Metadata');
+        $import_meta = FormState::getImportMeta($variables['form_state']);
         if (!empty($import_meta)) {
           $version = $import_meta[SubmissionVersion::FORM_KEY] ?? '-';
           $val_str = theme('item_list', [
