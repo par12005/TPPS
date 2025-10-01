@@ -10,9 +10,6 @@
  */
 function tpps_report_submission_file_type() {
   $type = arg(6);
-
-
-
   if (empty($type)) {
     // Show list of types when nothing yet selected.
     $path = 'admin/reports/tpps/submission/file/type/';
@@ -26,6 +23,7 @@ function tpps_report_submission_file_type() {
     return theme('item_list', ['items' => $list]);
   }
   else {
+    drupal_set_title(t('Submissions File Type "@type"', ['@type' => $type]));
     $file_name = str_replace('.inc', '',
       Report::getFilePath('all', ['submission', 'file'])
     );
