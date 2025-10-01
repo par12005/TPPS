@@ -6,7 +6,7 @@
  */
 
 /**
- * Manages 'SNPs Kinship' file field.
+ * Manages 'Other Marker' file field.
  *
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>

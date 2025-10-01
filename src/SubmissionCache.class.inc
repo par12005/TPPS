@@ -64,6 +64,7 @@ class SubmissionCache {
 
   // Name of the container of the files data in single item.
   const FILES_CONTAINER = 'file';
+  const FILE_GROUPED_LIST = 'grouped_list';
 
   /**
    * Updates cached list of Submissions.
@@ -297,7 +298,7 @@ class SubmissionCache {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Files.
       static::FILES_CONTAINER => [
-        'grouped_list' => [
+         static::FILE_GROUPED_LIST => [
           Report::TREE_ACCESSION_FILES => [],
           Report::PHENOTYPE_FILES => [],
           Report::GENOTYPE_FILES => [],
@@ -417,7 +418,7 @@ class SubmissionCache {
         $field_name = check_plain(end($parents));
         $file_row[$group][$organism_label][$field_name] = $fid;
       }
-      $data['file']['grouped_list'] = $file_row;
+      $data['file'][static::FILE_GROUPED_LIST] = $file_row;
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

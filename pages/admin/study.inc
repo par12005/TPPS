@@ -1482,10 +1482,12 @@ function tpps_admin_panel_get_reports() {
     'submissions_missing_files' => $panel_url . '/submissions-missing-files',
     'submissions_without_files' => $panel_url . '/submissions-without-files',
     'submissions_all_files' => $panel_url . '/submissions-all-files',
+    'submissions_type_files' => $panel_url . '/submissions-type-files',
     'organism_list' => $panel_url . '/organism-list',
     'doi_duplicates' => $panel_url . '/doi-duplicates',
     'zenodo_submissions' => $panel_url . '/zenodo-submissions',
     'zenodo_depositions' => $panel_url . '/zenodo-depositions',
+    'submission_version' => $panel_url . '/submission-version',
   ];
 }
 

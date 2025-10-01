@@ -1615,4 +1615,28 @@ abstract class FileField {
     return tpps_file_len($fid);
   }
 
+  /**
+   * Gets list of file field classes.
+   *
+   * @return array
+   *   Returns list of class names.
+   */
+  public static function getClassList() {
+    // @todo Scan folder and dynamically build list of classes.
+    // @todo Add all file fields to this list.
+    return [
+      // Genotype.
+      'AssayDesign',
+      'OtherMarker',
+      'SnpAssay',
+      'SnpAssociation',
+      'SnpsKinship',
+      'SnpsPopulationStructure',
+      // Phenotype.
+      'PhenotypeData',
+      'PhenotypeIso',
+      'PhenotypeMeta',
+    ];
+  }
+
 }

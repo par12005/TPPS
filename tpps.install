@@ -56,6 +56,8 @@ function tpps_get_variable_list() {
     'tpps_report_submission_file_all_title' => "Submission's All Files",
     'tpps_report_submission_file_none_title' => 'Submissions without Files',
     'tpps_report_submission_file_missing_title' => 'Submissions Missing Files',
+    'tpps_report_submission_file_type_title' => "Submission's File Type",
+    'tpps_report_submission_version_title' => "Submission Version Changes",
     // NCBI API.
     'tpps_report_organism_ncbi_all_title' => 'All organisms and their NCBI Taxonomy Ids',
     'tpps_report_organism_ncbi_missing_title' => 'Organisms without NCBI Taxonomy Id',
@@ -2505,4 +2507,6 @@ function tpps_update_7131() {
  */
 function tpps_update_7132() {
   variable_set('tpps_exclude_hash_sign_from_column_list', FALSE);
+  variable_set('tpps_report_submission_file_type_title', "Submission's File Type");
+  variable_set('tpps_report_submission_version_title', 'Submission Version Changes');
 }

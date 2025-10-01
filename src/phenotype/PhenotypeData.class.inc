@@ -9,8 +9,6 @@
  *
  * Values of column 'year' will be stored in table 'chado.phenotypeprop'.
  * See method getYearCvTermId() for more details.
- *
- * @todo Extend FileField class.
  */
 
 /**
@@ -32,8 +30,7 @@ class PhenotypeData extends FileField {
   // file is required.
   // Note: there is also 'iso-check' checkbox.
   const CHECKBOX_NAME = 'normal-check';
-
-
+  const TITLE = 'Phenotype';
   // Name of the file field.
   // Value is file id.
   const DOM_NAME = 'file';

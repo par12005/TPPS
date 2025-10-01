@@ -440,6 +440,11 @@ class Report {
           'description' => t('List of Submissions which has Zenodo Depositions.'),
           'admin_panel' => TRUE,
         ],
+        'version' => [
+          'title' => variable_get('tpps_report_submission_version_title', 'Submission Version Changes'),
+          'description' => t('Changes in given Submission Version.'),
+          'admin_panel' => TRUE,
+        ],
         'file' => [
           'all' => [
             'title' => variable_get('tpps_report_submission_file_all_title',
@@ -460,6 +465,12 @@ class Report {
             ),
             'description' => t('List submissions which has files but those files '
             . 'are missing in filesystem.'),
+            'admin_panel' => TRUE,
+          ],
+          'type' => [
+            'title' => variable_get('tpps_report_submission_file_type_title',
+              'Submissions File Type'),
+            'description' => t('List of submissions with files of the certain type.'),
             'admin_panel' => TRUE,
           ],
         ],
