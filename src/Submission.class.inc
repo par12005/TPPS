@@ -799,7 +799,7 @@ class Submission {
    *   This could create ethernal loop when record in DB has not 'sharedState'.
    *   Default is TRUE.
    */
-  public function load($generate_shared_state = TRUE) {
+  public function load($generate_shared_state = FALSE) {
     global $user;
     if (empty($this->accession)) {
       throw new Exception(t('Study accession is empty.'));
@@ -2462,20 +2462,18 @@ class Submission {
   }
 
   /**
-   * Sets Submission Form Version.
+   * Sets only Submission Form Version number.
    *
-   * To upgrade/downgrade Submission's version:
-   *   SubmissionVersion::set($submission_state, $version);
+   * WARNING: No upgrade/downgrade.
+   * See SubmissionVersion::set() to upgrade/downgrade.
    *
    * @return bool
    *   Returns TRUE if version was changed and FALSE otherwise.
-   *
-   * @todo Should we upgrade/downgrade in this case?
    */
   public function setFormVersion($version, $save_on_change = FALSE) {
-    $current_version = $this->gerFormVersion();
+    $current_version = $this->getFormVersion();
     if ($current_version != $version) {
-      $this->state['saved_values'][SubmissionVersion::FORM_KEY] == $version;
+      $this->state['saved_values'][SubmissionVersion::FORM_KEY] = $version;
       if ($save_on_change) {
         $this->save();
       }
