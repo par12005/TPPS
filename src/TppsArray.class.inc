@@ -289,6 +289,9 @@ class TppsArray {
    *   Returns FALSE otherwise.
    */
   public static function move(array &$array, array $action_data) {
+    if ($debug_mode ?? FALSE) {
+      dpm(print_r(debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 5), TRUE));
+    }
     module_load_include('inc', 'tpps', 'includes/form');
     foreach ($action_data as $key => $item) {
       if (empty($item['source']) || empty($item['target'])) {
@@ -322,6 +325,21 @@ class TppsArray {
       // @TODO Minor. Use TppsArray::getValue().
       $source_field_value = $source['parent_element'][$source['field_name']] ?? NULL;
       $target_field_value = $target['parent_element'][$target['field_name']] ?? NULL;
+
+      if ($debug_mode ?? FALSE) {
+        drupal_set_message(TppsArray::printList([
+          'action' => __METHOD__,
+          'source' => [
+            '[ ' . implode(', ', $item['source']) . ' ]'
+            => var_export($source_field_value, 1)
+          ],
+          'target' => [
+            '[ ' . implode(', ', $item['target']) . ' ]'
+            => var_export($target_field_value, 1)
+          ],
+        ]));
+      }
+
       if (empty($target_field_value)) {
         // Target has no value - do the move.
         $target['parent_element'][$target['field_name']] = $source_field_value;
