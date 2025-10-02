@@ -83,7 +83,7 @@ module_load_include('inc', 'tpps', 'includes/submission_form_version_changes');
  * To upgrade/downgrade to version:
  *    SubmissionVersion::set($submission_state, $version);
  * To set version (without upgrade/downgrade):
- *    SubmissionVersion::set($submission_state, $version, $no_migration = TRUE);
+ *    SubmissionVersion::set($submission_state, $version, $migrate = FALSE);
  *    or
  *    $submission->setFormVersion($version);
  *
@@ -189,23 +189,28 @@ class SubmissionVersion {
   /**
    * Sets Submission Form Version.
    *
-   * Note: Form State in database won't be updated.
    * To set version without upgrade/downgrade:
    *   $submission->setFormVersion($version);
+   * Note: Form State in database won't be updated.
    *
    * @param array $submission_state
    *   Submission Form State array.
    * @param int $version
    *   Submission Form Version.
    * @param bool $migrate
-   *   Defines if state array should be upgraded/downgraded. Default is TRUE.
+   *   Default is TRUE.
+   *   Defines if state array should be upgraded/downgraded.
    *   When FALSE then only version number will be changed. This could be used
    *   for troubleshooting and debugging.
    *
    * @return array
    *   Returns form state array upgraded/downgrated to desired version.
+   *
+   * @todo Rename to 'switch' or something more meaningful. 'Set' means for me
+   * just change number without migration.
    */
   public static function set(array $submission_state, $version = NULL, $migrate = TRUE) {
+    // Validate.
     if (is_null($version)) {
       // @TODO
       $message = "Version can't be empty.";
@@ -220,6 +225,7 @@ class SubmissionVersion {
     if ($current_version == $version) {
       return $submission_state;
     }
+    // Migrate.
     if ($migrate) {
       if ($current_version > $version) {
         return static::downgrade($submission_state, $version);
