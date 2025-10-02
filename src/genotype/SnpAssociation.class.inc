@@ -472,6 +472,7 @@ class SnpAssociation extends FileField {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Check that position values are correctly formatted.
     $position_col = $groups['Position'][static::DATA_TYPE_POSITION];
+    $assoc_no_header = $snps[static::DOM_NAME . '-no-header'] ?? FALSE;
     $positions = tpps_parse_file_column($fid, $position_col, $assoc_no_header);
     foreach ($positions as $position) {
       if (
