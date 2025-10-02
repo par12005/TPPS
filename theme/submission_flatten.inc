@@ -409,6 +409,8 @@ function tpps_submission_flatten(array $state, array $options = []) {
     'frontpage',
     'form_build_id',
     'dbxref_id',
+    // Some old/broken studies on dev-site has it but it's safe just hide it.
+    'organism-1',
   ];
   foreach ($hide_list as $item) {
     unset($data[$item]);
