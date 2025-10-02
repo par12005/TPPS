@@ -70,7 +70,7 @@ class SubmissionCache {
    * Updates cached list of Submissions.
    */
   public static function update() {
-    static::get($reset = TRUE);
+    static::get($accession = NULL, $reset = TRUE);
     // 'tpps_submission_cache_updated';
     if (function_exists('module_invoke_all')) {
       module_invoke_all('submission_cache_updated');
@@ -497,6 +497,7 @@ class SubmissionCache {
   public static function showClearCacheWidget() {
     if (($_GET[static::RESET_KEY] ?? FALSE) == static::CACHE_BIN) {
       $message = t('Cleared "@cid" cache bin.', ['@cid' => static::CACHE_BIN]);
+      drupal_get_messages();
       drupal_set_message($message);
       static::update();
       drupal_goto(current_path());
