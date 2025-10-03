@@ -2264,6 +2264,7 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
     echo "Tree Info:\n";
     print_r($options['tree_info']);
     $options['shared_state'] = $shared_state;
+    // 'SNPs Assay' file.
     tpps_file_iterator($snp_fid, 'FileField::processSpreadSheet', $options);
     tpps_log('Done.', [], TRIPAL_INFO);
 

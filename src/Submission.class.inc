@@ -620,16 +620,24 @@ class Submission {
     if ($db_record_updated > $memory_updated) {
       // @todo Merge with submission from database somehow.
       $message = 'Submission in database is newer than in memory.';
-      watchdog('tpps',
-        $message . 'DB: @db. Memory: @memory. <pre>@backtrace</pre>',
-        [
-          '@db' => $db_record_updated,
-          '@memory' => $memory_updated,
-          '@backtrace' => print_r($stack, 1),
-        ],
-        WATCHDOG_ERROR
-      );
-      throw new Exception($message . ' Check watchdog for more details.');
+      if (!tpps_is_cli()) {
+        // When in CLI-mode then watchdog-messages are shown in terminal and
+        // submit_all.php script uses transactions which change status of the
+        // submission and in case of fail rolls back with new status which
+        // cause this message be shown. We can't only change field in DB because
+        // status is stored (and probably used) also in State and SharedState.
+        watchdog('tpps',
+          $message . '<br />Updated date in DB: @db.'
+          . '<br />Updated date in memory: @memory.'
+          . '<pre>@backtrace</pre>',
+          [
+            '@db' => $db_record_updated,
+            '@memory' => $memory_updated,
+            '@backtrace' => print_r($stack, 1),
+          ],
+          WATCHDOG_ERROR
+        );
+      }
     }
 
     // Note: REQUEST_TIME couldn't be used because called from CLI script and
