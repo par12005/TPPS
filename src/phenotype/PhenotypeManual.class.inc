@@ -43,7 +43,7 @@ class PhenotypeManual {
     // List of Phenotype synonyms. This list will be the same for all
     // phenotypes. but unit list is unique per phenotype and
     // will be obtained later because depends on selected synonym.
-    $synonym_list = PhenotypeSynonym::getList();
+    $synonym_list = PhenotypeSynonym::getOptionList();
     // List of synonyms has not flat structure but separated by letter.
     $first_synonym_key = NULL;
     if (is_array($synonym_list)) {

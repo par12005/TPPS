@@ -31,30 +31,14 @@ class PhenotypeSynonym {
    *   Returns associative array with synonym_id as key
    *   and synonym's name as label.
    */
-  public static function getList(array $options = [], $reset = FALSE) {
+  public static function getOptionList(array $options = [], $reset = FALSE) {
+
+    $list = PhenotypeSynonym::getAll($reset);
     // Get defaults.
     $defaults = ['not_in_list_option' => TRUE, 'debug' => FALSE];
     $options = array_merge($defaults, $options);
 
-    // Use Drupal's cache in database instead of static caching.
-    $synonym_cid = 'tpps_synonym_list';
-    $cache_bin = TPPS_CACHE_BIN ?? 'cache';
-    $cache = cache_get($synonym_cid, $cache_bin);
-    $is_cache_allowed = variable_get('tpps_page_4_cache_synonym_list', FALSE);
-    if (empty($cache->data) || $reset || !$is_cache_allowed) {
-      // Using chado_select_record() don't allow to use fetchAllKeyed().
-      $query = db_select('chado.phenotype_synonyms', 'cps')
-        ->fields('cps', ['phenotype_synonyms_id', 'synonym'])
-        ->condition('cps.synonym', 0, '>')
-        ->orderBy('cps.phenotype_synonyms_id');
-      $data = $query->execute()->fetchAllKeyed();
-      asort($data, SORT_STRING | SORT_FLAG_CASE | SORT_NATURAL);
-      cache_set($synonym_cid, $data, $cache_bin);
-      $list = $data;
-    }
-    else {
-      $list = $cache->data;
-    }
+    asort($list, SORT_STRING | SORT_FLAG_CASE | SORT_NATURAL);
     if (variable_get('tpps_page_4_use_alphabetic_list', TRUE)) {
       $list = tpps_build_alphabetic_list($list);
     }
@@ -81,6 +65,8 @@ class PhenotypeSynonym {
    * @return object
    *   Returns all the Synonym's data.
    *   Returns FALSE if synonym wasn't found.
+   *
+   * @todo Merge with ::getAll() method.
    */
   public static function get($synonym_id) {
     // Table 'phenotype_synonyms' was created manually and wasn't added
@@ -263,6 +249,36 @@ class PhenotypeSynonym {
     $query->orderBy('cps.' . $field_name);
     //$query->addTag('debug');
     return $query->execute()->fetchAllKeyed() ?? [];
+  }
+
+  /**
+   * Gets list of the all phenotype synonyms.
+   *
+   * @param bool $reset
+   *   When TRUE static caching will not be used. Default is FALSE.
+   *
+   * @return array
+   *   Returns associative array with synonym_id as key
+   *   and synonym's name as label.
+   */
+  public static function getAll($reset = FALSE) {
+    $key = $synonym_cid = 'tpps_synonym_list';
+    $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+    $cache = cache_get($synonym_cid, $cache_bin);
+    $is_cache_allowed = variable_get('tpps_page_4_cache_synonym_list', FALSE);
+    if (
+      $reset || empty($cache) || empty($cache->data[$key])
+      || !$is_cache_allowed
+    ) {
+      // Using chado_select_record() don't allow to use fetchAllKeyed().
+      $query = db_select('chado.phenotype_synonyms', 'cps')
+        ->fields('cps', ['phenotype_synonyms_id', 'synonym'])
+        ->condition('cps.synonym', 0, '>')
+        ->orderBy('cps.phenotype_synonyms_id');
+      $cache->data[$key] = $query->execute()->fetchAllKeyed();
+      cache_set($synonym_cid, $cache->data, $cache_bin);
+    }
+    return $cache->data[$key];
   }
 
 }
