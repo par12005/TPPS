@@ -1999,7 +1999,7 @@ class Submission {
     return FALSE;
   }
 
-    /**
+  /**
    * Checks if study has Mass Environmental data.
    *
    * @return bool
@@ -2995,6 +2995,31 @@ class Submission {
       return TRUE;
     }
     return FALSE;
+  }
+
+  /**
+   * Get list of submission's phenotype id.
+   *
+   * Note: Only for processed submissions (loaded into DB).
+   * Unprocessed phenotypes has no ids yet.
+   *
+   * @return mixed
+   *   Returns list of phenotype ids.
+   *   Returns NULL when submission has no phenotype data or not yet loaded
+   *   into DB (not yet processed by submit_all.php script).
+   */
+  public function getPhenotypeIdList() {
+    if (!$this->hasPhenotypeData() || empty($this->getLoadTime())) {
+      // Submission has no phenotype data or not yet loaded into DB.
+      return NULL;
+    }
+    $query = db_select('chado.dbxref', 'dxr')
+      ->condition('accession', $this->accession);
+    $query->join('chado.project_dbxref', 'pdxr', 'pdxr.dbxref_id = dxr.dbxref_id');
+    $query->join('chado.project_stock', 'ps', 'ps.project_id = pdxr.project_id');
+    $query->join('chado.stock_phenotype', 'sph', 'sph.stock_id = ps.stock_id');
+    $query->fields('sph', ['phenotype_id']);
+    return $query->execute()->fetchCol('phenotype_id');
   }
 
 }
