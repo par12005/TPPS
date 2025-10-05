@@ -2998,7 +2998,7 @@ class Submission {
   }
 
   /**
-   * Get list of submission's phenotype id.
+   * Get list of the submission's phenotype id.
    *
    * Note: Only for processed submissions (loaded into DB).
    * Unprocessed phenotypes has no ids yet.
@@ -3020,6 +3020,71 @@ class Submission {
     $query->join('chado.stock_phenotype', 'sph', 'sph.stock_id = ps.stock_id');
     $query->fields('sph', ['phenotype_id']);
     return $query->execute()->fetchCol('phenotype_id');
+  }
+
+  /**
+   * Gets list of the unique phenotype names.
+   *
+   * Note: getPhenotypeIdList() method returns unique ids which have the same
+   * phenotype names so list returned by this method could be smaller.
+   *
+   * @return mixed
+   *   Returns list of the unique phenotype's names.
+   */
+  public function getPhenotypeNameList() {
+    if (!$this->hasPhenotypeData()) {
+      // Submission has no phenotype data.
+      return NULL;
+    }
+
+    if (empty($this->getLoadTime())) {
+      // Not yet loaded into DB.
+      //
+    }
+    else {
+      $list = $this->getPhenotypeIdList();
+      $field = 'name';
+      return db_select('chado.phenotype', 'p')
+        ->distinct()
+        ->condition('phenotype_id', $list, 'IN')
+        ->fields('p', [$field])
+        ->execute()
+        ->fetchCol($field);
+    }
+  }
+
+  /**
+   * Checks if at least one phenotype is missing synonym.
+   *
+   * @return bool
+   *   Returns TRUE if at least one phenotype is missing synonym.
+   *   Returns FALSE otherwise.
+   */
+  public function isAnyPhenotypeSynonymMissing() {
+    $missing = FALSE;
+    $list = $this->getPhenotypeNameList();
+    $synonym_list = PhenotypeSynonym::getAll();
+
+    $debug_mode = FALSE;
+    if ($debug_mode ?? FALSE) {
+      dpm(print_r($list, 1), 'Phenotype Names');
+      dpm(print_r($synonym_list, 1), 'Phenotype Synonyms');
+    }
+
+    foreach ($list as $item) {
+      if (!in_array($item, $synonym_list)) {
+        $missing = TRUE;
+        if ($debug_mode ?? FALSE) {
+          dpm($item, 'Missing');
+        }
+      }
+      else {
+        if ($debug_mode ?? FALSE) {
+          dpm($item, 'Found');
+        }
+      }
+    }
+    return $missing;
   }
 
 }
