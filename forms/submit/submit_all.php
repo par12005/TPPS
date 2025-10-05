@@ -1943,7 +1943,7 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
   PhenotypeIso::process($i, $shared_state, $options);
   // Store relations between Phenotype, Synonym, Unit.
   if ($id_list) {
-    tpps_synonym_save($phenotypes_meta, $id_list);
+    PhenotypeSynonym::save($phenotypes_meta, $id_list);
   }
   // [/VS].
 }
@@ -2281,7 +2281,7 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
     $options['type_cvterm'] = tpps_load_cvterm('snp')->cvterm_id;
     $options['ref-genome'] = $genotype['ref-genome'];
     $ref_genome = $genotype['ref-genome'];
-    
+
     echo "Ref-genome: $ref_genome\n";
 
     // Lookup analysis id from reference genome and add it to options array.
@@ -2320,8 +2320,8 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
       // Generate the species name
       $ref_genome_species = '';
       for ($rgp_i = 0; $rgp_i < ($ref_genome_parts_count -1); $rgp_i++) {
-        if (stripos($ref_genome_parts[$rgp_i], 'assembly') === FALSE 
-        and stripos($ref_genome_parts[$rgp_i], 'genome') === FALSE 
+        if (stripos($ref_genome_parts[$rgp_i], 'assembly') === FALSE
+        and stripos($ref_genome_parts[$rgp_i], 'genome') === FALSE
         ) {
           if ($rgp_i > 0) {
             $ref_genome_species .= ' ';
@@ -2412,9 +2412,9 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
       tpps_generate_vcf_from_assay_and_assay_design($options, $shared_state);
     }
 
-    
+
   }
-  
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // 'SSRs' and 'cpSSR' fields.
   foreach (['ssrs', 'ssrs_extra'] as $ssr_field_name) {
@@ -2515,7 +2515,7 @@ function tpps_generate_vcf_from_assay_and_assay_design(array &$options, array &$
   $assembly_version = $options['ref-genome-version'];
   $species = $options['ref-genome-species'];
   $four_letter_code = '';
-  
+
   foreach ($options['ref-genome-species-codes'] as $key => $code) {
     $four_letter_code = $code;
   }
@@ -2728,7 +2728,7 @@ if (file_exists($vcf_file_location) and file_exists($vcf_tbi_file_location)) {
   echo "VCF TBI file location: $vcf_tbi_file_location\n";
   echo "VCF file was created successfully.\n";
   // Add the vcf file location to the shared state so that it can be processed by the vcf processing function.
-  
+
   if (!isset($form_state['saved_values'][TPPS_PAGE_4]['organism-1']['genotype'])) {
     $form_state['saved_values'][TPPS_PAGE_4]['organism-1']['genotype'] = [
       'files' => [],
@@ -5003,7 +5003,7 @@ function tpps_genotype_vcf_processing_batch_some_features_insert(&$settings, $cu
       $featureloc_matches_count = 0;
       if (!empty($src_feature_ids)) {
         $src_feature_ids_csv = implode(',', $src_feature_ids); // explain this line
-        
+
         $results = db_query("SELECT f.feature_id as feature_id, f.uniquename as uniquename, srcfeature_id, fmin, fmax
           FROM chado.featureloc fl
           INNER JOIN chado.feature f ON fl.feature_id = f.feature_id
@@ -5047,7 +5047,7 @@ function tpps_genotype_vcf_processing_batch_some_features_insert(&$settings, $cu
         }
       }
       echo "Feature_synonym detections - Featureloc matches found: $featureloc_matches_count\n";
-    }   
+    }
 
     $sql = 'INSERT INTO chado.feature (name, organism_id, uniquename, type_id) VALUES ';
     $variant_index = 0;
@@ -5238,13 +5238,13 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
   //print_r($page4_values["organism-$i"]);
   $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
 
-  
+
 
   print_r("Genotype values:\n");
   print_r($genotype);
 
-  
-  
+
+
 
   // Insert mode is a mandatory requirement for this function to work so perform check
   if ($insert_mode == '') {
@@ -5329,7 +5329,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
   print_r($genotype['files']);
 
 
-  
+
   // For some reason, even after generating a VCF from assay and assay design, the file-type is not set to VCF
   // So we manually set it here if local_vcf is set.
   // This is a temporary fix until we can figure out why the file-type is not being set properly.
@@ -5338,7 +5338,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
   }
 
   print_r('Genotype File Type: ' . $genotype['files']['file-type'] . "\n");
-  
+
 
   if ($genotype['files']['file-type'] == TPPS_GENOTYPING_FILE_TYPE_VCF) {
     // Check to make sure vcf import is ENABLED

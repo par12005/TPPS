@@ -137,7 +137,7 @@ function tpps_synonym_add_form_submit($form, &$form_state) {
         ? ((int) $form_state['values']['synonym'][$name]) : NULL;
     }
   }
-  $id = tpps_synonym_add($form_state['values']['synonym']);
+  $id = PhenotypeSynonym::add($form_state['values']['synonym']);
   $message = t('New synonym was created. Id: @id.Data: <pre>@data</pre>',
     [
       '@id' => $id,

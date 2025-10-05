@@ -43,7 +43,7 @@ class PhenotypeManual {
     // List of Phenotype synonyms. This list will be the same for all
     // phenotypes. but unit list is unique per phenotype and
     // will be obtained later because depends on selected synonym.
-    $synonym_list = tpps_synonym_get_list();
+    $synonym_list = PhenotypeSynonym::getList();
     // List of synonyms has not flat structure but separated by letter.
     $first_synonym_key = NULL;
     if (is_array($synonym_list)) {
@@ -62,12 +62,12 @@ class PhenotypeManual {
       'synonym_name' => $this->buildFieldName($id) + [
         '#prefix' => "<label><b>Phenotype !num:</b></label>",
         '#states' => [
-          'visible' => [tpps_synonym_selector($id) => ['!value' => 0]],
+          'visible' => [PhenotypeSynonym::selector($id) => ['!value' => 0]],
         ],
       ],
       'synonym_description' => $this->buildFieldDescription() + [
         '#states' => [
-          'visible' => [tpps_synonym_selector($id) => ['!value' => 0]],
+          'visible' => [PhenotypeSynonym::selector($id) => ['!value' => 0]],
         ],
       ],
 
@@ -92,7 +92,7 @@ class PhenotypeManual {
       // Main form.
       'name' => $this->buildFieldName($id) + [
         '#states' => [
-          'visible' => [tpps_synonym_selector($id) => ['value' => 0]]
+          'visible' => [PhenotypeSynonym::selector($id) => ['value' => 0]]
         ],
       ],
       'env-check' => [
@@ -103,7 +103,7 @@ class PhenotypeManual {
           'wrapper' => "org_{$id}_phenotype_!num_meta",
         ],
         '#states' => [
-          'visible' => [tpps_synonym_selector($id) => ['value' => 0]],
+          'visible' => [PhenotypeSynonym::selector($id) => ['value' => 0]],
         ],
       ],
       'attribute' => array(
@@ -115,7 +115,7 @@ class PhenotypeManual {
           'wrapper' => "org_{$id}_phenotype_!num_meta",
         ),
         '#states' => [
-          'visible' => [tpps_synonym_selector($id) => ['value' => 0]],
+          'visible' => [PhenotypeSynonym::selector($id) => ['value' => 0]],
         ],
       ),
       'attr-other' => [
@@ -138,13 +138,13 @@ class PhenotypeManual {
           'visible' => [
             ':input[name="' . $id . '[phenotype][phenotypes-meta][!num]'
               . '[attribute]"]' => ['value' => 'other'],
-            tpps_synonym_selector($id) => ['value' => 0],
+            PhenotypeSynonym::selector($id) => ['value' => 0],
           ],
         ],
       ],
       'description' => $this->buildFieldDescription() + [
         '#states' => [
-          'visible' => [tpps_synonym_selector($id) => ['value' => 0]],
+          'visible' => [PhenotypeSynonym::selector($id) => ['value' => 0]],
         ],
       ],
       'unit' => [
@@ -184,7 +184,7 @@ class PhenotypeManual {
         '#title' => 'Phenotype !num Structure: *',
         '#options' => $struct_options,
         '#states' => [
-          'visible' => [tpps_synonym_selector($id) => ['value' => 0]],
+          'visible' => [PhenotypeSynonym::selector($id) => ['value' => 0]],
         ],
         '#validated' => TRUE,
       ],

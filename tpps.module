@@ -111,7 +111,6 @@ module_load_include('inc', 'tpps', 'includes/details');
 module_load_include('inc', 'tpps', 'includes/cvterm_utils');
 
 module_load_include('inc', 'tpps', 'includes/submission_file');
-require_once 'includes/phenotype_synonym.inc';
 require_once 'includes/phenotype_unit.inc';
 require_once 'api/tpps.api.inc';
 
