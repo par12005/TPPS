@@ -52,31 +52,38 @@ function tpps_report_synonym_missing() {
   $base_query->groupBy('chadophenotype.name');
   $base_query->groupBy('chadophenotype_to_synonym.phenotype_synonyms_id');
 
-  return '<h2>' . $page_title . '</h2>' . Report::print([
-    'formatter' => 'tpps_report_synonym_missing_formatter',
-    'debug_mode' => FALSE,
-    'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
-    'page_title' => $page_title,
-    'items_per_page' => variable_get('tpps_report_items_per_page', 15),
-    'table_attributes' => ['class' => ['view' , 'tpps_table']],
-    'header' => [
-      [
-        'data' => t('Phenotype Name'),
-        'field' => $table_alias . '.name',
+  if (arg(5) == 'json') {
+    $result = $base_query->execute()->fetchAll();
+    drupal_json_output($result);
+    drupal_exit();
+  }
+  else {
+    return '<h2>' . $page_title . '</h2>' . Report::print([
+      'formatter' => 'tpps_report_synonym_missing_formatter',
+      'debug_mode' => FALSE,
+      'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
+      'page_title' => $page_title,
+      'items_per_page' => variable_get('tpps_report_items_per_page', 15),
+      'table_attributes' => ['class' => ['view' , 'tpps_table']],
+      'header' => [
+        [
+          'data' => t('Phenotype Name'),
+          'field' => $table_alias . '.name',
+        ],
+        // @todo [VS] Find a way to avoid this field from result.
+        // Probably other level of subqueries is required.
+        [
+          'data' => t('Synonym Id'),
+          'field' => 'phenotype_synonyms_id',
+        ],
+        [
+          'data' => t('Study'),
+          'field' => 'publiccte.study_name',
+        ],
       ],
-      // @todo [VS] Find a way to avoid this field from result.
-      // Probably other level of subqueries is required.
-      [
-        'data' => t('Synonym Id'),
-        'field' => 'phenotype_synonyms_id',
-      ],
-      [
-        'data' => t('Study'),
-        'field' => 'publiccte.study_name',
-      ],
-    ],
-    'query' => $base_query,
-  ]);
+      'query' => $base_query,
+    ]);
+  }
 }
 
 /**
