@@ -1981,6 +1981,9 @@ class Submission {
   /**
    * Checks if study has phenote data.
    *
+   * Checks fields on Page 4.
+   * See also isPhenotypeStudy() which checks value of the selectbox on Page 2.
+   *
    * @return bool
    *   Returns TRUE when study has phenotype data and FALSE otherwise.
    */
@@ -2001,6 +2004,9 @@ class Submission {
 
   /**
    * Checks if study has Mass Environmental data.
+   *
+   * Checks fields on Page 4.
+   * See also isEnvironmentStudy() which checks value of the selectbox on Page 2.
    *
    * @return bool
    *   Returns TRUE when study has phenotype data and FALSE otherwise.
@@ -2039,6 +2045,9 @@ class Submission {
 
   /**
    * Checks if study has genotype data.
+   *
+   * Checks fields on Page 4.
+   * See also isGenotypeStudy() which checks value of the selectbox on Page 2.
    *
    * @return bool
    *   Returns TRUE when study has phenotype data and FALSE otherwise.
@@ -3085,6 +3094,119 @@ class Submission {
       }
     }
     return $missing;
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Study Data Type.
+
+  /**
+   * Gets raw value of the Page 2 / Data Type field.
+   *
+   * Value example: "Genotype x Phenotype"
+   *
+   * @return mixed
+   *   Returns value of the 'Data Type' field on Page 2.
+   *   Returns NULL if value wasn't found (probably not yet set).
+   *
+   * @todo Move to 'TppsForm' class.
+   * @todo Use 'TppsArray' class instead of 'tpps_array_*()'.
+   */
+  public function getStudyDataType() {
+    return tpps_array_get_value($this->state,
+      ['saved_values', TPPS_PAGE_2, 'data_type']
+    );
+  }
+
+  /**
+   * Checks if submission has Phenotypic data.
+   *
+   * Checks value of the selectbox on page 2.
+   * See also method hasPhenotypeData() which checks fields on Page 4.
+   *
+   * @return bool
+   *   Returns TRUE when study has phenotypic data and FALSE otherwise.
+   */
+  public function isPhenotypeStudy() {
+    return (strpos($this->getStudyDataType(), 'Phenotype') !== FALSE);
+  }
+
+  /**
+   * Checks if submission has Genotypic data.
+   *
+   * Checks value of the selectbox on page 2.
+   * See also method hasGenotypeData() which checks fields on Page 4.
+   *
+   * @return bool
+   *   Returns TRUE when study has phenotypic data and FALSE otherwise.
+   */
+  public function isGenotypeStudy() {
+    return (strpos($this->getStudyDataType(), 'Genotype') !== FALSE);
+  }
+
+  /**
+   * Checks if submission has Environmental data.
+   *
+   * Checks value of the selectbox on page 2.
+   * See also method hasEnvironmentalData() which checks fields on Page 4.
+   *
+   * @return bool
+   *   Returns TRUE when study has phenotypic data and FALSE otherwise.
+   */
+  public function isEnvironmentStudy() {
+    return (strpos($this->getStudyDataType(), 'Environment') !== FALSE);
+  }
+
+  /**
+   * Gets list of organisms which has manually added phenotypes.
+   *
+   * @return mixed
+   *   Returns list of organisms and status. Key is organism index (ordinal
+   *   number at page) and value is status. Where TRUE means organism has
+   *   manually added phenotype and FALSE means phenotype metadata file was
+   *   uploaded.
+   *   Returns NULL if study has no phenotype data.
+   *
+   * @todo Should this data be added to SubmissionCache?
+   */
+  public function getPhenotypeSynonymList() {
+    if (!$this->isPhenotypeStudy()) {
+      return NULL;
+    }
+    $list = [];
+    for ($i = 1; $i <= $this->getOrganismNumber(); $i++) {
+      $organism_key = 'organism-' . $i;
+      // '0' means manually added phenotype.
+      // '1' - metadata file was uploaded.
+      $is_metadata_in_file = tpps_array_get_value($this->state,
+        ['saved_values', TPPS_PAGE_4, $organism_key, 'phenotype', 'check']
+      );
+      if ($is_metadata_in_file) {
+        // Value is file id.
+        $list[$i] = tpps_array_get_value($this->state,
+          ['saved_values', TPPS_PAGE_4, $organism_key, 'phenotype', 'metadata']
+        );
+        // @todo Get list of phenotypes from file and check if they have
+        // synonyms.
+      }
+      else {
+        $phenotype_number = tpps_array_get_value($this->state,
+          [
+            'saved_values', TPPS_PAGE_4, $organism_key, 'phenotype',
+            'phenotypes-meta', 'number'
+          ]
+        );
+        for ($j = 1; $j <= $phenotype_number; $j++) {
+          // Note; value '0' means no synonym was found.
+          $list[$i][$j] = tpps_array_get_value($this->state,
+            [
+              'saved_values', TPPS_PAGE_4, $organism_key, 'phenotype',
+              'phenotypes-meta', $j, 'synonym_id'
+            ]
+          );
+        }
+      }
+    }
+    return $list;
   }
 
 }
