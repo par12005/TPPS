@@ -476,6 +476,27 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
       '#type' => 'checkbox',
       '#title' => t('This submission has been reviewed and approved.'),
     ];
+
+    if ($submission->isPhenotypeStudy()) {
+      $missing = [];
+      $synonym_list = $submission->getPhenotypeSynonymList();
+      foreach ($synonym_list as $organism_index => $id_list) {
+        // Check if list has '0' values which means phenotype synonym
+        // wasn't found.
+        if (count(array_filter($id_list)) != count($id_list)) {
+          $missing[] = t(
+            'Organism @organism_index is missing phenotype synonyms.',
+            ['@organism_index' => $organism_index]
+          );
+        }
+      }
+      if (count($missing)) {
+        $form['synonym-check'] = [
+          '#markup' => '<div class="error">' . implode('<br />', $missing) . '</div>',
+        ];
+        $form['approve-check']['#disabled'] = 'disabled';
+      }
+    }
     $form['reject-reason'] = [
       '#type' => 'textarea',
       '#title' => t('Reason for rejection:'),
