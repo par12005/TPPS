@@ -3187,6 +3187,7 @@ class Submission {
       );
       if ($is_metadata_in_file) {
         // Metadata file.
+        // See PhenotypeMeta::validate().
         $attribute_list = PhenotypeMeta::getColumn(
           $this->state,
           $organism_index,
@@ -3203,8 +3204,6 @@ class Submission {
           $synonym_id = (int) array_search($value, $synonym_list);
           $list[$organism_index][$key + 1]['synonym_id'] = $synonym_id;
           $list[$organism_index][$key + 1]['name'] = $phenotype_list[$key];
-          //$list[$organism_index][$key]['attribute'] = $value;
-
         }
       }
       else {
