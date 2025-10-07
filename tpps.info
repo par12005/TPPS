@@ -21,6 +21,7 @@ files[] = src/PhenotypeSynonym.class.inc
 files[] = src/RestAPI.class.inc
 files[] = src/ImportedSubmissionList.class.inc
 files[] = src/Report.class.inc
+files[] = src/FormState.class.inc
 
 ; Zenodo API.
 files[] = src/zenodo/Zenodo.class.inc
