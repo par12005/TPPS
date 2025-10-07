@@ -148,7 +148,6 @@ class FormState {
   /**
    * Gets number of species.
    *
-   *
    * @param array $form_state
    *   Drupal Form State array.
    *
@@ -206,7 +205,7 @@ class FormState {
    *   Returns value or NULL.
    */
   public static function get(array $form_state, array $parents) {
-    return TppsArray::getValue($form_state, $parents);
+    return tpps_array_get_value($form_state, $parents);
   }
 
   /**
@@ -220,7 +219,7 @@ class FormState {
    *   Value of the element.
    */
   public static function set(array $form_state, array $parents, $value) {
-    return TppsArray::setValue($form_state, $parents, $value);
+    return tpps_array_set_value($form_state, $parents, $value);
   }
 
   /**
@@ -272,6 +271,63 @@ class FormState {
     $import_meta['current_version'] = SubmissionVersion::get($form_state);
 
     return $import_meta;
+  }
+
+  /**
+   * Gets name of the specific organism.
+   *
+   * @param array $form_state
+   *   Drupal Form State array.
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   *
+   * @return mixed
+   *   Returns value or NULL.
+   */
+  public static function getOrganismName(array $form_state, $organism_index) {
+    $parents = [
+      'saved_values', TPPS_PAGE_1, 'organism', $organism_index, 'name',
+    ];
+    return static::get($form_state, $parents);
+  }
+
+  /**
+   * Gets name of the specific organism.
+   *
+   * @param array $form_state
+   *   Drupal Form State array.
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   * @param int $phenotype_index
+   *   Ordinal number of phenotype at page.
+   *
+   * @return mixed
+   *   Returns value or NULL.
+   */
+  public static function getPhenotypeName(array $form_state, $organism_index, $phenotype_index) {
+    $parents = [
+      'saved_values',
+      TPPS_PAGE_4,
+      'organism-' . $organism_index,
+      'phenotype',
+      'phenotypes-meta',
+      $phenotype_index,
+      // There are also fields which could be used:
+      // synonym_name: "Annual Precipitation",
+      // synonym_description: "mean annual precipitation of that year",
+      // synonym_id: "0",
+      // name: "Annual Precipitation",
+      // env-check: 1,
+      // attribute: "0",
+      // attr-other: "",
+      // description: "mean annual precipitation of that year",
+      // unit: "130439",
+      // unit-other: "",
+      // structure: "52336",
+      // struct-other: "".
+      'name',
+    ];
+    return static::get($form_state, $parents);
   }
 
 }
