@@ -2,11 +2,13 @@
 
 /**
  * @file
- * Gets TPPS Submission specific data from given Drupal Form State array.
+ * Shortcuts to get data from the $form_state array.
  *
- * Uses static methods as a shortcuts to get/set values in $form_state array.
- * Hides ugly list of parents and improves code's readability.
+ * WARNING:
+ * ONLY for latest version of Form State (not for Shared State).
+ * So must be updated to use latest Submission Version.
  *
+ * @todo Use other class's ::getParents() methods to get latest version values.
  * @todo Shoud default values for getters be used?
  * @todo Use dynamic methods to avoid sending $form_state each time.
  * Problems to solve:

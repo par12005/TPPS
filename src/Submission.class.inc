@@ -3174,21 +3174,41 @@ class Submission {
     }
     $list = [];
     for ($i = 1; $i <= $this->getOrganismNumber(); $i++) {
-      $organism_key = 'organism-' . $i;
+      $organism_index = $i;
+      $organism_key = 'organism-' . $organism_index;
+
+      $list[$organism_index]['name'] = FormState::getOrganismName(
+        $this->state, $organism_index
+      );
       // '0' means manually added phenotype.
       // '1' - metadata file was uploaded.
       $is_metadata_in_file = tpps_array_get_value($this->state,
         ['saved_values', TPPS_PAGE_4, $organism_key, 'phenotype', 'check']
       );
       if ($is_metadata_in_file) {
-        // Value is file id.
-        $list[$i] = tpps_array_get_value($this->state,
-          ['saved_values', TPPS_PAGE_4, $organism_key, 'phenotype', 'metadata']
+        // Metadata file.
+        $attribute_list = PhenotypeMeta::getColumn(
+          $this->state,
+          $organism_index,
+          PhenotypeMeta::DATA_TYPE_ATTRIBUTE
         );
-        // @todo Get list of phenotypes from file and check if they have
-        // synonyms.
+        $phenotype_list = PhenotypeMeta::getColumn(
+          $this->state,
+          $organism_index,
+          PhenotypeMeta::DATA_TYPE_IDENTIFIER
+        );
+        $synonym_list = PhenotypeSynonym::getAll();
+        foreach ($attribute_list as $key => $value) {
+          // Note: $item is an attribute name.
+          $synonym_id = (int) array_search($value, $synonym_list);
+          $list[$organism_index][$key + 1]['synonym_id'] = $synonym_id;
+          $list[$organism_index][$key + 1]['name'] = $phenotype_list[$key];
+          //$list[$organism_index][$key]['attribute'] = $value;
+
+        }
       }
       else {
+        // Manually added phenotypes.
         $phenotype_number = tpps_array_get_value($this->state,
           [
             'saved_values', TPPS_PAGE_4, $organism_key, 'phenotype',
@@ -3197,12 +3217,20 @@ class Submission {
         );
         for ($j = 1; $j <= $phenotype_number; $j++) {
           // Note; value '0' means no synonym was found.
-          $list[$i][$j] = tpps_array_get_value($this->state,
+          $synonym_id = tpps_array_get_value($this->state,
             [
               'saved_values', TPPS_PAGE_4, $organism_key, 'phenotype',
-              'phenotypes-meta', $j, 'synonym_id'
+              'phenotypes-meta', $j, 'synonym_id',
             ]
           );
+          $name = tpps_array_get_value($this->state,
+            [
+              'saved_values', TPPS_PAGE_4, $organism_key, 'phenotype',
+              'phenotypes-meta', $j, 'name',
+            ]
+          );
+          $list[$organism_index][$j]['name'] = $name;
+          $list[$organism_index][$j]['synonym_id'] = $synonym_id;
         }
       }
     }

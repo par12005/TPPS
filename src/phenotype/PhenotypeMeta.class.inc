@@ -303,4 +303,82 @@ class PhenotypeMeta {
   public static function process($organism_index, array $shared_state, array &$options = []) {
   }
 
+  /**
+   * Gets list of the selected column's data types.
+   *
+   * @param array $form_state
+   *   Drupal Form State array.
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   *
+   * @return mixed
+   *   Returns value or NULL.
+   */
+  public static function getColumnDataTypes(array $form_state, $organism_index) {
+    $parents = [
+      'saved_values',
+      TPPS_PAGE_4,
+      'organism-' . $organism_index,
+      'phenotype',
+      'metadata-columns',
+    ];
+    return tpps_array_get_value($form_state, $parents);
+  }
+
+  /**
+   * Gets value of the 'no-header' sub-field.
+   *
+   * @param array $form_state
+   *   Drupal Form State array.
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   *
+   * @return mixed
+   *   Returns value or NULL.
+   */
+  public static function getNoHeader(array $form_state, $organism_index) {
+    $parents = [
+      'saved_values',
+      TPPS_PAGE_4,
+      'organism-' . $organism_index,
+      'phenotype',
+      'metadata-no-header',
+    ];
+    return tpps_array_get_value($form_state, $parents);
+  }
+
+  /**
+   * Get column from file by column key.
+   *
+   * @param array $form_state
+   *   Drupal Form State array.
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   * @param int $column_key
+   *   Optional. Column integer key (see class constants DATA_TYPE_*).
+   *
+   * @return array
+   *   Returns values from the column.
+   */
+  public static function getColumn(array $form_state, $organism_index, $column_key = NULL) {
+    $column_key = $column_key ?? static::DATA_TYPE_IDENTIFIER;
+    $organism_key = 'organism-' . $organism_index;
+    // @todo Replace with PhenotypeMeta::getFileId() when branch
+    // VS/assay_design_column_data_type will be merged.
+    $fid = tpps_array_get_value($form_state,
+      ['saved_values', TPPS_PAGE_4, $organism_key, 'phenotype', 'metadata']
+    );
+    $selected = static::getColumnDataTypes($form_state, $organism_index);
+    $no_header = static::getNoHeader($form_state, $organism_index);
+    // Alphabetical key of the columns with phenotype names.
+    $column_letter = array_search($column_key, $selected);
+    $column = tpps_parse_file_column($fid, $column_letter, $no_header);
+    if ($no_header) {
+      // @todo use TppsArray::removeFirst().
+      reset($column);
+      array_shift($column);
+    }
+    return $column;
+  }
+
 }
