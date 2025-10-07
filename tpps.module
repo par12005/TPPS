@@ -2756,6 +2756,16 @@ function tpps_menu_add_api(array &$items = []) {
     'type' => MENU_CALLBACK,
     'delivery callback' => 'drupal_json_output',
   ];
+  $items['api/submission/%/cache'] = [
+    'title' => 'TPPS Submission Cache',
+    'description' => 'TPPS Submission Cache Item in JSON format',
+    'page callback' => 'tpps_api_submission_cache',
+    'page arguments' => [2],
+    'access callback' => 'tpps_api_access',
+    'file' => 'api/submission/cache.inc',
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Menu items from function tpps_api_paths().

@@ -8,8 +8,8 @@
 /**
  * Shows TPPS Submission Data in JSON format.
  *
- * @param string $submission
- *   Fully loaded subission object.
+ * @param object $submission
+ *   Fully loaded object of the 'Submission' class.
  */
 function tpps_api_submission_view($submission) {
   $url = $_GET['q'];
