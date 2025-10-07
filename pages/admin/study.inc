@@ -477,17 +477,35 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
       '#title' => t('This submission has been reviewed and approved.'),
     ];
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     if ($submission->isPhenotypeStudy()) {
       $missing = [];
       $synonym_list = $submission->getPhenotypeSynonymList();
       foreach ($synonym_list as $organism_index => $id_list) {
         // Check if list has '0' values which means phenotype synonym
         // wasn't found.
-        if (count(array_filter($id_list)) != count($id_list)) {
-          $missing[] = t(
-            'Organism @organism_index is missing phenotype synonyms.',
-            ['@organism_index' => $organism_index]
-          );
+        foreach ($id_list as $key => $value) {
+          if (empty($value)) {
+            // @todo Get phepnotype name.
+            $missing[] = t('Missing phenotype synonym for organism '
+              . ' @organism_index "@organism_name" / '
+              . 'phenotype @phenotype_index "@phenotype_name". '
+              . '<a href="@edit_url">Edit Study</a> | '
+              . '<a href="@add_synonym_url">Add New Synonym</a>.',
+              [
+                '@organism_index' => $organism_index,
+                '@organism_name' => FormState::getOrganismName(
+                  $submission->state, $organism_index
+                ),
+                '@phenotype_index' => $key,
+                '@phenotype_name' => FormState::getPhenotypeName(
+                  $submission->state, $organism_index, $key
+                ),
+                '@edit_url' => url('tppsc/' . $submission->accession),
+                '@add_synonym_url' => url('admin/config/tpps/synonym'),
+              ]
+            );
+          }
         }
       }
       if (count($missing)) {
@@ -497,6 +515,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
         $form['approve-check']['#disabled'] = 'disabled';
       }
     }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $form['reject-reason'] = [
       '#type' => 'textarea',
       '#title' => t('Reason for rejection:'),
