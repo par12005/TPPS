@@ -500,7 +500,9 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
                 '@organism_name' => $synonym_list[$organism_index]['name'],
                 '@phenotype_index' => $key,
                 '@phenotype_name' => $value['name'],
-                '@edit_url' => url('tppsc/' . $submission->accession),
+                '@edit_url' => url('tppsc/' . $submission->accession,
+                  ['query' => ['stage' => 4]]
+                ),
                 '@add_synonym_url' => url('admin/config/tpps/synonym'),
               ]
             );
