@@ -17,7 +17,7 @@ function tpps_api_submission_cache($accession) {
 
   $cache = SubmissionCache::get();
   if (empty($output = $cache[$accession])) {
-    drupal_goto('api/submission/' . $accession . '/view');
+    $output = 'NULL';
   }
   return $output;
 }
