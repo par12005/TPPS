@@ -49,6 +49,12 @@ class AssayDesign {
       // Existing studies with an "Assay design file":
       // 'The citation for my assay design is not in this list'.
       [
+        // 'does_study_include_snp_data': 'yes'.
+        ':input[name="' . $organism_key . '[' . implode('][', [
+          AssayDesign::DATA_TYPE,
+          'genotyping-type',
+          'does_study_include_snp_data',
+        ]) . ']"]' => ['value' => "yes"],
         ':input[name="' . $organism_key . '[' . implode('][', [
           AssayDesign::DATA_TYPE,
           AssayDesign::SNPS_FIELDSET,
@@ -60,7 +66,12 @@ class AssayDesign {
       ],
       'or',
       [
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // 'does_study_include_snp_data': 'yes'.
+        ':input[name="' . $organism_key . '[' . implode('][', [
+          AssayDesign::DATA_TYPE,
+          'genotyping-type',
+          'does_study_include_snp_data',
+        ]) . ']"]' => ['value' => "yes"],
         // 'Genotyping Type': 'Genotyping'
         // We should also check this field because when 'genotyping-type' set into
         // 'Genotyping Array' field 'file-type' disapears with value which allows
@@ -70,7 +81,6 @@ class AssayDesign {
           AssayDesign::SNPS_FIELDSET,
           'genotyping-type',
         ]) . ']"]' => ['value' => TPPS_GENOTYPING_TYPE_GENOTYPING],
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // 'Genotyping file type': 'SNP Assay file and Assay design file'
         ':input[name="' . $organism_key . '[' . implode('][', [
           AssayDesign::DATA_TYPE,
@@ -99,7 +109,7 @@ class AssayDesign {
       // Required when visible.
       'states' => [
         'visible' => $states,
-        'required' => $states,
+        //'required' => $states,
       ],
     ]);
   }
