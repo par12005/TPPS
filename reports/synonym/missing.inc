@@ -76,10 +76,6 @@ function tpps_report_synonym_missing() {
           'data' => t('Synonym Id'),
           'field' => 'phenotype_synonyms_id',
         ],
-        [
-          'data' => t('Study'),
-          'field' => 'publiccte.study_name',
-        ],
       ],
       'query' => $base_query,
     ]);
