@@ -5,6 +5,13 @@
  * Core of the TPPS module.
  */
 
+// Create a global variable which manages module's variables and constants.
+// Usage: 
+// global $tpps;
+// dpm($tpps->tpps_admin_email, 'tpps_admin_email');
+$GLOBALS['tpps'] = class_exists('TppsConfiguration')
+  ? new TppsConfiguration() : new stdClass();
+
 define("TPPS_MAJOR_VERSION", 1);
 define("TPPS_MINOR_VERSION", 2);
 define('TPPS_JS_PATH', '/js/tpps.js');
