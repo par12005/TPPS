@@ -222,23 +222,27 @@ class PhenotypeMeta {
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Validate synonyms.
-    // See also Submission->getPhenotypeSynonymList().
-    $attribute = $row[array_search(PhenotypeMeta::DATA_TYPE_ATTRIBUTE,
-      $options['selected']
-    )];
-    $phenotype_name = $row[array_search(PhenotypeMeta::DATA_TYPE_IDENTIFIER,
-      $options['selected']
-    )];
-    $synonym_id = array_search($attribute, PhenotypeSynonym::getAll());
-    if (empty($synonym_id)) {
-      $message = t('Phenotype Metadata File: Phenotype synonym is missing for '
-        . '"<strong>@phenotype_name</strong>".<br />Row: @row',
-        [
-          '@row' => implode(', ', $row),
-          '@phenotype_name' => $phenotype_name,
-        ]
-      );
-      form_set_error($form_error_name, $message);
+    if (
+      variable_get('tpps_page_4_phenotype_metadata_validate_synonyms')
+    ) {
+      // See also Submission->getPhenotypeSynonymList().
+      $attribute = $row[array_search(PhenotypeMeta::DATA_TYPE_ATTRIBUTE,
+        $options['selected']
+      )];
+      $phenotype_name = $row[array_search(PhenotypeMeta::DATA_TYPE_IDENTIFIER,
+        $options['selected']
+      )];
+      $synonym_id = array_search($attribute, PhenotypeSynonym::getAll());
+      if (empty($synonym_id)) {
+        $message = t('Phenotype Metadata File: Phenotype synonym is missing for '
+          . '"<strong>@phenotype_name</strong>".<br />Row: @row',
+          [
+            '@row' => implode(', ', $row),
+            '@phenotype_name' => $phenotype_name,
+          ]
+        );
+        form_set_error($form_error_name, $message);
+      }
     }
   }
 
