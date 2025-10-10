@@ -402,8 +402,14 @@ class SnpAssociation {
       'gene_id' => $row[($groups['Gene ID'][self::DATA_TYPE_GENE_ID] ?? NULL)] ?? NULL,
       'annotation' => $row[($groups['Annotation'][self::DATA_TYPE_ANNOTATION] ?? NULL)] ?? NULL,
       // Conditional.
-      'year' => $row[$groups['Year'][9]] ?? NULL,
+      'year' => NULL,
     ];
+
+    // Get 'Year' value.
+    $year_column_letter = $groups['Year'][9] ?? NULL;
+    if (!empty($year_column_letter) && isset($row[$year_column_letter])) {
+      $associations[$id]['year'] = $row[$year_column_letter];
+    }
 
     // Process 'start:stop' format of the 'Position' column.
     preg_match('/^(\d+):(\d+)$/', $position, $matches);
