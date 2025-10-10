@@ -16,6 +16,7 @@ files[] = src/SubmissionVersion.class.inc
 files[] = src/Organism.class.inc
 files[] = src/ChadoDb.class.inc
 files[] = src/PhenotypeSynonym.class.inc
+files[] = src/PhenotypeUnit.class.inc
 
 ; Misc
 files[] = src/RestAPI.class.inc

@@ -180,7 +180,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
 
       // Unit.
       $form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#options']
-        = tpps_unit_get_list($synonym_id ?? 'all');
+        = PhenotypeUnit::getList($synonym_id ?? 'all');
       $form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#default_value'] = (
         $phenotypes[$i]['unit']
         ?? array_key_first($form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#options'])

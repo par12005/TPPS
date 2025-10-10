@@ -81,7 +81,7 @@ class PhenotypeManual {
         '#default_value' => $first_synonym_key,
         // Unit dropdown must be updated in each synonym field change.
         '#ajax' => [
-          'callback' => 'tpps_unit_update_list',
+          'callback' => 'PhenotypeUnit::updateList',
           'wrapper' => 'unit-list-!num-wrapper',
           'method' => 'replace',
           'event' => 'change',
@@ -152,7 +152,7 @@ class PhenotypeManual {
         '#title' => 'Phenotype !num Unit: *',
         // List of units depends on selected synonym. Will be populated later.
         // The same for default value.
-        '#options' => tpps_unit_get_list($first_synonym_key ?? 'all'),
+        '#options' => PhenotypeUnit::getList($first_synonym_key ?? 'all'),
         '#prefix' => '<div id="unit-list-!num-wrapper">',
         '#suffix' => '</div>',
         '#validated' => TRUE,

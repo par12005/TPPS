@@ -170,7 +170,7 @@ function tpps_synonym_list_rebuild_form(array $form, array &$form_state) {
  * Implements hook_form_submit().
  */
 function tpps_synonym_list_rebuild_form_submit($form, &$form_state) {
-  tpps_unit_get_list('all', [], TRUE);
+  PhenotypeUnit::getList('all', [], TRUE);
   $message = t('Synonym/Unit lists was rebuilt.');
   drupal_set_message($message);
 }

@@ -209,7 +209,7 @@ class PhenotypeSynonym {
     $id = db_insert('chado.phenotype_synonyms')->fields($data)->execute();
     // Update cached list of units.
     // @todo Use hook to allow others to react on change.
-    tpps_unit_get_list('all', [], TRUE);
+    PhenotypeUnit::getList('all', [], TRUE);
     return $id;
   }
 

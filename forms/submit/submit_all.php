@@ -7105,7 +7105,7 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = [], Trip
     if (empty($meta[$name]['synonym_id']) && !empty($meta[$name]['unit_id'])) {
       // Note: Unit Id could belong to many Synonyms and we are
       // using 1st Synonym Id from the list.
-      if ($synonym_id = tpps_unit_get_synonym($meta[$name]['unit_id'])) {
+      if ($synonym_id = PhenotypeUnit::getSynonym($meta[$name]['unit_id'])) {
         $meta[$name]['synonym_id'] = $synonym_id;
       }
       else {

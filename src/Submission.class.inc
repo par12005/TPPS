@@ -1627,7 +1627,7 @@ class Submission {
                     if (isset($pheno_meta["$j"][$field]) and $pheno_meta["$j"][$field] != '') {
                       if ($field == 'unit') {
                         $value = $pheno_meta[$j][$field];
-                        $value = tpps_unit_get_name($value);
+                        $value = PhenotypeUnit::getName($value);
                       }
                       else {
                         $value = $pheno_meta[$j][$field];

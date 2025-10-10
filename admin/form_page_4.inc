@@ -39,7 +39,7 @@ function tpps_form_page_4_settings_form(array $form, array &$form_state) {
         'Default is <strong>checked</strong>.<br />When checked lists will be '
         . 'splitted by letter to improve readability. Could be applied to '
         . 'synonym and unit lists. Example: <pre>@unit_list</pre>',
-        ['@unit_list' => print_r(tpps_unit_get_list('1'), 1)]
+        ['@unit_list' => print_r(PhenotypeUnit::getList('1'), 1)]
       ),
     ],
     'tpps_page_4_env_check_always_visible' => [
