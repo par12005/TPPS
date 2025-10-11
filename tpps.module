@@ -5,6 +5,13 @@
  * Core of the TPPS module.
  */
 
+// Create a global variable which manages module's variables and constants.
+// Usage: 
+// global $tpps;
+// dpm($tpps->tpps_admin_email, 'tpps_admin_email');
+$GLOBALS['tpps'] = class_exists('TppsConfiguration')
+  ? new TppsConfiguration() : new stdClass();
+
 define("TPPS_MAJOR_VERSION", 1);
 define("TPPS_MINOR_VERSION", 2);
 define('TPPS_JS_PATH', '/js/tpps.js');
@@ -111,7 +118,6 @@ module_load_include('inc', 'tpps', 'includes/details');
 module_load_include('inc', 'tpps', 'includes/cvterm_utils');
 
 module_load_include('inc', 'tpps', 'includes/submission_file');
-require_once 'includes/phenotype_synonym.inc';
 require_once 'includes/phenotype_unit.inc';
 require_once 'api/tpps.api.inc';
 
@@ -2754,6 +2760,16 @@ function tpps_menu_add_api(array &$items = []) {
     'page arguments' => [2],
     'access callback' => 'tpps_api_access',
     'file' => 'api/submission/zenodo_files.inc',
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  ];
+  $items['api/submission/%/cache'] = [
+    'title' => 'TPPS Submission Cache',
+    'description' => 'TPPS Submission Cache Item in JSON format',
+    'page callback' => 'tpps_api_submission_cache',
+    'page arguments' => [2],
+    'access callback' => 'tpps_api_access',
+    'file' => 'api/submission/cache.inc',
     'type' => MENU_CALLBACK,
     'delivery callback' => 'drupal_json_output',
   ];

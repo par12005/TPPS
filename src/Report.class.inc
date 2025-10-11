@@ -21,6 +21,7 @@ class Report {
 
   const MISSING_FILES = 'missing';
   const FILE_ID_LIST = 'id_list';
+
   /**
    * Generates report based on given DB Query.
    *
