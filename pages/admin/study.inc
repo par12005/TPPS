@@ -476,6 +476,47 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
       '#type' => 'checkbox',
       '#title' => t('This submission has been reviewed and approved.'),
     ];
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    if ($submission->isPhenotypeStudy()) {
+      $missing = [];
+      $synonym_list = $submission->getPhenotypeSynonymList();
+      foreach ($synonym_list as $organism_index => $id_list) {
+        // Check if list has '0' values which means phenotype synonym
+        // wasn't found.
+        foreach ($id_list as $key => $value) {
+          if ($key == 'name' || !is_numeric($key)) {
+            continue;
+          }
+          if (empty($value['synonym_id'])) {
+            // @todo Get phepnotype name.
+            $missing[] = t('Missing phenotype synonym for '
+              . '"<strong>@organism_name</strong>" (organism @organism_index) / '
+              . '"<strong>@phenotype_name</strong>" (phenotype @phenotype_index).'
+              . ' <a href="@edit_url">Edit Study</a> |'
+              . ' <a href="@add_synonym_url">Add New Synonym</a>.',
+              [
+                '@organism_index' => $organism_index,
+                '@organism_name' => $synonym_list[$organism_index]['name'],
+                '@phenotype_index' => $key,
+                '@phenotype_name' => $value['name'],
+                '@edit_url' => url('tppsc/' . $submission->accession,
+                  ['query' => ['stage' => 4]]
+                ),
+                '@add_synonym_url' => url('admin/config/tpps/synonym'),
+              ]
+            );
+          }
+        }
+      }
+      if (count($missing)) {
+        $form['synonym-check'] = [
+          '#markup' => '<div class="error">' . implode('<br />', $missing) . '</div>',
+        ];
+        $form['approve-check']['#disabled'] = 'disabled';
+      }
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $form['reject-reason'] = [
       '#type' => 'textarea',
       '#title' => t('Reason for rejection:'),

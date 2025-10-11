@@ -999,7 +999,7 @@ function tpps_validate_ssr(array &$form_state, $org_num, $field_name) {
 /**
  * Checks if names in Phenotype Metadata File and Phenotype File matches.
  *
- * File Iterator callback for Phenotype Metadata File.
+ * File row iterator for Phenotype Metadata File. See PhenotypeMeta class.
  * WARNING:
  * Only first error message will be shown because form_set_error() do not use
  * arrays for messages but stores only singe error message.
@@ -1012,6 +1012,8 @@ function tpps_validate_ssr(array &$form_state, $org_num, $field_name) {
  *   - 'column_name' - column name (for example 'A') which contains Phenotype
  *     Names in Phenotype File.
  *   - 'organism_name' - Organism Name used in HTML Forms. Eg., 'organism-1'.
+ *
+ * @todo Move to PhenotypeMeta class::validateRow().
  */
 function tpps_validate_metafile_phenotype_names($row, array $options = []) {
   $file_header = $options['phenotypes'];

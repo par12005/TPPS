@@ -137,7 +137,7 @@ function tpps_synonym_add_form_submit($form, &$form_state) {
         ? ((int) $form_state['values']['synonym'][$name]) : NULL;
     }
   }
-  $id = tpps_synonym_add($form_state['values']['synonym']);
+  $id = PhenotypeSynonym::add($form_state['values']['synonym']);
   $message = t('New synonym was created. Id: @id.Data: <pre>@data</pre>',
     [
       '@id' => $id,
@@ -170,7 +170,7 @@ function tpps_synonym_list_rebuild_form(array $form, array &$form_state) {
  * Implements hook_form_submit().
  */
 function tpps_synonym_list_rebuild_form_submit($form, &$form_state) {
-  tpps_unit_get_list('all', [], TRUE);
+  PhenotypeUnit::getList('all', [], TRUE);
   $message = t('Synonym/Unit lists was rebuilt.');
   drupal_set_message($message);
 }

@@ -217,7 +217,7 @@ class PhenotypeData extends TppsFile {
           }
           if (!empty($current_phenotype['synonym_id'])) {
             // Restore only if there is Synonym Id.
-            tpps_synonym_restore_values($current_phenotype);
+            PhenotypeSynonym::restoreValues($current_phenotype);
           }
         }
 

@@ -87,14 +87,14 @@ class PhenotypeMeta {
   public static function validate($organism_index, array &$form, array &$form_state) {
     $organism = &$form_state['values']["organism-$organism_index"] ?? NULL;
     $phenotype = &$organism['phenotype'] ?? NULL;
-    $id = 'organism-' . $organism_index;
+    $organism_key = 'organism-' . $organism_index;
 
     $phenotype_number = $phenotype['phenotypes-meta']['number'];
     // File Id of metadata file.
     $meta_fid = $phenotype['metadata'];
     $data_fid = $phenotype['file'];
     if (empty($data_fid)) {
-      form_set_error("$id][phenotype][file",
+      form_set_error("$organism_key][phenotype][file",
         t('Phenotype File: field is required.')
       );
     }
@@ -109,14 +109,14 @@ class PhenotypeMeta {
     if (empty($phenotype['metadata'])) {
       // $phenotype['metadata'] holds File Id of Phenotype Metadata file.
       // @TODO Use:
-      // tpps_form_error_required($form_state, [$id, 'phenotype', 'metadata']);
-      form_set_error("$id][phenotype][metadata",
+      // tpps_form_error_required($form_state, [$organism_key, 'phenotype', 'metadata']);
+      form_set_error("$organism_key][phenotype][metadata",
         t('Phenotype Metadata File: field is required.')
       );
     }
     else {
       // Check if all required columns was set.
-      $file_element = $form[$id]['phenotype']['metadata'];
+      $file_element = $form[$organism_key]['phenotype']['metadata'];
       $groups = tpps_file_validate_columns(
         $form_state,
         PhenotypeMeta::getRequiredColumnList(),
@@ -131,7 +131,7 @@ class PhenotypeMeta {
       // Preserve file if it is valid.
       tpps_preserve_valid_file(
         $form_state,
-        $form_state['values'][$id]['phenotype']['metadata'],
+        $form_state['values'][$organism_key]['phenotype']['metadata'],
         $organism_index,
         "Phenotype_Metadata"
       );
@@ -139,7 +139,7 @@ class PhenotypeMeta {
 
     $groups = $phenotype['metadata-groups'] ?? NULL;
     if (empty($groups)) {
-      form_set_error("$id][phenotype][metadata",
+      form_set_error("$organism_key][phenotype][metadata",
         t("Phenotype Metadata File: No groups found.")
       );
     }
@@ -153,21 +153,21 @@ class PhenotypeMeta {
       ];
       $options = [
         'meta_columns' => $columns,
-        'id' => $id,
+        'id' => $organism_key,
+        'selected' => static::getColumnDataTypes($form_state, $organism_index),
       ];
       tpps_file_iterator($meta_fid, 'PhenotypeMeta::validateRow', $options);
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Validate if metafile matches phenotype file using columns.
       // Get Phenotype Data header which could have 'year' column.
-      // @todo Move this validation to PhenotypeData class.
-      $file_header = tpps_file_get_header($data_fid);
-      if ($file_header) {
+      $datafile_header = tpps_file_get_header($data_fid);
+      if ($datafile_header) {
         // $form_state['values'] has no value but $form_state['input']
         // has is so we will use it.
-        $phenotype_no_header = $form_state['input'][$id]['phenotype']
+        $datafile_no_header = $form_state['input'][$organism_key]['phenotype']
           ['file']['no-header'] ?? NULL;
         // Check if checkbox 'My file has no header row' wasn't checked.
-        if ($phenotype_no_header) {
+        if ($datafile_no_header) {
           // @TODO Check if phenotype file could be without header?
           drupal_set_message(
             t('Phenotype file has no header in 1st row so validation was NOT'
@@ -179,13 +179,12 @@ class PhenotypeMeta {
         else {
           // Check if list of phenotype names from metafile matches column names
           // in phenotype file.
-          // $file_header contains list of phenotype file column names.
+          // $datafile_header contains list of phenotype file column names.
           $options = [
             'columns' => [$columns['name']],
-            // List of phenotype file column names.
-            'phenotypes' => $file_header,
-            // $id is a string (not integer). Example: 'organism-1'.
-            'organism_name' => $id,
+            // List of phenotype names in datafile stored in header.
+            'phenotypes' => $datafile_header,
+            'organism_name' => $organism_key,
             'column_name' => $columns['name'],
           ];
           tpps_file_iterator(
@@ -199,7 +198,7 @@ class PhenotypeMeta {
   }
 
   /**
-   * Validates single row of file.
+   * Validates single row of the metadata file.
    *
    * @param mixed $row
    *   The item yielded by the TPPS file generator.
@@ -207,14 +206,43 @@ class PhenotypeMeta {
    *   Additional options set when calling tpps_file_iterator().
    */
   public static function validateRow($row, array &$options = []) {
+    $form_error_name = $options['id'] . '][phenotype][metadata';
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Check if 'unit' column has empty values.
     $columns = $options['meta_columns'];
     if (empty($row[$columns['unit']])) {
-      form_set_error(
-        $options['id'] . '][phenotype][metadata',
-        t('Phenotype Metadata File: Empty unit not allowed.')
-        . '<br />Row: ' . implode(', ', $row)
+      $message = t('Phenotype Metadata File: Empty unit not allowed for '
+        . '"<strong>@phenotype_name</strong>".<br />Row: @row',
+        [
+          '@row' => implode(', ', $row),
+          '@phenotype_name' => $phenotype_name,
+        ]
       );
+      form_set_error($form_error_name, $message);
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Validate synonyms.
+    if (
+      variable_get('tpps_page_4_phenotype_metadata_validate_synonyms')
+    ) {
+      // See also Submission->getPhenotypeSynonymList().
+      $attribute = $row[array_search(PhenotypeMeta::DATA_TYPE_ATTRIBUTE,
+        $options['selected']
+      )];
+      $phenotype_name = $row[array_search(PhenotypeMeta::DATA_TYPE_IDENTIFIER,
+        $options['selected']
+      )];
+      $synonym_id = array_search($attribute, PhenotypeSynonym::getAll());
+      if (empty($synonym_id)) {
+        $message = t('Phenotype Metadata File: Phenotype synonym is missing for '
+          . '"<strong>@phenotype_name</strong>".<br />Row: @row',
+          [
+            '@row' => implode(', ', $row),
+            '@phenotype_name' => $phenotype_name,
+          ]
+        );
+        form_set_error($form_error_name, $message);
+      }
     }
   }
 
@@ -301,6 +329,84 @@ class PhenotypeMeta {
    *   Necessary data.
    */
   public static function process($organism_index, array $shared_state, array &$options = []) {
+  }
+
+  /**
+   * Gets list of the selected column's data types.
+   *
+   * @param array $form_state
+   *   Drupal Form State array.
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   *
+   * @return mixed
+   *   Returns value or NULL.
+   */
+  public static function getColumnDataTypes(array $form_state, $organism_index) {
+    $parents = [
+      'saved_values',
+      TPPS_PAGE_4,
+      'organism-' . $organism_index,
+      'phenotype',
+      'metadata-columns',
+    ];
+    return tpps_array_get_value($form_state, $parents);
+  }
+
+  /**
+   * Gets value of the 'no-header' sub-field.
+   *
+   * @param array $form_state
+   *   Drupal Form State array.
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   *
+   * @return mixed
+   *   Returns value or NULL.
+   */
+  public static function getNoHeader(array $form_state, $organism_index) {
+    $parents = [
+      'saved_values',
+      TPPS_PAGE_4,
+      'organism-' . $organism_index,
+      'phenotype',
+      'metadata-no-header',
+    ];
+    return tpps_array_get_value($form_state, $parents);
+  }
+
+  /**
+   * Get column from file by column key.
+   *
+   * @param array $form_state
+   *   Drupal Form State array.
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   * @param int $column_key
+   *   Optional. Column integer key (see class constants DATA_TYPE_*).
+   *
+   * @return array
+   *   Returns values from the column.
+   */
+  public static function getColumn(array $form_state, $organism_index, $column_key = NULL) {
+    $column_key = $column_key ?? static::DATA_TYPE_IDENTIFIER;
+    $organism_key = 'organism-' . $organism_index;
+    // @todo Replace with PhenotypeMeta::getFileId() when branch
+    // VS/assay_design_column_data_type will be merged.
+    $fid = tpps_array_get_value($form_state,
+      ['saved_values', TPPS_PAGE_4, $organism_key, 'phenotype', 'metadata']
+    );
+    $selected = static::getColumnDataTypes($form_state, $organism_index);
+    $no_header = static::getNoHeader($form_state, $organism_index);
+    // Alphabetical key of the columns with phenotype names.
+    $column_letter = array_search($column_key, $selected);
+    $column = tpps_parse_file_column($fid, $column_letter, $no_header);
+    if ($no_header) {
+      // @todo use TppsArray::removeFirst().
+      reset($column);
+      array_shift($column);
+    }
+    return $column;
   }
 
 }

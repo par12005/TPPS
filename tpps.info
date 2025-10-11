@@ -15,11 +15,15 @@ files[] = src/SubmissionCache.class.inc
 files[] = src/SubmissionVersion.class.inc
 files[] = src/Organism.class.inc
 files[] = src/ChadoDb.class.inc
+files[] = src/PhenotypeSynonym.class.inc
+files[] = src/PhenotypeUnit.class.inc
 
 ; Misc
 files[] = src/RestAPI.class.inc
 files[] = src/ImportedSubmissionList.class.inc
 files[] = src/Report.class.inc
+files[] = src/FormState.class.inc
+files[] = src/TppsConfiguration.class.inc
 
 ; Zenodo API.
 files[] = src/zenodo/Zenodo.class.inc

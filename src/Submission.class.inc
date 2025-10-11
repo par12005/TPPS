@@ -1627,7 +1627,7 @@ class Submission {
                     if (isset($pheno_meta["$j"][$field]) and $pheno_meta["$j"][$field] != '') {
                       if ($field == 'unit') {
                         $value = $pheno_meta[$j][$field];
-                        $value = tpps_unit_get_name($value);
+                        $value = PhenotypeUnit::getName($value);
                       }
                       else {
                         $value = $pheno_meta[$j][$field];
@@ -1981,6 +1981,9 @@ class Submission {
   /**
    * Checks if study has phenote data.
    *
+   * Checks fields on Page 4.
+   * See also isPhenotypeStudy() which checks value of the selectbox on Page 2.
+   *
    * @return bool
    *   Returns TRUE when study has phenotype data and FALSE otherwise.
    */
@@ -1999,8 +2002,11 @@ class Submission {
     return FALSE;
   }
 
-    /**
+  /**
    * Checks if study has Mass Environmental data.
+   *
+   * Checks fields on Page 4.
+   * See also isEnvironmentStudy() which checks value of the selectbox on Page 2.
    *
    * @return bool
    *   Returns TRUE when study has phenotype data and FALSE otherwise.
@@ -2039,6 +2045,9 @@ class Submission {
 
   /**
    * Checks if study has genotype data.
+   *
+   * Checks fields on Page 4.
+   * See also isGenotypeStudy() which checks value of the selectbox on Page 2.
    *
    * @return bool
    *   Returns TRUE when study has phenotype data and FALSE otherwise.
@@ -2995,6 +3004,236 @@ class Submission {
       return TRUE;
     }
     return FALSE;
+  }
+
+  /**
+   * Get list of the submission's phenotype id.
+   *
+   * Note: Only for processed submissions (loaded into DB).
+   * Unprocessed phenotypes has no ids yet.
+   *
+   * @return mixed
+   *   Returns list of phenotype ids.
+   *   Returns NULL when submission has no phenotype data or not yet loaded
+   *   into DB (not yet processed by submit_all.php script).
+   */
+  public function getPhenotypeIdList() {
+    if (!$this->hasPhenotypeData() || empty($this->getLoadTime())) {
+      // Submission has no phenotype data or not yet loaded into DB.
+      return NULL;
+    }
+    $query = db_select('chado.dbxref', 'dxr')
+      ->condition('accession', $this->accession);
+    $query->join('chado.project_dbxref', 'pdxr', 'pdxr.dbxref_id = dxr.dbxref_id');
+    $query->join('chado.project_stock', 'ps', 'ps.project_id = pdxr.project_id');
+    $query->join('chado.stock_phenotype', 'sph', 'sph.stock_id = ps.stock_id');
+    $query->fields('sph', ['phenotype_id']);
+    return $query->execute()->fetchCol('phenotype_id');
+  }
+
+  /**
+   * Gets list of the unique phenotype names.
+   *
+   * Note: getPhenotypeIdList() method returns unique ids which have the same
+   * phenotype names so list returned by this method could be smaller.
+   *
+   * @return mixed
+   *   Returns list of the unique phenotype's names.
+   */
+  public function getPhenotypeNameList() {
+    if (!$this->hasPhenotypeData()) {
+      // Submission has no phenotype data.
+      return NULL;
+    }
+
+    if (empty($this->getLoadTime())) {
+      // Not yet loaded into DB.
+      //
+    }
+    else {
+      $list = $this->getPhenotypeIdList();
+      $field = 'name';
+      return db_select('chado.phenotype', 'p')
+        ->distinct()
+        ->condition('phenotype_id', $list, 'IN')
+        ->fields('p', [$field])
+        ->execute()
+        ->fetchCol($field);
+    }
+  }
+
+  /**
+   * Checks if at least one phenotype is missing synonym.
+   *
+   * @return bool
+   *   Returns TRUE if at least one phenotype is missing synonym.
+   *   Returns FALSE otherwise.
+   */
+  public function isAnyPhenotypeSynonymMissing() {
+    $missing = FALSE;
+    $list = $this->getPhenotypeNameList();
+    $synonym_list = PhenotypeSynonym::getAll();
+
+    $debug_mode = FALSE;
+    if ($debug_mode ?? FALSE) {
+      dpm(print_r($list, 1), 'Phenotype Names');
+      dpm(print_r($synonym_list, 1), 'Phenotype Synonyms');
+    }
+
+    foreach ($list as $item) {
+      if (!in_array($item, $synonym_list)) {
+        $missing = TRUE;
+        if ($debug_mode ?? FALSE) {
+          dpm($item, 'Missing');
+        }
+      }
+      else {
+        if ($debug_mode ?? FALSE) {
+          dpm($item, 'Found');
+        }
+      }
+    }
+    return $missing;
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Study Data Type.
+
+  /**
+   * Gets raw value of the Page 2 / Data Type field.
+   *
+   * Value example: "Genotype x Phenotype"
+   *
+   * @return mixed
+   *   Returns value of the 'Data Type' field on Page 2.
+   *   Returns NULL if value wasn't found (probably not yet set).
+   *
+   * @todo Move to 'TppsForm' class.
+   * @todo Use 'TppsArray' class instead of 'tpps_array_*()'.
+   */
+  public function getStudyDataType() {
+    return tpps_array_get_value($this->state,
+      ['saved_values', TPPS_PAGE_2, 'data_type']
+    );
+  }
+
+  /**
+   * Checks if submission has Phenotypic data.
+   *
+   * Checks value of the selectbox on page 2.
+   * See also method hasPhenotypeData() which checks fields on Page 4.
+   *
+   * @return bool
+   *   Returns TRUE when study has phenotypic data and FALSE otherwise.
+   */
+  public function isPhenotypeStudy() {
+    return (strpos($this->getStudyDataType(), 'Phenotype') !== FALSE);
+  }
+
+  /**
+   * Checks if submission has Genotypic data.
+   *
+   * Checks value of the selectbox on page 2.
+   * See also method hasGenotypeData() which checks fields on Page 4.
+   *
+   * @return bool
+   *   Returns TRUE when study has phenotypic data and FALSE otherwise.
+   */
+  public function isGenotypeStudy() {
+    return (strpos($this->getStudyDataType(), 'Genotype') !== FALSE);
+  }
+
+  /**
+   * Checks if submission has Environmental data.
+   *
+   * Checks value of the selectbox on page 2.
+   * See also method hasEnvironmentalData() which checks fields on Page 4.
+   *
+   * @return bool
+   *   Returns TRUE when study has phenotypic data and FALSE otherwise.
+   */
+  public function isEnvironmentStudy() {
+    return (strpos($this->getStudyDataType(), 'Environment') !== FALSE);
+  }
+
+  /**
+   * Gets list of organisms which has manually added phenotypes.
+   *
+   * @return mixed
+   *   Returns list of organisms and status. Key is organism index (ordinal
+   *   number at page) and value is status. Where TRUE means organism has
+   *   manually added phenotype and FALSE means phenotype metadata file was
+   *   uploaded.
+   *   Returns NULL if study has no phenotype data.
+   *
+   * @todo Should this data be added to SubmissionCache?
+   */
+  public function getPhenotypeSynonymList() {
+    if (!$this->isPhenotypeStudy()) {
+      return NULL;
+    }
+    $list = [];
+    for ($i = 1; $i <= $this->getOrganismNumber(); $i++) {
+      $organism_index = $i;
+      $organism_key = 'organism-' . $organism_index;
+
+      $list[$organism_index]['name'] = FormState::getOrganismName(
+        $this->state, $organism_index
+      );
+      // '0' means manually added phenotype.
+      // '1' - metadata file was uploaded.
+      $is_metadata_in_file = tpps_array_get_value($this->state,
+        ['saved_values', TPPS_PAGE_4, $organism_key, 'phenotype', 'check']
+      );
+      if ($is_metadata_in_file) {
+        // Metadata file.
+        // See PhenotypeMeta::validate().
+        $attribute_list = PhenotypeMeta::getColumn(
+          $this->state,
+          $organism_index,
+          PhenotypeMeta::DATA_TYPE_ATTRIBUTE
+        );
+        $phenotype_list = PhenotypeMeta::getColumn(
+          $this->state,
+          $organism_index,
+          PhenotypeMeta::DATA_TYPE_IDENTIFIER
+        );
+        $synonym_list = PhenotypeSynonym::getAll();
+        foreach ($attribute_list as $key => $value) {
+          // Note: $item is an attribute name.
+          $synonym_id = (int) array_search($value, $synonym_list);
+          $list[$organism_index][$key + 1]['synonym_id'] = $synonym_id;
+          $list[$organism_index][$key + 1]['name'] = $phenotype_list[$key];
+        }
+      }
+      else {
+        // Manually added phenotypes.
+        $phenotype_number = tpps_array_get_value($this->state,
+          [
+            'saved_values', TPPS_PAGE_4, $organism_key, 'phenotype',
+            'phenotypes-meta', 'number'
+          ]
+        );
+        for ($j = 1; $j <= $phenotype_number; $j++) {
+          // Note; value '0' means no synonym was found.
+          $synonym_id = tpps_array_get_value($this->state,
+            [
+              'saved_values', TPPS_PAGE_4, $organism_key, 'phenotype',
+              'phenotypes-meta', $j, 'synonym_id',
+            ]
+          );
+          $name = tpps_array_get_value($this->state,
+            [
+              'saved_values', TPPS_PAGE_4, $organism_key, 'phenotype',
+              'phenotypes-meta', $j, 'name',
+            ]
+          );
+          $list[$organism_index][$j]['name'] = $name;
+          $list[$organism_index][$j]['synonym_id'] = $synonym_id;
+        }
+      }
+    }
+    return $list;
   }
 
 }

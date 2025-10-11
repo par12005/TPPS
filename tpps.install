@@ -104,6 +104,7 @@ function tpps_get_variable_list() {
     'tpps_page_4_use_alphabetic_list' => TRUE,
     'tpps_page_4_env_check_always_visible' => TRUE,
     'tpps_page_4_env_check_ajax_update' => TRUE,
+    'tpps_page_4_phenotype_metadata_validate_synonyms' => TRUE,
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Submit All/Common.
     'tpps_submitall_skip_gps_request' => FALSE,
@@ -2490,4 +2491,11 @@ function tpps_update_7130() {
       ->condition('accession', $accession)
       ->execute();
   }
+}
+
+/**
+ * Block study approvement when Phenotype Synonym is missing.
+ */
+function tpps_update_7131() {
+  variable_set('tpps_page_4_phenotype_metadata_validate_synonyms', TRUE);
 }

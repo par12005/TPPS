@@ -119,15 +119,15 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       // [VS] Replace '!num' in attributes.
       'substitute_keys' => array(
         // Synonym form.
-        ['synonym_name', '#states', 'visible', tpps_synonym_selector($id)],
-        ['synonym_description', '#states', 'visible', tpps_synonym_selector($id)],
+        ['synonym_name', '#states', 'visible', PhenotypeSynonym::selector($id)],
+        ['synonym_description', '#states', 'visible', PhenotypeSynonym::selector($id)],
         // State of the Main form related to Synonym form.
-        array('name', '#states', 'visible', tpps_synonym_selector($id)),
-        array('env-check', '#states', 'visible', tpps_synonym_selector($id)),
-        array('attribute', '#states', 'visible', tpps_synonym_selector($id)),
-        array('attr-other', '#states', 'visible', tpps_synonym_selector($id)),
-        array('description', '#states', 'visible', tpps_synonym_selector($id)),
-        array('structure', '#states', 'visible', tpps_synonym_selector($id)),
+        array('name', '#states', 'visible', PhenotypeSynonym::selector($id)),
+        array('env-check', '#states', 'visible', PhenotypeSynonym::selector($id)),
+        array('attribute', '#states', 'visible', PhenotypeSynonym::selector($id)),
+        array('attr-other', '#states', 'visible', PhenotypeSynonym::selector($id)),
+        array('description', '#states', 'visible', PhenotypeSynonym::selector($id)),
+        array('structure', '#states', 'visible', PhenotypeSynonym::selector($id)),
         // Main form.
         array(
           'attr-other',
@@ -180,7 +180,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
 
       // Unit.
       $form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#options']
-        = tpps_unit_get_list($synonym_id ?? 'all');
+        = PhenotypeUnit::getList($synonym_id ?? 'all');
       $form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#default_value'] = (
         $phenotypes[$i]['unit']
         ?? array_key_first($form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#options'])
