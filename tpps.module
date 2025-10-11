@@ -6,7 +6,7 @@
  */
 
 // Create a global variable which manages module's variables and constants.
-// Usage: 
+// Usage:
 // global $tpps;
 // dpm($tpps->tpps_admin_email, 'tpps_admin_email');
 $GLOBALS['tpps'] = class_exists('TppsConfiguration')
@@ -118,7 +118,6 @@ module_load_include('inc', 'tpps', 'includes/details');
 module_load_include('inc', 'tpps', 'includes/cvterm_utils');
 
 module_load_include('inc', 'tpps', 'includes/submission_file');
-require_once 'includes/phenotype_unit.inc';
 require_once 'api/tpps.api.inc';
 
 /**
