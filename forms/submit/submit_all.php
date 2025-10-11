@@ -7290,6 +7290,9 @@ function tpps_process_phenotype_data($row, array &$options = []) {
         . 'data to not be added to database correctly.');
     }
     $value = $row[$id];
+    if (trim($value) == 'NA') {
+      return;
+    }
     $phenotype_name = PhenotypeData::buildPhenotypeName($accession, $tree_id,
       $name, $suffix, $value_4lettercode);
     $options['data']["$tree_id-$name-$suffix"] = [
