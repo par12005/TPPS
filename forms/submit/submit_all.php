@@ -5052,14 +5052,18 @@ function tpps_genotype_vcf_processing_batch_some_features_insert(&$settings, $cu
     $sql = 'INSERT INTO chado.feature (name, organism_id, uniquename, type_id) VALUES ';
     $variant_index = 0;
     foreach ($features_variant_data as $variant_name => $feature_data) {
+      $marker_cvterm_id = $feature_data['marker_cvterm_id'];
       if ($variant_index != 0) {
         $sql .= ',';
       }
-      $sql .= "('$variant_name', $current_id, '$variant_name', $seq_var_cvterm)";
+      // $sql .= "('$variant_name', $current_id, '$variant_name', $seq_var_cvterm)";
+      // RISH/EMILY 10/13/2025 - Do not use seq_var_cvterm, instead use the detected $marker_cvterm_id
+      $sql .= "('$variant_name', $current_id, '$variant_name', $marker_cvterm_id)";
       $variant_index = $variant_index + 1;
     }
     // $sql .= ' ON CONFLICT (organism_id, uniquename, type_id) DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
-    $sql .= ' ON CONFLICT (organism_id, uniquename) where type_id = 1491 DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
+    // $sql .= ' ON CONFLICT (organism_id, uniquename) where type_id = 1491 DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
+    $sql .= ' ON CONFLICT (organism_id, uniquename) DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
     if ($variant_index > 0) {
       $results_feature_inserts = db_query($sql);
     }
@@ -5261,6 +5265,8 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
   $genotype_count = 0;
   $genotype_total = 0;
   $seq_var_cvterm = tpps_load_cvterm('sequence_variant')->cvterm_id;
+  // TODO: RISH/EMILY/MEGHAN 10/13/2025 Get whether it's a SNP or SSR etc from the tpps form state
+
   $overrides = array(
     'genotype_call' => array(
       'variant' => array(
@@ -5562,7 +5568,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             // Check length of comma_part
             $len = strlen($ref_comma_part);
             // If len is more than 1, use this value to calculate the fmax position
-            if($len > 1) {
+            if($len != 1) {
               $marker_type = 'INDEL';
               break;
             }
@@ -5573,6 +5579,14 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             tpps_log($lmsg);
           }
           $time_end_indel_check = microtime(true);
+
+          $marker_type_cvterm_id = NULL;
+          if ($marker_type == 'INDEL') {
+            $marker_type_cvterm_id = tpps_load_cvterm('indel')->cvterm_id;
+          }
+          else {
+            $marker_type_cvterm_id = tpps_load_cvterm('snp')->cvterm_id;
+          }
           // echo("INDEL CHECK TIME: " . floatval($time_end_indel_check - $time_start_indel_check) . " ms\n");
 
 
@@ -5621,6 +5635,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
                   'src_feature_id' => $src_feature_data[$chromosome]['src_feature_id'],
                   'fmin' => intval($position),
                   'fmax' => $fmax,
+                  'marker_cvterm_id' => $marker_type_cvterm_id,
                 ];
                 if ($log_detailed) {
                   $msg = 'Accurate featureloc values for variant: ' . $variant_name . ' with fmin: ' . $position . ' fmax: ' . $fmax;
@@ -7333,18 +7348,18 @@ function tpps_process_phenotype_data($row, array &$options = []) {
 
     // List of properties which could be set manually using form or
     // found in uploaded phenotype data (not metadata) file.
-    foreach (['time'] as $property_name) {
-      // Note: Both $name and $phenotype_name must be sent here!!!
-      // $phenotype_name is a generated "full phenotype name".
-      // E.g., 'TGDR1020-24-height-23-Arth'.
-      // $name is a "short phenotype name" used in phenotype metadata file.
-      // E.g., 'height'.
-      // $value contains data from phenotype metadata file.
-      $value = $meta[strtolower($name)][$property_name] ?? NULL;
-      tpps_submitall_prepare_phenotypeprop(
-        $phenotype_name, $property_name, $row, $options, $value
-      );
-    }
+    // foreach (['time'] as $property_name) {
+    //   // Note: Both $name and $phenotype_name must be sent here!!!
+    //   // $phenotype_name is a generated "full phenotype name".
+    //   // E.g., 'TGDR1020-24-height-23-Arth'.
+    //   // $name is a "short phenotype name" used in phenotype metadata file.
+    //   // E.g., 'height'.
+    //   // $value contains data from phenotype metadata file.
+    //   $value = $meta[strtolower($name)][$property_name] ?? NULL;
+    //   tpps_submitall_prepare_phenotypeprop(
+    //     $phenotype_name, $property_name, $row, $options, $value
+    //   );
+    // }
 
     // Process 'year' column which is not a phenotype.
     // Both cases will be processed: Normal check and isotop analysis.
