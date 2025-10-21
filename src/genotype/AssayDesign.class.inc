@@ -334,6 +334,166 @@ class AssayDesign extends FileField {
       tpps_log($message, $params, TRIPAL_DEBUG);
       return;
     }
+
+    if (0) {
+      // This if statement caters for the Genotype Assay Design file
+      // (which holds extra data like positions etc)
+      // This is usually also accompanied with the Genotype SNP Assay
+      // (which holds the snps)
+      // We want to insert location data into the database
+      // if both are found and the marker-type is snp
+      // The previous step took care of the SNPs insertion via the Genotype
+      // SNP Assay (not to be confused with genotype SNP assay design file)
+      if (!empty($genotype['files']['assay-design'])) {
+        $design_fid = $genotype['files']['assay-design'];
+        tpps_add_project_file($shared_state, $design_fid);
+
+        // Setup the options array which the tpps_file_iterator custom function
+        // will be able to access necessary details.
+        $options['type'] = 'snp';
+
+        print_r("\n");
+        $options['marker'] = 'SNP';
+        $options['type_cvterm'] = tpps_load_cvterm('snp')->cvterm_id;
+        $options['ref-genome'] = $genotype['ref-genome'];
+        $ref_genome = $genotype['ref-genome'];
+
+        echo "Ref-genome: $ref_genome\n";
+
+        // Lookup analysis id from reference genome and add it to options array.
+        $options['analysis_id'] = tpps_get_analysis_id_from_ref_genome($ref_genome);
+
+
+
+        tpps_log("ANALYSIS ID: " . $options['analysis_id'], [], TRIPAL_DEBUG);
+        $options['headers_assay_design'] = tpps_file_headers($design_fid);
+        echo "Headers Assay Design:\n";
+        print_r($options['headers_assay_design']);
+        echo "\n";
+        $file_assay_design = tpps_file_load($design_fid);
+        $location_assay_design = tpps_get_location($file_assay_design->uri);
+        $options['path_assay_design'] = $location_assay_design;
+        echo "Path Assay Design:\n";
+        print_r($options['path_assay_design']);
+        echo "\n";
+
+        // We must have an analysis_id to tie back to the srcfeature.
+        if ($options['analysis_id'] != NULL) {
+
+          // Ref Genome details
+          $ref_genome_parts = explode(" ", $ref_genome);
+          echo "Ref Genome Parts:\n";
+          print_r($ref_genome_parts);
+          echo "\n";
+          $ref_genome_parts_count = count($ref_genome_parts);
+          // Get ref genome version
+          if (stripos($ref_genome_parts[$ref_genome_parts_count - 1], 'v') !== FALSE) {
+            $options['ref-genome-version'] = trim($ref_genome_parts[$ref_genome_parts_count - 1]);
+          }
+          echo "Ref Genome Version:\n";
+          print_r($options['ref-genome-version']);
+          echo "\n";
+          // Generate the species name
+          $ref_genome_species = '';
+          for ($rgp_i = 0; $rgp_i < ($ref_genome_parts_count -1); $rgp_i++) {
+            if (stripos($ref_genome_parts[$rgp_i], 'assembly') === FALSE
+            and stripos($ref_genome_parts[$rgp_i], 'genome') === FALSE
+            ) {
+              if ($rgp_i > 0) {
+                $ref_genome_species .= ' ';
+              }
+              echo 'Adding: ' . $ref_genome_parts[$rgp_i] . "\n";
+              $ref_genome_species .= $ref_genome_parts[$rgp_i];
+            }
+          }
+          $options['ref-genome-species'] = $ref_genome_species;
+          echo "Ref Genome Species:\n";
+          print_r($options['ref-genome-species']);
+          echo "\n";
+
+          // Get four letter codes
+          $species_codes = tpps_generate_species_codes_array_from_shared_state($shared_state);
+          $options['ref-genome-species-codes'] = $species_codes;
+          echo "Ref Genome Species Codes:\n";
+          print_r($options['ref-genome-species-codes']);
+          echo "\n";
+          // Initialize new records with featureloc array to store records.
+          $options['records']['featureloc'] = [];
+          $options['records']['featureprop'] = [];
+
+          $options['headers'] = tpps_file_headers($design_fid);
+          tpps_log("HEADERS:\n@headers\n",
+            ['@headers' => print_r($options['headers'], 1)], TRIPAL_DEBUG);
+
+          // Find the marker name header.
+          $options['file_columns'] = [];
+          foreach ($options['headers'] as $column => $column_name) {
+            $column_name = strtolower(trim($column_name));
+            tpps_log("Spreadsheet column name:" . $column_name . " column: $column",
+              [], TRIPAL_DEBUG);
+            switch ($column_name) {
+              case 'chr':
+                $options['file_columns']['chr'] = $column;
+                break;
+
+              case 'forward sequence':
+                $options['file_columns']['forward_sequence'] = $column;
+                break;
+
+              case 'reverse sequence':
+                $options['file_columns']['reverse_sequence'] = $column;
+                break;
+
+              case 'snp':
+                $options['file_columns']['snp'] = $column;
+                break;
+            }
+            if (strpos($column_name, 'position') !== FALSE) {
+              $options['file_columns']['position'] = $column;
+            }
+            elseif (strpos($column_name, 'marker name') !== FALSE) {
+              $options['file_columns']['marker_name'] = $column;
+            }
+            tpps_log(print_r($options['file_columns'], 1), [], TRIPAL_DEBUG);
+          }
+
+          // We want to process this Genotype SNP Assay Design file before
+          // we add it as a project file.
+          // if (empty($genotype['files']['snps-association'])) {}
+          // If there is no assay file, we will process the assay design file independently (without VCF creation option)
+          if (empty($genotype['files']['snps-assay'])) {
+            tpps_log('Processing genotype_snp_assay_design file data...', [], TRIPAL_INFO);
+            // tpps_file_iterator($design_fid, 'tpps_process_genotype_snp_assay_design', $options);
+            tpps_log('Done.', [], TRIPAL_INFO);
+          }
+          else {
+            // Perform the VCF creation later on using the assay file and assay design file
+          }
+
+          tpps_log('Inserting genotype_snp_assay_design_spreadsheet data into '
+            . 'database using insert_multi...', [], TRIPAL_INFO);
+          tpps_log('Done.', [], TRIPAL_INFO);
+          // Reset options[records] with empty records arrays.
+          $options['records'] = $records;
+
+        }
+        else {
+          tpps_log('Analysis ID could not be found, skipping assay design file processing.',
+            [], TRIPAL_ERROR
+          );
+        }
+
+        if ($options['analysis_id'] != NULL and $options['path_assay'] != NULL and $options['path_assay_design'] != NULL) {
+          // Generate the VCF file from assay and assay design files.
+          tpps_generate_vcf_from_assay_and_assay_design($options, $shared_state);
+        }
+
+
+      }
+
+    }
+
+
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // This if statement caters for the Genotype Assay Design file
     // (which holds extra data like positions etc)
