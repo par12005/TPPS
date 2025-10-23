@@ -1920,16 +1920,18 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
     $options['meta_headers'] = $meta_headers;
     $options['data_columns'] = $data_columns ?? NULL;
     $options['meta'] = $phenotypes_meta;
+    print_r($options['meta']);
     $options['file_empty'] = $phenotype['file-empty'];
     // Function tpps_process_phenotype_data() is used to process both Phenotype
     // Data and Phenotype Iso files. To avoid errors when multiple organisms
     // are processed we explicitly set 'iso' key it here.
     $options['iso'] = FALSE;
 
+
+
     // Phenotype data (not metadata).
     tpps_log('DATA_FID:' . $data_fid, [], TRIPAL_DEBUG);
     tpps_log('Processing phenotype_data file data...', [], TRIPAL_INFO);
-
     tpps_file_iterator($data_fid, 'tpps_process_phenotype_data', $options);
     $shared_state['data']['phenotype_meta'] += $phenotypes_meta;
     tpps_log('Inserting data into database using insert_multi...', [], TRIPAL_INFO);
@@ -1947,6 +1949,7 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
   }
   // [/VS].
 }
+
 
 /**
  * Submits genotype information for one species.
@@ -7305,120 +7308,148 @@ function tpps_process_phenotype_data($row, array &$options = []) {
         . 'data to not be added to database correctly.');
     }
     $value = $row[$id];
-    if (trim($value) == 'NA') {
-      return;
-    }
-    $phenotype_name = PhenotypeData::buildPhenotypeName($accession, $tree_id,
-      $name, $suffix, $value_4lettercode);
-    $options['data']["$tree_id-$name-$suffix"] = [
-      'uniquename' => "$tree_id-$name-$suffix",
-      'name' => $name,
-      'stock_id' => $tree_info[$tree_id]['stock_id'],
-      'time' => NULL,
-      'value' => $value,
-    ];
+    if (trim($value) != 'NA') {
+      $phenotype_name = PhenotypeData::buildPhenotypeName($accession, $tree_id,
+        $name, $suffix, $value_4lettercode);
+      $options['data']["$tree_id-$name-$suffix"] = [
+        'uniquename' => "$tree_id-$name-$suffix",
+        'name' => $name,
+        'stock_id' => $tree_info[$tree_id]['stock_id'],
+        'time' => NULL,
+        'value' => $value,
+      ];
 
-    $struct_id = NULL;
-    if (isset($meta[strtolower($name)]['struct_id'])) {
-      $struct_id = $meta[strtolower($name)]['struct_id'];
-    }
-    elseif ($iso) {
-      // Override the value - likely for intensity / mass spectrometry.
-      $struct_id = $meta['struct_id'];
-    }
+      $struct_id = NULL;
+      if (isset($meta[strtolower($name)]['struct_id'])) {
+        $struct_id = $meta[strtolower($name)]['struct_id'];
+      }
+      elseif ($iso) {
+        // Override the value - likely for intensity / mass spectrometry.
+        $struct_id = $meta['struct_id'];
+      }
 
-    $phenotype_row_data = array(
-      'uniquename' => $phenotype_name,
-      'name' => $name,
-      'attr_id' => $attr_id,
-      // Removed this old obserable_id to cater for mass spectrometry.
-      // 'observable_id' => $meta[strtolower($name)]['struct_id'] ?? NULL,
-      // this is the new way of adding observable_id to cater for mass spectrometry as well.
-      'observable_id' => $struct_id,
-      'value' => $value,
-    );
-    // tpps_log("Phenotype row data to be inserted\n");
-    // tpps_log(print_r($phenotype_row_data, true));
-    // tpps_log("\n");
-    $records['phenotype'][$phenotype_name] = $phenotype_row_data;
-    $records['stock_phenotype'][$phenotype_name] = array(
-      'stock_id' => $tree_info[$tree_id]['stock_id'],
-      '#fk' => ['phenotype' => $phenotype_name],
-    );
+      $phenotype_row_data = array(
+        'uniquename' => $phenotype_name,
+        'name' => $name,
+        'attr_id' => $attr_id,
+        // Removed this old obserable_id to cater for mass spectrometry.
+        // 'observable_id' => $meta[strtolower($name)]['struct_id'] ?? NULL,
+        // this is the new way of adding observable_id to cater for mass spectrometry as well.
+        'observable_id' => $struct_id,
+        'value' => $value,
+      );
+      // tpps_log("Phenotype row data to be inserted\n");
+      // tpps_log(print_r($phenotype_row_data, true));
+      // tpps_log("\n");
+      $records['phenotype'][$phenotype_name] = $phenotype_row_data;
+      $records['stock_phenotype'][$phenotype_name] = array(
+        'stock_id' => $tree_info[$tree_id]['stock_id'],
+        '#fk' => ['phenotype' => $phenotype_name],
+      );
 
-    // List of properties which could be set manually using form or
-    // found in uploaded phenotype data (not metadata) file.
-    // foreach (['time'] as $property_name) {
-    //   // Note: Both $name and $phenotype_name must be sent here!!!
-    //   // $phenotype_name is a generated "full phenotype name".
-    //   // E.g., 'TGDR1020-24-height-23-Arth'.
-    //   // $name is a "short phenotype name" used in phenotype metadata file.
-    //   // E.g., 'height'.
-    //   // $value contains data from phenotype metadata file.
-    //   $value = $meta[strtolower($name)][$property_name] ?? NULL;
-    //   tpps_submitall_prepare_phenotypeprop(
-    //     $phenotype_name, $property_name, $row, $options, $value
-    //   );
-    // }
+      // List of properties which could be set manually using form or
+      // found in uploaded phenotype data (not metadata) file.
+      // foreach (['time'] as $property_name) {
+      //   // Note: Both $name and $phenotype_name must be sent here!!!
+      //   // $phenotype_name is a generated "full phenotype name".
+      //   // E.g., 'TGDR1020-24-height-23-Arth'.
+      //   // $name is a "short phenotype name" used in phenotype metadata file.
+      //   // E.g., 'height'.
+      //   // $value contains data from phenotype metadata file.
+      //   $value = $meta[strtolower($name)][$property_name] ?? NULL;
+      //   tpps_submitall_prepare_phenotypeprop(
+      //     $phenotype_name, $property_name, $row, $options, $value
+      //   );
+      // }
 
-    // Process 'year' column which is not a phenotype.
-    // Both cases will be processed: Normal check and isotop analysis.
-    if (!empty($meta_headers['year'])) {
-      $records['phenotypeprop']["$phenotype_name-year"] = [
-        'type_id' => $cvterms['year'],
-        'value' => $row[$meta_headers['year']],
+      // Process 'year' column which is not a phenotype.
+      // Both cases will be processed: Normal check and isotop analysis.
+      if (!empty($meta_headers['year']) and trim($row[$meta_headers['year']]) != "NA") {
+        $records['phenotypeprop']["$phenotype_name-year"] = [
+          'type_id' => $cvterms['year'],
+          'value' => $row[$meta_headers['year']],
+          '#fk' => ['phenotype' => $phenotype_name],
+        ];
+      }
+
+      $records['phenotypeprop']["$phenotype_name-desc"] = [
+        'type_id' => $cvterms['desc'],
+        'value' => $iso ? $meta['desc'] : $meta[strtolower($name)]['desc'],
         '#fk' => ['phenotype' => $phenotype_name],
       ];
-    }
-
-    $records['phenotypeprop']["$phenotype_name-desc"] = [
-      'type_id' => $cvterms['desc'],
-      'value' => $iso ? $meta['desc'] : $meta[strtolower($name)]['desc'],
-      '#fk' => ['phenotype' => $phenotype_name],
-    ];
-    // $iso is TRUE when "Isotope/Mass spectrometry" file is processing.
-    if ($iso) {
-      // "Iso Check"
-      $records['phenotypeprop']["$phenotype_name-unit"] = [
-        // CVTerm Id of the Unit 'chemical substance'.
-        'type_id' => 139527,
-        // value: the chemical name/identifier.
-        'value' => $meta['unit'],
-        '#fk' => ['phenotype' => $phenotype_name],
-      ];
-    }
-    else {
-      // "Normal Check"
-      $records['phenotype_cvterm']["$phenotype_name-unit"] = [
-        'cvterm_id' => $meta[strtolower($name)]['unit_id'],
-        '#fk' => ['phenotype' => $phenotype_name],
-      ];
-    }
-    // @todo Remove 'min' and 'max' processing.
-    // Min and max not used anymore.
-    if (isset($meta[strtolower($name)]['min'])) {
-      $records['phenotypeprop']["$phenotype_name-min"] = [
-        'type_id' => $cvterms['min'],
-        'value' => $meta[strtolower($name)]['min'],
-        '#fk' => ['phenotype' => $phenotype_name],
-      ];
-    }
-    if (isset($meta[strtolower($name)]['max'])) {
-      $records['phenotypeprop']["$phenotype_name-max"] = [
-        'type_id' => $cvterms['max'],
-        'value' => $meta[strtolower($name)]['max'],
-        '#fk' => ['phenotype' => $phenotype_name],
-      ];
-    }
-    if (!empty($meta[strtolower($name)]['env'])) {
-      $records['phenotype_cvterm']["$phenotype_name-env"] = [
-        'cvterm_id' => $cvterms['environment'],
-        '#fk' => ['phenotype' => $phenotype_name],
-      ];
-    }
+      // $iso is TRUE when "Isotope/Mass spectrometry" file is processing.
+      if ($iso) {
+        // "Iso Check"
+        $records['phenotypeprop']["$phenotype_name-unit"] = [
+          // CVTerm Id of the Unit 'chemical substance'.
+          'type_id' => 139527,
+          // value: the chemical name/identifier.
+          'value' => $meta['unit'],
+          '#fk' => ['phenotype' => $phenotype_name],
+        ];
+      }
+      else {
+        // "Normal Check"
+        $records['phenotype_cvterm']["$phenotype_name-unit"] = [
+          'cvterm_id' => $meta[strtolower($name)]['unit_id'],
+          '#fk' => ['phenotype' => $phenotype_name],
+        ];
 
 
-// @TODO We have also 'year' column and we need to process it.
+        // Try to get a cache key value array
+        if ($options['cache_cvterm_unit_values'] === NULL) {
+          $options['cache_cvterm_unit_values'] = [];
+        }
+        // Lookup if we have already cached this cvterm_id value.
+        if (!isset($options['cache_cvterm_unit_values'][strtolower($name)])) {
+          $cvterm_unit_value_results = chado_query(
+            'SELECT * FROM chado.cvterm
+            WHERE cvterm_id = :cvterm_id
+            LIMIT 1',
+            [
+              ':cvterm_id' => $meta[strtolower($name)]['unit_id'],
+            ]
+          );
+          foreach ($cvterm_unit_value_results as $cvterm_unit_value_row) {
+            $options['cache_cvterm_unit_values'][strtolower($name)] = $cvterm_unit_value_row->name;
+          }
+        }
+        $unit_cvterm_value = $options['cache_cvterm_unit_values'][strtolower($name)] ?? NULL;
+        $records['phenotypeprop']["$phenotype_name-unit"] = [
+          // CVTerm value of the Unit 'chemical substance'.
+          'type_id' => 2842,
+          // value: the chemical name/identifier.
+          'value' => $unit_cvterm_value, // this will be the cvterm name
+          '#fk' => ['phenotype' => $phenotype_name],
+        ];
+      }
+      // @todo Remove 'min' and 'max' processing.
+      // Min and max not used anymore.
+      if (isset($meta[strtolower($name)]['min'])) {
+        $records['phenotypeprop']["$phenotype_name-min"] = [
+          'type_id' => $cvterms['min'],
+          'value' => $meta[strtolower($name)]['min'],
+          '#fk' => ['phenotype' => $phenotype_name],
+        ];
+      }
+      if (isset($meta[strtolower($name)]['max'])) {
+        $records['phenotypeprop']["$phenotype_name-max"] = [
+          'type_id' => $cvterms['max'],
+          'value' => $meta[strtolower($name)]['max'],
+          '#fk' => ['phenotype' => $phenotype_name],
+        ];
+      }
+      if (!empty($meta[strtolower($name)]['env'])) {
+        $records['phenotype_cvterm']["$phenotype_name-env"] = [
+          'cvterm_id' => $cvterms['environment'],
+          '#fk' => ['phenotype' => $phenotype_name],
+        ];
+      }
+      $phenotype_count++;
+    }
+
+
+    // @TODO We have also 'year' column and we need to process it.
 
     if ($phenotype_count >= $record_group) {
       tpps_log('Inserting data into database using insert_multi...', [], TRIPAL_INFO);
@@ -7440,10 +7471,11 @@ function tpps_process_phenotype_data($row, array &$options = []) {
       ];
       $phenotype_count = 0;
     }
-    $phenotype_count++;
   }
   $suffix++;
 }
+
+
 
 /**
  * This function processes a single row of a genotype spreadsheet.
