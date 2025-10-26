@@ -86,6 +86,7 @@ class AssayDesign extends FileField {
         ]) . ']"]' => [
           'value' => AssayDesignCitation::EXISTING_STUDY_OTHER_OPTION_KEY,
         ],
+      ],
       'or',
       [
         // 'does_study_include_snp_data': 'yes'.
@@ -126,7 +127,10 @@ class AssayDesign extends FileField {
       // Required when visible.
       'states' => [
         'visible' => $states,
-        //'required' => $states,
+        // Doesn't works as expected. Field is always required. Probably because
+        // 'required_when_visible' feature doesn't support complex rules.
+        // See tpps_form_validate_required_field().
+        // 'required' => $states,
       ],
       'extra_elements' => [
         'empty' => [
