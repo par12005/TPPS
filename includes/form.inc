@@ -1312,6 +1312,7 @@ function tpps_form_validate_required_field($element, $form_state) {
   }
 
   $is_required = $logic = NULL;
+  // @TODO Implement complex logic like AssayDesign::build() is using.
   foreach ($element['#states']['required'] as $trigger => $condition) {
     if (is_numeric($trigger)) {
       if (is_string($condition)) {

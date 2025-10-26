@@ -611,6 +611,10 @@ abstract class FileField {
   /**
    * Gets form element using list of parent elements.
    *
+   * Order of processing:
+   * 1. $form,
+   * 2. $form_state['complete_form'],
+   *
    * WARNING: Could be used ONLY for validation because uses currently
    * submitted form stored in $form_state['complete form'] element.
    *
@@ -630,20 +634,20 @@ abstract class FileField {
     $parents = static::getParents($organism_index, $form_state);
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Use $form first.
+    // 1. Use $form first.
     if (!empty($form)) {
       $element = TppsArray::getValue($form, $parents, $key_exists);
       if ($key_exists) {
         return $element;
       }
     }
+
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Use $form_state['complete form'].
+    // 2. Use $form_state['complete form'].
     if (empty($form_state['complete form'])) {
       $message = t("Form wasn't found under \$form_state['complete form'].");
       throw new Exception($message);
     }
-
     // Check if current field belongs to recently submitted form and we could
     // get form element from $form_state['complete form'].
     $complete_form_step = TppsArray::getValue(
@@ -732,6 +736,7 @@ abstract class FileField {
    * Note:
    * User selection is stored in format: ['A' => '1', 'B' => '4'];
    * But returned value uses array_flip().
+   * Could be used for just submitted form.
    *
    * Note:
    * Result could have extra (not required) columns because it uses user's
@@ -747,8 +752,36 @@ abstract class FileField {
    *   E.g., ['1' => 'A', '4' => 'B'].
    */
   public static function getSelectedColumns($organism_index, array &$form_state) {
-    $file_element = static::getFormElement($organism_index, $form_state);
-    return array_flip($file_element['#value']['columns'] ?? []);
+    $organism_key = 'organism-' . $organism_index;
+    $debug_mode = FALSE;
+    // Check if current field belongs to recently submitted form and we could
+    // get form element from $form_state['complete form'].
+    $complete_form_step = TppsArray::getValue($form_state['complete form'],
+      ['stage', '#value']
+    );
+    if (static::FORM_STEP == $complete_form_step) {
+      $file_element = static::getFormElement($organism_index, $form_state);
+      $selected_columns = array_flip($file_element['#value']['columns'] ?? []);
+    }
+    else {
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // WARNING: List of the selected by user data types for the columns has
+      // new simple structure.
+      $selected_columns = TppsArray::getValue($shared_state, [
+        'saved_values',
+        static::FORM_STEP,
+        $organism_key,
+        static::DATA_TYPE,
+        static::SNPS_FIELDSET,
+        // For searching purposes: 'assay-design-columns'.
+        static::DOM_NAME . '-columns',
+      ]);
+      if ($debug_mode) {
+        tpps_log_line();
+        tpps_log($selected_columns, 'selected_columns');
+      }
+    }
+    return $selected_columns;
   }
 
   /**
