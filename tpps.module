@@ -3349,12 +3349,14 @@ function tpps_form_tppsc_main_alter($form, $form_state) {
   // Add usage to avoid validation issues.
   $submission = new Submission();
   $submission->setState($form_state);
-  $file_list = $submission->getFileIdList();
-  if (!empty($file_list)) {
-    foreach (array_keys($file_list) as $fid) {
-      $file = tpps_file_load($fid);
-      if ($file && Submission::isEmptyFileUsage($file, $submission->accession)) {
-        Submission::addFileUsage($file, $submission->accession);
+  if (!$submission->isEmpty()) {
+    $file_list = $submission->getFileIdList();
+    if (!empty($file_list)) {
+      foreach (array_keys($file_list) as $fid) {
+        $file = tpps_file_load($fid);
+        if ($file && Submission::isEmptyFileUsage($file, $submission->accession)) {
+          Submission::addFileUsage($file, $submission->accession);
+        }
       }
     }
   }
