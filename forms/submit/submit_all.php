@@ -7850,7 +7850,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = []) {
     // if ($vcf_processing_completed == true && $type == 'snp') {
     //   //skip performing genotype and genotype_call inserts
     // }
-    // else {
+    // else {}
 
     $process_genotype_assay_new_naming = true;
     if ($process_genotype_assay_new_naming) {

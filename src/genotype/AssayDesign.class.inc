@@ -52,7 +52,6 @@ class AssayDesign {
         // 'does_study_include_snp_data': 'yes'.
         ':input[name="' . $organism_key . '[' . implode('][', [
           AssayDesign::DATA_TYPE,
-          'genotyping-type',
           'does_study_include_snp_data',
         ]) . ']"]' => ['value' => "yes"],
         ':input[name="' . $organism_key . '[' . implode('][', [
@@ -69,7 +68,6 @@ class AssayDesign {
         // 'does_study_include_snp_data': 'yes'.
         ':input[name="' . $organism_key . '[' . implode('][', [
           AssayDesign::DATA_TYPE,
-          'genotyping-type',
           'does_study_include_snp_data',
         ]) . ']"]' => ['value' => "yes"],
         // 'Genotyping Type': 'Genotyping'
