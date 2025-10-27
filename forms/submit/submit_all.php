@@ -5066,7 +5066,11 @@ function tpps_genotype_vcf_processing_batch_some_features_insert(&$settings, $cu
     }
     // $sql .= ' ON CONFLICT (organism_id, uniquename, type_id) DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
     // $sql .= ' ON CONFLICT (organism_id, uniquename) where type_id = 1491 DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
-    $sql .= ' ON CONFLICT (organism_id, uniquename) DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
+    
+    // This gives error: 
+    $sql .= ' ON CONFLICT (organism_id, uniquename) DO UPDATE SET uniquename=EXCLUDED.uniquename, type_id=EXCLUDED.type_id RETURNING feature_id, uniquename';
+
+    
     if ($variant_index > 0) {
       $results_feature_inserts = db_query($sql);
     }
