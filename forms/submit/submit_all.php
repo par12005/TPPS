@@ -2369,6 +2369,7 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
       $options['records']['featureloc'] = [];
       $options['records']['featureprop'] = [];
 
+      // See line 2299: $options['headers_assay_design'].
       $options['headers'] = tpps_file_headers($design_fid);
       tpps_log("HEADERS:\n@headers\n",
         ['@headers' => print_r($options['headers'], 1)], TRIPAL_DEBUG);
@@ -2479,6 +2480,8 @@ function tpps_generate_vcf_from_assay_and_assay_design(array &$options, array &$
     $four_letter_code = $code;
   }
 
+  // @TODO Replace $form_state with $shared_state.
+  $selected_columns = AssayDesign::getSelectedColumns($options['organism_index'], $form_state);
 
   // Get column number from assay file for snp_id
   $assay_snp_name_col = 0;

@@ -767,15 +767,9 @@ abstract class FileField {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // WARNING: List of the selected by user data types for the columns has
       // new simple structure.
-      $selected_columns = TppsArray::getValue($shared_state, [
-        'saved_values',
-        static::FORM_STEP,
-        $organism_key,
-        static::DATA_TYPE,
-        static::SNPS_FIELDSET,
-        // For searching purposes: 'assay-design-columns'.
-        static::DOM_NAME . '-columns',
-      ]);
+      $parents = static::getParents($organism_index, $form_state, static::DOM_NAME . '-columns');
+      // For searching purposes: 'assay-design-columns'.
+      $selected_columns = TppsArray::getValue($form_state['saved_values'][static::FORM_STEP], $parents);
       if ($debug_mode) {
         tpps_log_line();
         tpps_log($selected_columns, 'selected_columns');

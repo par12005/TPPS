@@ -356,7 +356,7 @@ class AssayDesign extends FileField {
     }
     tpps_add_project_file($shared_state, $fid);
     // Note: currently not used.
-    $options['selected_columns'] = static::getSelectedColumns($organism_index, $form_state);
+    $options['selected_columns'] = static::getSelectedColumns($organism_index, $shared_state);
 
     if ($debug_mode) {
       $message = t('"@title": Complete file processing.', $params);
