@@ -375,7 +375,7 @@ function tpps_submission_import_state_mods(array &$state, $new_accession) {
   // @TODO Minor. Use SubmissionVersion::get($state);
   $saved_values[SubmissionVersion::FORM_KEY]
     = $state['saved_values'][SubmissionVersion::FORM_KEY]
-    ?? SubmissionVersion::VERSION_1;
+    ?? SubmissionVersion::V1;
   // @TODO Check if this is required.
   //unset($state['tpps_submission_export_site']);
 

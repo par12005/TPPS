@@ -2466,7 +2466,7 @@ class Submission {
     // @TODO Should lastest version be the default?
     // @todo Could SubmissionVersion::get() be used here?
     return $this->state['saved_values'][SubmissionVersion::FORM_KEY]
-      ?? SubmissionVersion::VERSION_1;
+      ?? SubmissionVersion::V1;
   }
 
   /**

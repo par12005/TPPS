@@ -25,7 +25,7 @@ module_load_include('inc', 'tpps', 'includes/submission_form_version_changes');
  * ----------------------------------------------------------------------------
  * What is Submission Version?
  * 1. Versions are integers and start from '1' which is
- *    defined as SubmissionVersion::VERSION_1 constant.
+ *    defined as SubmissionVersion::V1 constant.
  * 2. Each version changes must be listed in function
  *    tpps_submission_interface_get_change_list().
  * 3. Version's value is stored under $submission_state['saved_values'] because
@@ -136,10 +136,12 @@ class SubmissionVersion {
   // Name of the key which stores Submission Form version.
   const FORM_KEY = 'submission_form_version';
 
+  // Versions.
   // Number of the initial version of Form State Array.
   // This value will be used to apply incremental changes (patches).
-  // Need to avoid 'magic numbers'.
-  const VERSION_1 = 1;
+  const V1 = 1;
+  const V2 = 2;
+  const V3 = 3;
 
   /**
    * Checks if Debug Mode is enabled.
@@ -269,7 +271,7 @@ class SubmissionVersion {
 
     // Skip if current version is '1'.
     $current_version = static::get($submission_state);
-    $final_version = $final_version ?? static::VERSION_1;
+    $final_version = $final_version ?? static::V1;
     $result = $submission_state;
 
     if ($current_version == $final_version) {
@@ -432,8 +434,8 @@ class SubmissionVersion {
         case 'downgrade':
           // @TODO Minor. Remove after testing those extra check
           // cause it's overkill but left to be sure.
-          $version = static::VERSION_1;
-          if ($final_version > static::VERSION_1) {
+          $version = static::V1;
+          if ($final_version > static::V1) {
             $version = $final_version - 1;
           }
           break;

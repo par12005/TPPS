@@ -102,10 +102,10 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       'snps-assay',
       // Assay Design and subfields.
       'assay-design',
-      // 'assay-design-columns',
-      // 'assay-design-no-header',
-      // 'assay-design-empty',
-      // 'assay-design-groups',
+      'assay-design-columns',
+      'assay-design-no-header',
+      'assay-design-empty',
+      'assay-design-groups',
       // SNP Association and columns.
       'snps-association',
       'snps-association-columns',
@@ -203,10 +203,10 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
     }
   }
   // End of Verion 2 Dynamic Changes.
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Version 3. Dynamyc changes.
-  $v = 3;
-  $version_change_list[$v] = [];
+  $version_change_list[SubmissionVersion::V3] = [];
   // Assay Design. v2 -> v3.
   if (!empty($form_state['saved_values'][TPPS_PAGE_1])) {
     $page1_values = $form_state['saved_values'][TPPS_PAGE_1];
@@ -217,27 +217,38 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       $genotype_parents = [
         'saved_values', TPPS_PAGE_4, $organism_key, 'genotype',
       ];
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Move 'Assay Design File' field into sub-fieldset.
       // See 'AssayDesignCitation::PARENT_FIELDSET'.
-      $version_change_list[$v]['move'][AssayDesign::DOM_NAME] = [
-        'source' => array_merge(
-          $genotype_parents,
-          [AssayDesign::SNPS_FIELDSET, AssayDesign::DOM_NAME]
-        ),
-        'target' => array_merge($genotype_parents,
-          [
-            AssayDesign::SNPS_FIELDSET,
-            AssayDesign::PARENT_FIELDSET,
-            AssayDesign::DOM_NAME,
-          ]
-        ),
+      $assay_design_list = [
+        'assay-design',
+        'assay-design-columns',
+        'assay-design-no-header',
+        'assay-design-empty',
+        'assay-design-groups',
       ];
+      foreach ($assay_design_list as $field_name) {
+        $version_change_list[SubmissionVersion::V3]['move'][$field_name] = [
+          'source' => array_merge(
+            $genotype_parents,
+            [AssayDesign::SNPS_FIELDSET, $field_name]
+          ),
+          'target' => array_merge($genotype_parents,
+            [
+              AssayDesign::SNPS_FIELDSET,
+              AssayDesign::PARENT_FIELDSET,
+              $field_name,
+            ]
+          ),
+        ];
+      }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Rename 'other/other' field.
-      $version_change_list[$v]['move']['other_other'] = [
+      $version_change_list[SubmissionVersion::V3]['move']['other_other'] = [
         'source' => array_merge($genotype_parents, ['other', 'other']),
         'target' => array_merge($genotype_parents, ['other', 'other_marker']),
       ];
-      $version_change_list[$v]['move']['other_other_marker_type'] = [
+      $version_change_list[SubmissionVersion::V3]['move']['other_other_marker_type'] = [
         'source' => array_merge($genotype_parents, ['other', 'other-marker']),
         'target' => array_merge(
           $genotype_parents,
@@ -246,7 +257,7 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       ];
       // New fields.
       // Format: field_name => full path including field name.
-      $version_change_list[$v]['create'] = [
+      $version_change_list[SubmissionVersion::V3]['create'] = [
         [
           'field_name' => 'paper-doi',
           'parents' => [
@@ -272,7 +283,7 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       // @TODO Minor. Rename into 'remove'?
       // See also Submission::purifySharedState() where 'unset' action used to
       // reduce size of the SharedState array.
-      $version_change_list[$v]['unset'] = [
+      $version_change_list[SubmissionVersion::V3]['unset'] = [
         [
           'field_name' => 'assay-citation',
           // Field was replaced with 'Assay Desigin Citation' fieldset.
