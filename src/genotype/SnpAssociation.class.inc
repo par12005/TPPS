@@ -445,6 +445,10 @@ class SnpAssociation extends FileField {
         );
       }
 
+      // Validation rule:
+      // The columns ‘Associated trait’ should only contain values also
+      // present in the ‘Phenotype’ file. Trait names in a phenotype value
+      // are header values.
       $missing_items = static::matchColumn(
         $organism_index,
         $form_state,

@@ -172,14 +172,16 @@ class AssayDesign extends FileField {
    * Validates file field.
    *
    * Validation rules:
-   *
-   * For ‘SNP Association' file:
-   * 1. Optional and shouldn't be required to process ‘Assay Design’ file.
-   * 2. Column 'SNP_ID' must match with 'SNP_ID' column in 'Assay Design' file.
+   *  For ‘SNP Association' file:
+   *   1. Optional and shouldn't be required to process ‘Assay Design’ file.
+   *   2. Column 'SNP_ID' must match with 'SNP_ID' column in 'Assay Design' file.
+   *   3. The columns ‘Associated trait’ should only contain values also present
+   *      in the ‘Phenotype’ file.
+   *      Trait names in a phenotype value are header values.
    *
    * For ‘SNP Assay' file:
-   * 1. Required to process 'Assay Design' file.
-   * 2. Column 'SNP_ID' must match with column 'SNP_ID' in 'Assay Design' file.
+   *  1. Required to process 'Assay Design' file.
+   *  2. Column 'SNP_ID' must match with column 'SNP_ID' in 'Assay Design' file.
    *
    * @param int $organism_index
    *   Ordinal organism number on page.
