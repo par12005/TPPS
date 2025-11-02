@@ -378,7 +378,7 @@ class PhenotypeMeta extends FileField {
       'phenotype',
       'metadata-columns',
     ];
-    return tpps_array_get_value($form_state, $parents);
+    return TppsArray::getValue($form_state, $parents);
   }
 
   /**
@@ -400,7 +400,7 @@ class PhenotypeMeta extends FileField {
       'phenotype',
       'metadata-no-header',
     ];
-    return tpps_array_get_value($form_state, $parents);
+    return TppsArray::getValue($form_state, $parents);
   }
 
   /**
@@ -421,7 +421,7 @@ class PhenotypeMeta extends FileField {
     $organism_key = 'organism-' . $organism_index;
     // @todo Replace with PhenotypeMeta::getFileId() when branch
     // VS/assay_design_column_data_type will be merged.
-    $fid = tpps_array_get_value($form_state,
+    $fid = TppsArray::getValue($form_state,
       ['saved_values', TPPS_PAGE_4, $organism_key, 'phenotype', 'metadata']
     );
     $selected = static::getColumnDataTypes($form_state, $organism_index);

@@ -1306,7 +1306,8 @@ function tpps_form_validate_required_field($element, $form_state) {
     empty($element['#states']['required'])
     // Skip this validation when form just saved.
     // @TODO Add '#name' to button Save and use it's name instead of label.
-    || tpps_array_get_value($form_state, ['clicked_button', '#value']) == 'Save'
+    
+    || TppsArray::getValue($form_state, ['clicked_button', '#value']) == 'Save'
   ) {
     return;
   }

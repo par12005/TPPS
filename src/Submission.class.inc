@@ -2605,7 +2605,7 @@ class Submission {
    * @todo Use 'TppsArray' class instead of 'tpps_array_*()'.
    */
   public function getStudyDataType() {
-    return tpps_array_get_value($this->state,
+    return TppsArray::getValue($this->state,
       ['saved_values', TPPS_PAGE_2, 'data_type']
     );
   }
@@ -2675,7 +2675,7 @@ class Submission {
       );
       // '0' means manually added phenotype.
       // '1' - metadata file was uploaded.
-      $is_metadata_in_file = tpps_array_get_value($this->state,
+      $is_metadata_in_file = TppsArray::getValue($this->state,
         ['saved_values', TPPS_PAGE_4, $organism_key, 'phenotype', 'check']
       );
       if ($is_metadata_in_file) {
@@ -2701,7 +2701,7 @@ class Submission {
       }
       else {
         // Manually added phenotypes.
-        $phenotype_number = tpps_array_get_value($this->state,
+        $phenotype_number = TppsArray::getValue($this->state,
           [
             'saved_values', TPPS_PAGE_4, $organism_key, 'phenotype',
             'phenotypes-meta', 'number'
@@ -2709,13 +2709,13 @@ class Submission {
         );
         for ($j = 1; $j <= $phenotype_number; $j++) {
           // Note; value '0' means no synonym was found.
-          $synonym_id = tpps_array_get_value($this->state,
+          $synonym_id = TppsArray::getValue($this->state,
             [
               'saved_values', TPPS_PAGE_4, $organism_key, 'phenotype',
               'phenotypes-meta', $j, 'synonym_id',
             ]
           );
-          $name = tpps_array_get_value($this->state,
+          $name = TppsArray::getValue($this->state,
             [
               'saved_values', TPPS_PAGE_4, $organism_key, 'phenotype',
               'phenotypes-meta', $j, 'name',
