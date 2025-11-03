@@ -5067,11 +5067,13 @@ function tpps_genotype_vcf_processing_batch_some_features_insert(&$settings, $cu
     // $sql .= ' ON CONFLICT (organism_id, uniquename, type_id) DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
     // $sql .= ' ON CONFLICT (organism_id, uniquename) where type_id = 1491 DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
     
-    // This gives error: 
-    $sql .= ' ON CONFLICT (organism_id, uniquename) DO UPDATE SET uniquename=EXCLUDED.uniquename, type_id=EXCLUDED.type_id RETURNING feature_id, uniquename';
-
+    // This gives error: Invalid column reference: 7 ERROR:  there is no unique or exclusion constraint matching the ON CONFLICT specification
+    // $sql .= ' ON CONFLICT (organism_id, uniquename) DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
+    $sql .= ' ON CONFLICT (organism_id, uniquename) where type_id in (1205, 1887, 2586, 54732, 54733, 54739) DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
+    // ON CONFLICT (organism_id, uniquename) where type_id in (1205, 1887, 2586, 54732, 54733, 54739)
     
     if ($variant_index > 0) {
+      print_r($sql . "\n");
       $results_feature_inserts = db_query($sql);
     }
     if ($log_detailed) {
@@ -5490,6 +5492,20 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
       $while_mem_start = memory_get_usage();
 
+      // Cache the indel_cvterm_id
+      $indel_cvterm_id = NULL;
+      $indel_cvterm_id_results = chado_query("SELECT cvterm_id FROM chado.cvterm WHERE name ILIKE 'indel' LIMIT 1");
+      foreach ($indel_cvterm_id_results as $indel_cvterm_row) {
+        $indel_cvterm_id = $indel_cvterm_row->cvterm_id;
+      }
+
+      // Cache the indel_cvterm_id
+      $snp_cvterm_id = NULL;
+      $snp_cvterm_id_results = chado_query("SELECT cvterm_id FROM chado.cvterm WHERE name ILIKE 'SNP' LIMIT 1");
+      foreach ($snp_cvterm_id_results as $snp_cvterm_row) {
+        $snp_cvterm_id = $snp_cvterm_row->cvterm_id;
+      } 
+
       // Keeps track of variant_name connection to src_feature_name + featureloc
       $features_variant_data = [];
       while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
@@ -5589,10 +5605,12 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
           $marker_type_cvterm_id = NULL;
           if ($marker_type == 'INDEL') {
-            $marker_type_cvterm_id = tpps_load_cvterm('indel')->cvterm_id;
+            // $marker_type_cvterm_id = tpps_load_cvterm('indel')->cvterm_id;
+            $marker_type_cvterm_id = $indel_cvterm_id;
           }
           else {
-            $marker_type_cvterm_id = tpps_load_cvterm('snp')->cvterm_id;
+            // $marker_type_cvterm_id = tpps_load_cvterm('snp')->cvterm_id;
+            $marker_type_cvterm_id = $snp_cvterm_id;
           }
           // echo("INDEL CHECK TIME: " . floatval($time_end_indel_check - $time_start_indel_check) . " ms\n");
 
