@@ -1718,4 +1718,52 @@ abstract class FileField {
     return $static_cache[$key];
   }
 
+  /**
+   * Gets header column index by column name.
+   *
+   * Usage example:
+   *   $a='TGDR1200';
+   *   $s = new Submission($a);
+   *   SnpAssay::getHeaderIndex(1, $s->state, 'SNP_ID');
+   *
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   * @param array $form_state
+   *   Drupal Form State array.
+   * @param string $column_name
+   *   Name of the column used in file's header.
+   *
+   * @return mixed
+   *   Returns integer column index.
+   *   Returns NULL when $column_name wasn't specified or wasn't found.
+   *
+   * @TODO Do not use for fields where column data type could be selected.
+   * @TODO Some files has no header. Check this
+   */
+  public static function getHeaderIndex($organism_index, array $form_state, $column_name) {
+    if (empty($column_name)) {
+      return NULL;
+    }
+    $fid = static::getFileId($organism_index, $form_state);
+    if ($file = tpps_file_load($fid)) {
+      // @TODO REplace with own implementation.
+      $header = tpps_file_headers($fid);
+    }
+    $assay_snp_name_col = 0;
+    $assay_snp_name_col_found = FALSE;
+    foreach ($header as $key => $value) {
+      if (stripos(strtolower($value), $column_name) !== FALSE) {
+        $assay_snp_name_col_found = TRUE;
+        break;
+      }
+      $assay_snp_name_col = $assay_snp_name_col + 1;
+    }
+    if ($assay_snp_name_col_found) {
+      return (int) $assay_snp_name_col;
+    }
+    else {
+      return NULL;
+    }
+  }
+
 }
