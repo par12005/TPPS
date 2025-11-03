@@ -172,6 +172,21 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
       ['@pid' => $submission->sharedState['ids']['project_id']],
       TRIPAL_INFO
     );
+    // When Tripal job finished with error (wasn't complete with suceess)
+    // then SharedState['ids']['project_id'] will be empty and function
+    // tpps_submission_clear_db() will not clear correctly DB.
+    // Those not removed records lead to errors like:
+    // "DETAIL:  Key (project_id, fid)=(3560, 21149) already exists.
+    // [site https://tgwebdev.cam.uchc.edu] [TRIPAL ERROR] [TRIPAL_JOB] [ERROR]
+    // Error message: SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate
+    // key value violates unique constraint
+    // "tpps_project_file_managed_tpps_project_file_managed_c1_key"DETAIL:
+    // Key (project_id, fid)=(3560, 21149) already exists."
+    //
+    // Other solution is to call function tpps_submission_clear_db() but to
+    // get latest changes we need to save current state of the $submission object.
+    tpps_project_clear_db($submission->sharedState['ids']['project_id']);
+
     tpps_tripal_entity_publish('Project',
       [
         $submission->sharedState['title'],

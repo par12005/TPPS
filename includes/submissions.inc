@@ -758,9 +758,58 @@ function tpps_submission_full_clear_db($project_id) {
 
   echo "Delete the temporary feature_ids_$project_id table...\n";
   chado_query("DROP TABLE IF EXISTS chado.feature_ids_" . $project_id, []);
-
 }
 
+/**
+ * Removes project's data in the database.
+ *
+ * @param int $project_id
+ *   Project Id.
+ * @param mixed $verbose
+ *   Default is TRUE. When TRUE log messages using tpps_log() will be shown.
+ */
+function tpps_project_clear_db($project_id = NULL, $verbose = TRUE) {
+  if (is_null($project_id)) {
+    throw new Exception('Project Id is required.');
+  }
+  $data = [
+    'chado' => [
+      'project_organism',
+      'project_pub',
+      'projectprop',
+      'genotype_call',
+    ],
+    'public' => [
+      'tpps_project_file_managed',
+    ],
+  ];
+
+  $message = 'Cleared "@table_name" for project @project_id';
+  foreach ($data as $schema => $table_list) {
+    foreach ($table_list as $table_name) {
+      if ($schema == 'chado') {
+        $sql = "DELETE FROM $table_name WHERE project_id = $project_id";
+        //chado_query($sql);
+        $num_deleted = db_delete($schema . '.' . $table_name)
+          ->condition('project_id', $project_id)
+          ->execute();
+      }
+      else {
+        $num_deleted = db_delete($schema . '.' . $table_name)
+          ->condition('project_id', $project_id)
+          ->execute();
+      }
+      if ($verbose) {
+        $params = ['@table_name' => $table_name, '@project_id' => $project_id];
+        if (!is_null($num_deleted)) {
+          $params['@num_deleted'] = $num_deleted;
+          $message .= '. Deleted: @num_deleted rows';
+        }
+        tpps_log($message, $params);
+      }
+    }
+  }
+}
 
 /**
  * Clears submission data from the database.
@@ -796,15 +845,9 @@ function tpps_submission_clear_db($accession) {
   $stocks_sql = "SELECT stock_id FROM chado.project_stock WHERE project_id = $project_id";
   echo $stocks_sql . "\n";
   chado_query("UPDATE chado.project_dbxref SET is_current = FALSE WHERE project_id = $project_id");
-  echo "DELETE chado.project_organism values for project...\n";
-  chado_query("DELETE FROM chado.project_organism WHERE project_id = $project_id");
-  echo "DELETE chado.project_pub values for project...\n";
-  chado_query("DELETE FROM chado.project_pub WHERE project_id = $project_id");
-  echo "DELETE chado.projectprop values for project...\n";
-  chado_query("DELETE FROM chado.projectprop WHERE project_id = $project_id");
-  echo "DELETE chado.projectprop values for project...\n";
-  db_query("DELETE FROM public.tpps_project_file_managed WHERE project_id = $project_id");
-  echo "DELETE tpps_project_file_managed values for project...\n";
+
+  tpps_project_clear_db($project_id);
+
   chado_query("DELETE FROM chado.phenotype_cvterm WHERE phenotype_id IN (SELECT phenotype_id from chado.stock_phenotype WHERE stock_id in ($stocks_sql))");
   echo "DELETE chado.phenotype_to_synonym values for project...\n";
   chado_query("DELETE FROM chado.phenotype_to_synonym WHERE phenotype_id IN (SELECT phenotype_id FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql))");
@@ -821,9 +864,7 @@ function tpps_submission_clear_db($accession) {
       chado_query("DELETE FROM $table WHERE study_accession = '" . strtoupper($accession) . "';");
     }
   }
-  echo "DELETE chado.genotype_call values for project...\n";
-  chado_query("DELETE FROM chado.genotype_call WHERE project_id = $project_id");
-  echo "DELETE chado.stock_genotype values for project...\n";
+  tpps_log('DELETE chado.stock_genotype values for project...');
   chado_query("DELETE FROM chado.stock_genotype WHERE stock_id IN ($stocks_sql)");
   echo "DELETE chado.stock_phenotype values for project...\n";
   chado_query("DELETE FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql)");
