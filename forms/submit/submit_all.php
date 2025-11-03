@@ -2465,7 +2465,7 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
  *   Options array containing:
  *   - study_accession: The accession of the study.
  */
-function tpps_generate_vcf_from_assay_and_assay_design(array &$options, array &$form_state) {
+function tpps_generate_vcf_from_assay_and_assay_design(array &$options, array &$shared_state) {
   echo "Generating VCF from assay and assay design files...\n";
   // Variables needed by the nextflow command
   $study_accession = $options['study_accession'];
@@ -2480,8 +2480,7 @@ function tpps_generate_vcf_from_assay_and_assay_design(array &$options, array &$
     $four_letter_code = $code;
   }
 
-  // @TODO Replace $form_state with $shared_state.
-  $selected_columns = AssayDesign::getSelectedColumns($options['organism_index'], $form_state);
+  $selected_columns = AssayDesign::getSelectedColumns($options['organism_index'], $shared_state);
 
   // Get column number from assay file for snp_id
   $assay_snp_name_col = 0;
@@ -2675,41 +2674,41 @@ sleep(10); // Wait for 10 seconds to ensure the job is completed
 
   }
 
-// TODO: Perform polling to see when job completes and check for vcf.gz file
-// and vcf.gz.tbi file.
-$vcf_file_location = $store_directory . '/assay_sort.vcf.gz';
-$vcf_tbi_file_location = $store_directory . '/assay_sort.vcf.gz.tbi';
-echo "Check to see if the VCF file was created at $vcf_file_location\n";
-echo "Check to see if the VCF TBI file was created at $vcf_tbi_file_location\n";
-$options['nextflow_vcf_maker_vcf_file_location'] = NULL;
-$options['nextflow_vcf_maker_success'] = FALSE; // Default to false
-if (file_exists($vcf_file_location) and file_exists($vcf_tbi_file_location)) {
-  tpps_log("VCF file location: $vcf_file_location", []);
-  echo "VCF file location: $vcf_file_location\n";
-  tpps_log("VCF TBI file location: $vcf_tbi_file_location", []);
-  echo "VCF TBI file location: $vcf_tbi_file_location\n";
-  echo "VCF file was created successfully.\n";
-  // Add the vcf file location to the shared state so that it can be processed by the vcf processing function.
+  // TODO: Perform polling to see when job completes and check for vcf.gz file
+  // and vcf.gz.tbi file.
+  $vcf_file_location = $store_directory . '/assay_sort.vcf.gz';
+  $vcf_tbi_file_location = $store_directory . '/assay_sort.vcf.gz.tbi';
+  echo "Check to see if the VCF file was created at $vcf_file_location\n";
+  echo "Check to see if the VCF TBI file was created at $vcf_tbi_file_location\n";
+  $options['nextflow_vcf_maker_vcf_file_location'] = NULL;
+  $options['nextflow_vcf_maker_success'] = FALSE; // Default to false
+  if (file_exists($vcf_file_location) and file_exists($vcf_tbi_file_location)) {
+    tpps_log("VCF file location: $vcf_file_location", []);
+    echo "VCF file location: $vcf_file_location\n";
+    tpps_log("VCF TBI file location: $vcf_tbi_file_location", []);
+    echo "VCF TBI file location: $vcf_tbi_file_location\n";
+    echo "VCF file was created successfully.\n";
+    // Add the vcf file location to the shared state so that it can be processed by the vcf processing function.
 
-  if (!isset($form_state['saved_values'][TPPS_PAGE_4]['organism-1']['genotype'])) {
-    $form_state['saved_values'][TPPS_PAGE_4]['organism-1']['genotype'] = [
-      'files' => [],
-    ];
+    if (!isset($shared_state['saved_values'][TPPS_PAGE_4]['organism-1']['genotype'])) {
+      $shared_state['saved_values'][TPPS_PAGE_4]['organism-1']['genotype'] = [
+        'files' => [],
+      ];
+    }
+    $shared_state['saved_values'][TPPS_PAGE_4]['organism-1']['genotype']['files']['file-type'] == TPPS_GENOTYPING_FILE_TYPE_VCF;
+    $shared_state['saved_values'][TPPS_PAGE_4]['organism-1']['genotype']['files']['local_vcf'] = $vcf_file_location;
+    // print_r($shared_state['saved_values'][TPPS_PAGE_4]);
+    $options['nextflow_vcf_maker_success'] = TRUE;
+    $options['nextflow_vcf_maker_vcf_file_location'] = $vcf_file_location;
   }
-  $form_state['saved_values'][TPPS_PAGE_4]['organism-1']['genotype']['files']['file-type'] == TPPS_GENOTYPING_FILE_TYPE_VCF;
-  $form_state['saved_values'][TPPS_PAGE_4]['organism-1']['genotype']['files']['local_vcf'] = $vcf_file_location;
-  // print_r($form_state['saved_values'][TPPS_PAGE_4]);
-  $options['nextflow_vcf_maker_success'] = TRUE;
-  $options['nextflow_vcf_maker_vcf_file_location'] = $vcf_file_location;
-}
-else {
-  throw new Exception("FATAL: No valid files were created during VCF generation script created at $SCRIPT_LOCATION. "
-  . "Please run it manually on the cluster to generate the VCF file.");
-}
+  else {
+    throw new Exception("FATAL: No valid files were created during VCF generation script created at $SCRIPT_LOCATION. "
+    . "Please run it manually on the cluster to generate the VCF file.");
+  }
 
-// TODO: Add vcf file location to the shared state so that it can be processed by the vcf processing function.
+  // TODO: Add vcf file location to the shared state so that it can be processed by the vcf processing function.
 
-// TODO: Alter the vcf processiong function to detect overlaps and create synonyms (use ingestion docs)
+  // TODO: Alter the vcf processiong function to detect overlaps and create synonyms (use ingestion docs)
 }
 
 /**
