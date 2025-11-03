@@ -733,10 +733,7 @@ abstract class FileField {
   /**
    * Gets list of user selected data types for columns.
    *
-   * Note:
-   * User selection is stored in format: ['A' => '1', 'B' => '4'];
-   * But returned value uses array_flip().
-   * Could be used for just submitted form.
+   * To get column letter: static::getColumnLetter();
    *
    * Note:
    * Result could have extra (not required) columns because it uses user's
@@ -749,7 +746,7 @@ abstract class FileField {
    *
    * @return array
    *   Returns list of column's data types selected by user in flipped format.
-   *   E.g., ['1' => 'A', '4' => 'B'].
+   *   E.g., ['A' => 1, 'B' => 4, 'C' => 2].
    */
   public static function getSelectedColumns($organism_index, array &$form_state) {
     $organism_key = 'organism-' . $organism_index;
@@ -776,6 +773,33 @@ abstract class FileField {
       }
     }
     return $selected_columns;
+  }
+
+  /**
+   * Gets column letter by data type index.
+   *
+   * Note: First column has letter 'A'.
+   * Usage example:
+   *   $a='TGDR1200';
+   *   $s = new Submission($a);
+   *   AssayDesign::getColumnLetter(1, $s->state, AssayDesign::DATA_TYPE_SNP_ID);
+   *
+   * @param int $organism_index
+   *   Ordinal organism number at page.
+   * @param array $form_state
+   *   Drupal Form API State Array.
+   * @param int $data_type_index
+   *   Index of the data type.
+   *   See file field class's constants DATA_TYPE_*.
+   *
+   * @return string
+   *   Returns column letter.
+   */
+  public static function getColumnLetter($organism_index, array &$form_state, $data_type_index) {
+    return array_search(
+      $data_type_index,
+      static::getSelectedColumns($organism_index, $form_state)
+    );
   }
 
   /**
@@ -1664,6 +1688,34 @@ abstract class FileField {
       'PhenotypeIso',
       'PhenotypeMeta',
     ];
+  }
+
+  /**
+   * Gets file path.
+   *
+   * Uses static caching.
+   *
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   * @param array $form_state
+   *   Drupal Form State array.
+   * @param bool $reset
+   *   Flag to reset cache.
+   *
+   * @return string
+   *   Returns absolute path to file.
+   */
+  public static function getFilePath($organism_index, array $form_state, $reset = FALSE) {
+    $unique = [$form_state['accession'], static::DOM_NAME, $organism_index];
+    $key = implode('_', $unique);
+    $static_cache = &drupal_static(__METHOD__);
+    if ($reset || !isset($static_cache[$key])) {
+      $fid = static::getFileId($organism_index, $form_state);
+      if (!empty($fid) && $file = tpps_file_load($fid)) {
+        $static_cache[$key] = tpps_get_location($file->uri);
+      }
+    }
+    return $static_cache[$key];
   }
 
 }
