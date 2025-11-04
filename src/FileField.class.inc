@@ -1777,29 +1777,78 @@ abstract class FileField {
    *   Ordinal number of organism at page.
    * @param array $form_state
    *   Drupal Form State array.
-   * @param string $column_name
-   *   Name of the column used in file's header.
+   * @param string $column_key
+   *   Column key could be:
+   *   1. Integer column's data type key (see class's constants 'DATA_TYPE_')
+   *      for file field which has column data type selector.
+   *      E.g., 'Assay Design', 'SNP Association' and etc.
+   *      Note: usually '0' not used for data type index but means not
+   *      selected default value.
+   *   2. String column name from file's header for file fields which doesn't
+   *      allow to select column data type. E.g., 'SNP Assay'.
    *
    * @return mixed
-   *   Returns integer column index.
+   *   Returns integer column index where 0 means 1st column.
+   *   Returns FALSE when column wasn't found.
    *   Returns NULL when:
-   *   1. $column_name wasn't specified
+   *   1. $column_key wasn't specified
    *   2. File has no header.
-   *   3. Column wasn't found.
    */
-  public static function getHeaderIndex($organism_index, array $form_state, $column_name) {
+  public static function getHeaderIndex($organism_index, array $form_state, $column_key = NULL) {
     $header = static::getFileHeader($organism_index, $form_state);
     if (
-      !empty($column_name)
+      !is_null($column_key)
       // Empty header could be when file wasn't found or file has no header.
       && !empty($header)
     ) {
-      $header = array_map('strtolower', array_values($header));
-      return array_search(strtolower($column_name), $header);
+      // Note: Data Type indexes start from 1.
+      if (
+        static::hasColumnDataTypeSelector()
+        && is_numeric($column_key)
+        && $column_key > 0
+      ) {
+        // File Field has column data type selector.
+        // Column key is an integer column data type key.
+        $letter = static::getColumnLetter($organism_index, $form_state, $column_key);
+        return static::columnLetterToNumber($letter);
+      }
+      else {
+        // No column data type selector.
+        // $column_key is a string with column name from the header.
+        // Note: column index could be string, zero and negative integers.
+        $header = array_map('strtolower', array_values($header));
+        return array_search(strtolower($column_key), $header);
+      }
     }
     else {
       return NULL;
     }
+  }
+
+  /**
+   * Converts letters into number.
+   *
+   * Used for file field column letter like 'AA', 'AAX' and etc.
+   * Note: Usually A gives 1 but we use index '0' for 1st column.
+   *
+   * Source: https://stackoverflow.com/a/55226643
+   *
+   * @param string $letters
+   *   Letters.
+   *
+   * @return int
+   *   Returns number. For example: A = 0, B = 1 and etc.
+   */
+  public static function columnLetterToNumber($letters) {
+    if (empty($letters)) {
+      return FALSE;
+    }
+    $alphabet = range('A', 'Z');
+    $number = 0;
+    foreach (str_split(strrev($letters)) as $key => $char) {
+      $number = $number + (array_search($char, $alphabet) + 1) * pow(count($alphabet), $key);
+    }
+    return $number - 1;
   }
 
 }
