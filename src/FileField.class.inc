@@ -111,6 +111,17 @@ abstract class FileField {
   }
 
   /**
+   * Checks if file field has column data type selector.
+   *
+   * @return bool
+   *   Return TRUE for file field which has column data type selector and
+   *   FALSE otherwise.
+   */
+  public static function hasColumnDataTypeSelector() {
+    return !empty(static::getColumnOptions());
+  }
+
+  /**
    * Gets parents of the field.
    *
    * See AssayDesign::getParents() for example.
