@@ -1570,13 +1570,19 @@ abstract class FileField {
    *
    * @return array
    *   Returns 1st row of file (header).
+   *   Returns empty array when:
+   *   1. File wasn't found.
+   *   2. File has no header.
+   *
+   * @TODO Return NULL instead of empty array.
    */
   public static function getFileHeader($organism_index, array &$form_state) {
     $header = [];
-    if ($fid = static::getFileId($organism_index, $form_state)) {
-      // @todo Use real value of the 'no-header' field.
-      $no_header = FALSE;
-      $header = tpps_file_headers($fid, $no_header);
+    if (
+      static::hasHeader($organism_index, $form_state)
+      && $fid = static::getFileId($organism_index, $form_state)
+    ) {
+      $header = tpps_file_headers($fid, $no_header = FALSE);
     }
     return $header;
   }
@@ -1622,7 +1628,7 @@ abstract class FileField {
    *   Drupal Form State.
    *
    * @return bool
-   *   Return TRUE when file has no header and FALSE otherwise.
+   *   Returns TRUE when file has no header and FALSE otherwise.
    */
   public static function getNoHeaderValue($organism_index, array $form_state) {
     $parents = static::getParents($organism_index, $form_state,
@@ -1632,6 +1638,25 @@ abstract class FileField {
     return (bool) (TppsArray::getValue($form_state['input'], $parents)
       ?? TppsArray::getValue($form_state['values'], $parents)
       ?? FALSE);
+  }
+
+  /**
+   * Checks if file has header.
+   *
+   * Note: We can't check if th first row is actually a header
+   * but only study submitter could specify it using dropdown menu with title
+   * 'Does your file have a header row?'.
+   *
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   * @param array $form_state
+   *   Drupal Form State.
+   *
+   * @return bool
+   *   Returns TRUE when file has header and FALSE otherwise.
+   */
+  public static function hasHeader($organism_index, array $form_state) {
+    return !static::getNoHeaderValue($organism_index, $form_state);
   }
 
   /**
@@ -1721,8 +1746,13 @@ abstract class FileField {
   /**
    * Gets header column index by column name.
    *
+   * Notes:
+   * 1. Could be used for both: file fields with and without column data
+   *    type selection.
+   * 2. Indexes start from 0.
+   *
    * Usage example:
-   *   $a='TGDR1200';
+   *   $a = 'TGDR1200';
    *   $s = new Submission($a);
    *   SnpAssay::getHeaderIndex(1, $s->state, 'SNP_ID');
    *
@@ -1735,31 +1765,20 @@ abstract class FileField {
    *
    * @return mixed
    *   Returns integer column index.
-   *   Returns NULL when $column_name wasn't specified or wasn't found.
-   *
-   * @TODO Do not use for fields where column data type could be selected.
-   * @TODO Some files has no header. Check this
+   *   Returns NULL when:
+   *   1. $column_name wasn't specified
+   *   2. File has no header.
+   *   3. Column wasn't found.
    */
   public static function getHeaderIndex($organism_index, array $form_state, $column_name) {
-    if (empty($column_name)) {
-      return NULL;
-    }
-    $fid = static::getFileId($organism_index, $form_state);
-    if ($file = tpps_file_load($fid)) {
-      // @TODO REplace with own implementation.
-      $header = tpps_file_headers($fid);
-    }
-    $assay_snp_name_col = 0;
-    $assay_snp_name_col_found = FALSE;
-    foreach ($header as $key => $value) {
-      if (stripos(strtolower($value), $column_name) !== FALSE) {
-        $assay_snp_name_col_found = TRUE;
-        break;
-      }
-      $assay_snp_name_col = $assay_snp_name_col + 1;
-    }
-    if ($assay_snp_name_col_found) {
-      return (int) $assay_snp_name_col;
+    $header = static::getFileHeader($organism_index, $form_state);
+    if (
+      !empty($column_name)
+      // Empty header could be when file wasn't found or file has no header.
+      && !empty($header)
+    ) {
+      $header = array_map('strtolower', array_values($header));
+      return array_search(strtolower($column_name), $header);
     }
     else {
       return NULL;
