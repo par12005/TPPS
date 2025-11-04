@@ -64,6 +64,7 @@ class AssayDesign extends FileField {
   const DATA_TYPE_POSITION = 3;
   const DATA_TYPE_FLANK_SEQUENCE = 4;
   const DATA_TYPE_REVERSE_FLANK_SEQUENCE = 5;
+  const DATA_TYPE_QUALITY_SCORE = 6;
 
   /**
    * Builds set of form fields for 'Assay Design Citation' feature.
@@ -670,6 +671,8 @@ class AssayDesign extends FileField {
   public static function getColumnOptions() {
     // List of data types to be used in the dropdown list from Meghan.
     // https://plantcompgenomics.slack.com/archives/C05R396U4QK/p1730737064312679?thread_ts=1730430961.236099&cid=C05R396U4QK
+    // 'Qual' option:
+    // https://plantcompgenomics.slack.com/archives/C05R396U4QK/p1762254283851269
     return [
       0 => t('N/A'),
       static::DATA_TYPE_SNP_ID => t('SNP ID'),
@@ -677,6 +680,7 @@ class AssayDesign extends FileField {
       static::DATA_TYPE_POSITION => t('Position'),
       static::DATA_TYPE_FLANK_SEQUENCE => t('Flank sequence'),
       self::DATA_TYPE_REVERSE_FLANK_SEQUENCE => t('Reverse Flank sequence'),
+      self::DATA_TYPE_QUALITY_SCORE => t('Quality Score'),
     ];
   }
 
