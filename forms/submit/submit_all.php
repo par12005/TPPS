@@ -2148,10 +2148,12 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
 
     $options['type'] = 'snp';
     $options['headers'] = tpps_file_headers($snp_fid);
-    $options['headers_assay'] = tpps_file_headers($snp_fid);
-    echo "Headers Assay:\n";
-    print_r($options['headers_assay']);
+    if ($dead_code ?? 0) {
+      $options['headers_assay'] = tpps_file_headers($snp_fid);
+      echo "Headers Assay:\n";
+      print_r($options['headers_assay']);
     echo "\n";
+    }
     $file_assay = tpps_file_load($snp_fid);
     $location_assay = tpps_get_location($file_assay->uri);
     $options['path_assay'] = $location_assay;
@@ -2317,13 +2319,6 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
     $options['headers_assay_design'] = tpps_file_headers($design_fid);
     echo "Headers Assay Design:\n";
     print_r($options['headers_assay_design']);
-    echo "\n";
-    $file_assay_design = tpps_file_load($design_fid);
-    $location_assay_design = tpps_get_location($file_assay_design->uri);
-    $options['path_assay_design'] = $location_assay_design;
-    echo "Path Assay Design:\n";
-    print_r($options['path_assay_design']);
-    echo "\n";
 
     // We must have an analysis_id to tie back to the srcfeature.
     if ($options['analysis_id'] != NULL) {
@@ -2401,13 +2396,17 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
       );
     }
 
-    if ($options['analysis_id'] != NULL and $options['path_assay'] != NULL and $options['path_assay_design'] != NULL) {
+    if (
+      !is_null($options['analysis_id'])
+      && !is_null($options['path_assay'])
+      // @TODO Could we check only fid without loading File object?
+      && !is_null(AssayDesign::getFilePath($organism_index, $shared_state))
+    ) {
       // Generate the VCF file from assay and assay design files.
       tpps_generate_vcf_from_assay_and_assay_design($options, $shared_state);
     }
-
-
   }
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // 'SSRs' and 'cpSSR' fields.
   // WARNING:
@@ -2466,11 +2465,12 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
  *   - study_accession: The accession of the study.
  */
 function tpps_generate_vcf_from_assay_and_assay_design(array &$options, array &$shared_state) {
+  $organism_index = $options['organism_index'];
   echo "Generating VCF from assay and assay design files...\n";
   // Variables needed by the nextflow command
   $study_accession = $options['study_accession'];
   $assay_path = $options['path_assay'];
-  $assay_design_path = $options['path_assay_design'];
+  $assay_design_path = AssayDesign::getFilePath($organism_index, $shared_state);
   $ref_genome = $options['ref-genome'];
   $assembly_version = $options['ref-genome-version'];
   $species = $options['ref-genome-species'];
@@ -2480,73 +2480,76 @@ function tpps_generate_vcf_from_assay_and_assay_design(array &$options, array &$
     $four_letter_code = $code;
   }
 
-  $selected_columns = AssayDesign::getSelectedColumns($options['organism_index'], $shared_state);
-
-  // Get column number from assay file for snp_id
-  $assay_snp_name_col = 0;
-  $assay_snp_name_col_found = FALSE;
-  foreach ($options['headers_assay'] as $key => $value) {
-    if (stripos($value, 'snp_id') !== FALSE) {
-      $assay_snp_name_col_found = TRUE;
-      break;
-    }
-    $assay_snp_name_col = $assay_snp_name_col + 1;
-  }
-  if ($assay_snp_name_col_found == FALSE) {
-    throw new Exception("ASSAY + ASSAY DESIGN TO VCF: SNP ID column not found in assay file. (required)");
+  // SNP Assay: Get column number for 'snp_id'.
+  // Note: 'SNP Assay' file field doesn't have column data type selector.
+  $assay_snp_name_col = SnpAssay::getHeaderIndex($organism_index, $shared_state, 'snp_id');
+  if (is_null($assay_snp_name_col) || $assay_snp_name_col === FALSE) {
+    $message = "ASSAY + ASSAY DESIGN TO VCF: 'SNP_ID' column not found in 'SNP Assay' file. (required)";
+    throw new Exception($message);
   }
 
-  $assay_design_snp_name_col = 'NA';
-  $assay_design_snp_name_col_found = FALSE;
-  $assay_design_snp_flank_col = 'NA'; // flanking sequence
-  $assay_design_snp_flank_col_found = FALSE;
-  $assay_design_snp_base_pos_col = 'NA'; // position
-  $assay_design_snp_base_pos_col_found = FALSE;
-  $assay_design_qual_col = 'NA';
-  $assay_design_qual_col_found = FALSE;
-  $assay_design_snp_chrom_col = 'NA'; // scaffold
-  $assay_design_snp_chrom_col_found = FALSE;
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Get column indexes (not letters).
+  $assay_design_snp_name_col = AssayDesign::getHeaderIndex(
+    $organism_index,
+    $shared_state,
+    AssayDesign::DATA_TYPE_SNP_ID
+  ) ?? 'NA';
+  $assay_design_snp_flank_col = AssayDesign::getHeaderIndex(
+    $organism_index,
+    $shared_state,
+    AssayDesign::DATA_TYPE_FLANK_SEQUENCE
+  ) ?? 'NA';
+  $assay_design_snp_rev_flank_col = AssayDesign::getHeaderIndex(
+    $organism_index,
+    $shared_state,
+    AssayDesign::DATA_TYPE_REVERSE_FLANK_SEQUENCE
+  ) ?? 'NA';
+  $assay_design_snp_base_pos_col = AssayDesign::getHeaderIndex(
+    $organism_index,
+    $shared_state,
+    AssayDesign::DATA_TYPE_POSITION
+  ) ?? 'NA';
+  $assay_design_qual_col = AssayDesign::getHeaderIndex(
+    $organism_index,
+    $shared_state,
+    AssayDesign::DATA_TYPE_QUALITY_SCORE
+  ) ?? 'NA';
+  $assay_design_snp_chrom_col = AssayDesign::getHeaderIndex(
+    $organism_index,
+    $shared_state,
+    AssayDesign::DATA_TYPE_SCAFFOLD
+  ) ?? 'NA';
 
-
-
-  $count = 0;
-  foreach ($options['headers_assay_design'] as $key => $value) {
-    if (stripos($value, 'snp_id') !== FALSE) {
-      $assay_design_snp_name_col = $count;
-      $assay_design_snp_name_col_found = TRUE;
-    }
-    else if (stripos($value, 'sequence') !== FALSE) {
-      $assay_design_snp_flank_col = $count;
-      $assay_design_snp_flank_col_found = TRUE;
-    }
-    else if (stripos($value, 'chrom') !== FALSE) {
-      $assay_design_snp_chrom_col = $count;
-      $assay_design_snp_chrom_col_found = TRUE;
-    }
-    else if (stripos($value, 'position') !== FALSE || stripos($value, 'pos') !== FALSE) {
-      $assay_design_snp_base_pos_col = $count;
-      $assay_design_snp_base_pos_col_found = TRUE;
-    }
-    else if (stripos($value, 'qual') !== FALSE) {
-      $assay_design_qual_col = $count;
-      $assay_design_qual_col_found = TRUE;
-    }
-    $count = $count + 1;
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Check required columns.
+  // Requirements should be at least one of the following:
+  // 1. SNP ID, scaffold, position
+  // 2. SNP ID, flank sequence
+  // 3. SNP ID, reverse flank sequence (not yet implemented)
+  // @TODO Implement 3rd case.
+  // Note: for some reasons (0 == 'NA') is TRUE so we have to use strict mode.
+  if ($assay_design_snp_name_col === 'NA') {
+    $message = "ASSAY + ASSAY DESIGN TO VCF: 'SNP ID' column not found in "
+      . "'Assay Design' file. (required)";
+    throw new Exception($message);
+  }
+  if (
+    (
+      $assay_design_snp_base_pos_col !== 'NA'
+      || $assay_design_snp_chrom_col !== 'NA'
+    )
+    && $assay_design_snp_flank_col !== 'NA'
+    && $assay_design_snp_rev_flank_col !== 'NA'
+  ) {
+    $message = "ASSAY + ASSAY DESIGN TO VCF: Either (Chromosome + Position) "
+      . "or (Flanking Sequence) or (Reverse Flanking Sequence) columns not "
+      . "found in 'Assay Design' file. (at least one group is required)";
+    throw new Exception($message);
   }
 
-  // SNP ID (required)
-  // Scaffold + Position (required or)
-  // the flanking sequence (required)
-  if ($assay_design_snp_name_col_found == FALSE) {
-    throw new Exception("ASSAY + ASSAY DESIGN TO VCF: SNP ID column not found in assay design file. (required)");
-  }
-  if (($assay_design_snp_chrom_col_found == TRUE and $assay_design_snp_base_pos_col_found == TRUE) or ($assay_design_snp_flank_col_found == TRUE)) {
-    // required columns for assay design file are found
-  }
-  else {
-    throw new Exception("ASSAY + ASSAY DESIGN TO VCF: Either (Chromosome + Position) or (Flanking Sequence) columns not found in assay design file. (at least one is required)");
-  }
-
+  // End of changes.
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   $store_directory = '/isg/treegenes/nextflow_workflows/' . $study_accession . '/new-study-pipeline/tpps-submitall/assay-to-vcf';
   $vcf_file_location = $store_directory . '/assay_sort.vcf.gz';
