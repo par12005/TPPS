@@ -805,8 +805,14 @@ abstract class FileField {
    *
    * @return string
    *   Returns column letter.
+   *   Returns FALSE when:
+   *   1. $data_type_index wasn't specified.
+   *   2. $data_type_index wasn't found in the list of the selected columns.
    */
-  public static function getColumnLetter($organism_index, array &$form_state, $data_type_index) {
+  public static function getColumnLetter($organism_index, array &$form_state, $data_type_index = NULL) {
+    if (is_null($data_type_index)) {
+      return FALSE;
+    }
     return array_search(
       $data_type_index,
       static::getSelectedColumns($organism_index, $form_state)
