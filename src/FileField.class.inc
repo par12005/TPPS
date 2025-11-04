@@ -1789,8 +1789,8 @@ abstract class FileField {
    *
    * @return mixed
    *   Returns integer column index where 0 means 1st column.
-   *   Returns FALSE when column wasn't found.
-   *   Returns NULL when:
+   *   Returns NULL when column wasn't found.
+   *   Returns FALSE when:
    *   1. $column_key wasn't specified
    *   2. File has no header.
    */
@@ -1810,18 +1810,19 @@ abstract class FileField {
         // File Field has column data type selector.
         // Column key is an integer column data type key.
         $letter = static::getColumnLetter($organism_index, $form_state, $column_key);
-        return static::columnLetterToNumber($letter);
+        $index = static::columnLetterToNumber($letter);
       }
       else {
         // No column data type selector.
         // $column_key is a string with column name from the header.
         // Note: column index could be string, zero and negative integers.
         $header = array_map('strtolower', array_values($header));
-        return array_search(strtolower($column_key), $header);
+        $index = array_search(strtolower($column_key), $header);
       }
+      return ($index === FALSE) ? NULL : $index;
     }
     else {
-      return NULL;
+      return FALSE;
     }
   }
 
