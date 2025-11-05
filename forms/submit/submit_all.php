@@ -348,7 +348,7 @@ function tpps_nextflow_new_study_pipeline(array &$form_state) {
   // 2. For further SECURITY, let's ensure there's no way someone can use an unsafe TGDR that contains '..'
   //    to traverse the directory
   $store_directory = str_ireplace('..', '', $store_directory);
-  exec('rm ' . $store_directory . '/*.log');
+  exec('rm -f ' . $store_directory . '/*.log');
 
   $output = [];
   $result_code = 0;
@@ -2562,7 +2562,7 @@ function tpps_generate_vcf_from_assay_and_assay_design(array &$options, array &$
 
 
     $store_directory = str_ireplace('..', '', $store_directory);
-    exec('rm ' . $store_directory . '/*.log');
+    exec('rm -f ' . $store_directory . '/*.log');
 
     $output = [];
     $result_code = 0;
@@ -2605,7 +2605,7 @@ rm -rf ~/.nextflow/assets/TreeGenes/new-study-pipeline
       'NEXTFLOW NEW STUDY PIPELINE SCRIPT LOCATION: @location',
       ['@location' => $SCRIPT_LOCATION]
     );
-    echo "Script location: $SCRIPT_LOCATION\n";
+    tpps_log("Script location: $SCRIPT_LOCATION", [], TRIPAL_DEBUG);
     file_put_contents($SCRIPT_LOCATION, $run_code);
     chmod($SCRIPT_LOCATION, 0755);
 
@@ -2617,11 +2617,10 @@ sbatch $SCRIPT_LOCATION
 EOF
 ", $output, $result_code);
 
-    print_r("Output: \n");
-    print_r($output);
-    print_r("Result code: $result_code\n");
+    tpps_log($output, "Output");
+    tpps_log($result_code, "Result code");
 
-    print_r("Waiting 20 seconds to make sure the job is submitted...\n");
+    tpps_log("Waiting 20 seconds to make sure the job is submitted...");
     // sleep(20); // Wait for 10 seconds to ensure the job is submitted
 
     while(!file_exists($store_directory . '/slurm_job_id.txt')) {
