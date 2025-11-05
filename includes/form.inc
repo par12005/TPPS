@@ -107,9 +107,10 @@ function tpps_form_add_buttons(array $form_bus) {
               => ['value' => TPPS_GENOTYPING_FILE_TYPE_VCF],
             ];
             for ($i = 2; $i <= $form_bus['organism_number']; $i++) {
+              $organism_key = 'organism-' . $i;
               $pre_valid_states[] = 'or';
               $pre_valid_states[] = [
-                '[name="organism-' . $i . '[genotype][SNPs][file-type]"]'
+                '[name="' . $organism_key . '[genotype][SNPs][file-type]"]'
                 => ['value' => TPPS_GENOTYPING_FILE_TYPE_VCF],
               ];
             }
@@ -156,27 +157,27 @@ function tpps_form_add_buttons(array $form_bus) {
  *
  * @param array $form_state
  *   Drupal Form API array with submitted values.
- * @param array $path
+ * @param array $parents
  *   Path to field form $form_state['complete form'] or $form.
- *   For example:
- *   ['organism-1', 'genotype', 'files', 'marker-type'].
+ *   Includes field name.
+ *   For example: ['organism-1', 'genotype', 'files', 'marker-type'].
  *
  * @return bool
  *   Returns TRUE if required field is empty and FALSE otherwise.
  */
-function tpps_is_required_field_empty(array $form_state, array $path) {
-  $field = drupal_array_get_nested_value($form_state['complete form'], $path);
+function tpps_is_required_field_empty(array $form_state, array $parents) {
+  $field = TppsArray::getValue($form_state['complete form'], $parents);
   if (empty($field)) {
-    watchdog('tpps', "Field wasn't found in 'complete form'. Path: @path",
-      ['@path' => implode('/', $path)], WATCHDOG_ERROR
+    watchdog('tpps', "Field wasn't found in 'complete form'. Parents: @parents",
+      ['@parents' => implode('/', $parents)], WATCHDOG_ERROR
     );
     return FALSE;
   }
-  $value = drupal_array_get_nested_value(
-    $form_state['values'], tpps_get_field_path($field, $path)
+  $value = TppsArray::getValue(
+    $form_state['values'], tpps_get_field_path($field, $parents)
   );
   if (empty($value)) {
-    tpps_form_error_required($form_state, $path);
+    tpps_form_error_required($form_state, $parents);
     return TRUE;
   }
   return FALSE;
@@ -221,7 +222,7 @@ function tpps_form_error_required(array $form_state, array $parents) {
  *   Error message text.
  */
 function tpps_form_error(array $form_state, array $parents, $message) {
-  $field = drupal_array_get_nested_value($form_state['complete form'], $parents);
+  $field = TppsArray::getValue($form_state['complete form'], $parents);
   if (empty($field['#title'])) {
     $message = t("Field didn't found at form. Parents: @parents",
       ['@parents' => implode(' / ', $parents)]
@@ -239,7 +240,11 @@ function tpps_form_error(array $form_state, array $parents, $message) {
     $new_path = $parents;
     array_pop($new_path);
     $new_path[] = 'other_marker_type';
-    $new_name = drupal_array_get_nested_value($form_state['input'], $new_path);
+    $new_name = TppsArray::getValue(
+      //$form_state['input'][TPPS_PAGE_4],
+      $form_state['input'],
+      $new_path
+    );
     $title = str_replace('Other', $new_name, $title);
   }
   form_set_error(implode('][', $field['#array_parents']),
@@ -351,7 +356,7 @@ function tpps_form_navigation_bar(array &$form, array $form_state) {
  *   Returns list of parents to element of requested type.
  *   Returns empty array if no elements found.
  *   Each item of array is a list of parents which could be used by
- *   drupal_array_get_nested_value() and similar.
+ *   TppsArray::getValue() and similar.
  *
  *   Example of returned array:
  *   Array
@@ -439,9 +444,7 @@ function tpps_form_add_yesno_field(array $form_bus) {
     return;
   }
   $field_name = $form_bus['field_name'];
-  $i = $form_bus['organism_id'];
-
-  $organism_name = 'organism-' . $i;
+  $organism_key = 'organism-' . $form_bus['organism_id'];
 
   // $form_state is optional and used for default value only.
   $form_state = &$form_bus['form_state'] ?? [];
@@ -467,7 +470,7 @@ function tpps_form_add_yesno_field(array $form_bus) {
   }, ARRAY_FILTER_USE_KEY);
   $field = array_merge($defaults, $field);
   $parents = array_merge(($form_bus['parents'] ?? []), [$field_name]);
-  drupal_array_set_nested_value($form, $parents, $field);
+  TppsArray::setValue($form, $parents, $field);
 }
 
 /**
@@ -527,13 +530,14 @@ function tpps_form_add_report(array &$form, array $meta) {
  *     Machine field name.
  *   'parents' array
  *     List of parents of the field.
+ *     Note: List of the parents could optionally include field name.
  *
  *   Example:
  *   tpps_form_build_file_field([
  *     'form' => &$form,
- *     'parents' => [$organism_name, 'genotype', 'files'],
+ *     'parents' => [$organism_key, 'genotype', 'files'],
  *     'form_state' => $form_state,
- *     'organism_name' => $id,
+ *     'organism_name' => $organism_key,
  *     'field_name' => $file_field_name,
  *     'optional' => TRUE,
  *     'title' => $title,
@@ -570,9 +574,24 @@ function tpps_form_build_file_field(array $form_bus) {
   // Map from the $form_bus.
   $form = &$form_bus['form'];
   $form_state = $form_bus['form_state'] ?? [];
-  $organism_name = $form_bus['organism_name'];
+  $organism_key = $form_bus['organism_name'];
   $allow_file_reuse = $form_bus['allow_file_reuse'] ?? FALSE;
   $parents = $form_bus['parents'] ?? [];
+
+  // Fields converted into classes use list of parents which includes field
+  // name so here we should remove this last element to have backward
+  // compatibility with not yet updated fields.
+  // @todo Update this code when all fields be converted into classes.
+  if (
+    TppsArray::isLast($parents, $form_bus['field_name'])
+    // EXCEPTION: Field's DOM-name is the same as parent fieldset has.
+    // @todo Change field name or parent fieldset name to have unique name.
+    // Tag: other/other.
+    && $form_bus['field_name'] != 'other'
+  ) {
+    // Don't remove in the middle of the array. Only last one.
+    TppsArray::removeLast($parents);
+  }
 
   // @TODO Minor. Add page id to $form_bus['parents'].
   $page = $form_bus['page'] ?? TPPS_PAGE_4;
@@ -593,7 +612,7 @@ function tpps_form_build_file_field(array $form_bus) {
   // When enabled field's machine name will be shown in field's decription.
   $debug_mode = FALSE;
   // Main element to work with.
-  $parent_element = &drupal_array_get_nested_value($form, $parents);
+  $parent_element = &TppsArray::getValue($form, $parents);
   // Upload folder.
   if (empty($upload_location) && ($form_bus['type'] ?? FALSE)) {
     $upload_location = 'public://' . variable_get(
@@ -639,12 +658,20 @@ function tpps_form_build_file_field(array $form_bus) {
     $parent_element[$field_name]['#states']['required'] = $states['visible'];
   }
 
-  // dpm(print_r($parents, 1), 'parents of ' . $field_name);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Customization.
   // @TODO Minor. Think about using elements with leading '#' to use them as
   // defaults for fields.
   if (!empty($extra_elements)) {
+    // Create default column's description.
+    if (empty($extra_elements['columns']['#description'])) {
+      $columns_options = $extra_elements['columns-options']['#value']
+        ?? $extra_elements['columns-options']['#value'] ?? [];
+      $extra_elements['columns']['#description'] = t(
+        'Please define which columns hold the required data: @option_list.',
+        ['@option_list' => implode(', ', $columns_options)]
+      );
+    }
     $parent_element[$field_name] = array_merge(
       $parent_element[$field_name], $extra_elements
     );
@@ -697,15 +724,12 @@ function tpps_form_build_file_field(array $form_bus) {
         . "contain plant identifiers which match the plant identifiers "
         . "you provided in your plant accession file, and all of the "
         . "remaining columns should contain SNP data."),
-
-// @TODO Update relocated fields #names.
-
       '#states' => [
         'visible' => [
-          ':input[name="' . $organism_name . '[genotype][SNPs][genotyping-type]"]'
+          ':input[name="' . $organism_key . '[genotype][SNPs][genotyping-type]"]'
             => ['!value' => TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY],
           // &&
-          ':input[name="' . $organism_name . '[genotype][SNPs][file-type]"]'
+          ':input[name="' . $organism_key . '[genotype][SNPs][file-type]"]'
             => ['!value' => TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE],
         ],
       ],
@@ -765,7 +789,7 @@ function &tpps_form_bus_get(array $form_bus, $name) {
 
   // Get value.
   if ($parents) {
-    $value = &drupal_array_get_nested_value($form_bus, $parents);
+    $value = &TppsArray::getValue($form_bus, $parents);
     return $value;
   }
   else {
@@ -790,7 +814,7 @@ function &tpps_form_bus_get(array $form_bus, $name) {
  * @TODO Minor. Use CSS id intead of name attribute to set focus.
  */
 function tpps_form_autofocus(array &$form = NULL, array $path) {
-  if (empty($field = drupal_array_get_nested_value($form, $path) ?? NULL)) {
+  if (empty($field = TppsArray::getValue($form, $path) ?? NULL)) {
     return;
   }
   // HTML fieldname (not from field name).
@@ -871,7 +895,7 @@ function tpps_form_get_study_type($key = NULL) {
  * Gets parent element and field name from the given path.
  *
  * Drupal allows to get/set nested field's values using function
- * drupal_array_get_nested_value() but to unset (or relocate) you need
+ * TppsArray::getValue() but to unset (or relocate) you need
  * to have parent element by reference. This function get's parent element
  * and suggests to store field name in the end of the list of parents.
  *
@@ -915,15 +939,15 @@ function &tpps_form_get_path(array &$array = NULL, $path = NULL) {
   if (is_array($path)) {
     // When element not exists in this version of array then create it first.
     // Otherwise we can't move item to non-existing element.
-    if (empty(drupal_array_get_nested_value($array, $path))) {
-      drupal_array_set_nested_value($array, $path, NULL);
+    if (empty(TppsArray::getValue($array, $path))) {
+      TppsArray::setValue($array, $path, NULL);
     }
     // Last element is always a field name.
     $result['field_name'] = end($path);
     array_pop($path);
     // Check if there is a list of parents.
     if (count($path) >= 1) {
-      $result['parent_element'] = &drupal_array_get_nested_value($array, $path);
+      $result['parent_element'] = &TppsArray::getValue($array, $path);
       $debug_mode = variable_get('tpps_debug_mode', FALSE);
       if (empty($result['parent_element']) && $debug_mode) {
         watchddog('tpps', 'Empty parent element. @path.<hr />@stack',
@@ -1282,12 +1306,14 @@ function tpps_form_validate_required_field($element, $form_state) {
     empty($element['#states']['required'])
     // Skip this validation when form just saved.
     // @TODO Add '#name' to button Save and use it's name instead of label.
-    || tpps_array_get_value($form_state, ['clicked_button', '#value']) == 'Save'
+    
+    || TppsArray::getValue($form_state, ['clicked_button', '#value']) == 'Save'
   ) {
     return;
   }
 
   $is_required = $logic = NULL;
+  // @TODO Implement complex logic like AssayDesign::build() is using.
   foreach ($element['#states']['required'] as $trigger => $condition) {
     if (is_numeric($trigger)) {
       if (is_string($condition)) {
@@ -1347,7 +1373,7 @@ function tpps_form_validate_required_field($element, $form_state) {
 function tpps_form_check_state_trigger($trigger, array $condition, array $form_state) {
   $parts = explode('"', $trigger);
   $parents = explode('[', str_replace(']', '', $parts[1]));
-  $actual_value = drupal_array_get_nested_value($form_state['values'], $parents);
+  $actual_value = TppsArray::getValue($form_state['values'], $parents);
   foreach ($condition as $key => $value) {
     // List of states from:
     // https://www.drupal.org/docs/drupal-apis/form-api/conditional-form-fields

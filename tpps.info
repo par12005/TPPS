@@ -24,6 +24,8 @@ files[] = src/ImportedSubmissionList.class.inc
 files[] = src/Report.class.inc
 files[] = src/FormState.class.inc
 files[] = src/TppsConfiguration.class.inc
+files[] = src/TppsArray.class.inc
+files[] = src/FormState.class.inc
 
 ; Zenodo API.
 files[] = src/zenodo/Zenodo.class.inc
@@ -34,14 +36,19 @@ files[] = src/zenodo/ZenodoFilesWidget.class.inc
 files[] = src/zenodo/ZenodoHost.class.inc
 ; files[] = src/zenodo/ZenodoRecords.class.inc
 
-; File Fields
+; File Fields.
 files[] = src/TppsFile.class.inc
-; File Fields / Phenotype
+files[] = src/FileField.class.inc
+; File Fields / Phenotype.
 files[] = src/phenotype/PhenotypeManual.class.inc
 files[] = src/phenotype/PhenotypeMeta.class.inc
 files[] = src/phenotype/PhenotypeData.class.inc
 files[] = src/phenotype/PhenotypeIso.class.inc
-; //File Fields / Genotype
-files[] = src/genotype/AssayDesignCitation.class.inc
+; //File Fields / Genotype.
 files[] = src/genotype/AssayDesign.class.inc
+files[] = src/genotype/AssayDesignCitation.class.inc
+files[] = src/genotype/SnpAssay.class.inc
+files[] = src/genotype/OtherMarker.class.inc
 files[] = src/genotype/SnpAssociation.class.inc
+files[] = src/genotype/SnpsKinship.class.inc
+files[] = src/genotype/SnpsPopulationStructure.class.inc

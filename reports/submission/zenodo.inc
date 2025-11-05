@@ -13,7 +13,7 @@
  * Menu callback. Shows list of submissions which has Zenodo Depositions.
  */
 function tpps_report_submission_zenodo($reset = FALSE) {
-  $submission_cache = SubmissionCache::get($reset);
+  $submission_cache = SubmissionCache::getAll($reset);
   $rows = [];
   $i = 0;
   foreach ($submission_cache as $accession => $item) {

@@ -19,7 +19,7 @@
  * @return array
  *   The part of the form to be updated.
  *
- * @TODO Rename. Function with the same name exists in page_3_helper.php
+ * @TODO Rename. Function with ALMOST the same name exists in page_3_helper.php
  */
 function tpps_accession_pop_group(array &$form, array $form_state) {
   $commands = [];

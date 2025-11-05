@@ -31,12 +31,10 @@ Main steps to add new report:
 2. Update code of this new file.
 3. Add variables which stores report title to hook_install/uninstall.
 4. Add metadata to ```Report::getList()```.
-5. Add ability to change report title at 'admin/config/tpps/reports'.
-   See function ```tpps_reports_settings_form()```.
-6. Add commented new title variable name to ```tpps_reports_settings_form()```.
-7. Register report and it's URL in ```tpps_admin_panel_get_reports()```.
-8. Use ```hook_update_N()``` to set value of the variable which holds report's title.
-9. Clear cache.
+5. Add commented new title variable name to ```tpps_reports_settings_form()```.
+6. Register report and it's URL in ```tpps_admin_panel_get_reports()```.
+7. Use ```hook_update_N()``` to set value of the variable which holds report's title.
+8. Clear cache.
 
 Example of the item in function ```Report::getList()```:
 ```

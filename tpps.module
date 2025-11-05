@@ -21,6 +21,8 @@ define('TPPS_PAGE_1', 1);
 define('TPPS_PAGE_2', 2);
 define('TPPS_PAGE_3', 3);
 define('TPPS_PAGE_4', 4);
+define('TPPS_YES', 'Yes');
+define('TPPS_NO', 'No');
 define('RESET_CACHE', TRUE);
 
 define("TPPS_TEMP_XLSX", "temporary://tpps_xlsx");
@@ -49,17 +51,6 @@ define('TPPS_COLUMN_GENUS_AND_SPECIES', 10);
 define('TPPS_COLUMN_SOURCE_PLANT_IDENTIFIER', 11);
 define('TPPS_COLUMN_POPULATION_GROUP', 12);
 define('TPPS_COLUMN_CLONE_NUMBER', 13);
-
-// Submission Statuses.
-define('TPPS_SUBMISSION_STATUS_INCOMPLETE', 'Incomplete');
-define('TPPS_SUBMISSION_STATUS_PENDING_APPROVAL', 'Pending Approval');
-define('TPPS_SUBMISSION_STATUS_APPROVED', 'Approved');
-define('TPPS_SUBMISSION_STATUS_SUBMISSION_JOB_RUNNING', 'Submission Job Running');
-// Special statuses:
-define(
-  'TPPS_SUBMISSION_STATUS_APPROVED_DELAYED',
-  'Approved - Delayed Submission Release'
-);
 
 // Values of the 'Define Experimental Design' field.
 define('TPPS_GENOTYPING_DESIGN_GBS', 1);
@@ -597,10 +588,7 @@ function tpps_access() {
       }
       else {
         // TPPS Form.
-        if (
-          $submission->isCreator()
-          && $submission->status == TPPS_SUBMISSION_STATUS_INCOMPLETE
-        ) {
+        if ($submission->isCreator() && $submission->isIncompleteStatus()) {
           return TRUE;
         }
       }
@@ -624,7 +612,7 @@ function tpps_access() {
       // Check if user submitted this study.
       $submission = new Submission($accession);
       return (bool) (
-        $submission->status != TPPS_SUBMISSION_STATUS_INCOMPLETE
+        !$submission->isIncompleteStatus()
         && $submission->isCreator()
       );
 
@@ -632,10 +620,7 @@ function tpps_access() {
     case 'tpps delete submission':
       $accession = $args[1] ?? NULL;
       $submission = new Submission($accession);
-      return (bool) (
-        $submission->status == TPPS_SUBMISSION_STATUS_INCOMPLETE
-        && $submission->isCreator()
-      );
+      return (bool) ($submission->isCreator() && $submission->isIncompleteStatus());
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     default:
@@ -994,7 +979,9 @@ function tpps_form_field_process(array $element, array &$form_state, array $form
 }
 
 /**
- * Extends the managed_file element type.
+ * Extends the managed_file form element.
+ *
+ * Called on form build but returns new elements (doesn't update $form).
  *
  * Provides options for users to define the columns in their file, as well as a
  * preview of the first 3 rows of the file.
@@ -1044,7 +1031,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
     if (!empty($form_state['saved_values'][$page])) {
       // @TODO Remove this if possible.
       // When form wasn't yet submitted or saved then there is no value.
-      $empty_field_parent = drupal_array_get_nested_value(
+      $empty_field_parent = TppsArray::getValue(
         $form_state['saved_values'][$page], $parents
       );
       $empty_field_default_value = $empty_field_parent[$field_name]['other'] ?? NULL;
@@ -1063,7 +1050,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // "No Header" checkbox.
-    $no_header = drupal_array_get_nested_value(
+    $no_header = TppsArray::getValue(
       $form_state['complete form'],
       array_merge($element['#parents'], ['#value', 'no-header'])
     );
@@ -1072,7 +1059,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
     if (!$no_header && ($callback != 'tpps_no_header_callback')) {
       $end = array_pop($parents);
       $parents[] = $end . '-no-header';
-      $no_header = drupal_array_get_nested_value(
+      $no_header = TppsArray::getValue(
         $form_state['saved_values'][$form_state['stage']],
         $parents
       );
@@ -1123,7 +1110,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
       array_pop($item_parents);
       $item_parents[] = end($element['#parents']) . '-columns';
       $item_parents[] = $key;
-      $default = drupal_array_get_nested_value($saved_vals, $item_parents);
+      $default = TppsArray::getValue($saved_vals, $item_parents);
       if (!isset($default)) {
         foreach ($options as $k => $val) {
           similar_text(strtolower($val), strtolower($item), $percent);
@@ -1429,24 +1416,22 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
 function tpps_main_validate(&$form, &$form_state) {
   global $user;
 
+  // Always save user selection of data types for columns and other subfields.
+  tpps_save_file_columns($form, $form_state);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // If the user is going backwards or simply saving their data in the form,
   // make sure to save the column data for the managed_file elements. The rest
   // of the validation function does not need to be completed.
-  $triggering_element = $form_state['triggering_element']['#value'] ?? NULL;
+  $triggering_element = FormState::getTriggeringElement($form_state);
   if (in_array($triggering_element, ['Back', 'Save'])) {
-    tpps_save_file_columns($form, $form_state);
     return;
   }
-
-  $submission = new Submission();
-  $submission->setState($form_state);
-  $is_tppsc = $submission->isTppsc();
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   switch ($form_state['stage']) {
     case 'frontpage':
-      if ($is_tppsc) {
+      if (FormState::getFormId($form_state) == 'tppsc_main') {
+        // Curation Form.
         if (
           ($form_state['values']['use_old_tgdr'] ?? FALSE)
           and !$form_state['values']['old_tgdr']
@@ -1456,7 +1441,8 @@ function tpps_main_validate(&$form, &$form_state) {
           );
         }
       }
-      elseif (!$is_tppsc) {
+      else {
+        // Regular User Form.
         require_once 'forms/validate/front.php';
         tpps_front_page_validate_form($form, $form_state);
       }
@@ -1552,7 +1538,7 @@ function tpps_main_submit($form, &$form_state) {
   $submission->state = SubmissionVersion::upgrade($form_state);
 
   if ($submission->isTppsc()) {
-    $form_state['status'] = TPPS_SUBMISSION_STATUS_INCOMPLETE;
+    $form_state['status'] = Submission::STATUS_INCOMPLETE;
     // Use old TGDR.
     if (
       $form_state['stage'] == 'frontpage'
@@ -1617,12 +1603,13 @@ function tpps_main_submit($form, &$form_state) {
         }
         else {
           // 'Complete' button was clicked.
-          $submission->setStatus(TPPS_SUBMISSION_STATUS_PENDING_APPROVAL);
+          $submission->setStatus(Submission::STATUS_PENDING_APPROVAL);
           $submission->set(['completed'], time());
           $submission->setFileStatus(FILE_STATUS_PERMANENT, []);
           $submission->generateSharedState();
           tpps_submit_email($form_state);
-          drupal_goto('completed-submission/' . $submission->accession);
+          // Redirect later to save submission first.
+          $goto = 'completed-submission/' . $submission->accession;
         }
         break;
 
@@ -1638,11 +1625,15 @@ function tpps_main_submit($form, &$form_state) {
     }
     $saved_values['form_build_id'] = $values['form_build_id'];
   }
-
-  $form_state['rebuild'] = TRUE;
-  $submission->setState($form_state);
+  if (empty($goto)) {
+    $form_state['rebuild'] = TRUE;
+    $submission->setState($form_state);
+  }
   if ($submission->accession) {
     $submission->save();
+  }
+  if (!empty($goto)) {
+    drupal_goto($goto);
   }
 }
 
@@ -1672,159 +1663,12 @@ function tppsc_main(array $form, array &$form_state, $accession = NULL) {
 
 /**
  * Implements hook_block_view_alter().
- *
- * This function populates the TPPS Status Bar block with data that has already
- * been collected through the form.
  */
 function tpps_block_view_alter(&$data, $block) {
-  global $base_url;
   switch ($block->delta) {
     case 'tpps_status':
-      $css = "
-      .tgdr_status_block img {
-          vertical-align: middle;
-          margin-bottom: 4px;
-          margin-right: 2px;
-      }
-      ";
-      drupal_add_css($css, 'inline');
-
-      $data['subject'] = t('TPPS Status');
-
-      $content = "<div class='tgdr_status_block'>";
-      if (preg_match('/tppsc?\/(TGDR.*)/', $_GET['q'], $matches)) {
-        $accession = $matches[1];
-      }
-      elseif (isset($_REQUEST['accession'])) {
-        $accession = $_REQUEST['accession'];
-      }
-      else {
-        $content .= '</div>';
-        $data['content'] = filter_xss($content);
-        break;
-      }
-      $submission = new Submission($accession);
-      $submission->state['saved_values'][TPPS_PAGE_2]['study_info'] = NULL;
-      $flat = $submission->flatten();
-
-      $ok = "<img src='$base_url/misc/message-16-ok.png'>";
-      $map_api_key = variable_get('tpps_maps_api_key', NULL);
-      foreach ($flat as $item => $val) {
-        if ($item[0] !== '#') {
-          $item_str = filter_xss(check_plain($item));
-          $val_str = filter_xss(check_plain($val));
-          if (preg_match('/(Abstract|Organization)/', $item)) {
-            continue;
-          }
-          elseif (preg_match('/File/', $item) && $file = tpps_file_load($val)) {
-            // Create links to files.
-            $file_url = check_plain(file_create_url($file->uri));
-            // @TODO Use Drupal API: l().
-            $val_str = "<a href='$file_url' target='blank'>$file->filename</a>";
-            if (!$flat['#skip_loc'] and preg_match('/^(.*)Accession File/', $item, $matches)) {
-              $fid = $val;
-              $val_str .= tpps_build_google_map_wrapper($fid);
-            }
-          }
-          elseif (
-            preg_match('/species photo/', $item)
-            && $file = tpps_file_load($val)
-          ) {
-            $file_url = check_plain(file_create_url($file->uri));
-            $val_str = "<img src='$file_url' width='100%'>";
-            $val_str .= "<br><a href='$file_url' target='blank'>$file->filename</a>";
-          }
-          elseif (preg_match('/Month/', $item)) {
-            // Skip experiment start/end month.
-            continue;
-          }
-          elseif (preg_match('/^(.*)Year/', $item, $matches)) {
-            // Combine experiment start/end month + year.
-            if (isset($flat[$matches[1] . 'Month'])) {
-              $item_str = $matches[1] . 'Date';
-              $val_str = "{$flat[$matches[1] . 'Month']} $val_str";
-            }
-            else {
-              continue;
-            }
-          }
-          elseif (
-            preg_match('/Study Location/', $item)
-            && isset($flat['#location_type'])
-            && $flat['#location_type']
-          ) {
-            // Add map capability to location.
-            if ($flat['#location_type'] == '2') {
-              $query = $val_str;
-            }
-            elseif ($flat['#location_type'] != '2' and ($standard = tpps_standard_coord($val_str))) {
-              $query = $standard;
-            }
-            $val_str = "<a id=\"sidebar_map\" style=\"cursor:pointer\">$val_str</a>";
-            if (isset($query) and !empty($map_api_key)) {
-              $url = url('https://www.google.com/maps', [
-                'query' => [
-                  'q' => $query,
-                  'output' => 'embed',
-                  'key' => $map_api_key,
-                  'z' => '5',
-                ],
-              ]);
-              // @TODO See /js/google_map.js.
-              $map = '<iframe frameborder="0"'
-                . ' style="border: 0; width: 100%; height: 100%;"'
-                . ' src="' . $url . '" allowfullscreen> </iframe></div>';
-              // @TODO Move to JS file.
-              $js = "jQuery(document).ready(function ($) {
-                jQuery(\"#sidebar_map\").click(function() {
-                  jQuery(\"#sidebar_map_wrapper\").remove();
-                  jQuery(\"#sidebar_map\").after( \"<br><div id=\\\"sidebar_map_wrapper\\\">$map</div>\" );
-                });
-              });";
-              drupal_add_js($js, 'inline');
-            }
-          }
-          elseif (
-            preg_match('/Publication DOI/', $item)
-            || preg_match('/Dataset DOI/', $item)
-          ) {
-            $link = preg_match('/https?:\/\//', $val_str) ? $val_str : "https://doi.org/$val_str";
-            $val_str = "<a href=\"$link\" target=\"blank\">$val_str</a>";
-          }
-          $content .= "$ok $item_str: $val_str <br>";
-        }
-        elseif (preg_match('/#page_(.)_cleared/', $item, $matches)) {
-          // Break between pages.
-          if ($val) {
-            $step_arr = array(
-              1 => 'Author and Species Information',
-              2 => 'Experimental Conditions',
-              3 => 'Plant Accession',
-              4 => 'Submit Data',
-            );
-            if ($matches[1] > 1) {
-              $content .= '<br />';
-            }
-            $content .= "$ok Step {$matches[1]} - Complete<br />{$step_arr[$matches[1]]}<br /><hr />";
-          }
-          else {
-            // If page not cleared, do not display remaining form state data.
-            break;
-          }
-        }
-        elseif (preg_match('/^#(.*)accession_(.*)/', $item, $matches)) {
-          $val_str = filter_xss(check_plain($val));
-          $parts = explode(" ", substr($matches[0], 1));
-          $item_id = implode("_", $parts);
-          $content .= "<div id=\"$item_id\" style=\"display:none;\">$val_str</div>";
-        }
-      }
-      if (!empty($flat['#page_3_cleared'])) {
-        $content .= tpps_get_markercluster_code(FALSE);
-      }
-      $content .= "</div>";
-      $data['content'] = $content;
-
+      // @todo Check if this block exists.
+      $data['content'] = theme('submission_block', ['data' => $data]);
       break;
 
     default:
@@ -3058,324 +2902,6 @@ function tpps_submission_load($accession) {
   return $submission;
 }
 
-/**
- * Implements hook_theme().
- */
-function tpps_theme() {
-  return [
-    'fcbold' => [
-      'variables' => [
-        'string' => NULL,
-      ],
-    ],
-    'submission_accession_link' => [
-      'variables' => [
-        'accession' => NULL,
-        'path' => NULL,
-        'use_abr' => NULL,
-      ],
-    ],
-    'submission_tag_list' => [
-      'variables' => [
-        'tags' => NULL,
-      ],
-    ],
-    'submission_date' => [
-      'variables' => [
-        'date' => NULL,
-      ],
-    ],
-    'submission_submitter' => [
-      'variables' => [
-        'submitter' => NULL,
-      ],
-    ],
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Zenodo.
-    'zenodo_deposit_link' => [
-      'variables' => [
-        'deposit_id' => NULL,
-        'host' => NULL,
-      ],
-    ],
-    'zenodo_concept_record_link' => [
-      'variables' => [
-        'conceptrecid' => NULL,
-      ],
-    ],
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Files.
-    'file_id' => [
-      'variables' => [
-        'fid' => NULL,
-        'attributes' => NULL,
-      ],
-    ],
-    'file_action_list' => [
-      'variables' => [
-        'fid' => NULL,
-        'attributes' => NULL,
-      ],
-    ],
-  ];
-}
-
-/**
- * Themes list of submission's tags.
- */
-function theme_submission_tag_list(array $variables) {
-  if (!empty($variables['tags'])) {
-    return tpps_show_tags($variables['tags']);
-  }
-}
-
-/**
- * Themes dates for TPPS Admin Panel.
- */
-function theme_submission_date(array $variables) {
-  $date = check_plain($variables['date']);
-  return !empty($date) ? date("F j, Y, g:i a", $date) : t('Unknown');
-}
-
-/**
- * Themes submitter of the TPPS Submission.
- */
-function theme_submission_submitter($variables) {
-
-  $use_tripal_contact = FALSE;
-  if ($use_tripal_contact) {
-    // @TODO Review this code. Copied from TPPS Admin Panel when it was updated
-    // to use 'SubmissionCache' class. Not tested.
-    $contact_bundle = tripal_load_bundle_entity(
-      ['label' => 'Tripal Contact Profile']
-    );
-    // If Tripal Contact Profile is available, we want to link to the
-    // profile of the owner instead of just displaying the name.
-    if ($contact_bundle) {
-      $query = new EntityFieldQuery();
-      $results = $query->entityCondition('entity_type', 'TripalEntity')
-        ->entityCondition('bundle', $contact_bundle->name)
-        ->fieldCondition('local__email', 'value', $owner_mail)
-        ->range(0, 1)
-        ->execute();
-      // [VS]
-      if (!empty($results['TripalEntity'])) {
-        // Commented out because there is a lot of warning messages
-        // shown at page.
-        //
-        //  $entity = current(
-        //    array_reverse(
-        //      entity_load(
-        //        'TripalEntity',
-        //        array_keys($results['TripalEntity'])
-        //      )
-        //    )
-        //  );
-        //  $owner = "<a href=\"$base_url/TripalContactProfile/"
-        //    . "{$entity->id}\">$submitting_user</a>";
-      }
-      // [/VS]
-    }
-  }
-  $submitter = $variables['submitter'] ?? NULL;
-  if (!empty($submitter['name'])) {
-    return $submitter['name']
-    . ($submitter['mail'] ? ' (' . $submitter['mail'] . ')' : '');
-  }
-  if (!empty($submitter['mail'])) {
-    return $submitter['mail'];
-  }
-  return $submitter['uid'] ?? '';
-}
-
-/**
- * Makes first char of the string bold.
- *
- * Note: Used in function tpps_report_submission_imported().
- * Usage:
- * theme('fcbold', ['string' => $string]);
- *
- * @param array $variables
- *   Data for theming.
- *   'string' - String to be processed.
- *
- * @return string
- *   Returns string where 1st char is wrapped with '<strong>' HTML-tag.
- */
-function theme_fcbold(array $variables) {
-  $string = $variables['string'] ?? NULL;
-  if (!empty($string)) {
-    return str_replace($string[0], '<strong>' . $string[0] . '</strong>', $string);
-  }
-}
-
-/**
- * Highlights number in study accession.
- *
- * Usage: theme('submission_accession_link', $vars);
- *
- * @param array $variables
- *   Data for theming.
- *   'accession' - String to be processed.
- *
- * @return string
- *   Returns string where 1st char is wrapped with '<strong>' HTML-tag.
- */
-function theme_submission_accession_link(array $variables) {
-  $accession = $variables['accession'] ?? NULL;
-  $path = $variables['path'] ?? NULL;
-  $show_version = $variables['show_version'] ?? FALSE;
-
-  if (empty($accession)) {
-    return;
-  }
-  $data = SubmissionCache::get();
-  $number = str_replace('TGDR', '', ($accession));
-  $output = '<span class="tpps-study-accession">TGDR</span>'
-    . '<span class="tpps-study-accession-number" title="'
-    . t('Study accession number') . '">' . $number . '</span>';
-
-  // Extra data.
-  if ($show_version) {
-    $submission_version = $data[$accession][SubmissionVersion::FORM_KEY] ?? NULL;
-    if (!empty($submission_version)) {
-      $output .= ' {<span class="tpps-study-form-version-number" title="'
-        .  t('Submission Form Version Number')
-        . '">' . $submission_version . '</span>}';
-    }
-  }
-  if ($path) {
-    $output = l($output, $path, ['html' => TRUE]);
-  }
-  return $output;
-
-}
-
-/**
- * Creates hyperlink to local Zenodo Deposit page.
- *
- * Usage: theme('zenodo_deposit_link', $vars);
- *
- * Usage: theme('submission_zenodo_deposit_link', $vars);
- * Note: Deposits withour host will be highlighted with red color.
- */
-function theme_zenodo_deposit_link(array $variables) {
-  if (empty($deposit_id = $variables['deposit_id'])) {
-    return '';
-  }
-
-  // Use ZenodoHost::search(['deposit_id' => $deposit_id]); to get host.
-  $host = $variables['host'] ?? NULL;
-  // Build link.
-  if ($host) {
-    $url = 'admin/reports/tpps/zenodo/deposition/' . $host . '/' . $deposit_id;
-    return l($deposit_id, $url);
-  }
-  else {
-    return '<div style="color:red;">' . $deposit_id . '</div>';
-  }
-}
-
-/**
- * Gets Hyperlink to Zenodo API Endpoint which shows all versions.
- *
- * Usage: theme('zenodo_concept_record_link', $vars);
- *
- * @return string
- *   Returns HTML A-tag which points to Zenodo Deposit List page where listed
- *   all versions of the Deposition.
- */
-function theme_zenodo_concept_record_link($variables) {
-  if (
-    empty($conceptrecid = $variables['conceptrecid'])
-    || empty($host = $variables['host'])
-  ) {
-    return '';
-  }
-  // Docs: https://developers.zenodo.org/?javascript#list
-  $query = [
-    'q' => 'conceptrecid:' . $conceptrecid,
-    'all_versions' => 1,
-    // optional. Sort order (bestmatch or mostrecent).
-    // Prefix with minus to change form ascending to descending (e.g. -mostrecent).
-    'sort' => 'mostrecent',
-  ];
-  // The same API Endpoint uses ZenodoDeposit::list().
-  $url = 'https://' . ($host == 'live' ? '' : 'sandbox.')
-    . 'zenodo.org/api/deposit/depositions';
-  return l($conceptrecid, Zenodo::addAccessToken($url), ['query' => $query]);
-}
-
-/**
- * Wraps file id into hyperlink.
- *
- * @param array $variables
- *   Data for theming.
- *   'fid' - string. File Id.
- *
- * @return string
- *   Returns string where 1st char is wrapped with '<strong>' HTML-tag.
- */
-function theme_file_id(array $variables) {
-  $fid = check_plain($variables['fid']) ?? NULL;
-  $destination = $variables['destination'] ?? NULL;
-  if (empty($fid)) {
-    return '';
-  }
-  $options = [
-    'query' => [
-      'token' => variable_get('tpps_api_token'),
-      'destination' => $destination,
-    ],
-    'attributes' => $variables['attributes'] ?? '',
-  ];
-  return l($fid, 'api/file/' . $fid . '/info', $options);
-}
-
-/**
- * Wraps file id into hyperlink.
- *
- * @param array $variables
- *   Data for theming.
- *   'fid' - string. File Id.
- *   'attributes' - array. List of hyperlink attributes.
- *
- * @return string
- *   Returns string where 1st char is wrapped with '<strong>' HTML-tag.
- */
-function theme_file_action_list(array $variables) {
-  $accession = $variables['accession'] ?? NULL;
-  $destination = $variables['destination'] ?? NULL;
-  if (empty($accession)) {
-    return '';
-  }
-  $fid = check_plain($variables['fid']) ?? NULL;
-  if (empty($fid)) {
-    return '';
-  }
-  $options = [
-    'query' => [
-      'token' => variable_get('tpps_api_token'),
-      'destination' => $destination,
-    ],
-    'attributes' => $variables['attributes'] ?? '',
-  ];
-  return '[' . implode('|', [
-    l(t('D'), 'api/file/' . $fid . '/get',
-      array_merge($options, ['attributes' => ['title' => t('Download File')]])
-    ),
-    l(t('U'), 'api/file/' . $fid . '/usage',
-      array_merge($options, ['attributes' => ['title' => t('Usage')]])
-    ),
-    l(t('U+'), 'api/file/' . $fid . '/usage/add/' . $accession,
-      array_merge($options, ['attributes' => ['title' => t('Add 1 Usage')]])
-    ),
-    l(t('U-'), 'api/file/' . $fid . '/usage/delete/' . $accession,
-      array_merge($options, ['attributes' => ['title' => t('Delete 1 Usage')]])
-    ),
-  ]) . ']';
-}
-
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 // Zenodo Hooks.
 
@@ -3602,7 +3128,7 @@ function tpps_rest_api_request_complete(array $context = []) {
     unset($context['Response']);
   }
   $message = 'Rest API Request Complete. !context';
-  $params = ['!context' => tpps_array_print_list($context)];
+  $params = ['!context' => TppsArray::printList($context)];
   watchdog('tpps', $message, $params, WATCHDOG_WARNING);
 }
 
@@ -3823,12 +3349,14 @@ function tpps_form_tppsc_main_alter($form, $form_state) {
   // Add usage to avoid validation issues.
   $submission = new Submission();
   $submission->setState($form_state);
-  $file_list = $submission->getFileIdList();
-  if (!empty($file_list)) {
-    foreach (array_keys($file_list) as $fid) {
-      $file = tpps_file_load($fid);
-      if ($file && Submission::isEmptyFileUsage($file, $submission->accession)) {
-        Submission::addFileUsage($file, $submission->accession);
+  if (!$submission->isEmpty()) {
+    $file_list = $submission->getFileIdList();
+    if (!empty($file_list)) {
+      foreach (array_keys($file_list) as $fid) {
+        $file = tpps_file_load($fid);
+        if ($file && Submission::isEmptyFileUsage($file, $submission->accession)) {
+          Submission::addFileUsage($file, $submission->accession);
+        }
       }
     }
   }
@@ -3842,12 +3370,12 @@ function tpps_form_tppsc_main_alter($form, $form_state) {
     return;
   }
   // File was removed from page using 'Remove' button.
-  $parents = tpps_array_get_path($form_state['values']);
-  $fid = tpps_array_get_value($form, array_merge($parents, ['#default_value']));
+  $parents = TppsArray::getPath($form_state['values']);
+  $fid = TppsArray::getValue($form, array_merge($parents, ['#default_value']));
   $file = tpps_file_load($fid);
   if (
     !(empty($fid)) && !empty($file)
-    && empty(tpps_array_get_value($form_state['input'], array_merge($parents, ['fid'])))
+    && empty(TppsArray::getValue($form_state['input'], array_merge($parents, ['fid'])))
   ) {
     $accession = $form_state['input']['accession'];
     Submission::deleteFileUsage($file, $accession);
@@ -3869,7 +3397,7 @@ function tpps_submission_saved($submission) {
   if (variable_get('tpps_submission_log_save_event', FALSE)) {
     $message = 'Submission "@accession" was saved. !stack';
     $params = [
-      '!stack' => tpps_array_print_list(
+      '!stack' => TppsArray::printList(
         debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 10)
       ),
       '@accession' => $submission->accession,
@@ -4001,7 +3529,7 @@ function tpps_submission_cache_updated() {
     $message = 'Submission Cache was fully updated. !stack';
     $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 10);
     $params = [
-      '!stack' => tpps_array_print_list($stack),
+      '!stack' => TppsArray::printList($stack),
     ];
     watchdog('tpps', $message, $params, WATCHDOG_NOTICE);
   }
@@ -4016,8 +3544,17 @@ function tpps_submission_cache_single_updated($accession) {
     $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 10);
     $params = [
       '@accession' => $accession,
-      '!stack' => tpps_array_print_list($stack),
+      '!stack' => TppsArray::printList($stack),
     ];
     watchdog('tpps', $message, $params, WATCHDOG_NOTICE);
   }
+}
+
+/**
+ * Implements hook_hook_info().
+ */
+function tpps_hook_info() {
+  // Move hook_theme() into tpps.theme.inc file.
+  $hooks['theme'] = ['group' => 'theme'];
+  return $hooks;
 }

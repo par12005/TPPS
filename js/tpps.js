@@ -302,9 +302,9 @@
         let missing_vcf = false;
         // Loop each organism to get VCF fid or path (local/remote).
         for (let organismId = 1; organismId <= organismNumber; organismId++) {
-          let organismName = 'organism-' + organismId;
+          let organismKey = 'organism-' + organismId;
           dog('Processing organism: ' + organismId, featureName);
-          let vcfFileLocation = $('select[name="' + organismName
+          let vcfFileLocation = $('select[name="' + organismKey
             + '[genotype][SNPs][vcf_file-location]'
             + '"]').val();
           // Note: 'remote' means already stored on remote server (path) and
@@ -313,7 +313,7 @@
             // Check if checkbox "Genotype information for <organism N> is the
             // same as genotype information for <organism 1>" was checked.
             // Note: it checked by default.
-            let $vcfRepeatCheck = $('input[name="' + organismName
+            let $vcfRepeatCheck = $('input[name="' + organismKey
               + '[genotype-repeat-check]"');
             if ($vcfRepeatCheck.is(':checked')) {
               dog('Skipped. Organism re-using Organism 1 file.', featureName);
@@ -321,7 +321,7 @@
             }
             else {
               // Process File Id. Value 'local'.
-              let vcfFid = $('input[name="' + organismName
+              let vcfFid = $('input[name="' + organismKey
                 + '[genotype][SNPs][vcf][fid]' + '"]').val();
               // Validate.
               if (vcfFid === '0') {
@@ -336,7 +336,7 @@
           }
           else {
             // Process path. Value 'remote'.
-            let vcfPath = $('input[name="' + organismName
+            let vcfPath = $('input[name="' + organismKey
               + '[genotype][SNPs][local_vcf]' + '"]').val();
             // Validate.
             if (vcfPath.length == 0) {
@@ -806,12 +806,12 @@
       ) {
         let organismNumber = Drupal.settings.tpps.organismNumber || 1;
         for (let organismId = 1; organismId <= organismNumber; organismId++) {
-          let organismName = 'organism-' + organismId;
-          let vcfFileLocationFieldName = 'select[name="' + organismName
+          let organismKey = 'organism-' + organismId;
+          let vcfFileLocationFieldName = 'select[name="' + organismKey
             + '[genotype][SNPs][vcf_file-location]' + '"]';
-          let vcfFileFieldName = 'input[name="' + organismName
+          let vcfFileFieldName = 'input[name="' + organismKey
             + '[genotype][SNPs][vcf][fid]' + '"]';
-          let vcfPathFieldName = 'input[name="' + organismName
+          let vcfPathFieldName = 'input[name="' + organismKey
             + '[genotype][SNPs][local_vcf]' + '"]';
 
           $(vcfFileLocationFieldName).change(function() { $('.pre-validate-message').hide() });

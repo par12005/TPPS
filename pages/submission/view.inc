@@ -130,7 +130,7 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
       ];
     }
     else {
-      $data = tpps_array_dump($state);
+      $data = TppsArray::dump($state);
       foreach ($data as $key => $item) {
         $form[$data_type][$key . '_container'] = [
           '#type' => 'fieldset',

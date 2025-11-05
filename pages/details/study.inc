@@ -50,7 +50,7 @@ function tpps_details_main($accession = NULL) {
       }
     }
 
-    if ($submission->state['status'] != TPPS_SUBMISSION_STATUS_APPROVED) {
+    if ($submission->state['status'] != Submission::STATUS_APPROVED) {
       drupal_set_message(
         t('This submission is still under construction. Some of the information '
         . 'may be available here, but please keep in mind that it may be '

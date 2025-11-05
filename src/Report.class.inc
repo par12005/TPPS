@@ -247,6 +247,16 @@ class Report {
    */
   public static function addSubMenuItem(array &$items, array $parents, $name, array $item) {
     if (empty($item['title'])) {
+      // Create parent menu item.
+      // @TODO Show sub-items.
+      $path = static::getMenuPath($name, $parents);
+      $items['admin/reports/tpps/' . $path] =
+      $items['tpps-admin-panel/reports/' . $path] = [
+        'title' => check_plain(ucfirst($name)),
+        'page callback' => 'Report::showItems',
+        'access callback' => 'tpps_access',
+        'access arguments' => ['administer tpps module'],
+      ];
       // List of sub-items.
       $parents[] = $name;
       foreach ($item as $sub_name => $sub_item) {
@@ -280,12 +290,15 @@ class Report {
   }
 
   /**
-   * getFilePath
+   * Gets path to the report's file.
    *
-   * @param mixed $name
+   * @param string $name
+   *   Menu item name.
    * @param array $parents
+   *   Menu item parents.
    *
-   * @return void
+   * @return string
+   *   Returns path to the file which contains helper code to process report.
    */
   public static function getFilePath($name, array $parents = []) {
     return 'reports/' . static::getMenuPath($name, $parents) . '.inc';
@@ -440,6 +453,11 @@ class Report {
           'description' => t('List of Submissions which has Zenodo Depositions.'),
           'admin_panel' => TRUE,
         ],
+        'version' => [
+          'title' => variable_get('tpps_report_submission_version_title', 'Submission Version Changes'),
+          'description' => t('Changes in given Submission Version.'),
+          'admin_panel' => TRUE,
+        ],
         'file' => [
           'all' => [
             'title' => variable_get('tpps_report_submission_file_all_title',
@@ -460,6 +478,12 @@ class Report {
             ),
             'description' => t('List submissions which has files but those files '
             . 'are missing in filesystem.'),
+            'admin_panel' => TRUE,
+          ],
+          'type' => [
+            'title' => variable_get('tpps_report_submission_file_type_title',
+              'Submissions File Type'),
+            'description' => t('List of submissions with files of the certain type.'),
             'admin_panel' => TRUE,
           ],
         ],
@@ -536,6 +560,30 @@ class Report {
     }
     $parent_string = (empty($parents) ? '' : implode('_', $parents) . '_');
     return 'tpps_report_' . $parent_string . $name;
+  }
+
+  /**
+   * Menu callback for report's parent pages.
+   *
+   * Shows menu subitems.
+   *
+   * @return string
+   *   Returns rendered list of the menu sub-items.
+   */
+  public static function showItems() {
+    $current_path = arg();
+    $report_list = static::getList();
+    foreach ($current_path as $item) {
+      if (in_array($item, ['admin', 'reports', 'tpps'])) {
+        continue;
+      }
+      // @TODO Implement multiple levels support.
+      $sub_item_list = TppsArray::getValue($report_list, [$item]);
+      if (!empty($sub_item_list)) {
+        return static::buildOverviewPage($sub_item_list, [$item]);
+      }
+    }
+    return "Empty";
   }
 
 }

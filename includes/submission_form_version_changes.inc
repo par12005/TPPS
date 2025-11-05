@@ -100,7 +100,12 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       'local_vcf',
       'vcf_file-location',
       'snps-assay',
+      // Assay Design and subfields.
       'assay-design',
+      'assay-design-columns',
+      'assay-design-no-header',
+      'assay-design-empty',
+      'assay-design-groups',
       // SNP Association and columns.
       'snps-association',
       'snps-association-columns',
@@ -142,8 +147,9 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
     ];
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     for ($i = 1; $i <= $organism_number; $i++) {
+      $organism_key = 'organism-' . $i;
       $genotype_parents = [
-        'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype',
+        'saved_values', TPPS_PAGE_4, $organism_key, 'genotype',
       ];
       // Single 'ref-genome' ("Reference Assembly used:") field.
       $field_name = 'ref-genome';
@@ -171,7 +177,7 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
           ),
         ];
       }
-      // ['genotype'] -> ['genotype', 'other']
+      // ['files', 'other'] -> ['other', 'other']
       foreach ($to_other_fieldset as $item) {
         $version_change_list[$v]['move'][] = [
           'source' => array_merge($genotype_parents, $item),
@@ -189,7 +195,7 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
         $version_change_list[$v]['create'][] = [
           'field_name' => $field_name,
           'parents' => [
-            'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype',
+            'saved_values', TPPS_PAGE_4, $organism_key, 'genotype',
             $field_name,
           ],
         ];
@@ -197,40 +203,52 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
     }
   }
   // End of Verion 2 Dynamic Changes.
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Version 3. Dynamyc changes.
-  $v = 3;
-  $version_change_list[$v] = [];
+  $version_change_list[SubmissionVersion::V3] = [];
   // Assay Design. v2 -> v3.
   if (!empty($form_state['saved_values'][TPPS_PAGE_1])) {
     $page1_values = $form_state['saved_values'][TPPS_PAGE_1];
     $organism_number = $page1_values['organism']['number'] ?? 1;
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     for ($i = 1; $i <= $organism_number; $i++) {
+      $organism_key = 'organism-' . $i;
       $genotype_parents = [
-        'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype',
+        'saved_values', TPPS_PAGE_4, $organism_key, 'genotype',
       ];
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Move 'Assay Design File' field into sub-fieldset.
       // See 'AssayDesignCitation::PARENT_FIELDSET'.
-      $version_change_list[$v]['move'][AssayDesign::FIELD_NAME] = [
-        'source' => array_merge(
-          $genotype_parents,
-          [AssayDesign::SNPS_FIELDSET, AssayDesign::FIELD_NAME]
-        ),
-        'target' => array_merge($genotype_parents,
-          [
-            AssayDesign::SNPS_FIELDSET,
-            AssayDesign::PARENT_FIELDSET,
-            AssayDesign::FIELD_NAME,
-          ]
-        ),
+      $assay_design_list = [
+        'assay-design',
+        'assay-design-columns',
+        'assay-design-no-header',
+        'assay-design-empty',
+        'assay-design-groups',
       ];
+      foreach ($assay_design_list as $field_name) {
+        $version_change_list[SubmissionVersion::V3]['move'][$field_name] = [
+          'source' => array_merge(
+            $genotype_parents,
+            [AssayDesign::SNPS_FIELDSET, $field_name]
+          ),
+          'target' => array_merge($genotype_parents,
+            [
+              AssayDesign::SNPS_FIELDSET,
+              AssayDesign::PARENT_FIELDSET,
+              $field_name,
+            ]
+          ),
+        ];
+      }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Rename 'other/other' field.
-      $version_change_list[$v]['move']['other_other'] = [
+      $version_change_list[SubmissionVersion::V3]['move']['other_other'] = [
         'source' => array_merge($genotype_parents, ['other', 'other']),
         'target' => array_merge($genotype_parents, ['other', 'other_marker']),
       ];
-      $version_change_list[$v]['move']['other_other_marker_type'] = [
+      $version_change_list[SubmissionVersion::V3]['move']['other_other_marker_type'] = [
         'source' => array_merge($genotype_parents, ['other', 'other-marker']),
         'target' => array_merge(
           $genotype_parents,
@@ -239,25 +257,25 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       ];
       // New fields.
       // Format: field_name => full path including field name.
-      $version_change_list[$v]['create'] = [
+      $version_change_list[SubmissionVersion::V3]['create'] = [
         [
           'field_name' => 'paper-doi',
           'parents' => [
-            'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype', 'SNPs',
+            'saved_values', TPPS_PAGE_4, $organism_key, 'genotype', 'SNPs',
             'assay-design-citation', 'paper-doi',
           ],
         ],
         [
           'field_name' => 'dataset-doi',
           'parents' => [
-            'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype', 'SNPs',
+            'saved_values', TPPS_PAGE_4, $organism_key, 'genotype', 'SNPs',
             'assay-design-citation', 'dataset-doi',
           ],
         ],
         [
           'field_name' => 'existing_study',
           'parents' => [
-            'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype', 'SNPs',
+            'saved_values', TPPS_PAGE_4, $organism_key, 'genotype', 'SNPs',
             'assay-design-citation', 'existing_study',
           ],
         ],
@@ -265,12 +283,12 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       // @TODO Minor. Rename into 'remove'?
       // See also Submission::purifySharedState() where 'unset' action used to
       // reduce size of the SharedState array.
-      $version_change_list[$v]['unset'] = [
+      $version_change_list[SubmissionVersion::V3]['unset'] = [
         [
           'field_name' => 'assay-citation',
           // Field was replaced with 'Assay Desigin Citation' fieldset.
           'parents' => [
-            'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype', 'SNPs',
+            'saved_values', TPPS_PAGE_4, $organism_key, 'genotype', 'SNPs',
             'assay-citation',
           ],
         ],

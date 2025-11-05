@@ -36,7 +36,9 @@
  *
  * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * Usage.
- *  $data = SubmissionCache::get($reset);
+ *
+ * Get all submissions:
+ *   $data = SubmissionCache::getAll($reset);
  */
 
 /**
@@ -62,12 +64,13 @@ class SubmissionCache {
 
   // Name of the container of the files data in single item.
   const FILES_CONTAINER = 'file';
+  const FILE_GROUPED_LIST = 'grouped_list';
 
   /**
    * Updates cached list of Submissions.
    */
   public static function update() {
-    static::get($reset = TRUE);
+    static::get($accession = NULL, $reset = TRUE);
     // 'tpps_submission_cache_updated';
     if (function_exists('module_invoke_all')) {
       module_invoke_all('submission_cache_updated');
@@ -83,7 +86,7 @@ class SubmissionCache {
   }
 
   /**
-   * Gets list of submissions.
+   * Gets list of the all cached submissions.
    *
    * Note: statically cached.
    *
@@ -96,10 +99,35 @@ class SubmissionCache {
    *   Flag is cache must be resetted. Default if FALSE.
    *
    * @return mixed
-   *   Returns cached list of Submissions.
-   *   Returns NULL if there is no submissions and nothing to cache.
+   *   Returns list of the cached submission's data.
    */
-  public static function get($reset = FALSE) {
+  public static function getAll($reset = FALSE) {
+    return static::get(NULL, $reset);
+  }
+
+  /**
+   * Gets single submission or list of the all submissions.
+   *
+   * Note: statically cached.
+   *
+   * Performance (550 studies):
+   * - Full cache recreation: 39334 msec (40 seconds)
+   * - DB cache: 40 msec
+   * - Static cache: 0.005 msec
+   *
+   * @param string $accession
+   *   Submission's accession. E.g., 'TGDRxxxx'.
+   *   When not set (NULL) then list of the all submissions will be returned.
+   * @param bool $reset
+   *   Flag is cache must be resetted. Default if FALSE.
+   *
+   * @return mixed
+   *   Returns list of the all cached submissions when $accession wasn't set.
+   *   Returns single cached submission when $accession was set and cached
+   *   version exists.
+   *   Return NULL if there is no cached submission for given $accession.
+   */
+  public static function get($accession = NULL, $reset = FALSE) {
     // Static caching.
     // Using static cache allows to avoid extra db query to get stored in db
     // cache and allows to update single items faster.
@@ -135,7 +163,18 @@ class SubmissionCache {
       }
       static::set($list);
     }
-    return $list;
+    // Output.
+    if (empty($accession)) {
+      return $list;
+    }
+    else {
+      if (isset($list[$accession])) {
+        return $list[$accession];
+      }
+      else {
+        return NULL;
+      }
+    }
   }
 
   /**
@@ -203,7 +242,7 @@ class SubmissionCache {
       return $data;
     }
     if (
-      ($submission->state['status'] ?? NULL) == TPPS_SUBMISSION_STATUS_INCOMPLETE
+      $submission->isIncompleteStatus()
       && ($submission->state['stage'] ?? NULL) == TPPS_PAGE_2
       && empty($submission->state['saved_values'][TPPS_PAGE_1])
       // @TODO Check if publication title is empty (not set).
@@ -233,10 +272,10 @@ class SubmissionCache {
       'project_id' => $submission->get(['ids', 'project_id']),
       SubmissionVersion::FORM_KEY => $submission->getFormVersion(),
       'publication' => [
-        'status' => tpps_array_get_value($page1_values,
+        'status' => TppsArray::getValue($page1_values,
           ['publication', 'status']
         ),
-        'title' => tpps_array_get_value($page1_values,
+        'title' => TppsArray::getValue($page1_values,
           ['publication', 'title']
         ),
         'publication_doi' => $submission->getPublicationDOI(),
@@ -259,7 +298,7 @@ class SubmissionCache {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Files.
       static::FILES_CONTAINER => [
-        'grouped_list' => [
+         static::FILE_GROUPED_LIST => [
           Report::TREE_ACCESSION_FILES => [],
           Report::PHENOTYPE_FILES => [],
           Report::GENOTYPE_FILES => [],
@@ -275,13 +314,14 @@ class SubmissionCache {
     // List of 'Assay Design' files.
     $reset_assay_design_list = FALSE;
     for ($n = 1; $n <= $submission->getOrganismNumber(); $n++) {
+      $organism_key = 'organism-' . $n;
       // @TODO Use AssayDesign::getValue() if possible.
-      $assay_design_fid = tpps_array_get_value(
+      $assay_design_fid = TppsArray::getValue(
         $submission->sharedState,
         [
           'saved_values',
           TPPS_PAGE_4,
-          'organism-' . $n,
+          $organism_key,
           'genotype',
           // Not static::FILES_CONTAINER but fieldset name.
           'files',
@@ -378,7 +418,7 @@ class SubmissionCache {
         $field_name = check_plain(end($parents));
         $file_row[$group][$organism_label][$field_name] = $fid;
       }
-      $data['file']['grouped_list'] = $file_row;
+      $data['file'][static::FILE_GROUPED_LIST] = $file_row;
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -457,6 +497,7 @@ class SubmissionCache {
   public static function showClearCacheWidget() {
     if (($_GET[static::RESET_KEY] ?? FALSE) == static::CACHE_BIN) {
       $message = t('Cleared "@cid" cache bin.', ['@cid' => static::CACHE_BIN]);
+      drupal_get_messages();
       drupal_set_message($message);
       static::update();
       drupal_goto(current_path());
@@ -514,7 +555,7 @@ class SubmissionCache {
             continue;
           }
           $operation = $condition[2] ?? '=';
-          $existing_value = tpps_array_get_value($cached_submission, $parents);
+          $existing_value = TppsArray::getValue($cached_submission, $parents);
           if ($operation == '=') {
             $match[] = ($existing_value == $value);
           }

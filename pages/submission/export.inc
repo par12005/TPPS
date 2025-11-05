@@ -143,7 +143,7 @@ function tpps_submission_export_file_report(array &$fid_list = [], array &$files
       tpps_form_add_report($form, [
         'files_prepared_for_import' => [
           'title' => t('List of files prepared for import'),
-          'data' => tpps_array_print_list($files),
+          'data' => TppsArray::printList($files),
         ],
       ]);
     }
