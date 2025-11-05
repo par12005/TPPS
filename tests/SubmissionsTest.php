@@ -37,8 +37,8 @@ class SubmissionsTest extends TripalTestCase {
    * This method tests the tpps_create_submission() function.
    *
    * Checks that the tpps_create_submission() function properly creates the
-   * submission record in tpps_submission, assigns the 'Incomplete' submission
-   * status, and creates the 'created' timestamp.
+   * submission record in tpps_submission, assigns the submission status to the
+   * Submission::STATUS_INCOMPLETE and creates the 'created' timestamp.
    */
   public function testCreateSubmission() {
     $state = $this->loginAndCreateEmptySubmission();
@@ -53,7 +53,7 @@ class SubmissionsTest extends TripalTestCase {
     $result = $query->fetchObject();
 
     // Verify submission status and uid.
-    $this->assertEquals(TPPS_SUBMISSION_STATUS_INCOMPLETE, $result->status);
+    $this->assertEquals(Submission::STATUS_INCOMPLETE, $result->status);
     $this->assertEquals($user->uid, $result->uid);
 
     // Verify created timestamp exists and is earlier than current time.
@@ -125,9 +125,9 @@ class SubmissionsTest extends TripalTestCase {
     $submisison->load();
     $this->assertGreaterThan($updated, $submission->state['updated']);
 
-    $submission->state['status'] = TPPS_SUBMISSION_STATUS_APPROVED;
+    $submission->state['status'] = Submission::STATUS_APPROVED;
     $submission->save();
-    $this->assertEquals(TPPS_SUBMISSION_STATUS_APPROVED, $submission->status);
+    $this->assertEquals(Submission::STATUS_APPROVED, $submission->status);
   }
 
   /**

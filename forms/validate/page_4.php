@@ -162,48 +162,49 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
  * Validates the phenotype section of the fourth page of the form.
  *
  * @param array $phenotype
- *   The form_state values of the phenotype fieldset for organism $id.
- * @param int $org_num
- *   The id of the organism being validated.
+ *   The form_state values of the phenotype fieldset for $organism_index.
+ * @param int $organism_index
+ *   Ordinal number of organism at page.
  * @param array $form
  *   The form being validated.
  * @param array $form_state
  *   The state of the form being validated.
  */
-function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array &$form_state) {
+function tpps_validate_phenotype(array &$phenotype, $organism_index, array $form, array &$form_state) {
+  $organism_key = 'organism-' . $organism_index;
   if (
-    empty(PhenotypeData::isSelected($org_num, $form_state))
-    && empty(PhenotypeIso::isSelected($org_num, $form_state))
+    empty(PhenotypeData::isSelected($organism_index, $form_state))
+    && empty(PhenotypeIso::isSelected($organism_index, $form_state))
   ) {
     form_set_error(
-      'organism-' . $org_num  . '][phenotype][' . PhenotypeData::CHECKBOX_NAME,
+      $organism_key . '][phenotype][' . PhenotypeData::CHECKBOX_NAME,
       t('Please choose at least one category of phenotypes to upload')
     );
     return;
   }
-  PhenotypeData::validate($org_num, $form, $form_state);
-  PhenotypeIso::validate($org_num, $form, $form_state);
+  PhenotypeData::validate($organism_index, $form, $form_state);
+  PhenotypeIso::validate($organism_index, $form, $form_state);
 }
 
 /**
  * Validates the genotype section of the fourth page of the form.
  *
  * @param array $genotype
- *   The form_state values of the genotype fieldset for organism $id.
- *   $form_state['values']["organism-$i"]['genotype'].
- * @param int $org_num
+ *   The form_state values of the genotype fieldset for $organism_index.
+ *   $form_state['values'][$organism_key]['genotype'].
+ * @param int $organism_index
  *   The id of the organism being validated.
  * @param array $form
  *   The form being validated.
  * @param array $form_state
  *   The state of the form being validated.
  */
-function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &$form_state) {
-  tpps_validate_genotype_snps($genotype, $org_num, $form, $form_state);
+function tpps_validate_genotype(array &$genotype, $organism_index, array $form, array &$form_state) {
+  tpps_validate_genotype_snps($genotype, $organism_index, $form, $form_state);
   // Validate SSR/cpSSR fieldset fields.
-  tpps_validate_genotype_ssr($genotype, $org_num, $form, $form_state);
+  tpps_validate_genotype_ssr($genotype, $organism_index, $form, $form_state);
   // Validate 'Other' fieldset fields.
-  tpps_validate_genotype_other($genotype, $org_num, $form, $form_state);
+  OtherMarker::validate($organism_index, $form, $form_state);
 
   $snps_fieldset = 'SNPs';
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -212,23 +213,23 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
   $accession = $form_state['accession'] ?? NULL;
   $submission = new Submission($accession);
   if (!empty($submission->state['vcf_replace'])) {
-    foreach ($submission->state['vcf_replace'] as $org_num => $fid) {
+    foreach ($submission->state['vcf_replace'] as $organism_index => $fid) {
+      $organism_key = 'organism-' . $organism_index;
       $file = file_load($fid ?? '');
       if ($file) {
         if ($file->filesize == 0) {
-          form_set_error("$org_num][genotype][$snps_fieldset][local_vcf",
+          form_set_error($organism_key . "][genotype][$snps_fieldset][local_vcf",
             t('Local VCF File: File is empty.')
           );
         }
         else {
-          $form_state['values'][$org_num]['genotype'][$snps_fieldset]['vcf'] = $fid;
+          $form_state['values'][$organism_key]['genotype'][$snps_fieldset]['vcf'] = $fid;
           $vcf = $fid;
-          $form_state['values'][$org_num]['genotype'][$snps_fieldset]['local_vcf'] = NULL;
+          $form_state['values'][$organism_key]['genotype'][$snps_fieldset]['local_vcf'] = NULL;
         }
       }
       else {
-        // @TODO Should be $id instead of $org_num here?
-        form_set_error("$orn_num][genotype][$snps_fieldset][local_vcf",
+        form_set_error($organism_key . "][genotype][$snps_fieldset][local_vcf",
           t("Local VCF File: File could not be loaded properly.")
         );
       }
@@ -240,20 +241,20 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
  * Validates the genotype/SNPs section of the fourth page of the form.
  *
  * @param array $genotype
- *   The form_state values of the genotype fieldset for organism $id.
- *   $form_state['values']["organism-$i"]['genotype'].
- * @param int $org_num
+ *   The form_state values of the genotype fieldset for $organism_index.
+ *   $form_state['values'][$organism_key]['genotype'].
+ * @param int $organism_index
  *   The id of the organism being validated.
  * @param array $form
  *   The form being validated.
  * @param array $form_state
  *   The state of the form being validated.
  */
-function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, array &$form_state) {
+function tpps_validate_genotype_snps(array &$genotype, $organism_index, array $form, array &$form_state) {
   if (($genotype['does_study_include_snp_data'] ?? NULL) == "no") {
     return;
   }
-  $id = "organism-$org_num";
+  $organism_key = 'organism-' . $organism_index;
 
   $snps_fieldset = 'SNPs';
   $snps = $genotype[$snps_fieldset] ?? NULL;
@@ -265,10 +266,6 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
   $file_type = $snps['file-type'] ?? NULL;
   // File fields:
   $vcf = $snps['vcf'] ?? 0;
-  $snps_assay = $snps['snps-assay'] ?? 0;
-  $assay_design = AssayDesign::getFileId($org_num, $form_state);
-  $assoc_file = $snps['snps-association'] ?? 0;
-
   $page3 = $form_state['saved_values'][TPPS_PAGE_3];
 
   // [VS]
@@ -280,7 +277,7 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
       'Genotype x Phenotype',
     ]
   );
-  $species_index = empty($page3['tree-accession']['check']) ? 'species-1' : "species-$org_num";
+  $species_index = empty($page3['tree-accession']['check']) ? 'species-1' : "species-$organism_index";
   $tree_accession_file = $page3['tree-accession'][$species_index]['file'];
   $id_col_accession_name = $page3['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
 
@@ -289,12 +286,12 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
   // This field must be shown on any value of 'Marker Type' field.
   if (!$ref_genome) {
     tpps_form_error_required($form_state,
-      [$id, 'genotype', 'SNPs', 'ref-genome']
+      [$organism_key, 'genotype', 'SNPs', 'ref-genome']
     );
   }
   elseif ($ref_genome === 'bio') {
     tpps_is_required_field_empty(
-      $form_state, [$id, 'genotype', 'tripal_eutils', 'accession']
+      $form_state, [$organism_key, 'genotype', 'tripal_eutils', 'accession']
     );
     $connection = new \EUtils();
     try {
@@ -315,7 +312,10 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
       $form_state['values']['parsed'] = $parsed;
     }
     catch (\Exception $e) {
-      form_set_error("$id][genotype][tripal_eutils][accession", $e->getMessage());
+      form_set_error(
+        $organism_key . "][genotype][tripal_eutils][accession",
+        $e->getMessage()
+      );
     }
   }
   elseif (in_array($ref_genome, ['url', 'manual', 'manual2'])) {
@@ -336,29 +336,29 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
 
     if (!$file_upload and !$file_existing and !$file_remote) {
       tpps_form_error_required($form_state,
-        [$id, 'genotype', 'tripal_fasta', 'file']
+        [$organism_key, 'genotype', 'tripal_fasta', 'file']
       );
     }
 
     if ($db_id and !$re_accession) {
       tpps_form_error_required($form_state,
-        [$id, 'genotype', 'tripal_fasta', 'additional', 're_accession']
+        [$organism_key, 'genotype', 'tripal_fasta', 'additional', 're_accession']
       );
     }
     if ($re_accession and !$db_id) {
       tpps_form_error_required($form_state,
-        [$id, 'genotype', 'tripal_fasta', 'additional', 'db_id']
+        [$organism_key, 'genotype', 'tripal_fasta', 'additional', 'db_id']
       );
     }
 
     if (!$analysis_id) {
       tpps_form_error_required($form_state,
-        [$id, 'genotype', 'tripal_fasta', 'analysis_id']
+        [$organism_key, 'genotype', 'tripal_fasta', 'analysis_id']
       );
     }
     if (!$seqtype) {
       tpps_form_error_required($form_state,
-        [$id, 'genotype', 'tripal_fasta', 'seqtype']
+        [$organism_key, 'genotype', 'tripal_fasta', 'seqtype']
       );
     }
     if (!form_get_errors()) {
@@ -369,37 +369,39 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   if ($is_step2_genotype) {
     tpps_is_required_field_empty($form_state,
-      [$id, 'genotype', $snps_fieldset, 'genotyping-type']
+      [$organism_key, 'genotype', $snps_fieldset, 'genotyping-type']
     );
   }
 
   if (!tpps_is_required_field_empty($form_state,
-    [$id, 'genotype', $snps_fieldset, 'genotyping-design'])
+    [$organism_key, 'genotype', $snps_fieldset, 'genotyping-design'])
   ) {
     if ($snps['genotyping-design'] == TPPS_GENOTYPING_DESIGN_GBS) {
       $condition = (
         !tpps_is_required_field_empty(
-          $form_state, [$id, 'genotype', $snps_fieldset, 'GBS']
+          $form_state, [$organism_key, 'genotype', $snps_fieldset, 'GBS']
         )
         // 5 = 'Other'
         && $snps['GBS'] == '5'
       );
       if ($condition) {
         !tpps_is_required_field_empty(
-          $form_state, [$id, 'genotype', $snps_fieldset, 'GBS-other']
+          $form_state, [$organism_key, 'genotype', $snps_fieldset, 'GBS-other']
         );
       }
     }
     elseif ($snps['genotyping-design'] == TPPS_GENOTYPING_DESIGN_TARGETED_CAPTURE) {
       $condition = (
-        !tpps_is_required_field_empty(
-          $form_state, [$id, 'genotype', $snps_fieldset, 'targeted-capture']
-        )
-        && $snps['targeted-capture'] == '2'
+        !tpps_is_required_field_empty($form_state, [
+          $organism_key,
+          'genotype',
+          $snps_fieldset,
+          'targeted-capture'
+        ]) && $snps['targeted-capture'] == '2'
       );
       if ($condition) {
         !tpps_is_required_field_empty($form_state,
-          [$id, 'genotype', $snps_fieldset, 'targeted-capture-other']
+          [$organism_key, 'genotype', $snps_fieldset, 'targeted-capture-other']
         );
       }
     }
@@ -414,13 +416,13 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
       && !$vcf
     ) {
       tpps_form_error_required($form_state,
-        [$id, 'genotype', $snps_fieldset, 'local_vcf']
+        [$organism_key, 'genotype', $snps_fieldset, 'local_vcf']
       );
     }
     if (!$vcf && $snps['vcf_file-location'] == 'local') {
-      // && trim($form_state['values'][$id]['genotype'][$snps_fieldset]['local_vcf']) == ''
+      // && trim($form_state['values'][$organism_key]['genotype'][$snps_fieldset]['local_vcf']) == ''
       tpps_form_error_required($form_state,
-        [$id, 'genotype', $snps_fieldset, 'vcf']
+        [$organism_key, 'genotype', $snps_fieldset, 'vcf']
       );
     }
     else {
@@ -480,9 +482,9 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
             }
 
             if (!$match) {
-              form_set_error("$id][genotype][$snps_fieldset][vcf",
+              form_set_error($organism_key . "][genotype][$snps_fieldset][vcf",
                 t("VCF File: scaffold @scaffold_id not found in assembly file(s)",
-                array('@scaffold_id' => $scaffold_id))
+                ['@scaffold_id' => $scaffold_id])
               );
             }
           }
@@ -506,7 +508,7 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
         && ($submission->state['vcf_validated'] ?? NULL) !== TRUE
       ) {
         form_set_error(
-          "$id][genotype][$snps_fieldset][local_vcf",
+          $organism_key . "][genotype][$snps_fieldset][local_vcf",
           t("Local VCF File: File needs to be pre-validated. "
           . "Please click on Pre-validate my VCF files button at the bottom.")
         );
@@ -545,7 +547,7 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
 
         if (count($stocks) == 0) {
           form_set_error(
-            "$id][genotype][$snps_fieldset][vcf",
+            $organism_key . "][genotype][$snps_fieldset][vcf",
             t("Genotype VCF File: unable to parse Plant Identifiers. "
             . "The format of your VCF file must be invalid")
           );
@@ -561,7 +563,7 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
           if (count($missing_plants) > 0) {
             $missing_plants = implode(', ', $missing_plants);
             form_set_error(
-              "$id][genotype][$snps_fieldset][vcf",
+              $organism_key . "][genotype][$snps_fieldset][vcf",
               t("Genotype VCF File: We found Plant Identifiers in your VCF file "
               . "that were not present in your accession file. "
               . "Please either add these plants to your accession file or "
@@ -580,139 +582,32 @@ function tpps_validate_genotype_snps(array &$genotype, $org_num, array $form, ar
       }
 
       // Preserve file if it is valid.
-      tpps_preserve_valid_file($form_state, $vcf, $org_num, "Genotype_VCF");
-    }
-  }
-
-
-  if (
-    $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
-    || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
-  ) {
-    if (!$snps_assay) {
-      tpps_form_error_required($form_state,
-        [$id, 'genotype', $snps_fieldset, 'snps-assay']
-      );
-    }
-    else {
-      $headers = tpps_file_headers($snps_assay);
-      $id_col_name = key($headers);
-      while (($k = array_search(NULL, $headers))) {
-        $message = t('Following header column is Null which needs to be fixed. '
-          . '%data', ['%data' => $k]);
-        drupal_set_message($message, 'error');
-        unset($headers[$k]);
-      }
-      $num_columns = tpps_file_width($snps_assay) - 1;
-      $num_unique_columns = count(array_unique($headers)) - 1;
-      if ($num_unique_columns != $num_columns) {
-        $duplicates = array_diff_assoc($headers, array_unique($headers));
-        if (!empty($duplicates)) {
-          drupal_set_message(
-            t('Following header values are duplicate in provided snp file. %data',
-            array('%data' => implode(',', $duplicates))),
-          'error'
-          );
-        }
-        form_set_error("$id][genotype][$snps_fieldset][snps-assay",
-          t("SNPs Assay file: some columns in the file you provided are "
-            . "missing or have duplicate header values. Please either enter "
-            . "valid header values for those columns or remove those columns, "
-            . "then reupload your file."
-          )
-        );
-      }
-
-      // #86782z4xu Skip this check if we reuse files from existing study.
-      // @todo Minor. Maybe better to get new list of trees and use it in
-      // all other checks to be sure we have the same list in other files.
-      if (!form_get_errors() && empty($page3['existing_trees'])) {
-        $acc_no_header = $page3['tree-accession'][$species_index]['file-no-header'];
-        $missing_trees = tpps_compare_files(
-          $snps_assay,
-          $tree_accession_file,
-          $id_col_name,
-          $id_col_accession_name,
-          FALSE,
-          $acc_no_header
-        );
-        if ($missing_trees !== []) {
-          form_set_error("$id][genotype][$snps_fieldset][snps-assay",
-            t(
-              "SNPs Assay file: We detected Plant Identifiers that were "
-              . "not in your Plant Accession file. Please either remove these "
-              . "plants from your Genotype file, or add them to your "
-              . "Plant Accession file. "
-              . "The Plant Identifiers we found were: @tree_id_str",
-              ['@tree_id_str' => implode(', ', $missing_trees)]
-            )
-          );
-        }
-      }
-      // Preserve file if it is valid.
-      tpps_preserve_valid_file($form_state, $snps_assay, $org_num, "Genotype_SNPs_Assay");
-
-      SnpAssociation::validate($org_num, $form, $form_state);
-
-      if (!form_get_errors()) {
-        if (
-          $file_type == TPPS_GENOTYPING_FILE_TYPE_SNP_ASSAY_FILE_AND_ASSAY_DESIGN_FILE
-          && ($snps['snps-association'] ?? 0)
-        ) {
-          // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-          // SNPs Population Structure file.
-          if (
-            $snps['upload_snp_population'] == 'Yes'
-            && !tpps_is_required_field_empty($form_state,
-              [$id, 'genotype', $snps_fieldset, 'snps-pop-struct']
-            )
-          ) {
-            // Preserve file if it is valid.
-            tpps_preserve_valid_file(
-              $form_state,
-              $snps['snps-pop-struct'],
-              $org_num,
-              'SNPs_Population_Structure'
-            );
-          }
-          // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-          // SNPs Kinship File.
-          if ($snps['upload_snp_kinship'] == 'Yes'
-            && !tpps_is_required_field_empty(
-              $form_state, [$id, 'genotype', $snps_fieldset, 'snps-kinship'])
-          ) {
-            // Preserve file if it is valid.
-            tpps_preserve_valid_file(
-              $form_state,
-              $snps['snps-kinship'],
-              $org_num,
-              'SNPs_Kinship'
-            );
-          }
-        }
-      }
+      tpps_preserve_valid_file($form_state, $vcf, $organism_index, "Genotype_VCF");
     }
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Assay Design.
-  AssayDesign::validate($org_num, $form, $form_state);
-  AssayDesignCitation::validate($org_num, $form, $form_state);
+  SnpAssay::validate($organism_index, $form, $form_state);
+  SnpAssociation::validate($organism_index, $form, $form_state);
+  // AssayDesign file requires 'SNP Association' and 'SNP Assay' files.
+  AssayDesign::validate($organism_index, $form, $form_state);
+  SnpsPopulationStructure::validate($organism_index, $form, $form_state);
+  SnpsKinship::validate($organism_index, $form, $form_state);
 }
 
 /**
  * Validates the environment section of the fourth page of the form.
  *
  * @param array $environment
- *   The form_state values of the environment fieldset for organism $id.
- * @param int $org_num
+ *   The form_state values of the environment fieldset for $organism_index.
+ * @param int $organism_index
  *   The id of the organism being validated.
  * @param array $form
  *   The form being validated.
  * @param array $form_state
  *   The state of the form being validated.
  */
-function tpps_validate_environment(array &$environment, $org_num, array $form, array &$form_state) {
-  $id = "organism-$org_num";
+function tpps_validate_environment(array &$environment, $organism_index, array $form, array &$form_state) {
+  $organism_key = 'organism-' . $organism_index;
   // Using cartograplant environment layers.
   $group_check = FALSE;
   $new_layers = array();
@@ -752,19 +647,19 @@ function tpps_validate_environment(array &$environment, $org_num, array $form, a
 
   if (!empty($environment['env_layers']['other'])) {
     if (empty($environment['env_layers']['other_db'])) {
-      form_set_error("$id][environment][env_layers][other_db",
+      form_set_error($organism_key . "][environment][env_layers][other_db",
         t('CartograPlant other environmental layer DB: field is required.')
       );
     }
 
     if (empty($environment['env_layers']['other_name'])) {
-      form_set_error("$id][environment][env_layers][other_name",
+      form_set_error($organism_key . "][environment][env_layers][other_name",
         t('CartograPlant other environmental layer name: field is required.')
       );
     }
 
     if (empty($environment['env_layers']['other_params'])) {
-      form_set_error("$id][environment][env_layers][other_params",
+      form_set_error($organism_key . "][environment][env_layers][other_params",
         t('CartograPlant other environmental layer parameters: field is required.')
       );
     }
@@ -779,12 +674,12 @@ function tpps_validate_environment(array &$environment, $org_num, array $form, a
   $environment['env_layers'] = $new_layers;
 
   if (!$group_check) {
-    form_set_error("$id][environment][env_layers_groups",
+    form_set_error($organism_key . "][environment][env_layers_groups",
       t('CartograPlant environmental layers groups: field is required.')
     );
   }
   elseif (empty($new_layers)) {
-    form_set_error("$id][environment][env_layers",
+    form_set_error($organism_key . "][environment][env_layers",
       t('CartograPlant environmental layers: field is required.')
     );
   }
@@ -829,14 +724,14 @@ function tpps_ssr_valid_values($row, array &$options) {
  *   The total column count.
  * @param int $num_unique_columns
  *   The unique column count.
- * @param int $org_num
+ * @param int $organism_index
  *   Ordinal number of organism.
  * @param string $field_name
  *   Ploidy field name.
  */
-function tpps_ssr_valid_ploidy($ploidy, $num_columns, $num_unique_columns, $org_num, $field_name) {
+function tpps_ssr_valid_ploidy($ploidy, $num_columns, $num_unique_columns, $organism_index, $field_name) {
   $ssrs_fieldset = 'ssrs_cpssrs';
-  $id = "organism-$org_num";
+  $organism_key = 'organism-' . $organism_index;
 
   if ($field_name == 'ssrs') {
     $title = 'SSRs Genotype Spreadsheet';
@@ -852,7 +747,7 @@ function tpps_ssr_valid_ploidy($ploidy, $num_columns, $num_unique_columns, $org_
   switch ($ploidy) {
     case 'Haploid':
       if ($num_unique_columns != $num_columns) {
-        form_set_error("$id][genotype][$ssrs_fieldset][$field_name",
+        form_set_error($organism_key . "][genotype][$ssrs_fieldset][$field_name",
           t("@title: some columns in the file you provided are missing or "
           . "have duplicate header values. Please either enter header "
           . "values for those columns or remove those columns, "
@@ -867,19 +762,19 @@ function tpps_ssr_valid_ploidy($ploidy, $num_columns, $num_unique_columns, $org_
         $num_unique_columns != $num_columns
         and $num_columns / $num_unique_columns !== 2
       ) {
-        form_set_error("$id][genotype][$ssrs_fieldset][$field_name", $message);
+        form_set_error($organism_key . "][genotype][$ssrs_fieldset][$field_name", $message);
       }
       elseif (
         $num_unique_columns == $num_columns
         and $num_columns % 2 !== 0
       ) {
-        form_set_error("$id][genotype][$ssrs_fieldset][$field_name", $message);
+        form_set_error($organism_key . "][genotype][$ssrs_fieldset][$field_name", $message);
       }
       break;
 
     case 'Polyploid':
       if ($num_columns % $num_unique_columns !== 0) {
-        form_set_error("$id][genotype][$ssrs_fieldset][$field_name", $message);
+        form_set_error($organism_key . "][genotype][$ssrs_fieldset][$field_name", $message);
       }
       break;
 
@@ -893,18 +788,19 @@ function tpps_ssr_valid_ploidy($ploidy, $num_columns, $num_unique_columns, $org_
  *
  * @param array $form_state
  *   Drupal Form API array.
- * @param int $org_num
- *   Ordinal number of organism.
+ * @param int $organism_index
+ *   Ordinal number of organism at page.
  * @param string $field_name
  *   Field name. For example: 'ssrs', 'ssrs_extra'.
  *
  * @TODO Find better name for function.
  */
-function tpps_validate_ssr(array &$form_state, $org_num, $field_name) {
-  $id = 'organism-' . $org_num;
-  $genotype = $form_state['values'][$id]['genotype'];
+function tpps_validate_ssr(array &$form_state, $organism_index, $field_name) {
+  $organism_key = 'organism-' . $organism_index;
+  $genotype = $form_state['values'][$organism_key]['genotype'];
   $page3 = $form_state['saved_values'][TPPS_PAGE_3];
-  $species_index = empty($page3['tree-accession']['check']) ? 'species-1' : "species-$org_num";
+  $species_index = empty($page3['tree-accession']['check'])
+    ? 'species-1' : "species-$organism_index";
   $tree_accession_file = $page3['tree-accession'][$species_index]['file'];
   $id_col_accession_name = $page3['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
   $ssrs_fieldset = 'ssrs_cpssrs';
@@ -914,10 +810,10 @@ function tpps_validate_ssr(array &$form_state, $org_num, $field_name) {
   // @TODO Minor. Simplify condition. Use form_get_errors() after each check.
   $condition = (
     !tpps_is_required_field_empty($form_state,
-      [$id, 'genotype', $ssrs_fieldset, $ploidy_field_name]
+      [$organism_key, 'genotype', $ssrs_fieldset, $ploidy_field_name]
     )
     && !tpps_is_required_field_empty($form_state,
-      [$id, 'genotype', $ssrs_fieldset, $field_name]
+      [$organism_key, 'genotype', $ssrs_fieldset, $field_name]
     )
   );
   if (!$condition) {
@@ -947,7 +843,7 @@ function tpps_validate_ssr(array &$form_state, $org_num, $field_name) {
       (tpps_file_width($genotype[$ssrs_fieldset][$field_name]) - 1),
       // Number of unique columns.
       (count(array_unique($headers)) - 1),
-      $org_num,
+      $organism_index,
       $field_name
     );
   }
@@ -966,7 +862,7 @@ function tpps_validate_ssr(array &$form_state, $org_num, $field_name) {
 
   if ($missing_trees !== []) {
     $tree_id_str = implode(', ', $missing_trees);
-    form_set_error("$id][genotype][$ssrs_fieldset][$field_name", t(
+    form_set_error($organism_key . "][genotype][$ssrs_fieldset][$field_name", t(
       "SSRs/cpSSRs Genotype Spreadsheet: "
       . "We detected Plant Identifiers that were not in your "
       . "Plant Accession file. Please either remove these plants from "
@@ -980,7 +876,7 @@ function tpps_validate_ssr(array &$form_state, $org_num, $field_name) {
   }
   $options = [
     'empty' => $genotype[$ssrs_fieldset][$field_name . '-empty'] ?? NULL,
-    'org_num' => $org_num,
+    'org_num' => $organism_index,
   ];
   tpps_file_iterator(
     $genotype[$ssrs_fieldset][$field_name],
@@ -991,7 +887,7 @@ function tpps_validate_ssr(array &$form_state, $org_num, $field_name) {
   tpps_preserve_valid_file(
     $form_state,
     $genotype[$ssrs_fieldset][$field_name],
-    $org_num,
+    $organism_index,
     $prefix
   );
 }
@@ -1039,122 +935,36 @@ function tpps_validate_metafile_phenotype_names($row, array $options = []) {
 // Genotype sub-sections.
 
 /**
- * Validates the genotype/other section of the 4th page of the form.
- *
- * @param array $genotype
- *   The form_state values of the genotype fieldset for organism $organism_key.
- *   $form_state['values']["organism-$i"]['genotype'].
- * @param int $organism_index
- *   The id of the organism being validated.
- * @param array $form
- *   The form being validated.
- * @param array $form_state
- *   The state of the form being validated.
- */
-function tpps_validate_genotype_other(array &$genotype, $organism_index, array $form, array &$form_state) {
-  if (($genotype['does_study_include_other_genotypic_data'] ?? NULL) == 'no') {
-    return;
-  }
-  $other_fieldset = 'other';
-  $organism_key = 'organism-' . $organism_index;
-
-  if (tpps_is_required_field_empty(
-    $form_state, [$organism_key, 'genotype', $other_fieldset, 'other_marker']
-  )) {
-    // Validation failed and no need to do extra checks.
-    return;
-  }
-  $other_file = $genotype[$other_fieldset]['other_marker'] ?? 0;
-  $page3_values = $form_state['saved_values'][TPPS_PAGE_3];
-  $species_index = empty($page3_values['tree-accession']['check'])
-    ? 'species-1' : "species-$organism_index";
-  $tree_accession_file = $page3_values['tree-accession'][$species_index]['file'];
-  $organism_key_col_accession_name = $page3_values['tree-accession'][$species_index]
-    ['file-groups']['Tree Id']['1'];
-
-  // ? [VS] Should $form_state be used instead of $form here?
-  if (array_key_exists('columns', $form[$organism_key]['genotype'][$other_fieldset]['other_marker'])) {
-    $required_groups = [
-      'Tree Id' => ['id' => [1]],
-      'Genotype Data' => ['data' => [0]],
-    ];
-    $file_element = $form[$organism_key]['genotype'][$other_fieldset]['other_marker'];
-    $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
-    // Get Plant Id column name.
-    if (!form_get_errors()) {
-      $organism_key_col_genotype_name = $groups['Tree Id']['1'];
-    }
-  }
-  if (!array_key_exists('columns', $form[$organism_key]['genotype'][$other_fieldset]['other_marker'])) {
-    $headers = tpps_file_headers($genotype[$other_fieldset]['other_marker']);
-    if (!form_get_errors()) {
-      $organism_key_col_genotype_name = key($headers);
-    }
-  }
-
-  if (!form_get_errors()) {
-    $acc_no_header = $page3_values['tree-accession'][$species_index]['file-no-header'];
-    // Note: Seems this field is now missing on form.
-    $other_no_header = $genotype[$other_fieldset]['other_marker-no-header'] ?? FALSE;
-    $missing_trees = tpps_compare_files(
-      $other_file,
-      $tree_accession_file,
-      $organism_key_col_genotype_name,
-      $organism_key_col_accession_name,
-      $other_no_header,
-      $acc_no_header
-    );
-    if ($missing_trees !== []) {
-      $tree_id_str = implode(', ', $missing_trees);
-      form_set_error($organism_key. "][genotype][$other_fieldset][other_marker",
-        "Other Marker Genotype Spreadsheet: "
-        . "We detected Plant Identifiers that were not in your "
-        . "Plant Accession file. Please either remove these plants "
-        . "from your Genotype file, or add them to your Plant Accession "
-        . "file. The Plant Identifiers we found were: $tree_id_str"
-      );
-    }
-  }
-  // Preserve file if it is valid.
-  tpps_preserve_valid_file(
-    $form_state,
-    $other_file,
-    $organism_index,
-    'Genotype_Other_Marker_Spreadsheet'
-  );
-}
-
-/**
  * Validates the genotype/ssr section of the fourth page of the form.
  *
  * @param array $genotype
- *   The form_state values of the genotype fieldset for organism $id.
- *   $form_state['values']["organism-$i"]['genotype'].
- * @param int $org_num
- *   The id of the organism being validated.
+ *   The form_state values of the genotype fieldset for $organism_index.
+ *   $form_state['values'][$organism_key]['genotype'].
+ * @param int $organism_index
+ *   Ordinal number of organism at page.
  * @param array $form
  *   The form being validated.
  * @param array $form_state
  *   The state of the form being validated.
  */
-function tpps_validate_genotype_ssr(array &$genotype, $org_num, array $form, array &$form_state) {
-  $id = "organism-$org_num";
+function tpps_validate_genotype_ssr(array &$genotype, $organism_index, array $form, array &$form_state) {
+  $organism_key = 'organism-' . $organism_index;
 
   if (($genotype['does_study_include_ssr_cpssr_data'] ?? NULL) == "yes") {
     $ssrs_fieldset = 'ssrs_cpssrs';
     $field_name = 'SSRs/cpSSRs';
     tpps_is_required_field_empty($form_state,
-      [$id, 'genotype', $ssrs_fieldset, $field_name]
+      [$organism_key, 'genotype', $ssrs_fieldset, $field_name]
     );
-    $field_value = drupal_array_get_nested_value($genotype,
+    $field_value = TppsArray::getValue($genotype,
       [$ssrs_fieldset, $field_name]
     );
 
     if (in_array($field_value, ['cpSSRs', 'Both SSRs and cpSSRs'])) {
-      tpps_validate_ssr($form_state, $org_num, 'ssrs_extra');
+      tpps_validate_ssr($form_state, $organism_index, 'ssrs_extra');
     }
     if (in_array($field_value, ['SSRs', 'Both SSRs and cpSSRs'])) {
-      tpps_validate_ssr($form_state, $org_num, 'ssrs');
+      tpps_validate_ssr($form_state, $organism_index, 'ssrs');
     }
   }
 }
@@ -1182,8 +992,8 @@ function tpps_validate_restore_file_field_on_form_rebuild(array &$form, array &$
   $debug_mode = FALSE;
   $key_exists = NULL;
   $new_key_exists = NULL;
-  $element = &drupal_array_get_nested_value($form, $parents, $key_exists);
-  $new_element = &drupal_array_get_nested_value($new_form, $parents, $new_key_exists);
+  $element = &TppsArray::getValue($form, $parents, $key_exists);
+  $new_element = &TppsArray::getValue($new_form, $parents, $new_key_exists);
   if (!$key_exists || empty($element) || !$new_key_exists || empty($new_element)) {
     return;
   }

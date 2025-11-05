@@ -15,7 +15,7 @@ function tpps_report_submission_imported() {
   // Keys are accessions for the new (imported) studies and values are
   // source submission accessions.
   $list = ImportedSubmissionList::get();
-  $data = SubmissionCache::get();
+  $data = SubmissionCache::getAll();
 
   // Reset single item.
   if (isset($_GET['reset'])) {

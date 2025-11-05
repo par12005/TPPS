@@ -19,7 +19,7 @@
  * @global string $base_url
  *   The base URL of the site.
  */
-function tpps_submit_email(array &$form_state) {
+function tpps_submit_email(array $form_state) {
   global $user;
 
   $is_tppsc = Submission::isCurationForm($form_state);

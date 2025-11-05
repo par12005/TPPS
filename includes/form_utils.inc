@@ -125,19 +125,19 @@ function tpps_dynamic_list(array &$form, array &$form_state, $id, array $repeat,
         $new_value = preg_replace(
           $replace_pattern,
           $i,
-          drupal_array_get_nested_value($repeat, $field)
+          TppsArray::getValue($repeat, $field)
         );
-        drupal_array_set_nested_value($instance, $field, $new_value);
+        TppsArray::setValue($instance, $field, $new_value);
       }
     }
     foreach ($sub_keys as $key) {
-      $value = drupal_array_get_nested_value($instance, $key);
-      drupal_array_set_nested_value($instance, $key, NULL);
+      $value = TppsArray::getValue($instance, $key);
+      TppsArray::setValue($instance, $key, NULL);
       $new_key = [];
       foreach ($key as $key_item) {
         $new_key[] = preg_replace($replace_pattern, $i, $key_item);
       }
-      drupal_array_set_nested_value($instance, $new_key, $value);
+      TppsArray::setValue($instance, $new_key, $value);
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -149,7 +149,7 @@ function tpps_dynamic_list(array &$form, array &$form_state, $id, array $repeat,
         continue;
       }
       $key_exists = FALSE;
-      $value = drupal_array_get_nested_value($form_state,
+      $value = TppsArray::getValue($form_state,
         ['saved_values', $stage, $id, $i, $field_name], $key_exists
       );
       if ($key_exists && $value) {
@@ -159,7 +159,7 @@ function tpps_dynamic_list(array &$form, array &$form_state, $id, array $repeat,
     }
     $element[$i] = $instance;
   }
-  drupal_array_set_nested_value($form, array_merge($parents, [$id]), $element);
+  TppsArray::setValue($form, array_merge($parents, [$id]), $element);
 }
 
 /**
@@ -201,7 +201,7 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
   $button_name = $state['triggering_element']['#name'] ?? '';
   if (preg_match('/^.*_(upload|remove)_button$/', $button_name)) {
     array_unshift($value_parents, 'complete form');
-    $val = drupal_array_get_nested_value($state, $value_parents);
+    $val = TppsArray::getValue($state, $value_parents);
     if (isset($val['#type']) and $val['#type'] == 'hidden') {
       array_push($value_parents, '#value');
     }
@@ -211,7 +211,7 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
     // have recent changes from browser on AJAX-requests but 'input' has!
     array_unshift($value_parents, 'input');
   }
-  $val = drupal_array_get_nested_value($state, $value_parents);
+  $val = TppsArray::getValue($state, $value_parents);
   if (isset($val) and array_key_exists($button_name, $options)) {
     $increment = $options[$button_name];
     $new_val = $val;
@@ -224,15 +224,15 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
     if (is_string($increment) and function_exists($increment)) {
       $new_val = $increment($button_name, $val);
     }
-    drupal_array_set_nested_value($state, $value_parents, $new_val);
+    TppsArray::setValue($state, $value_parents, $new_val);
   }
   elseif (isset($val) and $button_name == $up) {
-    drupal_array_set_nested_value($state, $value_parents, $val + 1);
+    TppsArray::setValue($state, $value_parents, $val + 1);
   }
   elseif (isset($val) and $button_name == $down and $val > $minimum) {
-    drupal_array_set_nested_value($state, $value_parents, $val - 1);
+    TppsArray::setValue($state, $value_parents, $val - 1);
   }
-  $val = drupal_array_get_nested_value($state, $value_parents);
+  $val = TppsArray::getValue($state, $value_parents);
   if (isset($val)) {
     return $val;
   }
@@ -243,7 +243,7 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
   // place with actual data for AJAX-requests.
   $saved_value_parents = $parents;
   array_unshift($saved_value_parents, 'saved_values', $page);
-  $saved_val = drupal_array_get_nested_value($state, $saved_value_parents);
+  $saved_val = TppsArray::getValue($state, $saved_value_parents);
   if (isset($saved_val)) {
     return $saved_val;
   }
@@ -262,7 +262,7 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
  * can also pass the file name in order to find saved_values such as
  * 'file-columns', or 'file-no-header'.
  *
- * See tpps_array_get/set_value() for more common solution.
+ * See TppsArray::get|setValue() for more common solution.
  *
  * @param array $state
  *   The state of the form.
@@ -280,11 +280,11 @@ function tpps_get_ajax_value(array &$state, array $parents, $default = NULL, $fi
   $page = $state['stage'];
   $value_parents = $parents;
   array_unshift($value_parents, 'values');
-  $element = drupal_array_get_nested_value($state, $value_parents);
+  $element = TppsArray::getValue($state, $value_parents);
   if (isset($element['#type']) and $element['#type'] != 'fieldset') {
     array_push($value_parents, '#value');
   }
-  $val = drupal_array_get_nested_value($state, $value_parents);
+  $val = TppsArray::getValue($state, $value_parents);
   if (isset($val)) {
     return $val;
   }
@@ -292,11 +292,11 @@ function tpps_get_ajax_value(array &$state, array $parents, $default = NULL, $fi
   // @todo Minor. Combine with code above to avoid duplication. Use loop.
   $complete_parents = $parents;
   array_unshift($complete_parents, 'complete form');
-  $element = drupal_array_get_nested_value($state, $complete_parents);
+  $element = TppsArray::getValue($state, $complete_parents);
   if (isset($element['#type']) and $element['#type'] != 'fieldset') {
     array_push($complete_parents, '#value');
   }
-  $val = drupal_array_get_nested_value($state, $complete_parents);
+  $val = TppsArray::getValue($state, $complete_parents);
   if (isset($val)) {
     return $val;
   }
@@ -317,7 +317,7 @@ function tpps_get_ajax_value(array &$state, array $parents, $default = NULL, $fi
     }
   }
   array_unshift($saved_value_parents, 'saved_values', $page);
-  $saved_val = drupal_array_get_nested_value($state, $saved_value_parents);
+  $saved_val = TppsArray::getValue($state, $saved_value_parents);
   return $saved_val ?? $default;
 }
 
@@ -501,10 +501,11 @@ function tpps_compare_accession_file_vs_vcf_file_tree_ids($accession = NULL, $i 
     $submission->state, $i
   );
 
-  $genotype = tpps_array_get_value($submission->state, [
+  $organism_key = 'organism-' . $i;
+  $genotype = TppsArray::getValue($submission->state, [
     'saved_values',
     TPPS_PAGE_4,
-    "organism-$i",
+    $organism_key,
     'genotype',
   ]);
   // Note: returns array['status','location'].
@@ -617,7 +618,8 @@ function tpps_vcf_tree_ids($accession = NULL, $i = 1) {
 
   $submission = new Submission($accession);
   $page4_values = $submission->state['saved_values'][TPPS_PAGE_4];
-  $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+  $organism_key = 'organism-' . $i;
+  $genotype = $page4_values[$organism_key]['genotype'] ?? NULL;
   // Returns array['status','location'].
   $vcf_location = tpps_vcf_location($submission->state, $i);
   $output = [];
@@ -637,7 +639,7 @@ function tpps_vcf_markers($accession = NULL, $i = 1) {
 
   $submission = new Submission($accession);
   $page4_values = $submission->state['saved_values'][TPPS_PAGE_4];
-  $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+  $organism_key = 'organism-' . $i;
   // Note: returns array['status','location'].
   $vcf_location = tpps_vcf_location($submission->state, $i);
   $output = [];
@@ -774,7 +776,8 @@ function tpps_compare_vcf_markers_vs_snps_assay_markers_results_array($accession
   // VCF markers.
   $submission = new Submission($accession);
   $page4_values = $submission->state['saved_values'][TPPS_PAGE_4];
-  $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+  $organism_key = 'organism-' . $i;
+  $genotype = $page4_values[$organism_key]['genotype'] ?? NULL;
   // Note: returns array['status','location'].
   $vcf_location = tpps_vcf_location($form_state, $i);
   $results_vcf_markers = [
@@ -828,7 +831,8 @@ function tpps_vcf_tree_validation($accession = NULL) {
   $organism_number = $firstpage['organism']['number'];
 
   for ($i = 1; $i <= $organism_number; $i++) {
-    $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+    $organism_key = 'organism-' . $i;
+    $genotype = $page4_values[$organism_key]['genotype'] ?? NULL;
 
     // Check the type of VCF file (uploaded or in the cluser)
     // Get file location.

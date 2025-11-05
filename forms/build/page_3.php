@@ -27,39 +27,42 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     $values = $form_state['saved_values'][TPPS_PAGE_3];
   }
   else {
-    $values = array();
+    $values = [];
   }
 
   if (($page_2_values['study_type'] ?? NULL) != 1) {
     tpps_study_location($form, $form_state);
   }
 
-  $form['existing_trees'] = array(
+  $form['existing_trees'] = [
     '#type' => 'checkbox',
     '#title' => t('These plants may have been studied in the past'),
-    '#description' => t('If this box is checked, TPPS will try to find plants with matching ids around the same location as the ones you are providing. If it finds them successfully, it will mark them as the same plant in the database.'),
-  );
+    '#description' => t('If this box is checked, TPPS will try to find '
+      . 'plants with matching ids around the same location as the ones '
+      . 'you are providing. If it finds them successfully, it will mark '
+      . 'them as the same plant in the database.'),
+  ];
 
-  $form['tree-accession'] = array(
+  $form['tree-accession'] = [
     '#type' => 'fieldset',
     '#title' => t('PLANT ACCESSION INFORMATION'),
     '#tree' => TRUE,
     '#prefix' => '<div id="tpps_accession">',
     '#suffix' => '</div>',
-  );
+  ];
 
   $species_number = $form_state['stats']['species_count'];
 
   if ($species_number > 1) {
     // Create the single/multiple file checkbox.
-    $form['tree-accession']['check'] = array(
+    $form['tree-accession']['check'] = [
       '#type' => 'checkbox',
       '#title' => t('I would like to upload a separate plant accession file for each species.'),
-      '#ajax' => array(
+      '#ajax' => [
         'wrapper' => 'tpps_accession',
         'callback' => 'tpps_accession_multi_file',
-      ),
-    );
+      ],
+    ];
   }
 
   $file_description = 'Please upload a spreadsheet file containing plant '

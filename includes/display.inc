@@ -17,223 +17,12 @@
  *   The TPPS Submission formatted in an HTML table.
  */
 function tpps_table_display(array &$state, array $options = []) {
-  $accession = $state['accession'] ?? NULL;
-  $submission = new Submission($accession);
-  if ($submission->isEmpty()) {
-    return;
-  }
   // Note: $state could be modified version of original sharedState received
   // by accession so we use it here without saving/updating original study.
-  // @TODO Check if this code could be merged (and cached) with Submission::flatten().
-  $submission->sharedState = $state;
-  $flat = $submission->flatten();
-
-  $rows = [];
-  $content = '';
-  foreach ($flat as $key => $val) {
-    if ($key[0] != '#') {
-      // [VS] Added extra space which must not be visible at site but
-      // will divide key and it's value in CLI.
-      $key_str = filter_xss(check_plain($key)) . ' ';
-      // Some items are arrays and this cause a lot of warnings about using
-      // check_plain() for arrays. Other way is to skip array processing at all
-      // or use empty string for arrays.
-      // @TODO Probably better way is to use check_plain() for each field and
-      // count it's content.
-      if (
-        // VCF files have a hyperlink instead of File Id. Exclude from processing.
-        stripos($key_str, 'VCF File (cluster)') !== FALSE
-        || stripos($key_str, 'VCF File (uploaded)') !== FALSE
-      ) {
-        $val_str = $val;
-      }
-      elseif (is_array($val)) {
-        foreach ($val as $key => $value) {
-          $value = is_array($value) ? var_export($value) : $value;
-          $items[] = check_plain($key . ': ' . $value);
-        }
-        $val_str = theme('item_list', ['items' => ($items ?? [])]);
-      }
-      else {
-        $val_str = filter_xss(check_plain($val));
-      }
-
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      if ($key == 'tpps_submission_import') {
-        $key_str = t('Submission Import Metadata');
-        $import_meta = $submission->getImportMeta();
-        if (!empty($import_meta)) {
-          $version = $import_meta[SubmissionVersion::FORM_KEY] ?? '-';
-          $val_str = theme('item_list', [
-            'items' => [
-              t('Original Accession: !url', ['!url' => $import_meta['accession_link']]),
-              t('Import Date: @date.', ['@date' => $import_meta['full_date']]),
-              t('Original site: !site.',
-                ['!site' => l($import_meta['site'], $import_meta['site'])]
-              ),
-              t('Original Submision Form Version: @version.', ['@version' => $version]),
-            ],
-          ]);
-        }
-      }
-      if ($key == SubmissionVersion::FORM_KEY) {
-        // This is not Submission State Array but Submission Shared State which
-        // version is always '1'. So we don't need to show this.
-        continue;
-      }
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Files.
-      if (
-        preg_match('/File/', $key)
-        && ($file = tpps_file_load($val) === FALSE)
-        // VCF files are gzipped value is not the File Id but a hyperlink to
-        // file which could be downloaded and manually reviewed because
-        // preview not work for gzipped files.
-        && stripos($key_str, 'VCF File (cluster)') === FALSE
-        && stripos($key_str, 'VCF File (uploaded)') === FALSE
-      ) {
-        // SOS. FILE NOT FOUND.
-        $val_str .= ' <span style="font-size: 32px;">🆘</span><span>(File missing)</span>';
-      }
-      if (preg_match('/File/', $key) and ($file = file_load($val))) {
-
-        // Create links to files.
-        $file_name = $file->filename;
-
-        $file_url = check_plain(file_create_url($file->uri));
-        $val_str = "<a href='$file_url' target='blank'>$file_name</a>";
-        if ($revised_file = tpps_file_load($state['revised_files'][$val] ?? '')) {
-          $val = $state['revised_files'][$val];
-          $file_url = check_plain(file_create_url($revised_file->uri));
-          $file_name = $revised_file->filename;
-          $val_str = "<a href='$file_url' target='blank'>$file_name</a> ( Revised from $val_str )";
-        }
-
-        // @TODO [VS] Use Drupal Form API instead of HTML in PHP.
-        // @TODO Use data-fid to store only file id.
-        $val_str .= '<br><input id="fid_' . $val . '" type="button" '
-          . 'class="preview_button form-button form-submit" '
-          . 'value="' . t('Preview file') . '"></input>';
-
-        if (tpps_access('administer tpps module')) {
-          // @TODO Use data-fid to store only file id.
-          $val_str .= '<br><input id="fid_' . $val . '" type="button" '
-            . 'class="preview_full_button form-button form-submit" '
-            . 'value="' . t('Show full file') . '"></input>';
-        }
-        if (preg_match('/^(.*)Accession File/', $key, $matches)) {
-          if (!$flat['#skip_loc']) {
-            $fid = $file->fid;
-            $val_str .= tpps_build_google_map_wrapper($fid);
-          }
-          else {
-            $val_str .= "<br>This submission was submitted without "
-              . "validating location information. As a result, we did not "
-              . "import location information for these plants.";
-          }
-        }
-
-        if (!empty($options['files']['revision_destination'])) {
-          $val_str .= "<div id=\"file_{$file->fid}_options_dest\"></div>";
-        }
-      }
-      elseif (
-        preg_match('/species photo/', $key)
-        && (file_load($val))
-        && ($file_name = file_load($val)->filename)
-      ) {
-        $file_url = check_plain(file_create_url(file_load($val)->uri));
-        $val_str = "<img src='$file_url' width='100%'>";
-        $val_str .= "<br><a href='$file_url' target='blank'>$file_name</a>";
-      }
-      elseif (preg_match('/Month/', $key)) {
-        // Skip experiment start/end month.
-        continue;
-      }
-      elseif (preg_match('/^(.*)Year/', $key, $matches)) {
-        // Combine experiment start/end month + year.
-        if (isset($flat[$matches[1] . 'Month'])) {
-          $key_str = $matches[1] . 'Date';
-          $val_str = "{$flat[$matches[1] . 'Month']} $val_str";
-        }
-        else {
-          continue;
-        }
-      }
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      elseif (
-        preg_match('/Study Location/', $key)
-        && isset($flat['#location_type'])
-        && $flat['#location_type']
-      ) {
-        // Add map capability to location.
-        if ($flat['#location_type'] == '2') {
-          $query = $val_str;
-        }
-        elseif ($flat['#location_type'] != '2' and ($standard = tpps_standard_coord($val_str))) {
-          $query = $standard;
-        }
-        // Why?
-        $val_str = "<a id=\"sidebar_map\" style=\"cursor:pointer\">$val_str</a>";
-        if (isset($query)) {
-          $map = "<iframe frameborder=\\\"0\\\" style=\\\"border:0;width:100%;"
-            . "height:100%\\\" src=\\\"https://www.google.com/maps?q=$query"
-            . "&output=embed&key=AIzaSyDkeQ6KN6HEBxrIoiSCrCHFhIbipycqouY&z=5\\\" "
-            . "allowfullscreen> </iframe></div>";
-          $js = "jQuery(document).ready(function ($) {
-            jQuery(\"#sidebar_map\").click(function() {
-              jQuery(\"#sidebar_map_wrapper\").remove();
-              jQuery(\"#sidebar_map\").after( \"<br><div
-                id=\\\"sidebar_map_wrapper\\\">$map</div>\" );
-            });
-          });";
-          drupal_add_js($js, 'inline');
-          tpps_add_css_js('google_map', $form);
-        }
-      }
-      elseif ($key == 'Publication Abstract' and strlen($val_str) > 50) {
-        $val_str = substr($val_str, 0, 47) . '...';
-      }
-      elseif (in_array($key, ['Publication DOI', 'Dataset DOI'])) {
-        $link = preg_match('/https?:\/\//', $val_str) ? $val_str : "https://doi.org/$val_str";
-        $val_str = "<a href=\"$link\" target=\"blank\">$val_str</a>";
-      }
-      elseif (!empty($options['skip_phenotypes']) and preg_match('/Phenotype/', $key)) {
-        continue;
-      }
-
-      $rows[] = [ucwords(str_replace('_', ' ', $key_str)), $val_str];
-    }
-    elseif (preg_match('/^#(.*)accession_(.*)/', $key, $matches)) {
-      $val_str = filter_xss(check_plain($val));
-      $parts = explode(" ", substr($matches[0], 1));
-      $item_id = implode("_", $parts);
-      $content .= "<div id=\"$item_id\" style=\"display:none;\">$val_str</div>";
-    }
-  }
-  if (variable_get('tpps_maps_api_key', NULL)) {
-    $content .= tpps_get_markercluster_code(FALSE);
-  }
-
-  $headers = ['Field', 'Value'];
-  $vars = [
-    'header' => $headers,
-    'rows' => $rows,
-    'attributes' => [
-      'class' => ['view'],
-      'id' => 'tpps_table_display',
-    ],
-    'caption' => '',
-    'colgroups' => NULL,
-    'sticky' => FALSE,
-    'empty' => '',
-  ];
-  if (!empty($flat['#study_photo']) && $file = file_load($flat['#study_photo'])) {
-    $photo = '<img src="' . check_plain(file_create_url($file->uri)) . '" '
-      . 'style="display: block; margin-left: auto; margin-right: auto;"></img>';
-  }
-  $display = ($photo ?? '') . theme('table', $vars) . $content;
-  return $display;
+  return theme('submission_page', [
+    'form_state' => $state,
+    'options' => $options,
+  ]);
 }
 
 /**
@@ -318,7 +107,7 @@ function tpps_tab_create($uid) {
 
   $submission_list = tpps_load_submission_multiple(
     [
-      'status' => TPPS_SUBMISSION_STATUS_INCOMPLETE,
+      'status' => Submission::STATUS_INCOMPLETE,
       'uid' => $user->uid,
     ]
   );
@@ -395,8 +184,8 @@ function tpps_tab_create($uid) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $submission_list = tpps_load_submission_multiple([
     'status' => [
-      TPPS_SUBMISSION_STATUS_PENDING_APPROVAL,
-      TPPS_SUBMISSION_STATUS_APPROVED,
+      Submission::STATUS_PENDING_APPROVAL,
+      Submission::STATUS_APPROVED,
     ],
     'uid' => $user->uid,
   ]);

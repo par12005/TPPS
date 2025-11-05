@@ -77,8 +77,8 @@ function tpps_string_format_indent($string) {
  *   or use admin settings page.
  */
 function tpps_message($message, array $params = [], $type = 'info') {
-  if (php_sapi_name() == 'cli') {
-    // Do nothing in CLI mode.
+  if (tpps_is_cli()) {
+    // Do nothing when in CLI-mode.
     return;
   }
   $watchdog_type = constant('WATCHDOG_' . strtoupper($type)) ?? WATCHDOG_NOTICE;
@@ -88,6 +88,18 @@ function tpps_message($message, array $params = [], $type = 'info') {
     $type = ($type == 'info') ? 'status' : $type;
     drupal_set_message(t($message, $params), $type);
   }
+}
+
+/**
+ * Checks if code runs in Command Line Interface (CLI).
+ *
+ * Note: php_sapi_name() for web-server returns 'fpm-fcgi'.
+ *
+ * @return bool
+ *   Returns TRUE when script is running from the CLI and FALSE otherwise.
+ */
+function tpps_is_cli() {
+  return (bool) (php_sapi_name() == 'cli');
 }
 
 /**

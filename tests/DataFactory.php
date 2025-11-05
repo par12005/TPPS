@@ -203,7 +203,7 @@ Factory::define('tpps_submission', function(Faker\Generator $faker) {
     'db_id' => $db_id,
     'accession' => $accession,
   ]);
-  $status = TPPS_SUBMISSION_STATUS_INCOMPLETE;
+  $status = Submission::STATUS_INCOMPLETE;
   $state = array(
     'accession' => $accession,
     'dbxref_id' => $dbxref->dbxref_id,

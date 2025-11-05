@@ -81,7 +81,7 @@ class ZenodoFilesWidget {
     ];
     $widget = &$form[$widget_name];
 
-    $submission_cache = SubmissionCache::get();
+    $submission_cache = SubmissionCache::getAll();
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get content.
     $deposit_id = $submission_cache[$accession]['zenodo']['deposit_id'] ?? NULL;
@@ -195,7 +195,7 @@ class ZenodoFilesWidget {
           }
           $rows[$fid]['zenodo'] = ($delete_button ?? '')
             // Zenodo File metadata.
-            . tpps_array_print_list($zenodo_file);
+            . TppsArray::printList($zenodo_file);
           unset($zenodo_file_list[$zenodo_file['id']]);
         }
       }
@@ -216,7 +216,7 @@ class ZenodoFilesWidget {
         }
       }
       $rows[$fid]['submission'] = $submission_button
-        . tpps_array_print_list($submission_file);
+        . TppsArray::printList($submission_file);
     }
 
     // Report about files missing in file system.
@@ -238,7 +238,7 @@ class ZenodoFilesWidget {
           $delete_button = l(t('Delete'), $delete_url, $action_link_params);
         }
         $rows[$zenodo_file['id']]['zenodo'] = ($delete_button ?? '')
-          . tpps_array_print_list($zenodo_file);
+          . TppsArray::printList($zenodo_file);
         unset($zenodo_file_list[$zenodo_file['id']]);
       }
     }

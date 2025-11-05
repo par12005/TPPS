@@ -420,6 +420,6 @@ function tpps_no_header_callback(array $form, array &$form_state) {
   $parents = $form_state['triggering_element']['#parents'];
   array_pop($parents);
 
-  $element = drupal_array_get_nested_value($form, $parents);
+  $element = TppsArray::getValue($form, $parents);
   return $element;
 }

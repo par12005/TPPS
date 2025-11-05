@@ -48,6 +48,8 @@ function tpps_reports_settings_form(array $form, array &$form_state) {
   // 'tpps_report_submission_file_all_title',
   // 'tpps_report_submission_file_none_title'.
   // 'tpps_report_submission_file_missing_title'.
+  // 'tpps_report_submission_file_type_title'.
+  // 'tpps_report_submission_version_title'.
   module_load_install('tpps');
   foreach (tpps_get_variable_list() as $name => $report) {
     if (

@@ -21,7 +21,7 @@
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class AssayDesignCitation {
+class AssayDesignCitation extends FileField {
 
   // Name of the fieldset on PAGE 4.
   const DATA_TYPE = 'genotype';
@@ -29,12 +29,25 @@ class AssayDesignCitation {
   const SNPS_FIELDSET = 'SNPs';
   // Machine name of the parent fieldset on form.
   const PARENT_FIELDSET = 'assay-design-citation';
+  // Integer Form Page number.
+  const FORM_STEP = TPPS_PAGE_4;
+
   // Machine name of the field which allow to select one of existing study
   // which has 'Assay Design' file. See AssayDesign::getSubmissionList().
   const EXISTING_STUDY_FIELD_NAME = 'existing_study';
   // Key of the option which allows to specify Paper DOI or Dataset DOI when
   // existing study couldn't be used.
   const EXISTING_STUDY_OTHER_OPTION_KEY = 'other';
+
+  /**
+   * Gets required columns.
+   *
+   * @return array
+   *   Returns list of groups of the required columns.
+   */
+  public static function getRequiredColumns() {
+    return [];
+  }
 
   /**
    * Gets value of the Existing Study field.
@@ -48,16 +61,87 @@ class AssayDesignCitation {
    *   Returns value of the field EXISTING_STUDY_FIELD_NAME.
    */
   public static function getExistingStudy($organism_index, array $form_state) {
-    $organism_key = 'organism-' . $organism_index;
-    $value = tpps_array_get_value($form_state['values'],
-    [
-      $organism_key,
-      static::DATA_TYPE,
-      static::SNPS_FIELDSET,
-      static::PARENT_FIELDSET,
-      static::EXISTING_STUDY_FIELD_NAME,
-    ]);
-    return $value;
+    return TppsArray::getValue(
+      $form_state['values'],
+      static::getParents($organism_index, $form_state,
+        static::EXISTING_STUDY_FIELD_NAME
+      )
+    );
+  }
+
+  /**
+   * Gets parents of the field.
+   *
+   * Note: Currently implemented only 'Existing Study' field.
+   *
+   * Usage:
+   * To get parents for $form skip $organism_index.
+   *   $parents = AssayDesign::getParents();
+   * To get latest version or skip version detection - skip $form_state array.
+   *   $parents = AssayDesign::getParents($organism_index);
+   * To detect current version of the $form_state array:
+   *   $parents = AssayDesign::getParents($organism_index, $form_state);
+   *
+   * Usage example:
+   * $parent_list = AssayDesignCitation::getParents(
+   *   $organism_index,
+   *   $form_state,
+   *   AssayDesignCitation::EXISTING_STUDY_FIELD_NAME
+   * );
+   *
+   * @param int $organism_index
+   *   Ordinal number on form.
+   *   When empty list of parents will not include leading organism key element.
+   *   E.g., 'organism-N'.
+   * @param array $form_state
+   *   Drupal Form State array.
+   *   When empty latest version of the SubmissionForm will be used. When NOT
+   *   empty then $form_state will be searched for SubmissionForm version.
+   * @param string $dom_name
+   *   When empty then static::DOM_NAME will be used.
+   *   When non-empty it's a DOM-name of the subfield. For example:
+   *   static::EXISTING_STUDY_FIELD_NAME.
+   *
+   * @return array
+   *   Returns parents for the checkbox which makes this field required.
+   */
+  public static function getParents($organism_index = NULL, array $form_state = NULL, $dom_name = NULL) {
+    // WARNING: Be sure to use 'default' key in switch block
+    // or explicitly set latest version number here.
+    $version = NULL;
+    if (!is_null($organism_index) && !is_null($form_state)) {
+      $version = SubmissionVersion::get($form_state);
+    }
+    $organism_key = NULL;
+
+    if ($dom_name == static::EXISTING_STUDY_FIELD_NAME) {
+      switch ($version) {
+        case 1:
+        case 2:
+          // Field didn't exist.
+          $parents = [];
+          break;
+
+        case 3:
+          $parents = [
+            static::DATA_TYPE,
+            static::SNPS_FIELDSET,
+            static::PARENT_FIELDSET,
+            static::EXISTING_STUDY_FIELD_NAME,
+          ];
+      }
+    }
+    else {
+      $message = 'Requested list of the parents for not yet defined field "@dom_name".';
+      $params = ['@dom_name' => $dom_name];
+      throw new Exception($message);
+    }
+
+    if (!is_null($organism_index)) {
+      $organism_key = 'organism-' . $organism_index;
+      $parents = array_merge([$organism_key], $parents);
+    }
+    return $parents;
   }
 
   /**
@@ -71,13 +155,13 @@ class AssayDesignCitation {
    *   Drupal Form API State Array.
    */
   public static function build($organism_index, array &$form, array $form_state) {
-    $organism_name = 'organism-' . $organism_index;
-    $fields = &$form[$organism_name][static::DATA_TYPE];
+    $organism_key = 'organism-' . $organism_index;
+    $fields = &$form[$organism_key][static::DATA_TYPE];
 
     $states = [
       'visible' => [
         [
-          ':input[name="' . $organism_name . '[' . implode('][', [
+          ':input[name="' . $organism_key . '[' . implode('][', [
             static::DATA_TYPE, 'does_study_include_snp_data'
           ]) . ']"]' => ['value' => 'yes'],
         ],
@@ -101,26 +185,17 @@ class AssayDesignCitation {
       ),
       '#default_value' => tpps_get_ajax_value(
         $form_state,
-        [
-          $organism_name,
-          static::DATA_TYPE,
-          static::SNPS_FIELDSET,
-          static::PARENT_FIELDSET,
-          static::EXISTING_STUDY_FIELD_NAME,
-        ]
+        static::getParents($organism_index, $form_state,
+          static::EXISTING_STUDY_FIELD_NAME
+        )
       ),
     ];
     $subelement_states = [
       'visible' => [
         [
-          ':input[name="' . $organism_name . '[' . implode('][',
-          [
-            static::DATA_TYPE,
-            static::SNPS_FIELDSET,
-            static::PARENT_FIELDSET,
-            static::EXISTING_STUDY_FIELD_NAME,
-          ]
-          ) . ']"]' => ['value' => static::EXISTING_STUDY_OTHER_OPTION_KEY],
+          ':input[name="' . static::buildDomName($organism_index, $form_state,
+            static::EXISTING_STUDY_FIELD_NAME) . '"]'
+          => ['value' => static::EXISTING_STUDY_OTHER_OPTION_KEY],
         ],
       ],
     ];
@@ -164,23 +239,23 @@ class AssayDesignCitation {
    *   Drupal Form API State array.
    */
   public static function validate($organism_index, array &$form, array &$form_state) {
-    $existing_studies_value = tpps_array_get_value($form_state['values'], [
-      'organism-' . $organism_index,
-      static::DATA_TYPE,
-      static::SNPS_FIELDSET,
-      static::PARENT_FIELDSET,
-      static::EXISTING_STUDY_FIELD_NAME,
-    ]);
+    $organism_key = 'organism-' . $organism_index;
+    $existing_studies_value = TppsArray::getValue(
+      $form_state['values'],
+      static::getParents($organism_index, $form_state,
+        static::EXISTING_STUDY_FIELD_NAME
+      )
+    );
     if ($existing_studies_value == static::EXISTING_STUDY_OTHER_OPTION_KEY) {
       $parents = [
-        'organism-' . $organism_index,
+        $organism_key,
         static::DATA_TYPE,
         static::SNPS_FIELDSET,
       ];
       // Paper DOI and Dataset DOI are visible.
       // Validate DOI format if fields not empty because they are optional.
       foreach (['paper-doi', 'dataset-doi'] as $field_name) {
-        $value = trim(tpps_array_get_value(
+        $value = trim(TppsArray::getValue(
           $form_state['values'],
           array_merge($parents, [static::PARENT_FIELDSET, $field_name])
         ));

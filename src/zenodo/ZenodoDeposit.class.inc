@@ -263,7 +263,7 @@ class ZenodoDeposit extends Zenodo {
 
     switch ($format) {
       case 'dump':
-        $dump = tpps_array_dump($deposition);
+        $dump = TppsArray::dump($deposition);
         foreach ($dump as $item) {
           $output .= '<h4>' . $item['title'] . '</h4>' . $item['data'];
         }
@@ -329,7 +329,7 @@ class ZenodoDeposit extends Zenodo {
             default:
               if (is_array($value)) {
                 // @TODO Check_plain.
-                $value = tpps_array_print_list($value);
+                $value = TppsArray::printList($value);
               }
               else {
                 $value = (string) $value;
@@ -381,12 +381,12 @@ class ZenodoDeposit extends Zenodo {
           }
         }
         // Link DOI to doi.org.
-        $doi = &tpps_array_get_value($deposition,
+        $doi = &TppsArray::getValue($deposition,
           ['metadata', 'prereserve_doi', 'doi']
         );
         $doi = l($doi, 'https://doi.org/' . $doi);
 
-        $output .= tpps_array_print_list($deposition);
+        $output .= TppsArray::printList($deposition);
         break;
     }
     return $output;

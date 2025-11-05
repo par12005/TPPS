@@ -25,7 +25,7 @@ module_load_include('inc', 'tpps', 'includes/submission_form_version_changes');
  * ----------------------------------------------------------------------------
  * What is Submission Version?
  * 1. Versions are integers and start from '1' which is
- *    defined as SubmissionVersion::VERSION_1 constant.
+ *    defined as SubmissionVersion::V1 constant.
  * 2. Each version changes must be listed in function
  *    tpps_submission_interface_get_change_list().
  * 3. Version's value is stored under $submission_state['saved_values'] because
@@ -69,15 +69,11 @@ module_load_include('inc', 'tpps', 'includes/submission_form_version_changes');
  * 5. Search module's code for a field name and update if necessary.
  * 6. Add new items to the Version Change List below.
  *
- * There is no need to update Submission::flatten() because it
- * uses Submission Shared State.
- *
  * How to change/modify structure of the Submission Shared State?
  * 1. Update submit_all.php
  * 2. Update this file.
  * 3. tpps_table_display().
- * 4. Submission::flatten().
- * 5. Other code which uses Submission Interface.
+ * 4. Other code which uses Submission Interface.
  *
  * ----------------------------------------------------------------------------
  * API.
@@ -87,7 +83,7 @@ module_load_include('inc', 'tpps', 'includes/submission_form_version_changes');
  * To upgrade/downgrade to version:
  *    SubmissionVersion::set($submission_state, $version);
  * To set version (without upgrade/downgrade):
- *    SubmissionVersion::set($submission_state, $version, $no_migration = TRUE);
+ *    SubmissionVersion::set($submission_state, $version, $migrate = FALSE);
  *    or
  *    $submission->setFormVersion($version);
  *
@@ -140,10 +136,12 @@ class SubmissionVersion {
   // Name of the key which stores Submission Form version.
   const FORM_KEY = 'submission_form_version';
 
+  // Versions.
   // Number of the initial version of Form State Array.
   // This value will be used to apply incremental changes (patches).
-  // Need to avoid 'magic numbers'.
-  const VERSION_1 = 1;
+  const V1 = 1;
+  const V2 = 2;
+  const V3 = 3;
 
   /**
    * Checks if Debug Mode is enabled.
@@ -193,23 +191,28 @@ class SubmissionVersion {
   /**
    * Sets Submission Form Version.
    *
-   * Note: Form State in database won't be updated.
    * To set version without upgrade/downgrade:
    *   $submission->setFormVersion($version);
+   * Note: Form State in database won't be updated.
    *
    * @param array $submission_state
    *   Submission Form State array.
    * @param int $version
    *   Submission Form Version.
    * @param bool $migrate
-   *   Defines if state array should be upgraded/downgraded. Default is TRUE.
+   *   Default is TRUE.
+   *   Defines if state array should be upgraded/downgraded.
    *   When FALSE then only version number will be changed. This could be used
    *   for troubleshooting and debugging.
    *
    * @return array
    *   Returns form state array upgraded/downgrated to desired version.
+   *
+   * @todo Rename to 'switch' or something more meaningful. 'Set' means for me
+   * just change number without migration.
    */
   public static function set(array $submission_state, $version = NULL, $migrate = TRUE) {
+    // Validate.
     if (is_null($version)) {
       // @TODO
       $message = "Version can't be empty.";
@@ -224,6 +227,7 @@ class SubmissionVersion {
     if ($current_version == $version) {
       return $submission_state;
     }
+    // Migrate.
     if ($migrate) {
       if ($current_version > $version) {
         return static::downgrade($submission_state, $version);
@@ -267,7 +271,7 @@ class SubmissionVersion {
 
     // Skip if current version is '1'.
     $current_version = static::get($submission_state);
-    $final_version = $final_version ?? static::VERSION_1;
+    $final_version = $final_version ?? static::V1;
     $result = $submission_state;
 
     if ($current_version == $final_version) {
@@ -291,7 +295,7 @@ class SubmissionVersion {
     if ($debug_mode ?? FALSE) {
       $message = 'Submission "@accession" was downgraded to @version. !stack';
       $params = [
-        '!stack' => tpps_array_print_list(
+        '!stack' => TppsArray::printList(
           debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 10)
         ),
         '@accession' => $submission_state['accession'],
@@ -421,7 +425,7 @@ class SubmissionVersion {
       $result = $submission_state;
     }
     else {
-      $result = tpps_array_apply_changes($change_list, $submission_state);
+      $result = TppsArray::applyChanges($change_list, $submission_state);
       switch ($direction) {
         case 'upgrade':
           $version = $final_version;
@@ -430,8 +434,8 @@ class SubmissionVersion {
         case 'downgrade':
           // @TODO Minor. Remove after testing those extra check
           // cause it's overkill but left to be sure.
-          $version = static::VERSION_1;
-          if ($final_version > static::VERSION_1) {
+          $version = static::V1;
+          if ($final_version > static::V1) {
             $version = $final_version - 1;
           }
           break;

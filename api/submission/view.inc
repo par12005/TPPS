@@ -35,7 +35,7 @@ function tpps_api_submission_view($submission) {
     if ($data) {
       array_shift($parents);
       $key_exist = FALSE;
-      $output = drupal_array_get_nested_value($data, $parents, $key_exist);
+      $output = TppsArray::getValue($data, $parents, $key_exist);
       if ($key_exist && is_null($output)) {
         $output = 'NULL';
       }

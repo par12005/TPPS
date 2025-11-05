@@ -189,7 +189,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
     }
   }
 
-  if ($submission->status == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
+  if ($submission->isPendingApprovalStatus()) {
     $options['files'] = [
       'revision_destination' => TRUE,
     ];
@@ -222,16 +222,17 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
   $display .= tpps_table_display($submission->sharedState, $options);
 
   if (
-    $submission->status == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL
+    $submission->isPendingApprovalStatus()
     && preg_match('/P/', $submission->sharedState['saved_values'][TPPS_PAGE_2]['data_type'])
   ) {
     $new_cvterms = array();
     $page4 = $submission->sharedState['saved_values'][TPPS_PAGE_4];
     for ($i = 1; $i <= $submission->getOrganismNumber(); $i++) {
+      $organism_key = 'organism-' . $i;
       // @TODO Could we just skip when it's checked?
       $phenotype = $page4["organism-1"]['phenotype'];
-      if (empty($page4["organism-$i"]['phenotype-repeat-check'])) {
-        $phenotype = $page4["organism-$i"]['phenotype'];
+      if (empty($page4[$organism_key]['phenotype-repeat-check'])) {
+        $phenotype = $page4[$organism_key]['phenotype'];
       }
 
 
@@ -405,7 +406,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Reject/Approve and comments.
-  if ($submission->status == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
+  if ($submission->isPendingApprovalStatus()) {
 
     if ($page2_values['study_type'] != 1) {
       module_load_include('php', 'tpps', 'forms/build/page_3_helper');
@@ -436,10 +437,11 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
     $orgamism_num = $page1_values['organism']['number'];
     $show_layers = FALSE;
     for ($i = 1; $i <= $orgamism_num; $i++) {
-      if (!empty($page4_values["organism-$i"]['environment'])) {
-        foreach ($page4_values["organism-$i"]['environment']['env_layers'] as $layer => $layer_id) {
+      $organism_key = 'organism-' . $i;
+      if (!empty($page4_values[$organism_key]['environment'])) {
+        foreach ($page4_values[$organism_key]['environment']['env_layers'] as $layer => $layer_id) {
           if (!empty($layer_id)) {
-            foreach ($page4_values["organism-$i"]['environment']['env_params'][$layer] as $param_id) {
+            foreach ($page4_values[$organism_key]['environment']['env_params'][$layer] as $param_id) {
               if (!empty($param_id)) {
                 $type = variable_get("tpps_param_{$param_id}_type", NULL);
                 if (empty($type)) {
@@ -544,7 +546,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
     '#prefix' => '<div id="tpps-admin-comments">',
     '#suffix' => '</div>',
   ];
-  if ($submission->status == TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
+  if ($submission->isPendingApprovalStatus()) {
     $form['APPROVE'] = [
       '#type' => 'submit',
       '#value' => t('Approve'),
@@ -557,7 +559,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
     ];
   }
 
-  if ($submission->status != TPPS_SUBMISSION_STATUS_PENDING_APPROVAL) {
+  if (!$submission->isPendingApprovalStatus()) {
     $form['SAVE_COMMENTS'] = [
       '#type' => 'button',
       '#value' => t('Save Comments'),
@@ -578,7 +580,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
   if (!empty($date)) {
     $datestr = "{$date['day']}-{$date['month']}-{$date['year']}";
     if (
-      $submission->status != TPPS_SUBMISSION_STATUS_APPROVED
+      $submission->status != Submission::STATUS_APPROVED
       || strtotime($datestr) > time()
     ) {
       tpps_admin_panel_add_section($form, $section);
@@ -597,7 +599,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
     'key' => 'save_alternative_accessions',
     'title' => t('Save Alternative Accessions'),
   ];
-  if ($submission->status == TPPS_SUBMISSION_STATUS_APPROVED) {
+  if ($submission->status == Submission::STATUS_APPROVED) {
     tpps_admin_panel_add_section($form, $section);
     $form[$section['key']]['alternative_accessions'] = [
       '#type' => 'textfield',
@@ -1249,7 +1251,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'reject':
-      $submission->save(TPPS_SUBMISSION_STATUS_INCOMPLETE);
+      $submission->save(Submission::STATUS_INCOMPLETE);
       // Email notification.
       $lang = user_preferred_language($owner);
       drupal_mail('tpps', 'user_rejected', $to, $lang, $params, $from, TRUE);
@@ -1262,7 +1264,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
     case 'approve':
       module_load_include('php', 'tpps', 'forms/submit/submit_all');
       global $user;
-      $submission->status = TPPS_SUBMISSION_STATUS_APPROVED;
+      $submission->status = Submission::STATUS_APPROVED;
 
       // Email notification.
       $params['subject'] = "$type_label Submission Approved: "
@@ -1480,10 +1482,12 @@ function tpps_admin_panel_get_reports() {
     'submissions_missing_files' => $panel_url . '/submissions-missing-files',
     'submissions_without_files' => $panel_url . '/submissions-without-files',
     'submissions_all_files' => $panel_url . '/submissions-all-files',
+    'submissions_type_files' => $panel_url . '/submissions-type-files',
     'organism_list' => $panel_url . '/organism-list',
     'doi_duplicates' => $panel_url . '/doi-duplicates',
     'zenodo_submissions' => $panel_url . '/zenodo-submissions',
     'zenodo_depositions' => $panel_url . '/zenodo-depositions',
+    'submission_version' => $panel_url . '/submission-version',
   ];
 }
 

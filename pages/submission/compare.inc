@@ -165,12 +165,12 @@ function tpps_submission_compare(array $form, array &$form_state, $accession_1 =
 
   $dumps = [
     'Submission Interface' => [
-      'parsed_1' => tpps_array_dump($shared_statediff_1, $sticky = FALSE),
-      'parsed_2' => tpps_array_dump($shared_statediff_2, $sticky = FALSE),
+      'parsed_1' => TppsArray::dump($shared_statediff_1, $sticky = FALSE),
+      'parsed_2' => TppsArray::dump($shared_statediff_2, $sticky = FALSE),
     ],
     'Form State' => [
-      'parsed_1' => tpps_array_dump($form_state_diff_1, $sticky = FALSE),
-      'parsed_2' => tpps_array_dump($form_state_diff_2, $sticky = FALSE),
+      'parsed_1' => TppsArray::dump($form_state_diff_1, $sticky = FALSE),
+      'parsed_2' => TppsArray::dump($form_state_diff_2, $sticky = FALSE),
     ],
   ];
   foreach ($dumps as $type => $data) {
@@ -203,10 +203,10 @@ function tpps_submission_compare(array $form, array &$form_state, $accession_1 =
  * @param string $accession_2
  *   Submission 2 Accession.
  * @param array $parsed_1
- *   Prepared array. See tpps_array_dump().
+ *   Prepared array. See TppsArray::dump().
  *   Keys are: 'title', 'data' and 'count'.
  * @param array $parsed_2
- *   Prepared array. See tpps_array_dump().
+ *   Prepared array. See TppsArray::dump().
  *   Keys are: 'title', 'data' and 'count'.
  */
 function tpps_submission_compare_show_diff(array &$form, $accession_1, $accession_2, array &$parsed_1, array &$parsed_2) {

@@ -5,7 +5,6 @@
  * Defines useful functions for file management.
  */
 
-
 /**
  * This function parses a file and returns an array of its content.
  *
@@ -23,13 +22,13 @@
  *   An array containing the content headers and content body.
  */
 function tpps_parse_file($fid, $max_rows = 0, $no_header = FALSE, $columns = NULL) {
-  $content = array();
-  $options = array(
+  $content = [];
+  $options = [
     'no_header' => $no_header,
     'columns' => $columns,
     'max_rows' => $max_rows,
     'content' => &$content,
-  );
+  ];
 
   tpps_file_iterator($fid, 'tpps_parse_file_helper', $options);
   $content['headers'] = tpps_file_headers($fid, $no_header);
@@ -433,6 +432,9 @@ function tpps_compare_files($fid_1, $fid_2, $file_1_id_name, $file_2_id_name, $f
 /**
  * This function validates that the file contains all of the required groups.
  *
+ * See improved version: FileField::validateColumns() which allows
+ * multiple sets of required columns (not only single set).
+ *
  * A "required group" is a column type that must be present within the file for
  * the file to be considered valid. For instance, a required group for a plant
  * accession file would be the "Location" group. The required groups array
@@ -456,11 +458,36 @@ function tpps_compare_files($fid_1, $fid_2, $file_1_id_name, $file_2_id_name, $f
  *   The state of the form that the file is part of.
  * @param array $required_groups
  *   The required column option groups for the file.
+ *   Example:
+ *   [
+ *     'SNP ID' => ['id' => [1]],
+ *     'Scaffold' => ['scaffold' => [2]],
+ *     'Position' => ['position' => [3]],
+ *     'Allele' => ['allele' => [4]],
+ *     'Associated Trait' => ['trait' => [5]],
+ *     'Confidence Value' => ['confidence' => [6]],
+ *   ].
  * @param array $file_element
  *   The managed_file element of the file within the form.
  *
  * @return array
  *   The groups and the column option types that the file was valid for.
+ *
+ *   Example:
+ *   [
+ *     // <Name> => [
+ *     //   <id in the option's list> => <column index>,
+ *     //   '#type' => <key>
+ *     // ],
+ *     'SNP ID' => [1 => 'B', '#type' => 'id'],
+ *     'Scaffold' => [
+ *       '#type' => [], // < ---- Not found!
+ *     ],
+ *     'Position' => [3 => 'D', '#type' => 'position'],
+ *     'Allele' => [4 => 'E', '#type' => 'allele'],
+ *     'Associated Trait' => [5 => 'F', '#type' => 'trait'],
+ *     'Confidence Value' => [6 => 'G', '#type' => 'confidence'],
+ *   ];
  */
 function tpps_file_validate_columns(array &$form_state, array $required_groups, array $file_element) {
 
@@ -478,7 +505,7 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
     return [];
   }
 
-  $cols = $file_element['#value']['columns'] ?? NULL;
+  $selected_columns = $file_element['#value']['columns'] ?? NULL;
   $parents = $file_element['#parents'];
   $new_end_columns = end($parents) . "-columns";
   $new_end_no_header = end($parents) . "-no-header";
@@ -489,7 +516,7 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
   // 'metadata-groups'
   // @TODO Only validate and don't touch existing data. Collect data on submit.
   $group_path = array_pop($parents) . "-groups";
-  $values = drupal_array_get_nested_value($form_state['values'], $parents);
+  $values = TppsArray::getValue($form_state['values'], $parents);
   // Initialize form column values in form state.
   $values[$new_end_columns] = [];
   // Hold onto the location of the columns in form state.
@@ -507,13 +534,13 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
     }
   }
 
-  if ($cols) {
-    // Note: $cols will be empty when user just added file (not clicked 'Upload'
+  if ($selected_columns) {
+    // Note: $selected_columns will be empty when user just added file (not clicked 'Upload'
     // button and submitted form (clicked 'Next' button).
     // Probably columns could be detected automatically because they are shown
     // at page and so we could use default values here.
     // @TODO Get default set of columns.
-    foreach ($cols as $name => $type) {
+    foreach ($selected_columns as $name => $type) {
       $state_column_values[$name] = $type;
       foreach ($required_groups_flat as $group => $types) {
         if (in_array($type, $types)) {
@@ -559,6 +586,17 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
     }
   }
 
+  // Replaces list of column names with a single value when was found only one. Instead of this:
+  // [
+  //   'Flank sequence' => [
+  //     '4' => ['0' => 'B'],
+  //     '#type' => ['0' => 'sequence'],
+  //   ]
+  // ];
+  // we will get this:
+  // [
+  //   'Flank sequence' => ['4' => 'B', '#type' => 'sequence'],
+  // ];
   foreach ($groups as $key => $group) {
     foreach ($group as $opt_num => $col_names) {
       if (count($col_names) == 1) {
@@ -568,14 +606,15 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
   }
 
   $values[$group_path] = $groups;
-  drupal_array_set_nested_value($form_state['values'], $parents, $values);
+  TppsArray::setValue($form_state['values'], $parents, $values);
   return $groups;
 }
 
 /**
  * Saves file column selections to the values of the form_state.
  *
- * Note: called of 'Save' button also.
+ * Note: also called on 'Save' button. See tpps_main_form_validate().
+ * Note: Stores columns into 'values' (not 'saved_values').
  *
  * This function is called before the form is validated so that the column
  * options can be saved whenever the user makes a selection.
@@ -586,86 +625,135 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
  *   The state of the form being validated.
  */
 function tpps_save_file_columns(array &$form, array &$form_state) {
-  $accession = substr($form_state['accession'], 4);
-  $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] ?? NULL;
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  if ($form_state['stage'] == TPPS_PAGE_3) {
-    for ($i = 1; $i <= $form_state['stats']['species_count']; $i++) {
-      $form_state['values']['tree-accession']["species-$i"]['file-columns'] = [];
-      if (isset($form['tree-accession']["species-$i"]['file']['#value']['columns'])) {
-        foreach ($form['tree-accession']["species-$i"]['file']['#value']['columns'] as $col => $val) {
-          if ($col[0] != '#') {
-            $form_state['values']['tree-accession']["species-$i"]['file-columns'][$col]
-              = $form['tree-accession']["species-$i"]['file']['#value']['columns'][$col];
-          }
-        }
-      }
-
-      if (empty($form_state['values']['tree-accession']['check'])) {
-        break;
-      }
-    }
+  $form_page = FormState::getPage($form_state);
+  if (!in_array($form_page, [TPPS_PAGE_3, TPPS_PAGE_4])) {
+    // Currently only file fields on this pages are supported.
+    return;
   }
+  $organism_number = FormState::getOrganismNumber($form_state);
+  $extra_field_list = [
+    'columns',
+    'no-header',
+    'empty',
+    // There is no need to store required groups because of different
+    // structure and this class's method could be used to get data.
+    'groups',
+  ];
+  // List of parents.
+  // Note: Pages has different structure.
+  // 3: 'tree-accession', 'species-N', 'file'.
+  // 4: 'organism-N', 'genotype', 'SNPs', ... , 'assay-design'.
+  if ($form_page == TPPS_PAGE_3) {
+    // @todo Update. See code for genotype|phenotype fields.
+    $parent_list = [
+      // Page 3. Accession file.
+      // ['tree-accession', 'species-1', 'file'].
+      // @todo Create separate class 'Accession'.
+      ['file'],
+    ];
+  }
+  elseif ($form_page == TPPS_PAGE_4) {
+    // @todo Use FileField::getParents().
+    $parent_list = [
+      // ['phenotype', 'file'].
+      PhenotypeData::getParents(),
+      // ['phenotype', 'metadata'],
+      PhenotypeMeta::getParents(),
+
+      // ['genotype', 'SNPs', 'snps-association'].
+      SnpAssociation::getParents(),
+      // ['genotype', 'SNPs', 'assay-design-citation', 'assay-design'].
+      AssayDesign::getParents(),
+      // ['genotype', 'other', 'other_marker'].
+      OtherMarker::getParents(),
+
+      // File fields which doesn't have column data type selector:
+      // ['organism-1', 'genotype', 'SNPs', 'snps-assay'],
+      // SnpAssay::getParents(),
+      // ['organism-1', 'genotype', 'SNPs', 'snps-pop-struct'],
+      // SnpsPopulationStructure::getParents(),
+      // ['organism-1', 'genotype', 'SNPs', 'snps-kinship'],
+      // SnpsKinship::getParents(),
+
+      // ['organism-1', 'genotype', 'SNPs', 'vcf'],
+      // ['organism-1', 'genotype', 'ssrs_cpssrs', 'ssrs'],
+      // ['organism-1', 'genotype', 'ssrs_cpssrs', 'ssrs_extra'],
+      // ['organism-1', 'genotype', 'tripal_fasta', 'file', 'file_upload'].
+    ];
+  }
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  elseif ($form_state['stage'] == TPPS_PAGE_4) {
-    $other_fieldset = 'other';
-    $snp_fieldset = 'SNPs';
-    // Genotype.
-    if (isset($form['organism-1']['genotype'])) {
-      // Format: Parent fieldset as a key and list of field names as a value.
-      $field_name_list = [
-        $snp_fieldset => [
-          'snps-association',
-        ],
-        $other_fieldset => [
-          'other_marker',
-        ],
-      ];
-      for ($i = 1; $i <= $organism_number; $i++) {
-        $organism_key = 'organism-' . $i;
-        foreach ($field_name_list as $fieldset => $item) {
-          foreach ($item as $field_name) {
-            $genotype = &$form_state['values'][$organism_key]['genotype'] ?? '';
-            $genotype_form_element = &$form[$organism_key]['genotype'] ?? '';
-            if ($file = tpps_file_load($genotype[$fieldset][$field_name] ?? '')) {
-              $genotype[$fieldset][$field_name . '-columns'] = [];
-              $column_list = $genotype_form_element[$fieldset][$field_name]
-                ['#value']['columns'] ?? [];
-              foreach ($column_list as $key => $value) {
-                if ($key[0] != '#') {
-                  $genotype[$fieldset][$field_name . '-columns'][$key] = $value;
-                }
-              }
-            }
+  for ($i = 1; $i <= $organism_number; $i++) {
+    if ($form_page == TPPS_PAGE_3) {
+      $organism_key = 'species-' . $i;
+    }
+    elseif ($form_page == TPPS_PAGE_4) {
+      $organism_key = 'organism-' . $i;
+    }
+
+    foreach ($parent_list as $parents) {
+      switch (TppsArray::getFirst($parents)) {
+        case 'genotype':
+          if (!isset($form['organism-1']['genotype'])) {
+            continue;
           }
+          break;
+
+        case 'phenotype':
+          // @todo Minor. Probably this check could be removed because
+          // 'columns' element will be missing in this case and previous
+          // check will skip further processing.
+          // Left because it was in original code.
+          if (!FormState::hasAnyPhenotypeData($form_state, $i)) {
+            continue;
+          }
+          break;
+      }
+      // Update list of the parents.
+      if ($form_page == TPPS_PAGE_3) {
+        $parents = array_merge(['tree-accession', $organism_key], $parents);
+      }
+      elseif ($form_page == TPPS_PAGE_4) {
+        $parents = array_merge([$organism_key], $parents);
+      }
+
+      $fid = TppsArray::getValue($form_state['values'], $parents);
+      if (empty($file = tpps_file_load($fid))) {
+        continue;
+      }
+
+      // Get field name.
+      $new_parents = $parents;
+      $field_name = TppsArray::removeLast($new_parents);
+
+      // @todo Could this check be removed? Left because it was in original code.
+      if ($form_page == TPPS_PAGE_4) {
+        if (
+          !FormState::hasPhenotypeMetaDataFile($form_state, $i)
+          && $field_name == 'metadata'
+        ) {
+          continue;
         }
       }
-    }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Phenotype.
-    if (isset($form['organism-1']['phenotype'])) {
-      for ($i = 1; $i <= $organism_number; $i++) {
-        $organism_key = 'organism-' . $i;
-        $phenotype = &$form_state['values'][$organism_key]['phenotype'] ?? '';
-        $phenotype_form_element = &$form[$organism_key]['phenotype'] ?? '';
+      // Set value.
+      foreach ($extra_field_list as $extra_name) {
+        TppsArray::setValue($form_state['values'],
+          array_merge(
+            $new_parents,
+            [$field_name . '-' . $extra_name]
+          ),
+          TppsArray::getValue($form, array_merge(
+            $parents, ['#value', $extra_name]
+          ))
+        );
+      }
 
-        if (!empty($phenotype['normal-check'])) {
-          $field_name_list = ['file', 'metadata'];
-          foreach ($field_name_list as $field_name) {
-            if ($field_name == 'metadata' && $phenotype['check'] == '0') {
-              continue;
-            }
-            $phenotype[$field_name . '-columns'] = [];
-            if (isset($phenotype_form_element[$field_name]['#value']['columns'])) {
-              $columns = $phenotype_form_element[$field_name]['#value']['columns'];
-              foreach ($columns as $col => $val) {
-                if ($col[0] != '#') {
-                  $phenotype[$field_name . '-columns'][$col] = $columns[$col];
-                }
-              }
-            }
-          }
-        }
+      if (
+        $form_page == TPPS_PAGE_3
+        && empty(FormState::getAccessionCheck($form_state))
+      ) {
+        // Other species has the same settings.
+        break;
       }
     }
   }
@@ -1013,7 +1101,15 @@ function tpps_get_archive_files($archive) {
  *   Whether or not the no_header option has been set for the file.
  *
  * @return array
- *   An array of headers for the file.
+ *   An array of headers for the file
+ *   Examples of format:
+ *   $no_header = TRUE | $no_header = FALSE
+ *   [                 | [
+ *     'A' => 0,       |   'A' => 'SNP ID',
+ *     'B' => 1,       |   'B' => 'Scaffold',
+ *     'C' => 2,       |   'C' => 'Position',
+ *     'D' => 3,       |   'D' => 'Flank sequence',
+ *   ];                | ].
  */
 function tpps_file_headers($fid, $no_header = FALSE) {
   $headers = array();
@@ -1141,7 +1237,7 @@ function tpps_file_iterator($fid, $function, array &$options = []) {
  * @return Generator|array
  *   The generator for the file.
  */
-function tpps_file_generator($fid, array $options = array()) {
+function tpps_file_generator($fid, array $options = []) {
   $file = tpps_file_load($fid);
   $location = tpps_get_location($file->uri);
   $extension = tpps_get_path_extension($location);

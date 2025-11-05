@@ -256,7 +256,7 @@ function tpps_submission_zenodo_files_action($action, $deposit_id, $file_id, $ac
       $data['file_id'] = $file_id;
       // @TODO Minor. Get Zenodo File Id by Drupal File Id and remove exception.
       // Find submission by Zenodo Deposit Id. $data['deposit_id']
-      $submission_cache = SubmissionCache::get($reset);
+      $submission_cache = SubmissionCache::getAll($reset);
       $rows = [];
       $i = 0;
       foreach ($submission_cache as $accession => $item) {

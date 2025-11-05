@@ -39,7 +39,7 @@ function tpps_doi_get_accession($doi, $reset = FALSE) {
     return FALSE;
   }
   $doi = strtolower($doi);
-  $data = SubmissionCache::get($reset);
+  $data = SubmissionCache::getAll($reset);
   foreach ($data as $accession => $cached_submission) {
     if (strtolower($cached_submission['publication']['publication_doi']) == $doi) {
       return $accession;
