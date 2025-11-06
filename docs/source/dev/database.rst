@@ -3,6 +3,17 @@ Where Does Data Go?
 
 This section assumes that the reader is familiar with the `Chado`_ relational database schema. It will explain where data is stored and how different data types within the same TPPS submission are associated with one another.
 
+Dbxref x Project
+----------------
+
+For every submission to TPPS, a ``dbxref`` record is created to represent the submission as a whole. The ``dbxref`` record is assigned a unique accession number (``TGDRxxxx``) which is used to associate all other data in the submission to this reference. 
+The ``dbxref`` record is also associated with a ``project`` record through the ``project_dbxref`` table. It's within the project record that metadata about the study (sequencing method, study type, data file, study lat/lon) in the ``projectprop`` table is stored.
+
+Stock
+-----
+
+For each individual plant in the submission, a ``stock`` record is created with a ``uniquename`` with the format ``<Project Accession>-<Plant ID>``. The metadata for the plant (location) is then represented with associated ``stockprop`` records. The stock is associated with the project through the ``project_stock`` table.
+
 Phenotype
 ---------
 
