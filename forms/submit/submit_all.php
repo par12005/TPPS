@@ -262,168 +262,113 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
  *   Actually it's a shared state.
  */
 function tpps_nextflow_new_study_pipeline(array &$form_state) {
-  tpps_log("Refreshing chado.plant_location_view since this is required before running the nextflow new study pipeline\n");
-  try {
-    chado_query("REFRESH MATERIALIZED VIEW chado.plant_location_view");
-  }
-  catch (Exception $ex) {
-    tpps_log("Could not refresh materialized view chado.plant_location_view\n");
-  }
-  // Get all required nextflow flag parameters from the shared state
-  $study_accession = $form_state['saved_values'][1]['accession'];
-  $vcf = NULL;
-  try {
-    // Note: Only 1st organism is processed.
-    $vcf = $form_state['saved_values'][4]['organism-1']['genotype']['files']['local_vcf'];
-    tpps_log('Local VCF detected: ' . $vcf . PHP_EOL);
-  } catch (Exception $ex) { }
-  if ($vcf == null || $vcf == NULL || $vcf == '') {
+    // Get required Nextflow parameters from the shared state
+    $study_accession = $form_state['saved_values'][1]['accession'] ?? null;
+    $vcf = null;
+
+    // Try to get local VCF first
     try {
-      // Note: Only 1st organism is processed.
-      $vcf = $form_state['saved_values'][4]['organism-1']['genotype']['files']['vcf'];
-      // Lookup file_managed table
-      $file_results = chado_query('SELECT * FROM public.file_managed WHERE fid = :fid', [':fid' => $vcf]);
-      $vcf_location = NULL;
-      foreach ($file_results as $results_row) {
-        $vcf_location = $results_row->uri;
-        tpps_log('FILENAME column: ' . $vcf_location . PHP_EOL);
-      }
-      tpps_log('VCF uploaded: ' . $vcf_location . PHP_EOL);
-      $vcf = str_ireplace('public://tpps_genotype/', '/core/labs/Wegrzyn/VCF/tpps_genotype_web_uploads/', $vcf_location);
-    } catch (Exception $ex) { }
-  }
-  $ref_genome = NULL;
-  try {
-    // Note: Only 1st organism is processed.
-    $ref_genome = $form_state['saved_values'][4]['organism-1']['genotype']['ref-genome'];
-  } catch (Exception $ex) { }
-
-  if ($ref_genome != NULL) {
-    // Clean up ref_genome
-    $ref_genome = trim($ref_genome);
-    // This will replace multiple spaces with single spaces
-    $ref_genome = preg_replace('!\s+!', ' ', $ref_genome);
-
-    $rg_parts = explode(' ', $ref_genome);
-    $rg_parts_count = count($rg_parts);
-    if ($rg_parts_count > 4) {
-      throw new Exception('The ref genome has more than 4 parts so it is not formatted correctly and needs to be resolved.');
-    }
-    else {
-      // These are the default assignments
-      $genus = $rg_parts[0];
-      $species = strtolower($rg_parts[1]);
-      $type = strtolower($rg_parts[2]);
-      $version = NULL;
-      if ($rg_parts_count > 3) {
-        $version = strtolower($rg_parts[3]);
-      }
-      // If the 3rd part starts with v or is a number, then this is a version representation
-      if (strtolower(substr($rg_parts[2],0,1)) == 'v' or ctype_digit(substr($rg_parts[2],0,1))) {
-        $version = strtolower($rg_parts[2]);
-        // So the 4th part if it exists would be the type
-        if ($rg_parts_count > 3) {
-          $type = strtolower($rg_parts[3]);
+        $vcf = $form_state['saved_values'][4]['organism-1']['genotype']['files']['local_vcf'] ?? null;
+        if ($vcf) {
+            tpps_log('Local VCF detected: ' . $vcf . PHP_EOL);
         }
-        // Else if there is no part, then the type is missing so set it as null
-        else {
-          $type = 'null';
-        }
-      }
-      // Now create over the ref_genome value
-      $ref_genome = $genus . ' ' . $species . ' ' . $type . ' ' . $version;
-      tpps_log('ref_genome formatted: ' . $ref_genome . '\n');
+    } catch (Exception $ex) {
+        $vcf = null;
     }
-  }
-  // @TODO Check if any NULLs were found and do not run the workflow.
 
-  $store_directory = '/isg/treegenes/nextflow_workflows/' . $study_accession . '/new-study-pipeline';
-  if (!file_exists($store_directory)) {
-    mkdir($store_directory, 0755, TRUE);
-  }
+    // If local VCF not found, get uploaded VCF
+    if (!$vcf) {
+        try {
+            $vcf_fid = $form_state['saved_values'][4]['organism-1']['genotype']['files']['vcf'] ?? null;
+            if ($vcf_fid) {
+                $file_results = chado_query('SELECT * FROM public.file_managed WHERE fid = :fid', [':fid' => $vcf_fid]);
+                $vcf_location = null;
+                foreach ($file_results as $results_row) {
+                    $vcf_location = $results_row->uri;
+                    tpps_log('FILENAME column: ' . $vcf_location . PHP_EOL);
+                }
+                if ($vcf_location) {
+                    tpps_log('VCF uploaded: ' . $vcf_location . PHP_EOL);
+                    $vcf = str_ireplace('public://tpps_genotype/', '/core/labs/Wegrzyn/VCF/tpps_genotype_web_uploads/', $vcf_location);
+                }
+            }
+        } catch (Exception $ex) {
+            $vcf = null;
+        }
+    }
 
-  // If the directory was already created previously, we want to delete the old log files
-  // [RISH] 11/27/2024
-  // 1. This is fairly safe since we're specifying on log files
-  // 2. For further SECURITY, let's ensure there's no way someone can use an unsafe TGDR that contains '..'
-  //    to traverse the directory
-  $store_directory = str_ireplace('..', '', $store_directory);
-  exec('rm -f ' . $store_directory . '/*.log');
+    // Get reference genome
+    $ref_genome = null;
+    try {
+        $ref_genome = $form_state['saved_values'][4]['organism-1']['genotype']['ref-genome'] ?? null;
+    } catch (Exception $ex) {
+        $ref_genome = null;
+    }
 
-  $output = [];
-  $result_code = 0;
-  $four_letter_code = $_POST['autocomplete_four_letter_code'] ?? NULL;
-  $version = $_POST['input_version'] ?? NULL;
-  // $SCRIPT_LOCATION='/home/FCAM/tg-nginx/simple_test.sh';
-  $run_code = "#!/bin/bash
-  #SBATCH --job-name=simple_test
-  #SBATCH -N 1
-  #SBATCH -n 1
-  #SBATCH -c 1
-  #SBATCH --partition=general
-  #SBATCH --qos=general
-  #SBATCH --mail-type=END
-  #SBATCH --mem=10G
-  #SBATCH --mail-user=tg-nginx@cam.uchc.edu
-  #SBATCH -o $store_directory/new_study_pipeline_%j.out
-  #SBATCH -e $store_directory/new_study_pipeline_%j.err
+    // Format ref genome
+    if ($ref_genome) {
+        $ref_genome = trim(preg_replace('!\s+!', ' ', $ref_genome));
+        $rg_parts = explode(' ', $ref_genome);
+        $rg_parts_count = count($rg_parts);
 
+        if ($rg_parts_count > 4) {
+            throw new Exception('The ref genome has more than 4 parts so it is not formatted correctly and needs to be resolved.');
+        }
 
-  module load nextflow
-  mkdir -p /scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
-  export TMPDIR=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
-  export NXF_TEMP=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
-  export NXF_WORK=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
-  export NXF_OPTS='-Xms5G -Xmx20G'
-  cd $store_directory
-  echo \$SLURM_JOB_ID > $store_directory/slurm_job_id.txt
+        $genus = $rg_parts[0] ?? null;
+        $species = strtolower($rg_parts[1] ?? '');
+        $type = strtolower($rg_parts[2] ?? '');
+        $version = $rg_parts[3] ?? null;
 
-rm -rf ~/.nextflow/assets/TreeGenes/new-study-pipeline
-nextflow pull TreeGenes/new-vcf-pipeline -r main -hub gitlab
-# nextflow run TreeGenes/new-study-pipeline -r main -profile treegenes -resume --tgdr $study_accession --vcf '$vcf' --ref_genome '$ref_genome'
-";
+        if (isset($rg_parts[2]) && (strtolower(substr($rg_parts[2], 0, 1)) == 'v' || ctype_digit(substr($rg_parts[2], 0, 1)))) {
+            $version = strtolower($rg_parts[2]);
+            $type = $rg_parts[3] ?? 'null';
+        }
 
-// Override temporarily since we're running on TREEGENESDEV and not on the cluster (so sbatch commands will not work)
-$run_code = "#!/bin/bash
+        $ref_genome = trim("$genus $species $type $version");
+        tpps_log('ref_genome formatted: ' . $ref_genome . PHP_EOL);
+    }
+
+        // Ensure VCF and ref genome exist before continuing
+    if (!$vcf || !$ref_genome) {
+        tpps_log('Cannot run Nextflow: missing VCF or reference genome.');
+        return;
+    }
+
+    // Create storage directory
+    $store_directory = '/isg/treegenes/nextflow_workflows/' . $study_accession . '/new-study-pipeline';
+    if (!file_exists($store_directory)) {
+        mkdir($store_directory, 0755, true);
+    }
+    $store_directory = str_ireplace('..', '', $store_directory);
+    exec('rm -f ' . escapeshellarg($store_directory) . '/*.log');
+
+    // Build Nextflow run script
+    $SCRIPT_LOCATION = $store_directory . '/run_script.sh';
+    $run_code = "#!/bin/bash
+module load nextflow
+mkdir -p /scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
+export TMPDIR=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
+export NXF_TEMP=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
+export NXF_WORK=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
+export NXF_OPTS='-Xms5G -Xmx20G'
 cd $store_directory
+echo \$SLURM_JOB_ID > $store_directory/slurm_job_id.txt
 rm -rf ~/.nextflow/assets/TreeGenes/new-study-pipeline
-nextflow pull TreeGenes/new-study-pipeline -r main -hub gitlab
-# nextflow run TreeGenes/new-study-pipeline -r main -profile treegenes -resume --tgdr $study_accession --vcf '$vcf' --ref_genome '$ref_genome'
+nextflow run TreeGenes/new-study-pipeline -r main -profile treegenes -resume --tgdr $study_accession --vcf '$vcf' --ref_genome '$ref_genome'
 ";
 
+    file_put_contents($SCRIPT_LOCATION, $run_code);
+    chmod($SCRIPT_LOCATION, 0755);
 
-  if (file_exists($store_directory . '/slurm_job_id.txt')) {
-    // @TODO Check why this varible not used.
-    $slurm_job_id = file_get_contents($store_directory . '/slurm_job_id.txt');
-  }
-  $SCRIPT_LOCATION = $store_directory . '/run_script.sh';
-  tpps_log(
-    'NEXTFLOW NEW STUDY PIPELINE SCRIPT LOCATION: @location',
-    ['@location' => $SCRIPT_LOCATION]
-  );
-  file_put_contents($SCRIPT_LOCATION, $run_code);
-  chmod($SCRIPT_LOCATION, 0755);
-
-  // TODO: Add the correct run code from Gabe
-  //$run_code .= "nextflow run TreeGenes/New_Genome_Pipeline -r master -profile xanadu ";
-
-  tpps_log("Attempting to run nextflow new study pipeline on treegenesdev...");
-  exec("
-      ssh tg-nginx@treegenesdev.cam.uchc.edu << EOF
-      $SCRIPT_LOCATION
-      EOF
-  ", $output, $result_code);
-
-  // THIS IS FOR THE CLUSTER BUT WE ARE CURRENTLY RUNNING ON TREEGENESDEV
-  // SO SBATCH COMMAND WILL NOT WORK.
-  // exec("
-  //     ssh tg-nginx@treegenesdev.cam.uchc.edu << EOF
-  //     sbatch $SCRIPT_LOCATION
-  //     EOF
-  // ", $output, $result_code);
-
-  tpps_log(print_r($output, 1));
+    // Run the script on remote host
+    tpps_log("Attempting to run nextflow new study pipeline on mantis...");
+    $output = [];
+    $result_code = 0;
+    exec("ssh tg-nginx@login.hpc.cam.uchc.edu " . escapeshellarg($SCRIPT_LOCATION), $output, $result_code);
+    tpps_log('Nextflow pipeline output: ' . print_r($output, true));
 }
+
 
 /**
  * Writes data to the tpps_job_logger_handle.
