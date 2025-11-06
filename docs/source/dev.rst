@@ -10,3 +10,4 @@ Developers
    dev/structure
    dev/files
    dev/database
+   dev/miappe
