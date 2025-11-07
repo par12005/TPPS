@@ -273,23 +273,18 @@ class AssayDesign extends FileField {
         'form_state' => $form_state,
         // Curent file.
         'no_header' => $snps[static::DOM_NAME . '-no-header'] ?? FALSE,
-        'column_letter' => static::getSelectedColumns(
-          $organism_index,
-          $form_state
-        )[static::DATA_TYPE_SNP_ID],
+        'column_letter' => static::getColumnLetter(
+          $organism_index, $form_state, static::DATA_TYPE_SNP_ID
+        ),
         // Target file.
         'target_form_element' => SnpAssociation::getFormElement(
-          $organism_index,
-          $form_state
+          $organism_index, $form_state
         ),
-        'target_column_letter' => SnpAssociation::getSelectedColumns(
-          $organism_index,
-          $form_state
-        )[SnpAssociation::DATA_TYPE_SNP_ID],
+        'target_column_letter' => SnpAssociation::getColumnLetter(
+          $organism_index, $form_state, SnpAssociation::DATA_TYPE_SNP_ID
+        ),
         'target_no_header' => SnpAssociation::getSubFieldValue(
-          $organism_index,
-          $form_state,
-          'no-header'
+          $organism_index, $form_state, 'no-header'
         ),
       ]);
       if (form_get_errors()) {
@@ -308,10 +303,9 @@ class AssayDesign extends FileField {
         $form_state,
         'no-header'
       ),
-      'column_letter' => static::getSelectedColumns(
-         $organism_index,
-        $form_state
-      )[static::DATA_TYPE_SNP_ID],
+      'column_letter' => static::getColumnLetter(
+        $organism_index, $form_state, static::DATA_TYPE_SNP_ID
+      ),
       // Target file.
       'target_column_letter' => NULL,
       'target_form_element' => SnpAssay::getFormElement($organism_index, $form_state),
@@ -358,9 +352,6 @@ class AssayDesign extends FileField {
       return;
     }
     tpps_add_project_file($shared_state, $fid);
-    // Note: currently not used.
-    $options['selected_columns'] = static::getSelectedColumns($organism_index, $shared_state);
-
     if ($debug_mode) {
       $message = t('"@title": Complete file processing.', $params);
       tpps_log_header($message);

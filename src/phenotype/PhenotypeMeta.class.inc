@@ -168,17 +168,11 @@ class PhenotypeMeta extends FileField {
     }
     else {
       // Empty units in metadata file are not allowed.
-      $columns = [
-        'name' => $groups['Phenotype Id'][self::DATA_TYPE_IDENTIFIER],
-        'attr' => $groups['Attribute'][self::DATA_TYPE_ATTRIBUTE],
-        'desc' => $groups['Description'][self::DATA_TYPE_DESCRIPTION],
-        'unit' => $groups['Unit'][self::DATA_TYPE_UNIT],
-      ];
       $options = [
-        'meta_columns' => $columns,
-        'id' => $organism_key,
-        'selected' => static::getColumnDataTypes($form_state, $organism_index),
+        'organism_index' => $organism_index,
+        'form_state' => $form_state,
       ];
+
       tpps_file_iterator($fid, 'PhenotypeMeta::validateRow', $options);
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Validate if metafile matches phenotype file using columns.
@@ -234,11 +228,23 @@ class PhenotypeMeta extends FileField {
    *   Additional options set when calling tpps_file_iterator().
    */
   public static function validateRow($row, array &$options = []) {
-    $form_error_name = $options['id'] . '][phenotype][metadata';
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    $organism_index = $options['organism_index'] ?? NULL;
+    $organism_key = 'organism-' . $organism_index;
+    $form_state = $options['form_state'] ?? NULL;
+    $form_error_name = $organism_key . '][phenotype][metadata';
+    $selected = static::getSelectedColumns($organism_index, $form_state);
+
+    // Get phenotype name.
+    $phenotype_column_letter = static::getColumnLetter(
+      $organism_index, $form_state,
+      static::DATA_TYPE_IDENTIFIER
+    );
+    $phenotype_name = $row[$phenotype_column_letter];
     // Check if 'unit' column has empty values.
-    $columns = $options['meta_columns'];
-    if (empty($row[$columns['unit']])) {
+    $unit_column_letter = static::getColumnLetter(
+      $organism_index, $form_state, static::DATA_TYPE_UNIT
+    );
+    if (empty($row[$unit_column_letter])) {
       $message = t('Phenotype Metadata File: Empty unit not allowed for '
         . '"<strong>@phenotype_name</strong>".<br />Row: @row',
         [
@@ -254,12 +260,12 @@ class PhenotypeMeta extends FileField {
       variable_get('tpps_page_4_phenotype_metadata_validate_synonyms')
     ) {
       // See also Submission->getPhenotypeSynonymList().
-      $attribute = $row[array_search(PhenotypeMeta::DATA_TYPE_ATTRIBUTE,
-        $options['selected']
-      )];
-      $phenotype_name = $row[array_search(PhenotypeMeta::DATA_TYPE_IDENTIFIER,
-        $options['selected']
-      )];
+      $attribute_column_letter = static::getColumnLetter(
+        $organism_index, $form_state,
+        static::DATA_TYPE_ATTRIBUTE
+      );
+
+      $attribute = $row[$attribute_column_letter];
       $synonym_id = array_search($attribute, PhenotypeSynonym::getAll());
       if (empty($synonym_id)) {
         $message = t('Phenotype Metadata File: Phenotype synonym is missing for '

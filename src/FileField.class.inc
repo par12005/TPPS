@@ -767,11 +767,27 @@ abstract class FileField {
     $complete_form_step = TppsArray::getValue($form_state['complete form'],
       ['stage', '#value']
     );
+    $input_step = TppsArray::getValue($form_state['input'], ['stage']);
     if (static::FORM_STEP == $complete_form_step) {
       $file_element = static::getFormElement($organism_index, $form_state);
-      $selected_columns = array_flip($file_element['#value']['columns'] ?? []);
+      $selected_columns = $file_element['#value']['columns'] ?? [];
+    }
+    elseif (static::FORM_STEP == $input_step) {
+      // For form validation (DB-record wasn't yet updated).
+      // Note: there is no data yet under $form_state['saved_values'][$current_step].
+      $parents = static::getParents($organism_index, $form_state, static::DOM_NAME);
+      // For searching purposes: 'assay-design-columns'.
+      $selected_columns = TppsArray::getValue(
+        $form_state['input'],
+        array_merge($parents, ['columns'])
+        );
+      if ($debug_mode) {
+        tpps_log_line();
+        tpps_log($selected_columns, 'selected_columns');
+      }
     }
     else {
+      // For processing (already submitted form/step).
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // WARNING: List of the selected by user data types for the columns has
       // new simple structure.
@@ -813,10 +829,8 @@ abstract class FileField {
     if (is_null($data_type_index)) {
       return FALSE;
     }
-    return array_search(
-      $data_type_index,
-      static::getSelectedColumns($organism_index, $form_state)
-    );
+    $selected = static::getSelectedColumns($organism_index, $form_state);
+    return array_search($data_type_index, $selected);
   }
 
   /**
