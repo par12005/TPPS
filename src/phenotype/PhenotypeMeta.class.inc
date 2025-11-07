@@ -202,6 +202,16 @@ class PhenotypeMeta extends FileField {
           // Check if list of phenotype names from metafile matches column names
           // in phenotype file.
           // $datafile_header contains list of phenotype file column names.
+          //
+          //
+          //
+          //
+          //  @TODO Fix;
+          //  Notice: Undefined variable: columns in PhenotypeMeta::validate() (line 206 of /var/www/Drupal/sites/all/modules/TGDR/src/phenotype/PhenotypeMeta.class.inc).
+          //  Notice: Undefined variable: columns in PhenotypeMeta::validate() (line 210 of /var/www/Drupal/sites/all/modules/TGDR/src/phenotype/PhenotypeMeta.class.inc).
+          //
+          //
+          //
           $options = [
             'columns' => [$columns['name']],
             // List of phenotype names in datafile stored in header.
