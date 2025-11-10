@@ -1,10 +1,12 @@
-
 .. image:: ../_static/images/miappe_logo.png
    :alt: Description of your PNG
     
 ============================
 
-The TreeGenes Plant Phenotype Submission (TPPS) system has been updated to support submissions that are compliant with the MIAPPE (Minimum Information About a Plant Phenotyping Experiment) standard. This document outlines the necessary steps and considerations for preparing and submitting MIAPPE-compliant data through TPPS. This documentation assumes that the reader is already familiar with the `MIAPPE`_ standard.
+The TreeGenes Plant Phenotype Submission (TPPS) system has been updated to support submissions that are compliant with the `MIAPPE`_ (Minimum Information About a Plant Phenotyping Experiment) standard. This document outlines the necessary steps and considerations for preparing and submitting MIAPPE-compliant data through TPPS. A lot of MIAPPE information is based on the `ISA Abstract Model`_ that consists of three core entities: Investigation, Study, Assay.
+
+.. image:: ../_static/images/miappe_owl.png
+   :alt: MIAPPE Entity Relationship Diagram
 
 .. note::
 
@@ -13,21 +15,48 @@ The TreeGenes Plant Phenotype Submission (TPPS) system has been updated to suppo
 Investigation
 -------------
 
-Investigations in MIAPPE correspond to TGDRxxxx studies in TPPS. Their use is intended to encapsulate large projects with their children studies. For example, a commond garden experiment may conduct multiple studies through time and report on the traits of progeny through successive years.  
+Investigations in MIAPPE correspond to TGDRxxxx studies in TPPS. 
 
 .. image:: ../_static/images/miappe_investigation2chado.png
    :alt: Mappings between MIAPPE Investigation and Chado tables
-   :width: 400px
-   :height: 600px
-
-.. _MIAPPE: https://www.miappe.org/
 
 Study
 -----
 
-Information provided here describes the duration, location, experimental design, observation unit, and kind of growth facility leveraged in the study.  
+An investigation can have one or more studies. Where a study corresponds to one experiment and its location and duration. Additional information like experimental design, cultural practices, and growth facility.
 
-.. image:: ../_static/images/miappe_study2chado.svg
-   :alt: Mappings between MIAPPE Study and Chado tables
-   :width: 400px
-   :height: 600px
+Biological Material
+-------------------
+
+It is recommended to follow the `MCPD`_ (Multi-Crop Passport Descriptors) guidelines plus a unique identifier provided by the institute when preparing biological material information for submission. This also needs to include fields like genus, species, and infraspecific name alongside geographical coordinates. The biological material also should include pretreatments (to the seeds, tree cuttings) prior to starting the experiment. The proveneance information like, forest wild site, laboratory-specific population and any relevant DOI's to gene banks should also be included. 
+
+Biological Unit
+-----------------
+
+
+Biological Variable
+--------------------
+
+
+Integration With Chado
+----------------------
+
+.. image:: ../_static/images/chado_mermaid.svg
+   :alt: Chado schema
+
+At the investigation level, we can start including relationships between MIAPPE version and study duration (end) with publication accession in dbxref table.  
+
+
+Exchange Formats To BioSample
+------------------------------
+
+EBI BioSample provides a MIAPPE-compliant schema for plant phenotyping data submissions. The schema can be found `EBI_BioSample_Miappe_Schema`_. When preparing data for submission to EBI BioSample, ensure that the data adheres to this schema to facilitate smooth integration and compliance with MIAPPE standards. Once a sample is submitted to BioSample you can view it here: `here`_.
+
+
+.. image:: ../_static/images/BioSample_schema_ui.jpeg
+   :alt: EBI BioSample MIAPPE Schema UI
+
+.. _MIAPPE: https://www.miappe.org/
+.. _MCPD: https://openknowledge.fao.org/server/api/core/bitstreams/52a8b5bc-0a5f-47e2-a6c3-3e93434057ae/content
+.. _EBI_BioSample_Miappe_Schema: https://www.ebi.ac.uk/biosamples/schemas/certification/plant-miappe.json
+.. _EBI_BioStudies_Example: https://www.ebi.ac.uk/biostudies/arrayexpress/studies/E-GEOD-32551
