@@ -663,4 +663,25 @@ class TppsArray {
     return end($array);
   }
 
+  /**
+   * Gets duplicates.
+   *
+   * WARNING: Original element is not included. Only duplicates.
+   *
+   * @param array $array
+   *   Array which will be processed.
+   *
+   * @return array
+   *   Returns list of duplicate elements.
+   *   Returns empty array if there is no duplicates.
+   */
+  public static function getDuplicates(array $array) {
+    // Compare values (and keys) of 2 arrays and return the difference.
+    return array_diff_assoc(
+      $array,
+      // Remove duplicate values.
+      array_unique($array)
+    );
+  }
+
 }
