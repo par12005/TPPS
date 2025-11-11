@@ -174,58 +174,6 @@ class PhenotypeMeta extends FileField {
       ];
 
       tpps_file_iterator($fid, 'PhenotypeMeta::validateRow', $options);
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Validate if metafile matches phenotype file using columns.
-      // Get Phenotype Data header which could have 'year' column.
-      $datafile_header = tpps_file_get_header($data_fid);
-      if ($datafile_header) {
-        // $form_state['values'] has no value but $form_state['input']
-        // has is so we will use it.
-        // WARNING: Data (not Meta).
-        $datafile_no_header = $form_state['input'][$organism_key]['phenotype']
-          ['file']['no-header'] ?? NULL;
-        // @todo Update.
-        // $phenotype_no_header = PhenotypeData::getNoHeaderValue(
-        //  $organism_index, $form_state
-        // );
-        // Check if checkbox 'My file has no header row' wasn't checked.
-        if ($datafile_no_header) {
-          // @TODO Check if phenotype file could be without header?
-          drupal_set_message(
-            t('Phenotype file has no header in 1st row so validation was NOT'
-            . ' completed. Please check if Phenotype Names in both files are'
-            . ' the same.'),
-            'warning'
-          );
-        }
-        else {
-          // Check if list of phenotype names from metafile matches column names
-          // in phenotype file.
-          // $datafile_header contains list of phenotype file column names.
-          //
-          //
-          //
-          //
-          //  @TODO Fix;
-          //  Notice: Undefined variable: columns in PhenotypeMeta::validate() (line 206 of /var/www/Drupal/sites/all/modules/TGDR/src/phenotype/PhenotypeMeta.class.inc).
-          //  Notice: Undefined variable: columns in PhenotypeMeta::validate() (line 210 of /var/www/Drupal/sites/all/modules/TGDR/src/phenotype/PhenotypeMeta.class.inc).
-          //
-          //
-          //
-          $options = [
-            'columns' => [$columns['name']],
-            // List of phenotype names in datafile stored in header.
-            'phenotypes' => $datafile_header,
-            'organism_name' => $organism_key,
-            'column_name' => $columns['name'],
-          ];
-          tpps_file_iterator(
-            $fid,
-            'tpps_validate_metafile_phenotype_names',
-            $options
-          );
-        }
-      }
     }
   }
 
@@ -287,6 +235,33 @@ class PhenotypeMeta extends FileField {
         );
         form_set_error($form_error_name, $message);
       }
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Validate if list of the phenotypes in the header of the Phenotype Data
+    // file  matches list of phenotypes in the column 'Phenotype Id' of the
+    // Phenotype Metadata file.
+    if (PhenotypeData::hasHeader($organism_index, $form_state)) {
+      $phenotype_data_header = PhenotypeData::getFileHeader($organism_index, $form_state);
+      if (!in_array($phenotype_name, $phenotype_data_header)) {
+        $message = t('Phenotype Metadata File for organism #<strong>@organism_id '
+          . '("@organism_name" </strong>: Phenotype name '
+          . '"<strong>@phenotype_name</strong>" from metafile was NOT found in '
+          . 'Phenotype File.<br />Phenotype File columns: @column_list.',
+          [
+            '@organism_id' => $organism_index,
+            'organism_name' => FormState::getOrganismName($form_state, $organism_index),
+            '@phenotype_name' => $phenotype_name,
+            '@column_list' => implode(', ', $phenotype_data_header),
+          ]
+        );
+        form_set_error($form_error_name, $message);
+      }
+    }
+    else {
+      $message = t('Phenotype Data file has no header in 1st row so validation '
+        . 'was NOT completed. Please check if Phenotype Names in both files '
+        . 'are  the same.');
+      drupal_set_message($message, 'warning');
     }
   }
 

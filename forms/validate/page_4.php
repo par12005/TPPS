@@ -892,47 +892,9 @@ function tpps_validate_ssr(array &$form_state, $organism_index, $field_name) {
   );
 }
 
-/**
- * Checks if names in Phenotype Metadata File and Phenotype File matches.
- *
- * File row iterator for Phenotype Metadata File. See PhenotypeMeta class.
- * WARNING:
- * Only first error message will be shown because form_set_error() do not use
- * arrays for messages but stores only singe error message.
- *
- * @param mixed $row
- *   Single row from Phenotype File.
- * @param array $options
- *   Options with the keys:
- *   - 'phenotypes' - list of Phenotype names in Phenotype Metadata File.
- *   - 'column_name' - column name (for example 'A') which contains Phenotype
- *     Names in Phenotype File.
- *   - 'organism_name' - Organism Name used in HTML Forms. Eg., 'organism-1'.
- *
- * @todo Move to PhenotypeMeta class::validateRow().
- */
-function tpps_validate_metafile_phenotype_names($row, array $options = []) {
-  $file_header = $options['phenotypes'];
-  $column_name = $options['column_name'];
-  if (!in_array($row[$column_name], $file_header)) {
-    $organism_name = $options['organism_name'];
-    // @TODO Minor. Get Organism Name for this message.
-    $message = t('Phenotype Metadata File for organism '
-      . '#<strong>@organism_id</strong> : Phenotype name '
-      . '"<strong>@phenotype_name</strong>" from metafile was NOT found in '
-      . 'Phenotype File.<br />Phenotype File columns: @column_list.',
-      [
-        '@organism_id' => str_replace('organism-', '', $organism_name),
-        '@phenotype_name' => $row[$column_name],
-        '@column_list' => implode(', ', $file_header),
-      ]
-    );
-    form_set_error($organism_name . '][phenotype][metadata', $message);
-  }
-}
-
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 // Genotype sub-sections.
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 /**
  * Validates the genotype/ssr section of the fourth page of the form.
