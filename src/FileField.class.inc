@@ -746,6 +746,11 @@ abstract class FileField {
    *
    * To get column letter: static::getColumnLetter();
    *
+   * Static caching note:
+   * No need to use static cache because file_load() already uses caching.
+   * See https://api.drupal.org/api/drupal/includes%21file.inc/function/file_load/7.x
+   * First call takes about 2.3 msec (cold cache) and next 0.05 msec (warm cache).
+   *
    * Note:
    * Result could have extra (not required) columns because it uses user's
    * selection. Be sure to call static::validateColumns() first.
@@ -754,12 +759,17 @@ abstract class FileField {
    *   Ordinal organism number at page.
    * @param array $form_state
    *   Drupal Form API State Array.
+   * @param bool $reset
+   *   Flag to reset cache.
    *
    * @return array
    *   Returns list of column's data types selected by user in flipped format.
    *   E.g., ['A' => 1, 'B' => 4, 'C' => 2].
+   *
+   * @todo It's better to use reversed structure to get column letter by key
+   * instead of value.
    */
-  public static function getSelectedColumns($organism_index, array &$form_state) {
+  public static function getSelectedColumns($organism_index, array &$form_state, $reset = FALSE) {
     $organism_key = 'organism-' . $organism_index;
     $debug_mode = FALSE;
     // Check if current field belongs to recently submitted form and we could
@@ -1594,10 +1604,18 @@ abstract class FileField {
   /**
    * Gets file's header (1st row).
    *
+   * Static caching note:
+   * Using static cache is useful even when file_load() already uses caching.
+   * See https://api.drupal.org/api/drupal/includes%21file.inc/function/file_load/7.x
+   * First call takes about 7 msec (cold cache) and next 2.5 msec (warm cache).
+   * Static cache: 7 msec / 0.4 msec.
+   *
    * @param int $organism_index
    *   Ordinal organism number on page.
    * @param array $form_state
    *   Drupal Form API State array.
+   * @param bool $reset
+   *   Flag to reset cache.
    *
    * @return array
    *   Returns 1st row of file (header).
@@ -1605,17 +1623,24 @@ abstract class FileField {
    *   1. File wasn't found.
    *   2. File has no header.
    *
-   * @TODO Return NULL instead of empty array.
+   * @todo Return NULL instead of empty array.
    */
-  public static function getFileHeader($organism_index, array &$form_state) {
-    $header = [];
-    if (
-      static::hasHeader($organism_index, $form_state)
-      && $fid = static::getFileId($organism_index, $form_state)
-    ) {
-      $header = tpps_file_headers($fid, $no_header = FALSE);
+  public static function getFileHeader($organism_index, array &$form_state, $reset = FALSE) {
+    $key = static::generateUniqueKey($organism_index, $form_state);
+    $static_cache = &drupal_static(__METHOD__);
+    if ($reset || !isset($static_cache[$key])) {
+      $output = [];
+
+      if (
+        static::hasHeader($organism_index, $form_state)
+        && $fid = static::getFileId($organism_index, $form_state)
+      ) {
+        $output = tpps_file_headers($fid, $no_header = FALSE);
+      }
+
+      $static_cache[$key] = $output;
     }
-    return $header;
+    return $static_cache[$key];
   }
 
   /**
@@ -1766,10 +1791,14 @@ abstract class FileField {
     $key = implode('_', $unique);
     $static_cache = &drupal_static(__METHOD__);
     if ($reset || !isset($static_cache[$key])) {
+      $output = NULL;
+
       $fid = static::getFileId($organism_index, $form_state);
       if (!empty($fid) && $file = tpps_file_load($fid)) {
-        $static_cache[$key] = tpps_get_location($file->uri);
+        $output = tpps_get_location($file->uri);
       }
+
+      $static_cache[$key] = $output;
     }
     return $static_cache[$key];
   }
@@ -1864,6 +1893,26 @@ abstract class FileField {
       $number = $number + (array_search($char, $alphabet) + 1) * pow(count($alphabet), $key);
     }
     return $number - 1;
+  }
+
+  /**
+   * Generates unique key for static caching.
+   *
+   * @param int $organism_index
+   *   Ordinal number of the organism at page.
+   * @param array $form_state
+   *   Drupal Form State array.
+   *
+   * @return string
+   *   Returns key which is unique per organism.
+   */
+  public static function generateUniqueKey($organism_index, array $form_state) {
+    $unique = [
+      ($form_state['accession'] ?? NULL),
+      static::DOM_NAME,
+      $organism_index,
+    ];
+    return implode('_', $unique);
   }
 
 }
