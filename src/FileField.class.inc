@@ -692,6 +692,8 @@ abstract class FileField {
   /**
    * This function validates that the file contains all of the required groups.
    *
+   * WARNING: NOT YET IMPLEMENTED.
+   *
    * Based on code from function tpps_file_validate_columns() but allows
    * multiple sets of required columns.
    * To use this method class must implement 'getRequiredColumns' method and
@@ -712,6 +714,7 @@ abstract class FileField {
    *
    * @return mixed
    *   The groups and the column option types that the file was valid for.
+   *
    *   Example:
    *   [
    *     // <Name> => [
@@ -730,15 +733,22 @@ abstract class FileField {
    *
    * @todo Minor. Replace tpps_file_validate_columns() with this code to allow
    * multiple groups of required columns.
+   * @todo Use format 'A1B2': ['A' => 1, 'B' => 2] which differs from used in
+   * the function tpps_file_validate_columns().
    */
   public static function validateColumns($organism_index, array &$form_state, array $form = NULL) {
     if (static::isMultipleRequiredColumns()) {
-      // @TODO Implement validation for fields except 'AssayDesign'.
-      // Use tpps_file_validate_columns().
+      // @todo see tpps_file_validate_columns().
     }
     else {
-      // See AssayDesign::validateColumns() for multiple required groups.
+      // @todo Implement validation for file fields which has multiple
+      // required groups of columns. See AssayDesign::validateColumns().
     }
+    $message = t(
+      'Method @method_name not yet implemented.',
+      ['@method_name' => __METHOD__]
+    );
+    throw new Exception($message);
   }
 
   /**
@@ -749,7 +759,7 @@ abstract class FileField {
    * Static caching note:
    * No need to use static cache because file_load() already uses caching.
    * See https://api.drupal.org/api/drupal/includes%21file.inc/function/file_load/7.x
-   * First call takes about 2.3 msec (cold cache) and next 0.05 msec (warm cache).
+   * First call takes about 2.3 msec (cold cache);  next 0.05 msec (warm cache).
    *
    * Note:
    * Result could have extra (not required) columns because it uses user's
@@ -763,11 +773,19 @@ abstract class FileField {
    *   Flag to reset cache.
    *
    * @return array
-   *   Returns list of column's data types selected by user in flipped format.
+   *   Returns list of column's data types selected by user.
+   *   Key is column letter and value - data type key.
    *   E.g., ['A' => 1, 'B' => 4, 'C' => 2].
+   *   This format allows multiple columns to have the same data type and
+   *   more descriptive and easy to read then flipped version.
    *
-   * @todo It's better to use reversed structure to get column letter by key
-   * instead of value.
+   *   To get column letter:  FileField::getColumnLetter().
+   *
+   *   To get data type keys: see 'DATA_TYPE_*' class's constants.
+   *   Column letter is an uppercase string. Starts from 'A' and contains only
+   *   letters. E.g., 'A', 'AB', 'AZ'.
+   *   To get column integer column number by column letter use:
+   *   FileField::columnLetterToNumber($letters).
    */
   public static function getSelectedColumns($organism_index, array &$form_state, $reset = FALSE) {
     $organism_key = 'organism-' . $organism_index;
@@ -813,34 +831,60 @@ abstract class FileField {
   }
 
   /**
-   * Gets column letter by data type index.
+   * Gets column letter.
+   *
+   * For file fields which has 'Column Data Type Selector' gets column letter
+   * by 'Data Type Index' (see class's constants 'DATA_TYPE_*').
+   * For file fields which does NOT have'Column Data Type Selector' searches
+   * column letter for header's label (value of the header's sell).
    *
    * Note: First column has letter 'A'.
    * Usage example:
    *   $a='TGDR1200';
    *   $s = new Submission($a);
-   *   AssayDesign::getColumnLetter(1, $s->state, AssayDesign::DATA_TYPE_SNP_ID);
+   *   AssayDesign::getColumnLetter($organism_index = 1, $s->state,
+   *     AssayDesign::DATA_TYPE_SNP_ID
+   *   );
    *
    * @param int $organism_index
    *   Ordinal organism number at page.
    * @param array $form_state
    *   Drupal Form API State Array.
-   * @param int $data_type_index
-   *   Index of the data type.
-   *   See file field class's constants DATA_TYPE_*.
+   * @param mixed $needle
+   *   When file field has 'Column Data Type Selector' then it's integer
+   *   'Data Type Index'. See file field class's constants DATA_TYPE_*.
+   *   When file field doesn't have  'Column Data Type Selector' then
+   *   it's string header label (column title).
    *
    * @return string
    *   Returns column letter.
    *   Returns FALSE when:
-   *   1. $data_type_index wasn't specified.
-   *   2. $data_type_index wasn't found in the list of the selected columns.
+   *   1. $needle wasn't specified.
+   *   2. $needle wasn't found.
+   *
+   * @todo Minor. Merge both cases to have less code.
    */
-  public static function getColumnLetter($organism_index, array &$form_state, $data_type_index = NULL) {
-    if (is_null($data_type_index)) {
+  public static function getColumnLetter($organism_index, array &$form_state, $needle = NULL) {
+    if (is_null($needle)) {
       return FALSE;
     }
-    $selected = static::getSelectedColumns($organism_index, $form_state);
-    return array_search($data_type_index, $selected);
+    if (static::hasColumnDataTypeSelector()) {
+      // $needle is an integer 'Data Type Index'.
+      $selected = static::getSelectedColumns($organism_index, $form_state);
+      if (empty($selected)) {
+        return FALSE;
+      }
+      return array_search($needle, $selected);
+    }
+    else {
+      // File field has no 'Column Data Type Selector'.
+      // $needle is a string header title.
+      $header = static::getFileHeader($organism_index, $form_state);
+      if (empty($header)) {
+        return FALSE;
+      }
+      return array_search($needle, $header);
+    }
   }
 
   /**
@@ -1623,7 +1667,11 @@ abstract class FileField {
    *   1. File wasn't found.
    *   2. File has no header.
    *
+   *   Format: Key is column letter and value is header's name.
+   *   E.g., ['A' => 'SNP_ID', 'B' => 'SNP1', 'C' => 'SNP2', 'D' => 'SNP3'].
+   *
    * @todo Return NULL instead of empty array.
+   * @todo Remove reference for $form_state.
    */
   public static function getFileHeader($organism_index, array &$form_state, $reset = FALSE) {
     $key = static::generateUniqueKey($organism_index, $form_state);
