@@ -1716,7 +1716,7 @@ abstract class FileField {
     $column_values = tpps_parse_file_column(
       static::getFileId($organism_index, $form_state),
       $column_letter,
-      static::getNoHeaderValue($organism_index, $form_state)
+      static::getNoHeader($organism_index, $form_state)
     );
     $missing_items = array_diff($column_values, $list);
     return $missing_items;
@@ -1725,19 +1725,20 @@ abstract class FileField {
   /**
    * Gets value of the 'no-header' field.
    *
-   * Note: form element has inverted value.
-   * Checkbox title: 'Does your file have a header row?'
-   * Checked (1) means has header and unchecked (0) means no header.
+   * Note: checkbox field has title 'Does your file have a header row?'
+   * so values are iverted:
+   *   '0' means file field has header.
+   *   '1' means no header.
    *
    * @param int $organism_index
    *   Ordinal number of organism at page.
    * @param array $form_state
    *   Drupal Form State.
    *
-   * @return bool
-   *   Returns TRUE when file has no header and FALSE otherwise.
+   * @return mixed
+   *   Returns value of the field.
    */
-  public static function getNoHeaderValue($organism_index, array $form_state) {
+  public static function getNoHeader($organism_index, array $form_state) {
     // For search purpose: 'snps-association-no-header'.
     if (
       // For validation we use just submitted value (not saved before).
@@ -1760,7 +1761,7 @@ abstract class FileField {
       );
       $value = TppsArray::getValue($form_state['saved_values'], $parents);
     }
-    return (bool) $value;
+    return $value;
   }
 
   /**
@@ -1779,7 +1780,7 @@ abstract class FileField {
    *   Returns TRUE when file has header and FALSE otherwise.
    */
   public static function hasHeader($organism_index, array $form_state) {
-    return !static::getNoHeaderValue($organism_index, $form_state);
+    return !static::getNoHeader($organism_index, $form_state);
   }
 
   /**

@@ -373,28 +373,6 @@ class PhenotypeMeta extends FileField {
   }
 
   /**
-   * Gets value of the 'no-header' sub-field.
-   *
-   * @param array $form_state
-   *   Drupal Form State array.
-   * @param int $organism_index
-   *   Ordinal number of organism at page.
-   *
-   * @return mixed
-   *   Returns value or NULL.
-   */
-  public static function getNoHeader(array $form_state, $organism_index) {
-    $parents = [
-      'saved_values',
-      TPPS_PAGE_4,
-      'organism-' . $organism_index,
-      'phenotype',
-      'metadata-no-header',
-    ];
-    return TppsArray::getValue($form_state, $parents);
-  }
-
-  /**
    * Get column from file by column key.
    *
    * @param array $form_state
