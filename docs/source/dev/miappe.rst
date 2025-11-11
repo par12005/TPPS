@@ -6,12 +6,12 @@ MIAPPE Compliant Submissions
 
 The TreeGenes Plant Phenotype Submission (TPPS) system has been updated to support submissions that are compliant with the `MIAPPE`_ (Minimum Information About a Plant Phenotyping Experiment) standard. This document outlines the necessary steps and considerations for preparing and submitting MIAPPE-compliant data through TPPS. A lot of MIAPPE information is based on the `ISA Abstract Model`_ that consists of three core entities: Investigation, Study, Assay.
 
-.. image:: ../_static/images/miappe_owl.png
+.. image:: ../_static/images/miappe_standard.png
    :alt: MIAPPE Entity Relationship Diagram
    :align: center
-   :scale: 50 %
-   :height: 500px
-   :width: 500px
+   :scale: 75 %
+   :height: 800px
+   :width: 800px
    
 .. note::
 
@@ -90,6 +90,13 @@ Sample
 A sample is a portion of plant tissue harvested, non-harvested or extracted from an observation unit for the purpose of sub-plant observations and/or molecular studies. A sample must be used when there is a physical sample that needs to be stored and traced.
 
 Required: `Observation unit ID`, `Sample ID`, `Plant anatomical entity`, `Collection date`
+
+
+Full Diagram
+~~~~~~~~~~~~~
+
+.. image:: ../_static/images/miappe_er_diagram.svg
+   :alt: MIAPPE Entity Relationship Diagram
 
 
 Integration With Chado
