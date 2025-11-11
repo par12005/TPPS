@@ -1687,13 +1687,29 @@ abstract class FileField {
    *   Returns TRUE when file has no header and FALSE otherwise.
    */
   public static function getNoHeaderValue($organism_index, array $form_state) {
-    $parents = static::getParents($organism_index, $form_state,
-      static::DOM_NAME . '-' . static::NO_HEADER
-    );
     // For search purpose: 'snps-association-no-header'.
-    return (bool) (TppsArray::getValue($form_state['input'], $parents)
-      ?? TppsArray::getValue($form_state['values'], $parents)
-      ?? FALSE);
+    if (
+      // For validation we use just submitted value (not saved before).
+      static::FORM_STEP == TppsArray::getValue($form_state['input'], ['stage'])
+    ) {
+      // For just submitted form/step.
+      // Example: ['organism-1', 'phenotype', 'file', 'no-header'].
+      $parents = static::getParents($organism_index, $form_state);
+      $parents[] = 'no-header';
+      // $form_state['values'] has no value but $form_state['input']
+      // has is so we will use it.
+      $value = TppsArray::getValue($form_state['input'], $parents);
+    }
+    else {
+      // For processing only.
+      // Example: ['organism-1', 'phenotype', 'file-no-header'].
+      // @TODO Use the same structure under 'saved_values' to avoid extra code.
+      $parents = static::getParents($organism_index, $form_state,
+        static::DOM_NAME . '-' . static::NO_HEADER
+      );
+      $value = TppsArray::getValue($form_state['saved_values'], $parents);
+    }
+    return (bool) $value;
   }
 
   /**
