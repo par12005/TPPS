@@ -351,28 +351,6 @@ class PhenotypeMeta extends FileField {
   }
 
   /**
-   * Gets list of the selected column's data types.
-   *
-   * @param array $form_state
-   *   Drupal Form State array.
-   * @param int $organism_index
-   *   Ordinal number of organism at page.
-   *
-   * @return mixed
-   *   Returns value or NULL.
-   */
-  public static function getColumnDataTypes(array $form_state, $organism_index) {
-    $parents = [
-      'saved_values',
-      TPPS_PAGE_4,
-      'organism-' . $organism_index,
-      'phenotype',
-      'metadata-columns',
-    ];
-    return TppsArray::getValue($form_state, $parents);
-  }
-
-  /**
    * Get column from file by column key.
    *
    * @param array $form_state
@@ -384,26 +362,19 @@ class PhenotypeMeta extends FileField {
    *
    * @return array
    *   Returns values from the column.
+   *
+   * @todo Move to 'FileField' class.
    */
   public static function getColumn(array $form_state, $organism_index, $column_key = NULL) {
     $column_key = $column_key ?? static::DATA_TYPE_IDENTIFIER;
     $organism_key = 'organism-' . $organism_index;
-    // @todo Replace with PhenotypeMeta::getFileId() when branch
-    // VS/assay_design_column_data_type will be merged.
-    $fid = TppsArray::getValue($form_state,
-      ['saved_values', TPPS_PAGE_4, $organism_key, 'phenotype', 'metadata']
+
+    return tpps_parse_file_column(
+      static::getFileId($organism_index, $form_state),
+      static::getColumnLetter($organism_index, $form_state, $column_key),
+      // Note; inverted values. '0' means have header, '1' means not.
+      static::getNoHeader($organism_index, $form_state)
     );
-    $selected = static::getColumnDataTypes($form_state, $organism_index);
-    $no_header = static::getNoHeader($form_state, $organism_index);
-    // Alphabetical key of the columns with phenotype names.
-    $column_letter = array_search($column_key, $selected);
-    $column = tpps_parse_file_column($fid, $column_letter, $no_header);
-    if ($no_header) {
-      // @todo use TppsArray::removeFirst().
-      reset($column);
-      array_shift($column);
-    }
-    return $column;
   }
 
   /**
