@@ -851,10 +851,16 @@ abstract class FileField {
    * @param array $form_state
    *   Drupal Form API State Array.
    * @param mixed $needle
-   *   When file field has 'Column Data Type Selector' then it's integer
-   *   'Data Type Index'. See file field class's constants DATA_TYPE_*.
-   *   When file field doesn't have  'Column Data Type Selector' then
-   *   it's string header label (column title).
+   *   1. Positive integer: column data type index or column index.
+   *   2. Case sensitive string: column header title.
+   *
+   *   When file field has 'Column Data Type Selector':
+   *   - positive integer value treated as 'Data Type Index'.
+   *     See class constants DATA_TYPE_*.
+   *   When file field has NO 'Column Data Type Selector':
+   *   - string treated as column header title.
+   *   - positive integer treated first as column header title and then
+   *   (if nothing found) as column index (ordinal number).
    *
    * @return string
    *   Returns column letter.
@@ -868,23 +874,39 @@ abstract class FileField {
     if (is_null($needle)) {
       return FALSE;
     }
+    $output = FALSE;
     if (static::isColumnDataTypeIndex($needle)) {
       // $needle is an integer 'Data Type Index'.
       $selected = static::getSelectedColumns($organism_index, $form_state);
-      if (empty($selected)) {
-        return FALSE;
+      if (!empty($selected)) {
+        $ouput = array_search($needle, $selected);
       }
-      return array_search($needle, $selected);
     }
     else {
+      $output = FALSE;
       // File field has no 'Column Data Type Selector'.
       // $needle is a string header title.
       $header = static::getFileHeader($organism_index, $form_state);
-      if (empty($header)) {
-        return FALSE;
+      if (!empty($header)) {
+        $output = $array_search($needle, $header);
+        if (!empty($output)) {
+          return $output;
+        }
       }
-      return array_search($needle, $header);
+      // If column letter wasn't found in header or there is no header
+      // let's assume that $needle is a column index (ordinal number).
+      // Get header without values: ['A' => 0, 'B' => 1].
+      // @todo Merge with getFileFirstRow() but it doesn't allow to change
+      // $no_header value right now.
+      if (is_numeric($needle) && $needle > 0) {
+        $column_letter_list = tpps_file_headers(
+          static::getFileId($organism_index, $form_state),
+          $no_header = TRUE
+        );
+        $output = array_search($needle, $column_letter_list);
+      }
     }
+    return $output;
   }
 
   /**
@@ -2020,10 +2042,9 @@ abstract class FileField {
    * @param array $form_state
    *   Drupal Form State array.
    * @param mixed $needle
-   *   1. Integer column data type index. See class constants DATA_TYPE_*.
-   *   2. Case sensitive string column title (from file header).
-   *   WARNING: It's not column ordinal number because there is no sense to
-   *   search by column ordinal number at all!
+   *   1. Positive integer: column data type index or column index.
+   *   2. Case sensitive string: column header title.
+   *   See FileField::getColumnLetter().
    *
    * @return mixed
    *   Returns values of the column.
