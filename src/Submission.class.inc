@@ -2681,14 +2681,14 @@ class Submission {
       if ($is_metadata_in_file) {
         // Metadata file.
         // See PhenotypeMeta::validate().
-        $attribute_list = PhenotypeMeta::getColumn(
-          $this->state,
+        $attribute_list = PhenotypeMeta::getColumnValues(
           $organism_index,
+          $this->state,
           PhenotypeMeta::DATA_TYPE_ATTRIBUTE
         );
-        $phenotype_list = PhenotypeMeta::getColumn(
-          $this->state,
+        $phenotype_list = PhenotypeMeta::getColumnValues(
           $organism_index,
+          $this->state,
           PhenotypeMeta::DATA_TYPE_IDENTIFIER
         );
         $synonym_list = PhenotypeSynonym::getAll();

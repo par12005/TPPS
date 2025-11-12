@@ -351,33 +351,6 @@ class PhenotypeMeta extends FileField {
   }
 
   /**
-   * Get column from file by column key.
-   *
-   * @param array $form_state
-   *   Drupal Form State array.
-   * @param int $organism_index
-   *   Ordinal number of organism at page.
-   * @param int $column_key
-   *   Optional. Column integer key (see class constants DATA_TYPE_*).
-   *
-   * @return array
-   *   Returns values from the column.
-   *
-   * @todo Move to 'FileField' class.
-   */
-  public static function getColumn(array $form_state, $organism_index, $column_key = NULL) {
-    $column_key = $column_key ?? static::DATA_TYPE_IDENTIFIER;
-    $organism_key = 'organism-' . $organism_index;
-
-    return tpps_parse_file_column(
-      static::getFileId($organism_index, $form_state),
-      static::getColumnLetter($organism_index, $form_state, $column_key),
-      // Note; inverted values. '0' means have header, '1' means not.
-      static::getNoHeader($organism_index, $form_state)
-    );
-  }
-
-  /**
    * Gets parents of the field.
    *
    * Usage:

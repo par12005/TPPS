@@ -1110,6 +1110,9 @@ function tpps_get_archive_files($archive) {
  *     'C' => 2,       |   'C' => 'Position',
  *     'D' => 3,       |   'D' => 'Flank sequence',
  *   ];                | ].
+ *
+ * @todo Seems $no_header doesn't work correctly and shows ordinal number
+ * of the column instead of it's actual value.
  */
 function tpps_file_headers($fid, $no_header = FALSE) {
   $headers = array();

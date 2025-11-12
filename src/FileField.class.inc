@@ -868,7 +868,7 @@ abstract class FileField {
     if (is_null($needle)) {
       return FALSE;
     }
-    if (static::hasColumnDataTypeSelector()) {
+    if (static::isColumnDataTypeIndex($needle)) {
       // $needle is an integer 'Data Type Index'.
       $selected = static::getSelectedColumns($organism_index, $form_state);
       if (empty($selected)) {
@@ -1651,11 +1651,12 @@ abstract class FileField {
   /**
    * Gets file's header (1st row).
    *
+   * To get 1st row (which is not header):
+   *   static::getFileFirstRow($organism_index, $form_state, $reset);
    * Static caching note:
-   * Using static cache is useful even when file_load() already uses caching.
-   * See https://api.drupal.org/api/drupal/includes%21file.inc/function/file_load/7.x
-   * First call takes about 7 msec (cold cache) and next 2.5 msec (warm cache).
-   * Static cache: 7 msec / 0.4 msec.
+   *   Using static cache is useful even when file_load() already uses caching.
+   *   First call takes about 7 msec (cold cache) and next 2.5 msec (warm cache).
+   *   Static cache: 7 msec / 0.4 msec.
    *
    * @param int $organism_index
    *   Ordinal organism number on page.
@@ -1665,30 +1666,67 @@ abstract class FileField {
    *   Flag to reset cache.
    *
    * @return array
-   *   Returns 1st row of file (header).
+   *   Returns the header of the file.
    *   Returns empty array when:
-   *   1. File wasn't found.
-   *   2. File has no header.
-   *
+   *   1. File has no header.
+   *      Checkbox 'Does your file have a header row?' set to 'No'.
+   *   2. File wasn't found.
    *   Format: Key is column letter and value is header's name.
    *   E.g., ['A' => 'SNP_ID', 'B' => 'SNP1', 'C' => 'SNP2', 'D' => 'SNP3'].
    *
    * @todo Return NULL instead of empty array.
-   * @todo Remove reference for $form_state.
    */
-  public static function getFileHeader($organism_index, array &$form_state, $reset = FALSE) {
+  public static function getFileHeader($organism_index, array $form_state, $reset = FALSE) {
     $key = static::generateUniqueKey($organism_index, $form_state);
     $static_cache = &drupal_static(__METHOD__);
     if ($reset || !isset($static_cache[$key])) {
       $output = [];
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Get data.
+      if (static::hasHeader($organism_index, $form_state)) {
+        $output = static::getFileFirstRow($organism_index, $form_state, $reset);
+      }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      $static_cache[$key] = $output;
+    }
+    return $static_cache[$key];
+  }
 
-      if (
-        static::hasHeader($organism_index, $form_state)
-        && $fid = static::getFileId($organism_index, $form_state)
-      ) {
+  /**
+   * Gets the 1st row of the file.
+   *
+   * Note: Doesn't respect 'no-header' field because it's no a header.
+   *
+   * Static caching note:
+   *   Using static cache is useful even when file_load() already uses caching.
+   *   First call takes about 7 msec (cold cache) and next 2.5 msec (warm cache).
+   *   Static cache: 7 msec / 0.4 msec.
+   *
+   * @param int $organism_index
+   *   Ordinal organism number on page.
+   * @param array $form_state
+   *   Drupal Form API State array.
+   * @param bool $reset
+   *   Flag to reset cache.
+   *
+   * @return array
+   *   Returns the 1st row of the file.
+   *   Returns empty array when file wasn't found.
+   *   Format: Key is column letter and value is header's name.
+   *   E.g., ['A' => 'SNP_ID', 'B' => 'SNP1', 'C' => 'SNP2', 'D' => 'SNP3'].
+   */
+  public static function getFileFirstRow($organism_index, array $form_state, $reset = FALSE) {
+    $key = static::generateUniqueKey($organism_index, $form_state);
+    $static_cache = &drupal_static(__METHOD__);
+    if ($reset || !isset($static_cache[$key])) {
+      $output = [];
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Get data.
+      if ($fid = static::getFileId($organism_index, $form_state)) {
+        // WARNING: tpps_file_headers() uses $no_header in a different way.
         $output = tpps_file_headers($fid, $no_header = FALSE);
       }
-
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       $static_cache[$key] = $output;
     }
     return $static_cache[$key];
@@ -1888,15 +1926,10 @@ abstract class FileField {
    *   Ordinal number of organism at page.
    * @param array $form_state
    *   Drupal Form State array.
-   * @param string $column_key
+   * @param mixed $column_key
    *   Column key could be:
-   *   1. Integer column's data type key (see class's constants 'DATA_TYPE_')
-   *      for file field which has column data type selector.
-   *      E.g., 'Assay Design', 'SNP Association' and etc.
-   *      Note: usually '0' not used for data type index but means not
-   *      selected default value.
-   *   2. String column name from file's header for file fields which doesn't
-   *      allow to select column data type. E.g., 'SNP Assay'.
+   *   1. Integer column's data type key.
+   *   2. String column name.
    *
    * @return mixed
    *   Returns integer column index where 0 means 1st column.
@@ -1908,33 +1941,27 @@ abstract class FileField {
   public static function getHeaderIndex($organism_index, array $form_state, $column_key = NULL) {
     $header = static::getFileHeader($organism_index, $form_state);
     if (
-      !is_null($column_key)
+      is_null($column_key)
       // Empty header could be when file wasn't found or file has no header.
-      && !empty($header)
+      || empty($header)
     ) {
-      // Note: Data Type indexes start from 1.
-      if (
-        static::hasColumnDataTypeSelector()
-        && is_numeric($column_key)
-        && $column_key > 0
-      ) {
-        // File Field has column data type selector.
-        // Column key is an integer column data type key.
-        $letter = static::getColumnLetter($organism_index, $form_state, $column_key);
-        $index = static::columnLetterToNumber($letter);
-      }
-      else {
-        // No column data type selector.
-        // $column_key is a string with column name from the header.
-        // Note: column index could be string, zero and negative integers.
-        $header = array_map('strtolower', array_values($header));
-        $index = array_search(strtolower($column_key), $header);
-      }
-      return ($index === FALSE) ? NULL : $index;
-    }
-    else {
       return FALSE;
     }
+
+    if (static::isColumnDataTypeIndex($column_key)) {
+      // File Field has column data type selector.
+      // Column key is an integer column data type key.
+      $letter = static::getColumnLetter($organism_index, $form_state, $column_key);
+      $index = static::columnLetterToNumber($letter);
+    }
+    else {
+      // No column data type selector.
+      // $column_key is a string with column name from the header.
+      // Note: column index could be string, zero and negative integers.
+      $header = array_map('strtolower', array_values($header));
+      $index = array_search(strtolower($column_key), $header);
+    }
+    return ($index === FALSE) ? NULL : $index;
   }
 
   /**
@@ -1981,6 +2008,74 @@ abstract class FileField {
       $organism_index,
     ];
     return implode('_', $unique);
+  }
+
+  /**
+   * Get column values from file by column key.
+   *
+   * Note: supports file fields with and without 'Column Data Type Selector'.
+   *
+   * @param int $organism_index
+   *   Ordinal number of organism at page.
+   * @param array $form_state
+   *   Drupal Form State array.
+   * @param mixed $needle
+   *   1. Integer column data type index. See class constants DATA_TYPE_*.
+   *   2. Case sensitive string column title (from file header).
+   *   WARNING: It's not column ordinal number because there is no sense to
+   *   search by column ordinal number at all!
+   *
+   * @return mixed
+   *   Returns values of the column.
+   *   Returns NULL when $needle is empty.
+   *   Note:
+   *   When field has no header but uses 'Column Data Type Selector'
+   *   and $needle is a data type index (not column's ordinal number or
+   *   column's header) then column values will be returned.
+   */
+  public static function getColumnValues($organism_index, array $form_state, $needle) {
+    $organism_key = 'organism-' . $organism_index;
+    if (empty($needle)) {
+      return NULL;
+    }
+
+    return tpps_parse_file_column(
+      static::getFileId($organism_index, $form_state),
+      static::getColumnLetter($organism_index, $form_state, $needle),
+      // WARNING; '0' means file has header, '1' means doesn't have.
+      static::getNoHeader($organism_index, $form_state)
+    );
+  }
+
+  /**
+   * Checks if give 'Column Key' is a Column Data Type Index.
+   *
+   * Note: Column could be addressed by 'Column Letter' so it's safe enough
+   * to do this validation.
+   *
+   * @param mixed $column_key
+   *   Column key could be:
+   *   1. Integer column's data type key (see class's constants 'DATA_TYPE_')
+   *      for file field which has column data type selector.
+   *      E.g., 'Assay Design', 'SNP Association' and etc.
+   *      Note: usually '0' not used for data type index but means not
+   *      selected default value.
+   *   2. String column name from file's header for file fields which doesn't
+   *      allow to select column data type. E.g., 'SNP Assay'.
+   *
+   * @return bool
+   *   Returns TRUE when $column_key has column data type index.
+   *   Returns FALSE otherwise.
+   */
+  public static function isColumnDataTypeIndex($column_key) {
+    return (bool) (
+     // File field has 'Column Data Type Selector'.
+      static::hasColumnDataTypeSelector()
+      // Value of the $column_key is positive integer.
+      && is_numeric($column_key)
+      // Note: Data Type indexes start from 1.
+      && $column_key > 0
+    );
   }
 
 }
