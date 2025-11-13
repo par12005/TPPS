@@ -8,6 +8,14 @@
 /**
  * Common methods for file field form elemnts.
  *
+ * Terms:
+ * 'Column Data Type Index' - integer. See 'DATA_TYPE_*' constants.
+ * 'Column Header Title' - string. Value of the column header (1st row).
+ * $column_key could be a 'Column Data Type Index' or 'Column Header Title'.
+ *
+ * Column indexes starts from 1 (not from 0).
+ * Column letter starts from 'A'.
+ *
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
@@ -833,24 +841,18 @@ abstract class FileField {
   /**
    * Gets column letter.
    *
-   * For file fields which has 'Column Data Type Selector' gets column letter
-   * by 'Data Type Index' (see class's constants 'DATA_TYPE_*').
-   * For file fields which does NOT have'Column Data Type Selector' searches
-   * column letter for header's label (value of the header's sell).
+   * Supports fields with and without 'Column Data Type Selector': yes.
    *
-   * Note: First column has letter 'A'.
-   * Usage example:
-   *   $a='TGDR1200';
-   *   $s = new Submission($a);
-   *   AssayDesign::getColumnLetter($organism_index = 1, $s->state,
-   *     AssayDesign::DATA_TYPE_SNP_ID
-   *   );
+   * For file fields which has 'Column Data Type Selector' gets column letter
+   *   by 'Data Type Index' (see class's constants 'DATA_TYPE_*').
+   * For file fields which does NOT have'Column Data Type Selector' searches
+   *   column letter for header's label (value of the header's sell).
    *
    * @param int $organism_index
    *   Ordinal organism number at page.
    * @param array $form_state
    *   Drupal Form API State Array.
-   * @param mixed $needle
+   * @param mixed $column_key
    *   1. Positive integer: column data type index or column index.
    *   2. Case sensitive string: column header title.
    *
@@ -864,46 +866,62 @@ abstract class FileField {
    *
    * @return string
    *   Returns column letter.
+   *   Note: First column has letter 'A'.
    *   Returns FALSE when:
-   *   1. $needle wasn't specified.
-   *   2. $needle wasn't found.
+   *   1. $column_key wasn't specified.
+   *   2. $column_key wasn't found.
    *
-   * @todo Minor. Merge both cases to have less code.
+   * @todo Case: field has no header and $column_key is string (not integer).
+   * Currently it gives FALSE but we could get first row and search there.
    */
-  public static function getColumnLetter($organism_index, array &$form_state, $needle = NULL) {
-    if (is_null($needle)) {
+  public static function getColumnLetter($organism_index, array &$form_state, $column_key = NULL) {
+    if (is_null($column_key)) {
       return FALSE;
     }
     $output = FALSE;
-    if (static::isColumnDataTypeIndex($needle)) {
-      // $needle is an integer 'Data Type Index'.
-      $selected = static::getSelectedColumns($organism_index, $form_state);
-      if (!empty($selected)) {
-        $ouput = array_search($needle, $selected);
+    if (static::hasColumnDataTypeSelector($column_key)) {
+      if (is_numeric($column_key) && $column_key > 0) {
+        // $column_key is an integer 'Data Type Index'.
+        $selected = static::getSelectedColumns($organism_index, $form_state);
+        if (!empty($selected)) {
+          $output = array_search($column_key, $selected);
+        }
+      }
+      if (empty($output)) {
+        if (static::hasHeader($organism_index, $form_state)) {
+          // Check header.
+          // Note: $header will be empty if file has no header.
+          $header = static::getFileHeader($organism_index, $form_state);
+          if (!empty($header)) {
+            // $header format: ['A' => 'Phenotype name', ...].
+            $output = array_search($column_key, $header);
+            if (!empty($output)) {
+              return $output;
+            }
+          }
+        }
+        else {
+          // $column_key is column index.
+          $output = static::columnNumberToLetter($column_key);
+        }
       }
     }
     else {
-      $output = FALSE;
-      // File field has no 'Column Data Type Selector'.
-      // $needle is a string header title.
-      $header = static::getFileHeader($organism_index, $form_state);
-      if (!empty($header)) {
-        $output = $array_search($needle, $header);
-        if (!empty($output)) {
-          return $output;
+      if (static::hasHeader($organism_index, $form_state)) {
+        // File field has no 'Column Data Type Selector'.
+        // $column_key is a string header title.
+        $header = static::getFileHeader($organism_index, $form_state);
+        if (!empty($header)) {
+          // $header format: ['A' => 'Phenotype name', ...].
+          $output = array_search($column_key, $header);
+          if (!empty($output)) {
+            return $output;
+          }
         }
       }
-      // If column letter wasn't found in header or there is no header
-      // let's assume that $needle is a column index (ordinal number).
-      // Get header without values: ['A' => 0, 'B' => 1].
-      // @todo Merge with getFileFirstRow() but it doesn't allow to change
-      // $no_header value right now.
-      if (is_numeric($needle) && $needle > 0) {
-        $column_letter_list = tpps_file_headers(
-          static::getFileId($organism_index, $form_state),
-          $no_header = TRUE
-        );
-        $output = array_search($needle, $column_letter_list);
+      else {
+        // $column_key is column index.
+        $output = static::columnNumberToLetter($column_key);
       }
     }
     return $output;
@@ -1935,8 +1953,7 @@ abstract class FileField {
    * Gets header column index by column name.
    *
    * Notes:
-   * 1. Could be used for both: file fields with and without column data
-   *    type selection.
+   * 1. Could be used for file fields with/without 'Column Data Type Selector'.
    * 2. Indexes start from 0.
    *
    * Usage example:
@@ -1969,20 +1986,8 @@ abstract class FileField {
     ) {
       return FALSE;
     }
-
-    if (static::isColumnDataTypeIndex($column_key)) {
-      // File Field has column data type selector.
-      // Column key is an integer column data type key.
-      $letter = static::getColumnLetter($organism_index, $form_state, $column_key);
-      $index = static::columnLetterToNumber($letter);
-    }
-    else {
-      // No column data type selector.
-      // $column_key is a string with column name from the header.
-      // Note: column index could be string, zero and negative integers.
-      $header = array_map('strtolower', array_values($header));
-      $index = array_search(strtolower($column_key), $header);
-    }
+    $letter = static::getColumnLetter($organism_index, $form_state, $column_key);
+    $index = static::columnLetterToNumber($letter) - 1;
     return ($index === FALSE) ? NULL : $index;
   }
 
@@ -1990,15 +1995,13 @@ abstract class FileField {
    * Converts letters into number.
    *
    * Used for file field column letter like 'AA', 'AAX' and etc.
-   * Note: Usually A gives 1 but we use index '0' for 1st column.
-   *
-   * Source: https://stackoverflow.com/a/55226643
+   * Inspiration: https://stackoverflow.com/a/55226643
    *
    * @param string $letters
    *   Letters.
    *
    * @return int
-   *   Returns number. For example: A = 0, B = 1 and etc.
+   *   Returns number. For example: A = 1, B = 2 and etc.
    */
   public static function columnLetterToNumber($letters) {
     if (empty($letters)) {
@@ -2009,7 +2012,29 @@ abstract class FileField {
     foreach (str_split(strrev($letters)) as $key => $char) {
       $number = $number + (array_search($char, $alphabet) + 1) * pow(count($alphabet), $key);
     }
-    return $number - 1;
+    return $number;
+  }
+
+  /**
+   * Converts a column index to an Excel-style column letter.
+   *
+   * @param int $column_index
+   *   Column index.
+   *   Note: 1st column has index '1'.
+   *
+   * @return string
+   *   Returns column letter.
+   *   E.g., 1 to A, 26 to Z, 27 to AA, etc.
+   *   Returns FALSE if $column_index is not positive integer.
+   */
+  public static function columnNumberToLetter($column_index) {
+    $column_letter = FALSE;
+    while ($column_index > 0) {
+      $modulo = ($column_index - 1) % 26;
+      $column_letter = chr(65 + $modulo) . $column_letter;
+      $column_index = floor(($column_index - $modulo) / 26);
+    }
+    return $column_letter;
   }
 
   /**
@@ -2041,28 +2066,27 @@ abstract class FileField {
    *   Ordinal number of organism at page.
    * @param array $form_state
    *   Drupal Form State array.
-   * @param mixed $needle
+   * @param mixed $column_key
    *   1. Positive integer: column data type index or column index.
    *   2. Case sensitive string: column header title.
    *   See FileField::getColumnLetter().
    *
    * @return mixed
    *   Returns values of the column.
-   *   Returns NULL when $needle is empty.
+   *   Returns NULL when $column_key is empty.
    *   Note:
    *   When field has no header but uses 'Column Data Type Selector'
-   *   and $needle is a data type index (not column's ordinal number or
+   *   and $column_key is a data type index (not column's ordinal number or
    *   column's header) then column values will be returned.
    */
-  public static function getColumnValues($organism_index, array $form_state, $needle) {
+  public static function getColumnValues($organism_index, array $form_state, $column_key) {
     $organism_key = 'organism-' . $organism_index;
-    if (empty($needle)) {
+    if (empty($column_key)) {
       return NULL;
     }
-
     return tpps_parse_file_column(
       static::getFileId($organism_index, $form_state),
-      static::getColumnLetter($organism_index, $form_state, $needle),
+      static::getColumnLetter($organism_index, $form_state, $column_key),
       // WARNING; '0' means file has header, '1' means doesn't have.
       static::getNoHeader($organism_index, $form_state)
     );
