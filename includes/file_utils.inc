@@ -667,9 +667,8 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
       // ['genotype', 'other', 'other_marker'].
       OtherMarker::getParents(),
 
+      SnpAssay::getParents(),
       // File fields which doesn't have column data type selector:
-      // ['organism-1', 'genotype', 'SNPs', 'snps-assay'],
-      // SnpAssay::getParents(),
       // ['organism-1', 'genotype', 'SNPs', 'snps-pop-struct'],
       // SnpsPopulationStructure::getParents(),
       // ['organism-1', 'genotype', 'SNPs', 'snps-kinship'],

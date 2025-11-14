@@ -480,7 +480,7 @@ abstract class FileField {
         key($headers),
         // Get column which holds Tree Ids.
         $species_fieldset['file-groups']['Tree Id']['1'],
-        static::getSubFieldValue($organism_index, $form_state, 'no-header'),
+        static::getSubFieldValue($organism_index, $form_state, static::NO_HEADER),
         // Note: Accession file uses non-standard ['file-no-header'] field name
         // instead of nested ['file']['no-header'].
         $species_fieldset['file-no-header']
