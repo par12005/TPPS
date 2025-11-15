@@ -8,7 +8,7 @@
  * (PhenotypeManual class) or using file (PhenotypeMeta class).
  *
  * Values of column 'year' will be stored in table 'chado.phenotypeprop'.
- * See method getYearCvTermId() for more details.
+ * See CVTerm::getId('year') for more details.
  */
 
 /**
@@ -555,26 +555,6 @@ class PhenotypeData extends FileField {
       self::DATA_TYPE_YEAR => 'Year',
       '4' => 'N/A',
     ];
-  }
-
-  /**
-   * Gets CVTerm Id for phenotype's year.
-   *
-   * Note: cvterm 54188 (year) doesn't work at dev-server.
-   * CVTerm must exist even if phenotype data file has no 'year' column.
-   *
-   * @return int
-   *   Returns CV Term Id for 'year' from phenotype data file.
-   */
-  public static function getYearCvTermId() {
-    try {
-      $year_cvterm_id = tpps_load_cvterm('year')->cvterm_id;
-    }
-    catch (Exception $e) {
-      // Note: cvterm 54188 (year) doesn't work at dev-server.
-      $year_cvterm_id = variable_get('tpps_submitall_cvterm_phenotype_year', '');
-    }
-    return $year_cvterm_id ?? NULL;
   }
 
   /**

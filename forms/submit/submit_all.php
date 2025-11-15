@@ -1656,7 +1656,7 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
   }
   tpps_submission_add_tag($shared_state['accession'], 'Phenotype');
 
-  $year_cvterm_id = PhenotypeData::getYearCvTermId();
+  $year_cvterm_id = CVTerm::getId('year');
   if (empty($year_cvterm_id)) {
     tpps_log(t("CV Term Id for phenotype's 'Year' column in data file wasn't set."
       . "Create cvterm or manually set it's value at @url."),
@@ -4973,12 +4973,12 @@ function tpps_genotype_vcf_processing_batch_some_features_insert(&$settings, $cu
     }
     // $sql .= ' ON CONFLICT (organism_id, uniquename, type_id) DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
     // $sql .= ' ON CONFLICT (organism_id, uniquename) where type_id = 1491 DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
-    
+
     // This gives error: Invalid column reference: 7 ERROR:  there is no unique or exclusion constraint matching the ON CONFLICT specification
     // $sql .= ' ON CONFLICT (organism_id, uniquename) DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
     $sql .= ' ON CONFLICT (organism_id, uniquename) where type_id in (1205, 1887, 2586, 54732, 54733, 54739) DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
     // ON CONFLICT (organism_id, uniquename) where type_id in (1205, 1887, 2586, 54732, 54733, 54739)
-    
+
     if ($variant_index > 0) {
       print_r($sql . "\n");
       $results_feature_inserts = db_query($sql);
@@ -5408,7 +5408,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
       $snp_cvterm_id_results = chado_query("SELECT cvterm_id FROM chado.cvterm WHERE name ILIKE 'SNP' LIMIT 1");
       foreach ($snp_cvterm_id_results as $snp_cvterm_row) {
         $snp_cvterm_id = $snp_cvterm_row->cvterm_id;
-      } 
+      }
 
       // Keeps track of variant_name connection to src_feature_name + featureloc
       $features_variant_data = [];
