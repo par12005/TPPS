@@ -627,29 +627,6 @@ class PhenotypeData extends FileField {
   }
 
   /**
-   * Checks if given column data type was set by user.
-   *
-   * Note: Required data types won't pass validation but optional
-   * data types like 'Year' requires those check.
-   *
-   * @param string $column_data_type
-   *   Human readable column name. E.g., 'Year'.
-   * @param int $organism_index
-   *   Ordinal organism number on page.
-   * @param object $submission
-   *   Study Submission object.
-   *
-   * @return bool
-   *   Returns TRUE if given data type was set by user and FALSE otherwise.
-   */
-  public static function hasColumn($column_data_type, $organism_index, $submission) {
-    $columns = static::getSelectedColumns($organism_index, $submission->state);
-    $options = static::getColumnOptions();
-    $key = array_search($column_data_type, $options);
-    return in_array($key, $columns);
-  }
-
-  /**
    * Processes a file.
    *
    * Note: called from /forms/submit/submit_all.php script.

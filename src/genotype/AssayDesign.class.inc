@@ -230,21 +230,6 @@ class AssayDesign extends FileField {
     // static::allowColumnDataTypeUseOnce($organism_index, $groups);
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Check if required data types for columns was set.
-    // Note: Assay Design has more then one group of required columns.
-    if (!static::hasColumns($organism_index, $form_state)) {
-      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
-        . 'Data types for columns must be set.',
-        [
-          '@field_title' => t(static::getFieldTitle()),
-          '@oidx' => $organism_index,
-        ]
-      );
-      form_set_error(static::getFormErrorName($organism_index), $error_message);
-      return FALSE;
-    }
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // 'SNP Assay' is required.
     if (empty(SnpAssay::getFileId($organism_index, $form_state))) {
       // @todo Minor. Highlight 'SNP Assay' file.

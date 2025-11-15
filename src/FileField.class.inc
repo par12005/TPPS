@@ -336,7 +336,7 @@ abstract class FileField {
         '@field_title' => static::getFieldTitle(),
         '@oidx' => $organism_index,
         '@sub_field' => implode('/', $parents),
-        '!stack' => $stack ? TppsArray::printList($stack) : NULL,
+        '!stack' => empty($stack) ? NULL : TppsArray::printList($stack),
       ];
       watchdog('tpps', $message, $params, WATCHDOG_WARNING);
 
@@ -612,19 +612,25 @@ abstract class FileField {
   }
 
   /**
-   * Checks if field has columns (ability to set column's data type).
+   * Checks if file has column with given column key.
+   *
+   * This check is required for optional 'Column Data Types' like 'Year'.
+   * Required data types even won't pass validation.
+   * For example column 'Year' in PhenotypeData, SnpAssociation.
    *
    * @param int $organism_index
-   *   Ordinal organism number at page.
+   *   Ordinal organism number on page.
    * @param array $form_state
-   *   Drupal Form API State Array.
+   *   Drupal Form API state array.
+   * @param mixed $column_key
+   *   Column name (string),  ordinal index (int) or data type index (int).
    *
    * @return bool
-   *   Returns TRUE if field has columns and FALSE otherwise.
+   *   Returns TRUE if given data type (by index) was selected by user.
+   *   Returns FALSE otherwise.
    */
-  public static function hasColumns($organism_index, array &$form_state) {
-    $form_element = static::getFormElement($organism_index, $form_state);
-    return !empty($form_element['columns']);
+  public static function hasColumn($organism_index, array $form_state, $column_key) {
+    return !empty(static::getColumnLetter($organism_index, $form_state, $column_key));
   }
 
   /**
@@ -843,6 +849,9 @@ abstract class FileField {
    *
    * Supports fields with and without 'Column Data Type Selector': yes.
    *
+   * Checks only existing columns. To get letter for non-existing column:
+   *   static::columnNumberToLetter($column_index)
+   *
    * For file fields which has 'Column Data Type Selector' gets column letter
    *   by 'Data Type Index' (see class's constants 'DATA_TYPE_*').
    * For file fields which does NOT have'Column Data Type Selector' searches
@@ -889,7 +898,7 @@ abstract class FileField {
       }
       if (empty($letter)) {
         if (static::hasHeader($organism_index, $form_state)) {
-          // Check header.
+          // Check header for string column name.
           // Note: $header will be empty if file has no header.
           $header = static::getFileHeader($organism_index, $form_state);
           if (!empty($header)) {
@@ -909,10 +918,6 @@ abstract class FileField {
           $letter = array_search($column_key, $header);
         }
       }
-    }
-    if (empty($letter)) {
-      // $column_key is column index.
-      $letter = static::columnNumberToLetter($column_key);
     }
     return $letter;
   }
