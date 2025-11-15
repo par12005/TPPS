@@ -878,31 +878,24 @@ abstract class FileField {
     if (is_null($column_key)) {
       return FALSE;
     }
-    $output = FALSE;
+    $letter = FALSE;
     if (static::hasColumnDataTypeSelector($column_key)) {
       if (is_numeric($column_key) && $column_key > 0) {
         // $column_key is an integer 'Data Type Index'.
         $selected = static::getSelectedColumns($organism_index, $form_state);
         if (!empty($selected)) {
-          $output = array_search($column_key, $selected);
+          $letter = array_search($column_key, $selected);
         }
       }
-      if (empty($output)) {
+      if (empty($letter)) {
         if (static::hasHeader($organism_index, $form_state)) {
           // Check header.
           // Note: $header will be empty if file has no header.
           $header = static::getFileHeader($organism_index, $form_state);
           if (!empty($header)) {
             // $header format: ['A' => 'Phenotype name', ...].
-            $output = array_search($column_key, $header);
-            if (!empty($output)) {
-              return $output;
-            }
+            $letter = array_search($column_key, $header);
           }
-        }
-        else {
-          // $column_key is column index.
-          $output = static::columnNumberToLetter($column_key);
         }
       }
     }
@@ -913,18 +906,15 @@ abstract class FileField {
         $header = static::getFileHeader($organism_index, $form_state);
         if (!empty($header)) {
           // $header format: ['A' => 'Phenotype name', ...].
-          $output = array_search($column_key, $header);
-          if (!empty($output)) {
-            return $output;
-          }
+          $letter = array_search($column_key, $header);
         }
       }
-      else {
-        // $column_key is column index.
-        $output = static::columnNumberToLetter($column_key);
-      }
     }
-    return $output;
+    if (empty($letter)) {
+      // $column_key is column index.
+      $letter = static::columnNumberToLetter($column_key);
+    }
+    return $letter;
   }
 
   /**
