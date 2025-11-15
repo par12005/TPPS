@@ -1942,14 +1942,11 @@ abstract class FileField {
   /**
    * Gets header column index by column name.
    *
-   * Notes:
-   * 1. Could be used for file fields with/without 'Column Data Type Selector'.
-   * 2. Indexes start from 0.
+   * Supports fields with/without 'Column Data Type Selector': yes.
    *
-   * Usage example:
-   *   $a = 'TGDR1200';
-   *   $s = new Submission($a);
-   *   SnpAssay::getHeaderIndex(1, $s->state, 'SNP_ID');
+   * WARNING:
+   * 1. Indexes starts from 0.
+   *    See FileField::columnLetterToNumber() which count from 1.
    *
    * @param int $organism_index
    *   Ordinal number of organism at page.
@@ -1961,11 +1958,14 @@ abstract class FileField {
    *   2. String column name.
    *
    * @return mixed
-   *   Returns integer column index where 0 means 1st column.
+   *   Returns integer column index (0 means 1st column).
    *   Returns NULL when column wasn't found.
    *   Returns FALSE when:
    *   1. $column_key wasn't specified
    *   2. File has no header.
+   *
+   * @todo Merge with FileField::columnLetterToNumber(). Note: This function
+   * used by submit_all.php and uses NULL and FALSE values differently.
    */
   public static function getHeaderIndex($organism_index, array $form_state, $column_key = NULL) {
     $header = static::getFileHeader($organism_index, $form_state);
