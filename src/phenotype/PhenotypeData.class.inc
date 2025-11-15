@@ -557,30 +557,6 @@ class PhenotypeData extends FileField {
     ];
   }
 
-
-  /**
-   * Checks if given DataType was set using column's widget.
-   *
-   * WARNING: only for validation because uses $form_state['input'].
-   *
-   * @param array $form_state
-   *   Drupal Form API State array.
-   * @param int $organism_index
-   *   Ordinal number of organism on page.
-   * @param int $data_type_id
-   *   Data type Id. See constants of this class.
-   *
-   * @return bool
-   *   Returns TRUE if data type was set and FALSE otherwise.
-   */
-  public static function isDataTypeSet(array $form_state, $organism_index, $data_type_id) {
-    $organism_key = 'organism-' . $organism_index;
-    $selected_columns = TppsArray::getValue($form_state['input'],
-      [$organism_key, 'phenotype', static::DOM_NAME, 'columns']
-    );
-    return !empty($selected_columns) && in_array($data_type_id, $selected_columns);
-  }
-
   /**
    * Gets CVTerm Id for phenotype's year.
    *
