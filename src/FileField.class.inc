@@ -1798,18 +1798,17 @@ abstract class FileField {
   /**
    * Gets value of the 'no-header' field.
    *
-   * Note: checkbox field has title 'Does your file have a header row?'
-   * so values are iverted:
-   *   '0' means file field has header.
-   *   '1' means no header.
-   *
    * @param int $organism_index
    *   Ordinal number of organism at page.
    * @param array $form_state
    *   Drupal Form State.
    *
    * @return mixed
-   *   Returns value of the field.
+   *   Returns raw value of the field.
+   *   Checkbox field has title 'Does your file have a header row?'
+   *   so values are iverted:
+   *     '0' means file field has header.
+   *     '1' means no header.
    */
   public static function getNoHeader($organism_index, array $form_state) {
     // For search purpose: 'snps-association-no-header'.
@@ -2055,7 +2054,9 @@ abstract class FileField {
   /**
    * Get column values from file by column key.
    *
-   * Note: supports file fields with and without 'Column Data Type Selector'.
+   * Supports fields:
+   * 1. with/without 'Column Data Type Selector': yes.
+   * 2. with/without header: yes.
    *
    * @param int $organism_index
    *   Ordinal number of organism at page.
