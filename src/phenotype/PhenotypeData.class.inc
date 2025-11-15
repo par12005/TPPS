@@ -627,24 +627,6 @@ class PhenotypeData extends FileField {
   }
 
   /**
-   * Gets list of user specified data types for columns.
-   *
-   * @param int $organism_index
-   *   Ordinal organism number on page.
-   * @param object $submission
-   *   Study Submission object.
-   *
-   * @return mixed
-   *   Returns acciative array where keys are column letters and values are
-   *   data type keys (see current class constants).
-   */
-  public static function getColumns($organism_index, $submission) {
-    $organism_key = 'organism-' . $organism_index;
-    return $submission->sharedState['saved_values'][TPPS_PAGE_4]
-      [$organism_key]['phenotype']['file-columns'] ?? NULL;
-  }
-
-  /**
    * Checks if given column data type was set by user.
    *
    * Note: Required data types won't pass validation but optional
@@ -661,8 +643,8 @@ class PhenotypeData extends FileField {
    *   Returns TRUE if given data type was set by user and FALSE otherwise.
    */
   public static function hasColumn($column_data_type, $organism_index, $submission) {
-    $columns = self::getColumns($organism_index, $submission);
-    $options = self::getColumnOptions();
+    $columns = static::getSelectedColumns($organism_index, $submission->state);
+    $options = static::getColumnOptions();
     $key = array_search($column_data_type, $options);
     return in_array($key, $columns);
   }
