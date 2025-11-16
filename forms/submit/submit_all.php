@@ -2426,44 +2426,36 @@ function tpps_generate_vcf_from_assay_and_assay_design(array &$options, array &$
   }
 
   // SNP Assay: Get column number for 'snp_id'.
-  // Note: 'SNP Assay' file field doesn't have column data type selector.
-  $assay_snp_name_col = SnpAssay::getHeaderIndex($organism_index, $shared_state, 'snp_id');
+  // Note: 'SNP Assay' file field doesn't have column data type selector
+  // Method getHeaderIndex() uses case insensitive search.
+  $assay_snp_name_col = SnpAssay::getHeaderIndex(
+    $organism_index, $shared_state, 'snp_id'
+  );
+
   if (is_null($assay_snp_name_col) || $assay_snp_name_col === FALSE) {
     $message = "ASSAY + ASSAY DESIGN TO VCF: 'SNP_ID' column not found in 'SNP Assay' file. (required)";
     throw new Exception($message);
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Get column indexes (not letters).
+  // Get column indexes (not letters) starting from zero.
   $assay_design_snp_name_col = AssayDesign::getHeaderIndex(
-    $organism_index,
-    $shared_state,
-    AssayDesign::DATA_TYPE_SNP_ID
+    $organism_index, $shared_state, AssayDesign::DATA_TYPE_SNP_ID
   ) ?? 'NA';
   $assay_design_snp_flank_col = AssayDesign::getHeaderIndex(
-    $organism_index,
-    $shared_state,
-    AssayDesign::DATA_TYPE_FLANK_SEQUENCE
+    $organism_index, $shared_state, AssayDesign::DATA_TYPE_FLANK_SEQUENCE
   ) ?? 'NA';
   $assay_design_snp_rev_flank_col = AssayDesign::getHeaderIndex(
-    $organism_index,
-    $shared_state,
-    AssayDesign::DATA_TYPE_REVERSE_FLANK_SEQUENCE
+    $organism_index, $shared_state, AssayDesign::DATA_TYPE_REVERSE_FLANK_SEQUENCE
   ) ?? 'NA';
   $assay_design_snp_base_pos_col = AssayDesign::getHeaderIndex(
-    $organism_index,
-    $shared_state,
-    AssayDesign::DATA_TYPE_POSITION
+    $organism_index, $shared_state, AssayDesign::DATA_TYPE_POSITION
   ) ?? 'NA';
   $assay_design_qual_col = AssayDesign::getHeaderIndex(
-    $organism_index,
-    $shared_state,
-    AssayDesign::DATA_TYPE_QUALITY_SCORE
+    $organism_index, $shared_state, AssayDesign::DATA_TYPE_QUALITY_SCORE
   ) ?? 'NA';
   $assay_design_snp_chrom_col = AssayDesign::getHeaderIndex(
-    $organism_index,
-    $shared_state,
-    AssayDesign::DATA_TYPE_SCAFFOLD
+    $organism_index, $shared_state, AssayDesign::DATA_TYPE_SCAFFOLD
   ) ?? 'NA';
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

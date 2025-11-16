@@ -623,7 +623,7 @@ abstract class FileField {
    * @param array $form_state
    *   Drupal Form API state array.
    * @param mixed $column_key
-   *   Column name (string),  ordinal index (int) or data type index (int).
+   *   Column name (string), ordinal index (int) or data type index (int).
    *
    * @return bool
    *   Returns TRUE if given data type (by index) was selected by user.
@@ -773,7 +773,7 @@ abstract class FileField {
    * Static caching note:
    * No need to use static cache because file_load() already uses caching.
    * See https://api.drupal.org/api/drupal/includes%21file.inc/function/file_load/7.x
-   * First call takes about 2.3 msec (cold cache);  next 0.05 msec (warm cache).
+   * First call takes about 2.3 msec (cold cache); next 0.05 msec (warm cache).
    *
    * Note:
    * Result could have extra (not required) columns because it uses user's
@@ -863,7 +863,7 @@ abstract class FileField {
    *   Drupal Form API State Array.
    * @param mixed $column_key
    *   1. Positive integer: column data type index or column index.
-   *   2. Case sensitive string: column header title.
+   *   2. Case insensitive (!) string: column header title.
    *
    *   When file field has 'Column Data Type Selector':
    *   - positive integer value treated as 'Data Type Index'.
@@ -915,7 +915,9 @@ abstract class FileField {
         $header = static::getFileHeader($organism_index, $form_state);
         if (!empty($header)) {
           // $header format: ['A' => 'Phenotype name', ...].
-          $letter = array_search($column_key, $header);
+          // Allow case insensitive search.
+          $header = array_map('strtolower', $header);
+          $letter = array_search(strtolower($column_key), $header);
         }
       }
     }
