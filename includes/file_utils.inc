@@ -653,31 +653,33 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
     ];
   }
   elseif ($form_page == TPPS_PAGE_4) {
-    // @todo Use FileField::getParents().
     $parent_list = [
+      // Fields with 'Column Data Type Selector':
       // ['phenotype', 'file'].
       PhenotypeData::getParents(),
       // ['phenotype', 'metadata'],
       PhenotypeMeta::getParents(),
-
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // ['genotype', 'SNPs', 'snps-association'].
       SnpAssociation::getParents(),
       // ['genotype', 'SNPs', 'assay-design-citation', 'assay-design'].
       AssayDesign::getParents(),
+
+      // Fields without 'Column Data Type Selector'.
+      // Those fields has sub-elements like 'no-header' and 'empty' elements
+      // and their values must be stored for later use.
+      // ['organism-1', 'genotype', 'SNPs', 'snps-assay'],
+      SnpAssay::getParents(),
+      // ['organism-1', 'genotype', 'SNPs', 'snps-pop-struct'].
+      SnpsPopulationStructure::getParents(),
+      // ['organism-1', 'genotype', 'SNPs', 'snps-kinship'].
+      SnpsKinship::getParents(),
       // ['genotype', 'other', 'other_marker'].
       OtherMarker::getParents(),
 
-      // File fields which doesn't have column data type selector:
-      // ['organism-1', 'genotype', 'SNPs', 'snps-assay'],
-      // SnpAssay::getParents(),
-      // ['organism-1', 'genotype', 'SNPs', 'snps-pop-struct'],
-      // SnpsPopulationStructure::getParents(),
-      // ['organism-1', 'genotype', 'SNPs', 'snps-kinship'],
-      // SnpsKinship::getParents(),
-
       // ['organism-1', 'genotype', 'SNPs', 'vcf'],
-      // ['organism-1', 'genotype', 'ssrs_cpssrs', 'ssrs'],
-      // ['organism-1', 'genotype', 'ssrs_cpssrs', 'ssrs_extra'],
+      ['organism-1', 'genotype', 'ssrs_cpssrs', 'ssrs'],
+      ['organism-1', 'genotype', 'ssrs_cpssrs', 'ssrs_extra'],
       // ['organism-1', 'genotype', 'tripal_fasta', 'file', 'file_upload'].
     ];
   }
@@ -1110,6 +1112,9 @@ function tpps_get_archive_files($archive) {
  *     'C' => 2,       |   'C' => 'Position',
  *     'D' => 3,       |   'D' => 'Flank sequence',
  *   ];                | ].
+ *
+ * @todo Seems $no_header doesn't work correctly and shows ordinal number
+ * of the column instead of it's actual value.
  */
 function tpps_file_headers($fid, $no_header = FALSE) {
   $headers = array();

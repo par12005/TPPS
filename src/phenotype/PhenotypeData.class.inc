@@ -8,7 +8,7 @@
  * (PhenotypeManual class) or using file (PhenotypeMeta class).
  *
  * Values of column 'year' will be stored in table 'chado.phenotypeprop'.
- * See method getYearCvTermId() for more details.
+ * See CVTerm::getId('year') for more details.
  */
 
 /**
@@ -557,50 +557,6 @@ class PhenotypeData extends FileField {
     ];
   }
 
-
-  /**
-   * Checks if given DataType was set using column's widget.
-   *
-   * WARNING: only for validation because uses $form_state['input'].
-   *
-   * @param array $form_state
-   *   Drupal Form API State array.
-   * @param int $organism_index
-   *   Ordinal number of organism on page.
-   * @param int $data_type_id
-   *   Data type Id. See constants of this class.
-   *
-   * @return bool
-   *   Returns TRUE if data type was set and FALSE otherwise.
-   */
-  public static function isDataTypeSet(array $form_state, $organism_index, $data_type_id) {
-    $organism_key = 'organism-' . $organism_index;
-    $selected_columns = TppsArray::getValue($form_state['input'],
-      [$organism_key, 'phenotype', static::DOM_NAME, 'columns']
-    );
-    return !empty($selected_columns) && in_array($data_type_id, $selected_columns);
-  }
-
-  /**
-   * Gets CVTerm Id for phenotype's year.
-   *
-   * Note: cvterm 54188 (year) doesn't work at dev-server.
-   * CVTerm must exist even if phenotype data file has no 'year' column.
-   *
-   * @return int
-   *   Returns CV Term Id for 'year' from phenotype data file.
-   */
-  public static function getYearCvTermId() {
-    try {
-      $year_cvterm_id = tpps_load_cvterm('year')->cvterm_id;
-    }
-    catch (Exception $e) {
-      // Note: cvterm 54188 (year) doesn't work at dev-server.
-      $year_cvterm_id = variable_get('tpps_submitall_cvterm_phenotype_year', '');
-    }
-    return $year_cvterm_id ?? NULL;
-  }
-
   /**
    * Builds Phenotype Name.
    *
@@ -624,47 +580,6 @@ class PhenotypeData extends FileField {
    */
   public static function buildPhenotypeName($accession, $tree_id, $name, $suffix, $value_4lettercode) {
     return "$accession-$tree_id-$name-$suffix-$value_4lettercode";
-  }
-
-  /**
-   * Gets list of user specified data types for columns.
-   *
-   * @param int $organism_index
-   *   Ordinal organism number on page.
-   * @param object $submission
-   *   Study Submission object.
-   *
-   * @return mixed
-   *   Returns acciative array where keys are column letters and values are
-   *   data type keys (see current class constants).
-   */
-  public static function getColumns($organism_index, $submission) {
-    $organism_key = 'organism-' . $organism_index;
-    return $submission->sharedState['saved_values'][TPPS_PAGE_4]
-      [$organism_key]['phenotype']['file-columns'] ?? NULL;
-  }
-
-  /**
-   * Checks if given column data type was set by user.
-   *
-   * Note: Required data types won't pass validation but optional
-   * data types like 'Year' requires those check.
-   *
-   * @param string $column_data_type
-   *   Human readable column name. E.g., 'Year'.
-   * @param int $organism_index
-   *   Ordinal organism number on page.
-   * @param object $submission
-   *   Study Submission object.
-   *
-   * @return bool
-   *   Returns TRUE if given data type was set by user and FALSE otherwise.
-   */
-  public static function hasColumn($column_data_type, $organism_index, $submission) {
-    $columns = self::getColumns($organism_index, $submission);
-    $options = self::getColumnOptions();
-    $key = array_search($column_data_type, $options);
-    return in_array($key, $columns);
   }
 
   /**

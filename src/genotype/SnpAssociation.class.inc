@@ -376,7 +376,7 @@ class SnpAssociation extends FileField {
 
     if (
       static::isPhenotypeStudy($form_state)
-      && PhenotypeData::isDataTypeSet($form_state, $organism_index, PhenotypeData::DATA_TYPE_YEAR)
+      && PhenotypeData::hasColumn($organism_index, $form_state, PhenotypeData::DATA_TYPE_YEAR)
     ) {
       $required_groups['Year'] = ['year' => [static::DATA_TYPE_YEAR]];
     }
