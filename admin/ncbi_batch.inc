@@ -23,7 +23,7 @@ function tpps_ncbi_batch_settings_form(array $form, array &$form_state) {
     unset($_SESSION['tpps_ncbi_batch']);
   }
 
-  $report_path = 'admin/reports/tpps/organism/ncbi';
+  $report_path = 'admin/reports/tpps/organism/ncbi/all';
   $form['report'] = [
     '#markup' => '<p>' . l(t('List of the NCBI Taxonomy Ids.'), $report_path) . '</p>',
   ];

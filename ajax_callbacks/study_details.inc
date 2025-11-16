@@ -389,6 +389,8 @@ function tpps_ajax_get_trees_details_tab(array $data) {
  *
  * @return string
  *   The HTML table of plants and phenotypes associated with the submission.
+ *
+ * @todo Send $organism_index from browser to get correct data.
  */
 function tpps_ajax_get_phenotype_details_tab(array $data) {
   if (!tpps_access('access tpps details')) {
@@ -423,12 +425,18 @@ function tpps_ajax_get_phenotype_details_tab(array $data) {
   $query->join('chado.project_stock', 'ps', 'ps.stock_id = sp.stock_id');
   $query->join('chado.stock', 's', 's.stock_id = sp.stock_id');
 
-  // Get optional 'year' column only when 'year exists in data file.
+  // Get optional 'Year' column only when 'year exists in data file.
+  //
   // WARNING: 1st phenotype data file could have no 'Year' column but others
   // do have and this will not work in this case.
-  if (PhenotypeData::hasColumn('Year', 1, $submission)) {
+  //
+  if (PhenotypeData::hasColumn(
+    $organism_index = 1,
+    $submission->state,
+    PhenotypeData::DATA_TYPE_YEAR
+  )) {
     $query->join('chado.phenotypeprop', 'pp', 'p.phenotype_id = pp.phenotype_id');
-    $query->condition('pp.type_id', PhenotypeData::getYearCvTermId());
+    $query->condition('pp.type_id', CVTerm::getId('year'));
     $query->addField('pp', 'value', 'year');
   }
 

@@ -230,21 +230,6 @@ class AssayDesign extends FileField {
     // static::allowColumnDataTypeUseOnce($organism_index, $groups);
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Check if required data types for columns was set.
-    // Note: Assay Design has more then one group of required columns.
-    if (!static::hasColumns($organism_index, $form_state)) {
-      $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
-        . 'Data types for columns must be set.',
-        [
-          '@field_title' => t(static::getFieldTitle()),
-          '@oidx' => $organism_index,
-        ]
-      );
-      form_set_error(static::getFormErrorName($organism_index), $error_message);
-      return FALSE;
-    }
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // 'SNP Assay' is required.
     if (empty(SnpAssay::getFileId($organism_index, $form_state))) {
       // @todo Minor. Highlight 'SNP Assay' file.
@@ -273,23 +258,18 @@ class AssayDesign extends FileField {
         'form_state' => $form_state,
         // Curent file.
         'no_header' => $snps[static::DOM_NAME . '-no-header'] ?? FALSE,
-        'column_letter' => static::getSelectedColumns(
-          $organism_index,
-          $form_state
-        )[static::DATA_TYPE_SNP_ID],
+        'column_letter' => static::getColumnLetter(
+          $organism_index, $form_state, static::DATA_TYPE_SNP_ID
+        ),
         // Target file.
         'target_form_element' => SnpAssociation::getFormElement(
-          $organism_index,
-          $form_state
+          $organism_index, $form_state
         ),
-        'target_column_letter' => SnpAssociation::getSelectedColumns(
-          $organism_index,
-          $form_state
-        )[SnpAssociation::DATA_TYPE_SNP_ID],
+        'target_column_letter' => SnpAssociation::getColumnLetter(
+          $organism_index, $form_state, SnpAssociation::DATA_TYPE_SNP_ID
+        ),
         'target_no_header' => SnpAssociation::getSubFieldValue(
-          $organism_index,
-          $form_state,
-          'no-header'
+          $organism_index, $form_state, 'no-header'
         ),
       ]);
       if (form_get_errors()) {
@@ -308,10 +288,9 @@ class AssayDesign extends FileField {
         $form_state,
         'no-header'
       ),
-      'column_letter' => static::getSelectedColumns(
-         $organism_index,
-        $form_state
-      )[static::DATA_TYPE_SNP_ID],
+      'column_letter' => static::getColumnLetter(
+        $organism_index, $form_state, static::DATA_TYPE_SNP_ID
+      ),
       // Target file.
       'target_column_letter' => NULL,
       'target_form_element' => SnpAssay::getFormElement($organism_index, $form_state),
@@ -358,9 +337,6 @@ class AssayDesign extends FileField {
       return;
     }
     tpps_add_project_file($shared_state, $fid);
-    // Note: currently not used.
-    $options['selected_columns'] = static::getSelectedColumns($organism_index, $shared_state);
-
     if ($debug_mode) {
       $message = t('"@title": Complete file processing.', $params);
       tpps_log_header($message);
@@ -788,20 +764,15 @@ class AssayDesign extends FileField {
     }
   }
 
-
   /**
-   * This function validates that the file contains all of the required groups.
+   * Checks if any of required group of the columns was specified.
    *
-   * Based on code from function tpps_file_validate_columns() but allows
-   * multiple sets of required columns.
    * To use this method class must implement 'getRequiredColumns' method and
    * allow multiple sets of required columns.
    *
-   * WARNING:
-   * - Not compatible with tpps_file_validate_columns().
-   * - Allows multiple required groups.
-   * - Uses different structure in getColumnOptions().
-   * - Uses diferent output structure (single level instead of nested array).
+   * WARNING: Uses diferent output format 'A1B2': ['A' => 1, 'B' => 2] which
+   *   differs from used in the function tpps_file_validate_columns().
+   * Based on function tpps_file_validate_columns().
    *
    * @param int $organism_index
    *   Ordinal organism number at page.
@@ -813,20 +784,9 @@ class AssayDesign extends FileField {
    * @return array
    *   Returns mapping of the column letters (starting from A) as keys and
    *   data type keys as values.
-   *   Example: ['A' => 1, 'B' => '2'].
-   *
-   * @todo Merge with FileField::validateColumns().
+   *   Format 'A1B2': ['A' => 1, 'B' => 2].
    */
   public static function validateColumns($organism_index, array &$form_state, array $form = NULL) {
-    $debug_mode = FALSE;
-
-    if (!static::isMultipleRequiredColumns()) {
-      return FileField::validateColumns($organism_index, $form_state, $form);
-    }
-
-    // @todo Check if validation and processing uses new structure of the
-    // required columns and remove array_flip() if possible.
-
     if (!method_exists(static::class, 'getRequiredColumns')) {
       // Method shouldn't be called if there is no required columns so it's not
       // an exception but probably method 'getRequiredColumns' wasn't implemented
@@ -866,23 +826,13 @@ class AssayDesign extends FileField {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get user selected data types for columns.
     // Example of structure: ['A' => '1', 'B' => '4',];
-    // Note: there is no sense to use FileField::getSelectedColumns() here
-    // because it uses different structure of output array.
-    $selected_columns = TppsArray::getValue(
-      $form_state['input'],
-      array_merge($parents, ['columns'])
-    );
+    $selected_columns = static::getSelectedColumns($organism_index, $form_state);
     if (empty($selected_columns)) {
-      // Note: $selected_columns will be empty when user just added file (not clicked 'Upload'
-      // button and submitted form (clicked 'Next' button).
-      // Probably columns could be detected automatically because they are shown
-      // at page and so we could use default values here.
       $error_message = t('Organism #@oidx / "<strong>@field_title</strong>": '
         . "Data types for columns wasn't specified.",
         [
           '@field_title' => t(static::getFieldTitle()),
           '@oidx' => $organism_index,
-
         ]
       );
       form_set_error(static::getFormErrorName($organism_index), $error_message);
@@ -891,15 +841,10 @@ class AssayDesign extends FileField {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // No need to storey list of options under $form_state['saved_values']
     // because it's a constant and will not be changed.
+    // @todo Minor. Store list of options to protect existing studies from
+    // dramatic change of this list in the bad future.
     $column_options = static::getColumnOptions();
-    // @todo Think if we should store list of options? If this list will be
-    // changed in future.
 
-    if ($debug_mode ?? FALSE) {
-      dpm(print_r($column_options, 1), 'options');
-      dpm(print_r($selected_columns, 1), 'selected');
-      dpm($fid, 'fid');
-    }
     // Store under $form_state['saved_values'].
     TppsArray::setValue(
       $form_state['saved_values'][static::FORM_STEP],
@@ -915,7 +860,6 @@ class AssayDesign extends FileField {
     }
     $columns = [];
     foreach ($required_cases as $case_name => $case_data) {
-
       // Since file can contain extra columns we can't check if lists are equal
       // but must check if $selected_columns list includes all required columns.
       if (TppsArray::contains($case_data, $selected_columns)) {
@@ -947,9 +891,7 @@ class AssayDesign extends FileField {
       form_set_error(static::getFormErrorName($organism_index), $error_message);
     }
 
-    // See tpps_file_validate_columns().
-    // Format: ['1' => 'A', '4' => 'B'].
-    return array_flip($selected_columns);
+    return $selected_columns;
   }
 
 }

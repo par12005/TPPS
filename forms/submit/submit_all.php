@@ -1656,7 +1656,7 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
   }
   tpps_submission_add_tag($shared_state['accession'], 'Phenotype');
 
-  $year_cvterm_id = PhenotypeData::getYearCvTermId();
+  $year_cvterm_id = CVTerm::getId('year');
   if (empty($year_cvterm_id)) {
     tpps_log(t("CV Term Id for phenotype's 'Year' column in data file wasn't set."
       . "Create cvterm or manually set it's value at @url."),
@@ -2426,44 +2426,36 @@ function tpps_generate_vcf_from_assay_and_assay_design(array &$options, array &$
   }
 
   // SNP Assay: Get column number for 'snp_id'.
-  // Note: 'SNP Assay' file field doesn't have column data type selector.
-  $assay_snp_name_col = SnpAssay::getHeaderIndex($organism_index, $shared_state, 'snp_id');
+  // Note: 'SNP Assay' file field doesn't have column data type selector
+  // Method getHeaderIndex() uses case insensitive search.
+  $assay_snp_name_col = SnpAssay::getHeaderIndex(
+    $organism_index, $shared_state, 'snp_id'
+  );
+
   if (is_null($assay_snp_name_col) || $assay_snp_name_col === FALSE) {
     $message = "ASSAY + ASSAY DESIGN TO VCF: 'SNP_ID' column not found in 'SNP Assay' file. (required)";
     throw new Exception($message);
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Get column indexes (not letters).
+  // Get column indexes (not letters) starting from zero.
   $assay_design_snp_name_col = AssayDesign::getHeaderIndex(
-    $organism_index,
-    $shared_state,
-    AssayDesign::DATA_TYPE_SNP_ID
+    $organism_index, $shared_state, AssayDesign::DATA_TYPE_SNP_ID
   ) ?? 'NA';
   $assay_design_snp_flank_col = AssayDesign::getHeaderIndex(
-    $organism_index,
-    $shared_state,
-    AssayDesign::DATA_TYPE_FLANK_SEQUENCE
+    $organism_index, $shared_state, AssayDesign::DATA_TYPE_FLANK_SEQUENCE
   ) ?? 'NA';
   $assay_design_snp_rev_flank_col = AssayDesign::getHeaderIndex(
-    $organism_index,
-    $shared_state,
-    AssayDesign::DATA_TYPE_REVERSE_FLANK_SEQUENCE
+    $organism_index, $shared_state, AssayDesign::DATA_TYPE_REVERSE_FLANK_SEQUENCE
   ) ?? 'NA';
   $assay_design_snp_base_pos_col = AssayDesign::getHeaderIndex(
-    $organism_index,
-    $shared_state,
-    AssayDesign::DATA_TYPE_POSITION
+    $organism_index, $shared_state, AssayDesign::DATA_TYPE_POSITION
   ) ?? 'NA';
   $assay_design_qual_col = AssayDesign::getHeaderIndex(
-    $organism_index,
-    $shared_state,
-    AssayDesign::DATA_TYPE_QUALITY_SCORE
+    $organism_index, $shared_state, AssayDesign::DATA_TYPE_QUALITY_SCORE
   ) ?? 'NA';
   $assay_design_snp_chrom_col = AssayDesign::getHeaderIndex(
-    $organism_index,
-    $shared_state,
-    AssayDesign::DATA_TYPE_SCAFFOLD
+    $organism_index, $shared_state, AssayDesign::DATA_TYPE_SCAFFOLD
   ) ?? 'NA';
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -4973,12 +4965,12 @@ function tpps_genotype_vcf_processing_batch_some_features_insert(&$settings, $cu
     }
     // $sql .= ' ON CONFLICT (organism_id, uniquename, type_id) DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
     // $sql .= ' ON CONFLICT (organism_id, uniquename) where type_id = 1491 DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
-    
+
     // This gives error: Invalid column reference: 7 ERROR:  there is no unique or exclusion constraint matching the ON CONFLICT specification
     // $sql .= ' ON CONFLICT (organism_id, uniquename) DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
     $sql .= ' ON CONFLICT (organism_id, uniquename) where type_id in (1205, 1887, 2586, 54732, 54733, 54739) DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
     // ON CONFLICT (organism_id, uniquename) where type_id in (1205, 1887, 2586, 54732, 54733, 54739)
-    
+
     if ($variant_index > 0) {
       print_r($sql . "\n");
       $results_feature_inserts = db_query($sql);
@@ -5408,7 +5400,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
       $snp_cvterm_id_results = chado_query("SELECT cvterm_id FROM chado.cvterm WHERE name ILIKE 'SNP' LIMIT 1");
       foreach ($snp_cvterm_id_results as $snp_cvterm_row) {
         $snp_cvterm_id = $snp_cvterm_row->cvterm_id;
-      } 
+      }
 
       // Keeps track of variant_name connection to src_feature_name + featureloc
       $features_variant_data = [];
