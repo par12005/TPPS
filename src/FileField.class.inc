@@ -1972,17 +1972,14 @@ abstract class FileField {
    * used by submit_all.php and uses NULL and FALSE values differently.
    */
   public static function getHeaderIndex($organism_index, array $form_state, $column_key = NULL) {
-    $header = static::getFileHeader($organism_index, $form_state);
-    if (
-      is_null($column_key)
-      // Empty header could be when file wasn't found or file has no header.
-      || empty($header)
-    ) {
+    if (is_null($column_key)) {
       return FALSE;
     }
     $letter = static::getColumnLetter($organism_index, $form_state, $column_key);
-    $index = static::columnLetterToNumber($letter) - 1;
-    return ($index === FALSE) ? NULL : $index;
+    if (!empty($letter)) {
+      return (static::columnLetterToNumber($letter) - 1);
+    }
+    return NULL;
   }
 
   /**
