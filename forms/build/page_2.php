@@ -52,24 +52,32 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
     );
   }
 
-  // @TODO Add fieldset and move those fields under this fieldset.
-  $form['data_type'] = array(
+  $form['study_design'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Study Design'),
+    // WARNING: All other forms are using form's '#tree' => TRUE but here we
+    // have very simple form and need to avoid extra HTML-tags used before to
+    // emulate fieldset. Also there is no sense to create new SubmissionVersion
+    // for this case.
+    '#tree' => FALSE,
+  ];
+  $form['study_design']['data_type'] = array(
     '#type' => 'select',
     '#title' => t('Data Type: *'),
     '#options' => $options,
-    '#prefix' => '<legend><span class="fieldset-legend"><div class="fieldset-title">Study Design</div></span></legend>',
   );
   tpps_form_autofocus($form, ['data_type']);
-  $form['study_type'] = [
+  $form['study_design']['study_type'] = [
     '#type' => 'select',
     '#title' => t('Study Type: *'),
     '#options' => tpps_form_get_study_type(),
   ];
   if (!Submission::isCurationForm($form_state)) {
-    $form['study_type']['#ajax'] = [
+    $form['study_design']['study_type']['#ajax'] = [
       'wrapper' => 'study_info',
       'callback' => 'tpps_study_type_callback',
     ];
+    // WARNING: Element 'study _info' doesn't belong to fieldset 'study_design'.
     $form['study_info'] = array(
       '#type' => 'fieldset',
       '#tree' => TRUE,
