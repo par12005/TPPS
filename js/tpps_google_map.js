@@ -179,6 +179,8 @@ Drupal.tpps = Drupal.tpps || {};
       map: maps[id],
     });
     $mapWrapper[0].scrollIntoView({block: "center", behavior: "smooth"});
+    // Make button 'Next' active again.
+    $('input.next-button').removeAttr('disabled');
   }
 
   // Make it global.
@@ -232,6 +234,9 @@ Drupal.tpps = Drupal.tpps || {};
           return;
         }
         dog('Unprocessed Map Wrapper found at page.', featureName);
+        // Disable button 'Next' until Google Map is fully loaded because form
+        // validation will fail.
+        $('input.next-button').attr('disabled','disabled');
         // When file was removed fid will be outdated. Actual value is stored
         // in the managed file field.
         let fid = $(this).data('fid');
