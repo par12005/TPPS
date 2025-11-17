@@ -36,6 +36,12 @@ An investigation can have one or more studies. This is to allow for Investigatio
 
 Required: `Study ID`, `Study Title`, `Start Date`, `Contact Institution`, `Geographic Location`, `Experiment Site Name`, `Experimental Design description`, `Observation unit description`, `Growth facility description`
 
+.. image:: ../_static/images/mckown_2014_miappe_study_text_annotation.png
+   :alt: MIAPPE Study Text Annotation Example
+   :align: center
+   :scale: 75 %
+   :height: 400px
+   :width: 800px
 
 Environment
 -------------------
@@ -90,13 +96,6 @@ Sample
 A sample is a portion of plant tissue harvested, non-harvested or extracted from an observation unit for the purpose of sub-plant observations and/or molecular studies. A sample must be used when there is a physical sample that needs to be stored and traced.
 
 Required: `Observation unit ID`, `Sample ID`, `Plant anatomical entity`, `Collection date`
-
-
-Full Diagram
-~~~~~~~~~~~~~
-
-.. image:: ../_static/images/miappe_er_diagram.svg
-   :alt: MIAPPE Entity Relationship Diagram
 
 
 Integration With Chado
