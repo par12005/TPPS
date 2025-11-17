@@ -240,7 +240,6 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     $form['tree-accession']["species-$i"]['pop-group'] = [
       '#type' => 'hidden',
       '#title' => 'Population group mapping',
-      '#suffix' => '</div>',
       '#tree' => TRUE,
     ];
 
@@ -297,7 +296,6 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       }
 
       if ($found_lat and $found_lng) {
-        unset($form['tree-accession']["species-$i"]['pop-group']['#suffix']);
         // [VS] #8669py308
         $form['tree-accession']["species-$i"]['location_accuracy'] = [
           '#type' => 'select',

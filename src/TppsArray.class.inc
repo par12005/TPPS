@@ -684,4 +684,42 @@ class TppsArray {
     );
   }
 
+  /**
+   * Finds the differences in values between two multidimensional arrays.
+   *
+   * To compare for exact equality (structure and values) use the strict
+   *   comparison operator '==='.
+   * To compare specific columns/values:
+   *   1. Extract those parts using array_column(),
+   *   2. Use functions like array_diff(), array_intersect(), or custom loops.
+   *
+   * @param array $array1
+   *   First array to compare.
+   * @param array $array2
+   *   Second array to compare.
+   *
+   * @return array
+   *   Returns element from 1st array which are missing or differs in 2nd array.
+   */
+  public static function compare(array $array1, array $array2) {
+    $difference = [];
+    foreach ($array1 as $key => $value) {
+      if (array_key_exists($key, $array2)) {
+        if (is_array($value) && is_array($array2[$key])) {
+          $recursiveDiff = TppsArray::compare($value, $array2[$key]);
+          if (count($recursiveDiff)) {
+            $difference[$key] = $recursiveDiff;
+          }
+        }
+        elseif ($value != $array2[$key]) {
+          $difference[$key] = $value;
+        }
+      }
+      else {
+        $difference[$key] = $value;
+      }
+    }
+    return $difference;
+  }
+
 }
