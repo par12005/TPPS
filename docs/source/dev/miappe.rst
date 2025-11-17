@@ -24,10 +24,7 @@ Investigations in MIAPPE represent the over-arching pieces of a publication like
 
 Required: `Title`, `MIAPPE Version`
 
-This entity corresponds directly with TGDRxxxx studies in TPPS. 
-
-.. image:: ../_static/images/
-   :alt: Mappings between MIAPPE Investigation and Chado tables
+This entity corresponds directly with TGDRxxxx studies in TPPS.
 
 Study
 -------------------
@@ -36,7 +33,7 @@ An investigation can have one or more studies. This is to allow for Investigatio
 
 Required: `Study ID`, `Study Title`, `Start Date`, `Contact Institution`, `Geographic Location`, `Experiment Site Name`, `Experimental Design description`, `Observation unit description`, `Growth facility description`
 
-.. image:: ../_static/images/mckown_2014_miappe_study_text_annotation.png
+.. image:: ../_static/images/mckown_2014_miappe_study_text_annotations.png
    :alt: MIAPPE Study Text Annotation Example
    :align: center
    :scale: 75 %
