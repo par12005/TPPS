@@ -95,6 +95,10 @@ A sample is a portion of plant tissue harvested, non-harvested or extracted from
 Required: `Observation unit ID`, `Sample ID`, `Plant anatomical entity`, `Collection date`
 
 
+.. image:: ../_static/images/miappe_er_diagram.svg
+   :alt: MIAPPE Entity Relationship Diagram
+
+
 Integration With Chado
 -----------------------
 
