@@ -36,7 +36,7 @@ Required: `Study ID`, `Study Title`, `Start Date`, `Contact Institution`, `Geogr
 .. image:: ../_static/images/mckown_2014_miappe_study_text_annotations.png
    :alt: MIAPPE Study Text Annotation Example
    :align: center
-   :scale: 75 %
+   :scale: 90 %
    :height: 400px
    :width: 800px
 
