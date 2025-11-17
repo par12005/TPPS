@@ -516,6 +516,9 @@ class SubmissionCache {
   /**
    * Builds a list of accessions for form.
    *
+   * Uses cache:
+   *   No cache/Reset: 25-28 msec.
+   *   Cache not empty: 2-3 msec.
    * Former: tpps_submission_get_accession_list().
    *
    * @param array $condition_list
@@ -528,55 +531,68 @@ class SubmissionCache {
    *     Possible values: '!=', '<>', '='.
    *   Possible fields: 'uid', 'accession', 'status' and etc.
    *   See SubmissionCache::buildSingle().
+   * @param bool $reset
+   *   Flag is cache must be resetted. Default if FALSE.
    *
    * @return array
    *   Returns list of accession to be used in form.
    *   Key is an accession and value is a human readable title.
    */
-  public static function getAccessionList(array $condition_list = []) {
-    $data = static::get();
-    $list = [];
+  public static function getAccessionList(array $condition_list = [], $reset = FALSE) {
+    $default_value = [1];
+    $cid = __METHOD__;
+    $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+    $cache = cache_get($cid, $cache_bin);
 
-    foreach ($data as $accession => $cached_submission) {
-      $title = $cached_submission['publication']['title'] ?? t('No Title');
-      $title = (strlen($title) > 97) ? substr($title, 0, 97) . '...' : $title;
-      $item = $accession . ' - ' . $title;
-      if (empty($condition_list)) {
-        $list[$accession] = $item;
-      }
-      else {
-        $match = [];
-        foreach ($condition_list as $condition) {
-          // @TODO Minor. To use list of parents switch $key and $value in
-          // $conditions.
-          $parents = $condition[0] ?? NULL;
-          $value = $condition[1] ?? NULL;
-          if (empty($parents)) {
-            continue;
-          }
-          $operation = $condition[2] ?? '=';
-          $existing_value = TppsArray::getValue($cached_submission, $parents);
-          if ($operation == '=') {
-            $match[] = ($existing_value == $value);
-          }
-          elseif ($operation == '!=' || $operation == '<>') {
-            $match[] = ($existing_value != $value);
-          }
-          else {
-            // dpm('Not supported operation.');
-          }
-        }
-        // Add to list when ALL conditions matches.
-        if (
-          count($match) == count($condition_list)
-          && count(array_filter($match)) == count($match)
-        ) {
+    $key = md5(json_encode($condition_list));
+    if ($reset || empty($cache) || empty($cache->data[$key])) {
+      $list = $default_value;
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      $data = static::get();
+      foreach ($data as $accession => $cached_submission) {
+        $title = $cached_submission['publication']['title'] ?? t('No Title');
+        $title = (strlen($title) > 96) ? substr($title, 0, 97) . '...' : $title;
+        $item = $accession . ' - ' . $title;
+        if (empty($condition_list)) {
           $list[$accession] = $item;
         }
+        else {
+          $match = [];
+          foreach ($condition_list as $condition) {
+            // @TODO Minor. To use list of parents switch $key and $value in
+            // $conditions.
+            $parents = $condition[0] ?? NULL;
+            $value = $condition[1] ?? NULL;
+            if (empty($parents)) {
+              continue;
+            }
+            $operation = $condition[2] ?? '=';
+            $existing_value = TppsArray::getValue($cached_submission, $parents);
+            if ($operation == '=') {
+              $match[] = ($existing_value == $value);
+            }
+            elseif ($operation == '!=' || $operation == '<>') {
+              $match[] = ($existing_value != $value);
+            }
+            else {
+              // dpm('Not supported operation.');
+            }
+          }
+          // Add to list when ALL conditions matches.
+          if (
+            count($match) == count($condition_list)
+            && count(array_filter($match)) == count($match)
+          ) {
+            $list[$accession] = $item;
+          }
+        }
       }
+      krsort($list, SORT_NATURAL);
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      $cache->data[$key] = $list;
+      cache_set($cid, $cache->data, $cache_bin);
     }
-    krsort($list, SORT_NATURAL);
-    return $list;
+    return $cache->data[$key] ?? $default_value;
   }
 
 }
