@@ -712,15 +712,19 @@ class Submission {
    *
    * To remove only record from tpps_submission' table see Submission::delete().
    *
-   * @param bool $force
-   *   Boolean indicating that the file should be deleted
-   *   if the file not in use by the file_usage table.
-   *   Removement of not used files are safe but I'm not sure that old studies
-   *   created correct records about usage of files so do NOT delete files
-   *   by default.
-   *   But for testing and Study Import file removement should be allowed.
+   * @param array $options
+   *   List of options.
+   *   'clear_db' - bool. When TRUE means db tables must be cleared.
+   *   'remove_files' - bool. When TRUE submission's files will be removed if
+   *     the file not in use by the file_usage table. Removement of not used
+   *     files are safe but I'm not sure that old studies created correct
+   *     records about usage of files so do NOT delete files by default.
+   *     But for testing and Study Import file removement should be allowed.
    */
-  public function purge($force = FALSE) {
+  public function purge(array $options) {
+
+return;
+
     // @todo Minor. Query DB table 'file_usage' to find if there is orphan
     // files related to this non-existing submission.
     if (!empty($this->state)) {
@@ -730,7 +734,7 @@ class Submission {
         if ($file = tpps_file_load($fid)) {
           // Remove file usage record (not file itself).
           Submission::deleteFileUsage($file, $this->getAccessionNumber());
-          if ($force) {
+          if ($options['remove_files']) {
             // Remove file from disk.
             file_delete($file);
           }
@@ -747,7 +751,9 @@ class Submission {
     // Remove all data added during processing.
     // @TODO Check if study was processed first.
     module_load_include('inc', 'tpps', 'includes/submissions');
-    tpps_submission_clear_db($this->accession);
+    if (!empty($options['clear_db'])) {
+      tpps_submission_clear_db($this->accession);
+    }
     // If this study was imported we need to remove it from the list.
     // @todo Check if study was imported to avoid extra moves.
     ImportedSubmissionList::remove($this->accession);

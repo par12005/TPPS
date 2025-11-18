@@ -151,7 +151,11 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   if ($values['tpps_submission_import_accession'] != 'new') {
     // Remove submission and files.
     $submission = new Submission($accession);
-    $submission->purge();
+    $purge_options = [
+      'clear_db' => TRUE,
+      'remove_files' => FALSE,
+    ];
+    $submission->purge($purge_options);
   }
 
   $state_raw = trim($values['tpps_submission_import_state']);

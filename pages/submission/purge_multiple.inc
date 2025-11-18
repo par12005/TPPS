@@ -116,17 +116,21 @@ function tpps_submission_purge_multiple_form_submit(array $form, array &$form_st
   );
   if (!empty($accession_list)) {
     $submission = new Submission();
+    $purge_options = [
+      'clear_db' => TRUE,
+      'remove_files' => FALSE,
+    ];
     foreach ($accession_list as $accession) {
       if ($accession == 'all_broken') {
         $data = tpps_submission_purge_multiple_get_range();
         for ($i = $data['latest_accession']; $i >= $data['last_real_accession']; $i--) {
           $submission->accession = 'TGDR' . $i;
-          $submission->purge();
+          $submission->purge($purge_options);
         }
       }
       else {
         $submission->accession = $accession;
-        $submission->purge();
+        $submission->purge($purge_options);
       }
     }
   }

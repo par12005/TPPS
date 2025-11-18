@@ -30,6 +30,7 @@ function tpps_submission_purge_form(array $form, array &$form_state, $accession 
     '#type' => 'hidden',
     '#value' => $accession,
   ];
+
   $form = confirm_form(
     $form,
     $message,
@@ -39,6 +40,18 @@ function tpps_submission_purge_form(array $form, array &$form_state, $accession 
     $cancel_button_text
   );
   $form['#attributes']['class'][] = 'tpps-submission';
+  $form['clear_db'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Clear DB tables'),
+    // @TODO Convert into 'checkboxes' and show list of tables which checked
+    // by default.
+    '#default_value' => TRUE,
+  ];
+  $form['remove_files'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Remove files'),
+    '#default_value' => FALSE,
+  ];
   tpps_add_css_js('theme', $form);
   $form['actions']['cancel']['#attributes']['class'][] = 'btn form-button';
   return $form;
@@ -50,7 +63,13 @@ function tpps_submission_purge_form(array $form, array &$form_state, $accession 
 function tpps_submission_purge_form_submit(array $form, array &$form_state) {
   $accession = $form_state['values']['tpps_submission_accession'] ?? NULL;
   tpps_submission_list_validate_accession($accession);
-  // Remove study.
-  tpps_submission_load($accession)->purge();
+    // Remove study.
+  $options = [
+    'clear_db' => (bool) $form_state['values']['clear_db'],
+    'remove_files' => (bool) $form_state['values']['remove_files'],
+  ];
+dpm( $options);
+return;
+  tpps_submission_load($accession)->purge($options);
   drupal_goto('tpps/submission');
 }
