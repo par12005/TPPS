@@ -3,6 +3,14 @@
 /**
  * @file
  * Contains 'TppsConfiguration' class.
+ *
+ * Usage example:
+ *
+ * global $tpps;
+ * dpm(
+ *   // Instead of variable_get('tpps_watchdog_cleanup', FALSE).
+ *   $tpps->watchdog_cleanup
+ * );
  */
 
 /**

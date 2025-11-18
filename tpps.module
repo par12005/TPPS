@@ -1739,6 +1739,7 @@ if (!function_exists('array_key_first')) {
  * Implements hook_init().
  */
 function tpps_init() {
+  global $tpps;
   // Removed spam message:
   // Notice: Undefined variable: show_nafgs_menu in include() (line 147 of
   // /var/www/Drupal/sites/all/themes/sites/all/themes/dawn/tpl/page.tpl.php).
@@ -1754,7 +1755,7 @@ function tpps_init() {
       unset($_SESSION['messages']['error']);
     }
   }
-  if (variable_get('tpps_watchdog_cleanup', FALSE)) {
+  if ($_GET['q'] == 'admin/reports/dblog' && $tpps->watchdog_cleanup) {
     tpps_watchdog_cleanup();
   }
 }
