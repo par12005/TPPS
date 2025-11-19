@@ -2458,6 +2458,16 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'pages/submission/purge_multiple.inc',
   ];
+  $items['tpps/submission/%/remove'] = [
+    'title callback' => 'tpps_submission_title',
+    'title arguments' => [2, 3],
+    'description' => 'Remove TPPS Submission',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_remove_form', 2],
+    'access arguments' => ['tpps delete submission'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'pages/submission/remove.inc',
+  ];
   $items['tpps/submission/%/vcf/local/rename'] = [
     'title callback' => 'tpps_submission_title',
     'title arguments' => [2, 3],

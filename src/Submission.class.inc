@@ -708,7 +708,61 @@ class Submission {
   }
 
   /**
-   * Removes Submission, it's files and all the data from db.
+   * Removes submission's files.
+   *
+   * @todo Check if this code respects file usage table.
+   */
+  public function removeFiles() {
+return;
+
+    // @todo Minor. Query DB table 'file_usage' to find if there is orphan
+    // files related to this non-existing submission.
+    if (!empty($this->state)) {
+      // Remove usage of files first.
+      $fid_list = array_keys($this->getFileIdList());
+      foreach ($fid_list as $fid) {
+        if ($file = tpps_file_load($fid)) {
+          // Remove file usage record (not file itself).
+          Submission::deleteFileUsage($file, $this->getAccessionNumber());
+          // Remove file from disk.
+          file_delete($file);
+        }
+      }
+    }
+  }
+
+  /**
+   * Removes record from 'public.tpps_submission' table.
+   */
+  public function clearTppsSubmissionTable() {
+    return;
+    // @TODO Combine with delete().
+    // Remove submission state from DB.
+    db_delete(static::TABLE)
+      ->condition('accession', $this->accession)
+      ->execute();
+    db_delete('chado.dbxref')
+      ->condition('accession', $this->accession)
+      ->execute();
+  }
+
+  /**
+   * Removes records from many DB tables created by submit_all.php script.
+   */
+  public function clearDB() {
+    return;
+    // @TODO Remove per table.
+
+    // Remove all data added during processing.
+    // @TODO Check if study was processed first.
+    module_load_include('inc', 'tpps', 'includes/submissions');
+    tpps_submission_clear_db($this->accession);
+  }
+
+  /**
+   * Removes parts or whole Submission.
+   *
+   * Files, the data in db.
    *
    * To remove only record from tpps_submission' table see Submission::delete().
    *
@@ -721,52 +775,60 @@ class Submission {
    *     records about usage of files so do NOT delete files by default.
    *     But for testing and Study Import file removement should be allowed.
    */
-  public function purge(array $options) {
-
-return;
-
-    // @todo Minor. Query DB table 'file_usage' to find if there is orphan
-    // files related to this non-existing submission.
-    if (!empty($this->state)) {
-      // Remove usage of files first.
-      $fid_list = array_keys($this->getFileIdList());
-      foreach ($fid_list as $fid) {
-        if ($file = tpps_file_load($fid)) {
-          // Remove file usage record (not file itself).
-          Submission::deleteFileUsage($file, $this->getAccessionNumber());
-          if ($options['remove_files']) {
-            // Remove file from disk.
-            file_delete($file);
-          }
-        }
+  public function remove(array $options) {
+    // Remove parts according to user selection.
+    foreach (array_keys(array_filter($options)) as $method_name) {
+      if (method_exists($this, $method_name)) {
+        $this->$method_name();
       }
     }
-    // Remove submission state from DB.
-    db_delete(static::TABLE)
-      ->condition('accession', $this->accession)
-      ->execute();
-    db_delete('chado.dbxref')
-      ->condition('accession', $this->accession)
-      ->execute();
-    // Remove all data added during processing.
-    // @TODO Check if study was processed first.
-    module_load_include('inc', 'tpps', 'includes/submissions');
-    if (!empty($options['clear_db'])) {
-      tpps_submission_clear_db($this->accession);
+    if (0) {
+
+
+      // @todo Run this only when whole submission was removed.
+
+
+
+      // If this study was imported we need to remove it from the list.
+      // @todo Check if study was imported to avoid extra moves.
+      ImportedSubmissionList::remove($this->accession);
+      // Update cached data.
+      SubmissionCache::remove($this->accession);
+      // Unset current instance (in memory).
+      $this->accession = NULL;
+      $this->state = NULL;
+      $this->sharedState = NULL;
+      if (function_exists('module_invoke_all')) {
+        // 'tpps_submission_removed() + $options.
+        // @todo ? Do we need a hook here?
+        //module_invoke_all('submission_removed', $this);
+      }
     }
-    // If this study was imported we need to remove it from the list.
-    // @todo Check if study was imported to avoid extra moves.
-    ImportedSubmissionList::remove($this->accession);
-    // Update cached data.
-    SubmissionCache::remove($this->accession);
-    // Unset current instance (in memory).
-    $this->accession = NULL;
-    $this->state = NULL;
-    $this->sharedState = NULL;
-    if (function_exists('module_invoke_all')) {
-      // 'tpps_submission_purged().
-      module_invoke_all('submission_purged', $this);
-    }
+  }
+
+  /**
+   * Removes Submission, it's files and all the data from db.
+   *
+   * To remove only record from tpps_submission' table see Submission::delete().
+   *
+   * @param array $options
+   *   List of options.
+   *   'clearDB' - bool. When TRUE means db tables must be cleared.
+   *   'clearTppsSubmissionTable' - bool. TRUE means to remove data added by
+   *     submit_all script.
+   *   'removeFiles' - bool. When TRUE submission's files will be removed if
+   *     the file not in use by the file_usage table. Removement of not used
+   *     files are safe but I'm not sure that old studies created correct
+   *     records about usage of files so do NOT delete files by default.
+   *     But for testing and Study Import file removement should be allowed.
+   */
+  public function purge(array $options) {
+    $options = [
+      'clearDB' => TRUE,
+      'removeFiles' => TRUE,
+      'clearTppsSubmissionTable' => TRUE,
+    ];
+    $this->remove($options);
   }
 
   /**
