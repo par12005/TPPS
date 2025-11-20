@@ -16,6 +16,7 @@ $tpps_job = NULL;
 module_load_include('inc', 'tpps', 'src/SnpAssociation.class');
 module_load_include('inc', 'tpps', 'src/PhenotypeMeta.class');
 module_load_include('inc', 'tpps', 'src/PhenotypeData.class');
+module_load_include('inc', 'tpps', 'src/NextFlowManager.class');
 
 /**
  * Initialized the job logger which handles writing to job logs
@@ -2410,223 +2411,72 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
  *   - study_accession: The accession of the study.
  */
 function tpps_generate_vcf_from_assay_and_assay_design(array &$options, array &$shared_state) {
-  $organism_index = $options['organism_index'];
-  echo "Generating VCF from assay and assay design files...\n";
-  // Variables needed by the nextflow command
-  $study_accession = $options['study_accession'];
-  $assay_path = $options['path_assay'];
-  $assay_design_path = AssayDesign::getFilePath($organism_index, $shared_state);
-  $ref_genome = $options['ref-genome'];
-  $assembly_version = $options['ref-genome-version'];
-  $species = $options['ref-genome-species'];
-  $four_letter_code = '';
+  // Output Directory and expected file stage
+  $store_directory = '/isg/treegenes/nextflow_workflows/' . $options['study_accession'] . '';
+  $vcf_file_location = $store_directory . '/assay_sort.vcf.gz';
+  $vcf_tbi_file_location = $store_directory . '/assay_sort.vcf.gz.tbi';
 
+  // ----------------------------------------------------------------
+  // Start building a nextflow run
+  // First use the constructor to initialize the pipeline to run
+  // Second add arguments
+  $nextflowManager = new NextFlowManager("TreeGenes/new-study-pipeline", $store_directory);
+  $nextflowManager->addNextflowArgument('tgdr', $options['study_accession']);
+  $nextflowManager->addNextflowArgument('species',  $options['ref-genome-species']);
   foreach ($options['ref-genome-species-codes'] as $key => $code) {
     $four_letter_code = $code;
   }
-
-  // SNP Assay: Get column number for 'snp_id'.
-  // Note: 'SNP Assay' file field doesn't have column data type selector
-  // Method getHeaderIndex() uses case insensitive search.
-  $assay_snp_name_col = SnpAssay::getHeaderIndex(
-    $organism_index, $shared_state, 'snp_id'
+  $nextflowManager->addNextflowArgument('four_letter_code',  $four_letter_code);
+  $nextflowManager->addNextflowArgument('assembly_version',  $options['ref-genome-version'] ?? 'NA');
+  $nextflowManager->addNextflowArgument('vcfmaker',  'true');
+  $nextflowManager->addNextflowArgument('workflow',  '[]');
+  $nextflowManager->addNextflowArgument('type',  'assay');
+  $nextflowManager->addNextflowArgument('outdir', $store_directory);
+  $nextflowManager->addNextflowArgument('ref_genome', $options['ref-genome']);
+  $nextflowManager->addNextflowArgument('assay_path', $options['path_assay']);
+  $organism_index = $options['organism_index'];
+  $nextflowManager->addNextflowArgument('assay_design_snp_chrom_col',
+    AssayDesign::getHeaderIndex($organism_index, $shared_state, AssayDesign::DATA_TYPE_SCAFFOLD)
+  );
+  $nextflowManager->addNextflowArgument('assay_design_snp_base_pos_col',
+    AssayDesign::getHeaderIndex($organism_index, $shared_state, AssayDesign::DATA_TYPE_POSITION)
+  );
+  $nextflowManager->addNextflowArgument('assay_design_snp_flank_col',
+    AssayDesign::getHeaderIndex($organism_index, $shared_state, AssayDesign::DATA_TYPE_FLANK_SEQUENCE) ?? 'NA'
+  );
+  $nextflowManager->addNextflowArgument('assay_design_path', 
+    AssayDesign::getFilePath($organism_index, $shared_state)
+  );
+  $nextflowManager->addNextflowArgument('assay_design_snp_name_col', 
+    AssayDesign::getHeaderIndex($organism_index, $shared_state, AssayDesign::DATA_TYPE_SNP_ID) ?? 'NA'
+  );
+  $nextflowManager->addNextflowArgument('assay_design_snp_rev_flank_col',
+    AssayDesign::getHeaderIndex($organism_index, $shared_state, AssayDesign::DATA_TYPE_REVERSE_FLANK_SEQUENCE) ?? 'NA'
+  );
+  $nextflowManager->addNextflowArgument('assay_design_qual_col',
+    AssayDesign::getHeaderIndex($organism_index, $shared_state, AssayDesign::DATA_TYPE_QUALITY_SCORE) ?? 'NA'
+  );
+  $nextflowManager->addNextflowArgument('assay_snp_name_col ',
+    SnpAssay::getHeaderIndex($organism_index, $shared_state, 'snp_id') ?? 'NA'
   );
 
-  if (is_null($assay_snp_name_col) || $assay_snp_name_col === FALSE) {
-    $message = "ASSAY + ASSAY DESIGN TO VCF: 'SNP_ID' column not found in 'SNP Assay' file. (required)";
-    throw new Exception($message);
+  $jobId = $nextflowManager->submitJob();
+  tpps_log("Assay2Vcf JobId: " . $jobId, [], TRIPAL_INFO);
+  $status = $nextflowManager->hasCompleted();
+  tpps_log("Assay2Vcf Job Status: " . $status, [], TRIPAL_INFO);
+
+  if (!$nextflowManager->isSuccessful($status)) {
+    $trace = $nextflowManager->extractStackTrace();
+    tpps_log("StackTrace: " . $trace, [], TRIPAL_DEBUG);
+    throw new Exception ("Assay2Vcf Job Failed");
   }
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Get column indexes (not letters) starting from zero.
-  $assay_design_snp_name_col = AssayDesign::getHeaderIndex(
-    $organism_index, $shared_state, AssayDesign::DATA_TYPE_SNP_ID
-  ) ?? 'NA';
-  $assay_design_snp_flank_col = AssayDesign::getHeaderIndex(
-    $organism_index, $shared_state, AssayDesign::DATA_TYPE_FLANK_SEQUENCE
-  ) ?? 'NA';
-  $assay_design_snp_rev_flank_col = AssayDesign::getHeaderIndex(
-    $organism_index, $shared_state, AssayDesign::DATA_TYPE_REVERSE_FLANK_SEQUENCE
-  ) ?? 'NA';
-  $assay_design_snp_base_pos_col = AssayDesign::getHeaderIndex(
-    $organism_index, $shared_state, AssayDesign::DATA_TYPE_POSITION
-  ) ?? 'NA';
-  $assay_design_qual_col = AssayDesign::getHeaderIndex(
-    $organism_index, $shared_state, AssayDesign::DATA_TYPE_QUALITY_SCORE
-  ) ?? 'NA';
-  $assay_design_snp_chrom_col = AssayDesign::getHeaderIndex(
-    $organism_index, $shared_state, AssayDesign::DATA_TYPE_SCAFFOLD
-  ) ?? 'NA';
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Check required columns.
-  // Requirements should be at least one of the following:
-  // 1. SNP ID, scaffold, position
-  // 2. SNP ID, flank sequence
-  // 3. SNP ID, reverse flank sequence (not yet implemented)
-  // @TODO Implement 3rd case.
-  // Note: for some reasons (0 == 'NA') is TRUE so we have to use strict mode.
-  if ($assay_design_snp_name_col === 'NA') {
-    $message = "ASSAY + ASSAY DESIGN TO VCF: 'SNP ID' column not found in "
-      . "'Assay Design' file. (required)";
-    throw new Exception($message);
-  }
-  if (
-    (
-      $assay_design_snp_base_pos_col !== 'NA'
-      || $assay_design_snp_chrom_col !== 'NA'
-    )
-    && $assay_design_snp_flank_col !== 'NA'
-    && $assay_design_snp_rev_flank_col !== 'NA'
-  ) {
-    $message = "ASSAY + ASSAY DESIGN TO VCF: Either (Chromosome + Position) "
-      . "or (Flanking Sequence) or (Reverse Flanking Sequence) columns not "
-      . "found in 'Assay Design' file. (at least one group is required)";
-    throw new Exception($message);
-  }
-
-  // End of changes.
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-  $store_directory = '/isg/treegenes/nextflow_workflows/' . $study_accession . '/new-study-pipeline/tpps-submitall/assay-to-vcf';
-  $vcf_file_location = $store_directory . '/assay_sort.vcf.gz';
-  $vcf_tbi_file_location = $store_directory . '/assay_sort.vcf.gz.tbi';
-  // If VCF FILE AND TBI FILE DO NOT EXIST, we will run the nextflow command to generate them.
-  if (file_exists($vcf_file_location) == false and file_exists($vcf_tbi_file_location) == false) {
-    if (!file_exists($store_directory)) {
-      mkdir($store_directory, 0755, TRUE);
-    }
-
-
-    $store_directory = str_ireplace('..', '', $store_directory);
-    exec('rm -f ' . $store_directory . '/*.log');
-
-    $output = [];
-    $result_code = 0;
-    // $SCRIPT_LOCATION='/home/FCAM/tg-nginx/simple_test.sh';
-    //   #SBATCH --qos=general
-$run_code = "#!/bin/bash
-#SBATCH --job-name=tpps_assay_and_assay_design_to_vcf
-#SBATCH -N 1
-#SBATCH -n 1
-#SBATCH -c 1
-#SBATCH --partition=general
-#SBATCH --qos=general
-#SBATCH --mail-type=END
-#SBATCH --mem=10G
-#SBATCH --mail-user=tg-nginx@cam.uchc.edu
-#SBATCH -o $store_directory/new_study_pipeline_%j.out
-#SBATCH -e $store_directory/new_study_pipeline_%j.err
-
-
-module load nextflow
-mkdir -p /scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
-export TMPDIR=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
-export NXF_TEMP=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
-export NXF_WORK=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
-export NXF_OPTS='-Xms5G -Xmx10G'
-export TZ='America/New_York'
-cd $store_directory
-echo \$SLURM_JOB_ID > $store_directory/slurm_job_id.txt
-
-rm -rf ~/.nextflow/assets/TreeGenes/new-study-pipeline
-/home/FCAM/tg-nginx/nextflow pull TreeGenes/new-study-pipeline -hub gitlab -r chado
-/home/FCAM/tg-nginx/nextflow run TreeGenes/new-study-pipeline -r chado -profile xanadu --assay_path '$assay_path'   --assay_design_path '$assay_design_path'   --species '$species'   --four_letter_code '$four_letter_code'   --assembly_version '$assembly_version'   --assay_design_snp_name_col '$assay_design_snp_name_col'   --assay_design_snp_chrom_col '$assay_design_snp_chrom_col'   --assay_design_snp_base_pos_col '$assay_design_snp_base_pos_col'   --assay_design_snp_flank_col '$assay_design_snp_flank_col'   --assay_design_qual_col '$assay_design_qual_col'   --assay_snp_name_col '$assay_snp_name_col' --ref_genome '$ref_genome' --vcfmaker true --workflow '[]' --type 'assay' --tgdr $study_accession --outdir $store_directory
-";
-// -r main
-// -profile singularity
-
-
-    $SCRIPT_LOCATION = $store_directory . '/run_script.sh';
-    tpps_log(
-      'NEXTFLOW NEW STUDY PIPELINE SCRIPT LOCATION: @location',
-      ['@location' => $SCRIPT_LOCATION]
-    );
-    tpps_log("Script location: $SCRIPT_LOCATION", [], TRIPAL_DEBUG);
-    file_put_contents($SCRIPT_LOCATION, $run_code);
-    chmod($SCRIPT_LOCATION, 0755);
-
-// THIS IS FOR THE CLUSTER BUT WE ARE CURRENTLY RUNNING ON TREEGENESDEV
-// SO SBATCH COMMAND WILL NOT WORK.
-exec("
-ssh tg-nginx@login.hpc.cam.uchc.edu << EOF
-sbatch $SCRIPT_LOCATION
-EOF
-", $output, $result_code);
-
-    tpps_log($output, "Output");
-    tpps_log($result_code, "Result code");
-
-    tpps_log("Waiting 20 seconds to make sure the job is submitted...");
-    // sleep(20); // Wait for 10 seconds to ensure the job is submitted
-
-    while(!file_exists($store_directory . '/slurm_job_id.txt')) {
-      print_r("Waiting for slurm_job_id.txt file to be created...\n");
-      sleep(10); // Wait for 10 seconds before checking again
-    }
-
-    if (file_exists($store_directory . '/slurm_job_id.txt')) {
-      // @TODO Check why this varible not used.
-      $slurm_job_id = file_get_contents($store_directory . '/slurm_job_id.txt');
-    }
-    print_r("SLURM JOB ID: " . $slurm_job_id . "\n");
-
-    // Wait for job to complete
-    $job_status = 'running';
-while ($job_status == 'running') {
-  $output = [];
-  print_r("Checking job status...\n");
-  exec("
-ssh -oStrictHostKeyChecking=no tg-nginx@login.hpc.cam.uchc.edu << EOF
-echo 'check-job-status'
-squeue -u tg-nginx | grep $slurm_job_id
-EOF
-", $output, $result_code);
-  print_r($output);
-  print_r("Result code: $result_code\n");
-  $curr_line_number = 0;
-  $total_lines = count($output);
-  foreach ($output as $line) {
-    $curr_line_number = $curr_line_number + 1;
-    if (stripos($line, 'check-job-status') !== FALSE) {
-      if ($curr_line_number == $total_lines) {
-        // There is no job listed in the queue
-        $job_status = 'completed';
-        $options['assay_and_assay_design_vcf_completed'] = TRUE;
-        print_r("Assay and Assay Design to VCF job is completed.\n");
-      }
-      else {
-        // There is a job listed in the queue
-        $job_status = 'running';
-        print_r("Assay and Assay Design to VCF job is still running...\n");
-      }
-      break;
-    }
-  }
-  sleep(10); // Wait for 10 seconds before checking again
-  if ($job_status == 'running') {
-    print_r("Waiting for 10 seconds to recheck whether job is completed\n");
-  }
-}
-print_r("\n");
-sleep(10); // Wait for 10 seconds to ensure the job is completed
-
-  }
-
-  // TODO: Perform polling to see when job completes and check for vcf.gz file
-  // and vcf.gz.tbi file.
-  $vcf_file_location = $store_directory . '/assay_sort.vcf.gz';
-  $vcf_tbi_file_location = $store_directory . '/assay_sort.vcf.gz.tbi';
-  echo "Check to see if the VCF file was created at $vcf_file_location\n";
-  echo "Check to see if the VCF TBI file was created at $vcf_tbi_file_location\n";
   $options['nextflow_vcf_maker_vcf_file_location'] = NULL;
   $options['nextflow_vcf_maker_success'] = FALSE; // Default to false
   if (file_exists($vcf_file_location) and file_exists($vcf_tbi_file_location)) {
     tpps_log("VCF file location: $vcf_file_location", []);
-    echo "VCF file location: $vcf_file_location\n";
     tpps_log("VCF TBI file location: $vcf_tbi_file_location", []);
-    echo "VCF TBI file location: $vcf_tbi_file_location\n";
-    echo "VCF file was created successfully.\n";
     // Add the vcf file location to the shared state so that it can be processed by the vcf processing function.
 
     if (!isset($shared_state['saved_values'][TPPS_PAGE_4]['organism-1']['genotype'])) {
