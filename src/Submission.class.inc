@@ -2602,7 +2602,6 @@ class Submission {
    *   Returns NULL if value wasn't found (probably not yet set).
    *
    * @todo Move to 'TppsForm' class.
-   * @todo Use 'TppsArray' class instead of 'tpps_array_*()'.
    */
   public function getStudyDataType() {
     return TppsArray::getValue($this->state,
