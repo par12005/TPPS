@@ -12,6 +12,7 @@ module_load_include('inc', 'tpps', 'pages/submission/list');
  */
 function tpps_submission_remove_form(array $form, array &$form_state, $accession = '') {
   tpps_submission_list_validate_accession($accession);
+  $submission = new Submission($accession);
   $message = t(
     'Are you sure you want to remove Submission @accession?',
     ['@accession' => $accession]
@@ -47,14 +48,29 @@ function tpps_submission_remove_form(array $form, array &$form_state, $accession
     '#title' => t('Removement options'),
     '#collapsible' => TRUE,
   ];
-  $remove_options = tpps_submission_get_remove_options();
+  $remove_options = tpps_submission_get_remove_options($accession);
   foreach ($remove_options as $name => $item) {
+
+    // @TODO Disable empty parts.
+    $status = NULL;
+    if (!empty($item['status_method'])) {
+      if (method_exists('Submission', $item['status_method'])) {
+        $status = call_user_func([$submission, $item['status_method']]);
+      }
+    }
+    $status_message = ' [' . ($status ? '<strong>NOT empty</strong>' : 'Empty') . ']';
     $form['options'][$name] = [
       '#type' => 'checkbox',
-      '#title' => $item['title'],
+      '#title' => $item['title'] . (is_null($status) ? '' : $status_message),
       '#default_value' => $item['default_value'],
-      '#description' => $item['description'] ?? NULL,
+      '#description' => ($item['description'] ?? NULL),
     ];
+    if (!is_null($status)) {
+      $form['options'][$name]['#default_value'] = $status;
+      if ($status === FALSE) {
+        $form['options'][$name]['#disabled'] = TRUE;
+      }
+    }
   }
   tpps_add_css_js('theme', $form);
   $form['actions']['cancel']['#attributes']['class'][] = 'btn form-button';
@@ -84,24 +100,46 @@ function tpps_submission_remove_form_submit(array $form, array &$form_state) {
  * @return array
  *   Returns array to build form and set default values.
  */
-function tpps_submission_get_remove_options() {
+function tpps_submission_get_remove_options($accession = NULL) {
   // Options.
   $options = [
     'clearTppsSubmissionTable' => [
       'default_value' => TRUE,
       'title' => t('Remove record in "tpps_submission" table.'),
-      'description' => t('Removes records from "public.tpps_submission" and "chado.dbxref" tables.')
+      'status_method' => 'hasDbRecord',
+      'description' => t('Remove records from "public.tpps_submission" and "chado.dbxref" tables.')
+      . theme('item_list', [
+        'items' => [
+          l(t('View record in "chado.dbxref" table.'),
+            'admin/reports/db/chado.dbxref',
+            ['query' => ['chado.dbxref.accession' => $accession]]
+          ),
+          l(t('View record in "tpps_submission" table.'),
+            'admin/reports/db/public.tpps_submission',
+            ['query' => ['public.tpps_submission.accession' => $accession]]
+          ),
+        ]
+      ]),
     ],
     'clearDB' => [
       'default_value' => TRUE,
       // @TODO Convert into 'checkboxes' and show list of tables which checked
       // by default.
       'title' => t('Clear DB tables.'),
+      'description' => t('Remove records from many DB tables.'),
     ],
     'removeFiles' => [
       'default_value' => FALSE,
       'title' => t('Remove files.'),
-      'description' => t('Removes only files not used by other studies.'),
+      'status_method' => 'hasFiles',
+      'description' => t('Remove only files not used by other studies.')
+      . theme('item_list', [
+        'items' => [
+          l(t("View Submission's File report."),
+            'admin/reports/tpps/submission/file/all/' . $accession
+          ),
+        ]
+      ]),
     ],
   ];
   return $options;

@@ -708,6 +708,46 @@ class Submission {
   }
 
   /**
+   * Checks if 'tpps_submission' table has record for this submission.
+   *
+   * @return bool
+   *   Returns TRUE record in 'public.tpps_submission' table found.
+   *   Returns FALSE otherwise.
+   */
+  public function hasDbRecord() {
+    return !empty(db_select(static::TABLE, 'ts')
+      ->fields('ts', ['tpps_submission_id'])
+      ->condition('accession', $this->accession)
+      ->range(0, 1)
+      ->execute()
+      ->fetchField()
+    );
+  }
+
+  /**
+   * Gets status of the files of the submission.
+   *
+   * @return bool
+   *   Returns TRUE if submission has files and FALSE otherwise.
+   */
+  public function hasFiles() {
+    $cached_submission = SubmissionCache::get($this->accession);
+    if (empty($cached_submission)) {
+      $cached_submission = SubmissionCache::get($this->accession, $reset = TRUE);
+    }
+    if (!empty($cached_submission)) {
+      return !empty(count($cached_submission['file']['id_list']));
+    }
+    else {
+      $message = t(
+        "Can't get list of files for submission @accession",
+        ['@accession' => $this->accession]
+      );
+      //throw new Exception($message);
+    }
+  }
+
+  /**
    * Removes submission's files.
    *
    * @todo Check if this code respects file usage table.
