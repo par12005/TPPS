@@ -30,7 +30,7 @@ function tpps_submission_list_form(array $form, array &$form_state = [], $access
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $action_list = [
-    'create', 'view', 'export', 'import', 'compare', 'purge', 'zenodo', 'edit',
+    'create', 'view', 'export', 'import', 'compare', 'remove', 'purge', 'zenodo', 'edit',
   ];
   foreach ($action_list as $action) {
     $form[$action] = [
