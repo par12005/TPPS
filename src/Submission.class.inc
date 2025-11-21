@@ -844,6 +844,18 @@ return;
   }
 
   /**
+   * Checks if submission has cached version.
+   *
+   * See 'SubmissionCache' class.
+   *
+   * @return bool
+   *   Returns TRUE if submission was cached and FALSE otherwise.
+   */
+  public function isCached() {
+    return !empty(SubmissionCache::get($this->accession));
+  }
+
+  /**
    * Removes Submission, it's files and all the data from db.
    *
    * To remove only record from tpps_submission' table see Submission::delete().
