@@ -82,86 +82,35 @@ function tpps_submission_remove_form(array $form, array &$form_state, $accession
  */
 function tpps_submission_remove_form_submit(array $form, array &$form_state) {
   $accession = $form_state['values']['tpps_submission_accession'] ?? NULL;
+  if (empty($accession)) {
+    drupal_set_message(t("Empty submission's accession."));
+    drupal_goto('tpps/submission');
+  }
+
+  dpm(var_export(
+    $form_state['values']
+  , 1));
+
+  if ($form_state['values']['#triggered_element']['#name'] == 'Purge') {
+    drupal_goto('tpps/submission/' . $accession . '/purge');
+  }
+
+
+drupal_goto('tpps/submission/' . $accession . '/remove');
+return;
+
+
+
   tpps_submission_list_validate_accession($accession);
+  $submission = new Submission($accession);
+
   // Get removement options.
   $options = [];
-  $remove_options = tpps_submission_get_remove_options();
-  foreach (array_keys($remove_options) as $name) {
+  $removement_options = $submission->getRemovementOptions();
+  foreach (array_keys($removement_options) as $name) {
     $options[$name] = (bool) $form_state['values'][$name];
   }
   // Remove study.
-  tpps_submission_load($accession)->remove($options);
+  $submission->remove($options);
   drupal_goto('tpps/submission/' . $accession . '/remove');
-}
-
-/**
- * Gets list of removement options.
- *
- * @return array
- *   Returns array to build form and set default values.
- */
-function tpps_submission_get_remove_options($accession = NULL) {
-  // Options.
-  $options = [
-    'clearTppsSubmissionTable' => [
-      'default_value' => TRUE,
-      'title' => t('Remove record in "tpps_submission" table.'),
-      'status_method' => 'hasDbRecord',
-      'description' => t('Remove records from "public.tpps_submission" and "chado.dbxref" tables.')
-      . theme('item_list', [
-        'items' => [
-          l(t('View record in "chado.dbxref" table.'),
-            'admin/reports/db/chado.dbxref',
-            ['query' => ['chado.dbxref.accession' => $accession]]
-          ),
-          l(t('View record in "tpps_submission" table.'),
-            'admin/reports/db/public.tpps_submission',
-            ['query' => ['public.tpps_submission.accession' => $accession]]
-          ),
-        ]
-      ]),
-    ],
-    'removeImportRecord' => [
-      'default_value' => TRUE,
-      'title' => t('Remove record from the imported submission list'),
-      'status_method' => 'wasImported',
-      'description' => t('Remove record from the list of imported submissions.')
-      . theme('item_list', [
-        'items' => [
-          l(t('View "Imported Studies" report.'),
-            'admin/reports/tpps/submission/imported'
-          ),
-          l(t('View variable which holds list of imported submissions.'),
-            'admin/reports/db/public.variable',
-            [
-              'query' => [
-                'public.variable.name' => 'tpps_imported_studies_list'
-              ],
-            ]
-          ),
-        ]
-      ]),
-    ],
-    'clearDB' => [
-      'default_value' => TRUE,
-      // @TODO Convert into 'checkboxes' and show list of tables which checked
-      // by default.
-      'title' => t('Clear DB tables.'),
-      'description' => t('Remove records from many DB tables.'),
-    ],
-    'removeFiles' => [
-      'default_value' => FALSE,
-      'title' => t('Remove files.'),
-      'status_method' => 'hasFiles',
-      'description' => t('Remove only files not used by other studies.')
-      . theme('item_list', [
-        'items' => [
-          l(t("View Submission's File report."),
-            'admin/reports/tpps/submission/file/all/' . $accession
-          ),
-        ]
-      ]),
-    ],
-  ];
-  return $options;
 }
