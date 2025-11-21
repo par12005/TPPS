@@ -332,4 +332,42 @@ class FormState {
     return static::get($form_state, $parents);
   }
 
+  /**
+   * Gets name or value of the clidded button.
+   *
+   * @param array $form_state
+   *   Drupal Form State array.
+   * @param string $element
+   *   Name of the sub-element of the $form_state['triggering_element'].
+   *   WARNING:
+   *   Use '#name' if possible because '#value' is a translatable string.
+   *   Possible values are:
+   *     '#type',
+   *     '#value',
+   *     '#name',
+   *     '#input',
+   *     '#button_type',
+   *     '#executes_submit_callback',
+   *     '#limit_validation_errors',
+   *     '#process',
+   *     '#theme_wrappers',
+   *     '#after_build',
+   *     '#defaults_loaded',
+   *     '#tree',
+   *     '#parents',
+   *     '#array_parents',
+   *     '#weight',
+   *     '#processed',
+   *     '#required',
+   *     '#attributes',
+   *     '#title_display',
+   *     '#id'.
+   *
+   * @return mixed
+   *   Returns value of the sub-element or NULL if element doesn't exists.
+   */
+  public static function getClickedButton(array $form_state, $element = '#name') {
+    return $form_state['clicked_button'][$element] ?? NULL;
+  }
+
 }
