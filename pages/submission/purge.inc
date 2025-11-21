@@ -17,12 +17,23 @@ function tpps_submission_purge_form(array $form, array &$form_state, $accession 
     ['@accession' => $accession]
   );
   $cancel_redirect = 'tpps/submission';
-  $description = t("Submission @accession and it's files will be removed.",
-      ['@accession' => $accession]
-    ) . '<br />' . l(
-        t('Submistion @accession view page', ['@accession' => $accession]),
-        'tpps/submission/' . $accession . '/view'
-      );
+  $description = t("Submission @accession will be fully removed.",
+    ['@accession' => $accession]
+  ) . theme('item_list', [
+    'items' => [
+      t('To partly remove submission use "!remove_page_link".',
+      [
+        '!remove_page_link' => l(t('Submission Remove page'),
+          'tpps/submission/' . $accession . '/remove'
+        ),
+      ]),
+      t('To review submission submission use "!view_page_link".', [
+        '!view_page_link' => l(t('Submistion View page'),
+          'tpps/submission/' . $accession . '/view'
+        ),
+      ]),
+    ]
+  ]);
   $confirm_button_text = t('Purge');
   $cancel_button_text = t('Cancel');
   // @TODO Get accession from URL (if it's safe).
