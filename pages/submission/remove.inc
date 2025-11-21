@@ -121,6 +121,27 @@ function tpps_submission_get_remove_options($accession = NULL) {
         ]
       ]),
     ],
+    'removeImportRecord' => [
+      'default_value' => TRUE,
+      'title' => t('Remove record from the imported submission list'),
+      'status_method' => 'wasImported',
+      'description' => t('Remove record from the list of imported submissions.')
+      . theme('item_list', [
+        'items' => [
+          l(t('View "Imported Studies" report.'),
+            'admin/reports/tpps/submission/imported'
+          ),
+          l(t('View variable which holds list of imported submissions.'),
+            'admin/reports/db/public.variable',
+            [
+              'query' => [
+                'public.variable.name' => 'tpps_imported_studies_list'
+              ],
+            ]
+          ),
+        ]
+      ]),
+    ],
     'clearDB' => [
       'default_value' => TRUE,
       // @TODO Convert into 'checkboxes' and show list of tables which checked

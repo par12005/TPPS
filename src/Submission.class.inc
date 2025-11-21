@@ -829,9 +829,6 @@ return;
 
 
 
-      // If this study was imported we need to remove it from the list.
-      // @todo Check if study was imported to avoid extra moves.
-      ImportedSubmissionList::remove($this->accession);
       // Update cached data.
       SubmissionCache::remove($this->accession);
       // Unset current instance (in memory).
@@ -1137,6 +1134,34 @@ return;
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   /**
+   * Checks if submission was imported.
+   *
+   * @return bool
+   *   Returns TRUE if submission was imported and FALSE otherwise.
+   */
+  public function wasImported() {
+    return !empty(
+      TppsArray::getValue($this->state,
+        ['saved_values', 'tpps_submission_import']
+      )
+    );
+  }
+
+  /**
+   * Removes record from the Imported submission list.
+   *
+   * This list is stored in variable because this is developer's tool and
+   * using separate table for this is overrill. Cache table also couldn't be
+   * used because this list must be stored for a long time.
+   */
+  public function removeImportRecord() {
+    // Check if study was imported to avoid extra moves.
+    if ($this->wasImported()) {
+      ImportedSubmissionList::remove($this->accession);
+    }
+  }
+
+  /**
    * Gets Import Metadata.
    *
    * Imported Studies has some extra information about export/import process.
@@ -1151,8 +1176,10 @@ return;
       return $output;
     }
 
-    // @TODO Create property $importMeta?
-    $import_meta = $this->state['saved_values']['tpps_submission_import'] ?? NULL;
+    // @TODO ? Create Submission class's property $importMeta.
+    $import_meta = TppsArray::getValue($this->state,
+      ['saved_values', 'tpps_submission_import']
+    );
     if (empty($import_meta)) {
       return $output;
     }
