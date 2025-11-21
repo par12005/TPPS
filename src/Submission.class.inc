@@ -800,6 +800,13 @@ return;
   }
 
   /**
+   * Removs SubmissionCache data.
+   */
+  public function removeSubmissionCache() {
+    SubmissionCache::remove($this->accession);
+  }
+
+  /**
    * Removes parts or whole Submission.
    *
    * Files, the data in db.
@@ -824,13 +831,8 @@ return;
     }
     if (0) {
 
+      // @TODO ? When this should be done?
 
-      // @todo Run this only when whole submission was removed.
-
-
-
-      // Update cached data.
-      SubmissionCache::remove($this->accession);
       // Unset current instance (in memory).
       $this->accession = NULL;
       $this->state = NULL;
