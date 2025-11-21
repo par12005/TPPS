@@ -34,7 +34,7 @@ function tpps_submission_remove_form(array $form, array &$form_state, $accession
       'Confirm removement of the Submission @accession?',
       ['@accession' => $accession]
     );
-    $cancel_redirect = 'tpps/submission';
+    $cancel_redirect = 'tpps/submission/' . $accession . '/remove';
     $description = t("Are you sure?");
     // Show list of the selected removement options.
     $description .= '<br />' . t("Removement options of the submission "
