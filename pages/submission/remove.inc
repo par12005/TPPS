@@ -5,13 +5,14 @@
  * Removes parts of the TPPS Submission.
  */
 
-module_load_include('inc', 'tpps', 'pages/submission/list');
-
 /**
  * Menu callback. TPPS Submission Remove Form.
  */
 function tpps_submission_remove_form(array $form, array &$form_state, $accession = '') {
-  tpps_submission_list_validate_accession($accession);
+  if (empty($accession)) {
+    drupal_set_message(t('Empty accession.'), 'warning');
+    drupal_goto('tpps/submission');
+  }
   $submission = new Submission($accession);
   $removement_options = $submission->getRemovementOptions($accession);
 
@@ -26,7 +27,7 @@ function tpps_submission_remove_form(array $form, array &$form_state, $accession
       }
     }
     if (empty($selected_options)) {
-      drupal_set_message(t("Nothing was selected to remove."));
+      drupal_set_message(t("Nothing was selected to remove."), 'warning');
       drupal_goto('tpps/submission/' . $accession . '/remove');
     }
     $message = t(
@@ -147,13 +148,12 @@ function tpps_submission_remove_form_submit(array $form, array &$form_state) {
   else {
     $accession = $form_state['values']['tpps_submission_accession'] ?? NULL;
     if (empty($accession)) {
-      drupal_set_message(t("Empty submission's accession."));
+      drupal_set_message(t("Empty accession."), 'warning');
       drupal_goto('tpps/submission');
     }
     if (FormState::getClickedButton($form_state) == 'purge') {
       drupal_goto('tpps/submission/' . $accession . '/purge');
     }
-    tpps_submission_list_validate_accession($accession);
     $submission = new Submission($accession);
     $form_state['saved_values']['confirmed'] = TRUE;
     $values_to_store = array_keys($submission->getRemovementOptions($accession));
