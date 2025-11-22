@@ -4756,11 +4756,13 @@ function tpps_genotype_vcf_processing_batch_some_features_insert(&$settings, $cu
       if (!empty($src_feature_ids)) {
         $src_feature_ids_csv = implode(',', $src_feature_ids); // explain this line
 
-        $results = db_query("SELECT f.feature_id as feature_id, f.uniquename as uniquename, srcfeature_id, fmin, fmax
+        tpps_log("Searching for featurelocs matching src_feature_ids: $src_feature_ids_csv\n", [], TPIPAL_INFO);
+        $sql_search_featurelocs = 'SELECT f.feature_id as feature_id, f.uniquename as uniquename, srcfeature_id, fmin, fmax
           FROM chado.featureloc fl
           INNER JOIN chado.feature f ON fl.feature_id = f.feature_id
-          WHERE fl.srcfeature_id IN ($src_feature_ids_csv) AND f.type_id = 1491
-        ", []);
+          WHERE fl.srcfeature_id IN ($src_feature_ids_csv) AND f.type_id = 1491';
+        $results = db_query($sql_search_featurelocs, []);
+        // throw new Exception("Featurelocs found: " . count($results) . "\n");
 
         $sql = 'INSERT INTO chado.feature_synonym (feature_id, synonym) VALUES ';
         foreach ($results as $fl_row) {
