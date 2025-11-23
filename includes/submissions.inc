@@ -1111,24 +1111,42 @@ function tpps_submission_edit_publication_submit($form, &$form_state) {
 /**
  * Builds list of accessions (values) and their dbxref_id's as a keys.
  *
+ * Cached version: ~3 msec.
+ * Non-cached version: ~280 msec.
+ *
  * @param bool $is_optional
  *   Should this list have an extra item '- Select -' which makes this
  *   dropdown list optional.
+ * @param bool $reset
+ *   Flag is cache must be resetted. Default if FALSE.
  *
  * @return array
  *   Returns array where keys are studie's dbxref_id and value is an
  *   accession (like TGDRxxxx).
  */
-function tpps_submission_get_tgdr_number_list($is_optional = TRUE) {
-  $result = db_query('SELECT dbxref_id, accession '
-    . 'FROM chado.dbxref '
-    . 'WHERE accession LIKE \'TGDR%\' '
-    . 'ORDER BY accession DESC;');
-  $list = $result->fetchAllKeyed();
-  if ($is_optional) {
-    $list = [0 => '- Select -'] + $list;
+function tpps_submission_get_tgdr_number_list($is_optional = TRUE, $reset = FALSE) {
+  $default_value = [];
+
+  $cid = __FUNCTION__;
+  $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+  $cache = cache_get($cid, $cache_bin);
+  $key = md5(json_encode(func_get_args()));
+  if ($reset || empty($cache) || empty($cache->data[$key])) {
+    $content = $default_value;
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    $content = db_query('SELECT dbxref_id, accession '
+      . 'FROM chado.dbxref '
+      . 'WHERE accession LIKE \'TGDR%\' '
+      . 'ORDER BY accession DESC;')->fetchAllKeyed();
+    if ($is_optional) {
+      $content = array_merge([0 => '- Select -'], $content);
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    $cache->data[$key] = $content;
+    cache_set($cid, $cache->data, $cache_bin);
   }
-  return $list;
+  $content = $cache->data[$key] ?? $default_value;
+  return $content;
 }
 
 /**
