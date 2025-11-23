@@ -139,7 +139,6 @@ class SubmissionsTest extends TripalTestCase {
    * from the chado.dbxref table.
    *
    * @TODO Check if files are removed.
-   * @TODO Check purge() method.
    */
   public function testDeleteSubmission() {
     $state = $this->loginAndCreateEmptySubmission();
@@ -148,8 +147,7 @@ class SubmissionsTest extends TripalTestCase {
 
     $this->assertNotEmpty(tpps_load_submission($accession));
 
-    $submission = new Submission($accession);
-    $submission->delete();
+    tpps_submission_load($accession)->purge();
 
     $submission = new Submission($accession);
     $this->assertEmpty($submission->doesExist());

@@ -247,9 +247,10 @@ class SubmissionCache {
       && empty($submission->state['saved_values'][TPPS_PAGE_1])
       // @TODO Check if publication title is empty (not set).
     ) {
-      // Note: There is no need to use Submission::purge() because it's probably
-      // not submitted fully study left on Step 1.
-      $submission->delete();
+      // @todo Minor. There is no need to use Submission::purge() because it's
+      // probably wasn't submitted fully (study left on Step 1).
+      // We could use $submission->remove() and a few removement options.
+      $submission->purge();
       // Study is treated as orphan (or empty) and will be removed when:
       // 1. It has no publication title.
       // 2. Page 1 wasn't submitted or saved yet.
@@ -298,7 +299,7 @@ class SubmissionCache {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Files.
       static::FILES_CONTAINER => [
-         static::FILE_GROUPED_LIST => [
+        static::FILE_GROUPED_LIST => [
           Report::TREE_ACCESSION_FILES => [],
           Report::PHENOTYPE_FILES => [],
           Report::GENOTYPE_FILES => [],

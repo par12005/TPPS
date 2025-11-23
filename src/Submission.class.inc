@@ -670,44 +670,6 @@ class Submission {
   }
 
   /**
-   * Delete submission from database.
-   *
-   * Removes only record from 'tpps_submission' table.
-   * See 'purge()' method for full study removement.
-   *
-   * @TODO Minor. Destroy object and do not allow chaining.
-   */
-  public function delete() {
-    if (empty($this->state['saved_values']['frontpage']['use_old_tgdr'])) {
-      if (!empty($this->dbxrefId)) {
-        db_delete('chado.dbxref')
-          ->condition('dbxref_id', $this->dbxrefId)
-          ->execute();
-      }
-    }
-    db_delete(static::TABLE)
-      ->condition('accession', $this->accession)
-      ->execute();
-    // If this study was imported we need to remove it from the list.
-    // @TODO Check if study was imported.
-    module_load_include('inc', 'tpps', 'includes/imported_studies_list');
-    ImportedSubmissionList::remove($this->accession);
-
-    SubmissionCache::remove($this->accession);
-    if (function_exists('module_invoke_all')) {
-      // 'tpps_submission_deleted().
-      module_invoke_all('submission_deleted', $this->accession);
-    }
-    // Be sure to unset at the very end.
-    $this->accession = NULL;
-    $this->state = NULL;
-    $this->sharedState = NULL;
-
-    // Do not allow chaining methods because object destroyed.
-    return NULL;
-  }
-
-  /**
    * Checks if 'tpps_submission' table has record for this submission.
    *
    * @return bool
@@ -789,6 +751,16 @@ return;
     db_delete('chado.dbxref')
       ->condition('accession', $this->accession)
       ->execute();
+
+
+// @todo Check if this is required.
+    if (empty($this->state['saved_values']['frontpage']['use_old_tgdr'])) {
+      if (!empty($this->dbxrefId)) {
+        db_delete('chado.dbxref')
+          ->condition('dbxref_id', $this->dbxrefId)
+          ->execute();
+      }
+    }
   }
 
   /**
@@ -826,20 +798,13 @@ return;
   }
 
   /**
-   * Removes parts or whole Submission.
-   *
-   * Files, the data in db.
+   * Removes parts of the submission.
    *
    * To remove only record from tpps_submission' table see Submission::delete().
    *
    * @param array $options
-   *   List of options.
-   *   'clear_db' - bool. When TRUE means db tables must be cleared.
-   *   'remove_files' - bool. When TRUE submission's files will be removed if
-   *     the file not in use by the file_usage table. Removement of not used
-   *     files are safe but I'm not sure that old studies created correct
-   *     records about usage of files so do NOT delete files by default.
-   *     But for testing and Study Import file removement should be allowed.
+   *   List of options. Keys are the keys from the array returned by
+   *   $this->getRemovementOptions() method and values are boolean TRUE/FALSE.
    */
   public function remove(array $options) {
     // Remove parts according to user selection.
@@ -882,6 +847,8 @@ return;
     $this->accession = NULL;
     $this->state = NULL;
     $this->sharedState = NULL;
+    // Do not allow chaining methods because object destroyed.
+    return NULL;
   }
 
   /**
@@ -2968,4 +2935,5 @@ return;
     ];
     return $options;
   }
+
 }

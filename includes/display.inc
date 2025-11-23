@@ -100,8 +100,7 @@ function tpps_tab_create($uid) {
   $params = drupal_get_query_parameters();
 
   if (isset($params['accession']) && ($params['action'] ?? NULL) === 'DELETE') {
-    $submission = new Submission($params['accession']);
-    $submission->delete();
+    tpps_submission_load($params['accession'])->purge();
     drupal_goto("user/{$uid}/tpps");
   }
 

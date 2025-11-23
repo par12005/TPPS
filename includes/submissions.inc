@@ -185,8 +185,7 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
  */
 function tpps_submission_delete_callback($accession) {
   global $user;
-  $submission = new Submission($accession);
-  $submission->delete();
+  tpps_submission_load($accession)->purge();
   drupal_goto("user/{$user->uid}/tpps");
 }
 
