@@ -145,9 +145,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // DOI Fields.
   //
-  // Note:
-  // Checkbox 'use_old_tgdr' is defined in TPPSc/forms/build/front.php.
-  // Accession will be stored in 'old_tgdr' field.
   //
   // Field was relocated (v.2). ['doi'] -> ['publication', 'publication_doi'];
   $form['publication']['publication_doi'] = [
@@ -283,6 +280,9 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $form_state['ids']['project_id'] = tpps_get_project_id($form_state['dbxref_id']);
 
   // Load existing study data.
+  // Note:
+  // Checkbox 'use_old_tgdr' is defined in TPPSc/forms/build/front.php.
+  // 'dbxref id' of existing study is stored in 'old_tgdr' field.
   if (!empty($form_state['saved_values']['frontpage']['use_old_tgdr'])) {
     // Usage of existing accession:
     // $values['accession'] = TGDR864;

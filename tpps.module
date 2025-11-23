@@ -1433,12 +1433,11 @@ function tpps_main_validate(&$form, &$form_state) {
       if (FormState::getFormId($form_state) == 'tppsc_main') {
         // Curation Form.
         if (
-          ($form_state['values']['use_old_tgdr'] ?? FALSE)
-          and !$form_state['values']['old_tgdr']
+          FormState::get($form_state, ['values', 'use_old_tgdr'])
+          && !FormState($form_state, ['values', 'old_tgdr'])
         ) {
-          form_set_error('old_tgdr',
-            t('Existing TGDR number: field is required.')
-          );
+          $message = t('Existing TGDR number: field is required.');
+          form_set_error('old_tgdr', $message);
         }
       }
       else {
@@ -1542,9 +1541,9 @@ function tpps_main_submit($form, &$form_state) {
     // Use old TGDR.
     if (
       $form_state['stage'] == 'frontpage'
-      && ($values['use_old_tgdr'] ?? FALSE)
+      && FormState::get($form_state, ['values', 'use_old_tgdr'])
     ) {
-      $form_state['dbxref_id'] = $form_state['values']['old_tgdr'];
+      $form_state['dbxref_id'] = FormState::get($form_state, ['values', 'old_tgdr']);
       $form_state['accession'] = chado_select_record(
         'dbxref', ['accession'], ['dbxref_id' => $form_state['dbxref_id']]
       )[0]->accession;

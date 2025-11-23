@@ -875,9 +875,7 @@ function tpps_submission_clear_db($accession) {
   tpps_log('DELETE chado.plants_per_marker values for project...');
   chado_query("DELETE FROM chado.plants_per_marker WHERE study_accession = '" . $accession . "';");
   tpps_log('FINISHED DB CLEAR DELETES');
-  
-  $time_end = time();
-  tpps_log('Time taken to delete records: @time.', ['@time' => $time_end - $time_start]);
+  tpps_log('Time taken to delete records: @time.', ['@time' => time() - $time_start]);
 
   // Force delete stock just in case by study accession name.
   // Make sure to ensure $accession is properly populated before doing this.

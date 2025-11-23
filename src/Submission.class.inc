@@ -739,35 +739,29 @@ return;
    * Removes record from 'public.tpps_submission' table.
    */
   public function clearTppsSubmissionTable() {
-
 // @todo Remove debug code.
 return;
-
-    // @TODO Combine with delete().
     // Remove submission state from DB.
     db_delete(static::TABLE)
       ->condition('accession', $this->accession)
       ->execute();
+    // Note: when existing study was used to create this submission then
+    // FormState::get($this->state,
+    // ['saved_values', 'frontpage', 'use_old_tgdr']) = 1
+    // && FormState::get($this->state,
+    // ['saved_values', 'frontpage', 'old_tgdr']) will be dbxref id of this
+    // existing study and 'accesion' will be accession of this existing study.
+    // So...
+    // It's enough to remove record in 'chado.dbxref' by study accession.
     db_delete('chado.dbxref')
       ->condition('accession', $this->accession)
       ->execute();
-
-
-// @todo Check if this is required.
-    if (empty($this->state['saved_values']['frontpage']['use_old_tgdr'])) {
-      if (!empty($this->dbxrefId)) {
-        db_delete('chado.dbxref')
-          ->condition('dbxref_id', $this->dbxrefId)
-          ->execute();
-      }
-    }
   }
 
   /**
    * Removes records from many DB tables created by submit_all.php script.
    */
   public function clearDB() {
-
 // @todo Remove debug code.
 return;
     // @TODO Remove per table.
