@@ -753,6 +753,8 @@ class Submission {
    * @todo Check if this code respects file usage table.
    */
   public function removeFiles() {
+
+// @todo Remove debug code.
 return;
 
     // @todo Minor. Query DB table 'file_usage' to find if there is orphan
@@ -775,7 +777,10 @@ return;
    * Removes record from 'public.tpps_submission' table.
    */
   public function clearTppsSubmissionTable() {
-    return;
+
+// @todo Remove debug code.
+return;
+
     // @TODO Combine with delete().
     // Remove submission state from DB.
     db_delete(static::TABLE)
@@ -790,7 +795,9 @@ return;
    * Removes records from many DB tables created by submit_all.php script.
    */
   public function clearDB() {
-    return;
+
+// @todo Remove debug code.
+return;
     // @TODO Remove per table.
 
     // Remove all data added during processing.
@@ -804,6 +811,18 @@ return;
    */
   public function removeSubmissionCache() {
     SubmissionCache::remove($this->accession);
+  }
+
+  /**
+   * Checks if submission has cached version.
+   *
+   * See 'SubmissionCache' class.
+   *
+   * @return bool
+   *   Returns TRUE if submission was cached and FALSE otherwise.
+   */
+  public function isCached() {
+    return !empty(SubmissionCache::get($this->accession));
   }
 
   /**
@@ -829,32 +848,6 @@ return;
         $this->$method_name();
       }
     }
-    if (0) {
-
-      // @TODO ? When this should be done?
-
-      // Unset current instance (in memory).
-      $this->accession = NULL;
-      $this->state = NULL;
-      $this->sharedState = NULL;
-      if (function_exists('module_invoke_all')) {
-        // 'tpps_submission_removed() + $options.
-        // @todo ? Do we need a hook here?
-        //module_invoke_all('submission_removed', $this);
-      }
-    }
-  }
-
-  /**
-   * Checks if submission has cached version.
-   *
-   * See 'SubmissionCache' class.
-   *
-   * @return bool
-   *   Returns TRUE if submission was cached and FALSE otherwise.
-   */
-  public function isCached() {
-    return !empty(SubmissionCache::get($this->accession));
   }
 
   /**
@@ -880,6 +873,15 @@ return;
       'clearTppsSubmissionTable' => TRUE,
     ];
     $this->remove($options);
+
+    if (function_exists('module_invoke_all')) {
+      // 'tpps_submission_purged'.
+      module_invoke_all('submission_purged', $this->accession);
+    }
+    // Unset current instance (in memory).
+    $this->accession = NULL;
+    $this->state = NULL;
+    $this->sharedState = NULL;
   }
 
   /**

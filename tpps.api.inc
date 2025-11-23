@@ -615,3 +615,17 @@ function hook_submission_version_upgraded($context) {
     ]
   );
 }
+
+/**
+ * Implements hook 'submission_purged'.
+ *
+ * Note: There is no 'submission_removed' because only part of submission could
+ * be removed and only 'purge' means full removement.
+ *
+ * @param string $accession
+ *   Submission accession. E.g., 'TGDR1234'.
+ */
+function hook_submission_purged($accession) {
+  $message = 'Submission "@accession" was totally purged.';
+  tpps_message($message, ['@accession' => $accession]);
+}
