@@ -58,13 +58,17 @@ function tpps_submit_all_settings_form(array $form, array &$form_state) {
     '#description' => t("Not all studies has VCF files and running "
       . "nextflow causes error in those cases."),
   ];
-  $form['nextflow']['tpps_submitall_nxf_scratch'] = [
+  $form['nextflow']['tpps_submitall_nxf_scratch_dir'] = [
     '#type' => 'select',
     '#title' => t('NextFlow Scratch Directory'),
-    '#default_value' => variable_get('nxf_scratch_dir'),
-    '#options' => ['/scratch', '/isg/treegenes/nextflow_workflows'],
+    '#default_value' => variable_get('tpps_submitall_nxf_scratch_dir', '/scratch'),
+    '#options' => [
+      '/scratch' => '/scratch',
+      '/isg/treegenes/nextflow_workflows' => '/isg/treegenes/nextflow_workflows',
+    ],
     '#description' => t("Base directory to write temporary files"),
   ];
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // CVTerms.
   $cvterm_list = [

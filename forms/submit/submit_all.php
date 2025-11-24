@@ -2419,7 +2419,7 @@ function tpps_generate_vcf_from_assay_and_assay_design(array &$options, array &$
   // Start building a nextflow run
   // First use the constructor to initialize the pipeline to run
   // Second add arguments
-  $nextflowManager = new NextFlowManager("TreeGenes/new-study-pipeline", $store_directory, variable_get('tpps_submitall_nxf_scratch'));
+  $nextflowManager = new NextFlowManager("TreeGenes/new-study-pipeline", $store_directory, variable_get('tpps_submitall_nxf_scratch_dir', '/scratch'));
   $nextflowManager->addNextflowArgument('tgdr', $options['study_accession']);
   $nextflowManager->addNextflowArgument('species',  $options['ref-genome-species']);
   foreach ($options['ref-genome-species-codes'] as $key => $code) {
