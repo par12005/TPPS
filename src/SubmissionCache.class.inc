@@ -295,7 +295,7 @@ class SubmissionCache {
         'updated' => $submission->state['updated'] ?? NULL,
         'cached' => REQUEST_TIME,
       ],
-      'tags' => tpps_submission_get_tags($submission->accession),
+      'tags' => SubmissionTag::getAll($submission->accession),
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Files.
       static::FILES_CONTAINER => [

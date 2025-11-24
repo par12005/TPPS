@@ -501,8 +501,8 @@ function ___old($context) {
           $submitting_user,
           $submission->state['saved_values'][TPPS_PAGE_1]['publication']['title'],
           !empty($submission->state['completed'])
-          ? date("F j, Y, g:i a", $submission->state['completed']) : "Unknown",
-          tpps_show_tags(tpps_submission_get_tags($accession)),
+            ? date("F j, Y, g:i a", $submission->state['completed']) : "Unknown",
+          theme('submission_tag_list', ['tags' => SubmissionTag::getAll($accession)]),
           $actions,
         ];
         $output['pending'][(int) substr($accession, 4)] = $row;
@@ -595,7 +595,7 @@ function ___old($context) {
           $submitting_user,
           $submission->state['saved_values'][TPPS_PAGE_1]['publication']['title'],
           $status_label,
-          tpps_show_tags(tpps_submission_get_tags($accession)),
+          theme('submission_tag_list', ['tags' => SubmissionTag::getAll($accession)]),
           $actions,
         ];
         $output['approved'][(int) substr($accession, 4)] = $row;
@@ -641,7 +641,7 @@ function ___old($context) {
           $title,
           $stage,
           $date,
-          tpps_show_tags(tpps_submission_get_tags($accession)),
+          theme('submission_tag_list', ['tags' => SubmissionTag::getAll($accession)]),
           $actions,
         ];
         break;

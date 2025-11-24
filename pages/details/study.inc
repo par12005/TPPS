@@ -97,7 +97,9 @@ function tpps_details_main($accession = NULL) {
       }
       $output .= "<h2>$pub_link</h2>";
     }
-    $output .= tpps_show_tags(tpps_submission_get_tags($accession));
+    $output .= theme('submission_tag_list',
+      ['tags' => SubmissionTag::getAll($accession)]
+    );
     if ($primary_author = $submission->state['authors'][0] ?? NULL) {
       if (preg_match('/,/', $primary_author)) {
         $parts = explode(',', $primary_author);

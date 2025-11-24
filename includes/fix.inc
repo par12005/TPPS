@@ -136,10 +136,10 @@ function __fix_tree_info($accession) {
         $options['exact'] = NULL;
         $options['precision'] = $tree_accession['coord_precision'] ?? NULL;
         //if (
-        //  !empty($tag_id = tpps_get_tag_id('No Location Information'))
-        //  && !array_key_exists($tag_id, tpps_submission_get_tags($shared_state['accession']))
+        //  !empty($tag_id = SubmissionTag::getId('No Location Information'))
+        //  && !array_key_exists($tag_id, SubmissionTag::getAll($shared_state['accession']))
         //) {
-        //  //tpps_submission_add_tag($shared_state['accession'], 'Approximate Coordinates');
+        //  //SubmissionTag::add($shared_state['accession'], 'Approximate Coordinates');
         //}
         break;
 

@@ -1,11 +1,24 @@
 <?php
 
 /**
+ * @file
+ * Contans theme-functions related to TPPS Submissions.
+ */
+
+/**
  * Themes list of submission's tags.
+ *
+ * Displays tags with proper styling.
+ * Used at Study Details pages and tabs.
  */
 function theme_submission_tag_list(array $variables) {
   if (!empty($variables['tags'])) {
-    return tpps_show_tags($variables['tags']);
+    foreach ($variables['tags'] as $tag) {
+      $display = ($display ?? '') . '<span class="tag" style="background-color:'
+        . (empty($tag['color']) ? 'white' : $tag['color'])
+        . '"><span class="tag-text">' . $tag['name'] . '</span></span>';
+    }
+    return $display ?? '';
   }
 }
 

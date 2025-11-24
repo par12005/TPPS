@@ -118,7 +118,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     tpps_log('Database cleared', [], TRIPAL_INFO);
 
 
-    tpps_submission_clear_default_tags($accession);
+    SubmissionTag::clear($accession);
     $submission->sharedState['file_rank'] = 0;
     $submission->sharedState['ids'] = [];
 
@@ -1357,10 +1357,10 @@ function tpps_submit_page_3(array &$shared_state, TripalJob &$job = NULL) {
         $options['exact'] = NULL;
         $options['precision'] = $tree_accession['coord_precision'] ?? NULL;
         if (
-          !empty($tag_id = tpps_get_tag_id('No Location Information'))
-          && !array_key_exists($tag_id, tpps_submission_get_tags($shared_state['accession']))
+          !empty($tag_id = SubmissionTag::getId('No Location Information'))
+          && !array_key_exists($tag_id, SubmissionTag::getAll($shared_state['accession']))
         ) {
-          tpps_submission_add_tag($shared_state['accession'], 'Approximate Coordinates');
+          SubmissionTag::add($shared_state['accession'], 'Approximate Coordinates');
         }
         break;
 
@@ -1624,7 +1624,7 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
   if (empty($phenotype)) {
     return;
   }
-  tpps_submission_add_tag($shared_state['accession'], 'Phenotype');
+  SubmissionTag::add($shared_state['accession'], 'Phenotype');
 
   $year_cvterm_id = CVTerm::getId('year');
   if (empty($year_cvterm_id)) {
@@ -1727,7 +1727,7 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
         // @TODO Should new synonym be created?
         // @todo should this 'is_environmental_phenotype' be per phenotype (not synonym)?
       }
-      tpps_submission_add_tag($shared_state['accession'], 'Environment');
+      SubmissionTag::add($shared_state['accession'], 'Environment');
     }
 
     if ($phenotype['check'] == '1' || $phenotype['check'] == 'upload_file') {
@@ -1921,7 +1921,7 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
   }
 
   // Add tag genotype to this study.
-  tpps_submission_add_tag($shared_state['accession'], 'Genotype');
+  SubmissionTag::add($shared_state['accession'], 'Genotype');
 
   $genotype_count = 0;
   $genotype_total = 0;
@@ -6630,7 +6630,7 @@ function tpps_submit_environment(array &$form_state, $i, TripalJob &$job = NULL)
   if (empty($environment)) {
     return;
   }
-  tpps_submission_add_tag($form_state['accession'], 'Environment');
+  SubmissionTag::add($form_state['accession'], 'Environment');
 
   $env_layers = isset($environment['env_layers']) ? $environment['env_layers'] : FALSE;
   $env_params = isset($environment['env_params']) ? $environment['env_params'] : FALSE;

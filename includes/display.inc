@@ -315,23 +315,3 @@ function tpps_entity_link($id, $name, $label) {
   }
   return $name;
 }
-
-/**
- * Displays tags with proper styling.
- *
- * Used at Study Details pages and tabs.
- *
- * @param array $tags
- *   The array of tags to display.
- *
- * @return string
- *   HTML string displaying all of the tags.
- */
-function tpps_show_tags(array $tags) {
-  foreach ($tags as $tag) {
-    $display = ($display ?? '') . '<span class="tag" style="background-color:'
-      . (empty($tag['color']) ? 'white' : $tag['color'])
-      . '"><span class="tag-text">' . $tag['name'] . '</span></span>';
-  }
-  return $display ?? '';
-}

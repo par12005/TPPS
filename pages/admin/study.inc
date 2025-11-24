@@ -277,7 +277,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Tags.
-  $submission_tags = tpps_submission_get_tags($submission->accession);
+  $submission_tags = SubmissionTag::getAll($submission->accession);
   $tags_markup = "<div style='margin-bottom: 10px; font-weight: bold; "
     . "text-decoration: underline;'><a target=\"_blank\" href=\"/tpps-tag\">"
     . "Manage Global TPPS Submission Tags</a></div>";

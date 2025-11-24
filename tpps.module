@@ -446,41 +446,8 @@ function tpps_menu() {
     'type' => MENU_CALLBACK,
   ];
 
-  $items['tpps-tag'] = array(
-    'title' => 'TPPS Submission Tags',
-    'page callback' => 'tpps_submission_tag_manage',
-    'access callback' => 'tpps_access',
-    'access arguments' => array('administer tpps module'),
-    'type' => MENU_NORMAL_ITEM,
-  );
-
-  $items['tpps-tag/create'] = array(
-    'title' => 'Create new TPPS Submission Tag',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('tpps_submission_tag_create'),
-    'access callback' => 'tpps_access',
-    'access arguments' => array('administer tpps module'),
-    'type' => MENU_LOCAL_ACTION,
-  );
-
-  $items['tpps-tag/edit/%'] = array(
-    'title' => 'TPPS Edit Tag',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('tpps_submission_tag_edit', 2),
-    'access callback' => 'tpps_access',
-    'access arguments' => array('administer tpps module'),
-    'type' => MENU_NORMAL_ITEM,
-  );
-
-  $items['tpps-tag/%/%/%'] = array(
-    'title' => 'TPPS Add/Remove Tag',
-    'page callback' => 'tpps_submission_add_remove_tag',
-    'page arguments' => array(1, 2, 3),
-    'access callback' => 'tpps_access',
-    'access arguments' => array('administer tpps module'),
-    'type' => MENU_CALLBACK,
-  );
-
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  tpps_menu_add_submission_tag($items);
   tpps_menu_add_detials_pages($items);
   tpps_menu_add_settings_pages($items);
   Report::addAllMenuItems($items);
@@ -2754,6 +2721,47 @@ function tpps_submission_title($accession = '', $op = '', $extra = '') {
       '@extra' => ($extra ? 'with ' . $extra : ''),
     ]
   );
+}
+
+/**
+ * Menu times for Submisssion Tags.
+ *
+ * @param array $items
+ *   Menu items.
+ */
+function tpps_menu_add_submission_tag(array &$items = []) {
+  $items = $items ?? [];
+  $items['tpps-tag'] = [
+    'title' => 'TPPS Submission Tags',
+    'page callback' => 'SubmissionTag::showTable',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'type' => MENU_NORMAL_ITEM,
+  ];
+  $items['tpps-tag/create'] = [
+    'title' => 'Create new TPPS Submission Tag',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['SubmissionTag::buildForm'],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'type' => MENU_LOCAL_ACTION,
+  ];
+  $items['tpps-tag/edit/%'] = [
+    'title' => 'TPPS Edit Tag',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['SubmissionTag::buildEditForm', 2],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'type' => MENU_NORMAL_ITEM,
+  ];
+  $items['tpps-tag/%/%/%'] = [
+    'title' => 'TPPS Add/Remove Tag',
+    'page callback' => 'SubmissionTag::update',
+    'page arguments' => [1, 2, 3],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'type' => MENU_CALLBACK,
+  ];
 }
 
 /**

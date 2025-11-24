@@ -12,6 +12,7 @@ dependencies[] = tripal_eutils
 ; Main
 files[] = src/Submission.class.inc
 files[] = src/SubmissionCache.class.inc
+files[] = src/SubmissionTag.class.inc
 files[] = src/SubmissionVersion.class.inc
 files[] = src/Organism.class.inc
 files[] = src/ChadoDb.class.inc
