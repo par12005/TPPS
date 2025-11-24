@@ -38,13 +38,6 @@ function tpps_submit_all_settings_form(array $form, array &$form_state) {
     '#description' => t('Tripal log messages usually duplicate CLI messages '
       . 'and could be disabled.')
   ];
-  $form['common']['tpps_submitall_run_nextflow'] = [
-    '#type' => 'checkbox',
-    '#title' => t('Allow to run nextflow'),
-    '#default_value' => variable_get('tpps_submitall_run_nextflow'),
-    '#description' => t("Not all studies has VCF files and running "
-      . "nextflow causes error in those cases."),
-  ];
   $form['common']['tpps_submitall_rename_files'] = [
     '#type' => 'checkbox',
     '#title' => t('Allow to files renaming'),
@@ -52,6 +45,26 @@ function tpps_submit_all_settings_form(array $form, array &$form_state) {
     '#description' => t("Renaming files doesn't work on dev server."),
   ];
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // NextFlow.
+  $form['nextflow'] = [
+    '#type' => 'fieldset',
+    '#title' => t('NextFlow')
+  ];
+  $form['nextflow']['tpps_submitall_run_nextflow'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Allow to run nextflow'),
+    '#default_value' => variable_get('tpps_submitall_run_nextflow'),
+    '#description' => t("Not all studies has VCF files and running "
+      . "nextflow causes error in those cases."),
+  ];
+  $form['nextflow']['tpps_submitall_nxf_scratch'] = [
+    '#type' => 'select',
+    '#title' => t('NextFlow Scratch Directory'),
+    '#default_value' => variable_get('nxf_scratch_dir'),
+    '#options' => ['/scratch', '/isg/treegenes/nextflow_workflows'],
+    '#description' => t("Base directory to write temporary files"),
+  ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // CVTerms.
   $cvterm_list = [

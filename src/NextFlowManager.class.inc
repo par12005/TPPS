@@ -38,6 +38,13 @@ class NextFlowManager {
     protected $out_dir;
 
     /**
+     * Path to scratch directory during nextflow run
+     *
+     * @var string
+     */
+     protected $scratch_dir;
+
+    /**
      * Two dimensional array of nextflow arguments (argument:value)
      *
      * @var list
@@ -56,17 +63,17 @@ class NextFlowManager {
      *
      * Throws Exception: Failed to connect
      */
-    public function __construct($pipeline_name, $out_dir)
+    public function __construct($pipeline_name, $out_dir, $scratch_dir)
     {
         $this->pipeline_name = $pipeline_name;
         $this->out_dir = $out_dir;
+	$this->scratch_dir = $scratch_dir;
         $this->addNextflowArgument('r', 'main', true);
         $this->addNextflowArgument('profile', 'xanadu', true);
     }
 
     private function getSlurmHeader()
     {
-        $out = $this->out_dir;
         return '#!/bin/bash' . "\n" .
             '#SBATCH --job-name=assay2vcf' . "\n" .
             '#SBATCH -N 1' . "\n" .
@@ -77,17 +84,17 @@ class NextFlowManager {
             '#SBATCH --mail-type=END' . "\n" .
             '#SBATCH --mem=10G' . "\n" .
             '#SBATCH --mail-user=tg-nginx@cam.uchc.edu' . "\n" .
-            '#SBATCH -o ' . $out . '/assay_design_%j.out' . "\n" .
-            '#SBATCH -e ' . $out . '/assay_design_%j.err' . "\n" .
+            '#SBATCH -o ' . $this->out_dir . '/assay_design_%j.out' . "\n" .
+            '#SBATCH -e ' . $this->out_dir. '/assay_design_%j.err' . "\n" .
             'source /etc/profile.d/modules.sh' . "\n" .
             'module load nextflow' . "\n" .
-            'mkdir -p /scratch/tg-nginx/new_study_pipeline_$SLURM_JOB_ID' . "\n" .
-            'export TMPDIR=/scratch/tg-nginx/new_study_pipeline_$SLURM_JOB_ID' . "\n" .
-            'export NXF_TEMP=/scratch/tg-nginx/new_study_pipeline_$SLURM_JOB_ID' . "\n" .
-            'export NXF_WORK=/scratch/tg-nginx/new_study_pipeline_$SLURM_JOB_ID' . "\n" .
+            'mkdir -p "' . $this->scratch_dir . '/tg-nginx/new_study_pipeline_$SLURM_JOB_ID"' . "\n" .
+            'export TMPDIR=' . $this->scratch_dir . '/tg-nginx/new_study_pipeline_$SLURM_JOB_ID' . "\n" .
+            'export NXF_TEMP=' . $this->scratch_dir. '/tg-nginx/new_study_pipeline_$SLURM_JOB_ID' . "\n" .
+            'export NXF_WORK=' . $this->scratch_dir . '/tg-nginx/new_study_pipeline_$SLURM_JOB_ID' . "\n" .
             'export NXF_OPTS=\'-Xms5G -Xmx9G\'' . "\n" .
             'export TZ=\'America/New_York\'' . "\n" .
-            'cd ' . $out . "\n";
+            'cd ' . $this->scratch_dir . "\n";
     }
 
     /**
@@ -190,6 +197,11 @@ class NextFlowManager {
         return $this->runCommand($cmd);
     }
 
+    /**
+     * @return string
+     * Waits for SLURM status to change to a final state.
+     * @throws Exception if status returns null to many times.
+     */
     public function hasCompleted($interval=5)
     {
         $finalStates = [
@@ -217,6 +229,10 @@ class NextFlowManager {
         }
     }
 
+    /**
+     * @return boolean
+     * Checks if final state was successful
+     */
     public function isSuccessful($status): bool
     {
         if ($status != 'COMPLETED') {
@@ -233,6 +249,12 @@ class NextFlowManager {
     {
     }
 
+    /**
+     * @param filePath file to write to
+     * @param content contents to write into file
+     * @return void
+     * Writes string contents to filepath
+     */
     public function writeFile(string $filePath, string $content)
     {
         $fp = fopen($filePath, "w") or die("I can't write file due to permissions.");
