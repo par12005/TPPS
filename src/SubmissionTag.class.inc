@@ -305,52 +305,41 @@ class SubmissionTag {
   }
 
   /**
-   * Display TPPS submission tags as a HTML-table.
+   * Menu callback. Shows all submission tags as a table.
+   *
+   * Shouldn't be converted into theme-function because used as a menu-callback.
    *
    * @return string
    *   String of renderable HTML.
-   *
-   * @todo ?Convert into theme-function?
    */
   public static function showTable() {
-
-    $query = db_select('tpps_tag', 't')
-      ->fields('t')
-      ->execute();
-
-    $rows = array();
-    while (($result = $query->fetchObject())) {
-      $color = !empty($result->color) ? $result->color : 'white';
-      $edit_link = $result->static ? "" : "<a href=\"tpps-tag/edit/{$result->tpps_tag_id}\">edit</a>";
-      $rows[$result->tpps_tag_id] = array(
-        "<span class=\"tag\" style=\"background-color:$color\"><span class=\"tag-text\">{$result->name}</span></span>",
-        $result->name,
+    $rows = [];
+    $result = db_select('tpps_tag', 't')->fields('t')->execute()->fetchAll();
+    foreach ($result as $tag) {
+      $color = !empty($tag->color) ? $tag->color : 'white';
+      $edit_link = NULL;
+      if ($tag->static) {
+        $url = 'tpps-tag/edit/' . check_plain($tag->tpps_tag_id);
+        $edit_link = l(t('edit'), $url);
+      }
+      $rows[$tag->tpps_tag_id] = [
+        '<span class="tag" style="background-color:' . $color . '">'
+          . '<span class="tag-text">' . $tag->name . '</span></span>',
+        $tag->name,
         $color,
-        $edit_link,
-      );
+        $edit_link ?? '',
+      ];
     }
-
     ksort($rows);
-
-    $vars = array(
-      'header' => array(
-        'Tag',
-        'Name',
-        'Color',
-        '',
-      ),
+    $output = theme('table', [
+      'header' => [t('Tag'), t('Name'), t('Color'), ''],
       'rows' => $rows,
-      'attributes' => array(
-        'class' => array('view'),
-        'id' => 'tpps_table_display',
-      ),
+      'attributes' => ['class' => ['view'], 'id' => 'tpps_table_display'],
       'caption' => '',
       'colgroups' => NULL,
       'sticky' => FALSE,
       'empty' => '',
-    );
-
-    $output = theme('table', $vars);
+    ]);
     tpps_add_css_js('main');
     return $output;
   }
