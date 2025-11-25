@@ -4756,14 +4756,16 @@ function tpps_genotype_vcf_processing_batch_some_features_insert(&$settings, $cu
         $src_feature_ids_csv = implode(',', $src_feature_ids); // explain this line
 
         tpps_log("Searching for featurelocs matching src_feature_ids: $src_feature_ids_csv\n", [], TPIPAL_INFO);
-        $sql_search_featurelocs = 'SELECT f.feature_id as feature_id, f.uniquename as uniquename, srcfeature_id, fmin, fmax
+        $sql_search_featurelocs = "SELECT f.feature_id as feature_id, f.uniquename as uniquename, srcfeature_id, fmin, fmax
           FROM chado.featureloc fl
           INNER JOIN chado.feature f ON fl.feature_id = f.feature_id
-          WHERE fl.srcfeature_id IN ($src_feature_ids_csv) AND f.type_id = 1491';
+          WHERE fl.srcfeature_id IN ($src_feature_ids_csv) AND f.type_id = 1491";
         $results = db_query($sql_search_featurelocs, []);
+        tpps_log("Featurelocs found: " . count($results) . "\n", [], TPIPAL_INFO);
         // throw new Exception("Featurelocs found: " . count($results) . "\n");
 
         $sql = 'INSERT INTO chado.feature_synonym (feature_id, synonym) VALUES ';
+        $feature_synonym_count = 0;
         foreach ($results as $fl_row) {
           $feature_id = $fl_row->feature_id;
           $src_feature_id = $fl_row->srcfeature_id;
@@ -4781,6 +4783,7 @@ function tpps_genotype_vcf_processing_batch_some_features_insert(&$settings, $cu
               $sql .= "($feature_id, '$variant_name'),";
               $featureloc_matches_count = $featureloc_matches_count + 1;
               $synonym_variant_names[] = $variant_name; // Store the synonym variant name
+              $feature_synonym_count = $feature_synonym_count + 1;
             }
           }
 
@@ -4794,7 +4797,7 @@ function tpps_genotype_vcf_processing_batch_some_features_insert(&$settings, $cu
         }
         // Remove the last comma
         $sql = rtrim($sql, ',');
-        if (!empty($sql)) {
+        if (!empty($sql) && $feature_synonym_count > 0) {
           // $sql .= " ON CONFLICT (feature_id, synonym) DO NOTHING";
           db_query($sql);
         }
