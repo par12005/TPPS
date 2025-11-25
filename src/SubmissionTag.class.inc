@@ -195,13 +195,14 @@ class SubmissionTag {
     if ($result->static) {
       drupal_goto(static::BASE_URL);
     }
+    $submission = new Submission($accession);
     switch ($type) {
       case 'add':
-        SubmissionTag::add($accession, $tag);
+        $submission->addTag($tag);
         break;
 
       case 'remove':
-        SubmissionTag::remove($accession, $tag);
+        $submission->removeTag($tag);
         break;
     }
   }
@@ -219,7 +220,7 @@ class SubmissionTag {
       'Environment',
     );
     foreach ($tags as $tag) {
-      SubmissionTag::remove($accession, $tag);
+      tpps_submission_load($accession)->removeTag($tag);
     }
   }
 

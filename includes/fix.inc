@@ -139,7 +139,8 @@ function __fix_tree_info($accession) {
         //  !empty($tag_id = SubmissionTag::getId('No Location Information'))
         //  && !array_key_exists($tag_id, SubmissionTag::getAll($shared_state['accession']))
         //) {
-        //  //SubmissionTag::add($shared_state['accession'], 'Approximate Coordinates');
+        //  tpps_submission_load($shared_state['accession'])
+        //    ->addTag('Approximate Coordinates');
         //}
         break;
 

@@ -874,7 +874,7 @@ return;
     db_insert(static::TABLE)->fields($fields)->execute();
     // Add default tag.
     $tag = $this->isTppsc() ? 'TPPSc' : 'TPPS';
-    SubmissionTag::add($this->accession, $tag);
+    $this->addTag($tag);
     return $this;
   }
 

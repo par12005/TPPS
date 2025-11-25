@@ -1360,7 +1360,8 @@ function tpps_submit_page_3(array &$shared_state, TripalJob &$job = NULL) {
           !empty($tag_id = SubmissionTag::getId('No Location Information'))
           && !array_key_exists($tag_id, SubmissionTag::getAll($shared_state['accession']))
         ) {
-          SubmissionTag::add($shared_state['accession'], 'Approximate Coordinates');
+          tpps_submission_load($shared_state['accession'])
+            ->addTag('Approximate Coordinates');
         }
         break;
 
@@ -1624,7 +1625,8 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
   if (empty($phenotype)) {
     return;
   }
-  SubmissionTag::add($shared_state['accession'], 'Phenotype');
+  tpps_submission_load($shared_state['accession'])
+    ->addTag('Phenotype');
 
   $year_cvterm_id = CVTerm::getId('year');
   if (empty($year_cvterm_id)) {
@@ -1727,7 +1729,8 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
         // @TODO Should new synonym be created?
         // @todo should this 'is_environmental_phenotype' be per phenotype (not synonym)?
       }
-      SubmissionTag::add($shared_state['accession'], 'Environment');
+      tpps_submission_load($shared_state['accession'])
+        ->addTag('Environment');
     }
 
     if ($phenotype['check'] == '1' || $phenotype['check'] == 'upload_file') {
@@ -1921,7 +1924,8 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
   }
 
   // Add tag genotype to this study.
-  SubmissionTag::add($shared_state['accession'], 'Genotype');
+  tpps_submission_load($shared_state['accession'])
+    ->addTag('Genotype');
 
   $genotype_count = 0;
   $genotype_total = 0;
@@ -6630,7 +6634,8 @@ function tpps_submit_environment(array &$form_state, $i, TripalJob &$job = NULL)
   if (empty($environment)) {
     return;
   }
-  SubmissionTag::add($form_state['accession'], 'Environment');
+  tpps_submission_load($shared_state['accession'])
+    ->addTag('Environment');
 
   $env_layers = isset($environment['env_layers']) ? $environment['env_layers'] : FALSE;
   $env_params = isset($environment['env_params']) ? $environment['env_params'] : FALSE;
