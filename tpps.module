@@ -2731,14 +2731,14 @@ function tpps_submission_title($accession = '', $op = '', $extra = '') {
  */
 function tpps_menu_add_submission_tag(array &$items = []) {
   $items = $items ?? [];
-  $items['tpps-tag'] = [
+  $items['tpps/tag'] = [
     'title' => 'TPPS Submission Tags',
     'page callback' => 'SubmissionTag::showTable',
     'access callback' => 'tpps_access',
     'access arguments' => ['administer tpps module'],
     'type' => MENU_NORMAL_ITEM,
   ];
-  $items['tpps-tag/create'] = [
+  $items['tpps/tag/create'] = [
     'title' => 'Create new TPPS Submission Tag',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['submission_tag_form'],
@@ -2746,18 +2746,23 @@ function tpps_menu_add_submission_tag(array &$items = []) {
     'access arguments' => ['administer tpps module'],
     'type' => MENU_LOCAL_ACTION,
   ];
-  $items['tpps-tag/edit/%'] = [
-    'title' => 'TPPS Edit Tag',
+  $items['tpps/tag/%/edit'] = [
+    'title' => 'Edit Submission Tag',
     'page callback' => 'drupal_get_form',
-    'page arguments' => [
-      'submission_tag_edit_form',
-      2
-    ],
+    'page arguments' => ['submission_tag_edit_form', 2],
     'access callback' => 'tpps_access',
     'access arguments' => ['administer tpps module'],
     'type' => MENU_NORMAL_ITEM,
   ];
-  $items['tpps-tag/%/%/%'] = [
+  $items['tpps/tag/%/remove'] = [
+    'title' => 'Remove Submission Tag',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['submission_tag_remove_form', 2],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'type' => MENU_NORMAL_ITEM,
+  ];
+  $items['tpps/tag/%/%/%'] = [
     'title' => 'TPPS Add/Remove Tag',
     'page callback' => 'SubmissionTag::update',
     'page arguments' => [1, 2, 3],
@@ -3585,7 +3590,8 @@ function tpps_hook_info() {
  */
 function tpps_forms() {
   $forms = [];
-  $forms['submission_tag_edit_form']['callback'] = 'SubmissionTag::buildEditForm';
   $forms['submission_tag_form']['callback'] = 'SubmissionTag::buildForm';
+  $forms['submission_tag_edit_form']['callback'] = 'SubmissionTag::buildEditForm';
+  $forms['submission_tag_remove_form']['callback'] = 'SubmissionTag::buildRemoveForm';
   return $forms;
 }

@@ -13,6 +13,7 @@
  *
  * @TODO Change URLs:
  * /tpps/tag - list
+ * /tpps/tag/create
  * /tpps/tag/<id> - view
  * /tpps/tag/<id>/edit
  * /tpps/tag/<id>/remove
@@ -33,7 +34,7 @@ class SubmissionTag {
   const SUBMISSION_TABLE = 'tpps_submission_tag';
 
   // URL of the main page.
-  const MAIN_PAGE = 'tpps-tag';
+  const BASE_URL = 'tpps/tag';
 
   /**
    * Form to create a new submission tag.
@@ -64,7 +65,7 @@ class SubmissionTag {
       '#title' => t('Name'),
       '#description' => t('The name of the new tag'),
       '#required' => TRUE,
-      '#prefix' => l(t('Back to TPPS Submission Tags page'), static::MAIN_PAGE),
+      '#prefix' => l(t('Back to TPPS Submission Tags page'), static::BASE_URL),
     ];
     $form['color'] = [
       '#type' => 'textfield',
@@ -106,7 +107,7 @@ class SubmissionTag {
       'name' => $form_state['values']['name'],
       'color' => $form_state['values']['color'],
     ])->execute();
-    drupal_goto(static::MAIN_PAGE);
+    drupal_goto(static::BASE_URL);
   }
 
   /**
@@ -170,7 +171,7 @@ class SubmissionTag {
    *   The id of the tag.
    */
   public static function getId($name) {
-    $result = db_select('tpps_tag', 't')
+    $result = db_select(static::TABLE, 't')
       ->fields('t', array('tpps_tag_id'))
       ->condition('name', $name)
       ->range(0, 1)
@@ -235,7 +236,7 @@ class SubmissionTag {
       ->range(0, 1)
       ->execute()->fetchObject();
     if ($result->static) {
-      drupal_goto(static::MAIN_PAGE);
+      drupal_goto(static::BASE_URL);
     }
     switch ($type) {
       case 'add':
@@ -280,7 +281,7 @@ class SubmissionTag {
    */
   public static function buildEditForm(array $form, array &$form_state, $tag_id = NULL) {
     if (empty($tag_id)) {
-      drupal_goto(static::MAIN_PAGE);
+      drupal_goto(static::BASE_URL);
     }
 
     $tag = db_select(static::TABLE, 't')
@@ -290,7 +291,7 @@ class SubmissionTag {
       ->execute()->fetchObject();
 
     if (empty($tag) or $tag->static) {
-      drupal_goto(static::MAIN_PAGE);
+      drupal_goto(static::BASE_URL);
     }
 
     $form = SubmissionTag::buildForm($form, $form_state);
@@ -333,7 +334,7 @@ class SubmissionTag {
       ))
       ->condition('tpps_tag_id', $form_state['values']['id'])
       ->execute();
-    drupal_goto(static::MAIN_PAGE);
+    drupal_goto(static::BASE_URL);
   }
 
   /**
@@ -349,15 +350,12 @@ class SubmissionTag {
     $result = db_select('tpps_tag', 't')->fields('t')->execute()->fetchAll();
     foreach ($result as $tag) {
       $color = !empty($tag->color) ? $tag->color : 'white';
+      $url = static::BASE_URL . '/' . check_plain($tag->tpps_tag_id);
       $actions = [];
       if (empty($tag->static)) {
         $actions = [
-          l(t('Edit'),
-            static::MAIN_PAGE . '/edit/' . check_plain($tag->tpps_tag_id)
-          ),
-          l(t('Remove'),
-            static::MAIN_PAGE . '/remove/' . check_plain($tag->tpps_tag_id)
-          ),
+          l(t('Edit'), $url . '/edit'),
+          l(t('Remove'), $url . '/remove'),
         ];
       }
       $rows[$tag->tpps_tag_id] = [
@@ -381,5 +379,25 @@ class SubmissionTag {
     tpps_add_css_js('main');
     return $output;
   }
+
+  /**
+   * Menu-callback. Shows form to remove tag.
+   */
+  public static function buildRemoveForm(array $form, array &$form_state, $tag_id = NULL) {
+    dpm($tag_id);
+    //$form = confirm_form(
+    //  $form,
+    //  t('Are you sure, you want to remove @tag_name?', ['@tag_name' => $tag_id]),
+    //  'activity-list',
+    //  'The action cannot be undone.',
+    //  'Delete',
+    //  'Cancel',
+    //);
+    return $form;
+  }
+
+  //function my_module_delete_activity_form_submit($form, &$form_state) {
+  //  // Required actions here
+  //}
 
 }
