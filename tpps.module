@@ -2741,7 +2741,7 @@ function tpps_menu_add_submission_tag(array &$items = []) {
   $items['tpps-tag/create'] = [
     'title' => 'Create new TPPS Submission Tag',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['SubmissionTag::buildForm'],
+    'page arguments' => ['submission_tag_form'],
     'access callback' => 'tpps_access',
     'access arguments' => ['administer tpps module'],
     'type' => MENU_LOCAL_ACTION,
@@ -2749,7 +2749,10 @@ function tpps_menu_add_submission_tag(array &$items = []) {
   $items['tpps-tag/edit/%'] = [
     'title' => 'TPPS Edit Tag',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['SubmissionTag::buildEditForm', 2],
+    'page arguments' => [
+      'submission_tag_edit_form',
+      2
+    ],
     'access callback' => 'tpps_access',
     'access arguments' => ['administer tpps module'],
     'type' => MENU_NORMAL_ITEM,
@@ -3575,4 +3578,14 @@ function tpps_hook_info() {
   // Move hook_theme() into tpps.theme.inc file.
   $hooks['theme'] = ['group' => 'theme'];
   return $hooks;
+}
+
+/**
+ * Implements hook_forms().
+ */
+function tpps_forms() {
+  $forms = [];
+  $forms['submission_tag_edit_form']['callback'] = 'SubmissionTag::buildEditForm';
+  $forms['submission_tag_form']['callback'] = 'SubmissionTag::buildForm';
+  return $forms;
 }
