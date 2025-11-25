@@ -9,14 +9,15 @@
  *
  * DB tables:
  * - Table where tags are stored: static::TABLE.
- * - Connection between tag and submission: static::SUBMISSION_TABLE.
  *
- * @TODO Change URLs:
- * /tpps/tag - list
- * /tpps/tag/create
- * /tpps/tag/<id> - view
- * /tpps/tag/<id>/edit
- * /tpps/tag/<id>/remove
+ * @TODO Store list of tag Ids in SubmsisionCache.
+ *
+ * URL to manage tags:
+ *   /tpps/tag - list
+ *   /tpps/tag/create
+ *   /tpps/tag/<id> - view
+ *   /tpps/tag/<id>/edit
+ *   /tpps/tag/<id>/remove
  */
 
 /**
@@ -29,9 +30,6 @@ class SubmissionTag {
 
   // Name of the DB table where tags are stored.
   const TABLE = 'tpps_tag';
-
-  // Name of the DB table where link between tag and submission is stored.
-  const SUBMISSION_TABLE = 'tpps_submission_tag';
 
   // URL of the main page.
   const BASE_URL = 'tpps/tag';
@@ -111,57 +109,6 @@ class SubmissionTag {
   }
 
   /**
-   * Removes a tag from a submission.
-   *
-   * @param string $accession
-   *   The accession of the desired submission.
-   * @param mixed $tag
-   *   The name or id of the tag to be removed.
-   */
-  public static function remove($accession, $tag) {
-    if (gettype($tag) == 'string') {
-      $id = SubmissionTag::getId($tag);
-      if (!empty($id)) {
-        $tag = $id;
-      }
-    }
-    $submission = new Submission($accession);
-    db_delete(static::SUBMISSION_TABLE)
-      ->condition('tpps_submission_id', $submission->id)
-      ->condition('tpps_tag_id', $tag)
-      ->execute();
-  }
-
-  /**
-   * Adds a tag to a submission.
-   *
-   * @param string $accession
-   *   The accession of the desired submission.
-   * @param mixed $tag
-   *   The name or id of the tag to be added.
-   */
-  public static function add($accession, $tag) {
-    if (gettype($tag) == 'string') {
-      $id = SubmissionTag::getId($tag);
-      if (!empty($id)) {
-        $tag = $id;
-      }
-    }
-    $tags = SubmissionTag::getAll($accession) ?? [];
-    if (!array_key_exists($tag, $tags)) {
-      $submission = new Submission($accession);
-      if ($submission->id) {
-        db_insert(static::SUBMISSION_TABLE)
-          ->fields([
-            'tpps_submission_id' => $submission->id,
-            'tpps_tag_id' => $tag,
-          ])
-          ->execute();
-      }
-    }
-  }
-
-  /**
    * Returns the id of a tag based on the name.
    *
    * @param string $name
@@ -171,6 +118,16 @@ class SubmissionTag {
    *   The id of the tag.
    */
   public static function getId($name) {
+
+    if (gettype($tag) == 'string') {
+      $id = SubmissionTag::getId($tag);
+      if (!empty($id)) {
+        $tag = $id;
+      }
+    }
+
+
+
     $result = db_select(static::TABLE, 't')
       ->fields('t', array('tpps_tag_id'))
       ->condition('name', $name)

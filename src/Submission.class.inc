@@ -118,6 +118,9 @@ class Submission {
   // Name of the DB table where Submissions are stored.
   const TABLE = 'tpps_submission';
 
+  // Name of the DB table where link between tag and submission is stored.
+  const SUBMISSION_TAG_TABLE = 'tpps_submission_tag';
+
   /**
    * Submission accession.
    *
@@ -2928,6 +2931,43 @@ return;
       ],
     ];
     return $options;
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Submission Tags.
+
+  /**
+   * Adds the tag to a the submission.
+   *
+   * @param mixed $tag_key
+   *   The name or id of the tag to be added.
+   */
+  public function addTag($tag_key) {
+    // @TODO Use SubmissionCache to store tag ids.
+    $tag_list = SubmissionTag::getAll($accession) ?? [];
+    if (!array_key_exists($tag_key, $tag_list)) {
+      if ($this->id) {
+        db_insert(static::SUBMISSION_TAG_TABLE)
+          ->fields([
+            'tpps_submission_id' => $submission->id,
+            'tpps_tag_id' => SubmissionTag::getId($tag_key),
+          ])
+          ->execute();
+      }
+    }
+  }
+
+  /**
+   * Removes the tag from the submission.
+   *
+   * @param mixed $tag_key
+   *   The name or id of the tag to be removed.
+   */
+  public function removeTag($tag_key) {
+    db_delete(static::SUBMISSION_TAG_TABLE)
+      ->condition('tpps_submission_id', $this->id)
+      ->condition('tpps_tag_id', SubmissionTag::getId($tag_key))
+      ->execute();
   }
 
 }
