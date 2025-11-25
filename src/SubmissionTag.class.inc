@@ -26,6 +26,9 @@ class SubmissionTag {
   // Name of the DB table where link between tag and submission is stored.
   const SUBMISSION_TABLE = 'tpps_submission_tag';
 
+  // URL of the main page.
+  const MAIN_PAGE = 'tpps-tag';
+
   /**
    * Form to create a new submission tag.
    *
@@ -55,7 +58,7 @@ class SubmissionTag {
       '#title' => t('Name'),
       '#description' => t('The name of the new tag'),
       '#required' => TRUE,
-      '#prefix' => '<a href="/tpps-tag">Back to TPPS Submission Tags page</a>',
+      '#prefix' => l(t('Back to TPPS Submission Tags page'), static::MAIN_PAGE),
     ];
     $form['color'] = [
       '#type' => 'textfield',
@@ -97,7 +100,7 @@ class SubmissionTag {
       'name' => $form_state['values']['name'],
       'color' => $form_state['values']['color'],
     ])->execute();
-    drupal_goto('tpps-tag');
+    drupal_goto(static::MAIN_PAGE);
   }
 
   /**
@@ -208,13 +211,16 @@ class SubmissionTag {
       ->range(0, 1)
       ->execute()->fetchObject();
     if ($result->static) {
-      drupal_goto('tpps-tag');
+      drupal_goto(static::MAIN_PAGE);
     }
-    if ($type == 'add') {
-      SubmissionTag::add($accession, $tag);
-    }
-    if ($type == 'remove') {
-      SubmissionTag::remove($accession, $tag);
+    switch ($type) {
+      case 'add':
+        SubmissionTag::add($accession, $tag);
+        break;
+
+      case 'remove':
+        SubmissionTag::remove($accession, $tag);
+        break;
     }
   }
 
@@ -250,7 +256,7 @@ class SubmissionTag {
    */
   public static function buildEditForm(array $form, array &$form_state, $tag_id = NULL) {
     if (empty($tag_id)) {
-      drupal_goto('tpps-tag');
+      drupal_goto(static::MAIN_PAGE);
     }
 
     $tag = db_select(static::TABLE, 't')
@@ -260,7 +266,7 @@ class SubmissionTag {
       ->execute()->fetchObject();
 
     if (empty($tag) or $tag->static) {
-      drupal_goto('tpps-tag');
+      drupal_goto(static::MAIN_PAGE);
     }
 
     $form = SubmissionTag::buildForm($form, $form_state);
@@ -286,7 +292,9 @@ class SubmissionTag {
       ->execute()->fetchObject();
 
     if (!empty($result)) {
-      form_set_error('name', t("A tag already exists with this name. Please select a different name or use the existing tag."));
+      $message = t("A tag already exists with this name. Please select a "
+        . "different name or use the existing tag.");
+      form_set_error('name', $message);
     }
   }
 
@@ -301,7 +309,7 @@ class SubmissionTag {
       ))
       ->condition('tpps_tag_id', $form_state['values']['id'])
       ->execute();
-    drupal_goto('tpps-tag');
+    drupal_goto(static::MAIN_PAGE);
   }
 
   /**
@@ -319,7 +327,7 @@ class SubmissionTag {
       $color = !empty($tag->color) ? $tag->color : 'white';
       $edit_link = NULL;
       if ($tag->static) {
-        $url = 'tpps-tag/edit/' . check_plain($tag->tpps_tag_id);
+        $url = static::MAIN_PAGE . '/edit/' . check_plain($tag->tpps_tag_id);
         $edit_link = l(t('edit'), $url);
       }
       $rows[$tag->tpps_tag_id] = [
