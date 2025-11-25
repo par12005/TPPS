@@ -183,6 +183,24 @@ class SubmissionTag {
   }
 
   /**
+   * Loads submisison tag.
+   *
+   * @param int $id
+   *   Tag Id.
+   *
+   * @return object
+   *   Returns Submission's metadata.
+   */
+  public static function load($id) {
+    return db_select(static::TABLE, 't')
+      ->fields('t')
+      ->condition('tpps_tag_id', $id)
+      ->range(0, 1)
+      ->execute()
+      ->fetchObject();
+  }
+
+  /**
    * Returns array of tags associated with a submission.
    *
    * @param string $accession
