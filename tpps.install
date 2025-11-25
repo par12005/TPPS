@@ -2072,24 +2072,25 @@ function tpps_update_7116() {
 
     $submissions = tpps_load_submission_multiple(array(), FALSE);
     foreach ($submissions as $record) {
-      $state = tpps_load_submission($record->accession);
-      $tags = SubmissionTag::getAll($state['accession']);
+      $submission = new Submission($record->accession);
+      $state = $submission->state;
+      $tags = $submission->getTagList();
       if (count($tags) == 0) {
         if ((!isset($state['tpps_type']) or $state['tpps_type'] != 'tppsc')) {
-          tpps_submission_load($state['accession'])->addTag('TPPS');
+          $submission->addTag('TPPS');
         }
         else {
-          tpps_submission_load($state['accession'])->addTag('TPPSc');
+          $submission->addTag('TPPSc');
         }
 
         if ($state['status'] == 'Approved') {
           $data_type = $state['saved_values'][TPPS_PAGE_2]['data_type'];
           $env_phenotypes = FALSE;
           if (preg_match('/G/', $data_type)) {
-            tpps_submission_load($state['accession'])->addTag('Genotype');
+            $submission->addTag('Genotype');
           }
           if (preg_match('/P/', $data_type)) {
-            tpps_submission_load($state['accession'])->addTag('Phenotype');
+            $submission->addTag('Phenotype');
             $org_num = $state['saved_values'][TPPS_PAGE_1]['organism']['number'];
             for ($i = 1; $i <= $org_num; $i++) {
               $phenotype_num = $state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['phenotypes-meta']['number'];
@@ -2103,7 +2104,7 @@ function tpps_update_7116() {
             }
           }
           if (preg_match('/E/', $data_type) or $env_phenotypes) {
-            tpps_submission_load($state['accession'])->addTag('Environment');
+            $submission->addTag('Environment');
           }
         }
       }
@@ -2148,17 +2149,16 @@ function tpps_update_7117() {
 
     $submissions = tpps_load_submission_multiple(array(), FALSE);
     foreach ($submissions as $record) {
-      $state = tpps_load_submission($record->accession);
-
+      $submission = new Submission($record->accession);
+      $state = $submission->state;
       if (!empty($state['saved_values'][TPPS_PAGE_3]['skip_validation'])) {
-        tpps_submission_load($state['accession'])->addTag('No Location Information');
+        $submission->addTag('No Location Information');
       }
-
       $org_num = $state['saved_values'][TPPS_PAGE_1]['organism']['number'];
       for ($i = 1; $i <= $org_num; $i++) {
         $species_i = $state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"];
         if (isset($species_i['exact_coords']) and !$species_i['exact_coords']) {
-          tpps_submission_load($state['accession'])->addTag('Approximate Coordinates');
+          $submission->addTag('Approximate Coordinates');
           break;
         }
       }

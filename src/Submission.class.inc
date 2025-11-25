@@ -2944,7 +2944,7 @@ return;
    */
   public function addTag($tag_key) {
     // @TODO Use SubmissionCache to store tag ids.
-    $tag_list = SubmissionTag::getAll($accession) ?? [];
+    $tag_list = $this->getTagList();
     if (!array_key_exists($tag_key, $tag_list)) {
       if ($this->id) {
         db_insert(static::SUBMISSION_TAG_TABLE)
@@ -2968,6 +2968,22 @@ return;
       ->condition('tpps_submission_id', $this->id)
       ->condition('tpps_tag_id', SubmissionTag::getId($tag_key))
       ->execute();
+  }
+
+  /**
+   * Returns array of tags associated with a submission.
+   *
+   * @return array
+   *   Returns array of tags associated with the submission.
+   *   Returns empty array if submission has no tags.
+   */
+  public function getTagList() {
+    $query = db_select('tpps_submission_tag', 'st');
+    $query->join('tpps_submission', 's', 's.tpps_submission_id = st.tpps_submission_id');
+    $query->join('tpps_tag', 't', 't.tpps_tag_id = st.tpps_tag_id');
+    $query->fields('t');
+    $query->condition('s.accession', $this->accession);
+    return $query->execute()->fetchAllAssoc('tpps_tag_id', PDO::FETCH_ASSOC);
   }
 
 }

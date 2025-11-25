@@ -295,7 +295,8 @@ class SubmissionCache {
         'updated' => $submission->state['updated'] ?? NULL,
         'cached' => REQUEST_TIME,
       ],
-      'tags' => SubmissionTag::getAll($submission->accession),
+      // @TODO Store only Tag Ids.
+      'tags' => $submission->getTagList(),
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Files.
       static::FILES_CONTAINER => [

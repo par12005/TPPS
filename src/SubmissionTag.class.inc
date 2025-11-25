@@ -141,39 +141,21 @@ class SubmissionTag {
   }
 
   /**
-   * Loads submisison tag.
+   * Loads single submisison tag or all tags.
    *
    * @param int $id
    *   Tag Id.
    *
-   * @return object
-   *   Returns Submission's metadata.
+   * @return mixed
+   *   Returns object with single submission tag when $id is not empty.
+   *   Returns array of objects with all the submission tags when $id is empty.
    */
-  public static function load($id) {
-    return db_select(static::TABLE, 't')
-      ->fields('t')
-      ->condition('tpps_tag_id', $id)
-      ->range(0, 1)
-      ->execute()
-      ->fetchObject();
-  }
-
-  /**
-   * Returns array of tags associated with a submission.
-   *
-   * @param string $accession
-   *   The accession of the desired submission.
-   *
-   * @return array
-   *   Array of tags associated with the submission.
-   */
-  public static function getAll($accession) {
-    $query = db_select('tpps_submission_tag', 'st');
-    $query->join('tpps_submission', 's', 's.tpps_submission_id = st.tpps_submission_id');
-    $query->join('tpps_tag', 't', 't.tpps_tag_id = st.tpps_tag_id');
-    $query->fields('t');
-    $query->condition('s.accession', $accession);
-    return $query->execute()->fetchAllAssoc('tpps_tag_id', PDO::FETCH_ASSOC);
+  public static function load($id = NULL) {
+    $query = db_select(static::TABLE, 't')->fields('t');
+    if (!empty($id)) {
+      $query->condition('tpps_tag_id', $id)->range(0, 1);
+    }
+    return $query->execute()->fetchAllAssoc('tpps_tag_id');
   }
 
   /**

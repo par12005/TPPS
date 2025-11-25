@@ -1356,9 +1356,11 @@ function tpps_submit_page_3(array &$shared_state, TripalJob &$job = NULL) {
       case 'approximate':
         $options['exact'] = NULL;
         $options['precision'] = $tree_accession['coord_precision'] ?? NULL;
+        $submission_tag_list = tpps_submission_load($shared_state['accession'])
+          ->getTagList();
         if (
           !empty($tag_id = SubmissionTag::getId('No Location Information'))
-          && !array_key_exists($tag_id, SubmissionTag::getAll($shared_state['accession']))
+          && !array_key_exists($tag_id, $submission_tag_list)
         ) {
           tpps_submission_load($shared_state['accession'])
             ->addTag('Approximate Coordinates');
