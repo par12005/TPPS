@@ -111,33 +111,21 @@ class SubmissionTag {
   /**
    * Returns the id of a tag based on the name.
    *
-   * @param string $name
-   *   The name of the desired tag.
+   * @param mixed $tag_key
+   *   The name or id of the tag.
    *
    * @return int
    *   The id of the tag.
    */
-  public static function getId($name) {
-
-    if (gettype($tag) == 'string') {
-      $id = SubmissionTag::getId($tag);
-      if (!empty($id)) {
-        $tag = $id;
-      }
+  public static function getId($tag_key) {
+    if (gettype($tag_key) != 'string' && is_numeric($tag_key)) {
+      return $tag_key;
     }
-
-
-
-    $result = db_select(static::TABLE, 't')
-      ->fields('t', array('tpps_tag_id'))
-      ->condition('name', $name)
+    return db_select(static::TABLE, 't')
+      ->fields('t', ['tpps_tag_id'])
+      ->condition('name', $tag_key)
       ->range(0, 1)
-      ->execute()->fetchObject();
-
-    if ($result) {
-      return $result->tpps_tag_id;
-    }
-    return FALSE;
+      ->execute()->fetchField();
   }
 
   /**

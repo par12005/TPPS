@@ -2937,6 +2937,20 @@ return;
   // Submission Tags.
 
   /**
+   * Checks if submission has tag.
+   *
+   * @param mixed $tag_key
+   *   The name or id of the tag to be added.
+   *
+   * @return bool
+   *   Returns TRUE if submission has given tag and FALSE otherwise.
+   */
+  public function isTagExists($tag_key) {
+    $tag_id = SubmissionTag::getId($tag_key);
+    return  array_search($tag_id, array_keys($this->getTagList()));
+  }
+
+  /**
    * Adds the tag to a the submission.
    *
    * @param mixed $tag_key
