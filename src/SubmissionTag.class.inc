@@ -10,6 +10,12 @@
  * DB tables:
  * - Table where tags are stored: static::TABLE.
  * - Connection between tag and submission: static::SUBMISSION_TABLE.
+ *
+ * @TODO Change URLs:
+ * /tpps/tag - list
+ * /tpps/tag/<id> - view
+ * /tpps/tag/<id>/edit
+ * /tpps/tag/<id>/remove
  */
 
 /**
@@ -325,22 +331,28 @@ class SubmissionTag {
     $result = db_select('tpps_tag', 't')->fields('t')->execute()->fetchAll();
     foreach ($result as $tag) {
       $color = !empty($tag->color) ? $tag->color : 'white';
-      $edit_link = NULL;
-      if ($tag->static) {
-        $url = static::MAIN_PAGE . '/edit/' . check_plain($tag->tpps_tag_id);
-        $edit_link = l(t('edit'), $url);
+      $actions = [];
+      if (empty($tag->static)) {
+        $actions = [
+          l(t('Edit'),
+            static::MAIN_PAGE . '/edit/' . check_plain($tag->tpps_tag_id)
+          ),
+          l(t('Remove'),
+            static::MAIN_PAGE . '/remove/' . check_plain($tag->tpps_tag_id)
+          ),
+        ];
       }
       $rows[$tag->tpps_tag_id] = [
         '<span class="tag" style="background-color:' . $color . '">'
           . '<span class="tag-text">' . $tag->name . '</span></span>',
         $tag->name,
         $color,
-        $edit_link ?? '',
+        implode(' | ', $actions),
       ];
     }
     ksort($rows);
     $output = theme('table', [
-      'header' => [t('Tag'), t('Name'), t('Color'), ''],
+      'header' => [t('Tag'), t('Name'), t('Color'), t('Actions')],
       'rows' => $rows,
       'attributes' => ['class' => ['view'], 'id' => 'tpps_table_display'],
       'caption' => '',
