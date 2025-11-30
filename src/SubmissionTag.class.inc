@@ -142,8 +142,11 @@ class SubmissionTag {
     $query = db_select(static::TABLE, 't')->fields('t');
     if (!empty($id)) {
       $query->condition('tpps_tag_id', $id)->range(0, 1);
+      return $query->execute()->fetchObject();
     }
-    return $query->execute()->fetchAllAssoc('tpps_tag_id');
+    else {
+      return $query->execute()->fetchAllAssoc('tpps_tag_id');
+    }
   }
 
   /**
@@ -312,20 +315,75 @@ class SubmissionTag {
    * Menu-callback. Shows form to remove tag.
    */
   public static function buildRemoveForm(array $form, array &$form_state, $tag_id = NULL) {
-    dpm($tag_id);
-    //$form = confirm_form(
-    //  $form,
-    //  t('Are you sure, you want to remove @tag_name?', ['@tag_name' => $tag_id]),
-    //  'activity-list',
-    //  'The action cannot be undone.',
-    //  'Delete',
-    //  'Cancel',
-    //);
+    $cancel_redirect = static::BASE_URL . '/' . $tag_id;
+    $tag = static::load($tag_id);
+    if (empty($tag)) {
+      drupal_goto($cancel_redirect);
+    }
+    $message = t('Are you sure, you want to remove submission tag #@tag_id '
+      . '"<strong>@tag_name</strong>"?',
+      [
+        '@tag_name' => $tag->name,
+        '@tag_id' => $tag->tpps_tag_id,
+      ]
+    );
+    $cancel_redirect = static::BASE_URL . '/' . $tag_id;
+    $description = $message . '<br />' . t('The action cannot be undone.');
+    $delete_button = t('Delete');
+    $cancel_button = t('Cancel');
+
+    $form = confirm_form(
+      $form,
+      $message,
+      $cancel_redirect,
+      $description,
+      $delete_button,
+      $cancel_button
+    );
+    $form['tag_id'] = ['#type' => 'hidden', '#value' => $tag_id];
+    $form['#submit'][] = 'SubmissionTag::submitRemoveForm';
     return $form;
   }
 
-  //function my_module_delete_activity_form_submit($form, &$form_state) {
-  //  // Required actions here
-  //}
+  /**
+   * Form submitter. Removes Submission tag.
+   *
+   * @param array $form
+   *   Drupal Form Array.
+   * @param array $form_state
+   *   Drupal Form State Array.
+   */
+  public static function submitRemoveForm(array $form, array &$form_state) {
+    if (FormState::get($form_state, ['values', 'confirm'])) {
+      $tag_id = FormState::get($form_state, ['values', 'tag_id']);
+      if ($tag_id) {
+        db_delete(Submission::SUBMISSION_TAG_TABLE)
+          ->condition('tpps_tag_id', $tag_id)
+          ->execute();
+        db_delete(static::TABLE)->condition('tpps_tag_id', $tag_id)->execute();
+        $message = t('Tag #@tag_id was removed.', ['@tag_id' => $tag_id]);
+        drupal_set_message($message);
+      }
+    }
+    drupal_goto(static::BASE_URL);
+  }
+
+  /**
+   * Gets list of submissions which has given tag.
+   *
+   * @param mixed $tag_key
+   *   The name or id of the tag.
+   *
+   * @return array
+   *   Returns list of submission ids (not accessions!).
+   */
+  public static function getSubmissionList($tag_key) {
+    return db_select('tpps_submission_tag', 'st')
+      ->fields('st', ['tpps_submission_id'])
+      ->condition('st.tpps_tag_id', SubmissionTag::getId($tag_key))
+      ->orderBy('st.tpps_submission_id')
+      ->execute()
+      ->fetchCol('tpps_submission_id');
+  }
 
 }
