@@ -357,15 +357,25 @@ class SubmissionTag {
     if (FormState::get($form_state, ['values', 'confirm'])) {
       $tag_id = FormState::get($form_state, ['values', 'tag_id']);
       if ($tag_id) {
-        db_delete(Submission::SUBMISSION_TAG_TABLE)
-          ->condition('tpps_tag_id', $tag_id)
-          ->execute();
-        db_delete(static::TABLE)->condition('tpps_tag_id', $tag_id)->execute();
+        SubmissionTag::remove($tag_id);
         $message = t('Tag #@tag_id was removed.', ['@tag_id' => $tag_id]);
         drupal_set_message($message);
       }
     }
     drupal_goto(static::BASE_URL);
+  }
+
+  /**
+   * Removes tag.
+   *
+   * @param int $tag_id
+   *   Submission Tag Id.
+   */
+  public static function remove($tag_id) {
+    db_delete(Submission::SUBMISSION_TAG_TABLE)
+      ->condition('tpps_tag_id', $tag_id)
+      ->execute();
+    db_delete(static::TABLE)->condition('tpps_tag_id', $tag_id)->execute();
   }
 
   /**
