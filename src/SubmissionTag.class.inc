@@ -48,6 +48,24 @@ class SubmissionTag {
    *   The populated form object.
    */
   public static function buildForm(array $form, array &$form_state) {
+    SubmissionTag::buildDefaultForm($form, $form_state);
+    $form['#submit'][] = 'SubmissionTag::submitForm';
+    $form['#validate'][] = 'SubmissionTag::validateForm';
+    return $form;
+  }
+
+  /**
+   * Default form to edit/create submission tag.
+   *
+   * @param array $form
+   *   The form object to be populated.
+   * @param array $form_state
+   *   The state of the form object to be populated.
+   *
+   * @return array
+   *   The populated form object.
+   */
+  public static function buildDefaultForm(array &$form, array &$form_state) {
     // This will add the color picker to the TPPS submission tags edit-color
     // field id.
     // @todo Minor. Use local copy of this js-file.
@@ -76,9 +94,6 @@ class SubmissionTag {
       '#suffix' => '<div id="color-picker"><a>Toggle Color Picker</a></div>',
     ];
     $form['submit'] = ['#type' => 'submit', '#value' => t('Submit')];
-    $form['#submit'][] = 'SubmissionTag::submitForm';
-    $form['#validate'][] = 'SubmissionTag::validateForm';
-    return $form;
   }
 
   /**
@@ -225,12 +240,10 @@ class SubmissionTag {
       drupal_goto(static::BASE_URL);
     }
 
-    $form = SubmissionTag::buildForm($form, $form_state);
-
+    SubmissionTag::buildDefaultForm($form, $form_state);
     $form['name']['#default_value'] = $tag->name;
     $form['color']['#default_value'] = $tag->color;
-
-    $form['id'] = ['#type' => 'hidden', '#value' => $tag_id];
+    $form['tag_id'] = ['#type' => 'hidden', '#value' => $tag_id];
     $form['#submit'][] = 'SubmissionTag::submitEditForm';
     $form['#validate'][] = 'SubmissionTag::validateEditForm';
     return $form;
@@ -240,12 +253,14 @@ class SubmissionTag {
    * Implements hook_form_validate().
    */
   public static function validateEditForm(array &$form, array &$form_state) {
+    $tag_id = FormState::get($form_state, ['values', 'tag_id']);
+    $tag_name = FormState::get($form_state, ['values', 'name']);
     $result = db_select('tpps_tag', 't')
-      ->fields('t')
-      ->condition('name', $form_state['values']['name'], 'ILIKE')
-      ->condition('tpps_tag_id', $form_state['values']['id'], '!=')
+      ->fields('t', ['name'])
+      ->condition('tpps_tag_id', $tag_id, '!=')
+      ->condition('name', $tag_name, 'ILIKE')
       ->range(0, 1)
-      ->execute()->fetchObject();
+      ->execute()->fetchField();
 
     if (!empty($result)) {
       $message = t("A tag already exists with this name. Please select a "
@@ -258,13 +273,18 @@ class SubmissionTag {
    * Implements hook_form_submit().
    */
   public static function submitEditForm($form, &$form_state) {
-    db_update('tpps_tag')
-      ->fields(array(
-        'name' => $form_state['values']['name'],
-        'color' => $form_state['values']['color'],
-      ))
-      ->condition('tpps_tag_id', $form_state['values']['id'])
+    $tag_id = FormState::get($form_state, ['values', 'tag_id']);
+    $tag_name = FormState::get($form_state, ['values', 'name']);
+    $tag_color = FormState::get($form_state, ['values', 'color']);
+    db_update(static::TABLE)
+      ->fields([
+        'name' => $tag_name,
+        'color' => $tag_color,
+      ])
+      ->condition('tpps_tag_id', $tag_id)
       ->execute();
+    $message = t('Tag #@tag_id was updated.', ['@tag_id' => $tag_id]);
+    drupal_set_message($message);
     drupal_goto(static::BASE_URL);
   }
 
@@ -290,8 +310,10 @@ class SubmissionTag {
         ];
       }
       $rows[$tag->tpps_tag_id] = [
+        $tag->tpps_tag_id,
         '<span class="tag" style="background-color:' . $color . '">'
-          . '<span class="tag-text">' . $tag->name . '</span></span>',
+        . '<span title="Tag Id: ' . $tag->tpps_tag_id . '" class="tag-text">'
+        . $tag->name . '</span></span>',
         $tag->name,
         $color,
         implode(' | ', $actions),
@@ -299,7 +321,7 @@ class SubmissionTag {
     }
     ksort($rows);
     $output = theme('table', [
-      'header' => [t('Tag'), t('Name'), t('Color'), t('Actions')],
+      'header' => [t('Id'), t('Tag'), t('Name'), t('Color'), t('Actions')],
       'rows' => $rows,
       'attributes' => ['class' => ['view'], 'id' => 'tpps_table_display'],
       'caption' => '',
