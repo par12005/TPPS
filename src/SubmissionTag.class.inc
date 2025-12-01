@@ -146,21 +146,38 @@ class SubmissionTag {
   /**
    * Loads single submisison tag or all tags.
    *
-   * @param int $id
+   * Uses static caching.
+   * First call: 1.3 msec,
+   * Next calls: 0.02 msec.
+   *
+   * @param int $tag_id
    *   Tag Id.
+   * @param bool $reset
+   *   Flag to reset cache.
    *
    * @return mixed
    *   Returns object with single submission tag when $id is not empty.
    *   Returns array of objects with all the submission tags when $id is empty.
    */
-  public static function load($id = NULL) {
-    $query = db_select(static::TABLE, 't')->fields('t');
-    if (!empty($id)) {
-      $query->condition('tpps_tag_id', $id)->range(0, 1);
-      return $query->execute()->fetchObject();
+  public static function load($tag_id = NULL, $reset = FALSE) {
+
+    // @TOdO store in SubmissionCache only tag ids.
+    // @ToDO Update theme('submission_tag_list') to use ids.
+
+    $list = &drupal_static(__METHOD__);
+    if ($reset || empty($list)) {
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      $list = db_select(static::TABLE, 't')
+        ->fields('t')
+        ->execute()
+        ->fetchAllAssoc('tpps_tag_id');
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    }
+    if (empty($tag_id)) {
+      return $list;
     }
     else {
-      return $query->execute()->fetchAllAssoc('tpps_tag_id');
+      return $list[$tag_id] ?? NULL;
     }
   }
 
