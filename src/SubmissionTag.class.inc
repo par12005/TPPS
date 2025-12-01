@@ -5,7 +5,7 @@
  * Contains 'SubmissionTag' class.
  *
  * Theming:
- *   To show all tags: theme('submission_tag_list', ['tags' => $tag_list]);
+ *   To show all tags: theme('submission_tag_list', ['tags' => $tag_id_list]);
  *
  * DB tables:
  * - Table where tags are stored: static::TABLE.
@@ -160,15 +160,13 @@ class SubmissionTag {
    *   Returns array of objects with all the submission tags when $id is empty.
    */
   public static function load($tag_id = NULL, $reset = FALSE) {
-
-    // @TOdO store in SubmissionCache only tag ids.
-    // @ToDO Update theme('submission_tag_list') to use ids.
-
     $list = &drupal_static(__METHOD__);
     if ($reset || empty($list)) {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       $list = db_select(static::TABLE, 't')
         ->fields('t')
+        ->orderBy('static', 'DESC')
+        ->orderBy('tpps_tag_id')
         ->execute()
         ->fetchAllAssoc('tpps_tag_id');
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

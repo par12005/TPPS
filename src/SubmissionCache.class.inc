@@ -39,6 +39,10 @@
  *
  * Get all submissions:
  *   $data = SubmissionCache::getAll($reset);
+ *
+ * To get Submission tags:
+ *   $a = 'TGDR1200';
+ *   SubmissionCache::get()[$accession]['tags'];
  */
 
 /**
@@ -295,8 +299,9 @@ class SubmissionCache {
         'updated' => $submission->state['updated'] ?? NULL,
         'cached' => REQUEST_TIME,
       ],
-      // @TODO Store only Tag Ids.
-      'tags' => $submission->getTagList(),
+      // Store only list of the tag ids.
+      // Used in pages/admin/panel.inc. See theme('submission_tag_list', ...).
+      'tags' => array_keys($submission->getTagList()),
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Files.
       static::FILES_CONTAINER => [

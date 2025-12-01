@@ -288,6 +288,17 @@ function tpps_admin_panel_reports(array &$form) {
   ];
 }
 
+/**
+ * Themes single study row.
+ *
+ * @param mixed $accession
+ *   Study accession.
+ * @param array $row
+ *   SubmissionCache record for single submission.
+ * @param array $output
+ *
+ * @return void
+ */
 function tpps_report_admin_panel_theme_single_row($accession, array $row, array &$output) {
   $number = (int) str_replace('TGDR', '', $accession);
   if (is_array($row) && empty($row)) {
@@ -502,7 +513,9 @@ function ___old($context) {
           $submission->state['saved_values'][TPPS_PAGE_1]['publication']['title'],
           !empty($submission->state['completed'])
             ? date("F j, Y, g:i a", $submission->state['completed']) : "Unknown",
-            theme('submission_tag_list', ['tags' => $submission->getTagList()]),
+            theme('submission_tag_list', [
+              'tags' => SubmissionCache::get()[$accession]['tags'],
+            ]),
           $actions,
         ];
         $output['pending'][(int) substr($accession, 4)] = $row;
@@ -595,7 +608,9 @@ function ___old($context) {
           $submitting_user,
           $submission->state['saved_values'][TPPS_PAGE_1]['publication']['title'],
           $status_label,
-          theme('submission_tag_list', ['tags' => $submission->getTagList()]),
+          theme('submission_tag_list', [
+            'tags' => SubmissionCache::get()[$accession]['tags'],
+          ]),
           $actions,
         ];
         $output['approved'][(int) substr($accession, 4)] = $row;
@@ -641,7 +656,9 @@ function ___old($context) {
           $title,
           $stage,
           $date,
-          theme('submission_tag_list', ['tags' => $submission->getTagList()]),
+          theme('submission_tag_list', [
+            'tags' => SubmissionCache::get()[$accession]['tags'],
+          ]),
           $actions,
         ];
         break;

@@ -13,10 +13,11 @@
  */
 function theme_submission_tag_list(array $variables) {
   if (!empty($variables['tags'])) {
-    foreach ($variables['tags'] as $tag) {
+    foreach ($variables['tags'] as $tag_id) {
+      $tag = SubmissionTag::load($tag_id);
       $display = ($display ?? '') . '<span class="tag" style="background-color:'
-        . (empty($tag['color']) ? 'white' : $tag['color'])
-        . '"><span class="tag-text">' . $tag['name'] . '</span></span>';
+        . (empty($tag->color) ? 'white' : $tag->color)
+        . '"><span class="tag-text">' . $tag->name . '</span></span>';
     }
     return $display ?? '';
   }
