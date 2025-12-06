@@ -7,17 +7,13 @@
  * Theming:
  *   To show all tags: theme('submission_tag_list', ['tags' => $tag_id_list]);
  *
- * DB tables:
- * - Table where tags are stored: static::TABLE.
- *
- * @TODO Store list of tag Ids in SubmsisionCache.
- *
  * URL to manage tags:
  *   /tpps/tag - list
  *   /tpps/tag/create
- *   /tpps/tag/<id> - view
+ *   /tpps/tag/<id> - view (not implemented)
  *   /tpps/tag/<id>/edit
  *   /tpps/tag/<id>/remove
+ *   /tpps/tag/<id>/list - show list of the submissions which has this tag.
  */
 
 /**
