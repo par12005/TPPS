@@ -88,6 +88,17 @@
  * $s2->load();
  * dpm($s2->status, 's2 status');
  * dpm($s2->get(['status']), 's2 state');
+ *
+ * ----------------------------------------------------------------------------
+ * Execution time.
+ *
+ * There are 2 ways to call any method (which takes the same time):
+ * 1. tpps_submission_load($a)->hasTag(4) // ~5.4 msec
+ * 2. $submission = new Submission($a); // ~2.4 msec
+ *    $submission->hasTag(4); // ~3 msec.
+ * Performance tip:
+ *   Using 'tpps_submission_load()' is good for a single method call
+ *   but in other cases it's better to re-use instance $submission.
  */
 
 /**
@@ -2998,6 +3009,21 @@ return;
     $query->fields('t');
     $query->condition('s.accession', $this->accession);
     return $query->execute()->fetchAllAssoc('tpps_tag_id', PDO::FETCH_ASSOC);
+  }
+
+  /**
+   * Checks if submission has tag.
+   *
+   * @param mixed $tag_key
+   *   Tag id or name.
+   *
+   * @return bool
+   *   Returns TRUE if submission has tag and FALSE otherwise.
+   */
+  public function hasTag($tag_key) {
+    $tag_id = SubmissionTag::getId($tag_key);
+    $tag_list = SubmissionCache::get()[$this->accession]['tags'];
+    return (bool) (!empty($tag_id) && in_array($tag_id, $tag_list));
   }
 
 }
