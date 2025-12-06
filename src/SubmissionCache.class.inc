@@ -115,9 +115,13 @@ class SubmissionCache {
    * Note: statically cached.
    *
    * Performance (550 studies):
-   * - Full cache recreation: 39334 msec (40 seconds)
-   * - DB cache: 40 msec
-   * - Static cache: 0.005 msec
+   * - Full cache recreation: 8298 msec (~8 seconds)
+   * - DB cache: ~3 msec (mostly cache_get());
+   * - Static cache: ~0.004 msec
+   *
+   * Both ways to call gives the same execution time:
+   *   SubmissionCache::get()[$accession]['tags'];
+   *   SubmissionCache::get($accession)['tags'];
    *
    * @param string $accession
    *   Submission's accession. E.g., 'TGDRxxxx'.
@@ -160,12 +164,11 @@ class SubmissionCache {
             $list[$accession] = [];
           }
         }
-        krsort($list, SORT_NATURAL);
+        static::set($list);
       }
       else {
         $list = $cache->data;
       }
-      static::set($list);
     }
     // Output.
     if (empty($accession)) {
