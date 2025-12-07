@@ -1201,6 +1201,7 @@ function tpps_submit_page_3(array &$shared_state, TripalJob &$job = NULL) {
   $shared_state['locations'] = [];
   $shared_state['tree_info'] = [];
   $stock_count = 0;
+  $accession = $shared_state['accession'];
   $loc_name = 'Location (latitude/longitude or country/state or population group)';
 
   if (!empty($page3_values['study_location'])) {
@@ -1322,7 +1323,7 @@ function tpps_submit_page_3(array &$shared_state, TripalJob &$job = NULL) {
     'records' => $records,
     'overrides' => $overrides,
     'locations' => &$shared_state['locations'],
-    'accession' => $shared_state['accession'],
+    'accession' => $accession,
     'single_file' => empty($page3_values['tree-accession']['check']),
     'org_names' => $names,
     'saved_ids' => &$shared_state['ids'],
@@ -1356,14 +1357,8 @@ function tpps_submit_page_3(array &$shared_state, TripalJob &$job = NULL) {
       case 'approximate':
         $options['exact'] = NULL;
         $options['precision'] = $tree_accession['coord_precision'] ?? NULL;
-        $submission_tag_list = tpps_submission_load($shared_state['accession'])
-          ->getTagList();
-        if (
-          !empty($tag_id = SubmissionTag::getId('No Location Information'))
-          && !array_key_exists($tag_id, $submission_tag_list)
-        ) {
-          tpps_submission_load($shared_state['accession'])
-            ->addTag('Approximate Coordinates');
+        if (!SubmissionTag::isLinked('No Location Information', $accession)) {
+          tpps_submission_load($accession)->addTag('Approximate Coordinates');
         }
         break;
 
