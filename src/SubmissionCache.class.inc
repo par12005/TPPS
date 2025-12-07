@@ -148,20 +148,17 @@ class SubmissionCache {
         // Note: Do not load cache from db but use statically cached list to
         // speed-up processing.
         $submission_list = tpps_load_submission_multiple();
-        // WARNIG: ksort do not respect keys and they will be lost but asort()
+        // WARNIG: krsort do not respect keys and they will be lost but asort()
         // doesn't work with objects in array values...
-        foreach ($submission_list as $accession => $submission) {
-          $accession = $submission->accession;
-          if (!empty($accession)) {
-            $list[$accession] = static::buildSingle($submission);
-          }
+        foreach ($submission_list as $submission) {
+          $list[$submission->accession] = static::buildSingle($submission);
         }
         // List of studies which must must be resubmitted.
         // Those studies are present in DB but doesn't have a record in
         // 'tpps_submission' table.
-        foreach (static::getResubmitList() as $accession) {
-          if (!empty($accession)) {
-            $list[$accession] = [];
+        foreach (static::getResubmitList() as $old_accession) {
+          if (!empty($old_accession)) {
+            $list[$old_accession] = [];
           }
         }
         static::set($list);
@@ -274,7 +271,7 @@ class SubmissionCache {
     }
     $page1_values = $submission->get(['saved_values', TPPS_PAGE_1]);
     $data = [
-      //'accession' => $submission->accession,
+      // 'accession' => $submission->accession,
       'id' => $submission->id,
       'status' => $submission->getStatus(),
       'stage' => $submission->getCurrentStage(),
