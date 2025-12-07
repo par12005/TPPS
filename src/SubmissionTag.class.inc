@@ -122,26 +122,31 @@ class SubmissionTag {
   /**
    * Returns the id of a tag based on the name.
    *
-   * Execution time:
-   *   - Fist: 1.4 msec.
-   *   - Next: 0.3 msec.
-   * There is no sense to use static cache.
-   *
    * @param mixed $tag_key
    *   The name or id of the tag.
+   * @param bool $reset
+   *   TRUE to reset static cache. Default is FALSE.
    *
    * @return int
    *   The id of the tag.
    */
-  public static function getId($tag_key) {
+  public static function getId($tag_key, $reset = FALSE) {
     if (is_numeric($tag_key)) {
       return $tag_key;
     }
-    return db_select(static::TABLE, 't')
-      ->fields('t', ['tpps_tag_id'])
-      ->condition('name', $tag_key)
-      ->range(0, 1)
-      ->execute()->fetchField();
+    $static_cache = &drupal_static(__METHOD__);
+    $key = md5(json_encode(array_slice(func_get_args(), 0, -1)));
+    if ($reset || !isset($static_cache[$key])) {
+      dpm('reset');
+      $value = db_select(static::TABLE, 't')
+        ->fields('t', ['tpps_tag_id'])
+        ->condition('name', $key)
+        ->range(0, 1)
+        ->execute()
+        ->fetchField();
+      $static_cache[$key] = $value;
+    }
+    return $static_cache[$key];
   }
 
   /**
