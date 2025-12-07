@@ -129,7 +129,7 @@ class SubmissionTag {
    *   The id of the tag.
    */
   public static function getId($tag_key) {
-    if (gettype($tag_key) != 'string' && is_numeric($tag_key)) {
+    if (is_numeric($tag_key)) {
       return $tag_key;
     }
     return db_select(static::TABLE, 't')
