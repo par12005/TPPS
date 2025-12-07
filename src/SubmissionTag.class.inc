@@ -27,6 +27,9 @@ class SubmissionTag {
   // Name of the DB table where tags are stored.
   const TABLE = 'tpps_tag';
 
+  // Name of the DB table where link between tag and submission is stored.
+  const TABLE_SUBMISSION_TAG = 'tpps_submission_tag';
+
   // URL of the main page.
   const BASE_URL = 'tpps/tag';
 
@@ -410,14 +413,31 @@ class SubmissionTag {
   /**
    * Removes tag.
    *
-   * @param int $tag_id
-   *   Submission Tag Id.
+   * See also static::unlink().
+   *
+   * @param mixed $tag_key
+   *   Tag id or name.
    */
-  public static function remove($tag_id) {
-    db_delete(Submission::TABLE_SUBMISSION_TAG)
+  public static function remove($tag_key) {
+    if (empty($tag_id = SubmissionTag::getId($tag_key))) {
+      return;
+    }
+    // Update SubmissionCache.
+    $cached_submissions = SubmissionCache::get();
+    foreach ($cached_submissions as $accession => $submission) {
+      if (!empty($key = array_search($tag_id, $submission['tags']))) {
+        unset($cached_submissions[$accession]['tags'][$key]);
+      }
+    }
+    SubmissionCache::set($cached_submissions);
+    // Remove link between submission and tag.
+    db_delete(static::TABLE_SUBMISSION_TAG)
       ->condition('tpps_tag_id', $tag_id)
       ->execute();
-    db_delete(static::TABLE)->condition('tpps_tag_id', $tag_id)->execute();
+    // Remove tag.
+    db_delete(static::TABLE)
+      ->condition('tpps_tag_id', $tag_id)
+      ->execute();
   }
 
   /**
@@ -465,7 +485,7 @@ class SubmissionTag {
     $cached_submissions[$accession]['tags'][] = $tag_id;
     SubmissionCache::set($cached_submissions);
     // Remove link.
-    db_insert(Submission::TABLE_SUBMISSION_TAG)
+    db_insert(static::TABLE_SUBMISSION_TAG)
       ->fields([
         'tpps_submission_id' => $submission_id,
         'tpps_tag_id' => $tag_id,
@@ -498,7 +518,7 @@ class SubmissionTag {
     unset($cached_submissions[$accession]['tags'][$key]);
     SubmissionCache::set($cached_submissions);
     // Remove link.
-    db_delete(Submission::TABLE_SUBMISSION_TAG)
+    db_delete(static::TABLE_SUBMISSION_TAG)
       ->condition('tpps_submission_id', $submission_id)
       ->condition('tpps_tag_id', $tag_id)
       ->execute();

@@ -129,8 +129,6 @@ class Submission {
   // Name of the DB table where Submissions are stored.
   const TABLE = 'tpps_submission';
 
-  // Name of the DB table where link between tag and submission is stored.
-  const TABLE_SUBMISSION_TAG = 'tpps_submission_tag';
 
   /**
    * Submission accession.
@@ -2951,14 +2949,13 @@ return;
    * Checks if submission has tag.
    *
    * @param mixed $tag_key
-   *   The name or id of the tag to be added.
+   *   Tag id or name.
    *
    * @return bool
    *   Returns TRUE if submission has given tag and FALSE otherwise.
    */
-  public function isTagExists($tag_key) {
-    $tag_id = SubmissionTag::getId($tag_key);
-    return  array_search($tag_id, array_keys($this->getTagList()));
+  public function hasTag($tag_key) {
+    return SubmissionTag::isLinked($tag_key, $this->accession);
   }
 
   /**
@@ -2968,18 +2965,7 @@ return;
    *   The name or id of the tag to be added.
    */
   public function addTag($tag_key) {
-    // @TODO Use SubmissionCache to store tag ids.
-    $tag_list = $this->getTagList();
-    if (!array_key_exists($tag_key, $tag_list)) {
-      if ($this->id) {
-        db_insert(static::TABLE_SUBMISSION_TAG)
-          ->fields([
-            'tpps_submission_id' => $submission->id,
-            'tpps_tag_id' => SubmissionTag::getId($tag_key),
-          ])
-          ->execute();
-      }
-    }
+    SubmissionTag::link($tag_key, $this->accession);
   }
 
   /**
@@ -2989,10 +2975,7 @@ return;
    *   The name or id of the tag to be removed.
    */
   public function removeTag($tag_key) {
-    db_delete(static::TABLE_SUBMISSION_TAG)
-      ->condition('tpps_submission_id', $this->id)
-      ->condition('tpps_tag_id', SubmissionTag::getId($tag_key))
-      ->execute();
+    SubmissionTag::unlink($tag_key, $this->accession);
   }
 
   /**
