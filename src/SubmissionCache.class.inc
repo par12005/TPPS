@@ -275,6 +275,7 @@ class SubmissionCache {
     $page1_values = $submission->get(['saved_values', TPPS_PAGE_1]);
     $data = [
       //'accession' => $submission->accession,
+      'id' => $submission->id,
       'status' => $submission->getStatus(),
       'stage' => $submission->getCurrentStage(),
       'project_id' => $submission->get(['ids', 'project_id']),

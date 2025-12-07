@@ -439,6 +439,37 @@ class SubmissionTag {
       ->fetchCol('tpps_submission_id');
   }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Link to the Submission.
+
+  /**
+   * Checks if tag and submission are linked.
+   *
+   * @param mixed $tag_key
+   *   Tag id or name.
+   * @param mixed $accession
+   *   Submission accession. E.g., 'TGDR1234'.
+   */
+  public static function link($tag_key, $accession) {
+    if (
+      empty($tag_id = SubmissionTag::getId($tag_key))
+      && SubmissionTag::isLinked($tag_id, $accession)
+      && empty($submission_id = SubmissionCache::get($accession)['id'])
+    ) {
+      return;
+    }
+    db_insert(Submission::TABLE_SUBMISSION_TAG)
+      ->fields([
+        'tpps_submission_id' => $submission_id,
+        'tpps_tag_id' => $tag_id,
+      ])
+      ->execute();
+  }
+
+  // @TODO Add 'unlink'.
+
+
+
   /**
    * Checks if tag and submission are linked.
    *
