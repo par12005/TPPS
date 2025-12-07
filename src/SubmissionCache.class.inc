@@ -140,9 +140,9 @@ class SubmissionCache {
     // Using static cache allows to avoid extra db query to get stored in db
     // cache and allows to update single items faster.
     $list = &drupal_static(static::CACHE_ID);
-    if ($reset || (empty($list) && !is_array($list))) {
+    if ($reset || empty($list)) {
       $cache = cache_get(static::CACHE_ID, static::CACHE_BIN);
-      if ($reset || empty($cache) || (empty($cache->data) && !is_array($cache->data))) {
+      if ($reset || empty($cache) || empty($cache->data)) {
         // Cache will be empty when module just installed and no submission yet.
         $list = [];
         // Note: Do not load cache from db but use statically cached list to
