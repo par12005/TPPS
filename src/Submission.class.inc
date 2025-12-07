@@ -3021,9 +3021,7 @@ return;
    *   Returns TRUE if submission has tag and FALSE otherwise.
    */
   public function hasTag($tag_key) {
-    $tag_id = SubmissionTag::getId($tag_key);
-    $tag_list = SubmissionCache::get()[$this->accession]['tags'];
-    return (bool) (!empty($tag_id) && in_array($tag_id, $tag_list));
+    return SubmissionTag::isLinked($tag_key, $this->accession);
   }
 
 }

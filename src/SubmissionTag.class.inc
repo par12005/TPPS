@@ -122,6 +122,11 @@ class SubmissionTag {
   /**
    * Returns the id of a tag based on the name.
    *
+   * Execution time:
+   *   - Fist: 1.4 msec.
+   *   - Next: 0.3 msec.
+   * There is no sense to use static cache.
+   *
    * @param mixed $tag_key
    *   The name or id of the tag.
    *
@@ -427,6 +432,25 @@ class SubmissionTag {
       ->orderBy('st.tpps_submission_id')
       ->execute()
       ->fetchCol('tpps_submission_id');
+  }
+
+  /**
+   * Checks if tag and submission are linked.
+   *
+   * @param mixed $tag_key
+   *   Tag id or name.
+   * @param mixed $accession
+   *   Submission accession. E.g., 'TGDR1234'.
+   *
+   * @return bool
+   *   Returns TRUE if submission has given tag and FALSE otherwise.
+   */
+  public static function isLinked($tag_key, $accession) {
+    return (bool) (
+      !empty($tag_id = SubmissionTag::getId($tag_key))
+      && !empty($tag_list = SubmissionCache::get($accession)['tags'])
+      && in_array($tag_id, $tag_list)
+    );
   }
 
 }
