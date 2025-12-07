@@ -415,7 +415,7 @@ class SubmissionTag {
    *   Submission Tag Id.
    */
   public static function remove($tag_id) {
-    db_delete(Submission::SUBMISSION_TAG_TABLE)
+    db_delete(Submission::TABLE_SUBMISSION_TAG)
       ->condition('tpps_tag_id', $tag_id)
       ->execute();
     db_delete(static::TABLE)->condition('tpps_tag_id', $tag_id)->execute();
