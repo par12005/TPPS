@@ -137,7 +137,6 @@ class SubmissionTag {
     $static_cache = &drupal_static(__METHOD__);
     $key = md5(json_encode(array_slice(func_get_args(), 0, -1)));
     if ($reset || !isset($static_cache[$key])) {
-      dpm('reset');
       $value = db_select(static::TABLE, 't')
         ->fields('t', ['tpps_tag_id'])
         ->condition('name', $key)
@@ -443,7 +442,7 @@ class SubmissionTag {
   // Link to the Submission.
 
   /**
-   * Checks if tag and submission are linked.
+   * Creates link between tag and submission.
    *
    * @param mixed $tag_key
    *   Tag id or name.
@@ -453,11 +452,19 @@ class SubmissionTag {
   public static function link($tag_key, $accession) {
     if (
       empty($tag_id = SubmissionTag::getId($tag_key))
-      && SubmissionTag::isLinked($tag_id, $accession)
-      && empty($submission_id = SubmissionCache::get($accession)['id'])
+      || SubmissionTag::isLinked($tag_id, $accession)
     ) {
       return;
     }
+    // Get submission id.
+    $cached_submissions = SubmissionCache::get();
+    if (empty($submission_id = $cached_submissions[$accession]['id'])) {
+      return;
+    }
+    // Add to SubmissionCache.
+    $cached_submissions[$accession]['tags'][] = $tag_id;
+    SubmissionCache::set($cached_submissions);
+    // Remove link.
     db_insert(Submission::TABLE_SUBMISSION_TAG)
       ->fields([
         'tpps_submission_id' => $submission_id,
@@ -466,9 +473,36 @@ class SubmissionTag {
       ->execute();
   }
 
-  // @TODO Add 'unlink'.
-
-
+  /**
+   * Removes link between tag and submission.
+   *
+   * @param mixed $tag_key
+   *   Tag id or name.
+   * @param mixed $accession
+   *   Submission accession. E.g., 'TGDR1234'.
+   */
+  public static function unlink($tag_key, $accession) {
+    if (
+      empty($tag_id = SubmissionTag::getId($tag_key))
+      || !SubmissionTag::isLinked($tag_id, $accession)
+    ) {
+      return;
+    }
+    // Get submission id.
+    $cached_submissions = SubmissionCache::get();
+    if (empty($submission_id = $cached_submissions[$accession]['id'])) {
+      return;
+    }
+    // Remove from SubmissionCache.
+    $key = array_search($tag_id, $cached_submissions[$accession]['tags']);
+    unset($cached_submissions[$accession]['tags'][$key]);
+    SubmissionCache::set($cached_submissions);
+    // Remove link.
+    db_delete(Submission::TABLE_SUBMISSION_TAG)
+      ->condition('tpps_submission_id', $submission_id)
+      ->condition('tpps_tag_id', $tag_id)
+      ->execute();
+  }
 
   /**
    * Checks if tag and submission are linked.

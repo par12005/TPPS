@@ -220,7 +220,7 @@ class SubmissionCache {
   }
 
   /**
-   * Sets list of submissions.
+   * Sets list of cached submissions.
    */
   public static function set(array $new_list) {
     $list = &drupal_static(static::CACHE_ID);
