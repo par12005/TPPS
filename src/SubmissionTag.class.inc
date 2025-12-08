@@ -425,7 +425,10 @@ class SubmissionTag {
     // Update SubmissionCache.
     $cached_submissions = SubmissionCache::get();
     foreach ($cached_submissions as $accession => $submission) {
-      if (!empty($key = array_search($tag_id, $submission['tags']))) {
+      if (
+        !empty($submission['tags'])
+        && !empty($key = array_search($tag_id, $submission['tags']))
+      ) {
         unset($cached_submissions[$accession]['tags'][$key]);
       }
     }
@@ -510,7 +513,10 @@ class SubmissionTag {
     }
     // Get submission id.
     $cached_submissions = SubmissionCache::get();
-    if (empty($submission_id = $cached_submissions[$accession]['id'])) {
+    if (
+      empty($submission_id = $cached_submissions[$accession]['id'])
+      || empty($submission['tags'])
+    ) {
       return;
     }
     // Remove from SubmissionCache.
