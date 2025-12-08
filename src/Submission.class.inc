@@ -2994,17 +2994,4 @@ return;
     return $query->execute()->fetchAllAssoc('tpps_tag_id', PDO::FETCH_ASSOC);
   }
 
-  /**
-   * Checks if submission has tag.
-   *
-   * @param mixed $tag_key
-   *   Tag id or name.
-   *
-   * @return bool
-   *   Returns TRUE if submission has tag and FALSE otherwise.
-   */
-  public function hasTag($tag_key) {
-    return SubmissionTag::isLinked($tag_key, $this->accession);
-  }
-
 }
