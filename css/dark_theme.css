@@ -24,6 +24,12 @@
  */
 body.html {
   background-color: #212428 !important;
+  color: white;
+}
+
+body a, body a:hover {
+  /* A little bit brighter and has more green color then dawn theme has (#777). */
+  color: #648b6b !important;
 }
 
 /*body.html div#block-system-main,*/
