@@ -873,7 +873,10 @@ function tpps_submission_clear_db($accession) {
   tpps_log('DELETE chado.phenotype values for project...');
   chado_query("DELETE FROM chado.phenotype WHERE uniquename LIKE '" . $accession . "-%';");
 
+  tpps_log('DELETE chado.plants_per_marker values for project...');
+  chado_query("DELETE FROM chado.plants_per_marker WHERE study_accession = '" . $accession . "';");
   tpps_log('FINISHED DB CLEAR DELETES');
+  
   $time_end = time();
   tpps_log('Time taken to delete records: @time.', ['@time' => $time_end - $time_start]);
 
