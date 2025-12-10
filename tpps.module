@@ -2762,6 +2762,14 @@ function tpps_menu_add_submission_tag(array &$items = []) {
     'access arguments' => ['administer tpps module'],
     'type' => MENU_NORMAL_ITEM,
   ];
+  $items['tpps/tag/%/info'] = [
+    'title' => "Tag's Info",
+    'page callback' => 'SubmissionTag::buildInfoPage',
+    'page arguments' => [2],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'type' => MENU_NORMAL_ITEM,
+  ];
   $items['tpps/tag/%/%/%'] = [
     'title' => 'TPPS Add/Remove Tag',
     'page callback' => 'SubmissionTag::update',

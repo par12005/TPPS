@@ -330,6 +330,7 @@ class SubmissionTag {
         $actions = [
           l(t('Edit'), $url . '/edit'),
           l(t('Remove'), $url . '/remove'),
+          l(t('Info'), $url . '/info'),
         ];
       }
       $rows[$tag->tpps_tag_id] = [
@@ -444,7 +445,7 @@ class SubmissionTag {
   }
 
   /**
-   * Gets list of submissions which has given tag.
+   * Gets list of submission's ids which has given tag.
    *
    * @param mixed $tag_key
    *   The name or id of the tag.
@@ -452,13 +453,29 @@ class SubmissionTag {
    * @return array
    *   Returns list of submission ids (not accessions!).
    */
-  public static function getSubmissionList($tag_key) {
+  public static function getSubmissionIdList($tag_key) {
     return db_select('tpps_submission_tag', 'st')
       ->fields('st', ['tpps_submission_id'])
       ->condition('st.tpps_tag_id', SubmissionTag::getId($tag_key))
       ->orderBy('st.tpps_submission_id')
       ->execute()
       ->fetchCol('tpps_submission_id');
+  }
+
+  /**
+   * Gets list of submission's accession which has given tag.
+   *
+   * @param mixed $tag_key
+   *   The name or id of the tag.
+   *
+   * @return array
+   *   Returns list of submission accessions (e.g., 'TGDR1234');
+   */
+  public static function getSubmissionAccessionList($tag_key) {
+    $query = db_select('tpps_submission', 's')->fields('s', ['accession']);
+    $query->join('tpps_submission_tag', 'st', 's.tpps_submission_id = st.tpps_submission_id');
+    $query->condition('st.tpps_tag_id', SubmissionTag::getId($tag_key));
+    return $query->execute()->fetchCol('accession');
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -547,6 +564,33 @@ class SubmissionTag {
       && !empty($tag_list = SubmissionCache::get($accession)['tags'])
       && in_array($tag_id, $tag_list)
     );
+  }
+
+  /**
+   * Menu callback. Shows tag info page.
+   *
+   * URL: 'tpps/tag/%/info'.
+   *
+   * @param mixed $tag_key
+   *   Tag id or name.
+   *
+   * @return string
+   *   Returns rendered page content which shows list of submission accessions
+   *   linked to given tag.
+   */
+  public static function buildInfoPage($tag_key) {
+    if (empty($tag_id = SubmissionTag::getId($tag_key))) {
+      $message = t('Wrong tag key: @tag_key', ['@tag_key' => $tag_key]);
+      drupal_set_message($message);
+      drupal_goto('tpps/tag');
+    }
+    foreach (static::getSubmissionAccessionList($tag_id) as $accession) {
+      $output[] = theme('submission_accession_link', [
+        'accession' => $accession,
+        'path' => 'tpps-admin-panel/' . $accession,
+      ]);
+    }
+    return theme('item_list', ['items' => $output]);
   }
 
 }

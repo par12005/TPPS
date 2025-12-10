@@ -102,7 +102,6 @@ function theme_submission_accession_link(array $variables) {
   if (empty($accession)) {
     return;
   }
-  $data = SubmissionCache::getAll();
   $number = str_replace('TGDR', '', ($accession));
   $output = '<span class="tpps-study-accession">TGDR</span>'
     . '<span class="tpps-study-accession-number" title="'
@@ -110,7 +109,8 @@ function theme_submission_accession_link(array $variables) {
 
   // Extra data.
   if ($show_version) {
-    $submission_version = $data[$accession][SubmissionVersion::FORM_KEY] ?? NULL;
+    $cached_submission = SubmissionCache::get($accession);
+    $submission_version = $cached_submission[SubmissionVersion::FORM_KEY] ?? NULL;
     if (!empty($submission_version)) {
       $output .= ' {<span class="tpps-study-form-version-number" title="'
         .  t('Submission Form Version Number')
