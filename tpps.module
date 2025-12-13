@@ -517,6 +517,8 @@ function tpps_permission() {
 /**
  * Access-callback. Checks if current user could access requested page.
  *
+ * Uses static caching without ability to reset.
+ *
  * @return bool
  *   Returns TRUE when user granted access and FALSE otherwise.
  */
@@ -534,66 +536,84 @@ function tpps_access() {
     return FALSE;
   }
 
-  // Special case. Study accession, owner and status.
-  switch ($permission) {
+  $static_cache = &drupal_static(__FUNCTION__);
+  $key = implode('', $args);
+  if (!isset($static_cache[$key])) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    case 'access tpps form':
-      $accession = $args[1] ?? NULL;
-      if (empty($accession) || $accession == 'new') {
-        return TRUE;
-      }
-      $submission = new Submission($accession);
-      if ($submission->doesNotExist()) {
-        // Study has no record in tpps_submission table.
-        return FALSE;
-      }
-
-      // Note: $submission->isTppsc() not always works correct so we allow
-      // admins and curation team to edit any study..
-      if (tpps_is_admin_or_curation()) {
-        return TRUE;
-      }
-      else {
-        // TPPS Form.
-        if ($submission->isCreator() && $submission->isIncompleteStatus()) {
-          return TRUE;
+    // Special case. Study accession, owner and status.
+    // Restrict access by default.
+    switch ($permission) {
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      case 'access tpps form':
+        $value = FALSE;
+        $accession = $args[1] ?? NULL;
+        if (empty($accession) || $accession == 'new') {
+          $value = TRUE;
         }
-      }
-      return FALSE;
+        else {
+          $submission = new Submission($accession);
+          if ($submission->doesNotExist()) {
+            // Study has no record in tpps_submission table.
+            $value = FALSE;
+          }
+          else {
+            // Note: $submission->isTppsc() not always works correct so we allow
+            // admins and curation team to edit any study..
+            if (tpps_is_admin_or_curation()) {
+              $value = TRUE;
+            }
+            else {
+              // TPPS Form.
+              $value = (bool) (
+                $submission->isCreator()
+                && $submission->isIncompleteStatus()
+              );
+            }
+          }
+        }
+        break;
 
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    case 'user tpps submissions':
-      if (tpps_is_admin_or_curation()) {
+      case 'user tpps submissions':
+        if (tpps_is_admin_or_curation()) {
+          $value = TRUE;
+        }
+        else {
+          $uid = $args[1] ?? NULL;
+          $value = (!empty($uid) && $uid == $user->uid);
+        }
+        break;
+
+      case 'view own tpps submission':
+        $accession = $args[1] ?? NULL;
+        // Allow admins to access any study.
+        if (user_access('administer tpps module', $user)) {
+          $value = TRUE;
+        }
+        else {
+          // Check if user submitted this study.
+          // @TODO Use SubmissionCache.
+          $submission = new Submission($accession);
+          $value = (bool) (
+            !$submission->isIncompleteStatus()
+            && $submission->isCreator()
+          );
+        }
+        break;
+
+      case 'tpps delete submission':
+        $accession = $args[1] ?? NULL;
+        $submission = new Submission($accession);
+        $value = (bool) ($submission->isCreator() && $submission->isIncompleteStatus());
+        break;
+
+      default:
+        // @todo Minor. Check if this is safe. Better to deny access by default.
         return TRUE;
-      }
-      $uid = $args[1] ?? NULL;
-      return (!empty($uid) && $uid == $user->uid);
-
+    }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    case 'view own tpps submission':
-      $accession = $args[1] ?? NULL;
-      // Allow admins to access any study.
-      if (user_access('administer tpps module', $user)) {
-        return TRUE;
-      }
-      // Check if user submitted this study.
-      $submission = new Submission($accession);
-      return (bool) (
-        !$submission->isIncompleteStatus()
-        && $submission->isCreator()
-      );
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    case 'tpps delete submission':
-      $accession = $args[1] ?? NULL;
-      $submission = new Submission($accession);
-      return (bool) ($submission->isCreator() && $submission->isIncompleteStatus());
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    default:
-      // @todo Minor. Check if this is safe. Better to deny access by default.
-      return TRUE;
+    $static_cache[$key] = $value;
   }
+  return $static_cache[$key];
 }
 
 /**
