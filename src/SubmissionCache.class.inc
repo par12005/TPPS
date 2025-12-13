@@ -380,7 +380,10 @@ class SubmissionCache {
         if ($submission->hasLocalVcf($n)) {
           $organism_name = $submission->getOrganismName($n);
           $organism_label = check_plain($n . '. ' . $organism_name);
-          $file_row['genotype'][$organism_label]['local_vcf'] = $submission->getLocalVcf($n);
+          $real_path = $submission->getLocalVcf($n);
+          $file_row['genotype'][$organism_label]['local_vcf'] = $real_path;
+          // Get size of the local VCF file.
+          $data['file'][Report::FILE_ID_LIST][$real_path] = filesize($real_path);
         }
       }
 

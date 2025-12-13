@@ -184,6 +184,7 @@ function tpps_report_submission_file_all_theme_single_row(array $context) {
   // New array must be used to have correct order of keys.
   $filter = ($context['is_single']) ? 'all' : $context['report_filter'];
 
+  $total_filesize =0;
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   switch ($filter) {
     case Report::MISSING_FILES:
@@ -216,6 +217,7 @@ function tpps_report_submission_file_all_theme_single_row(array $context) {
             continue;
           }
           foreach ($field as $field_name => $fid) {
+            $total_filesize += $value['file']['id_list'][$fid];
             if (in_array($fid, $value['file'][Report::MISSING_FILES])) {
               // File is missing in filesystem.
               $value['file']['grouped_list'][$group][$organism_label][$field_name]
@@ -224,10 +226,22 @@ function tpps_report_submission_file_all_theme_single_row(array $context) {
             else {
               // File exists.
               $value['file']['grouped_list'][$group][$organism_label][$field_name]
-                = theme('file_id',
-                  ['fid' => $fid, 'attributes' => ['title' => t('View Info')]]
-                ) . ' ' . theme('file_action_list',
-                  ['accession' => $accession, 'fid' => $fid]
+                = theme(
+                  'file_id',
+                  [
+                    'fid' => $fid,
+                    'attributes' => ['title' => t('View Info')],
+                  ]
+                )
+                // File size.
+                . ' (' . format_size($value['file']['id_list'][$fid]) . ') '
+                // Actions.
+                . theme(
+                  'file_action_list',
+                  [
+                    'accession' => $accession,
+                    'fid' => $fid
+                  ]
                 );
             }
           }
@@ -245,9 +259,10 @@ function tpps_report_submission_file_all_theme_single_row(array $context) {
         'path' => 'admin/reports/tpps/submission/file/all/' . $accession,
         'show_version' => TRUE,
       ])
-        . '<br />['
-        . implode(', ', Submission::getPageList(['accession' => $accession]))
-        . ']',
+      . ' (' . format_size($total_filesize) . ') '
+      . '<br />['
+      . implode(', ', Submission::getPageList(['accession' => $accession]))
+      . ']',
       theme('submission_submitter', $value),
       $value['stage'],
       $value['status'],
