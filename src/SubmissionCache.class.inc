@@ -370,7 +370,6 @@ class SubmissionCache {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Files.
     $file_list = $submission->getFileIdList();
-    $data['file'][Report::FILE_ID_LIST] = array_keys($file_list);
 
     if (!empty($file_list)) {
       // List of files per group.
@@ -422,6 +421,12 @@ class SubmissionCache {
         // to 'File Info' API page.
         if (empty($file = tpps_file_load($fid))) {
           $data['file'][Report::MISSING_FILES][] = $fid;
+          $data['file'][Report::FILE_ID_LIST][$fid] = NULL;
+        }
+        else {
+          // Note: Report::FILE_ID_LIST = 'id_list'.
+          // File size in bytes.
+          $data['file'][Report::FILE_ID_LIST][$fid] = $file->filesize;
         }
         $field_name = check_plain(end($parents));
         $file_row[$group][$organism_label][$field_name] = $fid;

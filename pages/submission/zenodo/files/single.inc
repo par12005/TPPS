@@ -267,8 +267,8 @@ function tpps_submission_zenodo_files_action($action, $deposit_id, $file_id, $ac
         ) {
           continue;
         }
-        foreach ($submission_cache['file']['id_list'] as $fid) {
-          if (empty($fid) || empty($file = tpps_file_load($fid))) {
+        foreach ($submission_cache['file']['id_list'] as $fid => $filesize) {
+          if (empty($fid) || is_null($filesize) || empty($file = tpps_file_load($fid))) {
             continue;
           }
           if (
