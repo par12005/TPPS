@@ -41,6 +41,14 @@ function tpps_theme() {
       ],
       'file' => 'theme/submission.inc',
     ],
+    'submission_actions' => [
+      'variables' => [
+        'accession' => NULL,
+        'deposit_id' => NULL,
+        'edit_publication_information' => NULL,
+      ],
+      'file' => 'theme/submission.inc',
+    ],
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Zenodo.
     'zenodo_deposit_link' => [

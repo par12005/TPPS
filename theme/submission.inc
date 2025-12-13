@@ -121,5 +121,75 @@ function theme_submission_accession_link(array $variables) {
     $output = l($output, $path, ['html' => TRUE]);
   }
   return $output;
+}
 
+/**
+ * Shows submission's actions.
+ *
+ * Uses static caching for action list template.
+ * Usage: theme('submission_actions', $vars);
+ *
+ * @param array $variables
+ *   Data for theming.
+ *   'accession' - string. Submission's acession. E.g., 'TGDR1234'.
+ *   'deposit_id' - Integer. Zenodo Deposit Id.
+ *
+ * @return string
+ *   Returns string where 1st char is wrapped with '<strong>' HTML-tag.
+ */
+function theme_submission_actions(array $variables) {
+  $accession = $variables['accession'] ?? NULL;
+  $deposit_id = $variables['deposit_id'] ?? NULL;
+
+  $token = drupal_encode_path('[accession]');
+  $static_cache = &drupal_static(__FUNCTION__);
+  if (empty($static_cache)) {
+    $action_list = [
+      l(t('Edit'), 'tppsc/[accession]') . ' | '
+      . l(t('Details'), 'tpps/details/[accession]') . ' | '
+      . l(t('Files'), 'tpps-admin-panel/file-diagnostics/[accession]'),
+      'JSON: '
+      . l(t('State'), 'api/submission/[accession]/view/state') . ' | '
+      . l(t('Shared State'), 'api/submission/[accession]/view/shared_state'),
+      l(t('View'), 'tpps/submission/[accession]/view') . ' | '
+      . l(t('Export'), 'tpps/submission/[accession]/export'),
+      'Zenodo: ' . l(t('Deposit'), 'tpps/submission/[accession]/zenodo') . ' | '
+      . l(t('Files'), 'tpps/submission/[accession]/zenodo/files'),
+      'Dataset DOI: '
+      . l(
+        t('Create'),
+        'tpps/[accession]/dataset-doi/create',
+        ['attributes' => ['class' => $token . '_create_link']]
+      )
+      . l(
+        t('View'),
+        'tpps/[accession]/dataset-doi',
+        ['attributes' => ['class' => $token . '_view_link']]
+      ),
+      l(t('Rename local VCF'), 'tpps/submission/[accession]/vcf/local/rename'),
+      l(
+        t('Edit publication information'),
+        'tpps/[accession]/edit-publication',
+        ['attributes' => ['class' => $token . '_edit_publication_information_link']]
+      ),
+    ];
+    // To add items use $action_list and recreate element.
+    $template = theme('item_list', [
+      'items' => $action_list,
+      'attributes' => ['class' => ['admin-panel-action-list']],
+    ]);
+    $static_cache = $template;
+  }
+  $template = $static_cache;
+  $output = str_replace($token, $accession, $template);
+
+  if ($variables['edit_publication_information'] === TRUE) {
+    $output .= '<style>.admin-panel-action-list li:has(.' . $accession
+      . '_edit_publication_information_link) {display: none;}</style>';
+  }
+
+  $name = empty($deposit_id) ? 'create' : 'view';
+  $output .= '<style>.admin-panel-action-list .' . $accession . '_'
+    . $name . '_link {display: none;}</style>';
+  return $output;
 }
