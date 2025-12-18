@@ -63,19 +63,34 @@ class NextFlowManager {
      *
      * Throws Exception: Failed to connect
      */
-    public function __construct($pipeline_name, $out_dir, $scratch_dir)
+    public function __construct($pipeline_name, $out_dir, $scratch_dir, $nodesToExc)
     {
         $this->pipeline_name = $pipeline_name;
-        $this->out_dir = $out_dir;
+        $this->out_dir = $this->createDirIfNotExist($out_dir);
+	    $this->scratch_dir = $scratch_dir;
+        $this->addNextflowArgument('r', 'main', true);
+        if ($nodesToExc !== NULL) {
+            $this->addNextflowArgument('c', $this->writeConfig($nodesToExc), true);
+        } else {
+            $this->addNextflowArgument('profile', 'xanadu', true);
+        }
+        $this->addNextflowArgument('resume', '', false);
+    }
+
+    /** 
+     * Should be called within the constructor
+     * 
+     * @param nxf running and output dir
+     * @return output directory path
+     */
+    private function createDirIfNotExist($out_dir)
+    {
         if (!is_dir($out_dir)) {
             if (!mkdir($out_dir, 0755, true) && !is_dir($out_dir)) {
                 throw new RuntimeException("Failed to create directory: $out_dir");
             }
         }
-	    $this->scratch_dir = $scratch_dir;
-        $this->addNextflowArgument('r', 'main', true);
-        $this->addNextflowArgument('profile', 'xanadu', true);
-        $this->addNextflowArgument('resume', '', false);
+        return $out_dir;
     }
 
     private function getShebang()
@@ -373,5 +388,56 @@ class NextFlowManager {
         return implode("\n", $stacktrace);
     }
 
+    /**
+     * Writes nxf config file to exclude certain nodes to nxf run
+     *  This is to resolve issues with certain nodes running nxf since this requires singularity etc.
+     * @param nodesToExc nodes for masking
+     * @return configFileName path to config
+     */
+    public function writeConfig($nodesToExc) {
+        $configFileName = $this->out_dir . "/" . 'clusterOptions.config';
+        $configFile = fopen($configFileName, "w") or die("Unable to open config file " . $configFileName);
+    
+        $clusterOptionsLine = "clusterOptions = { [ task.memory <= 245.GB ? '--qos=general' : '--qos=himem', '--exclude=" . $nodesToExc . "' ].join(' ').trim() }";
+    
+        $configContent = 
+    "params {\n" .
+    "    config_profile_description = 'The UConn HPC profile'\n" .
+    "    config_profile_contact     = 'noah.reid@uconn.edu'\n" .
+    "    config_profile_url         = 'https://bioinformatics.uconn.edu/'\n\n" .
+    "    // max resources\n" .
+    "    max_memory                 = 2.TB\n" .
+    "    max_cpus                   = 64\n" .
+    "    max_time                   = 21.d\n\n" .
+    "    // Path to shared singularity images\n" .
+    "    singularity_cache_dir      = '/isg/shared/databases/nfx_singularity_cache'\n" .
+    "}\n\n" .
+    "process {\n" .
+    "    resourceLimits = [\n" .
+    "        memory: 2.TB,\n" .
+    "        cpus: 64,\n" .
+    "        time: 21.d\n" .
+    "    ]\n" .
+    "    executor       = 'slurm'\n" .
+    "    queue          = { task.memory <= 245.GB ? 'general' : (task.memory <= 512.GB ? 'himem' : 'himem2') }\n\n" .
+    "    " . $clusterOptionsLine . "\n" .
+    "}\n\n" .
+    "executor {\n" .
+    "    name            = 'slurm'\n" .
+    "    submitRateLimit = '2 sec'\n" .
+    "    queueSize       = 100\n" .
+    "}\n\n" .
+    "singularity {\n" .
+    "    enabled       = true\n" .
+    "    cacheDir      = params.singularity_cache_dir\n" .
+    "    autoMounts    = true\n" .
+    "    conda.enabled = false\n" .
+    "}\n";
+    
+        fwrite($configFile, $configContent);
+        fclose($configFile);
+    
+        return $configFileName;
+    }    
 }
 ?>

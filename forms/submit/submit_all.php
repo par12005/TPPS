@@ -323,7 +323,10 @@ function tpps_nextflow_new_study_pipeline(array &$form_state) {
     }
 
     //TODO: add test or live
-    $nextflowManager = new NextFlowManager("TreeGenes/new-study-pipeline", $store_directory, variable_get('tpps_submitall_nxf_scratch_dir', '/scratch'));
+    $nextflowManager = new NextFlowManager("TreeGenes/new-study-pipeline", 
+      $store_directory, 
+      variable_get('tpps_submitall_nxf_scratch_dir', '/scratch'),
+      variable_get('tpps_submitall_nxf_nodes_to_exclude', NULL));
     $nextflowManager->addNextflowArgument('vcf', $vcf, false);
     $nextflowManager->addNextflowArgument('ref_genome', $ref_genome, false);
     $nextflowManager->addNextflowArgument('tgdr', $study_accession, false);
@@ -2382,7 +2385,10 @@ function tpps_generate_vcf_from_assay_and_assay_design(array &$options, array &$
   // Start building a nextflow run
   // First use the constructor to initialize the pipeline to run
   // Second add arguments
-  $nextflowManager = new NextFlowManager("TreeGenes/new-study-pipeline", $store_directory, variable_get('tpps_submitall_nxf_scratch_dir', '/scratch'));
+  $nextflowManager = new NextFlowManager("TreeGenes/new-study-pipeline", 
+    $store_directory, 
+    variable_get('tpps_submitall_nxf_scratch_dir', '/scratch'),
+    variable_get('tpps_submitall_nxf_nodes_to_exclude', NULL));
   $nextflowManager->addNextflowArgument('tgdr', $options['study_accession']);
   $nextflowManager->addNextflowArgument('species',  $options['ref-genome-species']);
   foreach ($options['ref-genome-species-codes'] as $key => $code) {
@@ -4708,71 +4714,69 @@ function tpps_genotype_vcf_processing_batch_some_features_insert(&$settings, $cu
 
     // This seems counterintuitive, but we need to check if the nextflow_vcf_maker_success is TRUE
     // and add the feature_synonym here and clear out features that are synonyms before then going to add new featurelocs etc
-    if ($settings['nextflow_vcf_maker_success'] == TRUE) {
-      // Get all src_feature_ids for $src_feature_data into an array
-      $src_feature_ids = [];
-      foreach ($src_feature_data as $src_feature_name => $src_feature_info) {
-        // we need this for the insert
-        $src_feature_id = $src_feature_info['src_feature_id'];
-        if (!empty($src_feature_id)) {
-          $src_feature_ids[] = $src_feature_id;
-        }
+    // Get all src_feature_ids for $src_feature_data into an array
+    $src_feature_ids = [];
+    foreach ($src_feature_data as $src_feature_name => $src_feature_info) {
+      // we need this for the insert
+      $src_feature_id = $src_feature_info['src_feature_id'];
+      if (!empty($src_feature_id)) {
+        $src_feature_ids[] = $src_feature_id;
       }
-
-      // Search for all featurelocs that match the src_feature_ids
-      $featureloc_matches_count = 0;
-      if (!empty($src_feature_ids)) {
-        $src_feature_ids_csv = implode(',', $src_feature_ids); // explain this line
-
-        tpps_log("Searching for featurelocs matching src_feature_ids: $src_feature_ids_csv\n", [], TPIPAL_INFO);
-        $sql_search_featurelocs = "SELECT f.feature_id as feature_id, f.uniquename as uniquename, srcfeature_id, fmin, fmax
-          FROM chado.featureloc fl
-          INNER JOIN chado.feature f ON fl.feature_id = f.feature_id
-          WHERE fl.srcfeature_id IN ($src_feature_ids_csv) AND f.type_id IN (1491, 1205, 2586)";
-        $results = db_query($sql_search_featurelocs, []);
-        tpps_log("Featurelocs found: " . count($results) . "\n", [], TPIPAL_INFO);
-        // throw new Exception("Featurelocs found: " . count($results) . "\n");
-
-        $sql = 'INSERT INTO chado.feature_synonym (feature_id, synonym) VALUES ';
-        $feature_synonym_count = 0;
-        foreach ($results as $fl_row) {
-          $feature_id = $fl_row->feature_id;
-          $src_feature_id = $fl_row->srcfeature_id;
-          $fmin = $fl_row->fmin;
-          $uniquename = $fl_row->uniquename;
-          // $fmax = $fl_row->fmax; // Not needed
-
-          // How do I determine that the found featureloc matches vcf line (variant)
-          // based on the fmin
-          $synonym_variant_names = [];
-          foreach ($features_variant_data as $variant_name => $feature_data) {
-            if ($feature_data['fmin'] == $fmin and $variant_name != $uniquename) {
-              // We have a match, so we can insert the featureloc
-              print_r("Match found for feature_id: $feature_id, src_feature_id: $src_feature_id, fmin: $fmin with variant_name: $variant_name\n");
-              $sql .= "($feature_id, '$variant_name'),";
-              $featureloc_matches_count = $featureloc_matches_count + 1;
-              $synonym_variant_names[] = $variant_name; // Store the synonym variant name
-              $feature_synonym_count = $feature_synonym_count + 1;
-            }
-          }
-
-          // Remove all found synonym variant names from the features_variant_data array
-          foreach ($synonym_variant_names as $synonym_variant_name) {
-            unset($features_variant_data[$synonym_variant_name]);
-          }
-          // Empty synonym_variant_names array
-          $synonym_variant_names = [];
-          unset($synonym_variant_names);
-        }
-        // Remove the last comma
-        $sql = rtrim($sql, ',');
-        if (!empty($sql) && $feature_synonym_count > 0) {
-          // $sql .= " ON CONFLICT (feature_id, synonym) DO NOTHING";
-          db_query($sql);
-        }
-      }
-      echo "Feature_synonym detections - Featureloc matches found: $featureloc_matches_count\n";
     }
+
+    // Search for all featurelocs that match the src_feature_ids
+    $featureloc_matches_count = 0;
+    if (!empty($src_feature_ids)) {
+      $src_feature_ids_csv = implode(',', $src_feature_ids); // explain this line
+
+      tpps_log("Searching for featurelocs matching src_feature_ids: $src_feature_ids_csv\n", [], TPIPAL_INFO);
+      $sql_search_featurelocs = "SELECT f.feature_id as feature_id, f.uniquename as uniquename, srcfeature_id, fmin, fmax
+        FROM chado.featureloc fl
+        INNER JOIN chado.feature f ON fl.feature_id = f.feature_id
+        WHERE fl.srcfeature_id IN ($src_feature_ids_csv) AND f.type_id IN (1491, 1205, 2586)";
+      $results = db_query($sql_search_featurelocs, []);
+      tpps_log("Featurelocs found: " . count($results) . "\n", [], TPIPAL_INFO);
+      // throw new Exception("Featurelocs found: " . count($results) . "\n");
+
+      $sql = 'INSERT INTO chado.feature_synonym (feature_id, synonym) VALUES ';
+      $feature_synonym_count = 0;
+      foreach ($results as $fl_row) {
+        $feature_id = $fl_row->feature_id;
+        $src_feature_id = $fl_row->srcfeature_id;
+        $fmin = $fl_row->fmin;
+        $uniquename = $fl_row->uniquename;
+        // $fmax = $fl_row->fmax; // Not needed
+
+        // How do I determine that the found featureloc matches vcf line (variant)
+        // based on the fmin
+        $synonym_variant_names = [];
+        foreach ($features_variant_data as $variant_name => $feature_data) {
+          if ($feature_data['fmin'] == $fmin and $variant_name != $uniquename) {
+            // We have a match, so we can insert the featureloc
+            print_r("Match found for feature_id: $feature_id, src_feature_id: $src_feature_id, fmin: $fmin with variant_name: $variant_name\n");
+            $sql .= "($feature_id, '$variant_name'),";
+            $featureloc_matches_count = $featureloc_matches_count + 1;
+            $synonym_variant_names[] = $variant_name; // Store the synonym variant name
+            $feature_synonym_count = $feature_synonym_count + 1;
+          }
+        }
+
+        // Remove all found synonym variant names from the features_variant_data array
+        foreach ($synonym_variant_names as $synonym_variant_name) {
+          unset($features_variant_data[$synonym_variant_name]);
+        }
+        // Empty synonym_variant_names array
+        $synonym_variant_names = [];
+        unset($synonym_variant_names);
+      }
+      // Remove the last comma
+      $sql = rtrim($sql, ',');
+      if (!empty($sql) && $feature_synonym_count > 0) {
+        // $sql .= " ON CONFLICT (feature_id, synonym) DO NOTHING";
+        db_query($sql);
+      }
+    }
+    echo "Feature_synonym detections - Featureloc matches found: $featureloc_matches_count\n";
 
     $sql = 'INSERT INTO chado.feature (name, organism_id, uniquename, type_id) VALUES ';
     $variant_index = 0;
@@ -4970,9 +4974,6 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
   $page4_values = $form_state['saved_values'][TPPS_PAGE_4];
   $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
 
-  print_r("Genotype values:\n");
-  print_r($genotype);
-
   // Insert mode is a mandatory requirement for this function to work so perform check
   if ($insert_mode == '') {
     throw new Exception('VCF processing insert mode was empty - it should have a value of either hybrid or inserts.');
@@ -4987,9 +4988,6 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
   // Initialization variables used later down in function
   $genotype_count = 0;
   $genotype_total = 0;
-  $seq_var_cvterm = tpps_load_cvterm('sequence_variant')->cvterm_id;
-  // TODO: RISH/EMILY/MEGHAN 10/13/2025 Get whether it's a SNP or SSR etc from the tpps form state
-  // Won't be an SSR at this point but could be a SNP or INDEL
 
   $overrides = array(
     'genotype_call' => array(
@@ -5057,6 +5055,10 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
   print_r("Genotype Files:\n");
   #print_r($genotype['files']);
   print_r('Genotype File Type: ' . $genotype['files']['file-type'] . "\n");
+
+  if (isset($genotype['files']['local_vcf'])) {
+    $genotype['files']['file-type'] = 'VCF';
+  }
 
   if ($genotype['files']['file-type'] == TPPS_GENOTYPING_FILE_TYPE_VCF) {
     // Check to make sure vcf import is ENABLED
