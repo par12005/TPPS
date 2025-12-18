@@ -68,6 +68,13 @@ function tpps_submit_all_settings_form(array $form, array &$form_state) {
     ],
     '#description' => t("Base directory to write temporary files"),
   ];
+  $form['nextflow']['tpps_submitall_nxf_reuse_existing_vcf'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Reuse vcfmaker output from previous runs'),
+    '#default_value' => variable_get('tpps_submitall_nxf_reuse_existing_vcf', FALSE),
+    '#description' => t("Allows TPPS to feed the vcf file from previous vcfmaker run for vcf_processing "
+      . "This is useful to speed up testing with the same snp assay."),
+  ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // CVTerms.

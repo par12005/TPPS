@@ -264,75 +264,56 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
 function tpps_nextflow_new_study_pipeline(array &$form_state) {
     // Get required Nextflow parameters from the shared state
     $study_accession = $form_state['saved_values'][1]['accession'] ?? null;
+    // --------------------
+    // Get VCF (required)
+    // --------------------
     $vcf = null;
 
-    // Try to get local VCF first
-    try {
-        $vcf = $form_state['saved_values'][4]['organism-1']['genotype']['files']['local_vcf'] ?? null;
-        if ($vcf) {
-            tpps_log('Local VCF detected: ' . $vcf . PHP_EOL);
-        }
-    } catch (Exception $ex) {
-        $vcf = null;
+    // 1) Try local VCF
+    $vcf = $form_state['saved_values'][4]['organism-1']['genotype']['files']['local_vcf'] ?? null;
+
+    if (!empty($vcf)) {
+        tpps_log('Local VCF detected: ' . $vcf . PHP_EOL);
     }
 
-    // If local VCF not found, get uploaded VCF
-    if (!$vcf) {
-        try {
-            $vcf_fid = $form_state['saved_values'][4]['organism-1']['genotype']['files']['vcf'] ?? null;
-            if ($vcf_fid) {
-                $file_results = chado_query('SELECT * FROM public.file_managed WHERE fid = :fid', [':fid' => $vcf_fid]);
-                $vcf_location = null;
-                foreach ($file_results as $results_row) {
-                    $vcf_location = $results_row->uri;
-                    tpps_log('FILENAME column: ' . $vcf_location . PHP_EOL);
-                }
-                if ($vcf_location) {
-                    tpps_log('VCF uploaded: ' . $vcf_location . PHP_EOL);
-                    $vcf = str_ireplace('public://tpps_genotype/', '/core/labs/Wegrzyn/VCF/tpps_genotype_web_uploads/', $vcf_location);
-                }
+    // 2) Fallback to uploaded VCF
+    if (empty($vcf)) {
+        $vcf_fid = $form_state['saved_values'][4]['organism-1']['genotype']['files']['vcf'] ?? null;
+
+        if (!empty($vcf_fid)) {
+            $file_results = chado_query(
+                'SELECT uri FROM public.file_managed WHERE fid = :fid',
+                [':fid' => $vcf_fid]
+            );
+
+            foreach ($file_results as $row) {
+                $vcf_location = $row->uri;
+                tpps_log('VCF uploaded (uri): ' . $vcf_location . PHP_EOL);
+
+                $vcf = str_ireplace(
+                    'public://tpps_genotype/',
+                    '/core/labs/Wegrzyn/VCF/tpps_genotype_web_uploads/',
+                    $vcf_location
+                );
+                break;
             }
-        } catch (Exception $ex) {
-            $vcf = null;
         }
     }
 
-    // Get reference genome
-    $ref_genome = null;
-    try {
-        $ref_genome = $form_state['saved_values'][4]['organism-1']['genotype']['ref-genome'] ?? null;
-    } catch (Exception $ex) {
-        $ref_genome = null;
+    // 3) Enforce required VCF
+    if (empty($vcf)) {
+        throw new Exception(
+            "Unable to find a VCF file. Please upload a VCF or provide a local VCF path."
+        );
     }
 
-    // Format ref genome
-    if ($ref_genome) {
-        $ref_genome = trim(preg_replace('!\s+!', ' ', $ref_genome));
-        $rg_parts = explode(' ', $ref_genome);
-        $rg_parts_count = count($rg_parts);
+    // --------------------
+    // Get reference genome (required)
+    // --------------------
+    $ref_genome = $form_state['saved_values'][4]['organism-1']['genotype']['ref-genome'] ?? null;
 
-        if ($rg_parts_count > 4) {
-            throw new Exception('The ref genome has more than 4 parts so it is not formatted correctly and needs to be resolved.');
-        }
-
-        $genus = $rg_parts[0] ?? null;
-        $species = strtolower($rg_parts[1] ?? '');
-        $type = strtolower($rg_parts[2] ?? '');
-        $version = $rg_parts[3] ?? null;
-
-        if (isset($rg_parts[2]) && (strtolower(substr($rg_parts[2], 0, 1)) == 'v' || ctype_digit(substr($rg_parts[2], 0, 1)))) {
-            $version = strtolower($rg_parts[2]);
-            $type = $rg_parts[3] ?? 'null';
-        }
-
-        $ref_genome = trim("$genus $species $type $version");
-        tpps_log('ref_genome formatted: ' . $ref_genome . PHP_EOL);
-    }
-
-        // Ensure VCF and ref genome exist before continuing
-    if (!$vcf || !$ref_genome) {
-        tpps_log('Cannot run Nextflow: missing VCF or reference genome.');
-        return;
+    if (empty($ref_genome)) {
+        throw new Exception("Reference genome is required.");
     }
 
     // Create storage directory
@@ -340,33 +321,15 @@ function tpps_nextflow_new_study_pipeline(array &$form_state) {
     if (!file_exists($store_directory)) {
         mkdir($store_directory, 0755, true);
     }
-    $store_directory = str_ireplace('..', '', $store_directory);
-    exec('rm -f ' . escapeshellarg($store_directory) . '/*.log');
 
-    // Build Nextflow run script
-    $SCRIPT_LOCATION = $store_directory . '/run_script.sh';
-    $run_code = "#!/bin/bash
-module load nextflow
-mkdir -p /scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
-export TMPDIR=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
-export NXF_TEMP=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
-export NXF_WORK=/scratch/tg-nginx/new_study_pipeline_\$SLURM_JOB_ID
-export NXF_OPTS='-Xms5G -Xmx20G'
-cd $store_directory
-echo \$SLURM_JOB_ID > $store_directory/slurm_job_id.txt
-rm -rf ~/.nextflow/assets/TreeGenes/new-study-pipeline
-nextflow run TreeGenes/new-study-pipeline -r main -profile treegenes -resume --tgdr $study_accession --vcf '$vcf' --ref_genome '$ref_genome'
-";
+    //TODO: add test or live
+    $nextflowManager = new NextFlowManager("TreeGenes/new-study-pipeline", $store_directory, variable_get('tpps_submitall_nxf_scratch_dir', '/scratch'));
+    $nextflowManager->addNextflowArgument('vcf', $vcf, false);
+    $nextflowManager->addNextflowArgument('ref_genome', $ref_genome, false);
+    $nextflowManager->addNextflowArgument('tgdr', $study_accession, false);
+    $jobId = $nextflowManager->submitJob();
+    tpps_log("New Study Pipeline Job ID: " . $jobId, [], TRIPAL_INFO);
 
-    file_put_contents($SCRIPT_LOCATION, $run_code);
-    chmod($SCRIPT_LOCATION, 0755);
-
-    // Run the script on remote host
-    tpps_log("Attempting to run nextflow new study pipeline on mantis...");
-    $output = [];
-    $result_code = 0;
-    exec("ssh tg-nginx@login.hpc.cam.uchc.edu " . escapeshellarg($SCRIPT_LOCATION), $output, $result_code);
-    tpps_log('Nextflow pipeline output: ' . print_r($output, true));
 }
 
 
@@ -2459,17 +2422,23 @@ function tpps_generate_vcf_from_assay_and_assay_design(array &$options, array &$
     SnpAssay::getHeaderIndex($organism_index, $shared_state, 'snp_id') ?? 'NA'
   );
 
-  $jobId = $nextflowManager->submitJob();
-  tpps_log("Assay2Vcf JobId: " . $jobId, [], TRIPAL_INFO);
-  $status = $nextflowManager->hasCompleted();
-  tpps_log("Assay2Vcf Job Status: " . $status, [], TRIPAL_INFO);
-
-  if (!$nextflowManager->isSuccessful($status)) {
-    $trace = $nextflowManager->extractStackTrace();
-    tpps_log("StackTrace: " . $trace, [], TRIPAL_DEBUG);
-    throw new Exception ("Assay2Vcf Job Failed");
+  // Speed up TPPS by checking if vcf already exists. WARNING does not check for marker information changes
+  if (variable_get('tpps_submitall_nxf_reuse_existing_vcf', false) 
+      && file_exists($vcf_file_location) 
+      && file_exists($vcf_tbi_file_location)) {
+    tpps_log("Vcf already exists reusing...", [], TRIPAL_INFO);
+  } else {
+    $jobId = $nextflowManager->submitJob();
+    tpps_log("Assay2Vcf JobId: " . $jobId, [], TRIPAL_INFO);
+    $status = $nextflowManager->hasCompleted();
+    tpps_log("Assay2Vcf Job Status: " . $status, [], TRIPAL_INFO);
+  
+    if (!$nextflowManager->isSuccessful($status)) {
+      $trace = $nextflowManager->extractStackTrace();
+      tpps_log("StackTrace: " . $trace, [], TRIPAL_DEBUG);
+      throw new Exception ("Assay2Vcf Job Failed");
+    }
   }
-
 
   $options['nextflow_vcf_maker_vcf_file_location'] = NULL;
   $options['nextflow_vcf_maker_success'] = FALSE; // Default to false
@@ -2673,7 +2642,7 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $sh
 
     $all_studies_array = [];
     $accession_results = chado_query("select distinct accession from
-    (select accession, unnest(markers) as marker from chado.studies_with_markers)x
+    (select accession, unnest(markers) as marker from chado.studies_with_markers)
     where marker in
     (select unnest(markers) as marker from chado.studies_with_markers where accession = '" . $accession . "');");
     foreach ($accession_results as $row) {
@@ -4759,7 +4728,7 @@ function tpps_genotype_vcf_processing_batch_some_features_insert(&$settings, $cu
         $sql_search_featurelocs = "SELECT f.feature_id as feature_id, f.uniquename as uniquename, srcfeature_id, fmin, fmax
           FROM chado.featureloc fl
           INNER JOIN chado.feature f ON fl.feature_id = f.feature_id
-          WHERE fl.srcfeature_id IN ($src_feature_ids_csv) AND f.type_id = 1491";
+          WHERE fl.srcfeature_id IN ($src_feature_ids_csv) AND f.type_id IN (1491, 1205, 2586)";
         $results = db_query($sql_search_featurelocs, []);
         tpps_log("Featurelocs found: " . count($results) . "\n", [], TPIPAL_INFO);
         // throw new Exception("Featurelocs found: " . count($results) . "\n");
@@ -4822,7 +4791,7 @@ function tpps_genotype_vcf_processing_batch_some_features_insert(&$settings, $cu
 
     // This gives error: Invalid column reference: 7 ERROR:  there is no unique or exclusion constraint matching the ON CONFLICT specification
     // $sql .= ' ON CONFLICT (organism_id, uniquename) DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
-    $sql .= ' ON CONFLICT (organism_id, uniquename) where type_id in (1205, 1887, 2586, 54732, 54733, 54739) DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
+    $sql .= ' ON CONFLICT (organism_id, uniquename, type_id) DO UPDATE SET uniquename=EXCLUDED.uniquename RETURNING feature_id, uniquename';
     // ON CONFLICT (organism_id, uniquename) where type_id in (1205, 1887, 2586, 54732, 54733, 54739)
 
     if ($variant_index > 0) {
@@ -4885,7 +4854,7 @@ function tpps_genotype_vcf_processing_batch_some_features_insert(&$settings, $cu
       }
     }
     // $sql .= " ON CONFLICT (feature_id, locgroup, rank) DO UPDATE SET fmin=EXCLUDED.fmin, fmax=EXCLUDED.fmax";
-    $sql .= " ON CONFLICT (feature_id, locgroup, rank, srcfeature_id) DO NOTHING";
+    $sql .= " ON CONFLICT (feature_id, locgroup, rank) DO NOTHING";
     if ($featureloc_index > 0) {
       db_query($sql);
       if ($log_detailed) {
@@ -5001,13 +4970,8 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
   $page4_values = $form_state['saved_values'][TPPS_PAGE_4];
   $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
 
-
-
   print_r("Genotype values:\n");
   print_r($genotype);
-
-
-
 
   // Insert mode is a mandatory requirement for this function to work so perform check
   if ($insert_mode == '') {
@@ -5025,6 +4989,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
   $genotype_total = 0;
   $seq_var_cvterm = tpps_load_cvterm('sequence_variant')->cvterm_id;
   // TODO: RISH/EMILY/MEGHAN 10/13/2025 Get whether it's a SNP or SSR etc from the tpps form state
+  // Won't be an SSR at this point but could be a SNP or INDEL
 
   $overrides = array(
     'genotype_call' => array(
@@ -5088,22 +5053,10 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
   );
 
   print_r('Disable VCF Import: ' . $disable_vcf_import . "\n");
-  print_r($genotype);
-
+  #print_r($genotype);
   print_r("Genotype Files:\n");
-  print_r($genotype['files']);
-
-
-
-  // For some reason, even after generating a VCF from assay and assay design, the file-type is not set to VCF
-  // So we manually set it here if local_vcf is set.
-  // This is a temporary fix until we can figure out why the file-type is not being set properly.
-  if (isset($genotype['files']['local_vcf'])) {
-    $genotype['files']['file-type'] = 'VCF';
-  }
-
+  #print_r($genotype['files']);
   print_r('Genotype File Type: ' . $genotype['files']['file-type'] . "\n");
-
 
   if ($genotype['files']['file-type'] == TPPS_GENOTYPING_FILE_TYPE_VCF) {
     // Check to make sure vcf import is ENABLED
@@ -5119,7 +5072,8 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
       $records['genotypeprop'] = array();
 
-      $snp_cvterm = tpps_load_cvterm('snp')->cvterm_id;
+      $snp_cvterm = tpps_load_cvterm('SNP')->cvterm_id;
+      $indel_cvterm = tpps_load_cvterm('indel')->cvterm_id;
       $format_cvterm = tpps_load_cvterm('format')->cvterm_id;
       $qual_cvterm = tpps_load_cvterm('quality_value')->cvterm_id;
       $filter_cvterm = tpps_load_cvterm('filter')->cvterm_id;
@@ -5200,13 +5154,9 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
       tpps_log("Analysis ID Found: $analysis_id\n");
       print_r("Analysis ID Found: $analysis_id\n");
 
-
-      // throw new Exception("DEBUG");
-
       tpps_log("Processing Genotype VCF file", [], TRIPAL_INFO);
       $file_progress_line_count = 0;
       $record_count = 0;
-
 
       // Get all srcfeatures for analysis_id / reference genome
       $src_feature_data = [];
@@ -5241,20 +5191,6 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
       $mode_features_and_analysis_checks_and_inserts = false;
 
       $while_mem_start = memory_get_usage();
-
-      // Cache the indel_cvterm_id
-      $indel_cvterm_id = NULL;
-      $indel_cvterm_id_results = chado_query("SELECT cvterm_id FROM chado.cvterm WHERE name ILIKE 'indel' LIMIT 1");
-      foreach ($indel_cvterm_id_results as $indel_cvterm_row) {
-        $indel_cvterm_id = $indel_cvterm_row->cvterm_id;
-      }
-
-      // Cache the indel_cvterm_id
-      $snp_cvterm_id = NULL;
-      $snp_cvterm_id_results = chado_query("SELECT cvterm_id FROM chado.cvterm WHERE name ILIKE 'SNP' LIMIT 1");
-      foreach ($snp_cvterm_id_results as $snp_cvterm_row) {
-        $snp_cvterm_id = $snp_cvterm_row->cvterm_id;
-      }
 
       // Keeps track of variant_name connection to src_feature_name + featureloc
       $features_variant_data = [];
@@ -5356,15 +5292,13 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           $marker_type_cvterm_id = NULL;
           if ($marker_type == 'INDEL') {
             // $marker_type_cvterm_id = tpps_load_cvterm('indel')->cvterm_id;
-            $marker_type_cvterm_id = $indel_cvterm_id;
+            $marker_type_cvterm_id = $indel_cvterm;
           }
           else {
             // $marker_type_cvterm_id = tpps_load_cvterm('snp')->cvterm_id;
-            $marker_type_cvterm_id = $snp_cvterm_id;
+            $marker_type_cvterm_id = $snp_cvterm;
           }
           // echo("INDEL CHECK TIME: " . floatval($time_end_indel_check - $time_start_indel_check) . " ms\n");
-
-
 
           // PETER'S CODE
           // $records['feature'][$marker_name] = array(
@@ -5372,7 +5306,6 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           //   'uniquename' => $marker_name,
           //   'type_id' => $seq_var_cvterm,
           // );
-
 
           if ($mode_features_and_analysis_checks_and_inserts == true) {
             // tpps_genotype_vcf_processing_features_and_analysis_checks_and_inserts_deprecated()
@@ -5568,7 +5501,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           if ($mode_features_and_analysis_checks_inserts_bulk_some == true) {
             $settings = [];
             $settings['nextflow_vcf_maker_success'] = $nextflow_vcf_maker_success;
-            tpps_genotype_vcf_processing_batch_some_features_insert($settings, $current_id, $seq_var_cvterm, $analysis_id, $features_variant_data, $src_feature_data, false);
+            tpps_genotype_vcf_processing_batch_some_features_insert($settings, $current_id, $marker_type_cvterm_id, $analysis_id, $features_variant_data, $src_feature_data, false);
           }
         }
         // Use the matched line to get the format information from the VCF file
@@ -5631,13 +5564,13 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
       if ($mode_features_and_analysis_checks_inserts_bulk_some == true) {
         $settings = [];
         $settings['nextflow_vcf_maker_success'] = $nextflow_vcf_maker_success;
-        tpps_genotype_vcf_processing_batch_some_features_insert($settings, $current_id, $seq_var_cvterm, $analysis_id, $features_variant_data, $src_feature_data, true);
+        tpps_genotype_vcf_processing_batch_some_features_insert($settings, $current_id, $marker_type_cvterm_id, $analysis_id, $features_variant_data, $src_feature_data, true);
       }
 
 
       $mode_features_and_analysis_checks_inserts_bulk_all = false;
       if ($mode_features_and_analysis_checks_inserts_bulk_all == true) {
-        tpps_genotype_vcf_processing_batch_all_features_insert($settings, $current_id, $seq_var_cvterm, $analysis_id, $features_variant_data, $src_feature_data);
+        tpps_genotype_vcf_processing_batch_all_features_insert($settings, $current_id, $marker_type_cvterm_id, $analysis_id, $features_variant_data, $src_feature_data);
       }
 
       // Recreate the indexes.

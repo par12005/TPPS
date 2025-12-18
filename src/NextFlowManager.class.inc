@@ -67,15 +67,29 @@ class NextFlowManager {
     {
         $this->pipeline_name = $pipeline_name;
         $this->out_dir = $out_dir;
-	$this->scratch_dir = $scratch_dir;
+        if (!is_dir($out_dir)) {
+            if (!mkdir($out_dir, 0755, true) && !is_dir($out_dir)) {
+                throw new RuntimeException("Failed to create directory: $out_dir");
+            }
+        }
+	    $this->scratch_dir = $scratch_dir;
         $this->addNextflowArgument('r', 'main', true);
         $this->addNextflowArgument('profile', 'xanadu', true);
+        $this->addNextflowArgument('resume', '', false);
     }
 
+    private function getShebang()
+    {
+        return '#!/bin/bash' . "\n";
+    }
+
+    /**
+     * @return String slurm header
+     */
     private function getSlurmHeader()
     {
-        return '#!/bin/bash' . "\n" .
-            '#SBATCH --job-name=assay2vcf' . "\n" .
+        return
+            "#SBATCH --job-name=${pipeline_name}" . "\n" .
             '#SBATCH -N 1' . "\n" .
             '#SBATCH -n 1' . "\n" .
             '#SBATCH -c 1' . "\n" .
@@ -94,7 +108,7 @@ class NextFlowManager {
             'export NXF_WORK=' . $this->scratch_dir . '/tg-nginx/new_study_pipeline_$SLURM_JOB_ID' . "\n" .
             'export NXF_OPTS=\'-Xms5G -Xmx9G\'' . "\n" .
             'export TZ=\'America/New_York\'' . "\n" .
-            'cd ' . $this->scratch_dir . "\n";
+            'cd ' . $this->out_dir . "\n";
     }
 
     /**
@@ -162,7 +176,7 @@ class NextFlowManager {
      */
     private function getSlurmScript(): string
     {
-        return $this->getSlurmHeader() . "\n\n" . $this->getNextflowCommand() . "\n";
+        return $this->getShebang() . $this->getSlurmHeader() . "\n\n" . $this->getNextflowCommand() . "\n";
     }
 
     /**
@@ -266,6 +280,7 @@ class NextFlowManager {
      * Executes sbatch on cluster
      *
      * @throws Exception Failed to connect or Failed to get jobId
+     * @return jobId the SLURM job ID for monitoring status 
      */
     public function submitJob(): string
     {
@@ -342,7 +357,7 @@ class NextFlowManager {
 
         foreach ($lines as $line) {
             // Start capturing at the first ERROR line
-            if (!$capture && preg_match('/\bERROR\b/', $line)) {
+            if (!$capture && preg_match('/\berror\b/i', $line)) {
                 $capture = true;
             }
 
