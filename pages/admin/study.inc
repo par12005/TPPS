@@ -277,68 +277,40 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Tags.
-  $submission_tags = $submission->getTagList();
-  $tags_markup = "<div style='margin-bottom: 10px; font-weight: bold; "
-    . "text-decoration: underline;'><a target=\"_blank\" href=\"/tpps-tag\">"
-    . "Manage Global TPPS Submission Tags</a></div>";
+  $tags_markup = l(
+    t('Manage Global TPPS Submission Tags'),
+    'tpps/tag',
+    [
+      'attributes' => [
+        'class' => ['tpps-submission-tag'],
+        'target' => '_blank',
+        'rel' => 'noopener noreferrer',
+      ]
+    ]
+  );
   // Show current tags.
-  $tags_markup .= "<label class=\"control-label\">Current Tags:</label><br>";
+  $tags_markup .= "<br /><label class=\"control-label\">Current Tags:</label><br>";
   $image_path = TPPS_IMAGES_PATH;
-  $query = db_select('tpps_tag', 't')
-    ->fields('t')
-    ->execute();
-  while (($result = $query->fetchObject())) {
-    $color = !empty($result->color) ? $result->color : 'white';
-    $style = !array_key_exists($result->tpps_tag_id, $submission_tags) ? "display: none" : "";
-    // $tooltip = $result->static ? "This tag cannot be removed" : "";
-    $tooltip = '';
-    $tags_markup .= "<span title=\"$tooltip\" class=\"tag\" "
-      . "style=\"background-color:$color; $style\"><span "
-      . "class=\"tag-text\">{$result->name}</span>";
-    if (!$result->static) {
-      $tags_markup .= "<span id=\"{$submission->accession}-tag-"
-        . "{$result->tpps_tag_id}-remove\" "
-        . "class=\"tag-close\"><img src=\"/{$image_path}remove.png\"></span>";
+  foreach (SubmissionTag::load() as $tag) {
+    $color = empty($tag->color) ? 'white' : $tag->color;
+    $style = $submission->hasTag($tag->tpps_tag_id) ? '' : 'display: none;';
+    $tags_markup .= '<span class="tag" style="' . check_plain($style)
+      . '; background-color:' . check_plain($color) . '">'
+      . '<span class="tag-text">' . check_plain($tag->name) . '</span>';
+    if (!$tag->static) {
+      $tags_markup .= '<span id="' . check_plain($submission->accession)
+        . '-tag-' . check_plain($tag->tpps_tag_id) . '-remove" class="tag-close">'
+        . '<img src="' . url(TPPS_IMAGES_PATH . 'remove.png') . '"></span>';
     }
-    $tags_markup .= "</span>";
+    $tags_markup .= '</span>';
   }
-
-  // Show available tags.
-  // REMOVED ON 3/8/2023 by Risharde (code does not work)
-  // $tags_markup .= "<br><label class=\"control-label\">Available Tags (click to add):</label><br><div id=\"available-tags\">";
-  // $query = db_select('tpps_tag', 't')
-  //   ->fields('t')
-  //   ->condition('static', 0)
-  //   ->execute();
-  // while (($result = $query->fetchObject())) {
-  //   $color = $result->color;
-  //   if (empty($color)) {
-  //     $color = 'white';
-  //   }
-  //   $style = "";
-  //   if (array_key_exists($result->tpps_tag_id, $submission_tags)) {
-  //     $style = 'display: none';
-  //   }
-  //   $tags_markup .= "<span id=\"{$submission->accession}-tag-{$result->tpps_tag_id}-add\" class=\"tag add-tag\" style=\"background-color:{$color}; $style\"><span class=\"tag-text\">{$result->name}</span></span>";
-  // }
-  // $tags_markup .= "</div>";
-  // $tags_markup .= "<div style='margin-top: 10px;'><a href=\"/tpps-tag\">Manage Global TPPS Submission Tags</a></div>";
-  $form['tags'] = ['#markup' => "<div id=\"tags\">$tags_markup</div>"];
+  $form['tags'] = ['#markup' => '<div id="tags">' . $tags_markup . '</div>'];
 
   $form['TAG_REMOVE_CONTAINER'] = [
     '#prefix' => '<div class="tag-admin-container" style="display: '
       . 'inline-block; vertical-align: top; text-align: left; padding: 25px;">',
     '#suffix' => '</div>',
   ];
-
-  $submission_tags_ids = [];
-  foreach ($submission_tags as $submission_tag) {
-    // When study has no tags $submission_tags will be empty and cause warnings.
-    // This happens for TPPS Studies which has no tags at all.
-    if (isset($submission_tag['id'])) {
-      $submission_tags_ids = $submission_tag['id'];
-    }
-  }
 
   // This code will generate the tag options that we can delete.
   $current_tags_options = [];

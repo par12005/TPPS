@@ -2614,6 +2614,21 @@ function tpps_menu_add_api(array &$items = []) {
     'delivery callback' => 'drupal_json_output',
   ];
 
+  $items['api/submission/%/tag/%/%'] = [
+    'title' => 'Link Submission and Tag',
+    'description' => 'Links Submission and Submission Tag',
+    //'page callback' => 'SubmissionTag::update',
+    'page callback' => 'tpps_api_submission_tag_action',
+    // 2: Study accession,
+    // 4: Tag Id,
+    // 5: Action ('link', 'unlink').
+    'page arguments' => [2, 4, 5],
+    'access callback' => 'tpps_api_access',
+      'access arguments' => ['administer tpps module'],
+    'file' => 'api/submission/tag.inc',
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Menu items from function tpps_api_paths().
 
@@ -2789,14 +2804,6 @@ function tpps_menu_add_submission_tag(array &$items = []) {
     'access callback' => 'tpps_access',
     'access arguments' => ['administer tpps module'],
     'type' => MENU_NORMAL_ITEM,
-  ];
-  $items['tpps/tag/%/%/%'] = [
-    'title' => 'TPPS Add/Remove Tag',
-    'page callback' => 'SubmissionTag::update',
-    'page arguments' => [1, 2, 3],
-    'access callback' => 'tpps_access',
-    'access arguments' => ['administer tpps module'],
-    'type' => MENU_CALLBACK,
   ];
 }
 
