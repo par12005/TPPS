@@ -327,13 +327,10 @@ class SubmissionTag {
     foreach ($result as $tag) {
       $color = !empty($tag->color) ? $tag->color : 'white';
       $url = static::BASE_URL . '/' . check_plain($tag->tpps_tag_id);
-      $actions = [];
+      $actions = [l(t('Info'), $url . '/info')];
       if (empty($tag->static)) {
-        $actions = [
-          l(t('Edit'), $url . '/edit'),
-          l(t('Remove'), $url . '/remove'),
-          l(t('Info'), $url . '/info'),
-        ];
+        $actions[] = l(t('Edit'), $url . '/edit');
+        $actions[] = l(t('Remove'), $url . '/remove');
       }
       $rows[$tag->tpps_tag_id] = [
         $tag->tpps_tag_id,
@@ -586,7 +583,12 @@ class SubmissionTag {
         'path' => 'tpps-admin-panel/' . $accession,
       ]);
     }
-    return theme('item_list', ['items' => $output]);
+    if (empty($output)) {
+      return t('No studies found.');
+    }
+    else {
+      return theme('item_list', ['items' => $output]);
+    }
   }
 
 }
