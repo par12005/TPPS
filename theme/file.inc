@@ -17,18 +17,43 @@
  */
 function theme_file_id(array $variables) {
   $fid = check_plain($variables['fid']) ?? NULL;
-  $destination = $variables['destination'] ?? NULL;
   if (empty($fid)) {
     return '';
   }
   $options = [
-    'query' => [
-      'token' => variable_get('tpps_api_token'),
-      'destination' => $destination,
-    ],
-    'attributes' => $variables['attributes'] ?? '',
+    'query' => ['token' => variable_get('tpps_api_token')],
+    'attributes' => $variables['attributes'] ?? [],
   ];
+  if (!empty($variables['destination'])) {
+    $options['query']['destination'] = $variables['destination'];
+  }
   return l($fid, 'api/file/' . $fid . '/info', $options);
+}
+
+/**
+ * Renders local VCF-file path as link to API page.
+ *
+ * @param array $variables
+ *   Data for theming.
+ *   'path' - string. Path to file
+ *   'accession' - string. Submission accession. E.g., 'TGDR1234'.
+ *
+ * @return string
+ *   Returns link to API page where submission's VCF files are listed.
+ */
+function theme_file_local_vcf(array $variables) {
+  $path = check_plain($variables['path']) ?? NULL;
+  if (empty($path)) {
+    return '';
+  }
+  $accession = check_plain($variables['accession']) ?? NULL;
+  $options = [
+    'attributes' => $variables['attributes'] ?? [],
+  ];
+  if (!empty($variables['destination'])) {
+    $options['query']['destination'] = $variables['destination'];
+  }
+  return l($path, 'api/submission/' . $accession . '/vcf', $options);
 }
 
 /**
@@ -38,27 +63,27 @@ function theme_file_id(array $variables) {
  *   Data for theming.
  *   'fid' - string. File Id.
  *   'attributes' - array. List of hyperlink attributes.
+ *   'destination' - string. Optional Drupal's 'destination' link attribute.
  *
  * @return string
  *   Returns string where 1st char is wrapped with '<strong>' HTML-tag.
  */
 function theme_file_action_list(array $variables) {
-  $accession = $variables['accession'] ?? NULL;
-  $destination = $variables['destination'] ?? NULL;
-  if (empty($accession)) {
-    return '';
-  }
-  $fid = check_plain($variables['fid']) ?? NULL;
-  if (empty($fid)) {
+  if (
+    empty($accession = check_plain($variables['accession']))
+    || empty($fid = check_plain($variables['fid']))
+  ) {
     return '';
   }
   $options = [
     'query' => [
       'token' => variable_get('tpps_api_token'),
-      'destination' => $destination,
     ],
-    'attributes' => $variables['attributes'] ?? '',
+    'attributes' => $variables['attributes'] ?? [],
   ];
+  if (!empty($variables['destination'])) {
+    $options['query']['destination'] = $variables['destination'];
+  }
   return '[' . implode('|', [
     l(t('D'), 'api/file/' . $fid . '/get',
       array_merge($options, ['attributes' => ['title' => t('Download File')]])
