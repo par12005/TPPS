@@ -2986,7 +2986,7 @@ return;
    *   Returns empty array if submission has no tags.
    */
   public function getTagList() {
-    $query = db_select('tpps_submission_tag', 'st');
+    $query = db_select('tpps_submission_tag', 'st')->distinct();
     $query->join('tpps_submission', 's', 's.tpps_submission_id = st.tpps_submission_id');
     $query->join('tpps_tag', 't', 't.tpps_tag_id = st.tpps_tag_id');
     $query->fields('t');
