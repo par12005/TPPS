@@ -68,7 +68,19 @@ function tpps_submit_all_settings_form(array $form, array &$form_state) {
     ],
     '#description' => t("Base directory to write temporary files"),
   ];
-
+  $form['nextflow']['tpps_submitall_nxf_reuse_existing_vcf'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Reuse vcfmaker output from previous runs'),
+    '#default_value' => variable_get('tpps_submitall_nxf_reuse_existing_vcf', FALSE),
+    '#description' => t("Allows TPPS to feed the vcf file from previous vcfmaker run for vcf_processing "
+      . "This is useful to speed up testing with the same snp assay."),
+  ];
+  $form['nextflow']['tpps_submitall_nxf_nodes_to_exclude'] = [
+    '#type' => 'textfield',
+    '#title' => t('Nodes to exclude from running NextFlow'),
+    '#default_value' => variable_get('tpps_submitall_nxf_nodes_to_exclude', NULL),
+    '#description' => t('Enter node names or ranges to exclude, e.g. mantis05,mantis07 or mantis[05-08].'),
+  ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // CVTerms.
   $cvterm_list = [
