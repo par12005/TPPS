@@ -4684,7 +4684,7 @@ function tpps_genotype_vcf_processing_batch_all_features_insert($current_id, $se
       }
     }
   }
-  $sql .= " ON CONFLICT (feature_id, locgroup, rank) DO UPDATE SET fmin=EXCLUDED.fmin";
+  $sql .= " ON CONFLICT (feature_id, locgroup, rank, srcfeature_id) DO UPDATE SET fmin=EXCLUDED.fmin";
   db_query($sql);
   $lmsg = "Inserting all featurelocs in db using bulk insert - DONE\n";
   echo($lmsg);
@@ -4858,7 +4858,7 @@ function tpps_genotype_vcf_processing_batch_some_features_insert(&$settings, $cu
       }
     }
     // $sql .= " ON CONFLICT (feature_id, locgroup, rank) DO UPDATE SET fmin=EXCLUDED.fmin, fmax=EXCLUDED.fmax";
-    $sql .= " ON CONFLICT (feature_id, locgroup, rank) DO NOTHING";
+    $sql .= " ON CONFLICT (feature_id, locgroup, rank, srcfeature_id) DO NOTHING";
     if ($featureloc_index > 0) {
       db_query($sql);
       if ($log_detailed) {
