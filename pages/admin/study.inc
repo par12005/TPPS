@@ -934,58 +934,20 @@ function tpps_admin_panel_submit($form, &$form_state) {
     }
   }
 
-  // We use '#name' instead of human-readable '#value' because '#value' could
-  // be localized and this code became broken.
+  // We're using '#name' instead of human-readable '#value' because '#value'
+  // could be localized and this code became broken.
   switch ($form_state['triggering_element']['#name']) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'add_tag':
       $tpps_tag_id = $form_state['values']['TAG_ADD_OPTION'];
-      // Insert tag for this tpps_submission_id.
-      chado_query('INSERT INTO tpps_submission_tag
-        (tpps_submission_id, tpps_tag_id)
-        VALUES (:tpps_submission_id, :tpps_tag_id)',
-        [
-          ':tpps_submission_id' => $tpps_submission_id,
-          ':tpps_tag_id' => $tpps_tag_id,
-        ]
-      );
-      // Get the tag name for the message alert.
-      $tag_name = "";
-      $tag_name_results = chado_query(
-        'SELECT * FROM tpps_tag WHERE tpps_tag_id = :tpps_tag_id',
-        [':tpps_tag_id' => $tpps_tag_id]
-      );
-      foreach ($tag_name_results as $row) {
-        $tag_name = $row->name;
-      }
-      drupal_set_message($tag_name . " has been added to the study");
+      dpm('add ' . $tpps_tag_id);
+      SubmissionTag::link($tpps_tag_id, $accession);
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'remove_tag':
       $tpps_tag_id = $form_state['values']['TAG_REMOVE_OPTION'];
-      // Get the tag name for the message alert.
-      $tag_name = "";
-      $tag_name_results = chado_query(
-        'SELECT * FROM tpps_tag WHERE tpps_tag_id = :tpps_tag_id',
-        [':tpps_tag_id' => $tpps_tag_id]
-      );
-      foreach ($tag_name_results as $row) {
-        $tag_name = $row->name;
-      }
-      if ($tpps_tag_id > 2) {
-        chado_query('DELETE FROM tpps_submission_tag
-          WHERE tpps_submission_id = :tpps_submission_id
-          AND tpps_tag_id = :tpps_tag_id', [
-            ':tpps_submission_id' => $tpps_submission_id,
-            ':tpps_tag_id' => $tpps_tag_id
-          ]
-        );
-        drupal_set_message($tag_name . " successfully removed from study.");
-      }
-      else {
-        drupal_set_message($tag_name . " cannot be removed from study.","error");
-      }
+      SubmissionTag::unlink($tpps_tag_id, $accession);
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

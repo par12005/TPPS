@@ -629,3 +629,38 @@ function hook_submission_purged($accession) {
   $message = 'Submission "@accession" was totally purged.';
   tpps_message($message, ['@accession' => $accession]);
 }
+
+/**
+ * Implements hook 'submission_tag_linked'.
+ *
+ * @param string $accession
+ *   Submission accession. E.g., 'TGDR1234'.
+ * @param int $tag_id
+ *   Submission Tag Id.
+ */
+function hook_submission_tag_linked($accession, $tag_id) {
+  $message = 'Tag @tag_name was added to Submission "@accession".';
+  drupal_set_message(t($message, [
+    '@accession' => $accession,
+    '@tag_name' => SubmissionTag::getName($tag_id),
+  ]));
+}
+
+/**
+ * Implements hook 'submission_tag_unlinked'.
+ *
+ * @param string $accession
+ *   Submission accession. E.g., 'TGDR1234'.
+ * @param int $tag_id
+ *   Submission Tag Id.
+ * @param string $result
+ *   Status of the removement. Tags with ids 1 and 2 can't be removed and
+ *   this case require additional processing.
+ */
+function hook_submission_tag_unlinked($accession, $tag_id, $result) {
+  $message = 'Tag @tag_name was removed from Submission "@accession".';
+  drupal_set_message(t($message, [
+    '@accession' => $accession,
+    '@tag_name' => SubmissionTag::getName($tag_id),
+  ]));
+}

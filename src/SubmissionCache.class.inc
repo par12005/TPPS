@@ -271,7 +271,7 @@ class SubmissionCache {
     }
     $page1_values = $submission->get(['saved_values', TPPS_PAGE_1]);
     $data = [
-      // 'accession' => $submission->accession,
+      'accession' => $submission->accession,
       'id' => $submission->id,
       'status' => $submission->getStatus(),
       'stage' => $submission->getCurrentStage(),
@@ -462,7 +462,31 @@ class SubmissionCache {
   }
 
   /**
+   * Updates single submission using prepared cached submission.
+   *
+   * To fully rebuild cached submission item:
+   *   SubmissionCache::updateSingle($submission);
+   *
+   * @param array $cached_submission
+   *   Cached TPPS Submission.
+   */
+  public static function setSingle(array $cached_submission) {
+    if (
+      empty($cached_submission)
+      || empty($cached_submission['accession'])
+    ) {
+      return;
+    }
+    $list = static::get($cached_submission['accession']);
+    $list[$cached_submission['accession']] = $cached_submission;
+    static::set($list);
+  }
+
+  /**
    * Updates single submission in the list of cached submissions.
+   *
+   * To partly update cached submission item:
+   *   SubmissionCache::setSingle($cached_submission);
    *
    * WARNING: Do not use in the loop. See buildSingle() method.
    *

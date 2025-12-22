@@ -3630,3 +3630,50 @@ function tpps_forms() {
   $forms['submission_tag_remove_form']['callback'] = 'SubmissionTag::buildRemoveForm';
   return $forms;
 }
+
+/**
+ * Implements hook 'submission_tag_linked'.
+ *
+ * Shows message to the end user.
+ *
+ * @param string $accession
+ *   Submission accession. E.g., 'TGDR1234'.
+ * @param int $tag_id
+ *   Submission Tag Id.
+ */
+function tpps_submission_tag_linked($accession, $tag_id) {
+  $message = 'Tag "@tag_name" (#@tag_id) has been added to Submission "@accession".';
+  drupal_set_message(t($message, [
+    '@accession' => $accession,
+    '@tag_id' => $tag_id,
+    '@tag_name' => SubmissionTag::getName($tag_id),
+  ]));
+}
+
+/**
+ * Implements hook 'submission_tag_unlinked'.
+ *
+ * Shows message to the end user.
+ *
+ * @param string $accession
+ *   Submission accession. E.g., 'TGDR1234'.
+ * @param int $tag_id
+ *   Submission Tag Id.
+ * @param string $result
+ *   Status of the removement. Tags with ids 1 and 2 can't be removed and
+ *   this case require additional processing.
+ */
+function tpps_submission_tag_unlinked($accession, $tag_id, $result = 'success') {
+  if ($result == 'success') {
+    $message = 'Tag "@tag_name" (#@tag_id) has been removed from Submission "@accession".';
+  }
+  elseif ($result == 'protected') {
+    $message = 'Tag "@tag_name" (#@tag_id) cannot be removed from Submission "@accession".';
+  }
+
+  drupal_set_message(t($message, [
+    '@accession' => $accession,
+    '@tag_id' => $tag_id,
+    '@tag_name' => SubmissionTag::getName($tag_id),
+  ]));
+}

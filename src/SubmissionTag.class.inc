@@ -14,6 +14,11 @@
  *   /tpps/tag/<id>/edit
  *   /tpps/tag/<id>/remove
  *   /tpps/tag/<id>/list - show list of the submissions which has this tag.
+ *
+ *
+ * Usage
+ * To get tag name:
+ *   SubmissionTag::load($tag_id)->name;
  */
 
 /**
@@ -187,6 +192,27 @@ class SubmissionTag {
     else {
       return $list[$tag_id] ?? NULL;
     }
+  }
+
+  /**
+   * Gets tag name.
+   *
+   * Note: ::load() uses static caching.
+   *
+   * @param int $tag_id
+   *   Tag Id.
+   *
+   * @return mixed
+   *   Returns name of the tag.
+   *   Returns NULL when $tag_id is empty or tag wan't found.
+   */
+  public static function getName($tag_id) {
+    if (!empty($tag_id)) {
+      if (!empty($tag = static::load($tag_id))) {
+        return $tag->name;
+      }
+    }
+    return NULL;
   }
 
   /**
@@ -490,24 +516,30 @@ class SubmissionTag {
    */
   public static function link($tag_key, $accession) {
     if (
-      empty($tag_key)
+      empty($tag_key) || empty($accession)
       || empty($tag_id = SubmissionTag::getId($tag_key))
       || SubmissionTag::isLinked($tag_id, $accession)
-      || empty($cached_submission_list = SubmissionCache::get())
-      || empty($submission_id = $cached_submission_list[$accession]['id'])
+      || empty($cached_submission = SubmissionCache::get($accession))
+      || empty($submission_id = $cached_submission['id'])
     ) {
       return;
     }
-    // Add to SubmissionCache.
-    $cached_submission_list[$accession]['tags'][] = $tag_id;
-    SubmissionCache::set($cached_submission_list);
-    // Remove link.
+    // Remove actual link.
     db_insert(static::TABLE_SUBMISSION_TAG)
       ->fields([
         'tpps_submission_id' => $submission_id,
         'tpps_tag_id' => $tag_id,
       ])
       ->execute();
+
+    // Update SubmissionCache.
+    $cached_submission['tags'][] = $tag_id;
+    SubmissionCache::setSingle($cached_submission);
+
+    // 'tpps_submission_tag_linked';
+    if (function_exists('module_invoke_all')) {
+      module_invoke_all('submission_tag_linked', $accession, $tag_id);
+    }
   }
 
   /**
@@ -520,24 +552,40 @@ class SubmissionTag {
    */
   public static function unlink($tag_key, $accession) {
     if (
-      empty($tag_key)
+      empty($tag_key) || empty($accession)
       || empty($tag_id = SubmissionTag::getId($tag_key))
       || !SubmissionTag::isLinked($tag_id, $accession)
-      || empty($cached_submission_list = SubmissionCache::get())
-      || empty($submission_id = $cached_submission_list[$accession]['id'])
-      || empty($cached_submission_list[$accession]['tags'])
+      || empty($cached_submission = SubmissionCache::get($accession))
+      || empty($submission_id = $cached_submission['id'])
+      || empty($cached_submission['tags'])
     ) {
       return;
     }
-    // Remove from SubmissionCache.
-    $key = array_search($tag_id, $cached_submission_list[$accession]['tags']);
-    unset($cached_submission_list[$accession]['tags'][$key]);
-    SubmissionCache::set($cached_submission_list);
-    // Remove link.
-    db_delete(static::TABLE_SUBMISSION_TAG)
-      ->condition('tpps_submission_id', $submission_id)
-      ->condition('tpps_tag_id', $tag_id)
-      ->execute();
+
+    if ($tag_id == 1 || $tag_id == 2) {
+      // 1st and 2nd tags are 'Tpps' and 'Tppsc' which can't be unlinked.
+      // Note: This is not related to 'static' property of the tag.
+      $result = 'protected';
+    }
+    else {
+      // Remove actual link.
+      db_delete(static::TABLE_SUBMISSION_TAG)
+        ->condition('tpps_submission_id', $submission_id)
+        ->condition('tpps_tag_id', $tag_id)
+        ->execute();
+
+      // Update SubmissionCache.
+      $key = array_search($tag_id, $cached_submission['tags']);
+      unset($cached_submission['tags'][$key]);
+      SubmissionCache::setSingle($cached_submission);
+      $result = 'success';
+    }
+dpm($result);
+
+    // 'tpps_submission_tag_unlinked';
+    if (function_exists('module_invoke_all')) {
+      module_invoke_all('submission_tag_unlinked', $accession, $tag_id, $result);
+    }
   }
 
   /**
