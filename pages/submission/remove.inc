@@ -65,23 +65,24 @@ function tpps_submission_remove_form(array $form, array &$form_state, $accession
       '#title' => t('Removement options'),
       '#collapsible' => TRUE,
     ];
+
     foreach ($removement_options as $name => $item) {
-      $status = NULL;
+      $is_empty = FALSE;
       if (!empty($item['status_method'])) {
         if (method_exists('Submission', $item['status_method'])) {
-          $status = call_user_func([$submission, $item['status_method']]);
+          $is_empty = empty(call_user_func([$submission, $item['status_method']]));
         }
       }
-      $status_message = ' [' . ($status ? '<strong>NOT empty</strong>' : 'Empty') . ']';
       $form['options'][$name] = [
         '#type' => 'checkbox',
-        '#title' => $item['title'] . (is_null($status) ? '' : $status_message),
+        '#title' => '<span class="' . ($is_empty ? 'strikethrough' : '')
+          . '">' . $item['title'] . '</span>',
         '#default_value' => $item['default_value'],
         '#description' => ($item['description'] ?? NULL),
       ];
-      if (!is_null($status)) {
-        $form['options'][$name]['#default_value'] = $status;
-        if ($status === FALSE) {
+      if ($is_empty) {
+        $form['options'][$name]['#default_value'] = $is_empty;
+        if ($is_empty) {
           $form['options'][$name]['#disabled'] = TRUE;
         }
       }

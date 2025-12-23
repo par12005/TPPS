@@ -19,6 +19,7 @@ function theme_submission_tag_list(array $variables) {
         . (empty($tag->color) ? 'white' : $tag->color)
         . '"><span class="tag-text">' . $tag->name . '</span></span>';
     }
+    tpps_add_css_js('main');
     return $display ?? '';
   }
 }

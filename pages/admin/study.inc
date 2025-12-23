@@ -940,7 +940,6 @@ function tpps_admin_panel_submit($form, &$form_state) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'add_tag':
       $tpps_tag_id = $form_state['values']['TAG_ADD_OPTION'];
-      dpm('add ' . $tpps_tag_id);
       SubmissionTag::link($tpps_tag_id, $accession);
       break;
 

@@ -313,3 +313,6 @@ form .fieldset-title {
 }
 
 /* [/VS] */
+.strikethrough {
+  text-decoration: line-through;
+}

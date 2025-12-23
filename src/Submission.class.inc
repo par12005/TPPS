@@ -2944,6 +2944,14 @@ return;
           ]
         ]),
       ],
+      'removeAllTags' => [
+        'default_value' => FALSE,
+        'title' => t("Remove all submission's tags."),
+        'status_method' => 'hasTags',
+        'description' => t('Removes tags associated with study.')
+          . t('Study tags:') . '<br />'
+          . theme('submission_tag_list', ['tags' => $this->getTagIdList()]),
+      ],
     ];
     return $options;
   }
@@ -2962,6 +2970,16 @@ return;
    */
   public function hasTag($tag_key) {
     return SubmissionTag::isLinked($tag_key, $this->accession);
+  }
+
+  /**
+   * Checks if submission has any tags.
+   *
+   * @return bool
+   *   Returns TRUE if submission has any tag and FALSE otherwise.
+   */
+  public function hasTags() {
+    return !empty($this->getTagIdList());
   }
 
   /**
@@ -2985,10 +3003,37 @@ return;
   }
 
   /**
-   * Returns array of tags associated with a submission.
+   * Removes all tags associated with the submission.
+   */
+  public function removeAllTags() {
+    foreach ($this->getTagList() as $tag) {
+      SubmissionTag::unlink($tag->tpps_tag_id, $this->accession);
+    }
+  }
+
+  /**
+   * Gets list of tag ids.
+   *
+   * To get list of tag objects use 'getTagList()'.
+   * Execution time:
+   * first call (empty static cache) takes 3 msec, then 0.005 msec.
    *
    * @return array
-   *   Returns array of tags associated with the submission.
+   *   Returns list of tag ids.
+   */
+  public function getTagIdList() {
+    return SubmissionCache::get($this->accession)['tags'];
+  }
+
+  /**
+   * Returns array of tags associated with a submission.
+   *
+   * To get only tag ids see 'getTagIdLIst()' which is faster.
+   * Execution time:
+   * first call: 5 msec, then 0.6 msec.
+   *
+   * @return array
+   *   Returns array of tag objects associated with the submission.
    *   Returns empty array if submission has no tags.
    */
   public function getTagList() {
