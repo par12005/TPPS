@@ -638,4 +638,17 @@ class SubmissionCache {
     return $cache->data[$key] ?? $default_value;
   }
 
+  /**
+   * Checks if cached submission list has extra items.
+   *
+   * @return bool
+   *   Returns TRUE if list doesn't have extra items and FALSE otherwise.
+   */
+  public static function isValid() {
+    $list = array_keys(SubmissionCache::get());
+    return empty(
+      array_filter($list, function($x) {return strpos($x, 'TGDR') === FALSE;})
+    );
+  }
+
 }
