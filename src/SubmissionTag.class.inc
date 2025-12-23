@@ -216,37 +216,6 @@ class SubmissionTag {
   }
 
   /**
-   * Edit submission tags.
-   *
-   * @param string $type
-   *   Either 'add' or 'remove'.
-   * @param string $accession
-   *   The accession of the desired submission.
-   * @param mixed $tag
-   *   The name or id of the tag to be added or removed.
-   */
-  public static function update($type, $accession, $tag) {
-    $result = db_select(static::TABLE, 't')
-      ->fields('t')
-      ->condition('tpps_tag_id', $tag)
-      ->range(0, 1)
-      ->execute()->fetchObject();
-    if ($result->static) {
-      drupal_goto(static::BASE_URL);
-    }
-    $submission = new Submission($accession);
-    switch ($type) {
-      case 'add':
-        $submission->addTag($tag);
-        break;
-
-      case 'remove':
-        $submission->removeTag($tag);
-        break;
-    }
-  }
-
-  /**
    * Removes default tags associated with a submission.
    *
    * @param string $accession

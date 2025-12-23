@@ -2617,7 +2617,6 @@ function tpps_menu_add_api(array &$items = []) {
   $items['api/submission/%/tag/%/%'] = [
     'title' => 'Link Submission and Tag',
     'description' => 'Links Submission and Submission Tag',
-    //'page callback' => 'SubmissionTag::update',
     'page callback' => 'tpps_api_submission_tag_action',
     // 2: Study accession,
     // 4: Tag Id,
