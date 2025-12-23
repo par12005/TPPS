@@ -2550,6 +2550,12 @@ return;
         'abr' => t('jVCF'),
         'path' => 'api/submission/' . $accession . '/vcf',
       ],
+      'cache' => [
+        'name' => t('JSON Cached Submission'),
+        'title' => t("Cached submission's data in JSON format"),
+        'abr' => t('jCS'),
+        'path' => 'api/submission/' . $accession . '/cache',
+      ],
     ];
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
