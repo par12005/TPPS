@@ -477,7 +477,7 @@ class SubmissionCache {
     ) {
       return;
     }
-    $list = static::get($cached_submission['accession']);
+    $list = static::get();
     $list[$cached_submission['accession']] = $cached_submission;
     static::set($list);
   }

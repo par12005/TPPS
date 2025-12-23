@@ -449,16 +449,16 @@ class SubmissionTag {
       return;
     }
     // Update SubmissionCache.
-    $cached_submissions = SubmissionCache::get();
-    foreach ($cached_submissions as $accession => $submission) {
+    $cached_submission_list = SubmissionCache::get();
+    foreach ($cached_submission_list as $accession => $submission) {
       if (
         !empty($submission['tags'])
         && !empty($key = array_search($tag_id, $submission['tags']))
       ) {
-        unset($cached_submissions[$accession]['tags'][$key]);
+        unset($cached_submission_list[$accession]['tags'][$key]);
       }
     }
-    SubmissionCache::set($cached_submissions);
+    SubmissionCache::set($cached_submission_list);
     // Remove link between submission and tag.
     db_delete(static::TABLE_SUBMISSION_TAG)
       ->condition('tpps_tag_id', $tag_id)
@@ -580,7 +580,6 @@ class SubmissionTag {
       SubmissionCache::setSingle($cached_submission);
       $result = 'success';
     }
-dpm($result);
 
     // 'tpps_submission_tag_unlinked';
     if (function_exists('module_invoke_all')) {
