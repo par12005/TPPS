@@ -533,7 +533,7 @@ class SubmissionTag {
       ->execute();
 
     // Update SubmissionCache.
-    $cached_submission['tags'][] = $tag_id;
+    $cached_submission['tags'][] = (int) $tag_id;
     SubmissionCache::setSingle($cached_submission);
 
     // 'tpps_submission_tag_linked';

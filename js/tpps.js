@@ -491,14 +491,28 @@
                 if (info[3] == 'remove') {
                   $(tag_button).parent().hide();
                   var pattern = new RegExp('TGDR[0-9]+-tag-' + info[2] + '-add');
-                  $('span').filter(function() { return this.id.match(pattern); }).show();
+                  $('span')
+                    .filter(function() { return this.id.match(pattern); })
+                    .show();
+                  // To remove option from 'Remove Tag' dropdown menu and add
+                  // to 'Add Tag' we need to reload page because we can't just
+                  // move option to other select element. Drupal Form became
+                  // 'invalid' and error message appears: "An illegal choice
+                  // has been detected. Please contact the site administrator."
+                  // @TODO To avoid page reload: Add all options in both
+                  // dropdowns and then remove them on client side.
+                  location.reload();
+                  // Remove item from the dropdown menu.
+                  $('select#edit-tag-remove-option option[value="' + info[2] + '"]')
+                    .remove();
                 }
                 else if (info[3] == 'add') {
                   $(tag_button).hide();
                   var pattern = new RegExp('TGDR[0-9]+-tag-' + info[2] + '-remove');
-                  $('span.tag-close').filter(function() {
-                    return this.id.match(pattern);
-                  }).parent().show();
+                  $('span.tag-close')
+                    .filter(function() {return this.id.match(pattern);})
+                    .parent()
+                    .show();
                 }
               });
             }
