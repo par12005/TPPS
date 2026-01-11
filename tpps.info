@@ -9,11 +9,14 @@ dependencies[] = ultimate_cron
 dependencies[] = jquery_update
 dependencies[] = tripal_eutils
 
+; Submission.
+files[] = src/submission/Submission.class.inc
+files[] = src/submission/SubmissionCache.class.inc
+files[] = src/submission/SubmissionTag.class.inc
+files[] = src/submission/SubmissionVersion.class.inc
+files[] = src/submission/ImportedSubmissionList.class.inc
+
 ; Main
-files[] = src/Submission.class.inc
-files[] = src/SubmissionCache.class.inc
-files[] = src/SubmissionTag.class.inc
-files[] = src/SubmissionVersion.class.inc
 files[] = src/Organism.class.inc
 files[] = src/ChadoDb.class.inc
 files[] = src/PhenotypeSynonym.class.inc
@@ -22,7 +25,6 @@ files[] = src/NextFlowManager.class.inc
 
 ; Misc
 files[] = src/RestAPI.class.inc
-files[] = src/ImportedSubmissionList.class.inc
 files[] = src/Report.class.inc
 files[] = src/FormState.class.inc
 files[] = src/TppsConfiguration.class.inc
