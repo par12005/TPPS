@@ -199,7 +199,7 @@ function theme_submission_page(array $variables) {
         $val_str = $val;
       }
       elseif (is_array($val)) {
-        $val_str = TppsArray::printList($val);
+        $val_str = TppsArray::print($val);
       }
       else {
         $val_str = filter_xss(check_plain($val));

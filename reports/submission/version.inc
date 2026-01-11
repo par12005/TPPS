@@ -49,7 +49,7 @@ function tpps_report_submission_version() {
       if (!empty($parents)) {
         $changes = TppsArray::getValue($changes, $parents);
       }
-      return TppsArray::printList($changes);
+      return TppsArray::print($changes);
     }
   }
 }

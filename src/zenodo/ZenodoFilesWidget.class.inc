@@ -195,7 +195,7 @@ class ZenodoFilesWidget {
           }
           $rows[$fid]['zenodo'] = ($delete_button ?? '')
             // Zenodo File metadata.
-            . TppsArray::printList($zenodo_file);
+            . TppsArray::print($zenodo_file);
           unset($zenodo_file_list[$zenodo_file['id']]);
         }
       }
@@ -216,7 +216,7 @@ class ZenodoFilesWidget {
         }
       }
       $rows[$fid]['submission'] = $submission_button
-        . TppsArray::printList($submission_file);
+        . TppsArray::print($submission_file);
     }
 
     // Report about files missing in file system.
@@ -238,7 +238,7 @@ class ZenodoFilesWidget {
           $delete_button = l(t('Delete'), $delete_url, $action_link_params);
         }
         $rows[$zenodo_file['id']]['zenodo'] = ($delete_button ?? '')
-          . TppsArray::printList($zenodo_file);
+          . TppsArray::print($zenodo_file);
         unset($zenodo_file_list[$zenodo_file['id']]);
       }
     }

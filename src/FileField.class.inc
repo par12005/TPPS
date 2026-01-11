@@ -336,7 +336,7 @@ abstract class FileField {
         '@field_title' => static::getFieldTitle(),
         '@oidx' => $organism_index,
         '@sub_field' => implode('/', $parents),
-        '!stack' => empty($stack) ? NULL : TppsArray::printList($stack),
+        '!stack' => empty($stack) ? NULL : TppsArray::print($stack),
       ];
       watchdog('tpps', $message, $params, WATCHDOG_WARNING);
 
@@ -604,7 +604,7 @@ abstract class FileField {
         '@field_title' => static::getFieldTitle(),
         '@oidx' => $organism_index,
         '@sub_field' => implode('/', $parents),
-        '!stack' => empty($stack) ? NULL : TppsArray::printList($stack),
+        '!stack' => empty($stack) ? NULL : TppsArray::print($stack),
       ];
       watchdog('tpps', $message, $params, WATCHDOG_WARNING);
     }

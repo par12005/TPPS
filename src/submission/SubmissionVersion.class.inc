@@ -295,7 +295,7 @@ class SubmissionVersion {
     if ($debug_mode ?? FALSE) {
       $message = 'Submission "@accession" was downgraded to @version. !stack';
       $params = [
-        '!stack' => TppsArray::printList(
+        '!stack' => TppsArray::print(
           debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 10)
         ),
         '@accession' => $submission_state['accession'],

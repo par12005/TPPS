@@ -458,14 +458,18 @@ class TppsArray {
    *
    * @param array $list
    *   Array with data.
+   * @param string $title
+   *   Optional title for the list.
+   *   Note: HTML's H3 tag wil be used.
    *
    * @return string
    *   Returns rendered HTML list.
-   *
-   *   @todo move to TppsArray class.
    */
-  public static function printList(array $list = []) {
+  public static function print(array $list = [], $title = NULL) {
     $items = [];
+    if (empty($list)) {
+      return '';
+    }
     foreach ($list as $key => $value) {
       if (is_array($value)) {
         $value = static::printList($value);
@@ -476,7 +480,10 @@ class TppsArray {
       }
       $items[] = '<strong>' . check_plain($key) . ':</strong> ' . $value;
     }
-    return theme('item_list', ['items' => $items]);
+    return theme('item_list', [
+      'items' => $items,
+      'title' => check_plain($title),
+    ]);
   }
 
   /**

@@ -445,7 +445,7 @@ class ZenodoDepositWidget {
         $content['modified'] = str_replace('T', ' ',
           ($deposition['modified'] ?? '')
         );
-        $output = TppsArray::printList($content);
+        $output = TppsArray::print($content);
       }
     }
     $element[$deposit_id]['dump'] = [

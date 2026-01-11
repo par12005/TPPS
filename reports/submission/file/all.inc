@@ -247,7 +247,7 @@ function tpps_report_submission_file_all_theme_single_row(array $context) {
             }
           }
         }
-        $final_file_row[] = TppsArray::printList($value['file']['grouped_list'][$group]);
+        $final_file_row[] = TppsArray::print($value['file']['grouped_list'][$group]);
       }
       break;
   }
