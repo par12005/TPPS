@@ -800,7 +800,7 @@ return;
    *   Returns TRUE if submission was cached and FALSE otherwise.
    */
   public function isCached() {
-    return !empty(SubmissionCache::get($this->accession));
+    return !empty(SubmissionCache::get($this->accession, $reset = TRUE));
   }
 
   /**

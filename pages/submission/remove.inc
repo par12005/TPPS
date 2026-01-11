@@ -237,24 +237,6 @@ function tpps_submission_remove_get_options($accession) {
         ]
       ]),
     ],
-    'removeSubmissionCache' => [
-      'default_value' => FALSE,
-      'title' => t("Remove Submission's cache."),
-      'status_method' => 'isCached',
-      'description' => t("Remove record from the 'cache_tpps_submission' table. ")
-        . t("Note: If submission won't be fully removed this cache will be "
-        . "updated automatically when cached submittion will be requested")
-        . theme('item_list', [
-          'items' => [
-            l(t("View Submission's File report (which uses ('SubmissionCache')."),
-              'admin/reports/tpps/submission/file/all/' . $accession
-            ),
-            l(t('View content of the "public.cache_tpps_submission" table.'),
-              'admin/reports/db/public.cache_tpps_submission'
-            ),
-          ]
-        ]),
-    ],
     'removeImportRecord' => [
       'default_value' => FALSE,
       'title' => t('Remove record from the imported submission list'),
@@ -278,9 +260,7 @@ function tpps_submission_remove_get_options($accession) {
     ],
 
     # @todo Add remove metadata.
-    # @todo add filelist.
     # @Todo Tags: remove all of them and add link to page
-    # @todo Add link to api submission cache.
 
     'clearDB' => [
       'default_value' => FALSE,
@@ -289,6 +269,27 @@ function tpps_submission_remove_get_options($accession) {
       'title' => t('Clear DB tables.'),
       'description' => t('Remove records from many DB tables.'),
     ],
+  ];
+
+
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Submission Cache.
+  $options['removeSubmissionCache'] = [
+    'default_value' => FALSE,
+    'title' => t("Remove Submission's cache."),
+    'status_method' => 'isCached',
+    'description' => t("Remove record from the 'cache_tpps_submission' table. ")
+      . t("Note: If submission won't be fully removed this cache will be "
+      . "updated automatically when cached submittion will be requested")
+      . theme('item_list', [
+        'items' => [
+          l(t("View JSON Submission Cache"), 'api/submission/' . $accession . '/cache'),
+          l(t('View content of the "public.cache_tpps_submission" table.'),
+            'admin/reports/db/public.cache_tpps_submission'
+          ),
+        ]
+      ]),
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -308,7 +309,7 @@ function tpps_submission_remove_get_options($accession) {
         ]
       ])
       . TppsArray::print(
-        SubmissionCache::get()[$accession]['file']['grouped_list'],
+        (SubmissionCache::get($accession)['file']['grouped_list'] ?? []),
         t("Submission's Files:")
       ),
   ];
