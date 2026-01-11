@@ -260,7 +260,7 @@ function tpps_submission_remove_get_options($accession) {
     ],
 
     # @todo Add remove metadata.
-    # @Todo Tags: remove all of them and add link to page
+    # @TODO Zenodo Deposit and files.
 
     'clearDB' => [
       'default_value' => FALSE,

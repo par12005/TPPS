@@ -2889,11 +2889,20 @@ return;
 
   /**
    * Removes all tags associated with the submission.
+   *
+   * We can't use SubmissionTag::unlink() because it leaves 'system' tags
+   * (with Ids: 1 and 2), does extra check and call's hooks.
    */
   public function removeAllTags() {
-    foreach ($this->getTagList() as $tag) {
-      SubmissionTag::unlink($tag->tpps_tag_id, $this->accession);
-    }
+    // Remove all tags linked to submission.
+    db_delete(SubmissionTag::TABLE_SUBMISSION_TAG)
+      ->condition('tpps_submission_id', $this->id)
+      ->execute();
+
+    // Update SubmissionCache.
+    $cached = SubmissionCache::get();
+    $cached[$this->accession]['tags'] = [];
+    SubmissionCache::set($cached);
   }
 
   /**
