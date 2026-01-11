@@ -311,8 +311,10 @@ form .fieldset-title {
 .tpps-study-accession-number {
   font-weight: bold;
 }
-
-/* [/VS] */
 .strikethrough {
   text-decoration: line-through;
+  font-style: italic;
+}
+#tpps-submission-remove-form .item-list h3 {
+  font-size: 1rem;
 }

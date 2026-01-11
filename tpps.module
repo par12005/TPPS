@@ -1959,17 +1959,19 @@ function tpps_flush_caches() {
  *    for caching system to have less unique pages and more pages with the
  *    same set of attached files.
  *
- * @param mixed $page_id
- *   When string it could be a 'theme', 'main' or a page name.
+ * @param mixed $page_key
+ *   'theme', 'main' or a page name.
  *   When integer it's TPPS Form Page Id.
  *
- *   What is $page_id?
- *   |                  | $page_id     | CSS       | JS        | File                          |
- *   +------------------+--------------+-----------+-----------+-------------------------------+
- *   Theme              | 'theme'      | Yes       | No        | /css/theme/<name>.css         |
- *   TPPS main CSS/JS   | 'main'       | Yes       | Yes       | /css/tpps.css                 |
- *   Specific Page Id   | $page_number | If exists | If exists | /css/tpps_page_${page_id}.css |
- *   Specific Page Name | $page_name   | If exists | If exists | /css/tpps_${page_name}.css    |
+ *   What is $page_key?
+ *   +--------------------+--------------+-----------+-----------+-------------------------------+
+ *   |                    | $page_key     | CSS       | JS        | File                          |
+ *   +--------------------+--------------+-----------+-----------+-------------------------------+
+ *   | Theme              | 'theme'      | Yes       | No        | /css/theme/<name>.css         |
+ *   | TPPS main CSS/JS   | 'main'       | Yes       | Yes       | /css/tpps.css                 |
+ *   | Specific Page Id   | $page_number | If exists | If exists | /css/tpps_page_${page_id}.css |
+ *   | Specific Page Name | $page_name   | If exists | If exists | /css/tpps_${page_name}.css    |
+ *   +--------------------+--------------+-----------+-----------+-------------------------------+
  *
  *   Constants like TPPS_PAGE_1 and etc could be used to improve code readablility.
  *   Custom Page Id like 'study_export' for 'TPPS Study Export Page'.
@@ -1985,13 +1987,7 @@ function tpps_flush_caches() {
  *
  * @TODO Minor. Get Form Id from the $form and use as a file name.
  */
-function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
-  $debug_mode = FALSE;
-  if ($debug_mode ?? FALSE) {
-    dpm(__FUNCTION__ . '(' . $page_id . ', '
-      . ($form === NULL ? 'NULL' : 'form') . ')'
-    );
-  }
+function tpps_add_css_js($page_key = 'main', array &$form = NULL) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Custom CSS Theme.
   $theme_path = TPPS_MODULE_PATH . '/css/themes/'
@@ -2026,34 +2022,37 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
         drupal_add_css($dark_theme_path);
       }
     }
-    if ($page_id == 'theme') {
-      // We only add theme.
-      return;
-    }
-    if ($page_id == 'main') {
-      // CSS.
-      drupal_add_css(TPPS_MODULE_PATH . TPPS_CSS_PATH);
-      // JS.
-      drupal_add_js(
-        ['tpps' => $js_settings],
-        ['type' => 'setting', 'scope' => 'header']
-      );
-      drupal_add_js(
-        TPPS_MODULE_PATH . TPPS_JS_HEADER_PATH,
-        ['type' => 'file', 'scope' => 'header']);
-      drupal_add_js(TPPS_MODULE_PATH . TPPS_JS_PATH);
-      if (variable_get('tpps_theme_fix_pager')) {
-        drupal_add_css(TPPS_MODULE_PATH . '/css/pager_fix.css');
-      }
-    }
-    else {
-      // Add custom page files. Like 'TPPS Study Export Page' and 'study_export'.
-      drupal_add_css(TPPS_MODULE_PATH . '/css/tpps_' . $page_id . '.css');
-      drupal_add_js(TPPS_MODULE_PATH . '/js/tpps_' . $page_id . '.js', [
-        'type' => 'file',
-        'weight' => 5,
-        'scope' => ($page_id == 'google_map' ? 'header' : 'footer'),
-      ]);
+    switch ($page_key) {
+      case 'theme':
+        // We only add theme.
+        return;
+
+      case 'main':
+        // CSS.
+        drupal_add_css(TPPS_MODULE_PATH . TPPS_CSS_PATH);
+        // JS.
+        drupal_add_js(
+          ['tpps' => $js_settings],
+          ['type' => 'setting', 'scope' => 'header']
+        );
+        drupal_add_js(
+          TPPS_MODULE_PATH . TPPS_JS_HEADER_PATH,
+          ['type' => 'file', 'scope' => 'header']);
+        drupal_add_js(TPPS_MODULE_PATH . TPPS_JS_PATH);
+        if (variable_get('tpps_theme_fix_pager')) {
+          drupal_add_css(TPPS_MODULE_PATH . '/css/pager_fix.css');
+        }
+        break;
+
+      default:
+        // Add custom page files. Like 'TPPS Study Export Page' and 'study_export'.
+        drupal_add_css(TPPS_MODULE_PATH . '/css/tpps_' . $page_key . '.css');
+        drupal_add_js(TPPS_MODULE_PATH . '/js/tpps_' . $page_key . '.js', [
+          'type' => 'file',
+          'weight' => 5,
+          'scope' => ($page_key == 'google_map' ? 'header' : 'footer'),
+        ]);
+        break;
     }
   }
   else {
@@ -2066,51 +2065,56 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
         $form['#attached']['css'][] = $dark_theme_path;
       }
     }
-    if ($page_id == 'theme') {
-      // We only add theme.
-      return;
-    }
-    if ($page_id == 'main') {
-      // JS.
-      $form['#attached']['js'][] = [
-        'type' => 'file',
-        'scope' => 'header',
-        'group' => JS_THEME,
-        'data' => TPPS_MODULE_PATH . TPPS_JS_HEADER_PATH,
-      ];
-      $form['#attached']['js'][] = [
-        'type' => 'setting',
-        'data' => ['tpps' => $js_settings],
-        'scope' => 'header',
-      ];
-      // Add main files.
-      $form['#attached']['js'][] = [
-        'type' => 'file',
-        'scope' => 'footer',
-        'group' => JS_THEME,
-        'data' => TPPS_MODULE_PATH . TPPS_JS_PATH,
-      ];
-      // CSS.
-      $form['#attached']['css'][] = TPPS_MODULE_PATH . TPPS_CSS_PATH;
-      if (variable_get('tpps_theme_fix_pager')) {
-        $form['#attached']['css'][] = TPPS_MODULE_PATH . '/css/pager_fix.css';
-      }
-    }
-    elseif ($page_id) {
-      // Features like 'autofocus' and etc.
-      $filename = 'tpps_' . $page_id;
-      if (is_numeric($page_id) && $page_id > 0) {
-        // TPPS/TPPSc Form pages.
-        $filename = 'tpps_page_' . $page_id;
-      }
-      // @TODO Minor. Check if JS/CSS file exists.
-      $form['#attached']['js'][] = [
-        'type' => 'file',
-        'scope' => ($page_id == 'google_map' ? 'header' : 'footer'),
-        'group' => JS_THEME,
-        'data' => TPPS_MODULE_PATH . '/js/' . $filename . '.js',
-      ];
-      $form['#attached']['css'][] = TPPS_MODULE_PATH . '/css/' . $filename . '.css';
+    switch ($page_key) {
+      case 'theme':
+        // We only add theme.
+        return;
+
+      case 'main':
+        // JS.
+        $form['#attached']['js'][] = [
+          'type' => 'file',
+          'scope' => 'header',
+          'group' => JS_THEME,
+          'data' => TPPS_MODULE_PATH . TPPS_JS_HEADER_PATH,
+        ];
+        $form['#attached']['js'][] = [
+          'type' => 'setting',
+          'data' => ['tpps' => $js_settings],
+          'scope' => 'header',
+        ];
+        // Add main files.
+        $form['#attached']['js'][] = [
+          'type' => 'file',
+          'scope' => 'footer',
+          'group' => JS_THEME,
+          'data' => TPPS_MODULE_PATH . TPPS_JS_PATH,
+        ];
+        // CSS.
+        $form['#attached']['css'][] = TPPS_MODULE_PATH . TPPS_CSS_PATH;
+        if (variable_get('tpps_theme_fix_pager')) {
+          $form['#attached']['css'][] = TPPS_MODULE_PATH . '/css/pager_fix.css';
+        }
+        break;
+
+      default:
+        if (!empty($page_key)) {
+          // Features like 'autofocus' and etc.
+          $filename = 'tpps_' . $page_key;
+          if (is_numeric($page_key) && $page_key > 0) {
+            // TPPS/TPPSc Form pages.
+            $filename = 'tpps_page_' . $page_key;
+          }
+          // @TODO Minor. Check if JS/CSS file exists.
+          $form['#attached']['js'][] = [
+            'type' => 'file',
+            'scope' => ($page_key == 'google_map' ? 'header' : 'footer'),
+            'group' => JS_THEME,
+            'data' => TPPS_MODULE_PATH . '/js/' . $filename . '.js',
+          ];
+          $form['#attached']['css'][] = TPPS_MODULE_PATH . '/css/' . $filename . '.css';
+        }
+        break;
     }
   }
 }
