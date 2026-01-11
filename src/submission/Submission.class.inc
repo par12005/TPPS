@@ -804,24 +804,6 @@ return;
   }
 
   /**
-   * Removes parts of the submission.
-   *
-   * To remove only record from tpps_submission' table see Submission::delete().
-   *
-   * @param array $options
-   *   List of options. Keys are the keys from the array returned by
-   *   $this->getRemovementOptions() method and values are boolean TRUE/FALSE.
-   */
-  public function remove(array $options) {
-    // Remove parts according to user selection.
-    foreach (array_keys(array_filter($options)) as $method_name) {
-      if (method_exists($this, $method_name)) {
-        $this->$method_name();
-      }
-    }
-  }
-
-  /**
    * Removes Submission, it's files and all the data from db.
    *
    * To remove only record from tpps_submission' table see Submission::delete().
@@ -2858,103 +2840,6 @@ return;
     return $list;
   }
 
-  /**
-   * Gets list of removement options.
-   *
-   * @return array
-   *   Returns array to build form and set default values.
-   */
-  public function getRemovementOptions() {
-    $options = [
-      'clearTppsSubmissionTable' => [
-        'default_value' => TRUE,
-        'title' => t('Remove record in "tpps_submission" table.'),
-        'status_method' => 'hasDbRecord',
-        'description' => t('Remove records from "public.tpps_submission" and "chado.dbxref" tables.')
-        . theme('item_list', [
-          'items' => [
-            l(t('View record in "chado.dbxref" table.'),
-              'admin/reports/db/chado.dbxref',
-              ['query' => ['chado.dbxref.accession' => $this->accession]]
-            ),
-            l(t('View record in "tpps_submission" table.'),
-              'admin/reports/db/public.tpps_submission',
-              ['query' => ['public.tpps_submission.accession' => $this->accession]]
-            ),
-          ]
-        ]),
-      ],
-      'removeSubmissionCache' => [
-        'default_value' => TRUE,
-        'title' => t("Remove Submission's cache."),
-        'status_method' => 'isCached',
-        'description' => t("Remove record from the 'cache_tpps_submission' "
-          . "table. Next request to cache will update this record if submission "
-          . "won't be removed."
-        )
-        . theme('item_list', [
-          'items' => [
-            l(t("View Submission's File report (which uses ('SubmissionCache')."),
-              'admin/reports/tpps/submission/file/all/' . $this->accession
-            ),
-            l(t('View content of the "public.cache_tpps_submission" table.'),
-              'admin/reports/db/public.cache_tpps_submission'
-            ),
-          ]
-        ]),
-      ],
-      'removeImportRecord' => [
-        'default_value' => TRUE,
-        'title' => t('Remove record from the imported submission list'),
-        'status_method' => 'wasImported',
-        'description' => t('Remove record from the list of imported submissions.')
-        . theme('item_list', [
-          'items' => [
-            l(t('View "Imported Studies" report.'),
-              'admin/reports/tpps/submission/imported'
-            ),
-            l(t('View variable which holds list of imported submissions.'),
-              'admin/reports/db/public.variable',
-              [
-                'query' => [
-                  'public.variable.name' => 'tpps_imported_studies_list'
-                ],
-              ]
-            ),
-          ]
-        ]),
-      ],
-      'clearDB' => [
-        'default_value' => TRUE,
-        // @TODO Convert into 'checkboxes' and show list of tables which checked
-        // by default.
-        'title' => t('Clear DB tables.'),
-        'description' => t('Remove records from many DB tables.'),
-      ],
-      'removeFiles' => [
-        'default_value' => FALSE,
-        'title' => t('Remove files.'),
-        'status_method' => 'hasFiles',
-        'description' => t('Remove only files not used by other studies.')
-        . theme('item_list', [
-          'items' => [
-            l(t("View Submission's File report."),
-              'admin/reports/tpps/submission/file/all/' . $this->accession
-            ),
-          ]
-        ]),
-      ],
-      'removeAllTags' => [
-        'default_value' => FALSE,
-        'title' => t("Remove all submission's tags."),
-        'status_method' => 'hasTags',
-        'description' => t('Removes tags associated with study.')
-          . t('Study tags:') . '<br />'
-          . theme('submission_tag_list', ['tags' => $this->getTagIdList()]),
-      ],
-    ];
-    return $options;
-  }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Submission Tags.

@@ -39,7 +39,7 @@ function tpps_submission_remove_form_submit(array $form, array &$form_state) {
     module_load_include('inc', 'tpps', 'pages/submission/list');
     tpps_submission_list_validate_accession($accession);
     $submission = new Submission($accession);
-    $removement_options = $submission->getRemovementOptions();
+    $removement_options = tpps_submission_remove_get_options($accession);
 
     // Get removement options.
     $options = [];
@@ -48,7 +48,12 @@ function tpps_submission_remove_form_submit(array $form, array &$form_state) {
     }
     // Remove study.
     if (1) {
-      $submission->remove($options);
+      // Remove parts according to user selection.
+      foreach (array_keys(array_filter($options)) as $method_name) {
+        if (method_exists($submission, $method_name)) {
+          $submission->$method_name();
+        }
+      }
     }
     else {
       dpm(var_export($options, 1));
@@ -69,7 +74,9 @@ function tpps_submission_remove_form_submit(array $form, array &$form_state) {
     }
     $submission = new Submission($accession);
     $form_state['saved_values']['confirmed'] = TRUE;
-    $values_to_store = array_keys($submission->getRemovementOptions($accession));
+    $values_to_store = array_keys(
+      tpps_submission_remove_get_options($accession)
+    );
     $values_to_store[] = 'tpps_submission_accession';
     foreach ($values_to_store as $name) {
       $form_state['saved_values'][$name] = FormState::get($form_state,
@@ -95,7 +102,7 @@ function tpps_submission_remove_selection_form(array &$form, $accession) {
     drupal_goto('tpps/submission');
   }
   $submission = new Submission($accession);
-  $removement_options = $submission->getRemovementOptions($accession);
+  $removement_options = tpps_submission_remove_get_options($accession);
   $form['options'] = [
     '#type' => 'fieldset',
     '#title' => t('Removement options'),
@@ -161,7 +168,7 @@ function tpps_submission_remove_confirmation_form(array &$form, array &$form_sta
     '#value' => $accession,
   ];
   $submission = new Submission($accession);
-  $removement_options = $submission->getRemovementOptions($accession);
+  $removement_options = tpps_submission_remove_get_options($accession);
   // Get removement options.
   $selected_options = [];
   foreach ($removement_options as $name => $item) {
@@ -198,4 +205,105 @@ function tpps_submission_remove_confirmation_form(array &$form, array &$form_sta
     $confirm_button_text,
     $cancel_button_text
   );
+}
+
+/**
+ * Gets list of removement options.
+ *
+ * @return array
+ *   Returns array to build form and set default values.
+ */
+function tpps_submission_remove_get_options($accession) {
+  if (empty($accession)) {
+    return [];
+  }
+  $submission = new Submission($accession);
+  $options = [
+    'clearTppsSubmissionTable' => [
+      'default_value' => FALSE,
+      'title' => t('Remove record in "tpps_submission" table.'),
+      'status_method' => 'hasDbRecord',
+      'description' => t('Remove records from "public.tpps_submission" and "chado.dbxref" tables.')
+      . theme('item_list', [
+        'items' => [
+          l(t('View record in "chado.dbxref" table.'),
+            'admin/reports/db/chado.dbxref',
+            ['query' => ['chado.dbxref.accession' => $accession]]
+          ),
+          l(t('View record in "tpps_submission" table.'),
+            'admin/reports/db/public.tpps_submission',
+            ['query' => ['public.tpps_submission.accession' => $accession]]
+          ),
+        ]
+      ]),
+    ],
+    'removeSubmissionCache' => [
+      'default_value' => FALSE,
+      'title' => t("Remove Submission's cache."),
+      'status_method' => 'isCached',
+      'description' => t("Remove record from the 'cache_tpps_submission' table. ")
+        . t("Note: If submission won't be fully removed this cache will be "
+        . "updated automatically when cached submittion will be requested")
+        . theme('item_list', [
+          'items' => [
+            l(t("View Submission's File report (which uses ('SubmissionCache')."),
+              'admin/reports/tpps/submission/file/all/' . $accession
+            ),
+            l(t('View content of the "public.cache_tpps_submission" table.'),
+              'admin/reports/db/public.cache_tpps_submission'
+            ),
+          ]
+        ]),
+    ],
+    'removeImportRecord' => [
+      'default_value' => FALSE,
+      'title' => t('Remove record from the imported submission list'),
+      'status_method' => 'wasImported',
+      'description' => t('Remove record from the list of imported submissions.')
+      . theme('item_list', [
+        'items' => [
+          l(t('View "Imported Studies" report.'),
+            'admin/reports/tpps/submission/imported'
+          ),
+          l(t('View variable which holds list of imported submissions.'),
+            'admin/reports/db/public.variable',
+            [
+              'query' => [
+                'public.variable.name' => 'tpps_imported_studies_list'
+              ],
+            ]
+          ),
+        ]
+      ]),
+    ],
+    'clearDB' => [
+      'default_value' => FALSE,
+      // @TODO Convert into 'checkboxes' and show list of tables which checked
+      // by default.
+      'title' => t('Clear DB tables.'),
+      'description' => t('Remove records from many DB tables.'),
+    ],
+    'removeFiles' => [
+      'default_value' => FALSE,
+      'title' => t('Remove files.'),
+      'status_method' => 'hasFiles',
+      'description' => t('Remove only files not used by other studies.')
+      . theme('item_list', [
+        'items' => [
+          l(t("View Submission's File report."),
+            'admin/reports/tpps/submission/file/all/' . $accession
+          ),
+        ]
+      ]),
+    ],
+    'removeAllTags' => [
+      'default_value' => FALSE,
+      'title' => t("Remove all submission's tags."),
+      'status_method' => 'hasTags',
+      'description' => t('Removes tags associated with study.')
+        . t('Study tags:') . '<br />'
+        . theme('submission_tag_list', ['tags' => $submission->getTagIdList()]),
+    ],
+  ];
+  return $options;
 }
