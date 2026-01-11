@@ -745,6 +745,7 @@ return;
         }
       }
     }
+    // $this->save();
   }
 
   /**
@@ -1110,12 +1111,29 @@ return;
    * @return bool
    *   Returns TRUE if submission was imported and FALSE otherwise.
    */
+  public function hasImportMeta() {
+    return !empty($this->get(['saved_values', 'tpps_submission_import']));
+    //return !empty(SubmissionCache::get($this->accession)['import_meta']);
+  }
+
+  /**
+   * Removes Import Meta-data.
+   */
+  public function removeImportMeta() {
+    // @TODO Minor. Test and use $this->unset().
+    $this->set(['saved_values', 'tpps_submission_import'], NULL, TRUE);
+    // Note: save() will update SubmissionCache.
+    $this->save();
+  }
+
+  /**
+   * Checks if submission was imported.
+   *
+   * @return bool
+   *   Returns TRUE if submission was imported and FALSE otherwise.
+   */
   public function wasImported() {
-    return !empty(
-      TppsArray::getValue($this->state,
-        ['saved_values', 'tpps_submission_import']
-      )
-    );
+    return !empty(ImportedSubmissionList::get()[$this->accession]);
   }
 
   /**

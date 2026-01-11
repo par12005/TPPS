@@ -223,7 +223,7 @@ function tpps_submission_remove_get_options($accession) {
       'default_value' => FALSE,
       'title' => t('Remove record in "tpps_submission" table.'),
       'status_method' => 'hasDbRecord',
-      'description' => t('Remove records from "public.tpps_submission" and "chado.dbxref" tables.')
+      'description' => t('Removes records from "public.tpps_submission" and "chado.dbxref" tables.')
       . theme('item_list', [
         'items' => [
           l(t('View record in "chado.dbxref" table.'),
@@ -237,27 +237,6 @@ function tpps_submission_remove_get_options($accession) {
         ]
       ]),
     ],
-    'removeImportRecord' => [
-      'default_value' => FALSE,
-      'title' => t('Remove record from the imported submission list'),
-      'status_method' => 'wasImported',
-      'description' => t('Remove record from the list of imported submissions.')
-      . theme('item_list', [
-        'items' => [
-          l(t('View "Imported Studies" report.'),
-            'admin/reports/tpps/submission/imported'
-          ),
-          l(t('View variable which holds list of imported submissions.'),
-            'admin/reports/db/public.variable',
-            [
-              'query' => [
-                'public.variable.name' => 'tpps_imported_studies_list'
-              ],
-            ]
-          ),
-        ]
-      ]),
-    ],
 
     # @todo Add remove metadata.
     # @TODO Zenodo Deposit and files.
@@ -266,12 +245,53 @@ function tpps_submission_remove_get_options($accession) {
       'default_value' => FALSE,
       // @TODO Convert into 'checkboxes' and show list of tables which checked
       // by default.
-      'title' => t('Clear DB tables.'),
+      'title' => t('Clears DB tables.'),
       'description' => t('Remove records from many DB tables.'),
     ],
   ];
 
-
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Imported Submission Metadata.
+  $options['removeImportRecord'] = [
+    'default_value' => FALSE,
+    'title' => t('Remove record from the Imported Submissions list'),
+    'status_method' => 'wasImported',
+    'description' => t('Removes record from the list of imported submissions.')
+    . theme('item_list', [
+      'items' => [
+        l(t('View "Imported Studies" report.'),
+          'admin/reports/tpps/submission/imported'
+        ),
+        l(t('View variable which holds list of imported submissions.'),
+          'admin/reports/db/public.variable',
+          [
+            'query' => [
+              'public.variable.name' => 'tpps_imported_studies_list'
+            ],
+          ]
+        ),
+      ]
+    ]),
+  ];
+  $options['removeImportMeta'] = [
+    'default_value' => FALSE,
+    'title' => t('Remove Import Meta'),
+    'status_method' => 'hasImportMeta',
+    'description' => t("Removes Import Meta-data from Submission's Form State")
+      . theme('item_list', [
+        'items' => [
+          l(t('View "Imported Studies" report.'), 'admin/reports/tpps/submission/imported'),
+          l(t('Submission Cache in JSON format'), 'api/submission/' . $accession . '/cache'),
+          l(t("Submission's State View page"), 'tpps/submission/' . $accession . '/view'),
+        ]
+      ]),
+  ];
+  if ($submission->hasImportMeta()) {
+    $options['removeImportMeta']['description'] .= TppsArray::print(
+      $submission->getImportMeta(),
+      t('Import Meta data')
+    );
+  }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Submission Cache.
@@ -279,7 +299,7 @@ function tpps_submission_remove_get_options($accession) {
     'default_value' => FALSE,
     'title' => t("Remove Submission's cache."),
     'status_method' => 'isCached',
-    'description' => t("Remove record from the 'cache_tpps_submission' table. ")
+    'description' => t("Removes record from the 'cache_tpps_submission' table. ")
       . t("Note: If submission won't be fully removed this cache will be "
       . "updated automatically when cached submittion will be requested")
       . theme('item_list', [
@@ -298,7 +318,7 @@ function tpps_submission_remove_get_options($accession) {
     'default_value' => FALSE,
     'title' => t('Remove files.'),
     'status_method' => 'hasFiles',
-    'description' => t('Remove only files not used by other studies.')
+    'description' => t('Removes only files not used by other studies.')
       . '<br />' . t('WARNING: Only files which not in use by other '
       . 'studies will be removed')
       . theme('item_list', [
@@ -327,10 +347,14 @@ function tpps_submission_remove_get_options($accession) {
           l(t("Manage Submission's tags"), 'tpps-admin-panel/' . $accession),
           l(t("Tag's settings page"), 'tpps/tag'),
         ]
-      ])
-      . t("Submission's Tags:")
-      . '<br />'
-      . theme('submission_tag_list', ['tags' => $submission->getTagIdList()]),
+      ]),
   ];
+  if ($submission->hasTags()) {
+    $options['removeAllTags']['description'] .= t("Submission's Tags:")
+      . '<br />'
+      . theme('submission_tag_list', ['tags' => $submission->getTagIdList()]);
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
   return $options;
 }
