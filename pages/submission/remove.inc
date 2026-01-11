@@ -276,6 +276,12 @@ function tpps_submission_remove_get_options($accession) {
         ]
       ]),
     ],
+
+    # @todo Add remove metadata.
+    # @todo add filelist.
+    # @Todo Tags: remove all of them and add link to page
+    # @todo Add link to api submission cache.
+
     'clearDB' => [
       'default_value' => FALSE,
       // @TODO Convert into 'checkboxes' and show list of tables which checked
@@ -283,27 +289,47 @@ function tpps_submission_remove_get_options($accession) {
       'title' => t('Clear DB tables.'),
       'description' => t('Remove records from many DB tables.'),
     ],
-    'removeFiles' => [
-      'default_value' => FALSE,
-      'title' => t('Remove files.'),
-      'status_method' => 'hasFiles',
-      'description' => t('Remove only files not used by other studies.')
+  ];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Files.
+  $options['removeFiles'] = [
+    'default_value' => FALSE,
+    'title' => t('Remove files.'),
+    'status_method' => 'hasFiles',
+    'description' => t('Remove only files not used by other studies.')
+      . '<br />' . t('WARNING: Only files which not in use by other '
+      . 'studies will be removed')
       . theme('item_list', [
         'items' => [
           l(t("View Submission's File report."),
             'admin/reports/tpps/submission/file/all/' . $accession
           ),
         ]
-      ]),
-    ],
-    'removeAllTags' => [
-      'default_value' => FALSE,
-      'title' => t("Remove all submission's tags."),
-      'status_method' => 'hasTags',
-      'description' => t('Removes tags associated with study.')
-        . t('Study tags:') . '<br />'
-        . theme('submission_tag_list', ['tags' => $submission->getTagIdList()]),
-    ],
+      ])
+      . TppsArray::print(
+        SubmissionCache::get()[$accession]['file']['grouped_list'],
+        t("Submission's Files:")
+      ),
+  ];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Tags.
+  $options['removeAllTags'] = [
+    'default_value' => FALSE,
+    'title' => t("Remove all submission's tags."),
+    'status_method' => 'hasTags',
+    'description' => t('Removes tags associated with study.')
+      . '<br />' . t('WARNING: All (!) tags (including system) will be removed.')
+      . theme('item_list', [
+        'items' => [
+          l(t("Manage Submission's tags"), 'tpps-admin-panel/' . $accession),
+          l(t("Tag's settings page"), 'tpps/tag'),
+        ]
+      ])
+      . t("Submission's Tags:")
+      . '<br />'
+      . theme('submission_tag_list', ['tags' => $submission->getTagIdList()]),
   ];
   return $options;
 }

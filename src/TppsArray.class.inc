@@ -327,7 +327,7 @@ class TppsArray {
       $target_field_value = $target['parent_element'][$target['field_name']] ?? NULL;
 
       if ($debug_mode ?? FALSE) {
-        drupal_set_message(TppsArray::printList([
+        drupal_set_message(TppsArray::print([
           'action' => __METHOD__,
           'source' => [
             '[ ' . implode(', ', $item['source']) . ' ]'
@@ -472,7 +472,7 @@ class TppsArray {
     }
     foreach ($list as $key => $value) {
       if (is_array($value)) {
-        $value = static::printList($value);
+        $value = static::print($value);
       }
       else {
         // Using check_plain() blocks HTML Links in the lists.
