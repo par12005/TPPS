@@ -252,7 +252,6 @@ function tpps_submission_remove_get_options($accession) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Zenodo Deposit.
-  // @TODO Show host.
   if (!empty($deposit_id = $submission->getZenodoDepositId())) {
     $options['removeZenodoDeposit'] = [
       'default_value' => FALSE,
@@ -261,20 +260,27 @@ function tpps_submission_remove_get_options($accession) {
       'description' => t('Removes not yet published Zenodo Deposit and files.')
         . '<br />' . ZenodoHost::getStatus(),
     ];
-    $deposit = ZenodoDeposit::retrieve([
-      'deposit_id' => $deposit_id,
-    ]);
-    if (empty($deposit['submitted'])) {
-      // Not yet published.
-      $options['removeZenodoDeposit']['status_method'] = FALSE;
-      $options['removeZenodoDeposit']['description'] .= '<br />'
-        . t("Deposit status: not yet published and could be removed.");
+    try {
+      $deposit = ZenodoDeposit::retrieve([
+        'deposit_id' => $deposit_id,
+      ]);
+      if (empty($deposit['submitted'])) {
+        // Not yet published.
+        $options['removeZenodoDeposit']['status_method'] = FALSE;
+        $options['removeZenodoDeposit']['description'] .= '<br />'
+          . t("Deposit status: not yet published and could be removed.");
+      }
+      else {
+        // Published.
+        $options['removeZenodoDeposit']['status_method'] = TRUE;
+        $options['removeZenodoDeposit']['description'] .= '<br />'
+          . t("Deposit status: was published and can't be removed.");
+      }
     }
-    else {
-      // Published.
-      $options['removeZenodoDeposit']['status_method'] = TRUE;
+    catch (Exception $e) {
       $options['removeZenodoDeposit']['description'] .= '<br />'
-        . t("Deposit status: was published and can't be removed.");
+        . t("Deposit status: doesn't exist on Zenodo server but submission has "
+        . "Zenodo Deposition Id (which probably outdated).");
     }
     $options['removeZenodoDeposit']['description'] .= theme('item_list', [
       'items' => [
@@ -286,7 +292,8 @@ function tpps_submission_remove_get_options($accession) {
           t('Zenodo Deposit #@deposit_id Files', ['@deposit_id' => $deposit_id]),
           'tpps/submission/' . $accession . '/zenodo/files'
         ),
-        l(t('Report "Zenodo Submissions"'), 'admin/reports/tpps/submission/zenodo'),
+        l(t('"Zenodo Submissions" report'), 'admin/reports/tpps/submission/zenodo'),
+        l(t('"Zenodo Depositions" report'), 'admin/reports/tpps/zenodo/deposition'),
       ],
     ]);
   }

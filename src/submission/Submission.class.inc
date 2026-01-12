@@ -1861,26 +1861,38 @@ return;
     if (empty($deposit_id = $this->getZenodoDepositId())) {
       return;
     }
-    $deposit = ZenodoDeposit::retrieve([
-      'deposit_id' => $deposit_id,
-    ]);
-    if (!empty($deposit['submitted'])) {
-      $message = "Zenodo Deposit was published and can't be removed.";
-      throw new Exception($message);
+
+    try {
+      $deposit = ZenodoDeposit::retrieve([
+        'deposit_id' => $deposit_id,
+      ]);
+      if ($deposit) {
+        if (empty($deposit['submitted'])) {
+          // Remove deposit.
+          // Note: When draft deposition is removing then all associated files
+          // will be removed automatically.
+          ZenodoDeposit::delete(['deposit_id' => $deposit_id]);
+        }
+        else {
+          $message = "Zenodo Deposit was published and can't be removed.";
+          throw new Exception($message);
+        }
+      }
+    }
+    catch (Exception $e) {
+      // @TODO Check Exception message. Possible responses when not found:
+      // Forbidden
+      // Access denied.
+      $message = t("Zenodo Deposit wasn't found on remote server.");
+      drupal_set_message($message);
     }
 
-
-
-
-// @TODO Get all file's ids.
-
-    foreach ($list as $file_id) {
-      // Remove file.
-      ZenodoFile::delete(['deposit_id' => $deposit_id, 'file_id' => $file_id]);
-    }
-    // Remove deposit.
-    ZenodoDeposit::delete(['deposit_id' => $deposit_id]);
-
+    // Unset store 'Zenodo Id' and 'Zenodo Record Id'.
+    $this->set([self::ZENODO_CONCEPT_RECORD_ID_KEY], NULL);
+    $this->set([self::ZENODO_DEPOSIT_ID_KEY], NULL);
+    $this->save();
+    $message = t("Removed 'Zenodo Deposit Id' and 'Zenodo Concept Id' from Submission.");
+    drupal_set_message($message);
     // @TODO Minor. Implement hook?
   }
 

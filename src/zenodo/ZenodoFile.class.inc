@@ -33,6 +33,49 @@ class ZenodoFile extends Zenodo {
   const CHECKSUM_KEY = 'checksum';
 
   /**
+   * Deletes single file.
+   *
+   * If the Deposition is a Draft (Unpublished)
+   *
+   * You do not need to remove files manually if your goal is to delete
+   * the entire deposition.
+   *  - Total Deletion:
+   *    Simply delete the draft deposition via the API or web interface.
+   *    This automatically removes all associated files.
+   *    https://help.zenodo.org/docs/deposit/create-new-upload/
+   *  - Specific File Correction:
+   *    If you only want to replace or remove one file, you should delete that
+   *    specific file manually using the Zenodo REST API or the "Remove"
+   *    icon in the web UI.
+   *
+   * If the Deposition is Published
+   *
+   *   As of January 2026, you have a limited window to manage published
+   *   files yourself without a support ticket:
+   *   - The 30-Day Window:
+   *     You can now modify or delete your own record—including its
+   *     files—within 30 days after publication.
+   *   - After 30 Days:
+   *     You cannot remove files manually. Deletion requires submitting a
+   *     formal request to Zenodo Support with a valid justification (e.g.,
+   *     copyright issues or sensitive data exposure).
+   *     https://help.zenodo.org/docs/deposit/manage-records/
+   *   - The "Tombstone" Policy:
+   *     Even if you delete a record within the 30-day window, Zenodo will
+   *     leave a "tombstone" page to ensure existing citations do not lead
+   *     to a broken link.
+   *
+   * @param array $data
+   *   Data for request. Required keys are:
+   *   - 'deposit_id' - int. Zenodo Deposit Id.
+   *   - 'file_id' - string. Zenodo File Id.
+   *   - 'drupal_file' - object. Fully loaded Drupal File object.
+   */
+  public static function delete(array $data) {
+    Zenodo::delete($data);
+  }
+
+  /**
    * Updates an existing deposition/deposition file resource.
    *
    * Zenodo API doesn't allow PUT- and POST-methods to update files.
