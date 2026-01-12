@@ -1106,18 +1106,17 @@ return;
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   /**
-   * Checks if submission was imported.
+   * Checks if submission's state has Import Metadata.
    *
    * @return bool
    *   Returns TRUE if submission was imported and FALSE otherwise.
    */
   public function hasImportMeta() {
     return !empty($this->get(['saved_values', 'tpps_submission_import']));
-    //return !empty(SubmissionCache::get($this->accession)['import_meta']);
   }
 
   /**
-   * Removes Import Meta-data.
+   * Removes Import Meta-data from State and SharedState.
    */
   public function removeImportMeta() {
     // @TODO Minor. Test and use $this->unset().
@@ -1853,6 +1852,36 @@ return;
    */
   public function hasZenodoDepositId() {
     return !empty($this->getZenodoDepositId());
+  }
+
+  /**
+   * Removes Zenodo Deposit and files.
+   */
+  public function removeZenodoDeposit() {
+    if (empty($deposit_id = $this->getZenodoDepositId())) {
+      return;
+    }
+    $deposit = ZenodoDeposit::retrieve([
+      'deposit_id' => $deposit_id,
+    ]);
+    if (!empty($deposit['submitted'])) {
+      $message = "Zenodo Deposit was published and can't be removed.";
+      throw new Exception($message);
+    }
+
+
+
+
+// @TODO Get all file's ids.
+
+    foreach ($list as $file_id) {
+      // Remove file.
+      ZenodoFile::delete(['deposit_id' => $deposit_id, 'file_id' => $file_id]);
+    }
+    // Remove deposit.
+    ZenodoDeposit::delete(['deposit_id' => $deposit_id]);
+
+    // @TODO Minor. Implement hook?
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

@@ -251,6 +251,47 @@ function tpps_submission_remove_get_options($accession) {
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Zenodo Deposit.
+  // @TODO Show host.
+  if (!empty($deposit_id = $submission->getZenodoDepositId())) {
+    $options['removeZenodoDeposit'] = [
+      'default_value' => FALSE,
+      'title' => t('Remove Zenodo Deposit and files'),
+      'status_method' => 'hasZenodoDepositId',
+      'description' => t('Removes not yet published Zenodo Deposit and files.')
+        . '<br />' . ZenodoHost::getStatus(),
+    ];
+    $deposit = ZenodoDeposit::retrieve([
+      'deposit_id' => $deposit_id,
+    ]);
+    if (empty($deposit['submitted'])) {
+      // Not yet published.
+      $options['removeZenodoDeposit']['status_method'] = FALSE;
+      $options['removeZenodoDeposit']['description'] .= '<br />'
+        . t("Deposit status: not yet published and could be removed.");
+    }
+    else {
+      // Published.
+      $options['removeZenodoDeposit']['status_method'] = TRUE;
+      $options['removeZenodoDeposit']['description'] .= '<br />'
+        . t("Deposit status: was published and can't be removed.");
+    }
+    $options['removeZenodoDeposit']['description'] .= theme('item_list', [
+      'items' => [
+        l(
+          t('Zenodo Deposit #@deposit_id', ['@deposit_id' => $deposit_id]),
+          'tpps/submission/' . $accession . '/zenodo'
+        ),
+        l(
+          t('Zenodo Deposit #@deposit_id Files', ['@deposit_id' => $deposit_id]),
+          'tpps/submission/' . $accession . '/zenodo/files'
+        ),
+        l(t('Report "Zenodo Submissions"'), 'admin/reports/tpps/submission/zenodo'),
+      ],
+    ]);
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Imported Submission Metadata.
   $options['removeImportRecord'] = [
     'default_value' => FALSE,
