@@ -41,9 +41,19 @@ function tpps_report_zenodo_deposition() {
     foreach ($host_list as $host) {
       ZenodoHost::set($host);
       $output .= '<h2>Zenodo Host: ' . l($host, $path . $host) . '</h2>';
-      $response = ZenodoDeposit::list([]);
+      try {
+        $response = ZenodoDeposit::list([]);
+      }
+      catch (Exception $e) {
+        drupal_set_message(
+          t(
+            "Can't get list of the depositions from Zenodo Host '@host'.",
+            ['@host' => strtoupper($host)]
+          ),
+          'error'
+        );
+      }
       if (empty($response)) {
-        drupal_set_message(t('Empty Zenodo API response.'), 'error');
         continue;
       }
       elseif (!empty($response['status'])) {
