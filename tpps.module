@@ -3418,8 +3418,8 @@ function tpps_form_tppsc_main_alter($form, $form_state) {
     if (!empty($file_list)) {
       foreach (array_keys($file_list) as $fid) {
         $file = tpps_file_load($fid);
-        if ($file && Submission::isEmptyFileUsage($file, $submission->accession)) {
-          Submission::addFileUsage($file, $submission->accession);
+        if ($file && TppsFile::isEmptyUsage($file, $submission->accession)) {
+          TppsFile::addUsage($file, $submission->accession);
         }
       }
     }
@@ -3442,7 +3442,7 @@ function tpps_form_tppsc_main_alter($form, $form_state) {
     && empty(TppsArray::getValue($form_state['input'], array_merge($parents, ['fid'])))
   ) {
     $accession = $form_state['input']['accession'];
-    Submission::deleteFileUsage($file, $accession);
+    TppsFile::deleteUsage($file, $accession);
   }
 }
 

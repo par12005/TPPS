@@ -837,8 +837,8 @@ function tpps_admin_panel_validate($form, &$form_state) {
           }
           if (!empty($form_state['values']["edit_file_{$fid}_file"])) {
             $file = tpps_file_load($fid);
-            if ($file && Submission::isEmptyFileUsage($file, $accession)) {
-              Submission::addFileUsage($file, $accession);
+            if ($file && TppsFile::isEmptyUsage($file, $accession)) {
+              TppsFile::addUsage($file, $accession);
             }
           }
         }

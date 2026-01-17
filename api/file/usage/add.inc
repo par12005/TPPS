@@ -17,7 +17,7 @@
  */
 function tpps_api_file_usage_add($file, $accession, $count = NULL) {
   $count = $count ?? arg(6) ?? 1;
-  Submission::addFileUsage($file, $accession, $count);
+  TppsFile::addUsage($file, $accession, $count);
   $message = 'Added @count usage for file #@fid for submission  "#@accession".';
   return [
     'message' => t($message,

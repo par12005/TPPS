@@ -88,7 +88,7 @@ function theme_file_action_list(array $variables) {
     l(t('D'), 'api/file/' . $fid . '/get',
       array_merge($options, ['attributes' => ['title' => t('Download File')]])
     ),
-    l(t('U'), 'api/file/' . $fid . '/usage',
+    TppsFile::buildApiUsageLink($fid, 'U',
       array_merge($options, ['attributes' => ['title' => t('Usage')]])
     ),
     l(t('U+'), 'api/file/' . $fid . '/usage/add/' . $accession,

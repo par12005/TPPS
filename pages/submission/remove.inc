@@ -218,36 +218,40 @@ function tpps_submission_remove_get_options($accession) {
     return [];
   }
   $submission = new Submission($accession);
-  $options = [
-    'clearTppsSubmissionTable' => [
-      'default_value' => FALSE,
-      'title' => t('Remove record in "tpps_submission" table.'),
-      'status_method' => 'hasDbRecord',
-      'description' => t('Removes records from "public.tpps_submission" and "chado.dbxref" tables.')
-      . theme('item_list', [
-        'items' => [
-          l(t('View record in "chado.dbxref" table.'),
-            'admin/reports/db/chado.dbxref',
-            ['query' => ['chado.dbxref.accession' => $accession]]
-          ),
-          l(t('View record in "tpps_submission" table.'),
-            'admin/reports/db/public.tpps_submission',
-            ['query' => ['public.tpps_submission.accession' => $accession]]
-          ),
-        ]
-      ]),
-    ],
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Submission object.
+  //
+  // @TODO Check if Submission Cache is updated.
+  // @TODO When selected use all other options too.
+  // @TODO REmove this option. Use 'purge' instead because there is no sence to remove record and leave other parts.
+  $options['removeSubmissionTable'] = [
+    'default_value' => FALSE,
+    'title' => t('Remove record in "tpps_submission" table.'),
+    'status_method' => 'hasDbRecord',
+    'description' => t('Removes records from "public.tpps_submission" and "chado.dbxref" tables.')
+    . theme('item_list', [
+      'items' => [
+        l(t('View record in "chado.dbxref" table.'),
+          'admin/reports/db/chado.dbxref',
+          ['query' => ['chado.dbxref.accession' => $accession]]
+        ),
+        l(t('View record in "tpps_submission" table.'),
+          'admin/reports/db/public.tpps_submission',
+          ['query' => ['public.tpps_submission.accession' => $accession]]
+        ),
+      ]
+    ]),
+  ];
 
-    # @todo Add remove metadata.
-    # @TODO Zenodo Deposit and files.
-
-    'clearDB' => [
-      'default_value' => FALSE,
-      // @TODO Convert into 'checkboxes' and show list of tables which checked
-      // by default.
-      'title' => t('Clears DB tables.'),
-      'description' => t('Remove records from many DB tables.'),
-    ],
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // DB Tables.
+  // @TODO Get code from submit all.
+  $options['clearDB'] = [
+    'default_value' => FALSE,
+    // @TODO Convert into 'checkboxes' and show list of tables which checked
+    // by default.
+    'title' => t('Clears DB tables.'),
+    'description' => t('Remove records from many DB tables.'),
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -362,6 +366,7 @@ function tpps_submission_remove_get_options($accession) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Files.
+  // Submission::removeFiles().
   $options['removeFiles'] = [
     'default_value' => FALSE,
     'title' => t('Remove files.'),
@@ -375,12 +380,43 @@ function tpps_submission_remove_get_options($accession) {
             'admin/reports/tpps/submission/file/all/' . $accession
           ),
         ]
-      ])
-      . TppsArray::print(
-        (SubmissionCache::get($accession)['file']['grouped_list'] ?? []),
-        t("Submission's Files:")
-      ),
+      ]),
   ];
+
+  // Format:
+  // ['file']['grouped_list'][$group][$organism_label][$field_name] => $fid.
+
+  // @TODO Minor. Implement ability to select files for removement.
+  // Show file status and link to usage page.
+  $file_list = SubmissionCache::get($accession)['file']['grouped_list'] ?? [];
+  foreach ($file_list as $group_name => $group_list) {
+    foreach ($group_list as $organism_name => $organism_list) {
+      foreach ($organism_list as $field_name => $fid) {
+        if ($file = tpps_file_load($fid)) {
+          $usage = TppsFile::getUsage($file, $accession);
+          $class = 'strikethrough';
+          $tooltip = t('Could NOT be removed');
+          if ($usage == 1) {
+            $class = '';
+            $tooltip = t('Could be removed');
+          }
+          $usage_link = TppsFile::buildApiUsageLink($fid, 'Usage', [
+            'attributes' => [
+              'title' => t('File usage: @count', ['@count' => $usage]),
+            ]
+          ]);
+          TppsArray::setValue(
+            $file_list,
+            [$group_name, $organism_name, $field_name],
+            '<span class="' . $class . '" title="' . $tooltip . '">' . $fid . '</span> (' . $usage_link . ')'
+          );
+        }
+      }
+    }
+  }
+  $options['removeFiles']['description'] .= TppsArray::print(
+    $file_list, t("Submission's Files:")
+  );
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Tags.

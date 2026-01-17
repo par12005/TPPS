@@ -701,7 +701,7 @@ function tpps_form_build_file_field(array $form_bus) {
 
     // Stop using the file so it can be deleted if the user clicks 'remove'.
     if (variable_get('tpps_genotype_file_usage_delete', TRUE)) {
-      Submission::deleteFileUsage($file, $form_state['accession']);
+      TppsFile::deleteUsage($file, $form_state['accession']);
     }
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1306,7 +1306,7 @@ function tpps_form_validate_required_field($element, $form_state) {
     empty($element['#states']['required'])
     // Skip this validation when form just saved.
     // @TODO Add '#name' to button Save and use it's name instead of label.
-    
+
     || TppsArray::getValue($form_state, ['clicked_button', '#value']) == 'Save'
   ) {
     return;
