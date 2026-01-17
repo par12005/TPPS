@@ -1,4 +1,4 @@
-<?php
+d<?php
 
 /**
  * @file
@@ -184,7 +184,7 @@ function tpps_report_submission_file_all_theme_single_row(array $context) {
   // New array must be used to have correct order of keys.
   $filter = ($context['is_single']) ? 'all' : $context['report_filter'];
 
-  $total_filesize =0;
+  $total_filesize = 0;
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   switch ($filter) {
     case Report::MISSING_FILES:
@@ -238,10 +238,8 @@ function tpps_report_submission_file_all_theme_single_row(array $context) {
               }
               $value['file']['grouped_list'][$group][$organism_label][$field_name]
                 = $file_label
-                // File size.
-                . ($file_size ? ' (' . format_size($file_size) . ') ' : ' ')
-                // Actions.
-                . theme('file_action_list',
+                . ' ' . theme('file_size', ['size' => $file_size])
+                . ' ' . theme('file_action_list',
                   ['accession' => $accession, 'fid' => $fid]
                 );
             }
@@ -260,7 +258,7 @@ function tpps_report_submission_file_all_theme_single_row(array $context) {
         'path' => 'admin/reports/tpps/submission/file/all/' . $accession,
         'show_version' => TRUE,
       ])
-      . ' (' . format_size($total_filesize) . ') '
+      . ' ' . theme('file_size', ['size' => $total_filesize])
       . '<br />['
       . implode(', ', Submission::getPageList(['accession' => $accession]))
       . ']',

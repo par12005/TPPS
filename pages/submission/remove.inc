@@ -394,21 +394,31 @@ function tpps_submission_remove_get_options($accession) {
       foreach ($organism_list as $field_name => $fid) {
         if ($file = tpps_file_load($fid)) {
           $usage = TppsFile::getUsage($file, $accession);
-          $class = 'strikethrough';
           $tooltip = t('Could NOT be removed');
+          $class = 'strikethrough';
           if ($usage == 1) {
-            $class = '';
             $tooltip = t('Could be removed');
+            $class = '';
           }
-          $usage_link = TppsFile::buildApiUsageLink($fid, 'Usage', [
-            'attributes' => [
-              'title' => t('File usage: @count', ['@count' => $usage]),
-            ]
-          ]);
+
           TppsArray::setValue(
             $file_list,
             [$group_name, $organism_name, $field_name],
-            '<span class="' . $class . '" title="' . $tooltip . '">' . $fid . '</span> (' . $usage_link . ')'
+              theme('file_id',
+                [
+                  'fid' => $fid,
+                  'attributes' => [
+                    'title' => $tooltip,
+                    'class' => [$class],
+                  ],
+                ]
+              )
+              . ' ' . theme('file_size',
+                ['size' => $file_size = $file->filesize]
+              )
+              . ' ' . theme('file_action_list',
+                 ['accession' => $accession, 'fid' => $fid, 'tiny' => FALSE]
+              )
           );
         }
       }

@@ -73,6 +73,12 @@ function tpps_theme() {
       ],
       'file' => 'theme/file.inc',
     ],
+    'file_size' => [
+      'variables' => [
+        'size' => NULL,
+      ],
+      'file' => 'theme/file.inc',
+    ],
     'file_local_vcf' => [
       'variables' => [
         'path' => NULL,

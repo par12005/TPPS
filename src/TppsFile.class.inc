@@ -128,30 +128,4 @@ class TppsFile {
     return empty(TppsFile::getUsage($file, $accession));
   }
 
-  /**
-   * Builds link to file usage API page.
-   *
-   * @param int $fid
-   *   File Id.
-   *   Note: no check if file exists.
-   * @param string $title
-   *   Link title.
-   * @param array $options
-   *   Link options. See l().
-   *
-   * @return string
-   *   Returns HTML code for hyperlink to file usage API page.
-   *   Url includes access token which allows to access this page.
-   *   Path example: 'api/file/20735/usage?token=xxxxx'.
-   */
-  public static function buildApiUsageLink($fid, $title = 'Usage', array $options = []) {
-    $title = t($title);
-    return l($title, 'api/file/' . $fid . '/usage', array_merge(
-      [
-        'query' => ['token' => variable_get('tpps_api_token')],
-        'attributes' => ['title' => $title],
-      ], $options
-    ));
-  }
-
 }
