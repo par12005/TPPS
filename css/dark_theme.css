@@ -38,7 +38,7 @@ body a, body a:hover {
 #main .region-sidebar-second div.block.contextual-links-region form,
 footer#footer,
 
-form.tpps-submission-tag-form,
+form.tpps,
 form#submission-remove-form,
 form.tpps-admin-panel,
 form.tpps-submission,
@@ -57,13 +57,11 @@ form.tppsc-form,
   background: #373a3c !important;
 }
 /* Submission Tag. To allow overwrite on fly */
-form.tpps-submission-tag-form input.form-text {
+form.tpps input.form-text {
   background: #373a3c;
 }
 
-form.tpps-submission-tag-form,
-form#submission-tag-remove-form,
-
+form.tpps,
 fieldset.tpps-submission-report pre,
 body.page-completed-submission,
 
@@ -127,10 +125,10 @@ form.tpps-form           table thead th select{
   color: white;
 }
 
-form.tpps-submission-tag-form .btn.form-submit:hover,
-form.tpps-submission-tag-form .btn.form-button:hover,
-form.tpps-submission-tag-form .btn.form-submit:focus,
-form.tpps-submission-tag-form .btn.form-button:focus,
+form.tpps .btn.form-submit:hover,
+form.tpps .btn.form-button:hover,
+form.tpps .btn.form-submit:focus,
+form.tpps .btn.form-button:focus,
 
 form.tpps-admin-panel .btn.form-submit:hover,
 form.tpps-admin-panel .btn.form-button:hover,
@@ -160,7 +158,7 @@ form.tppsc-form       .tag-text {
 /*form.tpps-submission input,*/
 /*form.tpps-form input,*/
 /*form.tppsc-form input,*/
-form.tpps-submission-tag-form textarea,
+form.tpps textarea,
 form.tpps-admin-panel textarea,
 form.tpps-submission textarea,
 form.tpps-form textarea,

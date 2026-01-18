@@ -740,9 +740,23 @@ class Submission {
           }
           else {
             // Remove file usage record (not file itself).
-            TppsFile::deleteUsage($file, $this->getAccessionNumber());
+            TppsFile::deleteUsage($file, $this->accession);
             // Remove file from disk.
-            file_delete($file);
+            // @TODO Add 'Force' checkbox to the form.
+            $result = file_delete($file, $force = FALSE);
+            if ($result === TRUE) {
+              // sucess.
+              // @TODO Remove from submission.
+              // Save at the very end.
+            }
+            elseif ($result === FALSE) {
+              // Error.
+              // @todo Show error to user.
+            }
+            elseif (is_array($result)) {
+              // Used by other modules.
+              // @todo Show message.
+            }
           }
         }
       }

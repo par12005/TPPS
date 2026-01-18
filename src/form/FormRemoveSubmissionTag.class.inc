@@ -50,7 +50,7 @@ class FormRemoveSubmissionTag {
       $delete_button,
       $cancel_button
     );
-    $form['#attributes']['class'][] = 'tpps-submission-tag-form';
+    $form['#attributes']['class'][] = 'tpps';
     $form['tag_id'] = ['#type' => 'hidden', '#value' => $tag_id];
     $form['#submit'][] = 'FormRemoveSubmissionTag::submit';
     return $form;

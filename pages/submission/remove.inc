@@ -103,11 +103,7 @@ function tpps_submission_remove_selection_form(array &$form, $accession) {
   }
   $submission = new Submission($accession);
   $removement_options = tpps_submission_remove_get_options($accession);
-  $form['options'] = [
-    '#type' => 'fieldset',
-    '#title' => t('Removement options'),
-    '#collapsible' => TRUE,
-  ];
+  $form['#attributes']['class'][] = 'tpps';
 
   foreach ($removement_options as $name => $item) {
     $is_empty = FALSE;
@@ -117,18 +113,54 @@ function tpps_submission_remove_selection_form(array &$form, $accession) {
         $is_empty = empty(call_user_func([$submission, $item['status_method']]));
       }
     }
-    $form['options'][$name] = [
-      '#type' => 'checkbox',
+    $form[$name] = [
+      '#type' => 'fieldset',
       '#title' => '<span class="' . ($is_empty ? 'strikethrough' : '') . '">'
         . $item['title'] . '</span>',
-      '#default_value' => $item['default_value'],
+      '#tree' => TRUE,
+      '#collapsible' => TRUE,
+      '#collapsed' => $is_empty,
       '#description' => ($item['description'] ?? NULL),
     ];
+    // Useful links.
+    if (!empty($item['links'])) {
+      $form[$name]['links'] = [
+        '#markup' => theme('item_list', ['items' => $item['links']]),
+      ];
+    }
+    // Disable if empty.
     if ($is_empty) {
-      $form['options'][$name]['#disabled'] = TRUE;
-      $form['options'][$name]['#default_value'] = FALSE;
+      // Note: disabled whole fieldset.
+      $form[$name]['#disabled'] = TRUE;
+      $form[$name]['#default_value'] = FALSE;
+    }
+    // Extra info.
+    if (!empty($item['info']['title'])) {
+      $form[$name]['info'] = [
+        '#title' => $item['info']['title'],
+        '#type' => 'fieldset',
+        '#tree' => FALSE,
+        '#collapsible' => TRUE,
+        'content' => ['#markup' => ($item['info']['content'] ?? '')],
+      ];
+    }
+    if (!$is_empty) {
+      $form[$name]['remove'] = [
+        '#type' => 'checkbox',
+        '#title' => t('Remove'),
+        '#default_value' => $item['default_value'],
+        '#description' => ($item['remove']['description'] ?? NULL),
+      ];
+      if (!empty($item['force'])) {
+        $form[$name]['force'] = [
+          '#type' => 'checkbox',
+          '#title' => t('Force'),
+          '#description' => ($item['force']['description'] ?? NULL),
+        ];
+      }
     }
   }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Buttons.
   $form['actions'] = ['#type' => 'container'];
   $form['actions']['submit'] = [
@@ -226,22 +258,54 @@ function tpps_submission_remove_get_options($accession) {
   // @TODO REmove this option. Use 'purge' instead because there is no sence to remove record and leave other parts.
   $options['removeSubmissionTable'] = [
     'default_value' => FALSE,
-    'title' => t('Remove record in "tpps_submission" table.'),
+    'title' => t('Form State'),
     'status_method' => 'hasDbRecord',
-    'description' => t('Removes records from "public.tpps_submission" and "chado.dbxref" tables.')
-    . theme('item_list', [
-      'items' => [
-        l(t('View record in "chado.dbxref" table.'),
-          'admin/reports/db/chado.dbxref',
-          ['query' => ['chado.dbxref.accession' => $accession]]
-        ),
-        l(t('View record in "tpps_submission" table.'),
-          'admin/reports/db/public.tpps_submission',
-          ['query' => ['public.tpps_submission.accession' => $accession]]
-        ),
-      ]
-    ]),
+    'description' => t('Remove Form State records stored in table '
+      . '"public.tpps_submission".'),
+    'links' => [
+      l(t('View record in "chado.dbxref" table.'),
+        'admin/reports/db/chado.dbxref',
+        ['query' => ['chado.dbxref.accession' => $accession]]
+      ),
+      l(t('View record in "tpps_submission" table.'),
+        'admin/reports/db/public.tpps_submission',
+        ['query' => ['public.tpps_submission.accession' => $accession]]
+      ),
+    ],
+    'remove' => [
+      'description' => t("Removement of the Form State record (and Shared "
+        . "State) means that study can't be found and processed. "
+        . "But records in other DB tables and files will be left."),
+    ],
+    'force' => [
+      'description' => t('Remove Form State, all the files and any records '
+      . 'in other DB tables.')
+      . '<br />'
+      . t('WARNING: This is full removement.')
+      . '<br />'
+      . t('Note: Submission Purge does the same.'),
+    ],
   ];
+
+  // :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  //$options['removeDbxrefTable'] = [
+  //  'default_value' => FALSE,
+  //  'title' => t('Form State'),
+  //  'status_method' => 'hasDbRecord',
+  //  'description' => t('Remove Form State records from "public.tpps_submission" and "chado.dbxref" tables.')
+  //  . theme('item_list', [
+  //    'items' => [
+  //      l(t('View record in "chado.dbxref" table.'),
+  //        'admin/reports/db/chado.dbxref',
+  //        ['query' => ['chado.dbxref.accession' => $accession]]
+  //      ),
+  //      l(t('View record in "tpps_submission" table.'),
+  //        'admin/reports/db/public.tpps_submission',
+  //        ['query' => ['public.tpps_submission.accession' => $accession]]
+  //      ),
+  //    ]
+  //  ]),
+  //];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // DB Tables.
@@ -250,18 +314,19 @@ function tpps_submission_remove_get_options($accession) {
     'default_value' => FALSE,
     // @TODO Convert into 'checkboxes' and show list of tables which checked
     // by default.
-    'title' => t('Clears DB tables.'),
-    'description' => t('Remove records from many DB tables.'),
+    'title' => t('DB tables'),
+    'description' => t('Remove records from DB tables.'),
   ];
+
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Zenodo Deposit.
   if (!empty($deposit_id = $submission->getZenodoDepositId())) {
     $options['removeZenodoDeposit'] = [
       'default_value' => FALSE,
-      'title' => t('Remove Zenodo Deposit and files'),
+      'title' => t('Zenodo Deposit (and files)'),
       'status_method' => 'hasZenodoDepositId',
-      'description' => t('Removes not yet published Zenodo Deposit and files.')
+      'description' => t("Removes unpublished Zenodo Deposit and it's files.")
         . '<br />' . ZenodoHost::getStatus(),
     ];
     try {
@@ -286,82 +351,84 @@ function tpps_submission_remove_get_options($accession) {
         . t("Deposit status: doesn't exist on Zenodo server but submission has "
         . "Zenodo Deposition Id (which probably outdated).");
     }
-    $options['removeZenodoDeposit']['description'] .= theme('item_list', [
-      'items' => [
-        l(
-          t('Zenodo Deposit #@deposit_id', ['@deposit_id' => $deposit_id]),
-          'tpps/submission/' . $accession . '/zenodo'
-        ),
-        l(
-          t('Zenodo Deposit #@deposit_id Files', ['@deposit_id' => $deposit_id]),
-          'tpps/submission/' . $accession . '/zenodo/files'
-        ),
-        l(t('"Zenodo Submissions" report'), 'admin/reports/tpps/submission/zenodo'),
-        l(t('"Zenodo Depositions" report'), 'admin/reports/tpps/zenodo/deposition'),
-      ],
-    ]);
+    $options['removeZenodoDeposit']['links'] = [
+      l(
+        t('Zenodo Deposit #@deposit_id', ['@deposit_id' => $deposit_id]),
+        'tpps/submission/' . $accession . '/zenodo'
+      ),
+      l(
+        t('Zenodo Deposit #@deposit_id Files', ['@deposit_id' => $deposit_id]),
+        'tpps/submission/' . $accession . '/zenodo/files'
+      ),
+      l(t('"Zenodo Submissions" report'), 'admin/reports/tpps/submission/zenodo'),
+      l(t('"Zenodo Depositions" report'), 'admin/reports/tpps/zenodo/deposition'),
+    ];
   }
+
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Imported Submission Metadata.
   $options['removeImportRecord'] = [
     'default_value' => FALSE,
-    'title' => t('Remove record from the Imported Submissions list'),
+    'title' => t('Record in the list of the imported submissions'),
     'status_method' => 'wasImported',
-    'description' => t('Removes record from the list of imported submissions.')
-    . theme('item_list', [
-      'items' => [
-        l(t('View "Imported Studies" report.'),
-          'admin/reports/tpps/submission/imported'
-        ),
-        l(t('View variable which holds list of imported submissions.'),
-          'admin/reports/db/public.variable',
-          [
-            'query' => [
-              'public.variable.name' => 'tpps_imported_studies_list'
-            ],
-          ]
-        ),
-      ]
-    ]),
+    'remove' => [
+      'description' => t('Remove record from the list of the submissions '
+      . 'which was imported. This list is store in Drupal variable with name '
+      . '"tpps_imported_studies_list".'),
+    ],
+    'description' => t('Removes record from the list of imported submissions.'),
+    'links' => [
+      l(t('View "Imported Studies" report.'),
+        'admin/reports/tpps/submission/imported'
+      ),
+      l(t('View variable which holds list of imported submissions.'),
+        'admin/reports/db/public.variable',
+        ['query' => ['public.variable.name' => 'tpps_imported_studies_list']]
+      ),
+    ],
   ];
+
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Import Meta-data.
   $options['removeImportMeta'] = [
     'default_value' => FALSE,
-    'title' => t('Remove Import Meta'),
+    'title' => t('Import Meta-data'),
     'status_method' => 'hasImportMeta',
-    'description' => t("Removes Import Meta-data from Submission's Form State")
-      . theme('item_list', [
-        'items' => [
-          l(t('View "Imported Studies" report.'), 'admin/reports/tpps/submission/imported'),
-          l(t('Submission Cache in JSON format'), 'api/submission/' . $accession . '/cache'),
-          l(t("Submission's State View page"), 'tpps/submission/' . $accession . '/view'),
-        ]
-      ]),
+    'description' => t("Remove Import Meta-data from Submission's Form State"),
+    'links' => [
+      l(t('View "Imported Studies" report.'), 'admin/reports/tpps/submission/imported'),
+      l(t('Submission Cache in JSON format'), 'api/submission/' . $accession . '/cache'),
+      l(t("Submission's State View page"), 'tpps/submission/' . $accession . '/view'),
+    ],
   ];
   if ($submission->hasImportMeta()) {
-    $options['removeImportMeta']['description'] .= TppsArray::print(
-      $submission->getImportMeta(),
-      t('Import Meta data')
-    );
+    $options['removeImportMeta']['info'] = [
+      'content' => TppsArray::print($submission->getImportMeta()),
+      'title' => t('Import Meta data'),
+    ];
   }
+
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Submission Cache.
   $options['removeSubmissionCache'] = [
     'default_value' => FALSE,
-    'title' => t("Remove Submission's cache."),
+    'title' => t("Submission Cache"),
     'status_method' => 'isCached',
-    'description' => t("Removes record from the 'cache_tpps_submission' table. ")
-      . t("Note: If submission won't be fully removed this cache will be "
-      . "updated automatically when cached submittion will be requested")
-      . theme('item_list', [
-        'items' => [
-          l(t("View JSON Submission Cache"), 'api/submission/' . $accession . '/cache'),
-          l(t('View content of the "public.cache_tpps_submission" table.'),
-            'admin/reports/db/public.cache_tpps_submission'
-          ),
-        ]
-      ]),
+    'description' => t("Remove the record from the 'cache_tpps_submission' table."),
+    'links' => [
+      l(t("View JSON Submission Cache"), 'api/submission/' . $accession . '/cache'),
+      l(t('View content of the "public.cache_tpps_submission" table.'),
+        'admin/reports/db/public.cache_tpps_submission'
+      ),
+    ],
+    'remove' => [
+      'description' => t("Note: If submission won't be fully removed this "
+        . "cache will be updated automatically when cached submittion will "
+        . "be requested."),
+    ],
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -369,26 +436,34 @@ function tpps_submission_remove_get_options($accession) {
   // Submission::removeFiles().
   $options['removeFiles'] = [
     'default_value' => FALSE,
-    'title' => t('Remove files.'),
+    'title' => t('Files'),
     'status_method' => 'hasFiles',
-    'description' => t('Removes only files not used by other studies.')
-      . '<br />' . t('WARNING: Only files which not in use by other '
-      . 'studies will be removed')
-      . theme('item_list', [
-        'items' => [
-          l(t("View Submission's File report."),
-            'admin/reports/tpps/submission/file/all/' . $accession
-          ),
-        ]
-      ]),
+    'links' => [
+      l(t("View 'File Diagnostics' page"),
+        'tpps-admin-panel/file-diagnostics/' . $accession
+      ),
+      l(t("'Submission's File' report"),
+        'admin/reports/tpps/submission/file/all/' . $accession
+      ),
+    ],
+    'description' => t('Remove files linked to submission.'),
+    'remove' => [
+      'description' => t('Remove only files not used by other studies, modules.')
+    ],
+    'force' => [
+      'description' => t('Remove files which are in use by other modules and '
+        . 'files locally stored on server (huge VCF-files).')
+        . '<br />'
+        . t('Note: Files which has usage greater then 1 are used by other '
+        . ' modules, studies. By default those file will not be removed.'),
+    ],
   ];
 
-  // Format:
-  // ['file']['grouped_list'][$group][$organism_label][$field_name] => $fid.
-
-  // @TODO Minor. Implement ability to select files for removement.
   // Show file status and link to usage page.
+  // @TODO Minor. Implement ability to select files for removement.
   $file_list = SubmissionCache::get($accession)['file']['grouped_list'] ?? [];
+  // Structure of the $file_list:
+  // ['file']['grouped_list'][$group][$organism_label][$field_name] => $fid.
   foreach ($file_list as $group_name => $group_list) {
     foreach ($group_list as $organism_name => $organism_list) {
       foreach ($organism_list as $field_name => $fid) {
@@ -400,7 +475,6 @@ function tpps_submission_remove_get_options($accession) {
             $tooltip = t('Could be removed');
             $class = '';
           }
-
           TppsArray::setValue(
             $file_list,
             [$group_name, $organism_name, $field_name],
@@ -424,29 +498,52 @@ function tpps_submission_remove_get_options($accession) {
       }
     }
   }
-  $options['removeFiles']['description'] .= TppsArray::print(
-    $file_list, t("Submission's Files:")
-  );
+  $options['removeFiles']['info'] = [
+    'title' => t("Submission's Files"),
+    'content' => TppsArray::print($file_list),
+  ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Tags.
+  $links = [
+    l(t("Manage tags of this submission"), 'tpps-admin-panel/' . $accession),
+    l(t("List of all existing tags"), 'tpps/tag'),
+  ];
+  if (!is_live_site()) {
+    $links[] = l(
+      t("Table 'public.tpps_tag' (tags definitions)"),
+      'admin/reports/db/public.tpps_tag'
+    );
+    $links[] = l(
+      t("Table 'public.tpps_submission_tag' (relation between tag and submission)"),
+      'admin/reports/db/tpps_submission_tag'
+    );
+  }
   $options['removeAllTags'] = [
     'default_value' => FALSE,
-    'title' => t("Remove all submission's tags."),
+    'title' => t("Submission Tags"),
     'status_method' => 'hasTags',
-    'description' => t('Removes tags associated with study.')
-      . '<br />' . t('WARNING: All (!) tags (including system) will be removed.')
-      . theme('item_list', [
-        'items' => [
-          l(t("Manage Submission's tags"), 'tpps-admin-panel/' . $accession),
-          l(t("Tag's settings page"), 'tpps/tag'),
-        ]
-      ]),
+    'description' => t('Remove tags associated with study.'),
+    'links' => $links,
+    'remove' => [
+      'description' => t('Removes tags associated with study except system tags.')
+        . '<br />'
+        . t('Note: There are system tag (not custom) which will not be removed.')
+        . '<br />'
+        . t('System tags are: "TPPS" (#1) and "TPPSc" (#2).'),
+    ],
+    'force' => [
+      'description' => t('Removes all tags (including system tags) associated '
+      . 'with study.'),
+    ],
   ];
   if ($submission->hasTags()) {
-    $options['removeAllTags']['description'] .= t("Submission's Tags:")
-      . '<br />'
-      . theme('submission_tag_list', ['tags' => $submission->getTagIdList()]);
+    $options['removeAllTags']['info'] = [
+      'title' => t("Submission's Tags"),
+      'content' => theme('submission_tag_list',
+        ['tags' => $submission->getTagIdList()]
+      ),
+    ];
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

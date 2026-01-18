@@ -37,7 +37,6 @@ class FormCreateSubmissionTag {
   public static function build(array $form, array &$form_state) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Common.
-    $form['#attributes']['class'][] = 'tpps-submission-tag-form';
     // This will add the color picker to the TPPS submission tags edit-color
     // field id.
     // @todo Minor. Use local copy of this js-file.
@@ -66,6 +65,8 @@ class FormCreateSubmissionTag {
       '#suffix' => '<div id="color-picker"><a>Toggle Color Picker</a></div>',
     ];
     $form['submit'] = ['#type' => 'submit', '#value' => t('Submit')];
+    $form['#attributes']['class'][] = 'tpps-submission-tag-form';
+    $form['#attributes']['class'][] = 'tpps';
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Custom.
