@@ -22,7 +22,7 @@
 class FormEditSubmissionTag {
 
   /**
-   * Form to edit a submission tag.
+   * Builds form. Form callback.
    *
    * @param array $form
    *   The form object to be populated.

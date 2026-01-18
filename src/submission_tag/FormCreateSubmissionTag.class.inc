@@ -22,9 +22,7 @@
 class FormCreateSubmissionTag {
 
   /**
-   * Form to create a new submission tag.
-   *
-   * Form callback.
+   * Builds form. Form callback.
    *
    * @param array $form
    *   The form object to be populated.

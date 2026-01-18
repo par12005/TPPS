@@ -22,7 +22,7 @@
 class FormRemoveSubmissionTag {
 
   /**
-   * Menu-callback. Shows form to remove tag.
+   * Builds form. Form callback.
    */
   public static function build(array $form, array &$form_state, $tag_id = NULL) {
     $cancel_redirect = SubmissionTag::BASE_URL . '/' . $tag_id;
