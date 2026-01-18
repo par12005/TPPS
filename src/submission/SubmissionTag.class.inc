@@ -19,6 +19,12 @@
  * Usage
  * To get tag name:
  *   SubmissionTag::load($tag_id)->name;
+ *
+ * Related classes:
+ *   'SubmissionTag',
+ *   'FormCreateSubmissionTag',
+ *   'FormEditSubmissionTag',
+ *   'FormRemoveSubmissionTag'.
  */
 
 /**
@@ -37,95 +43,6 @@ class SubmissionTag {
 
   // URL of the main page.
   const BASE_URL = 'tpps/tag';
-
-  /**
-   * Form to create a new submission tag.
-   *
-   * Form callback.
-   *
-   * @param array $form
-   *   The form object to be populated.
-   * @param array $form_state
-   *   The state of the form object to be populated.
-   *
-   * @return array
-   *   The populated form object.
-   */
-  public static function buildForm(array $form, array &$form_state) {
-    SubmissionTag::buildDefaultForm($form, $form_state);
-    $form['#submit'][] = 'SubmissionTag::submitForm';
-    $form['#validate'][] = 'SubmissionTag::validateForm';
-    return $form;
-  }
-
-  /**
-   * Default form to edit/create submission tag.
-   *
-   * @param array $form
-   *   The form object to be populated.
-   * @param array $form_state
-   *   The state of the form object to be populated.
-   *
-   * @return array
-   *   The populated form object.
-   */
-  public static function buildDefaultForm(array &$form, array &$form_state) {
-    // This will add the color picker to the TPPS submission tags edit-color
-    // field id.
-    // @todo Minor. Use local copy of this js-file.
-    drupal_add_js(
-      'https://cdnjs.cloudflare.com/ajax/libs/tinyColorPicker/1.1.1/jqColorPicker.min.js',
-      'external'
-    );
-    // @TODO [VS] This file must be stored under /sites/all/libraries to allow
-    // other modules to reuse it and get updates independently from this module.
-    drupal_add_js(TPPS_MODULE_PATH . '/js/tag_colorpicker.js');
-    $form['name'] = [
-      '#type' => 'textfield',
-      '#title' => t('Name'),
-      '#description' => t('The name of the new tag'),
-      '#required' => TRUE,
-      '#prefix' => l(t('Back to TPPS Submission Tags page'), static::BASE_URL),
-    ];
-    $form['color'] = [
-      '#type' => 'textfield',
-      '#title' => t('Color'),
-      '#description' => t('The color of the new tag. Can be the name of a '
-        . 'color, like "red" or "blue", or can be a hexidecimal color like '
-        . '"#FFFFFF" or "#A2C32F". Hexidecimal colors must start with the "#" '
-        . 'character.'),
-      '#required' => TRUE,
-      '#suffix' => '<div id="color-picker"><a>Toggle Color Picker</a></div>',
-    ];
-    $form['submit'] = ['#type' => 'submit', '#value' => t('Submit')];
-  }
-
-  /**
-   * Implements hook_form_validate().
-   */
-  public static function validateForm(array &$form, array &$form_state) {
-    $result = db_select(static::TABLE, 't')
-      ->fields('t')
-      ->condition('name', $form_state['values']['name'], 'ILIKE')
-      ->range(0, 1)
-      ->execute()->fetchObject();
-    if (!empty($result)) {
-      $message = t("A tag already exists with this name. Please select a "
-        . "different name or use the existing tag.");
-      form_set_error('name', $message);
-    }
-  }
-
-  /**
-   * Implements hook_form_submit().
-   */
-  public static function submitForm(array $form, array &$form_state) {
-    db_insert(static::TABLE)->fields([
-      'name' => $form_state['values']['name'],
-      'color' => $form_state['values']['color'],
-    ])->execute();
-    drupal_goto(static::BASE_URL);
-  }
 
   /**
    * Returns the id of a tag based on the name.
@@ -233,82 +150,6 @@ class SubmissionTag {
   }
 
   /**
-   * Form to edit a submission tag.
-   *
-   * @param array $form
-   *   The form object to be populated.
-   * @param array $form_state
-   *   The state of the form object to be populated.
-   * @param mixed $tag_id
-   *   The id of the tag being edited.
-   *
-   * @return array
-   *   The populated form object.
-   */
-  public static function buildEditForm(array $form, array &$form_state, $tag_id = NULL) {
-    if (empty($tag_id)) {
-      drupal_goto(static::BASE_URL);
-    }
-
-    $tag = db_select(static::TABLE, 't')
-      ->fields('t')
-      ->condition('tpps_tag_id', $tag_id)
-      ->range(0, 1)
-      ->execute()->fetchObject();
-
-    if (empty($tag) or $tag->static) {
-      drupal_goto(static::BASE_URL);
-    }
-
-    SubmissionTag::buildDefaultForm($form, $form_state);
-    $form['name']['#default_value'] = $tag->name;
-    $form['color']['#default_value'] = $tag->color;
-    $form['tag_id'] = ['#type' => 'hidden', '#value' => $tag_id];
-    $form['#submit'][] = 'SubmissionTag::submitEditForm';
-    $form['#validate'][] = 'SubmissionTag::validateEditForm';
-    return $form;
-  }
-
-  /**
-   * Implements hook_form_validate().
-   */
-  public static function validateEditForm(array &$form, array &$form_state) {
-    $tag_id = FormState::get($form_state, ['values', 'tag_id']);
-    $tag_name = FormState::get($form_state, ['values', 'name']);
-    $result = db_select('tpps_tag', 't')
-      ->fields('t', ['name'])
-      ->condition('tpps_tag_id', $tag_id, '!=')
-      ->condition('name', $tag_name, 'ILIKE')
-      ->range(0, 1)
-      ->execute()->fetchField();
-
-    if (!empty($result)) {
-      $message = t("A tag already exists with this name. Please select a "
-        . "different name or use the existing tag.");
-      form_set_error('name', $message);
-    }
-  }
-
-  /**
-   * Implements hook_form_submit().
-   */
-  public static function submitEditForm($form, &$form_state) {
-    $tag_id = FormState::get($form_state, ['values', 'tag_id']);
-    $tag_name = FormState::get($form_state, ['values', 'name']);
-    $tag_color = FormState::get($form_state, ['values', 'color']);
-    db_update(static::TABLE)
-      ->fields([
-        'name' => $tag_name,
-        'color' => $tag_color,
-      ])
-      ->condition('tpps_tag_id', $tag_id)
-      ->execute();
-    $message = t('Tag #@tag_id was updated.', ['@tag_id' => $tag_id]);
-    drupal_set_message($message);
-    drupal_goto(static::BASE_URL);
-  }
-
-  /**
    * Menu callback. Shows all submission tags as a table.
    *
    * Shouldn't be converted into theme-function because used as a menu-callback.
@@ -349,60 +190,6 @@ class SubmissionTag {
     ]);
     tpps_add_css_js('main');
     return $output;
-  }
-
-  /**
-   * Menu-callback. Shows form to remove tag.
-   */
-  public static function buildRemoveForm(array $form, array &$form_state, $tag_id = NULL) {
-    $cancel_redirect = static::BASE_URL . '/' . $tag_id;
-    $tag = static::load($tag_id);
-    if (empty($tag)) {
-      drupal_goto($cancel_redirect);
-    }
-    $message = t('Are you sure, you want to remove submission tag #@tag_id '
-      . '"<strong>@tag_name</strong>"?',
-      [
-        '@tag_name' => $tag->name,
-        '@tag_id' => $tag->tpps_tag_id,
-      ]
-    );
-    $cancel_redirect = static::BASE_URL . '/' . $tag_id;
-    $description = $message . '<br />' . t('The action cannot be undone.');
-    $delete_button = t('Delete');
-    $cancel_button = t('Cancel');
-
-    $form = confirm_form(
-      $form,
-      $message,
-      $cancel_redirect,
-      $description,
-      $delete_button,
-      $cancel_button
-    );
-    $form['tag_id'] = ['#type' => 'hidden', '#value' => $tag_id];
-    $form['#submit'][] = 'SubmissionTag::submitRemoveForm';
-    return $form;
-  }
-
-  /**
-   * Form submitter. Removes Submission tag.
-   *
-   * @param array $form
-   *   Drupal Form Array.
-   * @param array $form_state
-   *   Drupal Form State Array.
-   */
-  public static function submitRemoveForm(array $form, array &$form_state) {
-    if (FormState::get($form_state, ['values', 'confirm'])) {
-      $tag_id = FormState::get($form_state, ['values', 'tag_id']);
-      if ($tag_id) {
-        SubmissionTag::remove($tag_id);
-        $message = t('Tag #@tag_id was removed.', ['@tag_id' => $tag_id]);
-        drupal_set_message($message);
-      }
-    }
-    drupal_goto(static::BASE_URL);
   }
 
   /**
@@ -586,6 +373,8 @@ class SubmissionTag {
    * @return string
    *   Returns rendered page content which shows list of submission accessions
    *   linked to given tag.
+   *
+   * @todo Minor. ?Move to separate class
    */
   public static function buildInfoPage($tag_key) {
     if (empty($tag_id = SubmissionTag::getId($tag_key))) {

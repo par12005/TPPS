@@ -3628,9 +3628,9 @@ function tpps_hook_info() {
  */
 function tpps_forms() {
   $forms = [];
-  $forms['submission_tag_form']['callback'] = 'SubmissionTag::buildForm';
-  $forms['submission_tag_edit_form']['callback'] = 'SubmissionTag::buildEditForm';
-  $forms['submission_tag_remove_form']['callback'] = 'SubmissionTag::buildRemoveForm';
+  $forms['submission_tag_form']['callback'] = 'FormCreateSubmissionTag::build';
+  $forms['submission_tag_edit_form']['callback'] = 'FormEditSubmissionTag::build';
+  $forms['submission_tag_remove_form']['callback'] = 'FormRemoveSubmissionTag::build';
   return $forms;
 }
 

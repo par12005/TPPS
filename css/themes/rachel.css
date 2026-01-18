@@ -23,7 +23,7 @@
 /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 /* Form */
 
-form#submission-tag-edit-form,
+form.tpps-submission-tag-form,
 .tppsc-form {
   padding: 20px;
   /*font-size: 16px;*/
@@ -41,7 +41,7 @@ form.tppsc-form       .form-item {
 
 /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 /* Fields */
-form#submission-tag-edit-form select,
+form.tpps-submission-tag-form select,
 form.tpps-submission  select,
 form.tpps-admin-panel select,
 form.tppsc-form       select {
@@ -66,8 +66,8 @@ form.tppsc-form .form-managed-file table div.form-item {
 }
 
 /* TPPS Submission Tag Forms */
-form#submission-tag-edit-form input,
-form#submission-tag-edit-form textarea,
+form.tpps-submission-tag-form input,
+form.tpps-submission-tag-form textarea,
 /* TPPS Submission Forms */
 form.tpps-submission input,
 form.tpps-submission textarea,
@@ -85,13 +85,13 @@ form.tppsc-form textarea {
   font-size: 16px;
   height: auto;
 }
-form#submission-tag-edit-form .form-item label,
+form.tpps-submission-tag-form .form-item label,
 form.tpps-submission  .form-item label,
 form.tpps-admin-panel .form-item label,
 form.tppsc-form       .form-item label {
   font-size: 16px;
 }
-form#submission-tag-edit-form div.form-item,
+form.tpps-submission-tag-form div.form-item,
 form.tpps-submission  div.form-item,
 form.tpps-admin-panel div.form-item,
 form.tppsc-form       div.form-item {
@@ -171,7 +171,7 @@ form.tppsc-form       fieldset legend span.fieldset-legend {
 
 /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 /* Huge Rounded Buttons */
-form#submission-tag-edit-form .form-submit,
+form.tpps-submission-tag-form .form-submit,
 form.tpps-admin-panel .form-submit,
 form.tpps-submission  .form-submit,
 form.tppsc-form       .form-submit {
@@ -191,7 +191,7 @@ form.tppsc-form       .form-submit {
   border: none;
 }
 /* Rectangular Buttons */
-form#submission-tag-edit-form .form-button,
+form.tpps-submission-tag-form .form-button,
 form.tpps-submission   .form-button,
 form.tpps-admin-panel  .form-button,
 form.tppsc-form        .form-button,
@@ -227,10 +227,10 @@ form.tppsc-form       a.form-button {
 }
 
 /* Submission Tags */
-form#submission-tag-edit-form .form-submit:hover,
-form#submission-tag-edit-form .form-button:hover,
-form#submission-tag-edit-form .form-submit:focus,
-form#submission-tag-edit-form .form-button:focus,
+form.tpps-submission-tag-form .form-submit:hover,
+form.tpps-submission-tag-form .form-button:hover,
+form.tpps-submission-tag-form .form-submit:focus,
+form.tpps-submission-tag-form .form-button:focus,
 
 form.tpps-submission  .form-submit:hover,
 form.tpps-submission  .form-button:hover,
