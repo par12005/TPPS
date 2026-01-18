@@ -131,7 +131,7 @@ class PhenotypeMeta extends FileField {
     if (empty($phenotype['metadata'])) {
       // $phenotype['metadata'] holds File Id of Phenotype Metadata file.
       // @TODO Use:
-      // tpps_form_error_required($form_state, [$organism_key, 'phenotype', 'metadata']);
+      // TppsForm::errorRequired($form_state, [$organism_key, 'phenotype', 'metadata']);
       form_set_error($organism_key . "][phenotype][metadata",
         t('Phenotype Metadata File: field is required.')
       );

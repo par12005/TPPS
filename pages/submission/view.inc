@@ -35,7 +35,7 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
   //module_load_include('inc', 'tpps', 'includes/submissions');
   $import_meta = $submission->getImportMeta();
   if (!empty($import_meta)) {
-    tpps_form_add_report($form, [
+    TppsForm::addReport($form, [
       'import_metadata' => [
         'title' => t('Import Metadata'),
         'data' => theme('item_list', [

@@ -7,7 +7,7 @@
  * Drupal.settings.tpps.autoFocus.FieldName.
  * See
  * - tpps_add_css_js(),
- * - tpps_form_autofocus().
+ * - TppsForm::autofocus().
  */
 (function($, Drupal) {
   $(document).ready(function() {

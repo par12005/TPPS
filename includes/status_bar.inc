@@ -12,7 +12,7 @@
  * steps.
  *
  * WARNING:
- * Only this function uses icons tpps_form_navigation_bar() doesn't have icons
+ * Only this function uses icons TppsForm::navigationBar() doesn't have icons
  * so if this function will be removed be sure to remove icon files.
  *
  *

@@ -352,8 +352,8 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     // Wrapper is NOT required here.
     $form['tree-accession']['#suffix'] .= tpps_get_markercluster_code(FALSE);
   }
-  tpps_form_autofocus($form, ['tree-accession', 'species-1', 'file']);
+  TppsForm::autofocus($form, ['tree-accession', 'species-1', 'file']);
   tpps_add_css_js('google_map', $form);
-  tpps_form_add_buttons(['form' => &$form, 'page' => 'page_3']);
+  TppsForm::addButtons(['form' => &$form, 'page' => 'page_3']);
   return $form;
 }

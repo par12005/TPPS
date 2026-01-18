@@ -124,7 +124,7 @@ class AssayDesign extends FileField {
     ];
 
     // Add file upload field.
-    tpps_form_build_file_field([
+    TppsForm::buildFileField([
       'form' => &$form,
       'form_state' => $form_state,
       'parents' => static::getParents($organism_index, $form_state),
@@ -138,7 +138,7 @@ class AssayDesign extends FileField {
         'visible' => $states,
         // Doesn't works as expected. Field is always required. Probably because
         // 'required_when_visible' feature doesn't support complex rules.
-        // See tpps_form_validate_required_field().
+        // See TppsForm::validateRequiredField().
         // 'required' => $states,
       ],
       'extra_elements' => [

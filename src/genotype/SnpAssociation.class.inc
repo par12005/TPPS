@@ -174,7 +174,7 @@ class SnpAssociation extends FileField {
       ]),
     ];
     // SNP Association File.
-    tpps_form_build_file_field([
+    TppsForm::buildFileField([
       'form' => &$form,
       'form_state' => $form_state,
       'parents' => static::getParents($organism_index, $form_state),

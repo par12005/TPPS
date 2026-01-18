@@ -65,7 +65,7 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
     ],
   ];
   tpps_submission_list_add_buttons($form);
-  tpps_form_autofocus($form, ['tpps_submission_export_state']);
+  TppsForm::autofocus($form, ['tpps_submission_export_state']);
 
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('submission_export', $form);
@@ -140,7 +140,7 @@ function tpps_submission_export_file_report(array &$fid_list = [], array &$files
     }
     else {
       drupal_set_message(t('Files was found and processed. See report below.'));
-      tpps_form_add_report($form, [
+      TppsForm::addReport($form, [
         'files_prepared_for_import' => [
           'title' => t('List of files prepared for import'),
           'data' => TppsArray::print($files),

@@ -81,7 +81,7 @@ function tpps_genotype_subform(array $form_bus) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Only for 1st organism.
   if ($organism_index == 1 && $organism_number > 1) {
-    tpps_form_add_yesno_field(array_merge($form_bus,
+    TppsForm::addYesNoField(array_merge($form_bus,
       [
         'parents' => [$organism_key, $type],
         'field_name' => 'are_genotype_markers_identical',
@@ -118,7 +118,7 @@ function tpps_genotype_subform(array $form_bus) {
     $default_value = tpps_get_ajax_value($form_state,
       [$organism_key, 'genotype', $field_name]
     );
-    tpps_form_add_yesno_field(array_merge($form_bus,
+    TppsForm::addYesNoField(array_merge($form_bus,
       [
         'parents' => [$organism_key, $type],
         'field_name' => $field_name,
@@ -261,7 +261,7 @@ function tpps_genotype_subform(array $form_bus) {
   $file_field_name = 'vcf';
   $snps_fieldset = 'SNPs';
   // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
-  tpps_form_build_file_field(array_merge($form_bus, [
+  TppsForm::buildFileField(array_merge($form_bus, [
     'parents' => [$organism_key, 'genotype', $snps_fieldset],
     'field_name' => $file_field_name,
     'title' => $title,
@@ -790,7 +790,7 @@ function tpps_page_4_genotype_ssrs(array $form_bus) {
   // Field was relocated (v.2).
   //'source' => [$organism_key, 'genotype', 'files', 'ssrs'];
   //'target' => [$ssrs_fieldset, 'ssrs'];
-  tpps_form_build_file_field(array_merge($form_bus, [
+  TppsForm::buildFileField(array_merge($form_bus, [
     'parents' => [$organism_key, 'genotype', $ssrs_fieldset],
     'field_name' => $file_field_name,
     'title' => $title,
@@ -815,7 +815,7 @@ function tpps_page_4_genotype_ssrs(array $form_bus) {
   // Field was relocated (v.2).
   // ['saved_values', 4, $organism_key, 'genotype', 'files', 'ssrs_extra'] =>
   // ['saved_values', 4, $organism_key, 'genotype', $ssrs_fieldset, 'ssrs_extra'];
-  tpps_form_build_file_field(array_merge($form_bus, [
+  TppsForm::buildFileField(array_merge($form_bus, [
     'parents' => [$organism_key, 'genotype', $ssrs_fieldset],
     'field_name' => $file_field_name,
     'title' => $title,

@@ -33,10 +33,14 @@ files[] = src/NextFlowManager.class.inc
 files[] = src/RestAPI.class.inc
 files[] = src/Report.class.inc
 files[] = src/FormState.class.inc
-files[] = src/TppsConfiguration.class.inc
-files[] = src/TppsArray.class.inc
 files[] = src/FormState.class.inc
 files[] = src/CVTerm.class.inc
+
+; Tpps. Elemental Entities.
+files[] = src/tpps/TppsConfiguration.class.inc
+files[] = src/tpps/TppsArray.class.inc
+files[] = src/tpps/TppsForm.class.inc
+files[] = src/tpps/TppsFile.class.inc
 
 ; Zenodo API.
 files[] = src/zenodo/Zenodo.class.inc
@@ -48,7 +52,6 @@ files[] = src/zenodo/ZenodoHost.class.inc
 ; files[] = src/zenodo/ZenodoRecords.class.inc
 
 ; File Fields.
-files[] = src/TppsFile.class.inc
 files[] = src/FileField.class.inc
 ; File Fields / Phenotype.
 files[] = src/phenotype/PhenotypeManual.class.inc

@@ -477,8 +477,7 @@ function tpps_submission_flatten(array $state, array $options = []) {
   }
 
   if (!empty($page_2['study_type'])) {
-    module_load_include('inc', 'tpps', 'includes/form');
-    $data['Study Type'] = tpps_form_get_study_type($page_2['study_type']);
+    $data['Study Type'] = TppsForm::getStudyType($page_2['study_type']);
 
     if (!empty($page_2['study_info']['season'])) {
       $data['Seasons Assessed'] = implode($page_2['study_info']['season']);

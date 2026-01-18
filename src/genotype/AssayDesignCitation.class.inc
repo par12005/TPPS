@@ -211,7 +211,7 @@ class AssayDesignCitation extends FileField {
     $form_element['paper-doi'] = [
       '#type' => 'textfield',
       '#title' => t('Paper DOI:'),
-      '#description' => tpps_form_get_doi_examples(),
+      '#description' => TppsForm::getDoiExamples(),
       '#states' => $subelement_states,
       // Optional.
     ];
@@ -219,7 +219,7 @@ class AssayDesignCitation extends FileField {
       '#type' => 'textfield',
       '#title' => t('Dataset DOI:'),
       '#states' => $subelement_states,
-      '#description' => tpps_form_get_doi_examples(),
+      '#description' => TppsForm::getDoiExamples(),
       // Optional.
     ];
     tpps_add_css_js('suggestion', $form);

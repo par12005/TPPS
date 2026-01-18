@@ -75,13 +75,13 @@ function tpps_submission_import_form(array $form, array &$form_state, $accession
     '#title' => t('Status after import'),
     '#options' => array_merge(
       [TPPS_DO_NOT_CHANGE_STATUS => t(TPPS_DO_NOT_CHANGE_STATUS)],
-      tpps_form_get_submission_status_list()
+      TppsForm::getSubmissionStatusList()
     ),
     '#default_value' => $form_state['input']['tpps_submission_import_status']
     ?? TPPS_DO_NOT_CHANGE_STATUS,
   ];
   $form['#validate'][] = 'tpps_submission_import_form_validate';
-  tpps_form_autofocus($form, ['tpps_submission_import_accession']);
+  TppsForm::autofocus($form, ['tpps_submission_import_accession']);
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
   tpps_submission_list_add_buttons($form);
@@ -236,11 +236,11 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
 
     // Form submission was disabled because submission version
     // upgraded and downgraded multiple times.
-    // To submit form Drupal builds it again so tpps_form_build_main()
+    // To submit form Drupal builds it again so TppsForm::buildMain()
     // will be called before tpps_main_submit().
     // @TODO Check if incompleted submissions processed correctly.
     drupal_set_message(t('Submission was submitted.'));
-    drupal_form_submit(tpps_form_get_id($submission->state), $state);
+    drupal_form_submit(TppsForm::getId($submission->state), $state);
   }
   else {
     // If we don't submit form we need manually change status of attached files
@@ -437,7 +437,7 @@ function tpps_submission_import_process_files(array &$state, $new_accession, arr
         ['@new_fid' => $new_file->fid, '@original_fid' => $fid]
       );
       drupal_set_message($message);
-      tpps_form_add_report($form, [
+      TppsForm::addReport($form, [
         'import_file_' . $fid => [
           'title' => $message,
           'data' => 'Original file: <pre>' . print_r($file, 1) . '</pre>'

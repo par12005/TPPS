@@ -533,7 +533,7 @@ class FormRemoveSubmission {
       module_load_include('inc', 'tpps', 'pages/submission/list');
       tpps_submission_list_validate_accession($accession);
       $submission = new Submission($accession);
-      $removement_options = tpps_submission_remove_get_options($accession);
+      $removement_options = FormRemoveSubmission::getOptions($accession);
 
       // Get removement options.
       $options = [];

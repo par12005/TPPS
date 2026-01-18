@@ -690,7 +690,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
   $form[$section['key']]['state-status'] = [
     '#type' => 'select',
     '#title' => $section['title'],
-    '#options' => tpps_form_get_submission_status_list(),
+    '#options' => TppsForm::getSubmissionStatusList(),
     '#default_value' => $submission->status,
     '#description' => t('Warning: This feature is experimental and may '
       . 'cause unforseen issues. Please do not change the status of this '

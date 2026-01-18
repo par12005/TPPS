@@ -69,11 +69,11 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
       ['saved_values', TPPS_PAGE_2, 'data_type']
     ) ?? 0,
   );
-  tpps_form_autofocus($form, ['data_type']);
+  TppsForm::autofocus($form, ['data_type']);
   $form['study_design']['study_type'] = [
     '#type' => 'select',
     '#title' => t('Study Type: *'),
-    '#options' => tpps_form_get_study_type(),
+    '#options' => TppsForm::getStudyType(),
     '#default_value' => FormState::get($form_state,
       ['saved_values', TPPS_PAGE_2, 'study_type']
     ) ?? 0,
@@ -122,6 +122,6 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
         break;
     }
   }
-  tpps_form_add_buttons(['form' => &$form, 'page' => 'page_2']);
+  TppsForm::addButtons(['form' => &$form, 'page' => 'page_2']);
   return $form;
 }

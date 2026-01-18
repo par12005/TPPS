@@ -1079,7 +1079,7 @@ return;
   /**
    * Get TPPS Form Id.
    *
-   * See tpps_form_get_id();
+   * See TppsForm::getId();
    *
    * @return string
    *   Returns 'tpps_main' or 'tppsc_main'.
@@ -1997,8 +1997,7 @@ return;
     for ($i = 1; $i <= $page1_values['organism']['number']; $i++) {
       $keyword_list[] = $page1_values['organism'][$i]['name'];
     }
-    module_load_include('inc', 'tpps', 'includes/form');
-    $keyword_list[] = tpps_form_get_study_type($page2_values['study_type']);
+    $keyword_list[] = TppsForm::getStudyType($page2_values['study_type']);
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Metadata.
     $metadata = (object) [

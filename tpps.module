@@ -103,7 +103,6 @@ module_load_include('inc', 'tpps', 'includes/submissions');
 require_once 'includes/match_trees.inc';
 require_once 'includes/ncbi_utils.inc';
 // All steps helper functions.
-module_load_include('inc', 'tpps', 'includes/form');
 module_load_include('inc', 'tpps', 'includes/form_utils');
 module_load_include('inc', 'tpps', 'includes/details');
 module_load_include('inc', 'tpps', 'includes/cvterm_utils');
@@ -960,7 +959,7 @@ function tpps_form_field_process(array $element, array &$form_state, array $form
       . '<br />[ ' . implode(' ][ ', $element['#array_parents']) . ' ]';
   }
   // Adds custom validation of fields required using Drupal Form States AJAX.
-  $element['#element_validate'][] = 'tpps_form_validate_required_field';
+  $element['#element_validate'][] = 'TppsForm::validateRequiredField';
 
   return $element;
 }
@@ -1200,7 +1199,7 @@ function tpps_form_alter(array &$form, array &$form_state, $form_id) {
   }
   // Remember fieldset collapsed state.
   if (variable_get('tpps_remember_fieldset_collapsed_state', FALSE)) {
-    tpps_form_add_fieldset_collapsed_state($form, $form_id);
+    TppsForm::addFieldsetCollapsedState($form, $form_id);
     tpps_form_add_js_setting($form, 'fieldsetCollapsedState',
       ['ajaxUrl' => '/' . TPPS_AJAX_URL . '/' . TPPS_RFCS_KEY]
     );
@@ -1388,9 +1387,8 @@ function tpps_page_build(&$page) {
  */
 function tpps_main(array $form, array &$form_state, $accession = NULL) {
   // @todo Minor.Use the same function to build form but set form_id manually.
-  module_load_include('inc', 'tpps', 'includes/form');
   // Note: we use the same function to build TPPS and TPPSc forms.
-  return tpps_form_build_main($form, $form_state, $accession);
+  return TppsForm::buildMain($form, $form_state, $accession);
 }
 
 /**
@@ -1499,7 +1497,6 @@ function tpps_main_submit($form, &$form_state) {
   $submission = tpps_submission()->setState($form_state);
   $submission->setUid($user->uid);
 
-  module_load_include('inc', 'tpps', 'includes/form');
   module_load_include('inc', 'tpps', 'includes/submission_file');
 
   // Get Submission Form Version.
@@ -1640,9 +1637,8 @@ function tpps_main_submit($form, &$form_state) {
  */
 function tppsc_main(array $form, array &$form_state, $accession = NULL) {
   // @todo Minor.Use the same function to build form but set form_id manually.
-  module_load_include('inc', 'tpps', 'includes/form');
   // Note: we use the same function to build TPPS and TPPSc forms.
-  return tpps_form_build_main($form, $form_state, $accession);
+  return TppsForm::buildMain($form, $form_state, $accession);
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

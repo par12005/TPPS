@@ -194,10 +194,9 @@ function tpps_ajax_get_study_details_tab(array $data) {
   $rows[] = [t('Authors'), theme('item_list', ['items' => $author_list])];
   $rows[] = [t('Species'), theme('item_list', ['items' => $species_list])];
   $rows[] = [t('Data Type'), $page2_values['data_type']];
-  module_load_include('inc', 'tpps', 'includes/form');
   $rows[] = [
     'Study Type',
-    tpps_form_get_study_type($page2_values['study_type']),
+    TppsForm::getStudyType($page2_values['study_type']),
   ];
   if (!empty($files)) {
     unset($params['attributes']['title']);
@@ -271,10 +270,9 @@ function tpps_ajax_get_environmental_details_tab(array $data) {
   }
 
 
-  module_load_include('inc', 'tpps', 'includes/form');
   // $rows[] = [
   //   'Study Type',
-  //   tpps_form_get_study_type($page2_values['study_type']),
+  //   TppsForm::getStudyType($page2_values['study_type']),
   // ];
   // $rows[] = [t('File Downloads'), implode('<br>', $files)];
   // $rows[] = [t('Population Size'), $state['stats']['tree_count']];

@@ -334,7 +334,7 @@ function tpps_get_ajax_value(array &$state, array $parents, $default = NULL, $fi
  * @param array $old
  *   The old form state with the old information.
  *
- * @todo Minor. Move code to 'Submission' class.
+ * @todo Minor. Move code to 'FormState' class.
  */
 function tpps_form_state_info(array &$new, array &$old) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -476,7 +476,7 @@ function tpps_pre_validate_init($accession = NULL) {
   $jobs = [];
   foreach ($vcfs as $org_num => $fid) {
     $includes = [];
-    $includes[] = module_load_include('inc', 'tpps', 'includes/form_utils');
+    $includes[] = dodule_load_include('inc', 'tpps', 'includes/form_utils');
     $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
     $args = [$accession, $fid, $org_num];
     $jobs[] = tripal_add_job(

@@ -238,7 +238,6 @@ class TppsArray {
    *   Returns FALSE otherwise.
    */
   public static function unset(array &$array, array $action_data) {
-    module_load_include('inc', 'tpps', 'includes/form');
     foreach ($action_data as $key => $item) {
       $params = [
         '@key' => ($item['field_name'] ?? $key),
@@ -250,7 +249,7 @@ class TppsArray {
         tpps_message($message, $params, 'error');
         continue;
       }
-      $target = &tpps_form_get_path($array, $item['parents']);
+      $target = &TppsForm::getPath($array, $item['parents']);
       if (empty($target['parent_element']) || empty($target['field_name'])) {
         if (variable_get('tpps_debug_mode', FALSE)) {
           // It's not an error because field would be not used in this submission.
@@ -292,7 +291,6 @@ class TppsArray {
     if ($debug_mode ?? FALSE) {
       dpm(print_r(debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 5), TRUE));
     }
-    module_load_include('inc', 'tpps', 'includes/form');
     foreach ($action_data as $key => $item) {
       if (empty($item['source']) || empty($item['target'])) {
         continue;
@@ -300,8 +298,8 @@ class TppsArray {
       // Note:
       // 'parent_element' is not a list of parents but a reference to element.
       // To get value use 'field_name' as key inside 'parent_element'.
-      $source = &tpps_form_get_path($array, $item['source']);
-      $target = &tpps_form_get_path($array, $item['target']);
+      $source = &TppsForm::getPath($array, $item['source']);
+      $target = &TppsForm::getPath($array, $item['target']);
       if (
         empty($source['parent_element']) || empty($source['field_name'])
         || empty($target['parent_element']) || empty($target['field_name'])
