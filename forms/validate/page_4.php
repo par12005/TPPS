@@ -916,7 +916,7 @@ function tpps_validate_genotype_ssr(array &$genotype, $organism_index, array $fo
     TppsForm::isRequiredFieldEmpty($form_state,
       [$organism_key, 'genotype', $ssrs_fieldset, $field_name]
     );
-    $field_value = TppsArray::getValue($genotype,
+    $field_value = TppsArray::get($genotype,
       [$ssrs_fieldset, $field_name]
     );
 
@@ -952,8 +952,8 @@ function tpps_validate_restore_file_field_on_form_rebuild(array &$form, array &$
   $debug_mode = FALSE;
   $key_exists = NULL;
   $new_key_exists = NULL;
-  $element = &TppsArray::getValue($form, $parents, $key_exists);
-  $new_element = &TppsArray::getValue($new_form, $parents, $new_key_exists);
+  $element = &TppsArray::get($form, $parents, $key_exists);
+  $new_element = &TppsArray::get($new_form, $parents, $new_key_exists);
   if (!$key_exists || empty($element) || !$new_key_exists || empty($new_element)) {
     return;
   }

@@ -420,6 +420,6 @@ function tpps_no_header_callback(array $form, array &$form_state) {
   $parents = $form_state['triggering_element']['#parents'];
   array_pop($parents);
 
-  $element = TppsArray::getValue($form, $parents);
+  $element = TppsArray::get($form, $parents);
   return $element;
 }

@@ -1017,7 +1017,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
     if (!empty($form_state['saved_values'][$page])) {
       // @TODO Remove this if possible.
       // When form wasn't yet submitted or saved then there is no value.
-      $empty_field_parent = TppsArray::getValue(
+      $empty_field_parent = TppsArray::get(
         $form_state['saved_values'][$page], $parents
       );
       $empty_field_default_value = $empty_field_parent[$field_name]['other'] ?? NULL;
@@ -1036,7 +1036,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // "No Header" checkbox.
-    $no_header = TppsArray::getValue(
+    $no_header = TppsArray::get(
       $form_state['complete form'],
       array_merge($element['#parents'], ['#value', 'no-header'])
     );
@@ -1045,7 +1045,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
     if (!$no_header && ($callback != 'tpps_no_header_callback')) {
       $end = array_pop($parents);
       $parents[] = $end . '-no-header';
-      $no_header = TppsArray::getValue(
+      $no_header = TppsArray::get(
         $form_state['saved_values'][$form_state['stage']],
         $parents
       );
@@ -1096,7 +1096,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
       array_pop($item_parents);
       $item_parents[] = end($element['#parents']) . '-columns';
       $item_parents[] = $key;
-      $default = TppsArray::getValue($saved_vals, $item_parents);
+      $default = TppsArray::get($saved_vals, $item_parents);
       if (!isset($default)) {
         foreach ($options as $k => $val) {
           similar_text(strtolower($val), strtolower($item), $percent);
@@ -3429,11 +3429,11 @@ function tpps_form_tppsc_main_alter($form, $form_state) {
   }
   // File was removed from page using 'Remove' button.
   $parents = TppsArray::getPath($form_state['values']);
-  $fid = TppsArray::getValue($form, array_merge($parents, ['#default_value']));
+  $fid = TppsArray::get($form, array_merge($parents, ['#default_value']));
   $file = tpps_file_load($fid);
   if (
     !(empty($fid)) && !empty($file)
-    && empty(TppsArray::getValue($form_state['input'], array_merge($parents, ['fid'])))
+    && empty(TppsArray::get($form_state['input'], array_merge($parents, ['fid'])))
   ) {
     $accession = $form_state['input']['accession'];
     TppsFile::deleteUsage($file, $accession);

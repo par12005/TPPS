@@ -320,7 +320,7 @@ class TppsArray {
         continue;
       }
 
-      // @TODO Minor. Use TppsArray::getValue().
+      // @TODO Minor. Use TppsArray::get().
       $source_field_value = $source['parent_element'][$source['field_name']] ?? NULL;
       $target_field_value = $target['parent_element'][$target['field_name']] ?? NULL;
 
@@ -382,10 +382,10 @@ class TppsArray {
    * Gets value of the nested element from the array.
    *
    * To get value by reference use:
-   * $ref = &TppsArray::getValue($array, $parents);
+   * $ref = &TppsArray::get($array, $parents);
    *
    * To update value:
-   * $ref = &TppsArray::getValue($array, $parents);
+   * $ref = &TppsArray::get($array, $parents);
    * $ref = 'new value';
    *
    * Shortcut for function drupal_array_get_nested_value() with default value.
@@ -410,7 +410,7 @@ class TppsArray {
    *   Returns the reference (!) to the value of the element of the array.
    *   Returns $array when $parents is an empty array.
    */
-  public static function &getValue(&$array = NULL, array $parents = [], &$key_exists = NULL) {
+  public static function &get(&$array = NULL, array $parents = [], &$key_exists = NULL) {
     if (is_null($array)) {
       // $array could be a sub-element of the array (e.g., $form_state['input']
       // and be empty (doesn't exists) so needed element also doesn't exist.
@@ -444,7 +444,7 @@ class TppsArray {
    * @param mixed $value
    *   The value.
    */
-  public static function setValue(array &$array, array $parents, $value = NULL) {
+  public static function set(array &$array, array $parents, $value = NULL) {
     drupal_array_set_nested_value($array, $parents, $value);
   }
 
@@ -547,9 +547,9 @@ class TppsArray {
       $marker_type_parents = $item['parents'];
       array_pop($marker_type_parents);
       $marker_type_parents[] = 'marker-type';
-      $marker_type_values = TppsArray::getValue($array, $marker_type_parents);
+      $marker_type_values = TppsArray::get($array, $marker_type_parents);
       if (!empty($marker_type_values[$key])) {
-        TppsArray::setValue($array, $item['parents'], 'yes');
+        TppsArray::set($array, $item['parents'], 'yes');
       }
     }
 

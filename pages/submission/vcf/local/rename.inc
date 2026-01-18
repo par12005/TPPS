@@ -132,7 +132,7 @@ function tpps_submission_local_vcf_rename_form_submit(array $form, array &$form_
         'local_vcf',
         $form_version = 1
       );
-      TppsArray::setValue($submission->sharedState, $parents, $file_path);
+      TppsArray::set($submission->sharedState, $parents, $file_path);
       $updated = TRUE;
     }
   }

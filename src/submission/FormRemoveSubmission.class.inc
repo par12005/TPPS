@@ -441,7 +441,7 @@ class FormRemoveSubmission {
               $tooltip = t('Could be removed');
               $class = '';
             }
-            TppsArray::setValue(
+            TppsArray::set(
               $file_list,
               [$group_name, $organism_name, $field_name],
                 theme('file_id',

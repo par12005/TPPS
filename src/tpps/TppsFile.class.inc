@@ -110,7 +110,7 @@ class TppsFile {
   public static function getUsage($file, $accession) {
     $key = str_replace('TGDR', '', $accession);
     $usage = file_usage_list($file, 'tpps', 'tpps_project', $key);
-    return TppsArray::getValue($usage, ['tpps', 'tpps_project', $key]);
+    return TppsArray::get($usage, ['tpps', 'tpps_project', $key]);
   }
 
   /**

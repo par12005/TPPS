@@ -419,9 +419,9 @@ class PhenotypeMeta extends FileField {
   public static function getPhenotypeNameColumn($organism_index, array $form_state) {
     $organism_key = 'organism-' . $organism_index;
     $parents = [$organism_key, 'phenotype', 'metadata-columns'];
-    $column_list = TppsArray::getValue($form_state['input'], $parents)
-      ?? TppsArray::getValue($form_state['values'], $parents)
-      ?? TppsArray::getValue(
+    $column_list = TppsArray::get($form_state['input'], $parents)
+      ?? TppsArray::get($form_state['values'], $parents)
+      ?? TppsArray::get(
         $form_state['saved_values'][TPPS_PAGE_4],
         $parents
       ) ?? NULL;

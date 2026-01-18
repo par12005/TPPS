@@ -171,14 +171,14 @@ class TppsForm {
    *   Returns TRUE if required field is empty and FALSE otherwise.
    */
   public static function isRequiredFieldEmpty(array $form_state, array $parents) {
-    $field = TppsArray::getValue($form_state['complete form'], $parents);
+    $field = TppsArray::get($form_state['complete form'], $parents);
     if (empty($field)) {
       watchdog('tpps', "Field wasn't found in 'complete form'. Parents: @parents",
         ['@parents' => implode('/', $parents)], WATCHDOG_ERROR
       );
       return FALSE;
     }
-    $value = TppsArray::getValue(
+    $value = TppsArray::get(
       $form_state['values'], TppsForm::getFieldPath($field, $parents)
     );
     if (empty($value)) {
@@ -227,7 +227,7 @@ class TppsForm {
    *   Error message text.
    */
   public static function error(array $form_state, array $parents, $message) {
-    $field = TppsArray::getValue($form_state['complete form'], $parents);
+    $field = TppsArray::get($form_state['complete form'], $parents);
     if (empty($field['#title'])) {
       $message = t("Field didn't found at form. Parents: @parents",
         ['@parents' => implode(' / ', $parents)]
@@ -245,7 +245,7 @@ class TppsForm {
       $new_path = $parents;
       array_pop($new_path);
       $new_path[] = 'other_marker_type';
-      $new_name = TppsArray::getValue(
+      $new_name = TppsArray::get(
         //$form_state['input'][TPPS_PAGE_4],
         $form_state['input'],
         $new_path
@@ -361,7 +361,7 @@ class TppsForm {
    *   Returns list of parents to element of requested type.
    *   Returns empty array if no elements found.
    *   Each item of array is a list of parents which could be used by
-   *   TppsArray::getValue() and similar.
+   *   TppsArray::get() and similar.
    *
    *   Example of returned array:
    *   Array
@@ -475,7 +475,7 @@ class TppsForm {
     }, ARRAY_FILTER_USE_KEY);
     $field = array_merge($defaults, $field);
     $parents = array_merge(($form_bus['parents'] ?? []), [$field_name]);
-    TppsArray::setValue($form, $parents, $field);
+    TppsArray::set($form, $parents, $field);
   }
 
   /**
@@ -617,7 +617,7 @@ class TppsForm {
     // When enabled field's machine name will be shown in field's decription.
     $debug_mode = FALSE;
     // Main element to work with.
-    $parent_element = &TppsArray::getValue($form, $parents);
+    $parent_element = &TppsArray::get($form, $parents);
     // Upload folder.
     if (empty($upload_location) && ($form_bus['type'] ?? FALSE)) {
       $upload_location = 'public://' . variable_get(
@@ -794,7 +794,7 @@ class TppsForm {
 
     // Get value.
     if ($parents) {
-      $value = &TppsArray::getValue($form_bus, $parents);
+      $value = &TppsArray::get($form_bus, $parents);
       return $value;
     }
     else {
@@ -819,7 +819,7 @@ class TppsForm {
    * @TODO Minor. Use CSS id intead of name attribute to set focus.
    */
   public static function autofocus(array &$form = NULL, array $path) {
-    if (empty($field = TppsArray::getValue($form, $path) ?? NULL)) {
+    if (empty($field = TppsArray::get($form, $path) ?? NULL)) {
       return;
     }
     // HTML fieldname (not from field name).
@@ -899,7 +899,7 @@ class TppsForm {
    * Gets parent element and field name from the given path.
    *
    * Drupal allows to get/set nested field's values using public static function
-   * TppsArray::getValue() but to unset (or relocate) you need
+   * TppsArray::get() but to unset (or relocate) you need
    * to have parent element by reference. This public static function get's parent element
    * and suggests to store field name in the end of the list of parents.
    *
@@ -943,15 +943,15 @@ class TppsForm {
     if (is_array($path)) {
       // When element not exists in this version of array then create it first.
       // Otherwise we can't move item to non-existing element.
-      if (empty(TppsArray::getValue($array, $path))) {
-        TppsArray::setValue($array, $path, NULL);
+      if (empty(TppsArray::get($array, $path))) {
+        TppsArray::set($array, $path, NULL);
       }
       // Last element is always a field name.
       $result['field_name'] = end($path);
       array_pop($path);
       // Check if there is a list of parents.
       if (count($path) >= 1) {
-        $result['parent_element'] = &TppsArray::getValue($array, $path);
+        $result['parent_element'] = &TppsArray::get($array, $path);
         $debug_mode = variable_get('tpps_debug_mode', FALSE);
         if (empty($result['parent_element']) && $debug_mode) {
           watchddog('tpps', 'Empty parent element. @path.<hr />@stack',
@@ -1286,7 +1286,7 @@ class TppsForm {
       // Skip this validation when form just saved.
       // @TODO Add '#name' to button Save and use it's name instead of label.
 
-      || TppsArray::getValue($form_state, ['clicked_button', '#value']) == 'Save'
+      || TppsArray::get($form_state, ['clicked_button', '#value']) == 'Save'
     ) {
       return;
     }
@@ -1352,7 +1352,7 @@ class TppsForm {
   public static function checkStateTrigger($trigger, array $condition, array $form_state) {
     $parts = explode('"', $trigger);
     $parents = explode('[', str_replace(']', '', $parts[1]));
-    $actual_value = TppsArray::getValue($form_state['values'], $parents);
+    $actual_value = TppsArray::get($form_state['values'], $parents);
     foreach ($condition as $key => $value) {
       // List of states from:
       // https://www.drupal.org/docs/drupal-apis/form-api/conditional-form-fields

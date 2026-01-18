@@ -322,14 +322,14 @@ class Submission {
    *   was  found under $state.
    */
   public function set(array $parents, $value, $update_shared_state = FALSE) {
-    TppsArray::setValue($this->state, $parents, $value);
+    TppsArray::set($this->state, $parents, $value);
     // Update sharedState only if this value was there before.
     $key_exists = FALSE;
-    TppsArray::getValue($this->sharedState, $parents, $key_exists);
+    TppsArray::get($this->sharedState, $parents, $key_exists);
     // @todo Implement correct $parents for shared_state.
     // Shared State could have different $parents cause field was relocated.
     if ($key_exists || $update_shared_state) {
-      TppsArray::setValue($this->sharedState, $parents, $value);
+      TppsArray::set($this->sharedState, $parents, $value);
     }
     return $this;
   }
@@ -356,17 +356,17 @@ class Submission {
     // State.
     // Check if there is a list of parents.
     if (count($parents) >= 1) {
-      $parent_element = &TppsArray::getValue($this->state, $parents);
+      $parent_element = &TppsArray::get($this->state, $parents);
     }
     if (!empty($parent_element) && !empty($field_name)) {
       unset($parent_element[$field_name]);
     }
     // sharedState.
     $key_exists = FALSE;
-    TppsArray::getValue($this->sharedState, $parents, $key_exists);
+    TppsArray::get($this->sharedState, $parents, $key_exists);
     if ($key_exists) {
       if (count($parents) >= 1) {
-        $parent_element = &TppsArray::getValue($this->sharedState, $parents);
+        $parent_element = &TppsArray::get($this->sharedState, $parents);
       }
       if (!empty($parent_element) && !empty($field_name)) {
         unset($parent_element[$field_name]);
@@ -386,7 +386,7 @@ class Submission {
    */
   public function &get(array $parents = []) {
     $key_exists = FALSE;
-    $element = TppsArray::getValue($this->state, $parents, $key_exists);
+    $element = TppsArray::get($this->state, $parents, $key_exists);
     if ($key_exists) {
       return $element;
     }
@@ -1181,7 +1181,7 @@ return;
     }
 
     // @TODO ? Create Submission class's property $importMeta.
-    $import_meta = TppsArray::getValue($this->state,
+    $import_meta = TppsArray::get($this->state,
       ['saved_values', 'tpps_submission_import']
     );
     if (empty($import_meta)) {
@@ -1505,7 +1505,7 @@ return;
       // Value.
       if (is_array($this->$name) && !empty($parents)) {
         $title = $name . '[' . implode('][', $parents) . ']';
-        $value = TppsArray::getValue($this->$name, $parents);
+        $value = TppsArray::get($this->$name, $parents);
       }
       else {
         $title = $name;
@@ -2050,7 +2050,7 @@ return;
     foreach ($parent_list as $step => $step_list) {
       foreach ($step_list as $parents) {
         $new_parents = array_merge([$step], $parents);
-        $fid = (int) TppsArray::getValue($saved_values, $new_parents);
+        $fid = (int) TppsArray::get($saved_values, $new_parents);
         if (empty($fid)) {
           continue;
         }
@@ -2292,7 +2292,7 @@ return;
       default:
         $parents = ['saved_values', TPPS_PAGE_1, 'dataset_doi'];
     }
-    return TppsArray::getValue($this->state, $parents);
+    return TppsArray::get($this->state, $parents);
   }
 
   /**
@@ -2320,21 +2320,21 @@ return;
         $parents = ['saved_values', TPPS_PAGE_1, 'dataset_doi'];
     }
     // State.
-    $state_value = TppsArray::getValue($this->state, $parents);
+    $state_value = TppsArray::get($this->state, $parents);
     if ($state_value != $value) {
       $was_updated = TRUE;
-      TppsArray::setValue($this->state, $parents, $value);
+      TppsArray::set($this->state, $parents, $value);
     }
 
     // Shared State.
     $shared_state_parents = ['saved_values', TPPS_PAGE_1, 'dataset_doi'];
-    $shared_state_value = TppsArray::getValue(
+    $shared_state_value = TppsArray::get(
       $this->sharedState,
       $shared_state_parents
     );
     if ($shared_state_value != $value) {
       $was_updated = TRUE;
-      TppsArray::setValue($this->sharedState, $shared_state_parents, $value);
+      TppsArray::set($this->sharedState, $shared_state_parents, $value);
     }
     // Save changes.
     if ($save_on_change && $was_updated) {
@@ -2727,7 +2727,7 @@ return;
    * @todo Move to 'TppsForm' class.
    */
   public function getStudyDataType() {
-    return TppsArray::getValue($this->state,
+    return TppsArray::get($this->state,
       ['saved_values', TPPS_PAGE_2, 'data_type']
     );
   }
@@ -2797,7 +2797,7 @@ return;
       );
       // '0' means manually added phenotype.
       // '1' - metadata file was uploaded.
-      $is_metadata_in_file = TppsArray::getValue($this->state,
+      $is_metadata_in_file = TppsArray::get($this->state,
         ['saved_values', TPPS_PAGE_4, $organism_key, 'phenotype', 'check']
       );
       if ($is_metadata_in_file) {
@@ -2823,7 +2823,7 @@ return;
       }
       else {
         // Manually added phenotypes.
-        $phenotype_number = TppsArray::getValue($this->state,
+        $phenotype_number = TppsArray::get($this->state,
           [
             'saved_values', TPPS_PAGE_4, $organism_key, 'phenotype',
             'phenotypes-meta', 'number'
@@ -2831,13 +2831,13 @@ return;
         );
         for ($j = 1; $j <= $phenotype_number; $j++) {
           // Note; value '0' means no synonym was found.
-          $synonym_id = TppsArray::getValue($this->state,
+          $synonym_id = TppsArray::get($this->state,
             [
               'saved_values', TPPS_PAGE_4, $organism_key, 'phenotype',
               'phenotypes-meta', $j, 'synonym_id',
             ]
           );
-          $name = TppsArray::getValue($this->state,
+          $name = TppsArray::get($this->state,
             [
               'saved_values', TPPS_PAGE_4, $organism_key, 'phenotype',
               'phenotypes-meta', $j, 'name',

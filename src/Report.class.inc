@@ -578,7 +578,7 @@ class Report {
         continue;
       }
       // @TODO Implement multiple levels support.
-      $sub_item_list = TppsArray::getValue($report_list, [$item]);
+      $sub_item_list = TppsArray::get($report_list, [$item]);
       if (!empty($sub_item_list)) {
         return static::buildOverviewPage($sub_item_list, [$item]);
       }

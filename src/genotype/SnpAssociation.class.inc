@@ -210,7 +210,7 @@ class SnpAssociation extends FileField {
       ],
       'extra_elements' => [
         'empty' => [
-          '#default_value' => TppsArray::getValue($form_state,
+          '#default_value' => TppsArray::get($form_state,
             [
               'saved_values',
               static::FORM_STEP,
@@ -349,7 +349,7 @@ class SnpAssociation extends FileField {
         || $genotyping_type == TPPS_GENOTYPING_TYPE_GENOTYPING_ASSAY
       )
       && !empty($snps['snps-assay'])
-      && TppsArray::getValue($snps, ['upload_snp_association']) == TPPS_YES
+      && TppsArray::get($snps, ['upload_snp_association']) == TPPS_YES
     ));
     // Do NOT allow empty field validation.
     $fid = static::getFileId($organism_index, $form_state);

@@ -109,7 +109,7 @@ function tpps_report_submission_file($filter = NULL) {
         case PhenotypeMeta::DOM_NAME:
           $report_data = [];
           foreach (array_keys($data) as $accession) {
-            $grouped_list = TppsArray::getValue($data,
+            $grouped_list = TppsArray::get($data,
               [$accession, 'file', SubmissionCache::FILE_GROUPED_LIST]
             );
             if (empty($grouped_list)) {

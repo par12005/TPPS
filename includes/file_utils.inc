@@ -516,7 +516,7 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
   // 'metadata-groups'
   // @TODO Only validate and don't touch existing data. Collect data on submit.
   $group_path = array_pop($parents) . "-groups";
-  $values = TppsArray::getValue($form_state['values'], $parents);
+  $values = TppsArray::get($form_state['values'], $parents);
   // Initialize form column values in form state.
   $values[$new_end_columns] = [];
   // Hold onto the location of the columns in form state.
@@ -606,7 +606,7 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
   }
 
   $values[$group_path] = $groups;
-  TppsArray::setValue($form_state['values'], $parents, $values);
+  TppsArray::set($form_state['values'], $parents, $values);
   return $groups;
 }
 
@@ -719,7 +719,7 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
         $parents = array_merge([$organism_key], $parents);
       }
 
-      $fid = TppsArray::getValue($form_state['values'], $parents);
+      $fid = TppsArray::get($form_state['values'], $parents);
       if (empty($file = tpps_file_load($fid))) {
         continue;
       }
@@ -739,12 +739,12 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
       }
       // Set value.
       foreach ($extra_field_list as $extra_name) {
-        TppsArray::setValue($form_state['values'],
+        TppsArray::set($form_state['values'],
           array_merge(
             $new_parents,
             [$field_name . '-' . $extra_name]
           ),
-          TppsArray::getValue($form, array_merge(
+          TppsArray::get($form, array_merge(
             $parents, ['#value', $extra_name]
           ))
         );

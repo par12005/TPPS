@@ -155,7 +155,7 @@ class OtherMarker extends FileField {
 
     if (!form_get_errors()) {
       // @TODO Reuse SnpAssay::validateTrees().
-      $acc_no_header = TppsArray::getValue(
+      $acc_no_header = TppsArray::get(
         $form_state['saved_values'],
         [TPPS_PAGE_3, 'tree-accession', $species_index, 'file-no-header']
       );
@@ -267,7 +267,7 @@ class OtherMarker extends FileField {
     $options['headers'] = tpps_file_headers($fid);
     $options['type'] = 'other';
     // Value of the select-box 'Other Marker Type'.
-    $options['marker'] = TppsArray::getValue($shared_state, [
+    $options['marker'] = TppsArray::get($shared_state, [
       'saved_values',
       static::FORM_STEP,
       $organism_key,
