@@ -2450,17 +2450,15 @@ function tpps_menu_add_submission_pages(array &$items = []) {
   ];
   $items['tpps/submission/%/remove'] = [
     'title callback' => 'tpps_submission_title',
-    'title arguments' => [2, 3],
+    'title arguments' => [2],
     'description' => 'Remove TPPS Submission',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_remove_form', 2],
+    'page arguments' => ['submission_remove_form', 2],
     'access arguments' => ['tpps delete submission'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'pages/submission/remove.inc',
   ];
   $items['tpps/submission/%/vcf/local/rename'] = [
     'title callback' => 'tpps_submission_title',
-    'title arguments' => [2, 3],
+    'title arguments' => [2],
     'description' => 'TPPS Submission Rename local VCF',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_local_vcf_rename_form', 2],
@@ -3631,6 +3629,7 @@ function tpps_forms() {
   $forms['submission_tag_form']['callback'] = 'FormCreateSubmissionTag::build';
   $forms['submission_tag_edit_form']['callback'] = 'FormEditSubmissionTag::build';
   $forms['submission_tag_remove_form']['callback'] = 'FormRemoveSubmissionTag::build';
+  $forms['submission_remove_form']['callback'] = 'FormRemoveSubmission::build';
   return $forms;
 }
 

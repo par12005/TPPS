@@ -63,7 +63,6 @@ class FormCreateSubmissionTag {
       '#suffix' => '<div id="color-picker"><a>Toggle Color Picker</a></div>',
     ];
     $form['submit'] = ['#type' => 'submit', '#value' => t('Submit')];
-    $form['#attributes']['class'][] = 'tpps-submission-tag-form';
     $form['#attributes']['class'][] = 'tpps';
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

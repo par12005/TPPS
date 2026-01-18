@@ -11,10 +11,10 @@ dependencies[] = tripal_eutils
 
 ; Submission.
 files[] = src/submission/Submission.class.inc
-files[] = src/submission/FormRemoveSubmission.class.inc
 files[] = src/submission/SubmissionCache.class.inc
 files[] = src/submission/SubmissionVersion.class.inc
 files[] = src/submission/ImportedSubmissionList.class.inc
+files[] = src/submission/FormRemoveSubmission.class.inc
 
 ; Submission Tag.
 files[] = src/submission_tag/SubmissionTag.class.inc
