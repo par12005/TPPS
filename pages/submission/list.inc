@@ -128,25 +128,6 @@ function tpps_submission_list_add_buttons(array &$form, $add_action = TRUE) {
 }
 
 /**
- * Validates study accession for subforms.
- *
- * @param string $accession
- *   Study accession. Example: TGDR23423.
- */
-function tpps_submission_list_validate_accession($accession) {
-  if (empty($accession)) {
-    drupal_set_message(t('Empty accession in @function().',
-      [
-        '@function' => debug_backtrace(
-          !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 2
-        )[1]['function'],
-      ]
-    ), 'warning');
-    drupal_goto('tpps/submission');
-  }
-}
-
-/**
  * TPPS Submission form submitter for 'Back' button.
  */
 function tpps_submission_list_back() {

@@ -23,8 +23,7 @@ function tpps_submission_zenodo_form(array $form, array &$form_state = [], $acce
     );
     drupal_goto($path);
   }
-  module_load_include('inc', 'tpps', 'pages/submission/list');
-  tpps_submission_list_validate_accession($accession);
+  TppsForm::validateAccession($accession);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Zenodo Deposition Widget.
   $context = [

@@ -5,8 +5,6 @@
  * Zenodo Single File  page.
  */
 
-module_load_include('inc', 'tpps', 'pages/submission/list');
-
 /**
  * Menu callback. Shows Zenodo Action buttons.
  */
@@ -19,7 +17,7 @@ function tpps_submission_zenodo_files_single_form(array $form, array &$form_stat
     drupal_set_message($message, 'error');
     drupal_goto($path);
   }
-  tpps_submission_list_validate_accession($accession);
+  TppsForm::validateAccession($accession);
   $submission = new Submission($accession);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

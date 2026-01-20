@@ -520,9 +520,10 @@ class FormRemoveSubmission {
    * Implements hook_form_submit().
    */
   public static function submit(array $form, array &$form_state) {
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Confirmed removement.
     if (FormState::get($form_state, ['saved_values', 'confirmed'])) {
+      // @TODO When any file removed - clear db tables (all loaded data).
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Confirmed removement.
       $accession = FormState::get($form_state,
         ['saved_values', 'tpps_submission_accession']
       );
@@ -530,8 +531,7 @@ class FormRemoveSubmission {
         drupal_set_message(t("Empty submission's accession."));
         drupal_goto('tpps/submission');
       }
-      module_load_include('inc', 'tpps', 'pages/submission/list');
-      tpps_submission_list_validate_accession($accession);
+      TppsForm::validateAccession($accession);
       $submission = new Submission($accession);
       $removement_options = FormRemoveSubmission::getOptions($accession);
 
@@ -556,29 +556,8 @@ class FormRemoveSubmission {
       drupal_goto('tpps/submission/' . $accession . '/remove');
     }
     else {
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Not yet confirmed.
-      $accession = $form_state['values']['tpps_submission_accession'] ?? NULL;
-      if (empty($accession)) {
-        drupal_set_message(t("Empty accession."), 'warning');
-        drupal_goto('tpps/submission');
-      }
-      if (FormState::getClickedButton($form_state) == 'purge') {
-        drupal_goto('tpps/submission/' . $accession . '/purge');
-      }
-      $submission = new Submission($accession);
-      $form_state['saved_values']['confirmed'] = TRUE;
-      $values_to_store = array_keys(
-        FormRemoveSubmission::getOptions($accession)
-      );
-      $values_to_store[] = 'tpps_submission_accession';
-      foreach ($values_to_store as $name) {
-        $form_state['saved_values'][$name] = FormState::get($form_state,
-          ['values', $name]
-        );
-      }
-      // Rebuild form to show confirmation page.
-      $form_state['rebuild'] = TRUE;
+      FormRemoveSubmission::submitConfirmation($form, $form_state);
     }
   }
 
@@ -586,11 +565,42 @@ class FormRemoveSubmission {
    * Implements hook_form_validate().
    */
   public static function validate(array &$form, array &$form_state) {
+
+    // @TODO When Form State removed - remove all (redirect to 'purge').
+
     //if (!empty($result)) {
     //  $message = t("A tag already exists with this name. Please select a "
     //    . "different name or use the existing tag.");
     //  form_set_error('name', $message);
     //}
+  }
+
+  /**
+   * Shows confirmation page on form submit.
+   */
+  public static function submitConfirmation(array $form, array &$form_state) {
+    $accession = $form_state['values']['tpps_submission_accession'] ?? NULL;
+    if (empty($accession)) {
+      drupal_set_message(t("Empty accession."), 'warning');
+      drupal_goto('tpps/submission');
+    }
+    if (FormState::getClickedButton($form_state) == 'purge') {
+      drupal_goto('tpps/submission/' . $accession . '/purge');
+    }
+    $submission = new Submission($accession);
+    $form_state['saved_values']['confirmed'] = TRUE;
+    $values_to_store = array_keys(
+      FormRemoveSubmission::getOptions($accession)
+    );
+    // Hidden values which must be stored for later use.
+    $values_to_store[] = 'tpps_submission_accession';
+    foreach ($values_to_store as $name) {
+      $form_state['saved_values'][$name] = FormState::get($form_state,
+        ['values', $name]
+      );
+    }
+    // Rebuild form to show confirmation page.
+    $form_state['rebuild'] = TRUE;
   }
 
 }

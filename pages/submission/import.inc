@@ -12,7 +12,6 @@
  * Job just after import. Required more work with code.
  */
 
-module_load_include('inc', 'tpps', 'pages/submission/list');
 module_load_include('inc', 'tpps', 'includes/imported_studies_list');
 define('TPPS_DO_NOT_CHANGE_STATUS', 'Do not change');
 
@@ -20,7 +19,7 @@ define('TPPS_DO_NOT_CHANGE_STATUS', 'Do not change');
  * TPPS Submission Import Form.
  */
 function tpps_submission_import_form(array $form, array &$form_state, $accession = '') {
-  tpps_submission_list_validate_accession($accession);
+  TppsForm::validateAccession($accession);
   $next_accession = 'TGDR' . tpps_init_project_get_next_accession();
   $accession = ($accession == 'new') ? $next_accession : $accession;
 

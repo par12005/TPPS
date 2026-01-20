@@ -5,13 +5,11 @@
  * TPPS Submission View.
  */
 
-module_load_include('inc', 'tpps', 'pages/submission/list');
-
 /**
  * Menu callback. Shows a single submission data.
  */
 function tpps_submission_view_form(array $form, array $form_state, $accession = '', $type = '') {
-  tpps_submission_list_validate_accession($accession);
+  TppsForm::validateAccession($accession);
   $submission = new Submission($accession);
 
   if ($submission->doesNotExist()) {

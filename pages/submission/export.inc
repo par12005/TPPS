@@ -12,14 +12,12 @@
  * reviewed studies files was detected correclty using 'comolete form'.
  */
 
-module_load_include('inc', 'tpps', 'pages/submission/list');
-
 /**
  * TPPS Study Export Form.
  */
 function tpps_submission_export_form(array $form, array &$form_state, $accession = '') {
   global $base_url;
-  tpps_submission_list_validate_accession($accession);
+  TppsForm::validateAccession($accession);
 
   $accession_list = SubmissionCache::getAccessionList();
   $form['tpps_submission_accession'] = [
@@ -83,7 +81,7 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
  */
 function tpps_submission_export_form_submit(array $form, array $form_state) {
   $accession = $form_state['values']['tpps_submission_accession'];
-  tpps_submission_list_validate_accession($accession);
+  TppsForm::validateAccession($accession);
   drupal_goto('tpps/submission/' . $accession . '/export');
 
 }

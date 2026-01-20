@@ -1500,4 +1500,26 @@ class TppsForm {
     ];
   }
 
+  /**
+   * Validates study accession.
+   *
+   * In case of fail redirects to 'tpps/submission' page.
+   *
+   * @param string $accession
+   *   Study accession. Example: TGDR23423.
+   */
+  public static function validateAccession($accession) {
+    if (empty($accession)) {
+      // @TODO Use watchdog to store function name and show more user-friendly message.
+      drupal_set_message(t('Empty accession in @function().',
+        [
+          '@function' => debug_backtrace(
+            !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 2
+          )[1]['function'],
+        ]
+      ), 'warning');
+      drupal_goto('tpps/submission');
+    }
+  }
+
 }

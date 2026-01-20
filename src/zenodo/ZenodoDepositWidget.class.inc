@@ -101,7 +101,7 @@ class ZenodoDepositWidget {
         }
         return FALSE;
       }
-      // tpps_submission_list_validate_accession($accession);
+      // TppsForm::validateAccession($accession);
       $submission = $context['submission'] = new Submission($accession);
       // @TODO Minor. Check if submission exists.
       $deposit_id = $context['deposit_id'] = $submission->getZenodoDepositId();
