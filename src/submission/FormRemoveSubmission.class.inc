@@ -569,7 +569,7 @@ class FormRemoveSubmission {
       $submission = new Submission($accession);
       $form_state['saved_values']['confirmed'] = TRUE;
       $values_to_store = array_keys(
-        tpps_submission_remove_get_options($accession)
+        FormRemoveSubmission::getOptions($accession)
       );
       $values_to_store[] = 'tpps_submission_accession';
       foreach ($values_to_store as $name) {
