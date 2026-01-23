@@ -8,13 +8,28 @@
  * ONLY for latest version of Form State (not for Shared State).
  * So must be updated to use latest Submission Version.
  *
- * @todo Use other class's ::getParents() methods to get latest version values.
+ * @todo Create instance of this class in hook_init() (or similar) and make it
+ * global. But having it global means that there must be only one $form_state
+ * but we also have 'Submission Shared State', 'Submission Form State' and
+ * currently processed $form_state. Create 3 items ($SSS, $FS, $SFS)?
+ *   $GLOBALS['FS'] = new FormState();
+ *
+ * @todo Use file field class's method ::getParents() to find elemnts and have
+ * SubmissionVersion support.
  * @todo Shoud default values for getters be used?
- * @todo Use dynamic methods to avoid sending $form_state each time.
- * Problems to solve:
- * 1) What instance name should be used to avoid naming conflicts and
- * keep readability? E.g., $fs = new FormState($form_state);
- * 2) This will bring the same data cloned in memory multiple times.
+ * @todo Minor. Remove dependency from 'TppsArray' class but it means code
+ * duplication.
+ *
+ * Usage example:
+ * $formState = new FormState($form_state);
+ * $formState->getAccession();
+ * $formState->set(['stage'], 2);
+ *
+ * Naming rules:
+ *   $formState - currently processing form.
+ *   $sharedState - Submission's Shared State.
+ *   @todo Find better name.
+ *   $state - Submission Form State.
  */
 
 /**
@@ -25,6 +40,125 @@
  */
 class FormState {
 
+  /**
+   * Submission's State Array.
+   *
+   * See __set()/__get().
+   *
+   * @var array
+   */
+  protected $formState = [];
+
+  /**
+   * Class constructor.
+   *
+   * @param array $form_state
+   *   TPPS Submission Form State.
+   */
+  public function __construct(array $form_state = NULL) {
+    // @TODO Minor. Get some useful data like accession, status and etc.
+    if (!empty($form_state)) {
+      $this->formState = $form_state;
+    }
+    return $this;
+  }
+
+  /**
+   * Magic setter.
+   *
+   * @param string $name
+   *   Class property name.
+   * @param mixed $value
+   *   Value to be set.
+   */
+  public function __set($name, $value) {
+    // Allow to overwrite magic with custom setter.
+    $func = 'set' . ucfirst($name);
+    if (method_exists($this, $func)) {
+      $this->$func($value);
+    }
+    else {
+      if (property_exists($this, $name)) {
+        $this->$name = $value;
+      }
+      else {
+        throw new InexistentPropertyException(
+          t('Inexistent property: @name', ['@name' => $name])
+        );
+      }
+    }
+    return $this;
+  }
+
+  /**
+   * Magic getter.
+   *
+   * @param string $name
+   *   Class property name.
+   *
+   * @return mixed
+   *   Returns property value.
+   */
+  public function &__get($name) {
+    // Allow to overwrite magic with custom getter.
+    $func = 'get' . ucfirst($name);
+    if (method_exists($this, $func)) {
+      return $this->$func();
+    }
+    else {
+      if (property_exists($this, $name)) {
+        return $this->$name;
+      }
+      else {
+        throw new Exception("Inexistent property: $name");
+      }
+    }
+    return $this;
+  }
+
+  // Common methods.
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+  /**
+   * Gets value of the arbitrary element using list of parents.
+   *
+   * @param array $parents
+   *   List of parents including element's name.
+   *
+   * @return mixed
+   *   Returns value or NULL.
+   */
+  public function get(array $parents) {
+    $this->validate();
+    return TppsArray::get($this->formState, $parents);
+  }
+
+  /**
+   * Sets value of the arbitrary element using list of parents.
+   *
+   * @param array $parents
+   *   List of parents including element's name.
+   * @param mixed $value
+   *   Value of the element.
+   */
+  public function set(array $parents, $value) {
+    $this->validate();
+    return TppsArray::set($this->formState, $parents, $value);
+  }
+
+  /**
+   * Checks if property 'formState' was set and not empty.
+   *
+   * @throws \Exception
+   *   Throws exception when property 'formState' wasn't set or empty.
+   */
+  public function validate() {
+    if (empty($this->formState)) {
+      $message = 'Empty Form State';
+      throw new Exception($message);
+    }
+  }
+
   // Custom methods.
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -34,16 +168,13 @@ class FormState {
    * Checkbox on Page 3 with title:
    * I would like to upload a separate plant accession file for each species.
    *
-   * @param array $form_state
-   *   Drupal Form State array.
-   *
    * @return bool
    *   Returns TRUE when each organism has own accession file.
    *   Returns FALSE otherwise (single accession file for all organisms).
    */
-  public static function getAccessionCheck(array $form_state) {
+  public function getAccessionCheck() {
     $parents = ['values', 'tree-accession', 'check'];
-    return (bool) static::get($form_state, $parents);
+    return (bool) $this->get($parents);
   }
 
   /**
@@ -53,8 +184,6 @@ class FormState {
    * My phenotypes include traits and/or environmental information other than
    * mass spectrometry or isotope analysis.
    *
-   * @param array $form_state
-   *   Drupal Form State array.
    * @param int $organism_index
    *   Ordinal organism number on page. Default is 1.
    *   Default value could be used to check if study has phenotypes in common.
@@ -62,10 +191,10 @@ class FormState {
    * @return bool
    *   Returns TRUE if organism has any phenotype data and FALSE otherwise.
    */
-  public static function hasAnyPhenotypeData(array $form_state, $organism_index = 1) {
+  public function hasAnyPhenotypeData($organism_index = 1) {
     $organism_key = 'organism-' . $organism_index;
     $parents = ['values', $organism_key, 'phenotype', 'normal-check'];
-    return (bool) static::get($form_state, $parents);
+    return (bool) $this->get($parents);
   }
 
   /**
@@ -74,47 +203,39 @@ class FormState {
    * Checkbox with title:
    * I would like to upload a phenotype metadata file'),
    *
-   * @param array $form_state
-   *   Drupal Form State array.
    * @param int $organism_index
    *   Ordinal organism number on page.
    *
    * @return bool
    *   Returns TRUE if organism has phenotype metadata file and FALSE otherwise.
    */
-  public static function hasPhenotypeMetaDataFile(array $form_state, $organism_index) {
+  public function hasPhenotypeMetaDataFile($organism_index) {
     $organism_key = 'organism-' . $organism_index;
     $parents = ['values', $organism_key, 'phenotype', 'check'];
-    return (bool) static::get($form_state, $parents);
+    return (bool) $this->get($parents);
   }
 
   /**
    * Gets study's accession. E.g., 'TGDR1234'.
    *
-   * @param array $form_state
-   *   Drupal Form State array.
-   *
    * @return mixed
    *   Returns value or NULL.
    */
-  public static function getAccession(array $form_state) {
+  public function getAccession() {
     $parents = ['accession'];
-    return static::get($form_state, $parents);
+    return $this->get($parents);
   }
 
   /**
    * Gets study's accession number. E.g., '1234'.
    *
-   * @param array $form_state
-   *   Drupal Form State array.
-   *
    * @return mixed
    *   Returns value or NULL.
    */
-  public static function getAccessionNumber(array $form_state) {
+  public function getAccessionNumber() {
     // Using 'str_replace' seems more secure then just cut off first 4 chars:
-    // substr(static::getAccession($form_state), 4).
-    return str_replace('TGDR', '', static::getAccession($form_state));
+    // substr($this->getAccession(), 4).
+    return str_replace('TGDR', '', $this->getAccession());
   }
 
   /**
@@ -122,106 +243,59 @@ class FormState {
    *
    * For buttons it will be button's label.
    *
-   * @param array $form_state
-   *   Drupal Form State array.
-   *
    * @return mixed
    *   Returns value or NULL.
    */
-  public static function getTriggeringElement(array $form_state) {
+  public function getTriggeringElement() {
     $parents = ['triggering_element', '#value'];
-    return static::get($form_state, $parents);
+    return $this->get($parents);
   }
 
   /**
    * Gets number of organisms.
    *
-   * @param array $form_state
-   *   Drupal Form State array.
-   *
    * @return mixed
    *   Returns value or NULL.
    */
-  public static function getOrganismNumber(array $form_state) {
+  public function getOrganismNumber() {
     $parents = ['saved_values', TPPS_PAGE_1, 'organism', 'number'];
-    return static::get($form_state, $parents);
+    return $this->get($parents);
   }
 
   /**
    * Gets number of species.
-   *
-   * @param array $form_state
-   *   Drupal Form State array.
    *
    * @return mixed
    *   Returns value or NULL.
    *
    * @todo Probably the same as getOrganismNumber().
    */
-  public static function getSpeciesNumber(array $form_state) {
+  public function getSpeciesNumber() {
     $parents = ['stats', 'species_count'];
-    return static::get($form_state, $parents);
+    return $this->get($parents);
   }
 
   /**
    * Gets page key.
    *
-   * @param array $form_state
-   *   Drupal Form State array.
-   *
    * @return mixed
    *   Returns integer value for Pages 1-4 and string for welcome page and
    *   summary page.
    */
-  public static function getPage(array $form_state) {
+  public function getPage() {
     $parents = ['stage'];
-    return static::get($form_state, $parents);
+    return $this->get($parents);
   }
 
   /**
    * Gets form id.
    *
-   * @param array $form_state
-   *   Drupal Form State array.
-   *
    * @return mixed
    *   Returns value or NULL.
    */
-  public static function getFormId(array $form_state) {
+  public function getFormId() {
     $parents = ['build_info', 'form_id'];
-    return static::get($form_state, $parents);
-  }
-
-  // Common methods.
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-  /**
-   * Gets value of the arbitrary element using list of parents.
-   *
-   * @param array $form_state
-   *   Drupal Form State array.
-   * @param array $parents
-   *   List of parents including element's name.
-   *
-   * @return mixed
-   *   Returns value or NULL.
-   */
-  public static function get(array $form_state, array $parents) {
-    return TppsArray::get($form_state, $parents);
-  }
-
-  /**
-   * Sets value of the arbitrary element using list of parents.
-   *
-   * @param array $form_state
-   *   Drupal Form State array.
-   * @param array $parents
-   *   List of parents including element's name.
-   * @param mixed $value
-   *   Value of the element.
-   */
-  public static function set(array $form_state, array $parents, $value) {
-    return TppsArray::set($form_state, $parents, $value);
+    return $this->get($parents);
   }
 
   /**
@@ -232,15 +306,15 @@ class FormState {
    * @return array
    *   Returns Submission Import Meta with some useful extra items.
    */
-  public static function getImportMeta(array $form_state) {
+  public function getImportMeta() {
     $output = [];
     if (
-      empty($form_state)
-      || empty($form_state['saved_values']['tpps_submission_import'])
+      empty($this->formState)
+      || empty($this->formState['saved_values']['tpps_submission_import'])
     ) {
       return $output;
     }
-    $import_meta = $form_state['saved_values']['tpps_submission_import'];
+    $import_meta = $this->formState['saved_values']['tpps_submission_import'];
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Sanitize data.
@@ -270,7 +344,7 @@ class FormState {
       $import_meta['full_date'] .= (empty($import_meta['imported']) ? ''
         : ' [' . $import_meta['imported'] . ']');
     }
-    $import_meta['current_version'] = SubmissionVersion::get($form_state);
+    $import_meta['current_version'] = SubmissionVersion::get($this->form_state);
 
     return $import_meta;
   }
@@ -278,26 +352,22 @@ class FormState {
   /**
    * Gets name of the specific organism.
    *
-   * @param array $form_state
-   *   Drupal Form State array.
    * @param int $organism_index
    *   Ordinal number of organism at page.
    *
    * @return mixed
    *   Returns value or NULL.
    */
-  public static function getOrganismName(array $form_state, $organism_index) {
+  public function getOrganismName($organism_index) {
     $parents = [
       'saved_values', TPPS_PAGE_1, 'organism', $organism_index, 'name',
     ];
-    return static::get($form_state, $parents);
+    return $this->get($parents);
   }
 
   /**
    * Gets name of the specific organism.
    *
-   * @param array $form_state
-   *   Drupal Form State array.
    * @param int $organism_index
    *   Ordinal number of organism at page.
    * @param int $phenotype_index
@@ -306,7 +376,7 @@ class FormState {
    * @return mixed
    *   Returns value or NULL.
    */
-  public static function getPhenotypeName(array $form_state, $organism_index, $phenotype_index) {
+  public function getPhenotypeName($organism_index, $phenotype_index) {
     $parents = [
       'saved_values',
       TPPS_PAGE_4,
@@ -329,16 +399,14 @@ class FormState {
       // struct-other: "".
       'name',
     ];
-    return static::get($form_state, $parents);
+    return $this->get($parents);
   }
 
   /**
    * Gets name or value of the clidded button.
    *
-   * @param array $form_state
-   *   Drupal Form State array.
    * @param string $element
-   *   Name of the sub-element of the $form_state['triggering_element'].
+   *   Name of the sub-element of the $this->formState['triggering_element'].
    *   WARNING:
    *   Use '#name' if possible because '#value' is a translatable string.
    *   Possible values are:
@@ -366,8 +434,8 @@ class FormState {
    * @return mixed
    *   Returns value of the sub-element or NULL if element doesn't exists.
    */
-  public static function getClickedButton(array $form_state, $element = '#name') {
-    return $form_state['clicked_button'][$element] ?? NULL;
+  public function getClickedButton($element = '#name') {
+    return $this->formState['clicked_button'][$element] ?? NULL;
   }
 
 }

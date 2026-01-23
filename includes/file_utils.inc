@@ -625,12 +625,13 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
  *   The state of the form being validated.
  */
 function tpps_save_file_columns(array &$form, array &$form_state) {
-  $form_page = FormState::getPage($form_state);
+  $formState = tpps_form_state_load($form_state);
+  $form_page = $formState->getPage();
   if (!in_array($form_page, [TPPS_PAGE_3, TPPS_PAGE_4])) {
     // Currently only file fields on this pages are supported.
     return;
   }
-  $organism_number = FormState::getOrganismNumber($form_state);
+  $organism_number = $formState->getOrganismNumber();
   $extra_field_list = [
     'columns',
     'no-header',
@@ -706,7 +707,7 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
           // 'columns' element will be missing in this case and previous
           // check will skip further processing.
           // Left because it was in original code.
-          if (!FormState::hasAnyPhenotypeData($form_state, $i)) {
+          if (!$formState->hasAnyPhenotypeData($i)) {
             continue;
           }
           break;
@@ -731,7 +732,7 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
       // @todo Could this check be removed? Left because it was in original code.
       if ($form_page == TPPS_PAGE_4) {
         if (
-          !FormState::hasPhenotypeMetaDataFile($form_state, $i)
+          !$formState->hasPhenotypeMetaDataFile($i)
           && $field_name == 'metadata'
         ) {
           continue;
@@ -752,7 +753,7 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
 
       if (
         $form_page == TPPS_PAGE_3
-        && empty(FormState::getAccessionCheck($form_state))
+        && empty($formState->getAccessionCheck())
       ) {
         // Other species has the same settings.
         break;

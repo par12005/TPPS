@@ -63,8 +63,9 @@ class FormEditSubmissionTag {
    * Implements hook_form_validate().
    */
   public static function validate(array &$form, array &$form_state) {
-    $tag_id = FormState::get($form_state, ['values', 'tag_id']);
-    $tag_name = FormState::get($form_state, ['values', 'name']);
+    $formState = new FormState($form_state);
+    $tag_id = $formState->get(['values', 'tag_id']);
+    $tag_name = $formState->get(['values', 'name']);
     $result = db_select('tpps_tag', 't')
       ->fields('t', ['name'])
       ->condition('tpps_tag_id', $tag_id, '!=')
@@ -83,9 +84,10 @@ class FormEditSubmissionTag {
    * Implements hook_form_submit().
    */
   public static function submit($form, &$form_state) {
-    $tag_id = FormState::get($form_state, ['values', 'tag_id']);
-    $tag_name = FormState::get($form_state, ['values', 'name']);
-    $tag_color = FormState::get($form_state, ['values', 'color']);
+    $formState = new FormState($form_state);
+    $tag_id = $formState->get(['values', 'tag_id']);
+    $tag_name = $formState->get(['values', 'name']);
+    $tag_color = $formState->get(['values', 'color']);
     db_update(SubmissionTag::TABLE)
       ->fields([
         'name' => $tag_name,

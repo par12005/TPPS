@@ -1403,11 +1403,12 @@ function tpps_main_validate(&$form, &$form_state) {
 
   // Always save user selection of data types for columns and other subfields.
   tpps_save_file_columns($form, $form_state);
+  $formState = new FormState($form_state);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // If the user is going backwards or simply saving their data in the form,
   // make sure to save the column data for the managed_file elements. The rest
   // of the validation function does not need to be completed.
-  $triggering_element = FormState::getTriggeringElement($form_state);
+  $triggering_element = $formState->getTriggeringElement();
   if (in_array($triggering_element, ['Back', 'Save'])) {
     return;
   }
@@ -1415,10 +1416,10 @@ function tpps_main_validate(&$form, &$form_state) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   switch ($form_state['stage']) {
     case 'frontpage':
-      if (FormState::getFormId($form_state) == 'tppsc_main') {
+      if ($formState->getFormId() == 'tppsc_main') {
         // Curation Form.
         if (
-          FormState::get($form_state, ['values', 'use_old_tgdr'])
+          $formState->get(['values', 'use_old_tgdr'])
           && !FormState($form_state, ['values', 'old_tgdr'])
         ) {
           $message = t('Existing TGDR number: field is required.');
@@ -1520,14 +1521,15 @@ function tpps_main_submit($form, &$form_state) {
   // Note: If form version is up-to-date then nothing will be done.
   $submission->state = SubmissionVersion::upgrade($form_state);
 
+  $formState = new FormState($form_state);
   if ($submission->isTppsc()) {
     $form_state['status'] = Submission::STATUS_INCOMPLETE;
     // Use old TGDR.
     if (
       $form_state['stage'] == 'frontpage'
-      && FormState::get($form_state, ['values', 'use_old_tgdr'])
+      && $formState->get(['values', 'use_old_tgdr'])
     ) {
-      $form_state['dbxref_id'] = FormState::get($form_state, ['values', 'old_tgdr']);
+      $form_state['dbxref_id'] = $formState->get(['values', 'old_tgdr']);
       $form_state['accession'] = chado_select_record(
         'dbxref', ['accession'], ['dbxref_id' => $form_state['dbxref_id']]
       )[0]->accession;
@@ -2946,18 +2948,33 @@ function tpps_phenotype_meta() {
 }
 
 /**
- * Loads TPPS Submission.
+ * Creates intance of the 'Submission' class.
  *
  * @param string $accession
  *   Submission Accession.
  *
  * @return object
- *   Returns Submission object.
+ *   Returns created instance to allow method chaining.
  */
 function tpps_submission_load($accession) {
   // @todo Minor. Use static caching.
   $submission = new Submission($accession);
   return $submission;
+}
+
+/**
+ * Creates instance of the 'FormState' class.
+ *
+ * @param array $form_state
+ *   Submission's Form State.
+ *   See 'public.tpps_submission.submission_state' db table.
+ *
+ * @return object
+ *   Returns created instance to allow method chaining.
+ */
+function tpps_form_state_load(array $form_state) {
+  $formState = new FormState($form_state);
+  return $formState;
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

@@ -62,24 +62,27 @@ class FormRemoveSubmission {
    *   Drupal Form State array.
    */
   public static function buildConfirmationForm(array &$form, array &$form_state) {
-    $accession = $form_state['values']['tpps_submission_accession'];
-    if (empty($accession)) {
-      drupal_set_message(t('Empty accession.'), 'warning');
-      drupal_goto('tpps/submission');
-    }
-    $form['tpps_submission_accession'] = [
+    $accession = $form_state['values']['accession'];
+    TppsForm::validateAccession($accession);
+
+//dpm(print_r($form_state, 1));
+
+    $form['accession'] = [
       '#type' => 'hidden',
       '#value' => $accession,
     ];
-    $submission = new Submission($accession);
     $removement_options = FormRemoveSubmission::getOptions($accession);
     // Get removement options.
     $selected_options = [];
+    $formState = new FormState($form_state);
     foreach ($removement_options as $name => $item) {
-      if (!empty(FormState::get($form_state['saved_values'], [$name]))) {
+      $fieldset = $formState->get(['saved_values', $name]);
+      if (!empty($fieldset)) {
+        // Fieldset wasn't empty.
         $selected_options[$name] = $item['title'];
       }
     }
+
     if (empty($selected_options)) {
       drupal_set_message(t("Nothing was selected to remove."), 'warning');
       drupal_goto('tpps/submission/' . $accession . '/remove');
@@ -192,13 +195,7 @@ class FormRemoveSubmission {
       '#name' => 'remove',
       '#attributes' => ['title' => t('Remove parts of the submission')],
     ];
-    $form['actions']['button'] = [
-      '#type' => 'submit',
-      '#value' => t('Purge'),
-      '#name' => 'purge',
-      '#attributes' => ['title' => t('Totally remove submission')],
-    ];
-    $form['tpps_submission_accession'] = [
+    $form['accession'] = [
       '#type' => 'hidden',
       '#value' => $accession,
     ];
@@ -520,13 +517,16 @@ class FormRemoveSubmission {
    * Implements hook_form_submit().
    */
   public static function submit(array $form, array &$form_state) {
-    if (FormState::get($form_state, ['saved_values', 'confirmed'])) {
+
+
+
+    if (!empty($form_state['saved_values']['confirmed'])) {
+      dpm('confirmed');
       // @TODO When any file removed - clear db tables (all loaded data).
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Confirmed removement.
-      $accession = FormState::get($form_state,
-        ['saved_values', 'tpps_submission_accession']
-      );
+      $formState = new FormState($form_state);
+      $accession = $formState->get(['saved_values', 'accession']);
       if (empty($accession)) {
         drupal_set_message(t("Empty submission's accession."));
         drupal_goto('tpps/submission');
@@ -545,7 +545,7 @@ class FormRemoveSubmission {
         // Remove parts according to user selection.
         foreach (array_keys(array_filter($options)) as $method_name) {
           if (method_exists($submission, $method_name)) {
-            $submission->$method_name();
+            $submissvvion->$method_name();
           }
         }
       }
@@ -557,7 +557,10 @@ class FormRemoveSubmission {
     }
     else {
       // Not yet confirmed.
-      FormRemoveSubmission::submitConfirmation($form, $form_state);
+      $form_state['saved_values'] = $form_state['values'];
+      $form_state['saved_values']['confirmed'] = TRUE;
+      // Rebuild form to show confirmation page.
+      $form_state['rebuild'] = TRUE;
     }
   }
 
@@ -565,6 +568,8 @@ class FormRemoveSubmission {
    * Implements hook_form_validate().
    */
   public static function validate(array &$form, array &$form_state) {
+    $accession = $form_state['values']['accession'] ?? NULL;
+    TppsForm::validateAccession($accession);
 
     // @TODO When Form State removed - remove all (redirect to 'purge').
 
@@ -573,34 +578,6 @@ class FormRemoveSubmission {
     //    . "different name or use the existing tag.");
     //  form_set_error('name', $message);
     //}
-  }
-
-  /**
-   * Shows confirmation page on form submit.
-   */
-  public static function submitConfirmation(array $form, array &$form_state) {
-    $accession = $form_state['values']['tpps_submission_accession'] ?? NULL;
-    if (empty($accession)) {
-      drupal_set_message(t("Empty accession."), 'warning');
-      drupal_goto('tpps/submission');
-    }
-    if (FormState::getClickedButton($form_state) == 'purge') {
-      drupal_goto('tpps/submission/' . $accession . '/purge');
-    }
-    $submission = new Submission($accession);
-    $form_state['saved_values']['confirmed'] = TRUE;
-    $values_to_store = array_keys(
-      FormRemoveSubmission::getOptions($accession)
-    );
-    // Hidden values which must be stored for later use.
-    $values_to_store[] = 'tpps_submission_accession';
-    foreach ($values_to_store as $name) {
-      $form_state['saved_values'][$name] = FormState::get($form_state,
-        ['values', $name]
-      );
-    }
-    // Rebuild form to show confirmation page.
-    $form_state['rebuild'] = TRUE;
   }
 
 }

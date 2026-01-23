@@ -33,7 +33,6 @@ files[] = src/NextFlowManager.class.inc
 files[] = src/RestAPI.class.inc
 files[] = src/Report.class.inc
 files[] = src/FormState.class.inc
-files[] = src/FormState.class.inc
 files[] = src/CVTerm.class.inc
 
 ; Tpps. Elemental Entities.

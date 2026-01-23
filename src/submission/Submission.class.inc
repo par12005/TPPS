@@ -775,12 +775,12 @@ return;
       ->condition('accession', $this->accession)
       ->execute();
     // Note: when existing study was used to create this submission then
-    // FormState::get($this->state,
-    // ['saved_values', 'frontpage', 'use_old_tgdr']) = 1
-    // && FormState::get($this->state,
-    // ['saved_values', 'frontpage', 'old_tgdr']) will be dbxref id of this
-    // existing study and 'accesion' will be accession of this existing study.
-    // So...
+    // tpps_form_state_load($this->state)
+    //   ->get(['saved_values', 'frontpage', 'use_old_tgdr']) = 1
+    // && tpps_form_state_load($this->state)
+    //   ->get(['saved_values', 'frontpage', 'old_tgdr'])
+    // will be dbxref id of this existing study and 'accesion' will be
+    // accession of this existing study. So...
     // It's enough to remove record in 'chado.dbxref' by study accession.
     db_delete('chado.dbxref')
       ->condition('accession', $this->accession)
@@ -2788,16 +2788,15 @@ return;
       return NULL;
     }
     $list = [];
+    $formState = new FormState($this->state);
     for ($i = 1; $i <= $this->getOrganismNumber(); $i++) {
       $organism_index = $i;
       $organism_key = 'organism-' . $organism_index;
 
-      $list[$organism_index]['name'] = FormState::getOrganismName(
-        $this->state, $organism_index
-      );
+      $list[$organism_index]['name'] = $formState->getOrganismName($organism_index);
       // '0' means manually added phenotype.
       // '1' - metadata file was uploaded.
-      $is_metadata_in_file = TppsArray::get($this->state,
+      $is_metadata_in_file = $formState->get(
         ['saved_values', TPPS_PAGE_4, $organism_key, 'phenotype', 'check']
       );
       if ($is_metadata_in_file) {
@@ -2823,7 +2822,7 @@ return;
       }
       else {
         // Manually added phenotypes.
-        $phenotype_number = TppsArray::get($this->state,
+        $phenotype_number = $formState->get(
           [
             'saved_values', TPPS_PAGE_4, $organism_key, 'phenotype',
             'phenotypes-meta', 'number'
@@ -2831,13 +2830,13 @@ return;
         );
         for ($j = 1; $j <= $phenotype_number; $j++) {
           // Note; value '0' means no synonym was found.
-          $synonym_id = TppsArray::get($this->state,
+          $synonym_id = $formState->get(
             [
               'saved_values', TPPS_PAGE_4, $organism_key, 'phenotype',
               'phenotypes-meta', $j, 'synonym_id',
             ]
           );
-          $name = TppsArray::get($this->state,
+          $name = $formState::get(
             [
               'saved_values', TPPS_PAGE_4, $organism_key, 'phenotype',
               'phenotypes-meta', $j, 'name',
@@ -2850,7 +2849,6 @@ return;
     }
     return $list;
   }
-
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Submission Tags.

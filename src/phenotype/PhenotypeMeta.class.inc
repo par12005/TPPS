@@ -249,7 +249,7 @@ class PhenotypeMeta extends FileField {
           . 'Phenotype File.<br />Phenotype File columns: @column_list.',
           [
             '@organism_id' => $organism_index,
-            'organism_name' => FormState::getOrganismName($form_state, $organism_index),
+            'organism_name' => tpps_form_state_load($form_state)->getOrganismName($organism_index),
             '@phenotype_name' => $phenotype_name,
             '@column_list' => implode(', ', $phenotype_data_header),
           ]

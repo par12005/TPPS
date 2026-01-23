@@ -65,8 +65,9 @@ class FormRemoveSubmissionTag {
    *   Drupal Form State Array.
    */
   public static function submit(array $form, array &$form_state) {
-    if (FormState::get($form_state, ['values', 'confirm'])) {
-      $tag_id = FormState::get($form_state, ['values', 'tag_id']);
+    $formState = new FormState($form_state);
+    if ($formState->get(['values', 'confirm'])) {
+      $tag_id = $formState->get(['values', 'tag_id']);
       if ($tag_id) {
         SubmissionTag::remove($tag_id);
         $message = t('Tag #@tag_id was removed.', ['@tag_id' => $tag_id]);

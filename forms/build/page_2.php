@@ -61,11 +61,12 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
     // for this case.
     '#tree' => FALSE,
   ];
+  $formState = new FormState($form_state);
   $form['study_design']['data_type'] = array(
     '#type' => 'select',
     '#title' => t('Data Type: *'),
     '#options' => $options,
-    '#default_value' => FormState::get($form_state,
+    '#default_value' => $formState->get(
       ['saved_values', TPPS_PAGE_2, 'data_type']
     ) ?? 0,
   );
@@ -74,7 +75,7 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
     '#type' => 'select',
     '#title' => t('Study Type: *'),
     '#options' => TppsForm::getStudyType(),
-    '#default_value' => FormState::get($form_state,
+    '#default_value' => $formState->get(
       ['saved_values', TPPS_PAGE_2, 'study_type']
     ) ?? 0,
   ];
