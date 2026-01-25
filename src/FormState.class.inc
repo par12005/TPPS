@@ -25,6 +25,18 @@
  * $formState->getAccession();
  * $formState->set(['stage'], 2);
  *
+ * Using shortcuts:
+ * To get $form_state['status']:
+ *   $fs->status;
+ *   // or
+ *   $fs->get(['status']);
+ * To get $form_state['saved_values']:
+ *   $fs->saved_values();
+ * To get sub-element of the nested array:
+ *   $fs->saved_values(['dbxref_id']);
+ * Some often used elements have one methods:
+ *  $fs->getOrganismNumber();
+ *
  * Naming rules:
  *   $formState - currently processing form.
  *   $sharedState - Submission's Shared State.
@@ -49,6 +61,27 @@ class FormState {
    */
   protected $formState = [];
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Plain items on 1st level.
+  // @todo Add description.
+  protected $stage;
+  protected $accession;
+  protected $dbxref_id;
+  protected $tpps_type;
+  protected $status;
+  protected $updated;
+  protected $created;
+  protected $approved;
+  protected $completed;
+  protected $loaded;
+  protected $submitting_uid;
+  protected $job_id;
+  protected $revised_files;
+  protected $admin_comments;
+  protected $alternative_accessions;
+  protected $data;
+  protected $has_file_element;
+
   /**
    * Class constructor.
    *
@@ -56,9 +89,34 @@ class FormState {
    *   TPPS Submission Form State.
    */
   public function __construct(array $form_state = NULL) {
-    // @TODO Minor. Get some useful data like accession, status and etc.
     if (!empty($form_state)) {
       $this->formState = $form_state;
+      // Fill items on 1st level to allow shorter references.
+      // E.g., $fs->status instead of $fs->get(['status']).
+      $items = [
+        'stage',
+        'accession',
+        'dbxref_id',
+        'tpps_type',
+        'status',
+        'updated',
+        'created',
+        'approved',
+        'completed',
+        'loaded',
+        'submitting_uid',
+        'job_id',
+        'revised_files',
+        'admin_comments',
+        'alternative_accessions',
+        'data',
+        'has_file_element',
+      ];
+      foreach ($items as $name) {
+        if (isset($form_state[$name])) {
+          $this->$name = $form_state[$name];
+        }
+      }
     }
     return $this;
   }
@@ -106,6 +164,7 @@ class FormState {
       return $this->$func();
     }
     else {
+      // Property.
       if (property_exists($this, $name)) {
         return $this->$name;
       }
@@ -114,6 +173,114 @@ class FormState {
       }
     }
     return $this;
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Shortcuts for some $formState elements.
+
+  /**
+   * Gets sub-element under $formState['saved_values'].
+   *
+   * @param array $parents
+   *   Path to the element.
+   *
+   * @return mixed
+   *   Returns value of the sub-element.
+   *   Returns NULL if element doesn't exists.
+   *   Returns all sub-elements when $parents is empty.
+   */
+  public function saved_values(array $parents = []) {
+    return $this->get(array_merge([__FUNCTION__], $parents));
+  }
+
+  /**
+   * Gets sub-element under $formState['values'].
+   *
+   * @param array $parents
+   *   Path to the element.
+   *
+   * @return mixed
+   *   Returns value of the sub-element.
+   *   Returns NULL if element doesn't exists.
+   *   Returns all sub-elements when $parents is empty.
+   */
+  public function values(array $parents = []) {
+    return $this->get(array_merge([__FUNCTION__], $parents));
+  }
+
+  /**
+   * Gets sub-element under $formState['input'].
+   *
+   * @param array $parents
+   *   Path to the element.
+   *
+   * @return mixed
+   *   Returns value of the sub-element.
+   *   Returns NULL if element doesn't exists.
+   *   Returns all sub-elements when $parents is empty.
+   */
+  public function input(array $parents = []) {
+    return $this->get(array_merge([__FUNCTION__], $parents));
+  }
+
+  /**
+   * Gets sub-element under $formState['stats'].
+   *
+   * @param array $parents
+   *   Path to the element.
+   *
+   * @return mixed
+   *   Returns value of the sub-element.
+   *   Returns NULL if element doesn't exists.
+   *   Returns all sub-elements when $parents is empty.
+   */
+  public function stats(array $parents = []) {
+    return $this->get(array_merge([__FUNCTION__], $parents));
+  }
+
+  /**
+   * Gets sub-element under $formState['ids'].
+   *
+   * @param array $parents
+   *   Path to the element.
+   *
+   * @return mixed
+   *   Returns value of the sub-element.
+   *   Returns NULL if element doesn't exists.
+   *   Returns all sub-elements when $parents is empty.
+   */
+  public function ids(array $parents = []) {
+    return $this->get(array_merge([__FUNCTION__], $parents));
+  }
+
+  /**
+   * Gets sub-element under $formState['file_info'].
+   *
+   * @param array $parents
+   *   Path to the element.
+   *
+   * @return mixed
+   *   Returns value of the sub-element.
+   *   Returns NULL if element doesn't exists.
+   *   Returns all sub-elements when $parents is empty.
+   */
+  public function file_info(array $parents = []) {
+    return $this->get(array_merge([__FUNCTION__], $parents));
+  }
+
+  /**
+   * Gets sub-element under $formState['clicked_button'].
+   *
+   * @param array $parents
+   *   Path to the element.
+   *
+   * @return mixed
+   *   Returns value of the sub-element.
+   *   Returns NULL if element doesn't exists.
+   *   Returns all sub-elements when $parents is empty.
+   */
+  public function clicked_button(array $parents = []) {
+    return $this->get(array_merge([__FUNCTION__], $parents));
   }
 
   // Common methods.
@@ -130,6 +297,7 @@ class FormState {
    */
   public function get(array $parents) {
     $this->validate();
+    dpm(print_r($parents, 1));
     return TppsArray::get($this->formState, $parents);
   }
 
@@ -435,7 +603,7 @@ class FormState {
    *   Returns value of the sub-element or NULL if element doesn't exists.
    */
   public function getClickedButton($element = '#name') {
-    return $this->formState['clicked_button'][$element] ?? NULL;
+    return $this->clicked_button([$element]);
   }
 
 }
