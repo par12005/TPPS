@@ -64,9 +64,6 @@ class FormRemoveSubmission {
   public static function buildConfirmationForm(array &$form, array &$form_state) {
     $accession = $form_state['values']['accession'];
     TppsForm::validateAccession($accession);
-
-//dpm(print_r($form_state, 1));
-
     $form['accession'] = [
       '#type' => 'hidden',
       '#value' => $accession,
@@ -79,7 +76,17 @@ class FormRemoveSubmission {
       $fieldset = $formState->saved_values([$name]);
       if (!empty($fieldset)) {
         // Fieldset wasn't empty.
-        $selected_options[$name] = $item['title'];
+        if (!empty($fieldset['force'])) {
+          $selected_options[$name] = $item['title']
+            . ': ' . t('<strong>force</strong> removement.');
+        }
+        elseif (!empty($fieldset['remove'])) {
+          $selected_options[$name] = $item['title']
+            . ': ' . t('removement.');
+        }
+        else {
+          // Both (remove and force) wasn't selected.
+        }
       }
     }
 
@@ -518,39 +525,33 @@ class FormRemoveSubmission {
    */
   public static function submit(array $form, array &$form_state) {
 
-
+    // @TODO When any file removed - clear db tables (all loaded data).
 
     if (!empty($form_state['saved_values']['confirmed'])) {
-      dpm('confirmed');
-      // @TODO When any file removed - clear db tables (all loaded data).
+      $formState = new FormState($form_state);
+//dpm('confirmed');
+//$formState->printValues();
+//$formState->print(['saved_values']);
+//return;
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Confirmed removement.
-      $formState = new FormState($form_state);
       $accession = $formState->saved_values(['accession']);
       if (empty($accession)) {
         drupal_set_message(t("Empty submission's accession."));
         drupal_goto('tpps/submission');
       }
       TppsForm::validateAccession($accession);
-      $submission = new Submission($accession);
-      $removement_options = FormRemoveSubmission::getOptions($accession);
 
-      // Get removement options.
-      $options = [];
-      foreach (array_keys($removement_options) as $name) {
-        $options[$name] = (bool) $form_state['saved_values'][$name];
-      }
-      // Remove study.
-      if (1) {
-        // Remove parts according to user selection.
-        foreach (array_keys(array_filter($options)) as $method_name) {
-          if (method_exists($submission, $method_name)) {
-            $submissvvion->$method_name();
-          }
+      $submission = new Submission($accession);
+      foreach ($formState->saved_values() as $method_name) {
+        if (empty($formState->saved_values([$method_name, 'remove']))) {
+          continue;
         }
-      }
-      else {
-        dpm(var_export($options, 1));
+        // Remove.
+        if (method_exists($submission, $method_name)) {
+          $force = (bool) $formState->saved_values([$method_name, 'force']);
+          $submission->$method_name($force);
+        }
       }
       // Show new status. Not all parts could be removed so it makes sense.
       drupal_goto('tpps/submission/' . $accession . '/remove');

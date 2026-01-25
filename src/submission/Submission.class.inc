@@ -726,8 +726,13 @@ class Submission {
    *
    * @todo Check if this code respects file usage table.
    */
-  public function removeFiles() {
+  public function removeFiles($force = FALSE) {
     $debug_mode = TRUE;
+
+// @TODO Implement 'force' mode in thi method. And other methods too.
+
+
+
     // @todo Minor. Query DB table 'file_usage' to find if there is orphan
     // files related to this non-existing submission.
     if (!empty($this->state)) {
@@ -761,6 +766,10 @@ class Submission {
         }
       }
     }
+    // @TODO Major.
+    // When any file removed - clear db tables (all loaded data).
+    // $this->clearDB();
+
     // $this->save();
   }
 
