@@ -66,8 +66,8 @@ class FormRemoveSubmissionTag {
    */
   public static function submit(array $form, array &$form_state) {
     $formState = new FormState($form_state);
-    if ($formState->get(['values', 'confirm'])) {
-      $tag_id = $formState->get(['values', 'tag_id']);
+    if ($formState->values(['confirm'])) {
+      $tag_id = $formState->values(['tag_id']);
       if ($tag_id) {
         SubmissionTag::remove($tag_id);
         $message = t('Tag #@tag_id was removed.', ['@tag_id' => $tag_id]);

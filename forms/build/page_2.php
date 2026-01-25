@@ -66,18 +66,15 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
     '#type' => 'select',
     '#title' => t('Data Type: *'),
     '#options' => $options,
-    '#default_value' => $formState->get(
-      ['saved_values', TPPS_PAGE_2, 'data_type']
-    ) ?? 0,
+    '#default_value' => $formState->saved_values([TPPS_PAGE_2, 'data_type']
+    ),
   );
   TppsForm::autofocus($form, ['data_type']);
   $form['study_design']['study_type'] = [
     '#type' => 'select',
     '#title' => t('Study Type: *'),
     '#options' => TppsForm::getStudyType(),
-    '#default_value' => $formState->get(
-      ['saved_values', TPPS_PAGE_2, 'study_type']
-    ) ?? 0,
+    '#default_value' => $formState->saved_values([TPPS_PAGE_2, 'study_type']),
   ];
   if (!Submission::isCurationForm($form_state)) {
     $form['study_design']['study_type']['#ajax'] = [

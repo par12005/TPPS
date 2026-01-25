@@ -297,7 +297,6 @@ class FormState {
    */
   public function get(array $parents) {
     $this->validate();
-    dpm(print_r($parents, 1));
     return TppsArray::get($this->formState, $parents);
   }
 
@@ -604,6 +603,32 @@ class FormState {
    */
   public function getClickedButton($element = '#name') {
     return $this->clicked_button([$element]);
+  }
+
+  /**
+   * Prints arbitrary element of the $form_state array.
+   */
+  public function print(array $parents, $title = NULL) {
+    if (is_null($title)) {
+      $title = '$form_state["' . implode('", "', $parents) . '"]';
+    }
+    drupal_set_message(
+      TppsArray::print($this->get($parents), $title)
+    );
+  }
+
+  /**
+   * Prints $form_state['values'] to the end-user.
+   *
+   * Note:
+   * 1. Shows only 'values' element because by default $form_state has
+   * huge element 'complete form' and other not very important elements.
+   * 2. Element 'saved_values' is custom element which could be missing when
+   * other then TPPS form submits.
+   * 3. Builds formatted as HTML-list values of the array.
+   */
+  public function printValues() {
+    $this->print(['values'], '$form_state["values"]');
   }
 
 }

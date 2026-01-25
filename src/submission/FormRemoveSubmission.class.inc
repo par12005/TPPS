@@ -76,7 +76,7 @@ class FormRemoveSubmission {
     $selected_options = [];
     $formState = new FormState($form_state);
     foreach ($removement_options as $name => $item) {
-      $fieldset = $formState->get(['saved_values', $name]);
+      $fieldset = $formState->saved_values([$name]);
       if (!empty($fieldset)) {
         // Fieldset wasn't empty.
         $selected_options[$name] = $item['title'];
@@ -526,7 +526,7 @@ class FormRemoveSubmission {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Confirmed removement.
       $formState = new FormState($form_state);
-      $accession = $formState->get(['saved_values', 'accession']);
+      $accession = $formState->saved_values(['accession']);
       if (empty($accession)) {
         drupal_set_message(t("Empty submission's accession."));
         drupal_goto('tpps/submission');
