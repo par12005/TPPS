@@ -729,7 +729,12 @@ class Submission {
   public function removeFiles($force = FALSE) {
     $debug_mode = TRUE;
 
-// @TODO Implement 'force' mode in thi method. And other methods too.
+//dpm(__METHOD__);
+
+    // @TODO Implement 'force' mode in thi method. And other methods too.
+    // Remove first all file usage
+    // Remove local files.
+
 
 
 

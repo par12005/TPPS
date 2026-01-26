@@ -64,10 +64,6 @@ class FormRemoveSubmission {
   public static function buildConfirmationForm(array &$form, array &$form_state) {
     $accession = $form_state['values']['accession'];
     TppsForm::validateAccession($accession);
-    $form['accession'] = [
-      '#type' => 'hidden',
-      '#value' => $accession,
-    ];
     $removement_options = FormRemoveSubmission::getOptions($accession);
     // Get removement options.
     $selected_options = [];
@@ -119,6 +115,10 @@ class FormRemoveSubmission {
       $confirm_button_text,
       $cancel_button_text
     );
+    $form['accession'] = [
+      '#type' => 'hidden',
+      '#value' => $accession,
+    ];
   }
 
   /**
@@ -526,13 +526,8 @@ class FormRemoveSubmission {
   public static function submit(array $form, array &$form_state) {
 
     // @TODO When any file removed - clear db tables (all loaded data).
-
     if (!empty($form_state['saved_values']['confirmed'])) {
       $formState = new FormState($form_state);
-//dpm('confirmed');
-//$formState->printValues();
-//$formState->print(['saved_values']);
-//return;
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Confirmed removement.
       $accession = $formState->saved_values(['accession']);
@@ -541,15 +536,14 @@ class FormRemoveSubmission {
         drupal_goto('tpps/submission');
       }
       TppsForm::validateAccession($accession);
-
       $submission = new Submission($accession);
-      foreach ($formState->saved_values() as $method_name) {
-        if (empty($formState->saved_values([$method_name, 'remove']))) {
+      foreach ($formState->saved_values() as $method_name => $sub_elements) {
+        if (empty($sub_elements['remove'])) {
           continue;
         }
         // Remove.
         if (method_exists($submission, $method_name)) {
-          $force = (bool) $formState->saved_values([$method_name, 'force']);
+          $force = $sub_elements['force'];
           $submission->$method_name($force);
         }
       }
@@ -563,6 +557,7 @@ class FormRemoveSubmission {
       // Rebuild form to show confirmation page.
       $form_state['rebuild'] = TRUE;
     }
+//dpm(__METHOD__);
   }
 
   /**
