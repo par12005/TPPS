@@ -318,3 +318,6 @@ form .fieldset-title {
 #tpps-submission-remove-form .item-list h3 {
   font-size: 1rem;
 }
+.tpps-submission-removement-force label.option {
+  color: red;
+}

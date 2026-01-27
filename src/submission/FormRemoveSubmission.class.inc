@@ -187,8 +187,15 @@ class FormRemoveSubmission {
         if (!empty($item['force'])) {
           $form[$name]['force'] = [
             '#type' => 'checkbox',
+            '#prefix' => '<div class="tpps-submission-removement-force">',
             '#title' => t('Force'),
+            '#suffix' => '</div>',
             '#description' => ($item['force']['description'] ?? NULL),
+            '#states' => [
+              'visible' => [
+                ':input[name="' . $name . '[remove]"]' => ['checked' => TRUE],
+              ],
+            ],
           ];
         }
       }

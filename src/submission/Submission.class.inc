@@ -729,53 +729,103 @@ class Submission {
   public function removeFiles($force = FALSE) {
     $debug_mode = TRUE;
 
-//dpm(__METHOD__);
+    if (empty($this->state)) {
+      return;
+    }
+    // Flag which is TRUE when at least one file was removed.
+    $any_file_was_removed = FALSE;
 
-    // @TODO Implement 'force' mode in thi method. And other methods too.
-    // Remove first all file usage
-    // Remove local files.
-
-
-
-
-    // @todo Minor. Query DB table 'file_usage' to find if there is orphan
-    // files related to this non-existing submission.
-    if (!empty($this->state)) {
-      // Remove usage of files first.
-      $fid_list = array_keys($this->getFileIdList());
-      foreach ($fid_list as $fid) {
-        if ($file = tpps_file_load($fid)) {
-          if ($debug_mode ?? FALSE) {
-            dpm(print_r($file, 1), $fid);
+    // Remove local VCF files.
+    if ($force) {
+      for ($i = 1; $i <= $this->getOrganismNumber(); $i++) {
+        // See getLocalVcf() method.
+        $parents = $this->getLocalVcfParents($i);
+        $local_vcf = TppsArray::get($this->sharedState, $parents);
+        if (empty($local_vcf)) {
+          continue;
+        }
+        $file_path = strip_tags($local_vcf);
+        if ($debug_mode ?? 0) {
+          dpm('Local VCF: ' . $file_path);
+        }
+        else {
+          if (unlink($file_path)) {
+            TppsArray::set($this->sharedState, $parents, NULL);
+            $any_file_was_removed = TRUE;
           }
           else {
-            // Remove file usage record (not file itself).
-            TppsFile::deleteUsage($file, $this->accession);
-            // Remove file from disk.
-            // @TODO Add 'Force' checkbox to the form.
-            $result = file_delete($file, $force = FALSE);
-            if ($result === TRUE) {
-              // sucess.
-              // @TODO Remove from submission.
-              // Save at the very end.
-            }
-            elseif ($result === FALSE) {
-              // Error.
-              // @todo Show error to user.
-            }
-            elseif (is_array($result)) {
-              // Used by other modules.
-              // @todo Show message.
-            }
+            $message = "File '@file_path' wasn't removed. Check permissions or file path.";
+            $params = ['@file_path' => $file_path];
+            drupal_set_message(t($message, $params), 'error');
+            watchdog('tpps', $message, $params, WATCHDOG_ERROR);
           }
         }
       }
     }
-    // @TODO Major.
-    // When any file removed - clear db tables (all loaded data).
-    // $this->clearDB();
 
-    // $this->save();
+    // @todo Minor. Query DB table 'file_usage' to find if there is orphan
+    // files related to this non-existing submission.
+    $parent_list = $this->getFileParents();
+    foreach ($parent_list as $step => $step_list) {
+      foreach ($step_list as $parents) {
+        $new_parents = array_merge([$step], $parents);
+        $fid = (int) TppsArray::get($this->sharedState['saved_values'], $new_parents);
+        if (empty($fid)) {
+          continue;
+        }
+        if ($file = tpps_file_load($fid)) {
+          if ($debug_mode ?? 0) {
+            dpm(print_r($file, 1), $fid);
+            $result = [];
+          }
+          else {
+            $count = (int) !$force;
+            // Remove file usage record (not file itself).
+            TppsFile::deleteUsage($file, $this->accession, $count);
+            // 0 - remove all ussage; 1 - (default) remove single usage.
+            // Remove file from disk.
+            $result = file_delete($file, $force);
+          }
+
+          if ($result === TRUE) {
+            // Sucess.
+            // Remove from submission.
+            // Note: Submission will be saved when all files will be processed.
+            TppsArray::set($this->state['saved_values'], $new_parents, NULL);
+            // If at least one file was removed all data loaded to DB must be
+            // removed.
+            $any_file_was_removed = TRUE;
+          }
+          elseif ($result === FALSE) {
+            // Error.
+            $message = "File #@fid wasn't removed.";
+            $params = ['@fid' => $fid];
+            drupal_set_message(t($message, $params), 'error');
+            watchdog('tpps', $message, $params, WATCHDOG_ERROR);
+          }
+          elseif (is_array($result)) {
+            // Used by other modules/studies.
+            $message = "File #@fid wasn't removed because it's still in use.";
+            $params = ['@fid' => $fid];
+            drupal_set_message(t($message, $params), 'error');
+            watchdog('tpps', $message, $params, WATCHDOG_ERROR);
+          }
+        }
+      }
+    }
+    if ($any_file_was_removed) {
+      // Clear submission data loaded into DB.
+      if ($debug_mode ?? 0) {
+        dpm('Call of the $this->clearDB()');
+      }
+      else {
+        $this->clearDB();
+        // No need to manually update SubmissionCache because it will be updated
+        // automatically on submission's save.
+        $this->save();
+      }
+    }
+
   }
 
   /**
@@ -1728,16 +1778,46 @@ return;
   public function hasLocalVcf($organism_index = 1) {
     $this->getSharedState();
     $organism_key = 'organism-' . $organism_index;
+    $vcf_file_location_parents = [
+      'saved_values',
+      TPPS_PAGE_4,
+      $organism_key,
+      'genotype',
+      'files',
+      'vcf_file-location',
+    ];
     if (
-      ($this->sharedState['saved_values'][TPPS_PAGE_4]
-        [$organism_key]['genotype']['files']
-        ['vcf_file-location'] ?? NULL) == 'remote'
-      && !empty($this->sharedState['saved_values'][TPPS_PAGE_4]
-        [$organism_key]['genotype']['files']['local_vcf'])
+        TppsArray::get($this->sharedState, $vcf_file_location_parents) == 'remote'
+        && !empty(TppsArray::get(
+          $this->sharedState,
+          $this->getLocalVcfParents($organism_index)
+        ))
     ) {
       return TRUE;
     }
     return FALSE;
+  }
+
+  /**
+   * Checks if study has local (located on server) VCF file.
+   *
+   * @param int $organism_index
+   *   Ordinal number of the organism at page.
+   *
+   * @return mixed
+   *   Returns path to the local VCF file.
+   *   Returns NULL if study has no local VCF file.
+   */
+  public function getLocalVcfParents($organism_index = 1) {
+    $organism_key = 'organism-' . $organism_index;
+    return [
+      'saved_values',
+      TPPS_PAGE_4,
+      $organism_key,
+      'genotype',
+      'files',
+      'local_vcf',
+    ];
   }
 
   /**
@@ -1755,8 +1835,10 @@ return;
     if (!$this->hasLocalVcf($organism_index)) {
       return NULL;
     }
-    return $this->sharedState['saved_values'][TPPS_PAGE_4]
-      [$organism_key]['genotype']['files']['local_vcf'];
+    return TppsArray::get(
+      $this->sharedState,
+      $this->getLocalVcfParents($organism_index)
+    );
   }
 
   /**
@@ -2116,7 +2198,7 @@ return;
   /**
    * Gets hardcoded list of file field parents.
    *
-   * WARNING: Uses Submission Form Version 1 (AKA Submission Shared State).
+   * WARNING: For Shared State only.
    *
    * @return array
    *   Returns empty array if number of organisms is zero.
