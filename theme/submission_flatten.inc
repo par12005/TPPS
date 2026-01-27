@@ -13,6 +13,10 @@
  */
 function theme_submission_block(array $variables) {
   global $base_url;
+  // Do not show block 'Tpps Status' on pages under this URL.
+  if (strpos($_GET['q'], 'tpps/submission') !== FALSE) {
+    return '';
+  }
   $data = $variables['data'] ?? NULL;
 
   $css = "

@@ -1338,7 +1338,9 @@ function tpps_leaves(array &$elements, array $vals, array $saved_vals) {
  */
 function tpps_page_build(&$page) {
   $form_id = $page['content']['system_main']['#form_id'] ?? NULL;
-  if (!in_array($form_id, ['tpps_main', 'tppsc_main'])) {
+  // List of forms where 'Tpps Status' block should be shown.
+  $form_list = ['tpps_main', 'tppsc_main'];
+  if (!in_array($form_id, $form_list)) {
     return $page;
   }
 
@@ -1647,11 +1649,17 @@ function tppsc_main(array $form, array &$form_state, $accession = NULL) {
 
 /**
  * Implements hook_block_view_alter().
+ *
+ * https://api.drupal.org/api/drupal/modules%21block%21block.api.php/function/hook_block_view_alter/7.x
+ *
+ * Note that instead of hook_block_view_alter(), which is called for all blocks,
+ * you can also use hook_block_view_MODULE_DELTA_alter() to alter a specific block.
  */
 function tpps_block_view_alter(&$data, $block) {
   switch ($block->delta) {
     case 'tpps_status':
-      // @todo Check if this block exists.
+      // Note: Block exists and appears on the /tpps/submission/TGDR1136/remove
+      // page in the right sidebar.
       $data['content'] = theme('submission_block', ['data' => $data]);
       break;
 
