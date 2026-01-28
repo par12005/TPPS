@@ -301,6 +301,21 @@ class FormState {
   }
 
   /**
+   * Unsets the value of the arbitrary element using list of parents.
+   *
+   * @param array $parents
+   *   List of parents including element's name.
+   * @param mixed $value
+   *   Empty value. Default is NULL.
+   *   Note: Some fields could require integer '0' or boolean FALSE to be
+   *   treated as empty.
+   */
+  public function unset(array $parents, $value = NULL) {
+    $this->validate();
+    TppsArray::set($this->formState, $parents, $value);
+  }
+
+  /**
    * Sets value of the arbitrary element using list of parents.
    *
    * @param array $parents
@@ -310,7 +325,7 @@ class FormState {
    */
   public function set(array $parents, $value) {
     $this->validate();
-    return TppsArray::set($this->formState, $parents, $value);
+    TppsArray::set($this->formState, $parents, $value);
   }
 
   /**
