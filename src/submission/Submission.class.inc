@@ -255,7 +255,7 @@ class Submission {
    */
   public function __set($name, $value) {
     // Allow to overwrite magic with custom setter.
-    $func = 'set' . ucfirst($name);
+    $func = tpps_snake_to_camel_case('set_' . $name);
     if (method_exists($this, $func)) {
       $this->$func($value);
     }
@@ -283,7 +283,7 @@ class Submission {
    */
   public function &__get($name) {
     // Allow to overwrite magic with custom getter.
-    $func = 'get' . ucfirst($name);
+    $func = tpps_snake_to_camel_case('get_' . $name);
     if (method_exists($this, $func)) {
       return $this->$func();
     }
