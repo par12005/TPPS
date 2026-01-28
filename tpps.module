@@ -3549,11 +3549,11 @@ function tpps_cache_get_cid_list() {
 /**
  * Implements hook 'submission_purged'.
  */
-function tpps_submission_purged($submission) {
+function tpps_submission_purged($accession) {
   tpps_cache_clear_all();
   drupal_set_message(
     t("Submission @accession and it's files was removed and cache was cleared.",
-      ['@accession' => $submission->accession]
+      ['@accession' => $accession]
     )
   );
 }

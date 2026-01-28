@@ -885,28 +885,21 @@ return;
   }
 
   /**
-   * Removes Submission, it's files and all the data from db.
+   * Removes parts of the  Submission.
    *
-   * To remove only record from tpps_submission' table see Submission::delete().
-   *
-   * @param array $options
-   *   List of options.
-   *   'clearDB' - bool. When TRUE means db tables must be cleared.
-   *   'clearTppsSubmissionTable' - bool. TRUE means to remove data added by
-   *     submit_all script.
-   *   'removeFiles' - bool. When TRUE submission's files will be removed if
-   *     the file not in use by the file_usage table. Removement of not used
-   *     files are safe but I'm not sure that old studies created correct
-   *     records about usage of files so do NOT delete files by default.
-   *     But for testing and Study Import file removement should be allowed.
+   * To remove only record from tpps_submission' table see Submission::remove().
    */
-  public function purge(array $options) {
-    $options = [
-      'clearDB' => TRUE,
-      'removeFiles' => TRUE,
-      'clearTppsSubmissionTable' => TRUE,
-    ];
-    $this->remove($options);
+  public function remove() {
+    // @TODO Implement. See remove* methods.
+  }
+
+  /**
+   * Totally removes the Submission.
+   *
+   * To remove only record from tpps_submission' table see Submission::remove().
+   */
+  public function purge() {
+    $this->remove();
 
     if (function_exists('module_invoke_all')) {
       // 'tpps_submission_purged'.
