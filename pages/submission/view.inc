@@ -143,7 +143,7 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
     }
   }
 
-  //tpps_submission_list_add_buttons($form);
+  // TppsForm::addSubmissionActionButtons($form);
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
   return $form;

@@ -95,7 +95,7 @@ function tpps_submission_zenodo_files_single_form(array $form, array &$form_stat
   // WARNING: This CSS class adds theme and design.
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
-  tpps_submission_list_add_buttons($form, FALSE);
+  TppsForm::addSubmissionActionButtons($form);
   return $form;
 }
 

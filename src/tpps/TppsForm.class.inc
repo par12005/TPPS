@@ -1522,4 +1522,38 @@ class TppsForm {
     }
   }
 
+  /**
+   * Adds 'Back' button to TPPS Submission subforms.
+   *
+   * NOTE: Used by /tpps/submission* subpages for navigation.
+   *
+   * @param array $form
+   *   Drupal Form API array.
+   */
+  public static function addSubmissionActionButtons(array &$form, $add_action = TRUE) {
+    $form['actions'] = $form['actions'] ?? ['#type' => 'container'];
+    // Back-button.
+    $action = 'back';
+    $form['actions'][$action] = [
+      '#type' => 'submit',
+      '#name' => $action,
+      '#value' => t(ucfirst($action)),
+      '#submit' => ['tpps_submission_list_back'],
+    ];
+    if ($add_action) {
+      // Main action button.
+      $main_action = check_plain(arg(3));
+      // Get caller function name.
+      $function = debug_backtrace(
+        !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 2
+      )[1]['function'];
+      $form['actions'][$main_action] = [
+        '#type' => 'submit',
+        '#name' => $main_action,
+        '#value' => t(ucfirst($main_action)),
+        '#submit' => [$function . '_submit'],
+      ];
+    }
+  }
+
 }

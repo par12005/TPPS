@@ -62,7 +62,7 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
       ],
     ],
   ];
-  tpps_submission_list_add_buttons($form);
+  TppsForm::addSubmissionActionButtons($form);
   TppsForm::autofocus($form, ['tpps_submission_export_state']);
 
   $form['#attributes']['class'][] = 'tpps-submission';
