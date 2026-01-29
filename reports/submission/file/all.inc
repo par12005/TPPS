@@ -230,6 +230,12 @@ function tpps_report_submission_file_all_theme_single_row(array $context) {
                 $file_label = theme('file_id',
                   ['fid' => $fid, 'attributes' => ['title' => t('View Info')]]
                 );
+                $value['file']['grouped_list'][$group][$organism_label][$field_name]
+                  = $file_label
+                  . ' ' . theme('file_size', ['size' => $file_size])
+                  . ' ' . theme('file_action_list',
+                    ['accession' => $accession, 'fid' => $fid]
+                  );
               }
               else {
                 $file_label = theme('file_local_vcf',
@@ -237,11 +243,14 @@ function tpps_report_submission_file_all_theme_single_row(array $context) {
                 );
               }
               $value['file']['grouped_list'][$group][$organism_label][$field_name]
-                = $file_label
-                . ' ' . theme('file_size', ['size' => $file_size])
-                . ' ' . theme('file_action_list',
-                  ['accession' => $accession, 'fid' => $fid]
-                );
+                = $file_label . ' ' . theme('file_size', ['size' => $file_size]);
+              // Actions only for managed files (not for local VCF files).
+              if (is_numeric($fid)) {
+                $value['file']['grouped_list'][$group][$organism_label][$field_name]
+                  .= ' ' . theme('file_action_list',
+                    ['accession' => $accession, 'fid' => $fid]
+                  );
+              }
             }
           }
         }
