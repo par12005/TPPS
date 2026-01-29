@@ -3,6 +3,10 @@
 /**
  * @file
  * API Callback. Shows list of VCF file Ids in JSON format.
+ *
+ * Note:
+ * Gabe doesn't use this API for nextflow because scipt gets data
+ * direclty from DB.
  */
 
 /**

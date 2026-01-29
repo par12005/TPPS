@@ -154,7 +154,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
 
   $state_raw = trim($values['tpps_submission_import_state']);
 
-  // Fix 'stdClass' in the submistion dump createdy by var_export().
+  // Fix 'stdClass' in the submission's dump which was created by var_export().
   // We shouldn't do this on export to have unchanged data.
   // Though var_export() is designed to "outputs or return a parsable
   // string representation of a variable", the output of stdClass
@@ -187,6 +187,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     SubmissionVersion::FORM_KEY => SubmissionVersion::get($submission->state),
   ];
   // Files.
+
   tpps_submission_import_process_files($submission->state, $accession, $form);
   // Main modification must be done after file processing complete.
   tpps_submission_import_state_mods($submission->state, $accession);
@@ -364,7 +365,46 @@ function tpps_submission_import_state_mods(array &$state, $new_accession) {
   // Check also $form_state['input'] and $form_state['completed_form'].
   // Update accession value in $form_state.
   $old_accession = $state['saved_values']['frontpage']['accession'];
+
+  $original_submission = new Submission();
+  $original_submission->state = $state;
+
+  // Protect local VCF files from changes to reuse the same files for
+  // imported studies. If path to local VCF file contains study accession it
+  // will be replaced with new accession and link became broken.
+  // Let's replace absolute path with it's md5-sum and restore original path
+  // after accession replacement.
+  $local_vcf_list = [];
+  for ($i = 1; $i <= $original_submission->getOrganismNumber(); $i++) {
+    $original_path = $original_submission->getLocalVcf($i);
+    if (empty($original_path)) {
+      continue;
+    }
+    $local_vcf_list[$i] = $original_path;
+    // Hide path to local VCF from change if it includes study accession.
+    // @todo Minor. Hide only paths which has accession.
+    $state = TppsArray::replace(
+      $state,
+      $original_path,
+      md5($original_path)
+    );
+  }
+
+  // Replace accession.
   $state = TppsArray::replace($state, $old_accession, $new_accession);
+
+  // Restore Local VCF file's path.
+  foreach ($local_vcf_list as $original_path) {
+    if (empty($original_path)) {
+      continue;
+    }
+    $state = TppsArray::replace(
+      $state,
+      md5($original_path),
+      $original_path
+    );
+  }
+
   $saved_values = &$state['saved_values'];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -428,6 +468,10 @@ function tpps_submission_import_process_files(array &$state, $new_accession, arr
       }
       TppsFile::addUsage($new_file, $new_accession);
       // Change File ID in submission state.
+      // WARNING:
+      // If $fid matches other number it will be replaced too which is wrong.
+      // @TODO Replace only files using list of parents instead of update
+      // whole $state.
       $state = TppsArray::replace($state, $fid, $new_file->fid);
 
       // Report.
