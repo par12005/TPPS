@@ -722,6 +722,27 @@ class Submission {
   }
 
   /**
+   * Gets list of all local VCF files.
+   *
+   * @return array
+   *   Returns associated array where key is organism index and value is a
+   *   path to the local VCF file stored on the server.
+   */
+  public function getLocalVcfList() {
+    $sharedState = new FormState($this->sharedState);
+    $list = [];
+    for ($i = 1; $i <= $this->getOrganismNumber(); $i++) {
+      $parents = $this->getLocalVcfParents($i);
+      $local_vcf = $sharedState->get($parents);
+      if (empty($local_vcf)) {
+        continue;
+      }
+      $list[$i] = strip_tags($local_vcf);
+    }
+    return $list;
+  }
+
+  /**
    * Removes submission's files.
    *
    * @todo Check if this code respects file usage table.
@@ -1833,6 +1854,29 @@ return;
       $this->getLocalVcfParents($organism_index)
     );
   }
+
+  /**
+   * Checks if study has local (located on server) VCF file.
+   *
+   * @param int $organism_index
+   *   Ordinal number of the organism at page.
+   *
+   * @return mixed
+   *   Returns number of studies which uses this file.
+   *   Returns NULL if organism in this study has no local VCF file.
+   */
+  public function getLocalVcfUsage($organism_index = 1) {
+    $path = $this->getLocalVcf($organism_index);
+    if (is_null($path)) {
+      return NULL;
+    }
+    return substr_count(
+      json_encode(SubmissionCache::get()),
+      json_encode($path)
+    );
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   /**
    * Gets name of the organism specified on Page 1.
