@@ -69,6 +69,9 @@ class TppsArray {
   /**
    * Replaces $old with $new in array's values and keys.
    *
+   * WARNING: $old and $new must have the same type (see gettype()).
+   * Type of the $new will be set to the type of $old.
+   *
    * @param array $array
    *   Array to be updated.
    * @param mixed $old
@@ -80,10 +83,18 @@ class TppsArray {
    *   Returns updated array.
    */
   public static function replace(array $array, $old, $new) {
-    // Source: tpps_change_tgdr_number();
-    $state_json = json_encode($array);
-    $state_json = str_replace($old, $new, $state_json);
-    return json_decode($state_json, TRUE);
+    // Note: if $old is integer but $new is string it cause an error
+    // because JSON representation are different.
+    // Both must have the same type.
+    settype($new, gettype($old));
+    // Using json_encode() for $old and $new allows to have slashes and
+    // other special chars in them.
+    $json = str_replace(
+      json_encode($old),
+      json_encode($new),
+      json_encode($array)
+    );
+    return json_decode($json, TRUE);
   }
 
   /**
