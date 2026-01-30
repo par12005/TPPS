@@ -88,9 +88,9 @@ class FormState {
    * @param array $form_state
    *   TPPS Submission Form State.
    */
-  public function __construct(array $form_state = NULL) {
+  public function __construct(array &$form_state = NULL) {
     if (!empty($form_state)) {
-      $this->formState = $form_state;
+      $this->formState = &$form_state;
       // Fill items on 1st level to allow shorter references.
       // E.g., $fs->status instead of $fs->get(['status']).
       $items = [
@@ -294,6 +294,8 @@ class FormState {
    *
    * @return mixed
    *   Returns value or NULL.
+   *
+   * @todo Minor. Return by reference.
    */
   public function get(array $parents) {
     $this->validate();
@@ -526,7 +528,7 @@ class FormState {
       $import_meta['full_date'] .= (empty($import_meta['imported']) ? ''
         : ' [' . $import_meta['imported'] . ']');
     }
-    $import_meta['current_version'] = SubmissionVersion::get($this->form_state);
+    $import_meta['current_version'] = SubmissionVersion::get($this->formState);
 
     return $import_meta;
   }

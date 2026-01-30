@@ -41,7 +41,7 @@ form.tppsc-form       .form-item {
 
 /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 /* Fields */
-form.tpps select.
+form.tpps select,
 form.tpps-submission  select,
 form.tpps-admin-panel select,
 form.tppsc-form       select {

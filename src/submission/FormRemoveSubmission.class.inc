@@ -73,8 +73,12 @@ class FormRemoveSubmission {
       if (!empty($fieldset)) {
         // Fieldset wasn't empty.
         if (!empty($fieldset['force'])) {
-          $selected_options[$name] = $item['title']
-            . ': ' . t('<strong>force</strong> removement.');
+          $selected_options[$name] =
+            '<div class="tpps-submission-removement-force">'
+            . $item['title']
+            . ': ' . t('<strong>force</strong> removement.')
+            . $item['force']['description']
+            . '</div>';
         }
         elseif (!empty($fieldset['remove'])) {
           $selected_options[$name] = $item['title']
@@ -408,77 +412,6 @@ class FormRemoveSubmission {
       ],
     ];
 
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Files.
-    // Submission::removeFiles().
-    $options['removeFiles'] = [
-      'default_value' => FALSE,
-      'title' => t('Files'),
-      'status_method' => 'hasFiles',
-      'links' => [
-        l(t("View 'File Diagnostics' page"),
-          'tpps-admin-panel/file-diagnostics/' . $accession
-        ),
-        l(t("'Submission's File' report"),
-          'admin/reports/tpps/submission/file/all/' . $accession
-        ),
-      ],
-      'description' => t('Remove files linked to submission.'),
-      'remove' => [
-        'description' => t('Remove only files not used by other studies, modules.')
-      ],
-      'force' => [
-        'description' => t('Remove files which are in use by other modules and '
-          . 'files locally stored on server (huge VCF-files).')
-          . '<br />'
-          . t('Note: Files which has usage greater then 1 are used by other '
-          . ' modules, studies. By default those file will not be removed.'),
-      ],
-    ];
-
-    // Show file status and link to usage page.
-    // @TODO Minor. Implement ability to select files for removement.
-    $file_list = SubmissionCache::get($accession)['file']['grouped_list'] ?? [];
-    // Structure of the $file_list:
-    // ['file']['grouped_list'][$group][$organism_label][$field_name] => $fid.
-    foreach ($file_list as $group_name => $group_list) {
-      foreach ($group_list as $organism_name => $organism_list) {
-        foreach ($organism_list as $field_name => $fid) {
-          if ($file = tpps_file_load($fid)) {
-            $usage = TppsFile::getUsage($file, $accession);
-            $tooltip = t('Could NOT be removed');
-            $class = 'strikethrough';
-            if ($usage == 1) {
-              $tooltip = t('Could be removed');
-              $class = '';
-            }
-            TppsArray::set(
-              $file_list,
-              [$group_name, $organism_name, $field_name],
-                theme('file_id',
-                  [
-                    'fid' => $fid,
-                    'attributes' => [
-                      'title' => $tooltip,
-                      'class' => [$class],
-                    ],
-                  ]
-                )
-                . ' ' . theme('file_size',
-                  ['size' => $file_size = $file->filesize]
-                )
-                . ' ' . theme('file_action_list',
-                   ['accession' => $accession, 'fid' => $fid, 'tiny' => FALSE]
-                )
-            );
-          }
-        }
-      }
-    }
-    $options['removeFiles']['info'] = [
-      'title' => t("Submission's Files"),
-      'content' => TppsArray::print($file_list),
-    ];
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Tags.
@@ -522,8 +455,98 @@ class FormRemoveSubmission {
         ),
       ];
     }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Files.
+    // Submission::removeFiles().
+    $force_removement_description = [
+      t('Remove files EVEN if they are used by other studies.'),
+    ];
+    if (is_live_site()) {
+      // Dev-site should not remove local VCF files at all.
+      $force_removement_description[] =
+        t('Remove local VCF files but ONLY if they are not used by other studies.');
+    }
+    $options['removeFiles'] = [
+      'default_value' => FALSE,
+      'title' => t('Files'),
+      'status_method' => 'hasFiles',
+      'links' => [
+        l(t("View 'File Diagnostics' page"),
+          'tpps-admin-panel/file-diagnostics/' . $accession
+        ),
+        l(t("'Submission's File' report"),
+          'admin/reports/tpps/submission/file/all/' . $accession
+        ),
+      ],
+      'description' => t('Remove files linked to submission.')
+        . '<br />' . t('Note: If any file removed then data loaded to '
+        . 'database will be cleared too.'),
+      'remove' => [
+        'description' => t('Remove only files not used by other studies, modules.')
+      ],
+      'force' => [
+        'description' => theme('item_list',
+          ['items' => $force_removement_description]
+        ),
+      ],
+    ];
+
+    // Show file status and link to usage page.
+    // @TODO Minor. Implement ability to select files for removement.
+    $file_list = SubmissionCache::get($accession)['file']['grouped_list'] ?? [];
+    // Structure of the $file_list:
+    // ['file']['grouped_list'][$group][$organism_label][$field_name] => $fid.
+    foreach ($file_list as $group_name => $group_list) {
+      if (empty($group_list)) {
+        unset($file_list[$group_name]);
+        continue;
+      }
+      foreach ($group_list as $organism_name => $organism_list) {
+        if (empty($organism_list)) {
+          unset($file_list[$group_name][$organism_name]);
+          continue;
+        }
+        foreach ($organism_list as $field_name => $fid) {
+          if ($file = tpps_file_load($fid)) {
+            $usage = TppsFile::getUsage($file, $accession);
+            $tooltip = t('Could NOT be removed');
+            $class = 'strikethrough';
+            if ($usage == 1) {
+              $tooltip = t('Could be removed');
+              $class = '';
+            }
+            TppsArray::set(
+              $file_list,
+              [$group_name, $organism_name, $field_name],
+                theme('file_id',
+                  [
+                    'fid' => $fid,
+                    'attributes' => [
+                      'title' => $tooltip,
+                      'class' => [$class],
+                    ],
+                  ]
+                )
+                . ' ' . theme('file_size',
+                  ['size' => $file_size = $file->filesize]
+                )
+                . ' ' . theme('file_action_list',
+                   ['accession' => $accession, 'fid' => $fid, 'tiny' => FALSE]
+                )
+            );
+          }
+        }
+      }
+    }
+    if (!empty($file_list)) {
+      $options['removeFiles']['info'] = [
+        'title' => t("Submission's Files"),
+        'content' => TppsArray::print($file_list),
+      ];
+    }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     return $options;
   }
 

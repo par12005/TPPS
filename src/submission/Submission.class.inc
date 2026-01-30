@@ -745,32 +745,52 @@ class Submission {
   /**
    * Removes submission's files.
    *
-   * @todo Check if this code respects file usage table.
+   * Local VCF files will be removed only on live site and after confirmation.
+   * By default local VCF files are renamed (not removed).
+   *
+   * Drupal managed files will be removed if other studies not use them but
+   * in 'force' mode those files will be removed anyway.
+   *
+   * @param bool $force
+   *   Indicates that 'force mode' should be used.
+   *   In this mode:
+   *   1. Local VCF files will be removed on live (not on dev which
+   *      re-uses files from live-site).
+   *   2. Managed files will be removed even if other studies are using them.
    */
   public function removeFiles($force = FALSE) {
     $debug_mode = TRUE;
 
-    if (empty($this->state)) {
+    if (empty($this->sharedState)) {
       return;
     }
+    $sharedState = new FormState($this->sharedState);
     // Flag which is TRUE when at least one file was removed.
     $any_file_was_removed = FALSE;
 
     // Remove local VCF files.
-    if ($force) {
+    if ($force && is_live_site()) {
+      // Local VCF files must be removed only on live site because dev-site
+      // re-uses this files and often has clonned studies which shares the
+      // same local VCF files.
       for ($i = 1; $i <= $this->getOrganismNumber(); $i++) {
-        // See getLocalVcf() method.
-        $parents = $this->getLocalVcfParents($i);
-        $local_vcf = TppsArray::get($this->sharedState, $parents);
-        if (empty($local_vcf)) {
-          continue;
-        }
-        $file_path = strip_tags($local_vcf);
-        if ($debug_mode ?? 0) {
-          dpm('Local VCF: ' . $file_path);
-        }
-        else {
-          if (unlink($file_path)) {
+        $local_vcf_usage = $this->getLocalVcfUsage($i);
+        if ($local_vcf_usage == 1) {
+          // File exists and in use by only one study.
+          $path = $this->getLocalVcf($organism_index);
+          $parents = $this->getLocalVcfParents($i);
+
+          $file_path = strip_tags($local_vcf);
+          // Safer way is to rename file to allow rollback.
+          if (variable_get('tpps_submission_remove_local_vcf', FALSE)) {
+            $removement_result = unlink($file_path);
+          }
+          else {
+            // Do not remove but create a backup copy.
+            $removement_result = rename($file_path, $file_path . '.removed');
+          }
+          if ($removement_result) {
+            //$this->sharedState = $sharedState->unset($parents);
             TppsArray::set($this->sharedState, $parents, NULL);
             $any_file_was_removed = TRUE;
           }
@@ -784,8 +804,8 @@ class Submission {
       }
     }
 
-    // @todo Minor. Query DB table 'file_usage' to find if there is orphan
-    // files related to this non-existing submission.
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Remove Drupal managed files.
     $parent_list = $this->getFileParents();
     foreach ($parent_list as $step => $step_list) {
       foreach ($step_list as $parents) {
@@ -795,24 +815,40 @@ class Submission {
           continue;
         }
         if ($file = tpps_file_load($fid)) {
-          if ($debug_mode ?? 0) {
-            dpm(print_r($file, 1), $fid);
-            $result = [];
-          }
-          else {
-            $count = (int) !$force;
-            // Remove file usage record (not file itself).
-            TppsFile::deleteUsage($file, $this->accession, $count);
-            // 0 - remove all ussage; 1 - (default) remove single usage.
-            // Remove file from disk.
-            $result = file_delete($file, $force);
-          }
+          $count = (int) !$force;
+          // Remove file usage record (not file itself).
+          TppsFile::deleteUsage($file, $this->accession, $count);
+          // 0 - remove all ussage; 1 - (default) remove single usage.
+          // Remove file from disk.
+          $result = file_delete($file, $force);
 
           if ($result === TRUE) {
             // Sucess.
             // Remove from submission.
             // Note: Submission will be saved when all files will be processed.
-            TppsArray::set($this->state['saved_values'], $new_parents, NULL);
+            $field_parents = array_merge(['saved_values'], $new_parents);
+            $this->set(
+              $field_parents,
+              $value = NULL,
+              $update_shared_state = TRUE
+            );
+            // Unset also sub-fields.
+            $field_name = $field_parents[count($field_parents) - 1];
+            $subfield_list = [
+              'columns',
+              'no-header',
+              'empty',
+              'groups',
+            ];
+            foreach ($subfield_list as $sub_name) {
+              $field_parents[count($field_parents) - 1]
+                = implode('-', [$field_name, $sub_name]);
+              $this->set(
+                $field_parents,
+                $value = NULL,
+                $update_shared_state = TRUE
+              );
+            }
             // If at least one file was removed all data loaded to DB must be
             // removed.
             $any_file_was_removed = TRUE;
@@ -836,17 +872,11 @@ class Submission {
     }
     if ($any_file_was_removed) {
       // Clear submission data loaded into DB.
-      if ($debug_mode ?? 0) {
-        dpm('Call of the $this->clearDB()');
-      }
-      else {
-        $this->clearDB();
-        // No need to manually update SubmissionCache because it will be updated
-        // automatically on submission's save.
-        $this->save();
-      }
+      $this->clearDB();
+      // No need to manually update SubmissionCache because it will be updated
+      // automatically on submission's save.
+      $this->save();
     }
-
   }
 
   /**
