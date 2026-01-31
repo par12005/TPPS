@@ -186,8 +186,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     //
     // Other solution is to call function tpps_submission_clear_db() but to
     // get latest changes we need to save current state of the $submission object.
-    tpps_project_clear_db($submission->sharedState['ids']['project_id']);
-
+    $submission->removeProjectData();
     tpps_tripal_entity_publish('Project',
       [
         $submission->sharedState['title'],

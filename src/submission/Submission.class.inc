@@ -957,8 +957,6 @@ return;
    * @return mixed
    *   Returns FALSE if 'project_id' not found in Shared State.
    *   Returns TRUE in case of success sql query execution.
-   *
-   * @todo Review: tpps_project_clear_db($project_id);
    */
   public function removeLoadedData($table) {
     if (function_exists('tpps_log')) {
@@ -3204,6 +3202,54 @@ return;
     $query->fields('t');
     $query->condition('s.accession', $this->accession);
     return $query->execute()->fetchAllAssoc('tpps_tag_id', PDO::FETCH_ASSOC);
+  }
+
+  /**
+   * Removes project's data in the database.
+   */
+  public function removeProjectData() {
+    $project_id = $this->sharedState['ids']['project_id'] ?? NULL;
+    if (empty($project_id)) {
+      return FALSE;
+    }
+    $verbose = (bool) function_exists('tpps_log');
+    $data = [
+      'chado' => [
+        'project_organism',
+        'project_pub',
+        'projectprop',
+        'genotype_call',
+      ],
+      'public' => [
+        'tpps_project_file_managed',
+      ],
+    ];
+
+    $message = 'Cleared "@table_name" for project @project_id';
+    foreach ($data as $schema => $table_list) {
+      foreach ($table_list as $table_name) {
+        if ($schema == 'chado') {
+          $sql = "DELETE FROM $table_name WHERE project_id = $project_id";
+          //chado_query($sql);
+          $num_deleted = db_delete($schema . '.' . $table_name)
+            ->condition('project_id', $project_id)
+            ->execute();
+        }
+        else {
+          $num_deleted = db_delete($schema . '.' . $table_name)
+            ->condition('project_id', $project_id)
+            ->execute();
+        }
+        if ($verbose) {
+          $params = ['@table_name' => $table_name, '@project_id' => $project_id];
+          if (!is_null($num_deleted)) {
+            $params['@num_deleted'] = $num_deleted;
+            $message .= '. Deleted: @num_deleted rows';
+          }
+          tpps_log($message, $params);
+        }
+      }
+    }
   }
 
 }

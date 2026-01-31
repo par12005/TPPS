@@ -430,57 +430,6 @@ function tpps_submission_full_clear_db($project_id) {
 }
 
 /**
- * Removes project's data in the database.
- *
- * @param int $project_id
- *   Project Id.
- * @param mixed $verbose
- *   Default is TRUE. When TRUE log messages using tpps_log() will be shown.
- */
-function tpps_project_clear_db($project_id = NULL, $verbose = TRUE) {
-  if (is_null($project_id)) {
-    throw new Exception('Project Id is required.');
-  }
-  $data = [
-    'chado' => [
-      'project_organism',
-      'project_pub',
-      'projectprop',
-      'genotype_call',
-    ],
-    'public' => [
-      'tpps_project_file_managed',
-    ],
-  ];
-
-  $message = 'Cleared "@table_name" for project @project_id';
-  foreach ($data as $schema => $table_list) {
-    foreach ($table_list as $table_name) {
-      if ($schema == 'chado') {
-        $sql = "DELETE FROM $table_name WHERE project_id = $project_id";
-        //chado_query($sql);
-        $num_deleted = db_delete($schema . '.' . $table_name)
-          ->condition('project_id', $project_id)
-          ->execute();
-      }
-      else {
-        $num_deleted = db_delete($schema . '.' . $table_name)
-          ->condition('project_id', $project_id)
-          ->execute();
-      }
-      if ($verbose) {
-        $params = ['@table_name' => $table_name, '@project_id' => $project_id];
-        if (!is_null($num_deleted)) {
-          $params['@num_deleted'] = $num_deleted;
-          $message .= '. Deleted: @num_deleted rows';
-        }
-        tpps_log($message, $params);
-      }
-    }
-  }
-}
-
-/**
  * Clears submission data from the database.
  *
  * This function is particularly useful when submitting a study to the database
@@ -504,8 +453,7 @@ function tpps_submission_clear_db($accession) {
   // from TGDR665 and 674 6/29/2023)
   // tpps_submission_full_clear_db($project_id);
 
-  tpps_project_clear_db($project_id);
-
+  $submission->removeProjectData();
   $result = $submission->clearDataBase();
   if ($result) {
     tpps_log('FINISHED DB CLEAR DELETES');
