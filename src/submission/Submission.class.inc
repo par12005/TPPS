@@ -872,7 +872,7 @@ class Submission {
     }
     if ($any_file_was_removed) {
       // Clear submission data loaded into DB.
-      $this->clearDB();
+      $this->clearDataBase();
       // No need to manually update SubmissionCache because it will be updated
       // automatically on submission's save.
       $this->save();
@@ -903,17 +903,112 @@ return;
   }
 
   /**
-   * Removes records from many DB tables created by submit_all.php script.
+   * Clears submission's data loaded into DB.
+   *
+   * This function is particularly useful when submitting a study to the database
+   * multiple times. Note that Tripal Entities should be manually un-published
+   * after this process has completed.
+   *
+   * @return bool
+   *   Returns TRUE if submission successfully cleared and FALSE otherwise.
    */
-  public function clearDB() {
-// @todo Remove debug code.
-return;
-    // @TODO Remove per table.
+  public function clearDataBase() {
+    $debug_mode = TRUE;
+    if ($debug_mode ?? 0) {
+      return;
+    }
 
-    // Remove all data added during processing.
-    // @TODO Check if study was processed first.
-    module_load_include('inc', 'tpps', 'includes/submissions');
-    tpps_submission_clear_db($this->accession);
+    $this->sharedState['file_rank'] = 0;
+    $project_id = $this->sharedState['ids']['project_id'] ?? NULL;
+    if (empty($project_id)) {
+      return FALSE;
+    }
+    $this->sharedState['file_rank'] = 0;
+    chado_query("UPDATE chado.project_dbxref SET is_current = FALSE WHERE project_id = $project_id");
+
+    $table_list = [
+      'chado.phenotype_cvterm',
+      'chado.phenotype_to_synonym',
+      'chado.phenotype',
+      'chado.genotype_reads_per_plant',
+      'chado.plants_per_marker',
+      'chado.stock_genotype',
+      'chado.stock_phenotype',
+      'chado.stock',
+      'chado.phenotype',
+      'chado.plants_per_marker',
+    ];
+    foreach ($table_list as $table_name) {
+      $this->removeLoadedData($table_name);
+    }
+    $this->sharedState['ids'] = ['project_id' => $project_id];
+    $this->save();
+    return TRUE;
+  }
+
+  /**
+   * Removes study data loaded into given table.
+   *
+   * From function tpps_submission_clear_db().
+   *
+   * @param string $table
+   *   Table name with leading schema.
+   *
+   * @return mixed
+   *   Returns FALSE if 'project_id' not found in Shared State.
+   *   Returns TRUE in case of success sql query execution.
+   *
+   * @todo Review: tpps_project_clear_db($project_id);
+   */
+  public function removeLoadedData($table) {
+    if (function_exists('tpps_log')) {
+      tpps_log('DELETE ' . $table . ' values...');
+    }
+    $project_id = $this->sharedState['ids']['project_id'] ?? NULL;
+    if (empty($project_id)) {
+      return FALSE;
+    }
+    // @TODO Execute $stocks_sql and use plain list of ids instead of query.
+    $stocks_sql = "SELECT stock_id FROM chado.project_stock WHERE project_id = $project_id";
+    // @TODO Minor. Move this check to class constructor method.
+    if (strpos($this->accession, 'TGDR') !== FALSE && strlen($this->accession) >= 7) {
+      $accession = strtoupper($this->accession);
+    }
+    else {
+      return FALSE;
+    }
+    $sql = [
+      // Stocks_sql.
+      'chado.phenotype_cvterm' => 'DELETE FROM ' . $table . ' WHERE
+        phenotype_id IN (SELECT phenotype_id from chado.stock_phenotype WHERE
+        stock_id in (' . $stocks_sql . '))',
+      'chado.phenotype_to_synonym' => 'DELETE FROM ' . $table
+        . ' WHERE phenotype_id IN (SELECT phenotype_id FROM chado.stock_phenotype
+        WHERE stock_id IN (' . $stocks_sql . '))',
+      'chado.phenotype' => 'DELETE FROM ' . $table . ' WHERE phenotype_id IN
+        (SELECT phenotype_id FROM chado.stock_phenotype WHERE stock_id IN
+        (' . $stocks_sql . '))',
+      'chado.stock_genotype' => "DELETE FROM $table WHERE stock_id IN ( $stocks_sql)",
+      'chado.stock_phenotype' => "DELETE FROM $table WHERE stock_id IN ($stocks_sql)",
+      'chado.stock' => "DELETE FROM $table WHERE stock_id IN ($stocks_sql)"
+        // Force delete stock just in case by study accession name.
+        . " OR uniquename LIKE $accession-%"
+
+      // Accession.
+      'chado.genotype_reads_per_plant' => "DELETE FROM $table WHERE study_accession = '$accession'",
+      'chado.plants_per_marker' => "DELETE FROM $table WHERE study_accession = '$accession'",
+      'chado.phenotype' => "DELETE FROM $table WHERE uniquename LIKE '$accession-%'",
+      'chado.plants_per_marker' => "DELETE FROM $table WHERE study_accession = '$accession'",
+    ];
+    if (empty($sql[$table])) {
+      $message = t("Can't find sql-query for table @table.", ['@table' => $table]);
+      throw new Exception($message);
+    }
+    else {
+      if (db_table_exists($table)) {
+        chado_query($sql[$table]);
+      }
+    }
   }
 
   /**

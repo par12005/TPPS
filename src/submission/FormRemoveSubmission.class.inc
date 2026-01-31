@@ -291,7 +291,7 @@ class FormRemoveSubmission {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // DB Tables.
     // @TODO Get code from submit all.
-    $options['clearDB'] = [
+    $options['clearDataBase'] = [
       'default_value' => FALSE,
       // @TODO Convert into 'checkboxes' and show list of tables which checked
       // by default.
