@@ -301,12 +301,15 @@ class FormRemoveSubmission {
       'description' => t('Remove records from DB tables.'),
       'info' => [
         'title' => t("Tables to be cleared"),
-        'content' => theme('item_list',
-          ['items' => $submission->getTableListToClearDataBase()]
-        ),
+        'content' => theme('item_list', [
+          'items' => array_merge(
+            // @TODO Minor. Implement ability to select tables.
+            $submission->getTableListToClearDataBase(),
+            $submission->getTableListToRemoveProjectData()
+          ),
+        ]),
       ],
     ];
-
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Zenodo Deposit.

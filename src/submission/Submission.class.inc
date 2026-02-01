@@ -941,6 +941,8 @@ return;
    *
    * @return array
    *   Returns list of table names with leading schema.
+   *
+   * @TODO Minor. Merge with getTableListToRemoveProjectData().
    */
   public function getTableListToClearDataBase() {
     return [
@@ -3225,14 +3227,7 @@ return;
       return FALSE;
     }
     $verbose = (bool) function_exists('tpps_log');
-    $table_list = [
-      'chado.project_organism',
-      'chado.project_pub',
-      'chado.projectprop',
-      'chado.genotype_call',
-      'public.tpps_project_file_managed',
-    ];
-
+    $table_list = $this->getTableListToRemoveProjectData();
     $message = 'Cleared "@table_name" for project @project_id';
     foreach ($table_list as $table_name) {
       $num_deleted = db_delete($table_name)
@@ -3247,6 +3242,21 @@ return;
         tpps_log($message, $params);
       }
     }
+  }
+
+  /**
+   * Gets list of the db tables to remove project's data.
+   *
+   * @TODO Minor. Merge with getTableListToClearDataBase().
+   */
+  public function getTableListToRemoveProjectData() {
+    return [
+      'chado.project_organism',
+      'chado.project_pub',
+      'chado.projectprop',
+      'chado.genotype_call',
+      'public.tpps_project_file_managed',
+    ];
   }
 
 }
