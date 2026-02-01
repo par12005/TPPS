@@ -293,10 +293,18 @@ class FormRemoveSubmission {
     // @TODO Get code from submit all.
     $options['clearDataBase'] = [
       'default_value' => FALSE,
+      // @TODO check if study was processed.
+      // 'status_method' => 'hasFiles',
       // @TODO Convert into 'checkboxes' and show list of tables which checked
       // by default.
       'title' => t('DB tables'),
       'description' => t('Remove records from DB tables.'),
+      'info' => [
+        'title' => t("Tables to be cleared"),
+        'content' => theme('item_list',
+          ['items' => $submission->getTableListToClearDataBase()]
+        ),
+      ],
     ];
 
 

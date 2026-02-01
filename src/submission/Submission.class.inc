@@ -926,7 +926,24 @@ return;
     $this->sharedState['file_rank'] = 0;
     chado_query("UPDATE chado.project_dbxref SET is_current = FALSE WHERE project_id = $project_id");
 
-    $table_list = [
+    foreach ($this->getTableListToClearDataBase() as $table_name) {
+      $this->removeLoadedData($table_name);
+    }
+    $this->sharedState['ids'] = ['project_id' => $project_id];
+    $this->save();
+    return TRUE;
+  }
+
+  /**
+   * Gets list of table names to be cleared.
+   *
+   * See clearDataBase() method.
+   *
+   * @return array
+   *   Returns list of table names with leading schema.
+   */
+  public function getTableListToClearDataBase() {
+    return [
       'chado.phenotype_cvterm',
       'chado.phenotype_to_synonym',
       'chado.phenotype',
@@ -938,12 +955,6 @@ return;
       'chado.phenotype',
       'chado.plants_per_marker',
     ];
-    foreach ($table_list as $table_name) {
-      $this->removeLoadedData($table_name);
-    }
-    $this->sharedState['ids'] = ['project_id' => $project_id];
-    $this->save();
-    return TRUE;
   }
 
   /**
@@ -975,6 +986,7 @@ return;
     else {
       return FALSE;
     }
+
     $sql = [
       // Stocks_sql.
       'chado.phenotype_cvterm' => 'DELETE FROM ' . $table . ' WHERE
@@ -990,7 +1002,7 @@ return;
       'chado.stock_phenotype' => "DELETE FROM $table WHERE stock_id IN ($stocks_sql)",
       'chado.stock' => "DELETE FROM $table WHERE stock_id IN ($stocks_sql)"
         // Force delete stock just in case by study accession name.
-        . " OR uniquename LIKE $accession-%"
+        . " OR uniquename LIKE $accession-%",
 
       // Accession.
       'chado.genotype_reads_per_plant' => "DELETE FROM $table WHERE study_accession = '$accession'",
@@ -3213,41 +3225,26 @@ return;
       return FALSE;
     }
     $verbose = (bool) function_exists('tpps_log');
-    $data = [
-      'chado' => [
-        'project_organism',
-        'project_pub',
-        'projectprop',
-        'genotype_call',
-      ],
-      'public' => [
-        'tpps_project_file_managed',
-      ],
+    $table_list = [
+      'chado.project_organism',
+      'chado.project_pub',
+      'chado.projectprop',
+      'chado.genotype_call',
+      'public.tpps_project_file_managed',
     ];
 
     $message = 'Cleared "@table_name" for project @project_id';
-    foreach ($data as $schema => $table_list) {
-      foreach ($table_list as $table_name) {
-        if ($schema == 'chado') {
-          $sql = "DELETE FROM $table_name WHERE project_id = $project_id";
-          //chado_query($sql);
-          $num_deleted = db_delete($schema . '.' . $table_name)
-            ->condition('project_id', $project_id)
-            ->execute();
+    foreach ($table_list as $table_name) {
+      $num_deleted = db_delete($table_name)
+        ->condition('project_id', $project_id)
+        ->execute();
+      if ($verbose) {
+        $params = ['@table_name' => $table_name, '@project_id' => $project_id];
+        if (!is_null($num_deleted)) {
+          $params['@num_deleted'] = $num_deleted;
+          $message .= '. Deleted: @num_deleted rows';
         }
-        else {
-          $num_deleted = db_delete($schema . '.' . $table_name)
-            ->condition('project_id', $project_id)
-            ->execute();
-        }
-        if ($verbose) {
-          $params = ['@table_name' => $table_name, '@project_id' => $project_id];
-          if (!is_null($num_deleted)) {
-            $params['@num_deleted'] = $num_deleted;
-            $message .= '. Deleted: @num_deleted rows';
-          }
-          tpps_log($message, $params);
-        }
+        tpps_log($message, $params);
       }
     }
   }
