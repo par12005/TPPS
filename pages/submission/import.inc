@@ -361,6 +361,11 @@ function tpps_submission_import_state_mods(array &$state, $new_accession) {
   // (line 1071 of /var/www/Drupal/sites/all/modules/TGDR/tpps.module).
   $state['triggering_element']['#value'] = t('Review and Submit');
 
+  // Imported study has no data loaded into db and we must clear loading time.
+  $state['loaded'] = NULL;
+  // Ids are filled during pipeline processing. Must be empty.
+  $state['ids'] = [];
+
   // $form_state['values']['frontpage']['accession'] = $new_accession;
   // Check also $form_state['input'] and $form_state['completed_form'].
   // Update accession value in $form_state.
@@ -423,9 +428,6 @@ function tpps_submission_import_state_mods(array &$state, $new_accession) {
     = $state['dbxref_id']
       = $state['values']['dbxref_id']
         = tpps_init_project_get_dbxref_id($new_accession);
-
-  module_load_include('php', 'tpps', 'forms/build/page_1');
-  $state['ids']['project_id'] = tpps_get_project_id($state['dbxref_id']);
   $state['values'] = $state['saved_values'];
 }
 
