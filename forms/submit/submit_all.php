@@ -221,12 +221,6 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
       tpps_log('Files renamed!' . PHP_EOL, [], TRIPAL_INFO);
     }
 
-    if (variable_get('tpps_submitall_run_nextflow', TRUE)) {
-      // @TODO Run only when study has VCF files.
-      tpps_log('Nextflow New Study Pipeline', [], TRIPAL_INFO);
-      tpps_nextflow_new_study_pipeline($submission->sharedState);
-    }
-
     tpps_log('Finishing up...', [], TRIPAL_INFO);
     // Functions starting from tpps_submit_page_1() update $shared_state array
     // with new data so now we are going to update db record.
@@ -2354,10 +2348,21 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
   OtherMarker::process($organism_index, $shared_state, $options);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  tpps_log('VCF IMPORT MODE is ' . $vcf_import_mode, [], TRIPAL_INFO);
+
   if ($vcf_processing_completed == FALSE) {
-    tpps_log('Processing VCF since it was not yet processed...', [], TRIPAL_INFO);
-    tpps_genotype_vcf_processing($shared_state, $species_codes, $i, $job, $vcf_import_mode, $options);
+    if ($shared_state['saved_values'][TPPS_PAGE_4]['organism-1']['genotype']['files']['file-type'] == TPPS_GENOTYPING_FILE_TYPE_VCF) {
+      tpps_log('Processing VCF since it was not yet processed...', [], TRIPAL_INFO);
+      tpps_log('VCF IMPORT MODE is ' . $vcf_import_mode, [], TRIPAL_INFO);
+      # db operations
+      tpps_genotype_vcf_processing($shared_state, $species_codes, $i, $job, $vcf_import_mode, $options);
+  
+      # NextFlow Liftover + VCF standardization to FTP
+      if (variable_get('tpps_submitall_run_nextflow', TRUE)) {
+        // @TODO Run only when study has VCF files.
+        tpps_log('Nextflow New Study Pipeline', [], TRIPAL_INFO);
+        tpps_nextflow_new_study_pipeline($submission->sharedState);
+      }
+    }
   }
   else {
     tpps_log('VCF was already processed!', [], TRIPAL_INFO);
