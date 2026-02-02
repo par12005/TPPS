@@ -1056,24 +1056,32 @@ class Submission {
   }
 
   /**
-   * Removes parts of the  Submission.
+   * Removes parts of the Submission.
    *
-   * To remove only record from tpps_submission' table see Submission::remove().
+   * @param mixed $options
+   *   List of options to be removed.
+   *   When string 'all' then all parts will be removed.
+   *   - Files will be removed in normal (not forced) mode.
+   *   - All Submission Tags (including system tags) will be removed.
+   *
+   * @todo Implement ability to specify parts.
    */
-  public function remove(array $options) {
-
-
-
-
-
-
-// @TODO Implement. See remove* methods.
-
-
-
-
-
-
+  public function remove($options) {
+    if ($options == 'all') {
+      $this->clearDataBase();
+      $this->clearDbxrefTable();
+      $this->removeAllTags();
+      $this->removeImportMeta();
+      $this->removeImportRecord();
+      $this->removeProjectData();
+      $this->removeSharedState();
+      $this->removeSubmissionCache();
+      $this->removeZenodoDeposit();
+      $this->removeFiles($force = FALSE);
+    }
+    else {
+      throw new Exception('Ability to specify parts to be removed not yet implemented');
+    }
   }
 
   /**
