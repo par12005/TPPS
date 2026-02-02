@@ -33,19 +33,33 @@ class FormRemoveSubmission {
       FormRemoveSubmission::buildConfirmationForm($form, $form_state);
     }
     else {
+      $form['intro'] = [
+        '#markup' => theme('item_list', [
+          'title' => t('Useful links'),
+          'items' => [
+            l(t('Submission Purge page'), 'tpps/submission/' . $accession . '/purge'),
+            l(t('View record in "tpps_submission" table.'),
+              'admin/reports/db/public.tpps_submission',
+              ['query' => ['public.tpps_submission.accession' => $accession]]
+            ),
+            l(t('Edit'), 'tppsc/' . $accession),
+            l(t('Details'), 'tpps/details/' . $accession),
+            l(t('Files'), 'tpps-admin-panel/file-diagnostics/' . $accession),
+            l(t('JSON State'), 'api/submission/' . $accession . '/view/state'),
+            l(t('JSON Shared State'), 'api/submission/' . $accession . '/view/shared_state'),
+            l(t('View'), 'tpps/submission/' . $accession . '/view'),
+            l(t('Zenodo Deposit'), 'tpps/submission/' . $accession . '/zenodo'),
+            l(t('Files'), 'tpps/submission/' . $accession . '/zenodo/files'),
+          ],
+        ]),
+      ];
       FormRemoveSubmission::buildSelectionForm($form, $accession);
     }
     $form['#attributes']['class'][] = 'tpps-submission';
     tpps_add_css_js('theme', $form);
     tpps_add_css_js('main', $form);
     $form['actions']['cancel']['#attributes']['class'][] = 'btn form-button';
-
-
-    //$form['submit'] = ['#type' => 'submit', '#value' => t('Submit')];
-    //$form['#attributes']['class'][] = 'tpps-submission-tag-form';
-    //$form['#attributes']['class'][] = 'tpps';
     $form['accession'] = ['#type' => 'hidden', '#value' => $accession];
-
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Custom.
     $form['#validate'][] = 'FormRemoveSubmission::validate';
@@ -233,72 +247,31 @@ class FormRemoveSubmission {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Submission object.
     //
-    // @TODO Check if Submission Cache is updated.
     // @TODO When selected use all other options too.
-    // @TODO REmove this option. Use 'purge' instead because there is no
-    // sence to remove record and leave other parts.
-    $options['removeSubmissionTable'] = [
-      'default_value' => FALSE,
-      'title' => t('Form State'),
-      'status_method' => 'hasDbRecord',
-      'description' => t('Remove Form State records stored in table '
-        . '"public.tpps_submission".'),
-      'links' => [
-        l(t('View record in "chado.dbxref" table.'),
-          'admin/reports/db/chado.dbxref',
-          ['query' => ['chado.dbxref.accession' => $accession]]
-        ),
-        l(t('View record in "tpps_submission" table.'),
-          'admin/reports/db/public.tpps_submission',
-          ['query' => ['public.tpps_submission.accession' => $accession]]
-        ),
-      ],
-      'remove' => [
-        'description' => t("Removement of the Form State record (and Shared "
-          . "State) means that study can't be found and processed. "
-          . "But records in other DB tables and files will be left."),
-      ],
-      'force' => [
-        'description' => t('Remove Form State, all the files and any records '
-        . 'in other DB tables.')
-        . '<br />'
-        . t('WARNING: This is full removement.')
-        . '<br />'
-        . t('Note: Submission Purge does the same.'),
-      ],
-    ];
 
     // :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    //$options['removeDbxrefTable'] = [
-    //  'default_value' => FALSE,
-    //  'title' => t('Form State'),
-    //  'status_method' => 'hasDbRecord',
-    //  'description' => t('Remove Form State records from "public.tpps_submission" and "chado.dbxref" tables.')
-    //  . theme('item_list', [
-    //    'items' => [
-    //      l(t('View record in "chado.dbxref" table.'),
-    //        'admin/reports/db/chado.dbxref',
-    //        ['query' => ['chado.dbxref.accession' => $accession]]
-    //      ),
-    //      l(t('View record in "tpps_submission" table.'),
-    //        'admin/reports/db/public.tpps_submission',
-    //        ['query' => ['public.tpps_submission.accession' => $accession]]
-    //      ),
-    //    ]
-    //  ]),
-    //];
+    $options['clearDbxrefTable'] = [
+      'default_value' => FALSE,
+      'title' => t('Record in "chado.dbxref" table'),
+      'status_method' => 'hasDbRecord',
+      'description' => t('Removes record "chado.dbxref" table.')
+        . theme('item_list', [
+          'items' => [
+            l(t('View record in "chado.dbxref" table.'),
+              'admin/reports/db/chado.dbxref',
+              ['query' => ['chado.dbxref.accession' => $accession]]
+            ),
+          ]
+        ]),
+    ];
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // DB Tables.
-    // @TODO Get code from submit all.
     $options['clearDataBase'] = [
       'default_value' => FALSE,
-      // @TODO check if study was processed.
-      // 'status_method' => 'hasFiles',
-      // @TODO Convert into 'checkboxes' and show list of tables which checked
-      // by default.
+      'status_method' => 'isLoaded',
       'title' => t('DB tables'),
-      'description' => t('Remove records from DB tables.'),
+      'description' => t('Removes data loaded by submit_all.php script into database.'),
       'info' => [
         'title' => t("Tables to be cleared"),
         'content' => theme('item_list', [
@@ -520,12 +493,17 @@ class FormRemoveSubmission {
         }
         foreach ($organism_list as $field_name => $fid) {
           if ($file = tpps_file_load($fid)) {
-            $usage = TppsFile::getUsage($file, $accession);
-            $tooltip = t('Could NOT be removed');
-            $class = 'strikethrough';
-            if ($usage == 1) {
-              $tooltip = t('Could be removed');
-              $class = '';
+            $usage = TppsFile::getUsage($file);
+            $tooltip = t('Could be removed.');
+            $class = '';
+            $key = str_replace('TGDR', '', $accession);
+            if (
+              count($usage) > 1
+              || (!empty($usage[$key]) && $usage[$key] >= 1)
+              || (count($usage) == 1 && empty($usage[$key]))
+            ) {
+              $tooltip = t('Could NOT be removed. Use "force".');
+              $class = 'strikethrough';
             }
             TppsArray::set(
               $file_list,
@@ -584,7 +562,7 @@ class FormRemoveSubmission {
         }
         // Remove.
         if (method_exists($submission, $method_name)) {
-          $force = $sub_elements['force'];
+          $force = $sub_elements['force'] ?? NULL;
           $submission->$method_name($force);
         }
       }

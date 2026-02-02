@@ -365,6 +365,7 @@ function tpps_submission_import_state_mods(array &$state, $new_accession) {
   $state['loaded'] = NULL;
   // Ids are filled during pipeline processing. Must be empty.
   $state['ids'] = [];
+  $state['job_id'] = NULL;
 
   // $form_state['values']['frontpage']['accession'] = $new_accession;
   // Check also $form_state['input'] and $form_state['completed_form'].

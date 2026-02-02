@@ -65,7 +65,7 @@ class TppsFile {
   }
 
   /**
-   * Adds record about usage of the file.
+   * Adds record about usage of the file for certain study.
    *
    * @param object $file
    *   Drupal's Managed File object.
@@ -80,7 +80,7 @@ class TppsFile {
   }
 
   /**
-   * Removes record about usage of the file.
+   * Removes record about usage of the file for certain study.
    *
    * @param object $file
    *   Drupal's Managed File object.
@@ -95,24 +95,37 @@ class TppsFile {
   }
 
   /**
-   * Gets file usage.
+   * Gets file usage for certain study.
    *
    * @param object $file
    *   Drupal's Managed File object.
    * @param string $accession
    *   Submission's accession. Format: 'TGDRxxxx'.
+   *   Optional. Default is NULL.
    *
    * @return int
    *   Returns count of the usage for given study.
+   *   When $accession is not empty then returns file usage for certain study.
+   *   When $accession is empty returns usage for all studies returned by the
+   *   file_usage_list() function. Format example (key is accession number):
+   *   [
+   *     1200 => 1,
+   *     1245 => 1,
+   *   ];
    */
-  public static function getUsage($file, $accession) {
-    $key = str_replace('TGDR', '', $accession);
-    $usage = file_usage_list($file, 'tpps', 'tpps_project', $key);
-    return TppsArray::get($usage, ['tpps', 'tpps_project', $key]);
+  public static function getUsage($file, $accession = NULL) {
+    $usage = file_usage_list($file);
+    if (is_null($accession)) {
+      return TppsArray::get($usage, ['tpps', 'tpps_project']);
+    }
+    else {
+      $key = str_replace('TGDR', '', $accession);
+      return TppsArray::get($usage, ['tpps', 'tpps_project', $key]);
+    }
   }
 
   /**
-   * Checks if file usage is empty.
+   * Checks if file usage is empty for certain study.
    *
    * @param object $file
    *   Drupal's Managed File object.

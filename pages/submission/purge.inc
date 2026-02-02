@@ -15,9 +15,20 @@ function tpps_submission_purge_form(array $form, array &$form_state, $accession 
     ['@accession' => $accession]
   );
   $cancel_redirect = 'tpps/submission';
-  $description = t("Submission @accession will be fully removed.",
+  $description = t("Submission @accession will be totally removed, including:",
     ['@accession' => $accession]
   ) . theme('item_list', [
+    'items' => [
+      'Record in "public.tpps_submission" table',
+      'All the files (in force mode)',
+      "Submission's tags (in force mode)",
+      "Zenodo Deposit (not yet published)",
+      "Cached Submission",
+      "Data loaded into database",
+    ],
+  ])
+  . t('Useful links:')
+  . theme('item_list', [
     'items' => [
       t('To partly remove submission use "!remove_page_link".',
       [
@@ -32,6 +43,7 @@ function tpps_submission_purge_form(array $form, array &$form_state, $accession 
       ]),
     ]
   ]);
+
   $confirm_button_text = t('Purge');
   $cancel_button_text = t('Cancel');
   // @TODO Get accession from URL (if it's safe).

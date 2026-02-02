@@ -816,6 +816,29 @@ class Submission {
         }
         if ($file = tpps_file_load($fid)) {
           $count = (int) !$force;
+          $usage = TppsFile::getUsage($file);
+          // @TODO Minor. Use getAccessionNumber().
+          $key = str_replace('TGDR', '', $this->accession);
+          if (
+            count($usage) > 1
+            || (!empty($usage[$key]) && $usage[$key] >= 1)
+            || (count($usage) == 1 && empty($usage[$key]))
+          ) {
+            // File used by other studies.
+            if ($force) {
+              // We still remove this file because of the 'force mode'.
+            }
+            else {
+              // Do NOT remove this file and do NOT reduce it's usage counter.
+              $message = "File '@fid' wasn't removed because stil in use: !usage";
+              $params = [
+                '@fid' => $fid,
+                '!usage' => TppsArray::print($usage),
+              ];
+              drupal_set_message(t($message, $params), 'error');
+              continue;
+            }
+          }
           // Remove file usage record (not file itself).
           TppsFile::deleteUsage($file, $this->accession, $count);
           // 0 - remove all ussage; 1 - (default) remove single usage.
@@ -862,8 +885,11 @@ class Submission {
           }
           elseif (is_array($result)) {
             // Used by other modules/studies.
-            $message = "File #@fid wasn't removed because it's still in use.";
-            $params = ['@fid' => $fid];
+            $message = "File #@fid wasn't removed because it's used by other studies: !usage";
+            $params = [
+              '@fid' => $fid,
+              '!usage' => TppsArray::print($usage),
+            ];
             drupal_set_message(t($message, $params), 'error');
             watchdog('tpps', $message, $params, WATCHDOG_ERROR);
           }
@@ -880,23 +906,12 @@ class Submission {
   }
 
   /**
-   * Removes record from 'public.tpps_submission' table.
+   * Removes record from 'chado.dbxref' table.
+   *
+   * Note:
+   * It's enough to remove record in 'chado.dbxref' by study accession.
    */
-  public function clearTppsSubmissionTable() {
-// @todo Remove debug code.
-return;
-    // Remove submission state from DB.
-    db_delete(static::TABLE)
-      ->condition('accession', $this->accession)
-      ->execute();
-    // Note: when existing study was used to create this submission then
-    // tpps_form_state_load($this->state)
-    //   ->get(['saved_values', 'frontpage', 'use_old_tgdr']) = 1
-    // && tpps_form_state_load($this->state)
-    //   ->get(['saved_values', 'frontpage', 'old_tgdr'])
-    // will be dbxref id of this existing study and 'accesion' will be
-    // accession of this existing study. So...
-    // It's enough to remove record in 'chado.dbxref' by study accession.
+  public function clearDbxrefTable() {
     db_delete('chado.dbxref')
       ->condition('accession', $this->accession)
       ->execute();
@@ -913,7 +928,7 @@ return;
    *   Returns TRUE if submission successfully cleared and FALSE otherwise.
    */
   public function clearDataBase() {
-    $debug_mode = TRUE;
+    $debug_mode = FALSE;
     if ($debug_mode ?? 0) {
       return;
     }
@@ -923,13 +938,13 @@ return;
     if (empty($project_id)) {
       return FALSE;
     }
-    $this->sharedState['file_rank'] = 0;
     chado_query("UPDATE chado.project_dbxref SET is_current = FALSE WHERE project_id = $project_id");
 
     foreach ($this->getTableListToClearDataBase() as $table_name) {
-      $this->removeLoadedData($table_name);
+      dpm($table_name);
+      //$this->removeLoadedData($table_name);
     }
-    $this->sharedState['ids'] = ['project_id' => $project_id];
+    $this->sharedState['file_rank'] = 0;
     $this->save();
     return TRUE;
   }
@@ -1009,8 +1024,9 @@ return;
       // Accession.
       'chado.genotype_reads_per_plant' => "DELETE FROM $table WHERE study_accession = '$accession'",
       'chado.plants_per_marker' => "DELETE FROM $table WHERE study_accession = '$accession'",
-      'chado.phenotype' => "DELETE FROM $table WHERE uniquename LIKE '$accession-%'",
       'chado.plants_per_marker' => "DELETE FROM $table WHERE study_accession = '$accession'",
+      // Accession with suffix.
+      'chado.phenotype' => "DELETE FROM $table WHERE uniquename LIKE '$accession-%'",
     ];
     if (empty($sql[$table])) {
       $message = t("Can't find sql-query for table @table.", ['@table' => $table]);
@@ -1047,8 +1063,20 @@ return;
    *
    * To remove only record from tpps_submission' table see Submission::remove().
    */
-  public function remove() {
-    // @TODO Implement. See remove* methods.
+  public function remove(array $options) {
+
+
+
+
+
+
+// @TODO Implement. See remove* methods.
+
+
+
+
+
+
   }
 
   /**
@@ -1058,6 +1086,11 @@ return;
    */
   public function purge() {
     $this->remove();
+
+    // Remove record from 'public.tpps_submission' table.
+    db_delete(static::TABLE)
+      ->condition('accession', $this->accession)
+      ->execute();
 
     if (function_exists('module_invoke_all')) {
       // 'tpps_submission_purged'.
