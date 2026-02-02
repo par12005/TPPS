@@ -76,9 +76,7 @@ class TppsFile {
    */
   public static function addUsage($file, $accession, $count = 1) {
     $key = str_replace('TGDR', '', $accession);
-    if (TppsFile::isEmptyUsage($file, $accession)) {
-      file_usage_add($file, 'tpps', 'tpps_project', $key, $count);
-    }
+    file_usage_add($file, 'tpps', 'tpps_project', $key, $count);
   }
 
   /**
