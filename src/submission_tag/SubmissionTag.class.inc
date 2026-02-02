@@ -27,6 +27,17 @@
  *   'FormRemoveSubmissionTag'.
  */
 
+// @todo Review:
+// tpps_show_tags, $items['tpps/tag/%/%/%']
+// function tpps_details_tags_sort().
+// Merge with SubmissionTag::getAll().
+// search: && !array_key_exists($tag_id, SubmissionTag::getAll($shared_state['accession'])
+// Search ‘tag’:
+//   pages/admin/study.inc - a lot about tags.
+//   pages/details/top.inc
+// Search $submission->getTagList();
+// use tag id and SubmissionTag::load() which now uses caching./
+
 /**
  * Manages TPPS Submission Tags.
  *

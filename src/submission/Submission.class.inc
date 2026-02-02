@@ -926,23 +926,20 @@ class Submission {
    *
    * @return bool
    *   Returns TRUE if submission successfully cleared and FALSE otherwise.
+   *
+   * @todo Review:
+   *   function tpps_submission_clear_default_tags($accession)
+   *   function tpps_submission_full_clear_db($project_id)
    */
   public function clearDataBase() {
-    $debug_mode = FALSE;
-    if ($debug_mode ?? 0) {
-      return;
-    }
-
     $this->sharedState['file_rank'] = 0;
     $project_id = $this->sharedState['ids']['project_id'] ?? NULL;
     if (empty($project_id)) {
       return FALSE;
     }
     chado_query("UPDATE chado.project_dbxref SET is_current = FALSE WHERE project_id = $project_id");
-
     foreach ($this->getTableListToClearDataBase() as $table_name) {
-      dpm($table_name);
-      //$this->removeLoadedData($table_name);
+      $this->removeLoadedData($table_name);
     }
     $this->sharedState['file_rank'] = 0;
     $this->save();
