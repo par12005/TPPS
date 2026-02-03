@@ -162,8 +162,11 @@ class TppsFile {
       $usage = TppsFile::getUsage($file);
       $key = str_replace('TGDR', '', $accession);
       if (
+        // More then 2 studies are using this file.
         count($usage) > 1
-        || (!empty($usage[$key]) && $usage[$key] >= 1)
+        // Current study uses more the once. It's not normal but could happen.
+        || (!empty($usage[$key]) && $usage[$key] > 1)
+        // Only one study uses this file but not current study.
         || (count($usage) == 1 && empty($usage[$key]))
       ) {
         return FALSE;

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Generates list of the imported studies.
+ * Shows list of files missing if filesystem.
  */
 
 /**
@@ -13,7 +13,7 @@
  * @param bool $reset
  *   Flag is cache must be resetted. Default if FALSE.
  */
-function tpps_admin_missing_files_report($reset = FALSE) {
+function tpps_report_file_missing($reset = FALSE) {
   $reset = $_GET['reset'] ?? FALSE;
   $cid = __FUNCTION__;
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';

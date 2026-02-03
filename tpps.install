@@ -34,8 +34,11 @@ function tpps_get_variable_list() {
     // See:
     // - Report::getList()
     // - tpps_reports_settings_form() (/admin/config/tpps/reports).
-    'tpps_report_missing_files_title' => 'List of missing files',
     'tpps_report_variable_list_title' => 'TPPS module variables',
+    // File.
+    'tpps_report_file_missing_title' => 'Files missing in filesystem',
+    'tpps_report_file_not_used_title' => 'Not used files',
+    'tpps_report_file_orfan_title' => 'Orfan files',
     // Synonym reports.
     'tpps_report_synonym_missing_title' => 'List of phenotypes without Synonyms',
     'tpps_report_synonym_unit_warning_title' => 'Unit Warning (list of phenotypes which unit differs from Synonym)',
@@ -2509,4 +2512,13 @@ function tpps_update_7132() {
   variable_set('tpps_exclude_hash_sign_from_column_list', FALSE);
   variable_set('tpps_report_submission_file_type_title', "Submission's File Type");
   variable_set('tpps_report_submission_version_title', 'Submission Version Changes');
+}
+
+/**
+ * Set titles for File related reports.
+ */
+function tpps_update_7133() {
+  variable_set('tpps_report_file_missing_title', 'Files missing in filesystem');
+  variable_set('tpps_report_file_not_used_title', 'Not used files');
+  variable_set('tpps_report_file_orfan_title', 'Orfan files');
 }
