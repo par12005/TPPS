@@ -99,23 +99,36 @@ function theme_submission_accession_link(array $variables) {
   $accession = $variables['accession'] ?? NULL;
   $path = $variables['path'] ?? NULL;
   $show_version = $variables['show_version'] ?? FALSE;
+  // Loaded submission means it was processed and data was loaded into database.
+  $show_load_time = $variables['show_load_time'] ?? FALSE;
 
   if (empty($accession)) {
-    return;
+    return '';
   }
   $number = str_replace('TGDR', '', ($accession));
   $output = '<span class="tpps-study-accession">TGDR</span>'
     . '<span class="tpps-study-accession-number" title="'
     . t('Study accession number') . '">' . $number . '</span>';
+  if ($show_version || $show_load_time) {
+    $cached_submission = SubmissionCache::get($accession);
+  }
 
   // Extra data.
   if ($show_version) {
-    $cached_submission = SubmissionCache::get($accession);
     $submission_version = $cached_submission[SubmissionVersion::FORM_KEY] ?? NULL;
     if (!empty($submission_version)) {
       $output .= ' {<span class="tpps-study-form-version-number" title="'
         .  t('Submission Form Version Number')
         . '">' . $submission_version . '</span>}';
+    }
+  }
+  if ($show_load_time) {
+    // @TODO Minor. Create separate theme-function.
+    $load_time = $cached_submission['date']['loaded'] ?? NULL;
+    $project_id = $cached_submission['project_id'] ?? NULL;
+    if (!empty($project_id) && !empty($load_time)) {
+      $output .= ' [Loaded]';
+      // format_date($load_time,  'custom', "Y/m/d H:i:s O");
     }
   }
   if ($path) {

@@ -267,6 +267,7 @@ function tpps_report_submission_file_all_theme_single_row(array $context) {
         'accession' => $accession,
         'path' => 'admin/reports/tpps/submission/file/all/' . $accession,
         'show_version' => TRUE,
+        'show_load_time' => TRUE,
       ])
       . ' ' . theme('file_size', ['size' => $total_filesize])
       . '<br />['

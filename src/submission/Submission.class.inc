@@ -2796,10 +2796,16 @@ class Submission {
         'path' => 'tpps/submission/' . $accession . '/compare',
       ],
       'purge' => [
-        'title' => t("Remove submission and it's files"),
+        'title' => t("Totally remove submission"),
         'name' => t('Purge'),
         'abr' => t('Pu'),
         'path' => 'tpps/submission/' . $accession . '/purge',
+      ],
+      'remove' => [
+        'title' => t("Partly remove submission"),
+        'name' => t('Remove'),
+        'abr' => t('R'),
+        'path' => 'tpps/submission/' . $accession . '/remove',
       ],
       // Old pages:
       'admin_panel' => [
