@@ -74,6 +74,7 @@ function tpps_report_submission_file($filter = NULL) {
     $report_data = [$accession => $data[$accession]];
   }
   else {
+    krsort($data);
     if ($filter == 'all') {
       $report_data = $data;
     }

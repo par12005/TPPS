@@ -12,6 +12,8 @@
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  *
  * @todo Convert file /includes/file_utils.inc into methods.
+ * @todo Minor.
+ * Implement method to theme links to API usage and info pages (with token).
  */
 class TppsFile {
 
