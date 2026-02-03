@@ -34,15 +34,30 @@ function tpps_report_file_missing($reset = FALSE) {
     $options = ['query' => ['token' => variable_get('tpps_api_token')]];
     foreach ($file_list as $item) {
       $path = tpps_realpath($item->uri);
-      $accession = 'TGDR' . $item->id;
-      $submission = new Submission($accession);
+      $accession = '';
+      if (!empty($item->id)) {
+        $accession = 'TGDR' . $item->id;
+        $submission = new Submission($accession);
+        if (!$submission->doesNotExist()) {
+          $accession = l($accession,
+            'api/submission/' . $accession . '/view/shared_state/saved_values/',
+            ['attributes' => ['title' => 'Submission exists']]
+          );
+        }
+        else {
+          $accession =
+            '<div title="Submission not found.">'
+            . $accession . '</div>';
+        }
+      }
+      // File path.
       if (!file_exists($path)) {
+        // Build table's row.
         $rows[] = [
           ++$i,
-          l($item->fid, 'api/file/' . $item->fid . '/info', $options),
+          $item->fid,
           $path,
-          $submission->doesNotExist() ? $accession : l($accession,
-          'api/submission/' . $accession . '/view/shared_state/saved_values/'),
+          $accession,
         ];
       }
     }

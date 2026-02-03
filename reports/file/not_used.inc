@@ -35,17 +35,42 @@ function tpps_report_file_not_used($reset = FALSE) {
     $options = ['query' => ['token' => variable_get('tpps_api_token')]];
     foreach ($file_list as $item) {
       $path = tpps_realpath($item->uri);
-      $accession = 'TGDR' . $item->id;
-      $submission = new Submission($accession);
-      if (!file_exists($path)) {
-        $rows[] = [
-          ++$i,
-          l($item->fid, 'api/file/' . $item->fid . '/info', $options),
-          $path,
-          $submission->doesNotExist() ? $accession : l($accession,
-          'api/submission/' . $accession . '/view/shared_state/saved_values/'),
-        ];
+      $accession = '';
+      if (!empty($item->id)) {
+        $accession = 'TGDR' . $item->id;
+        $submission = new Submission($accession);
+        if (!$submission->doesNotExist()) {
+          $accession = l($accession,
+            'api/submission/' . $accession . '/view/shared_state/saved_values/',
+            ['attributes' => ['title' => 'Submission exists']]
+          );
+        }
+        else {
+          $accession =
+            '<div title="Submission not found.">'
+            . $accession . '</div>';
+        }
       }
+      // File path.
+      if (file_exists($path)) {
+        $path = l($path,
+          'api/file/' . $item->fid . '/info',
+          [
+            'query' => ['token' => variable_get('tpps_api_token')],
+            'attributes' => ['title' => 'File exists'],
+          ]
+        );
+      }
+      else {
+        $path = '<div title="File not found.">' . $path . '</div';
+      }
+      // Build table's row.
+      $rows[] = [
+        ++$i,
+        $item->fid,
+        $path,
+        $accession,
+      ];
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     unset($_GET['reset']);
