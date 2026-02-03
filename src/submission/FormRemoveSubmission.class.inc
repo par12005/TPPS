@@ -492,39 +492,36 @@ class FormRemoveSubmission {
           continue;
         }
         foreach ($organism_list as $field_name => $fid) {
-          if ($file = tpps_file_load($fid)) {
-            $usage = TppsFile::getUsage($file);
+          if (empty($file = tpps_file_load($fid))) {
+            continue;
+          }
+          if (TppsFile::isFileRemoveable($file, $accession)) {
             $tooltip = t('Could be removed.');
             $class = '';
-            $key = str_replace('TGDR', '', $accession);
-            if (
-              count($usage) > 1
-              || (!empty($usage[$key]) && $usage[$key] >= 1)
-              || (count($usage) == 1 && empty($usage[$key]))
-            ) {
-              $tooltip = t('Could NOT be removed. Use "force".');
-              $class = 'strikethrough';
-            }
-            TppsArray::set(
-              $file_list,
-              [$group_name, $organism_name, $field_name],
-                theme('file_id',
-                  [
-                    'fid' => $fid,
-                    'attributes' => [
-                      'title' => $tooltip,
-                      'class' => [$class],
-                    ],
-                  ]
-                )
-                . ' ' . theme('file_size',
-                  ['size' => $file_size = $file->filesize]
-                )
-                . ' ' . theme('file_action_list',
-                   ['accession' => $accession, 'fid' => $fid, 'tiny' => FALSE]
-                )
-            );
           }
+          else {
+            $tooltip = t('Could NOT be removed. Use "force".');
+            $class = 'strikethrough';
+          }
+          TppsArray::set(
+            $file_list,
+            [$group_name, $organism_name, $field_name],
+              theme('file_id',
+                [
+                  'fid' => $fid,
+                  'attributes' => [
+                    'title' => $tooltip,
+                    'class' => [$class],
+                  ],
+                ]
+              )
+              . ' ' . theme('file_size',
+                ['size' => $file_size = $file->filesize]
+              )
+              . ' ' . theme('file_action_list',
+                 ['accession' => $accession, 'fid' => $fid, 'tiny' => FALSE]
+              )
+          );
         }
       }
     }

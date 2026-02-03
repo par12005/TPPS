@@ -815,15 +815,7 @@ class Submission {
           continue;
         }
         if ($file = tpps_file_load($fid)) {
-          $count = (int) !$force;
-          $usage = TppsFile::getUsage($file);
-          // @TODO Minor. Use getAccessionNumber().
-          $key = str_replace('TGDR', '', $this->accession);
-          if (
-            count($usage) > 1
-            || (!empty($usage[$key]) && $usage[$key] >= 1)
-            || (count($usage) == 1 && empty($usage[$key]))
-          ) {
+          if (!TppsFile::isFileRemoveable($file, $this->accession)) {
             // File used by other studies.
             if ($force) {
               // We still remove this file because of the 'force mode'.
@@ -839,6 +831,8 @@ class Submission {
               continue;
             }
           }
+          $count = (int) !$force;
+          $usage = TppsFile::getUsage($file);
           // Remove file usage record (not file itself).
           TppsFile::deleteUsage($file, $this->accession, $count);
           // 0 - remove all ussage; 1 - (default) remove single usage.

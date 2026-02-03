@@ -139,4 +139,39 @@ class TppsFile {
     return empty(TppsFile::getUsage($file, $accession));
   }
 
+  /**
+   * Checks if Drupal managed file exist and could be removed.
+   *
+   * Note: doesn't check if file exists in filesystem but checks
+   * if other studies are using this file.
+   *
+   * @param object $file
+   *   Drupal's Managed File object.
+   * @param string $accession
+   *   Submission's accession. Format: 'TGDRxxxx'.
+   *
+   * @return bool
+   *   Returns TRUE if file could be safely removed and FALSE otherwise.
+   */
+  public static function isFileRemoveable($file, $accession) {
+    if (empty($file) || empty($accession)) {
+      // File doesn't exist.
+      return FALSE;
+    }
+    else {
+      $usage = TppsFile::getUsage($file);
+      $key = str_replace('TGDR', '', $accession);
+      if (
+        count($usage) > 1
+        || (!empty($usage[$key]) && $usage[$key] >= 1)
+        || (count($usage) == 1 && empty($usage[$key]))
+      ) {
+        return FALSE;
+      }
+      else {
+        return TRUE;
+      }
+    }
+  }
+
 }
