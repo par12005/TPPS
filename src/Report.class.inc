@@ -358,9 +358,9 @@ class Report {
           'description' => t("List of the files which not used by any study."),
           'admin_panel' => TRUE,
         ],
-        'orfan' => [
-          'title' => variable_get('tpps_report_file_orfan_title',
-            'Orfan files'
+        'orphan' => [
+          'title' => variable_get('tpps_report_file_orphan_title',
+            'Orphan files'
           ),
           'description' => t('List of the files which do not belong to any submission.'),
           'admin_panel' => TRUE,

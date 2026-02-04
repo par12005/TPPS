@@ -15,7 +15,7 @@
  * @param bool $reset
  *   Flag is cache must be resetted. Default if FALSE.
  */
-function tpps_report_file_orfan($reset = FALSE) {
+function tpps_report_file_orphan($reset = FALSE) {
   $reset = $_GET['reset'] ?? FALSE;
   $cid = __FUNCTION__;
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';

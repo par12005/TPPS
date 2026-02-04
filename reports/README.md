@@ -30,7 +30,7 @@ Main steps to add new report:
 2. URL uses hyphens. E.g., 'organism-list'.
  . Variable which holds report's title must have prefix 'tpps_report_' and suffix '_title'.
 4. Page callback must have prefix 'tpps_report_'.
-   E.g., 'tpps_report_file_orfan',
+   E.g., 'tpps_report_file_orphan',
 5. Default value of the report title is required.
 6. Title stored in non-localized English in variable.
 

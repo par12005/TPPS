@@ -38,7 +38,7 @@ function tpps_get_variable_list() {
     // File.
     'tpps_report_file_missing_title' => 'Files missing in filesystem',
     'tpps_report_file_not_used_title' => 'Not used files',
-    'tpps_report_file_orfan_title' => 'Orfan files',
+    'tpps_report_file_orphan_title' => 'Orphan files',
     // Synonym reports.
     'tpps_report_synonym_missing_title' => 'List of phenotypes without Synonyms',
     'tpps_report_synonym_unit_warning_title' => 'Unit Warning (list of phenotypes which unit differs from Synonym)',
@@ -2520,5 +2520,5 @@ function tpps_update_7132() {
 function tpps_update_7133() {
   variable_set('tpps_report_file_missing_title', 'Files missing in filesystem');
   variable_set('tpps_report_file_not_used_title', 'Not used files');
-  variable_set('tpps_report_file_orfan_title', 'Orfan files');
+  variable_set('tpps_report_file_orphan_title', 'Orphan files');
 }

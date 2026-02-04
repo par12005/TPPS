@@ -37,7 +37,7 @@ function tpps_reports_settings_form(array $form, array &$form_state) {
   // File:
   // 'tpps_report_file_missing_title'.
   // 'tpps_report_file_not_used_title'.
-  // 'tpps_report_file_orfan_title'.
+  // 'tpps_report_file_orphan_title'.
   // Synonym:
   // 'tpps_report_synonym_missing_title'.
   // 'tpps_report_synonym_unit_warning_title'.

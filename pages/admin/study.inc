@@ -1422,7 +1422,7 @@ function tpps_admin_panel_get_reports() {
     'submission_version' => $panel_url . '/submission-version',
     'file_missing' => $panel_url . '/file-missing',
     'file_not_used' => $panel_url . '/file-not-used',
-    'file_orfan' => $panel_url . '/file-orfan',
+    'file_orphan' => $panel_url . '/file-orphan',
   ];
 }
 
