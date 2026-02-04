@@ -272,16 +272,32 @@ class FormRemoveSubmission {
       'status_method' => 'isLoaded',
       'title' => t('DB tables'),
       'description' => t('Removes data loaded by submit_all.php script into database.'),
-      'info' => [
-        'title' => t("Tables to be cleared"),
-        'content' => theme('item_list', [
-          'items' => array_merge(
-            // @TODO Minor. Implement ability to select tables.
-            $submission->getTableListToClearDataBase(),
-            $submission->getTableListToRemoveProjectData()
-          ),
-        ]),
-      ],
+    ];
+
+    $total_count = 0;
+    $table_list = [];
+    foreach ($submission->getTableListToClearDataBase() as $table_name) {
+      $count = $submission->countLoadedRecords($table_name);
+      $total_count += $count;
+      $table_list[] = $table_name . ' (' . $count . ')';
+    }
+    $project_id = $submission->sharedState['ids']['project_id'] ?? NULL;
+    if (!empty($project_id)) {
+      foreach ($submission->getTableListToRemoveProjectData() as $table_name) {
+        $count = db_select($table_name)
+          ->condition('project_id', $project_id)
+          ->countQuery()
+          ->execute()
+          ->fetchField();
+        $total_count += $count;
+        $table_list[] = $table_name . ' (' . $count . ')';
+      }
+    }
+    $options['clearDataBase']['status_method'] = !((bool) $total_count);
+    // @TODO Minor. Implement ability to select tables.
+    $options['clearDataBase']['info'] = [
+      'title' => t("Tables to be cleared"),
+      'content' => theme('item_list', ['items' => $table_list]),
     ];
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

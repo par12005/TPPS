@@ -931,12 +931,18 @@ class Submission {
     if (empty($project_id)) {
       return FALSE;
     }
-    chado_query("UPDATE chado.project_dbxref SET is_current = FALSE WHERE project_id = $project_id");
     foreach ($this->getTableListToClearDataBase() as $table_name) {
       $this->removeLoadedData($table_name);
     }
+    $this->removeProjectData();
+    chado_query("UPDATE chado.project_dbxref SET is_current = FALSE WHERE project_id = $project_id");
     $this->sharedState['file_rank'] = 0;
-    $this->save();
+
+
+// @TODO Uncomment.
+
+    //$this->sharedState['ids']['project_id'] = NULL;
+    // $this->save();
     return TRUE;
   }
 
@@ -954,14 +960,12 @@ class Submission {
     return [
       'chado.phenotype_cvterm',
       'chado.phenotype_to_synonym',
-      'chado.phenotype',
       'chado.genotype_reads_per_plant',
       'chado.plants_per_marker',
       'chado.stock_genotype',
       'chado.stock_phenotype',
       'chado.stock',
       'chado.phenotype',
-      'chado.plants_per_marker',
     ];
   }
 
@@ -975,24 +979,52 @@ class Submission {
    *
    * @return mixed
    *   Returns FALSE if 'project_id' not found in Shared State.
-   *   Returns TRUE in case of success sql query execution.
+   *   Returns TRUE when sql-query was successfully executed.
    */
   public function removeLoadedData($table) {
     if (function_exists('tpps_log')) {
       tpps_log('DELETE ' . $table . ' values...');
     }
+    else {
+      dpm('Clearing table: ' . $table);
+    }
+
+    $sql = $this->getQueryToClearTable($table);
+    if (!empty($sql) && db_table_exists($table)) {
+      chado_query($sql);
+      return TRUE;
+    }
+    return FALSE;
+  }
+
+  /**
+   * Gets SQL-query to clear loaded data from given table.
+   *
+   * @param string $table
+   *   DB table name.
+   *
+   * @return mixed
+   *   Returns NULL if accession didn't pass validation or $project_id is empty
+   *   what means study wasn't loaded into database yet.
+   *   Returns SQL-query to remove loaded data from given table.
+   *
+   * @thrown Exception
+   *   Throws exception when SQL-query for given table wasn't found.
+   *   Note: there is no check if table actually exists in database.
+   */
+  public function getQueryToClearTable($table) {
     $project_id = $this->sharedState['ids']['project_id'] ?? NULL;
     if (empty($project_id)) {
-      return FALSE;
+      return NULL;
     }
     // @TODO Execute $stocks_sql and use plain list of ids instead of query.
     $stocks_sql = "SELECT stock_id FROM chado.project_stock WHERE project_id = $project_id";
-    // @TODO Minor. Move this check to class constructor method.
+    // @TODO Minor. Move this check to class constructor method or just remove.
     if (strpos($this->accession, 'TGDR') !== FALSE && strlen($this->accession) >= 7) {
       $accession = strtoupper($this->accession);
     }
     else {
-      return FALSE;
+      return NULL;
     }
 
     $sql = [
@@ -1010,11 +1042,10 @@ class Submission {
       'chado.stock_phenotype' => "DELETE FROM $table WHERE stock_id IN ($stocks_sql)",
       'chado.stock' => "DELETE FROM $table WHERE stock_id IN ($stocks_sql)"
         // Force delete stock just in case by study accession name.
-        . " OR uniquename LIKE $accession-%",
+        . " OR uniquename ILIKE '$accession-%'",
 
       // Accession.
       'chado.genotype_reads_per_plant' => "DELETE FROM $table WHERE study_accession = '$accession'",
-      'chado.plants_per_marker' => "DELETE FROM $table WHERE study_accession = '$accession'",
       'chado.plants_per_marker' => "DELETE FROM $table WHERE study_accession = '$accession'",
       // Accession with suffix.
       'chado.phenotype' => "DELETE FROM $table WHERE uniquename LIKE '$accession-%'",
@@ -1024,9 +1055,7 @@ class Submission {
       throw new Exception($message);
     }
     else {
-      if (db_table_exists($table)) {
-        chado_query($sql[$table]);
-      }
+      return $sql[$table];
     }
   }
 
@@ -3295,6 +3324,27 @@ class Submission {
       'chado.genotype_call',
       'public.tpps_project_file_managed',
     ];
+  }
+
+  /**
+   * Counts number of records created during study processing.
+   *
+   * @param string $table
+   *   Full table name (including schema).
+   *
+   * @return mixed
+   *   Returns number of records.
+   *   Returns NULL when:
+   *   1. Table doesn't exists;
+   *   2. Sql-query for this table wasn't found.
+   */
+  public function countLoadedRecords($table) {
+    $sql = $this->getQueryToClearTable($table);
+    if (empty($sql) || !db_table_exists($table)) {
+      return NULL;
+    }
+    $sql = str_ireplace('DELETE', 'SELECT count(*) ', $sql);
+    return db_query($sql)->fetchField();
   }
 
 }
