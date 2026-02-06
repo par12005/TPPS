@@ -627,7 +627,14 @@ class Submission {
     // class which updates every time submission is stored.
     $memory_updated = $this->get(['updated']);
     $cached_submission = SubmissionCache::get($this->accession, $reset = FALSE);
-    $db_record_updated = $cached_submission['date']['updated'];
+    if (is_null($cached_submission)) {
+      // Submission was removed.
+      // We could try to request cached Submission again with $reset=TRUE but
+      // seems it's not necessary.
+      return;
+    }
+
+    $db_record_updated = $cached_submission['date']['updated'] ?? NULL;
 
     if ($db_record_updated > $memory_updated) {
       // @todo Merge with submission from database somehow.
