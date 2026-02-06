@@ -985,10 +985,6 @@ class Submission {
     if (function_exists('tpps_log')) {
       tpps_log('DELETE ' . $table . ' values...');
     }
-    else {
-      dpm('Clearing table: ' . $table);
-    }
-
     $sql = $this->getQueryToClearTable($table);
     if (!empty($sql) && db_table_exists($table)) {
       chado_query($sql);
