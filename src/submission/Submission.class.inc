@@ -1096,7 +1096,6 @@ class Submission {
       $this->removeAllTags();
       $this->removeImportMeta();
       $this->removeImportRecord();
-      $this->removeProjectData();
       $this->removeSharedState();
       $this->removeSubmissionCache();
       $this->removeZenodoDeposit();

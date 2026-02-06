@@ -453,7 +453,6 @@ function tpps_submission_clear_db($accession) {
   // from TGDR665 and 674 6/29/2023)
   // tpps_submission_full_clear_db($project_id);
 
-  $submission->removeProjectData();
   $result = $submission->clearDataBase();
   if ($result) {
     tpps_log('FINISHED DB CLEAR DELETES');
