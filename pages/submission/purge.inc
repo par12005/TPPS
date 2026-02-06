@@ -10,6 +10,14 @@
  */
 function tpps_submission_purge_form(array $form, array &$form_state, $accession = '') {
   TppsForm::validateAccession($accession);
+
+  // Check if submission exists.
+  $submission = new Submission($accession);
+  if ($submission->doesNotExist()) {
+    $message = t("Submission @accession doesn't exists.", ['@accession' => $accession]);
+    drupal_set_message($message, 'warning');
+    drupal_goto('tpps/submission');
+  }
   $message = t(
     'Are you sure you want to purge Submission @accession?',
     ['@accession' => $accession]
