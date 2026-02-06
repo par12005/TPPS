@@ -33,6 +33,15 @@ class FormRemoveSubmission {
       FormRemoveSubmission::buildConfirmationForm($form, $form_state);
     }
     else {
+      TppsForm::validateAccession($accession);
+      // Check if submission exists.
+      $submission = new Submission($accession);
+      if ($submission->doesNotExist()) {
+        $message = t("Submission @accession doesn't exists.", ['@accession' => $accession]);
+        drupal_set_message($message, 'warning');
+        drupal_goto('tpps/submission');
+      }
+
       $form['intro'] = [
         '#markup' => theme('item_list', [
           'title' => t('Useful links'),
