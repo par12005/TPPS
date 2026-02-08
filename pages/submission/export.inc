@@ -19,6 +19,14 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
   global $base_url;
   TppsForm::validateAccession($accession);
 
+  // Check if submission exists.
+  $submission = new Submission($accession);
+  if ($submission->doesNotExist()) {
+    $message = t("Submission @accession doesn't exists.", ['@accession' => $accession]);
+    drupal_set_message($message, 'warning');
+    drupal_goto('tpps/submission');
+  }
+
   $accession_list = SubmissionCache::getAccessionList();
   $form['tpps_submission_accession'] = [
     '#type' => 'select',
