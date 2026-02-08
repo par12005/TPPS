@@ -231,6 +231,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     tpps_log('Complete!', [], TRIPAL_INFO);
     fclose($tpps_job_logger['log_file_handle']);
 
+
   }
   catch (Exception $e) {
     $transaction->rollback();

@@ -930,8 +930,8 @@ class Submission {
    *   Returns TRUE if submission successfully cleared and FALSE otherwise.
    *
    * @todo Review:
-   *   function tpps_submission_clear_default_tags($accession)
-   *   function tpps_submission_full_clear_db($project_id)
+   *   tpps_submission_clear_db_extra($accession),
+   *   tpps_submission_full_clear_db($project_id).
    */
   public function clearDataBase() {
     $this->sharedState['file_rank'] = 0;

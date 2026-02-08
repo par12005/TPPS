@@ -76,11 +76,31 @@ class FormCreateSubmissionTag {
    * Implements hook_form_validate().
    */
   public static function validate(array &$form, array &$form_state) {
-    $result = db_select(SubmissionTag::TABLE, 't')
-      ->fields('t')
-      ->condition('name', $form_state['values']['name'], 'ILIKE')
+    $formState = new FormState($form_state);
+    // Check id.
+    $tag_id = $formState->get(['values', 'tag_id']);
+    if (empty($tag_id)) {
+      $message = t("Tag id is empty.");
+      form_set_error('name', $message);
+    }
+    // Check name.
+    $tag_name = $formState->get(['values', 'name']);
+    if (empty($tag_name)) {
+      $message = t("Tag name is empty.");
+      form_set_error('name', $message);
+    }
+    // Check if color field is not empty.
+    if (empty($formState->get(['values', 'color']))) {
+      $message = t("Tag color is empty.");
+      form_set_error('color', $message);
+    }
+    // Check if tag exists.
+    $result = db_select('tpps_tag', 't')
+      ->fields('t', ['name'])
+      ->condition('tpps_tag_id', $tag_id, '!=')
+      ->condition('name', $tag_name, 'ILIKE')
       ->range(0, 1)
-      ->execute()->fetchObject();
+      ->execute()->fetchField();
     if (!empty($result)) {
       $message = t("A tag already exists with this name. Please select a "
         . "different name or use the existing tag.");

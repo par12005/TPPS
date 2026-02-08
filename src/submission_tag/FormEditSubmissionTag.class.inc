@@ -54,8 +54,10 @@ class FormEditSubmissionTag {
     $form['name']['#default_value'] = $tag->name;
     $form['color']['#default_value'] = $tag->color;
     $form['tag_id'] = ['#type' => 'hidden', '#value' => $tag_id];
-    $form['#validate'][] = 'FormEditSubmissionTag::validate';
-    $form['#submit'][] = 'FormEditSubmissionTag::submit';
+    // Note: existing callbacks must be overwritten.
+    $form['#validate'] = ['FormEditSubmissionTag::validate'];
+    $form['#submit'] = ['FormEditSubmissionTag::submit'];
+
     return $form;
   }
 
@@ -64,18 +66,32 @@ class FormEditSubmissionTag {
    */
   public static function validate(array &$form, array &$form_state) {
     $formState = new FormState($form_state);
+    // Check id.
     $tag_id = $formState->get(['values', 'tag_id']);
+    if (empty($tag_id)) {
+      $message = t("Tag id is empty.");
+      form_set_error('name', $message);
+    }
+    // Check name.
     $tag_name = $formState->get(['values', 'name']);
+    if (empty($tag_name)) {
+      $message = t("Tag name is empty.");
+      form_set_error('name', $message);
+    }
+    // Check if color field is not empty.
+    if (empty($formState->get(['values', 'color']))) {
+      $message = t("Tag color is empty.");
+      form_set_error('color', $message);
+    }
+    // Check if tag exists.
     $result = db_select('tpps_tag', 't')
       ->fields('t', ['name'])
-      ->condition('tpps_tag_id', $tag_id, '!=')
+      ->condition('tpps_tag_id', $tag_id)
       ->condition('name', $tag_name, 'ILIKE')
       ->range(0, 1)
       ->execute()->fetchField();
-
-    if (!empty($result)) {
-      $message = t("A tag already exists with this name. Please select a "
-        . "different name or use the existing tag.");
+    if (empty($result)) {
+      $message = t("A tag doesn't exist. Please create tag before edit it.");
       form_set_error('name', $message);
     }
   }
