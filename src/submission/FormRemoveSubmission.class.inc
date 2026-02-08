@@ -46,10 +46,14 @@ class FormRemoveSubmission {
         '#markup' => theme('item_list', [
           'title' => t('Useful links'),
           'items' => [
-            l(t('Submission Purge page'), 'tpps/submission/' . $accession . '/purge'),
+            l(t('Submission Purge'), 'tpps/submission/' . $accession . '/purge'),
             l(t('View record in "tpps_submission" table.'),
               'admin/reports/db/public.tpps_submission',
               ['query' => ['public.tpps_submission.accession' => $accession]]
+            ),
+            l(t('View record in "chado.dbxref" table.'),
+              'admin/reports/db/chado.dbxref',
+              ['query' => ['chado.dbxref.accession' => $accession]]
             ),
             l(t('Edit'), 'tppsc/' . $accession),
             l(t('Details'), 'tpps/details/' . $accession),
@@ -255,24 +259,6 @@ class FormRemoveSubmission {
     $submission = new Submission($accession);
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Submission object.
-    //
-    // @TODO When selected use all other options too.
-
-    // :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    $options['clearDbxrefTable'] = [
-      'default_value' => FALSE,
-      'title' => t('Record in "chado.dbxref" table'),
-      'status_method' => 'hasDbRecord',
-      'description' => t('Removes record "chado.dbxref" table.')
-        . theme('item_list', [
-          'items' => [
-            l(t('View record in "chado.dbxref" table.'),
-              'admin/reports/db/chado.dbxref',
-              ['query' => ['chado.dbxref.accession' => $accession]]
-            ),
-          ]
-        ]),
-    ];
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // DB Tables.
@@ -355,7 +341,6 @@ class FormRemoveSubmission {
       ];
     }
 
-
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Imported Submission Metadata.
     $options['removeImportRecord'] = [
@@ -379,7 +364,6 @@ class FormRemoveSubmission {
       ],
     ];
 
-
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Import Meta-data.
     $options['removeImportMeta'] = [
@@ -400,7 +384,6 @@ class FormRemoveSubmission {
       ];
     }
 
-
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Submission Cache.
     $options['removeSubmissionCache'] = [
@@ -415,12 +398,11 @@ class FormRemoveSubmission {
         ),
       ],
       'remove' => [
-        'description' => t("Note: If submission won't be fully removed this "
-          . "cache will be updated automatically when cached submittion will "
-          . "be requested."),
+        'description' => t("Note: Submission Cache will be recovered again "
+        . "automatically until Submission totally removed (purged).")
+        . '<br />' . t('This option could be used to refresh cached data.'),
       ],
     ];
-
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Tags.

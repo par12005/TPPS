@@ -909,8 +909,9 @@ class Submission {
   /**
    * Removes record from 'chado.dbxref' table.
    *
-   * Note:
-   * It's enough to remove record in 'chado.dbxref' by study accession.
+   * WARNING:
+   * Will also remove record from the 'public.tpps_submission' table
+   * using foreing key.
    */
   public function clearDbxrefTable() {
     db_delete('chado.dbxref')
@@ -921,9 +922,9 @@ class Submission {
   /**
    * Clears submission's data loaded into DB.
    *
-   * This function is particularly useful when submitting a study to the database
-   * multiple times. Note that Tripal Entities should be manually un-published
-   * after this process has completed.
+   * This function is particularly useful when submitting a study to the
+   * database multiple times. Note that Tripal Entities should be manually
+   * un-published after this process has completed.
    *
    * @return bool
    *   Returns TRUE if submission successfully cleared and FALSE otherwise.
@@ -1095,7 +1096,6 @@ class Submission {
   public function remove($options) {
     if ($options == 'all') {
       $this->clearDataBase();
-      $this->clearDbxrefTable();
       $this->removeAllTags();
       $this->removeImportMeta();
       $this->removeImportRecord();
@@ -1117,10 +1117,9 @@ class Submission {
   public function purge() {
     $this->remove();
 
-    // Remove record from 'public.tpps_submission' table.
-    db_delete(static::TABLE)
-      ->condition('accession', $this->accession)
-      ->execute();
+    // Note: Will also remove record from the 'public.tpps_submission' table
+    // using foreing key.
+    $this->clearDbxrefTable();
 
     if (function_exists('module_invoke_all')) {
       // 'tpps_submission_purged'.
