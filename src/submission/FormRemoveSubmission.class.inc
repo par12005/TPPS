@@ -288,9 +288,9 @@ class FormRemoveSubmission {
         $table_list[] = $table_name . ' (' . $count . ')';
       }
     }
-    $options['clearDataBase']['title'] .= ' (' . $total_count . ')';
 
     if ($total_count) {
+      $options['clearDataBase']['title'] .= ' (' . $total_count . ')';
       $options['clearDataBase']['status_method'] = FALSE;
     }
     else {

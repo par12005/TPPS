@@ -1115,7 +1115,7 @@ class Submission {
    * To remove only record from tpps_submission' table see Submission::remove().
    */
   public function purge() {
-    $this->remove();
+    $this->remove('all');
 
     // Note: Will also remove record from the 'public.tpps_submission' table
     // using foreing key.
