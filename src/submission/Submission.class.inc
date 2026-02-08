@@ -2819,6 +2819,12 @@ class Submission {
         'abr' => t('Ex'),
         'path' => 'tpps/submission/' . $accession . '/export',
       ],
+      'clone' => [
+        'title' => t("Clone Submission"),
+        'name' => t('Clone'),
+        'abr' => t('Cl'),
+        'path' => 'tpps/submission/' . $accession . '/clone',
+      ],
       'compare' => [
         'title' => t("Compare submission with other one"),
         'name' => t('Compare'),

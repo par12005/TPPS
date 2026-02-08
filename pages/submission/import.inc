@@ -130,7 +130,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
 
   $values = $form_state['values'] ?? NULL;
   $accession = $values['tpps_submission_import_accession'];
-  tpps_submission_import([
+  $new_accession = tpps_submission_import([
     // Required:
     'accession' => $accession,
     'export' => trim($values['tpps_submission_import_state']),
@@ -141,7 +141,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     'submit_form' => $values['tpps_submission_import_submit_form'] ?? NULL,
   ]);
 
-  drupal_goto('completed-submission/' . $accession);
+  drupal_goto('completed-submission/' . $new_accession);
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -396,6 +396,9 @@ function tpps_submission_import_process_files(array &$state, $new_accession) {
  *       Optional. Default is TPPS_DO_NOT_CHANGE_STATUS.
  *   - 'submit_form'
  *       Optional. Default is FALSE.
+ *
+ * @return string
+ *   Returns new accession.
  */
 function tpps_submission_import(array $data) {
   global $user;
@@ -512,5 +515,5 @@ function tpps_submission_import(array $data) {
     $submission->setFileStatus(FILE_STATUS_PERMANENT, []);
   }
   SubmissionCache::updateSingle($submission);
-
+  return $accession;
 }

@@ -2371,12 +2371,22 @@ function tpps_menu_add_submission_pages(array &$items = []) {
   ];
   $items['tpps/submission/%/export/json'] = [
     'type' => MENU_CALLBACK,
-    'title' => 'TPPS Submission Export',
+    'title' => 'The TPPS Submission Export',
     'description' => 'TPPS Submission Export in JSON format',
     'page callback' => 'tpps_submission_export_json',
     'page arguments' => [2],
     'access callback' => TRUE,
+    'file path' => TPPS_MODULE_PATH,
     'file' => 'pages/submission/export.json.inc',
+  ];
+  $items['tpps/submission/%/clone'] = [
+    'title callback' => 'tpps_submission_title',
+    'title arguments' => [2, 3],
+    'description' => 'Clone of the Submission',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_clone_form', 2],
+    'access arguments' => ['administer tpps module'],
+    'file' => 'pages/submission/clone.inc',
   ];
   // @TODO Menu item is depricated and could be removed in future.
   // Use /api/submission/<accession>/view instead.
@@ -2397,7 +2407,6 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_import_form', 2],
     'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
     'file' => 'pages/submission/import.inc',
   ];
   // Compare.

@@ -167,6 +167,7 @@ function theme_submission_actions(array $variables) {
       . l(t('Shared State'), 'api/submission/[accession]/view/shared_state'),
       l(t('View'), 'tpps/submission/[accession]/view') . ' | '
       . l(t('Export'), 'tpps/submission/[accession]/export'),
+      . l(t('Clone'), 'tpps/submission/[accession]/clone'),
       'Zenodo: ' . l(t('Deposit'), 'tpps/submission/[accession]/zenodo') . ' | '
       . l(t('Files'), 'tpps/submission/[accession]/zenodo/files'),
       'Dataset DOI: '
