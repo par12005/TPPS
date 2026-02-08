@@ -126,128 +126,21 @@ function tpps_submission_import_form_validate(array &$form, array &$form_state) 
  * Form submitter. Imports submission from the dump (with files).
  */
 function tpps_submission_import_form_submit(array $form, array &$form_state) {
-  global $user;
   module_load_include('inc', 'tpps', 'includes/common');
 
   $values = $form_state['values'] ?? NULL;
-  $upgrade_version = $values['tpps_submission_import_upgrade_version'] ?? TRUE;
-  // @TODO Add to import form as a checkbox.
-  $submit_form = $values['tpps_submission_import_submit_form'] ?? FALSE;
-  $submission_new_status = $values['tpps_submission_import_status']
-    ?? TPPS_DO_NOT_CHANGE_STATUS;
+  $accession = $values['tpps_submission_import_accession'];
+  tpps_submission_import([
+    // Required:
+    'accession' => $accession,
+    'export' => trim($values['tpps_submission_import_state']),
+    // Optional:
+    'upgrade_version' => $values['tpps_submission_import_upgrade_version'] ?? NULL,
+    // @TODO Add to import form as a checkbox.
+    'new_status' => $values['tpps_submission_import_status'] ?? NULL,
+    'submit_form' => $values['tpps_submission_import_submit_form'] ?? NULL,
+  ]);
 
-  // Get local accession.
-  if ($values['tpps_submission_import_accession'] == 'new') {
-    $accession = tpps_init_project_get_next_accession();
-  }
-  else {
-    $accession = $values['tpps_submission_import_accession'];
-  }
-  // Since we allow both formats (TGDRxxx and xxx) we need to sync them.
-  $accession = 'TGDR' . str_replace('TGDR', '', $accession);
-
-  // Remove existing study (if any).
-  if ($values['tpps_submission_import_accession'] != 'new') {
-    // Remove submission and files.
-    tpps_submission_load($accession)->purge();
-  }
-
-  $state_raw = trim($values['tpps_submission_import_state']);
-
-  // Fix 'stdClass' in the submission's dump which was created by var_export().
-  // We shouldn't do this on export to have unchanged data.
-  // Though var_export() is designed to "outputs or return a parsable
-  // string representation of a variable", the output of stdClass
-  // objects is not "a parsable string".
-  tpps_submission_import_fix_stdclass($state_raw);
-
-  try {
-    eval('$state = ' . $state_raw . ';');
-  }
-  catch (Exception $e) {
-    drupal_set_message($e->errorMessage());
-    drupal_set_message('<pre>' . print_r($state, 1) . '</pre>');
-    return;
-  }
-  // Now $state contains submitted submission state array.
-
-  // Get original (old) accession from $state (Submission Form State Array).
-  $submission = new Submission();
-  $submission->state = $state;
-
-  // Modify before files processing to have updated import meta data.
-  // Store original accession.
-  // @TODO Minor. Remove 'saved_values' but be sure to restore those values
-  // when submission reopened using '/tppsc' form.
-  $submission->state['saved_values']['tpps_submission_import'] = [
-    'original_accession' => $submission->accession,
-    'imported' => REQUEST_TIME,
-    'imported_date' => format_date(REQUEST_TIME, 'custom', 'Y-m-d h:s:i O'),
-    'site' => $submission->state['tpps_submission_export_site'] ?? 'https://treegenesdb.org',
-    SubmissionVersion::FORM_KEY => SubmissionVersion::get($submission->state),
-  ];
-  // Files.
-
-  tpps_submission_import_process_files($submission->state, $accession, $form);
-  // Main modification must be done after file processing complete.
-  tpps_submission_import_state_mods($submission->state, $accession);
-  // We need to restore original accession because function
-  // tpps_submission_import_state_mods() overwrites it.
-  $submission->state['saved_values']['tpps_submission_import']['original_accession']
-    = $submission->accession;
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  $submission->create($submission->state, $user->uid);
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Status.
-  //
-  // Having Submission::STATUS_INCOMPLETE status is safe if we then
-  // programmatically submit form but this status requires a lot of
-  // extra work to run Tripal job so better to have status
-  // Submission::STATUS_PENDING_APPROVAL
-  // or maybe even Submission::STATUS_APPROVED.
-  if (in_array($submission_new_status, Submission::getStatusList())) {
-    $submission->status = $submission_new_status;
-  }
-  else {
-    $submission->status = $submission->get(['status']);
-  }
-  // Update a list of imported studies.
-  ImportedSubmissionList::add($accession, $submission->accession);
-  // Clear cached list of studies to have new items at 'frontpage'.
-  tpps_cache_clear_all(['tpps_submission_get_accession_list']);
-
-  if ($upgrade_version) {
-    // Upgrade to latest Submission Form Version.
-    $submission->state = SubmissionVersion::upgrade($submission->state);
-    drupal_set_message(t('Submission Form Version was upgraded.'));
-    // Note: SharedState will be stored to db.
-  }
-  $submission->generateSharedState();
-  $submission->save();
-
-  if ($submit_form) {
-    // Recreate Submission.
-    // Function drupal_form_submit() in case of success will redirect to
-    // the confirmation page (/completed-submission/TGDRxxxx).
-    // Note:
-    // Submission Form Version will be upgraded here!
-    // Function tpps_main_submit() will change version.
-
-    // Form submission was disabled because submission version
-    // upgraded and downgraded multiple times.
-    // To submit form Drupal builds it again so TppsForm::buildMain()
-    // will be called before tpps_main_submit().
-    // @TODO Check if incompleted submissions processed correctly.
-    drupal_set_message(t('Submission was submitted.'));
-    drupal_form_submit(TppsForm::getId($submission->state), $state);
-  }
-  else {
-    // If we don't submit form we need manually change status of attached files
-    // from temporaty to permanent to avoid it's automatic removement.
-    $submission->setFileStatus(FILE_STATUS_PERMANENT, []);
-  }
-  SubmissionCache::updateSingle($submission);
   drupal_goto('completed-submission/' . $accession);
 }
 
@@ -442,10 +335,11 @@ function tpps_submission_import_state_mods(array &$state, $new_accession) {
  *   Submission State.
  * @param string $new_accession
  *   New (local) study accession.
- * @param array $form
- *   Drupal Form API array which will be used to add report.
+ *
+ * @throw Exception
+ *   Throws exception if new file is empty.
  */
-function tpps_submission_import_process_files(array &$state, $new_accession, array &$form = []) {
+function tpps_submission_import_process_files(array &$state, $new_accession) {
   if (empty($state['tpps_submission_export_files'])) {
     drupal_set_message('Submission has no files.', 'warning');
   }
@@ -456,11 +350,8 @@ function tpps_submission_import_process_files(array &$state, $new_accession, arr
       }
       $new_file = tpps_submission_import_download_file($state, $file);
       if (empty($new_file)) {
-        drupal_set_message(
-          t('File @url is empty.', ['@url' => $file['url']]), 'error'
-        );
-        $form['rebuild'] = 1;
-        return;
+        $message = t('File @url is empty.', ['@url' => $file['url']]);
+        throw new Exception($message);
       }
       // To avoid errors when page navigation used we need to have
       // temporary stored files until final form submit ('summarypage').
@@ -483,13 +374,143 @@ function tpps_submission_import_process_files(array &$state, $new_accession, arr
         ['@new_fid' => $new_file->fid, '@original_fid' => $fid]
       );
       drupal_set_message($message);
-      TppsForm::addReport($form, [
-        'import_file_' . $fid => [
-          'title' => $message,
-          'data' => 'Original file: <pre>' . print_r($file, 1) . '</pre>'
-            . '<hr />New file: <pre>' . print_r($new_file, 1) . '</pre>',
-        ],
-      ]);
     }
   }
+}
+
+/**
+ * Creates new submission from spesial export array.
+ *
+ * @param array $data
+ *   Keys are:
+ *   - 'accession' string
+ *       Required. Submission accession. Format: 'TGDRxxxx' (or 'xxxx').
+ *   - 'export'
+ *       Required. Special export array. See Submission::export().
+ *   - 'upgrade_version' mixed
+ *       Optional. Default is TRUE.
+ *       When TRUE Submission Version must be upgraded.
+ *       When FALSE must not.
+ *       NULL when wasn't set.
+ *   - 'new_status' string
+ *       Optional. Default is TPPS_DO_NOT_CHANGE_STATUS.
+ *   - 'submit_form'
+ *       Optional. Default is FALSE.
+ */
+function tpps_submission_import(array $data) {
+  global $user;
+  // Get local accession.
+  if ($data['accession'] == 'new') {
+    $accession = tpps_init_project_get_next_accession();
+  }
+  else {
+    $accession = $data['accession'];
+  }
+  // Since we allow both formats (TGDRxxx and xxx) we need to sync them.
+  $accession = 'TGDR' . str_replace('TGDR', '', $accession);
+  // Remove existing study (if any).
+  if ($data['accession'] != 'new') {
+    // Remove submission and files.
+    tpps_submission_load($accession)->purge();
+  }
+  // Get special export array.
+  $state_raw = trim($data['export']);
+  $new_status = $data['new_status'] ?? TPPS_DO_NOT_CHANGE_STATUS;
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Fix 'stdClass' in the submission's dump which was created by var_export().
+  // We shouldn't do this on export to have unchanged data.
+  // Though var_export() is designed to "outputs or return a parsable
+  // string representation of a variable", the output of stdClass
+  // objects is not "a parsable string".
+  tpps_submission_import_fix_stdclass($state_raw);
+
+  try {
+    eval('$state = ' . $state_raw . ';');
+  }
+  catch (Exception $e) {
+    drupal_set_message($e->errorMessage());
+    drupal_set_message('<pre>' . print_r($state, 1) . '</pre>');
+    return;
+  }
+  // Now $state contains submitted submission state array.
+
+  // Get original (old) accession from $state (Submission Form State Array).
+  $submission = new Submission();
+  $submission->state = $state;
+
+  // Modify before files processing to have updated import meta data.
+  // Store original accession.
+  // @TODO Minor. Remove 'saved_values' but be sure to restore those values
+  // when submission reopened using '/tppsc' form.
+  $submission->state['saved_values']['tpps_submission_import'] = [
+    'original_accession' => $submission->accession,
+    'imported' => REQUEST_TIME,
+    'imported_date' => format_date(REQUEST_TIME, 'custom', 'Y-m-d h:s:i O'),
+    'site' => $submission->state['tpps_submission_export_site'] ?? 'https://treegenesdb.org',
+    SubmissionVersion::FORM_KEY => SubmissionVersion::get($submission->state),
+  ];
+  // Files.
+
+  tpps_submission_import_process_files($submission->state, $accession);
+  // Main modification must be done after file processing complete.
+  tpps_submission_import_state_mods($submission->state, $accession);
+  // We need to restore original accession because function
+  // tpps_submission_import_state_mods() overwrites it.
+  $submission->state['saved_values']['tpps_submission_import']['original_accession']
+    = $submission->accession;
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $submission->create($submission->state, $user->uid);
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Status.
+  //
+  // Having Submission::STATUS_INCOMPLETE status is safe if we then
+  // programmatically submit form but this status requires a lot of
+  // extra work to run Tripal job so better to have status
+  // Submission::STATUS_PENDING_APPROVAL
+  // or maybe even Submission::STATUS_APPROVED.
+  if (in_array($new_status, Submission::getStatusList())) {
+    $submission->status = $new_status;
+  }
+  else {
+    $submission->status = $submission->get(['status']);
+  }
+  // Update a list of imported studies.
+  ImportedSubmissionList::add($accession, $submission->accession);
+  // Clear cached list of studies to have new items at 'frontpage'.
+  tpps_cache_clear_all(['tpps_submission_get_accession_list']);
+
+  if ($data['upgrade_version'] ?? TRUE) {
+    // Upgrade to latest Submission Form Version.
+    $submission->state = SubmissionVersion::upgrade($submission->state);
+    drupal_set_message(t('Submission Form Version was upgraded.'));
+    // Note: SharedState will be stored to db.
+  }
+  $submission->generateSharedState();
+  $submission->save();
+
+  if ($data['submit_form'] ?? FALSE) {
+    // Recreate Submission.
+    // Function drupal_form_submit() in case of success will redirect to
+    // the confirmation page (/completed-submission/TGDRxxxx).
+    // Note:
+    // Submission Form Version will be upgraded here!
+    // Function tpps_main_submit() will change version.
+
+    // Form submission was disabled because submission version
+    // upgraded and downgraded multiple times.
+    // To submit form Drupal builds it again so TppsForm::buildMain()
+    // will be called before tpps_main_submit().
+    // @TODO Check if incompleted submissions processed correctly.
+    drupal_set_message(t('Submission was submitted.'));
+    drupal_form_submit(TppsForm::getId($submission->state), $state);
+  }
+  else {
+    // If we don't submit form we need manually change status of attached files
+    // from temporaty to permanent to avoid it's automatic removement.
+    $submission->setFileStatus(FILE_STATUS_PERMANENT, []);
+  }
+  SubmissionCache::updateSingle($submission);
+
 }
