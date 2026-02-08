@@ -230,7 +230,7 @@ class SubmissionCache {
   }
 
   /**
-   * Builds single submission data for cached.
+   * Builds single submission data to be cached.
    *
    * Those data could be used in reports to avoid full load of submission.
    *
@@ -508,6 +508,8 @@ class SubmissionCache {
     if (function_exists('module_invoke_all')) {
       module_invoke_all('submission_cache_single_updated', $submission->accession);
     }
+    // Rebuild accession lists.
+    SubmissionCache::getAccessionList([], $reset = TRUE);
   }
 
   /**
