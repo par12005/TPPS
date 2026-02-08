@@ -288,7 +288,21 @@ class FormRemoveSubmission {
         $table_list[] = $table_name . ' (' . $count . ')';
       }
     }
-    $options['clearDataBase']['status_method'] = !((bool) $total_count);
+    $options['clearDataBase']['title'] .= ' (' . $total_count . ')';
+
+    if ($total_count) {
+      $options['clearDataBase']['status_method'] = FALSE;
+    }
+    else {
+      // All the tables are empty.
+      $options['clearDataBase']['status_method'] = TRUE;
+      // Unset 'loaded' date. It's not necessary but to fix issues in broken
+      // or outdated submissions we do it here.
+      if (!empty($submission->getLoadTime())) {
+        $submission->set(['loaded'], NULL, $update_shared_state = TRUE);
+        $submission->save();
+      }
+    }
     // @TODO Minor. Implement ability to select tables.
     $options['clearDataBase']['info'] = [
       'title' => t("Tables to be cleared"),
