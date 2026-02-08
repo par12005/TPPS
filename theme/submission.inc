@@ -159,28 +159,33 @@ function theme_submission_actions(array $variables) {
   $static_cache = &drupal_static(__FUNCTION__);
   if (empty($static_cache)) {
     $action_list = [
-      l(t('Edit'), 'tppsc/[accession]') . ' | '
-      . l(t('Details'), 'tpps/details/[accession]') . ' | '
-      . l(t('Files'), 'tpps-admin-panel/file-diagnostics/[accession]'),
-      'JSON: '
-      . l(t('State'), 'api/submission/[accession]/view/state') . ' | '
-      . l(t('Shared State'), 'api/submission/[accession]/view/shared_state'),
-      l(t('View'), 'tpps/submission/[accession]/view') . ' | '
-      . l(t('Export'), 'tpps/submission/[accession]/export'),
-      . l(t('Clone'), 'tpps/submission/[accession]/clone'),
-      'Zenodo: ' . l(t('Deposit'), 'tpps/submission/[accession]/zenodo') . ' | '
-      . l(t('Files'), 'tpps/submission/[accession]/zenodo/files'),
+      implode(' | ', [
+        l(t('Edit'), 'tppsc/[accession]'),
+        l(t('Details'), 'tpps/details/[accession]'),
+        l(t('Files'), 'tpps-admin-panel/file-diagnostics/[accession]'),
+      ]),
+      'JSON: ' . implode(' | ', [
+        l(t('State'), 'api/submission/[accession]/view/state'),
+        l(t('Shared State'), 'api/submission/[accession]/view/shared_state'),
+      ]),
+      implode(' | ', [
+        l(t('View'), 'tpps/submission/[accession]/view'),
+        l(t('Export'), 'tpps/submission/[accession]/export'),
+        l(t('Clone'), 'tpps/submission/[accession]/clone')
+      ]),
+      'Zenodo: ' . implode(' | ', [
+        l(t('Deposit'), 'tpps/submission/[accession]/zenodo').
+        l(t('Files'), 'tpps/submission/[accession]/zenodo/files'),
+      ]),
       'Dataset DOI: '
-      . l(
-        t('Create'),
-        'tpps/[accession]/dataset-doi/create',
-        ['attributes' => ['class' => $token . '_create_link']]
-      )
-      . l(
-        t('View'),
-        'tpps/[accession]/dataset-doi',
-        ['attributes' => ['class' => $token . '_view_link']]
-      ),
+        . l(t('Create'),
+          'tpps/[accession]/dataset-doi/create',
+          ['attributes' => ['class' => $token . '_create_link']]
+        )
+        . l(t('View'),
+          'tpps/[accession]/dataset-doi',
+          ['attributes' => ['class' => $token . '_view_link']]
+        ),
       l(t('Rename local VCF'), 'tpps/submission/[accession]/vcf/local/rename'),
       l(
         t('Edit publication information'),
