@@ -1129,6 +1129,9 @@ class Submission {
     $this->accession = NULL;
     $this->state = NULL;
     $this->sharedState = NULL;
+
+    // Update cached list of the accessions.
+    SubmissionCache::getAccessionList([], $reset = TRUE);
     // Do not allow chaining methods because object destroyed.
     return NULL;
   }
