@@ -3348,4 +3348,62 @@ class Submission {
     return db_query($sql)->fetchField();
   }
 
+  /**
+   * Prepare data for Submission Export.
+   *
+   * @return string
+   *   Returns dump of the PHP-array which represents Submisison State array
+   *   with fixed files.
+   */
+  public function export() {
+    global $base_url;
+    $export = $this->getState();
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Removes some minor elements which could broke import.
+    //
+    // The main goal is to export all the data without changes at all but
+    // when it's not possible we need to remove them to allow import of more
+    // important parts to be completed.
+
+    // This is form element which has a lot of HTML code which breaks
+    // parsing of state on import. See TGDR1089.
+    unset($export['complete form']['comments']['#prefix']);
+    // Remove huge but useless for import dataset added by Tripal pipeline processing.
+    if (variable_get('tpps_submission_export_exclude_data', TRUE)) {
+      unset($export['data']);
+    }
+    if (variable_get('tpps_submission_export_exclude_tree_info', TRUE)) {
+      unset($export['tree_info']);
+    }
+
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Files.
+    $fid_list = array_keys($this->getFileIdList());
+
+    // Gets Submission file's metadata.
+    // @TODO Minor. Get rid of this code.
+    // It was added because we didn't had orignal site base url in exported state
+    // array but now we have. Also all types of files now could be downloaded using
+    // 'tpps/file/<file_id>/<secure_token>' URL.
+
+    // Builds associative array where:
+    // - key is File Id,
+    // - value is an array with File Metadata returned by file_load() and
+    // extra item 'url' which is File's absolute URL.
+    $files = [];
+    foreach ($fid_list as $fid) {
+      if ($file = tpps_file_load($fid)) {
+        $file->url = file_create_url($file->uri);
+        // To detect files manually uploaded to server use this check:
+        // if ($file->uri[0] == '/') {}.
+        // For those files $file-url will have an absolute path to file.
+        $files[$fid] = (array) $file;
+      }
+    }
+    $export['tpps_submission_export_files'] = $files;
+    $export['tpps_submission_export_site'] = $base_url;
+    return var_export($export, 1);
+  }
+
 }

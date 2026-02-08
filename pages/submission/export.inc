@@ -19,25 +19,11 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
   global $base_url;
   TppsForm::validateAccession($accession);
 
-  // Check if submission exists.
-  $submission = new Submission($accession);
-  if ($submission->doesNotExist()) {
-    $message = t("Submission @accession doesn't exists.", ['@accession' => $accession]);
-    drupal_set_message($message, 'warning');
-    drupal_goto('tpps/submission');
-  }
-
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Build dropdown list and validate accession.
   $accession_list = SubmissionCache::getAccessionList();
-  $form['tpps_submission_accession'] = [
-    '#type' => 'select',
-    '#title' => t('Accession'),
-    '#options' => $accession_list,
-    '#default_value' => $accession ?? array_key_first($accession_list) ?? '',
-    '#required' => TRUE,
-  ];
   // Get Submission State.
-  $submission = new Submission($accession);
-  if ($submission->doesNotExist()) {
+  if (empty($accession_list[$accession])) {
     $message = t(
       'Submission @accession not found. Please choose from the list below.',
       ['@accession' => $accession]
@@ -45,22 +31,21 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
     drupal_set_message($message, 'warning');
     drupal_goto('tpps/submission');
   }
-  tpps_submission_export_fixes($submission->state);
-  // Files.
-  $fid_list = array_keys($submission->getFileIdList());
-  $files = tpps_submission_export_get_files_info($fid_list);
-  if (empty($form_state['input'])) {
-    // This check allows to avoid double processing files when new accession
-    // was selected and button 'Export' clicked to update data.
-    tpps_submission_export_file_report($fid_list, $files, $form);
-  }
-  $submission->state['tpps_submission_export_files'] = $files;
-  $submission->state['tpps_submission_export_site'] = $base_url;
+  $form['tpps_submission_accession'] = [
+    '#type' => 'select',
+    '#title' => t('Accession'),
+    '#options' => $accession_list,
+    '#default_value' => $accession ?? array_key_first($accession_list) ?? '',
+    '#required' => TRUE,
+  ];
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Prepare submission for export.
+  $submission = new Submission($accession);
   $form['tpps_submission_export_state'] = [
     '#type' => 'textarea',
     '#title' => t('State PHP Array'),
-    '#value' => var_export($submission->state, 1),
+    '#value' => $submission->export(),
     '#rows' => 10,
     '#resizable' => TRUE,
     '#attributes' => ['readonly' => 'readonly'],
@@ -70,6 +55,9 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
       ],
     ],
   ];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Add common form elements.
   TppsForm::addSubmissionActionButtons($form);
   TppsForm::autofocus($form, ['tpps_submission_export_state']);
 
@@ -92,36 +80,6 @@ function tpps_submission_export_form_submit(array $form, array $form_state) {
   TppsForm::validateAccession($accession);
   drupal_goto('tpps/submission/' . $accession . '/export');
 
-}
-
-/**
- * Gets Submission file's metadata.
- *
- * @param array $fid_list
- *   List of File IDs.
- *
- * @return array
- *   Returns associative array where key is File Id and value is an array
- *   with File Metadata returned by file_load() and additionally new
- *   item 'url' which is File's absolute URL.
- *
- * @TODO Minor. Get rid of this function.
- * It was added because we didn't had orignal site base url in exported state
- * array but now we have. Also all types of files now could be downloaded using
- * 'tpps/file/<file_id>/<secure_token>' URL.
- */
-function tpps_submission_export_get_files_info(array &$fid_list) {
-  $files = [];
-  foreach ($fid_list as $fid) {
-    if ($file = tpps_file_load($fid)) {
-      $file->url = file_create_url($file->uri);
-      // To detect files manually uploaded to server use this check:
-      // if ($file->uri[0] == '/') {}.
-      // For those files $file-url will have an absolute path to file.
-      $files[$fid] = (array) $file;
-    }
-  }
-  return $files;
 }
 
 /**
@@ -157,28 +115,5 @@ function tpps_submission_export_file_report(array &$fid_list = [], array &$files
   else {
     $message = t('No files found in this submission. Please double-check.');
     drupal_set_message($message, 'warning');
-  }
-}
-
-/**
- * Removes some minor elements which could broke import.
- *
- * The main goal is to export all the data without changes at all but
- * when it's not possible we need to remove them to allow import of more
- * important parts to be completed.
- *
- * @param array $state
- *   Submission state.
- */
-function tpps_submission_export_fixes(array &$state) {
-  // This is form element which has a lot of HTML code which breaks
-  // parsing of state on import. See TGDR1089.
-  unset($state['complete form']['comments']['#prefix']);
-  // Remove huge but useless for import dataset added by Tripal pipeline processing.
-  if (variable_get('tpps_submission_export_exclude_data', TRUE)) {
-    unset($state['data']);
-  }
-  if (variable_get('tpps_submission_export_exclude_tree_info', TRUE)) {
-    unset($state['tree_info']);
   }
 }
