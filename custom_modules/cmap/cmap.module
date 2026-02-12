@@ -13,208 +13,247 @@
  *
  * Title: Treegenes Comparative Map Viewer
  * Desctiption: summary of cmaps
- * Block is shown only at /cmap page.
+ * Restrictions:
+ * - Block is shown only at /cmap page.
+ * - No other restrictions.
  */
 function cmap_block_content() {
+  $output = '<style type="text/css">
+    .speciesBox
+    {
+        background-color:#daeace;
+        padding-left:10px;
+        border:1px solid #323F37;
+        border-radius: 3px;
+        margin-top:15px;
+    }
 
-<style type="text/css">
+    .studyTable
+    {
+        border-collapse: separate;
+        border-spacing: 5px 0px;
+    }
 
-.speciesBox
-{
-    background-color:#daeace;
-    padding-left:10px;
-    border:1px solid #323F37;
-    border-radius: 3px;
-    margin-top:15px;
-}
+    .keyTD
+    {
+        width: 150px;
+        align: right;
+        vertical-align:top;
+    }
 
-.studyTable
-{
-    border-collapse: separate;
-    border-spacing: 5px 0px;
-}
+    .filterForm
+    {
+        float:left;
+        display: inline;
+    }
+    .resetForm
+    {
+        float:right;
+        display: inline;
+    }
 
-.keyTD
-{
-    width: 150px;
-    align: right;
-    vertical-align:top;
-}
+    </style>';
 
-.filterForm
-{
-    float:left;
-    display: inline;
-}
-.resetForm
-{
-    float:right;
-    display: inline;
-}
-
-</style>
-<?php
-if(isset($_GET["id"])) {
+  if (isset($_GET["id"])) {
     $filterID = filter_xss(htmlspecialchars($_GET["id"]));
-}
-else
-{
+  }
+  else {
     $filterID = "";
-}
+  }
 
-    $query = "select distinct tg.genus, tg.species, tg.organism_id from chado.tg_code tg inner join cmap_map_set on tg.organism_id=cmap_map_set.species_id order by tg.genus";
-    $speciesListDB = db_query($query);
+  $query = "select distinct tg.genus, tg.species, tg.organism_id from chado.tg_code tg inner join cmap_map_set on tg.organism_id=cmap_map_set.species_id order by tg.genus";
+  $speciesListDB = db_query($query);
 
-    //Iterate through the returned database
-    for($i = 0; $i< $speciesListDB->rowCount();$i++)
-    {
-        $speciesList[$i] = $speciesListDB->fetchAssoc();
-    }
-    ?>
+  //Iterate through the returned database
+  for($i = 0; $i< $speciesListDB->rowCount();$i++) {
+    $speciesList[$i] = $speciesListDB->fetchAssoc();
+  }
+
+  $output .= '
     <form class="filterForm" id="filterCmapList" method="get" action="">
-    <select name="id" value="512">
-    <?php
-    foreach($speciesList as $species)
-    {
-        //Truncate any ridiculously long names (species)
-        if (strlen($species['species']) > 80)
-        {
-            $species['species'] = substr($species['species'], 0, 80)."...";
-        }
-        //echo "<option value=\"$species['organism_id']\">$species['genus'] $species['species']</option>";
-        if ($filterID == $species['organism_id'])
-        {
-            echo "<option selected=\"selected\" name=\"".$species['organism_id']."\" value=\"".$species['organism_id']."\">".$species['genus']." ".$species['species']."</option>";
-        }
-        else
-        {
-            echo "<option name=\"".$species['organism_id']."\" value=\"".$species['organism_id']."\">".$species['genus']." ".$species['species']."</option>";
-        }
+    <select name="id" value="512">';
 
+  foreach ($speciesList as $species) {
+    // Truncate any ridiculously long names (species).
+    if (strlen($species['species']) > 80) {
+      $species['species'] = substr($species['species'], 0, 80)."...";
     }
-echo "</select>";
-echo "<input type=\"submit\" value=\"Filter this list\"></form>";
-echo "<form class=\"resetForm\"><input type=\"submit\" value=\"Reset\"></form><br />";
-//Get the map data
-if ($filterID == "")
-{
-    $query = "select map_set_id, map_set_name, map_set_short_name, map_set_acc, tg.genus, tg.species, map_type_acc, published_on, mapping_population from cmap_map_set inner join chado.tg_code tg on cmap_map_set.species_id=tg.organism_id order by map_set_id";
-}
-else
-{
-    $query = "select map_set_id, map_set_name, map_set_short_name, map_set_acc, tg.genus, tg.species, map_type_acc, published_on, mapping_population from cmap_map_set inner join chado.tg_code tg on cmap_map_set.species_id=tg.organism_id and tg.organism_id='$filterID' order by map_set_id";
-}
-
-    $map_set_details_list = db_query($query);
-
-    for($i = 0; $i< $map_set_details_list->rowCount();$i++)
-    {
-        $map_set_details[$i] = $map_set_details_list->fetchAssoc();
+    // echo "<option value=\"$species['organism_id']\">$species['genus'] $species['species']</option>";
+    if ($filterID == $species['organism_id']) {
+      $output .= "<option selected=\"selected\" name=\"" . $species['organism_id']."\" value=\"".$species['organism_id']."\">" . $species['genus'] . " " . $species['species'] . "</option>";
     }
-//Get linkage group count (no need to filter by ID since we can do this later without a multiple join SQL query)
-    $query = "select map_set_id, count(map_set_id) as count from cmap_map group by map_set_id order by map_set_id";
-
-$linkageGroupCount = db_query($query);
-
-    for($i = 0; $i< $linkageGroupCount->rowCount();$i++)
-    {
-        $linkageGroupCountList[$i] = $linkageGroupCount->fetchAssoc();
+    else {
+      $output .= "<option name=\"" . $species['organism_id'] . "\" value=\"" . $species['organism_id'] . "\">".$species['genus'] . " " . $species['species']."</option>";
     }
+  }
 
-    function getLinkGroupCount($map_set_id,$list)
-    {
-        for ($j = 0;$j < count($list);$j++)
-        {
-            if ($list[$j]['map_set_id'] == $map_set_id)
-            {
-                return $j;
-            }
-        }
-    }
-    //Get the map sets and maps available
-    $query = "select s.map_set_name, s.map_set_id, m.map_name from cmap_map_set s join cmap_map m on m.map_set_id=s.map_set_id order by m.map_name";
+  $output .= "</select>"
+    . "<input type=\"submit\" value=\"Filter this list\"></form>"
+    . "<form class=\"resetForm\"><input type=\"submit\" value=\"Reset\"></form><br />";
+  // Get the map data.
+  if ($filterID == "") {
+    $query = "select map_set_id, map_set_name, map_set_short_name,
+        map_set_acc, tg.genus, tg.species, map_type_acc, published_on,
+       mapping_population
+     from cmap_map_set
+     inner join chado.tg_code tg
+       on cmap_map_set.species_id=tg.organism_id
+     order by map_set_id";
+  }
+  else {
+    $query = "select map_set_id, map_set_name, map_set_short_name,
+        map_set_acc, tg.genus, tg.species, map_type_acc, published_on,
+        mapping_population
+      from cmap_map_set
+      inner join chado.tg_code tg
+        on cmap_map_set.species_id=tg.organism_id
+        and tg.organism_id='$filterID'
+      order by map_set_id";
+  }
+  $map_set_details_list = db_query($query);
+  for ($i = 0; $i < $map_set_details_list->rowCount(); $i++) {
+    $map_set_details[$i] = $map_set_details_list->fetchAssoc();
+  }
+  // Get linkage group count (no need to filter by ID since we can do
+  // this later without a multiple join SQL query).
+  $query = "select map_set_id, count(map_set_id) as count
+    from cmap_map
+    group by map_set_id
+    order by map_set_id";
 
-    $mapsAvailable = db_query($query);
+  $linkageGroupCount = db_query($query);
+  for ($i = 0; $i < $linkageGroupCount->rowCount(); $i++) {
+    $linkageGroupCountList[$i] = $linkageGroupCount->fetchAssoc();
+  }
 
-    for($i = 0; $i < $mapsAvailable->rowCount();$i++)
-    {
-        $mapsAvailableList[$i] = $mapsAvailable->fetchAssoc();
-    }
+  // @TODO Move out.
+  function getLinkGroupCount($map_set_id,$list) {
+      for ($j = 0;$j < count($list);$j++)
+      {
+          if ($list[$j]['map_set_id'] == $map_set_id)
+          {
+              return $j;
+          }
+      }
+  }
 
-    //Get the Publication ID (chado.pub)
-    //$query = "select map_set_id, cpub.pub_id, cpub.title from cmap_map_set_pub inner join chado.pub cpub on cmap_map_set_pub.pub_id=cpub.pub_id order by map_set_id";
-   $query = "select map_set_id, cpub.pub_id, cpub.title, cbd13.entity_id from cmap_map_set_pub inner join chado.pub cpub on cmap_map_set_pub.pub_id=cpub.pub_id LEFT JOIN public.chado_bio_data_13 as cbd13 ON cpub.pub_id = cbd13.record_id order by map_set_id";
+  // Get the map sets and maps available.
+  $query = "select s.map_set_name, s.map_set_id, m.map_name
+    from cmap_map_set s
+    join cmap_map m
+      on m.map_set_id=s.map_set_id
+    order by m.map_name";
+  $mapsAvailable = db_query($query);
+  for ($i = 0; $i < $mapsAvailable->rowCount(); $i++) {
+    $mapsAvailableList[$i] = $mapsAvailable->fetchAssoc();
+  }
 
-    $publications = db_query($query);
-    for($i = 0; $i < $publications->rowCount();$i++)
-    {
-    	$publicationsList[$i] = $publications->fetchAssoc();
-    }
+  // @TODO Review code below.
+  //
 
-    //Get the bioproject accession links
-    $query = "select dx.dbxref_id, dx.accession, p.project_id,c.cmap_map_set_id from chado.dbxref dx join chado.project_dbxref p on dx.dbxref_id = p.dbxref_id join cmap_map_set_dbxref c on c.dbxref_id=dx.dbxref_id";
+  // Get the Publication ID (chado.pub).
+  // $query = "select map_set_id, cpub.pub_id, cpub.title
+  // from cmap_map_set_pub inner
+  // join chado.pub cpub on cmap_map_set_pub.pub_id=cpub.pub_id
+  // order by map_set_id";
+  $query = "select map_set_id, cpub.pub_id, cpub.title, cbd13.entity_id
+    from cmap_map_set_pub
+    inner join chado.pub cpub
+      on cmap_map_set_pub.pub_id=cpub.pub_id
+    LEFT JOIN public.chado_bio_data_13 as cbd13
+      ON cpub.pub_id = cbd13.record_id
+    order by map_set_id";
 
-    $bioProjects = db_query($query);
-    for($i = 0; $i < $bioProjects->rowCount();$i++)
-    {
-        $bioProjectsList[$i] = $bioProjects->fetchAssoc();
-    }
+  $publications = db_query($query);
+  for ($i = 0; $i < $publications->rowCount(); $i++) {
+    $publicationsList[$i] = $publications->fetchAssoc();
+  }
 
-//Display some basic info
-for($i = 0; $i < count($map_set_details);$i++)
-{
-    //Prepare map_set_name for human-readability
+  // Get the bioproject accession links.
+  $query = "select
+    dx.dbxref_id, dx.accession, p.project_id,c.cmap_map_set_id
+    from chado.dbxref dx
+    join chado.project_dbxref p
+      on dx.dbxref_id = p.dbxref_id
+    join cmap_map_set_dbxref c
+      on c.dbxref_id=dx.dbxref_id";
+
+  $bioProjects = db_query($query);
+  for ($i = 0; $i < $bioProjects->rowCount(); $i++) {
+    $bioProjectsList[$i] = $bioProjects->fetchAssoc();
+  }
+
+  // Display some basic info.
+  for ($i = 0; $i < count($map_set_details); $i++) {
+    // Prepare map_set_name for human-readability.
     $studyName = explode('_', $map_set_details[$i]['map_set_name']);
-    $linkageGroupIndex = getLinkGroupCount($map_set_details[$i]['map_set_id'], $linkageGroupCountList);
-    echo "<div id=\"".$map_set_details[$i]['map_set_id']."box\" class=\"speciesBox\">";
-    echo "<h4>".$map_set_details[$i]['genus']." ".$map_set_details[$i]['species'].": ".$studyName[4]." (".$studyName[3].", ".$studyName[1].")</h4>";
-    //echo "<h4>".$map_set_details[$i]['map_set_name']."</h4>";
-    echo "<table class=\"studyTable\">";
-    echo "<tr><td class=\"keyTD\">Abbreviated name:</td><td class=\"valueTD\">".$map_set_details[$i]['map_set_short_name']."</td></tr>";
-    echo "<tr><td class=\"keyTD\">Accession:</td><td class=\"valueTD\">".$map_set_details[$i]['map_set_acc']."</td></tr>";
-    //TODO - make sure species page exists before linking to it (all should be on site though if we have maps for them)
-    echo "<tr><td class=\"keyTD\">Species:</td><td class=\"valueTD\"><a href=\"organism/".$map_set_details[$i]['genus']."-".$map_set_details[$i]['species']."\">".$map_set_details[$i]['genus']." ".$map_set_details[$i]['species']."</a></td></tr>";
-    echo "<tr><td class=\"keyTD\">Linkage groups:</td><td class=\"valueTD\">".$linkageGroupCountList[$linkageGroupIndex]['count']."</td></tr>";
-    echo "<tr><td class=\"keyTD\">Published on:</td><td class=\"valueTD\">".$map_set_details[$i]['published_on']."</td></tr>";
-    echo "<tr><td class=\"keyTD\">Mapping Population:</td><td class=\"valueTD\">".$map_set_details[$i]['mapping_population']."</td></tr>";
-    //Publication
-    for ($k = 0; $k < count($publicationsList);$k++)
-    {
-    	if ($map_set_details[$i]['map_set_id'] == $publicationsList[$k]['map_set_id'])
-    	{
-    		echo "<tr><td class=\"keyTD\">Publication:</td><td class=\"valueTD\"><a href=\"/Publication/".$publicationsList[$k]['entity_id']."\">".$publicationsList[$k]['title']."</a></td></tr>";
-    		//echo "<tr><td>Publication:</td><td>Link</td></tr>";
-    	}
+    $linkageGroupIndex = getLinkGroupCount(
+      $map_set_details[$i]['map_set_id'],
+      $linkageGroupCountList
+    );
+    $output .= "<div id=\"" . $map_set_details[$i]['map_set_id']
+      . "box\" class=\"speciesBox\">"
+      . "<h4>" . $map_set_details[$i]['genus'] . " "
+      . $map_set_details[$i]['species'] . ": " . $studyName[4]
+      . " (".$studyName[3] . ", " . $studyName[1] . ")</h4>"
+    // "<h4>".$map_set_details[$i]['map_set_name']."</h4>"
+    . "<table class=\"studyTable\">"
+    . "<tr><td class=\"keyTD\">Abbreviated name:</td><td class=\"valueTD\">"
+      . $map_set_details[$i]['map_set_short_name'] . "</td></tr>"
+    . "<tr><td class=\"keyTD\">Accession:</td><td class=\"valueTD\">"
+      . $map_set_details[$i]['map_set_acc'] . "</td></tr>"
+    //TODO - make sure species page exists before linking to it (all should be
+    // on site though if we have maps for them)
+    . "<tr><td class=\"keyTD\">Species:</td><td class=\"valueTD\"><a
+      href=\"organism/" . $map_set_details[$i]['genus'] . "-"
+      . $map_set_details[$i]['species'] . "\">"
+      . $map_set_details[$i]['genus'] . " " . $map_set_details[$i]['species']
+      . "</a></td></tr>"
+    . "<tr><td class=\"keyTD\">Linkage groups:</td><td class=\"valueTD\">"
+      . $linkageGroupCountList[$linkageGroupIndex]['count'] . "</td></tr>"
+    . "<tr><td class=\"keyTD\">Published on:</td><td class=\"valueTD\">"
+      . $map_set_details[$i]['published_on'] . "</td></tr>"
+    . "<tr><td class=\"keyTD\">Mapping Population:</td><td class=\"valueTD\">"
+      . $map_set_details[$i]['mapping_population'] . "</td></tr>";
+    // Publication.
+    for ($k = 0; $k < count($publicationsList); $k++) {
+      if ($map_set_details[$i]['map_set_id'] == $publicationsList[$k]['map_set_id']) {
+        $output .= "<tr><td class=\"keyTD\">Publication:</td><td
+          class=\"valueTD\"><a href=\"/Publication/"
+          . $publicationsList[$k]['entity_id'] . "\">"
+          . $publicationsList[$k]['title'] . "</a></td></tr>";
+        // echo "<tr><td>Publication:</td><td>Link</td></tr>";
+      }
     }
 
-    //Bioproject
-    for ($k = 0; $k < count($bioProjectsList);$k++)
-    {
-        if ($map_set_details[$i]['map_set_id'] == $bioProjectsList[$k]['cmap_map_set_id'])
-        {
-            echo "<tr><td class=\"keyTD\">Bioproject:</td><td class=\"valueTD\"><a href=\"https://www.ncbi.nlm.nih.gov/bioproject/".$bioProjectsList[$k]['accession']."\">NCBI BioProject:".$bioProjectsList[$k]['accession']."</a></td></tr>";
-        }
+    // Bioproject.
+    for ($k = 0; $k < count($bioProjectsList); $k++) {
+      if ($map_set_details[$i]['map_set_id'] == $bioProjectsList[$k]['cmap_map_set_id']) {
+        $output .= "<tr><td class=\"keyTD\">Bioproject:</td><td
+          class=\"valueTD\"><a href=\"https://www.ncbi.nlm.nih.gov/bioproject/"
+          . $bioProjectsList[$k]['accession'] . "\">NCBI BioProject:"
+          . $bioProjectsList[$k]['accession'] . "</a></td></tr>";
+      }
     }
 
-    echo "</table>";
-    echo "<br/>";
-    //List the maps available
-    echo "<table class=\"mapsAvailableTable\">";
-    for ($j = 0; $j < count($mapsAvailableList);$j++)
-    {
-        if ($map_set_details[$i]['map_set_id'] == $mapsAvailableList[$j]['map_set_id'])
-        {
-            echo "<tr>";
-            echo "<td class=\"keyTD\">".$mapsAvailableList[$j]['map_name']."</td>";
-            echo "<td><a href=\"/cmap-js/index.html?config=tg/tg.php?mapinfo=".$mapsAvailableList[$j]['map_name']."__CMAP__".$mapsAvailableList[$j]['map_set_name']."\">Map Viewer</a></td>";
-            echo "</tr>";
-        }
+    $output .= "</table>";
+    $output .= "<br/>";
+
+    // List the maps available.
+    $output .= "<table class=\"mapsAvailableTable\">";
+    for ($j = 0; $j < count($mapsAvailableList); $j++) {
+      if ($map_set_details[$i]['map_set_id'] == $mapsAvailableList[$j]['map_set_id']) {
+        $output .= "<tr>";
+        $output .= "<td class=\"keyTD\">" . $mapsAvailableList[$j]['map_name'] . "</td>";
+        $output .= "<td><a href=\"/cmap-js/index.html?config=tg/tg.php?mapinfo="
+          . $mapsAvailableList[$j]['map_name'] . "__CMAP__"
+          . $mapsAvailableList[$j]['map_set_name'] . "\">Map Viewer</a></td>";
+        $output .= "</tr>";
+      }
     }
-    echo "</table>";
-
-    echo "</div>";
-}
-?>
-
+    $output .= "</table>";
+    $output .= "</div>";
+  }
+  return $output;
 }
 
