@@ -30,7 +30,7 @@ function cmap_menu() {
   $items['admin/config/tpps/cmap'] = [
     'title' => 'CMAP Page Settings',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['cmap_settings_page'],
+    'page arguments' => ['cmap_settings_form'],
     'access arguments' => ['administer cmap'],
     'type' => MENU_NORMAL_ITEM,
     'file' => 'cmap.admin.inc',
