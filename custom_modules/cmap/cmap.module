@@ -6,6 +6,48 @@
  */
 
 /**
+ * Implements hook_permission().
+ */
+function cmap_permission() {
+  return [
+    'view cmap page' => [
+      'title' => t('View "cmap" page'),
+      'description' => t('Allows to access and view CMAP page.'),
+    ],
+    'administer cmap' => [
+      'title' => t('Administer "cmap" module'),
+      'description' => t('Allows to change all settings.'),
+    ],
+  ];
+}
+
+/**
+ * Implements hook_menu().
+ */
+function cmap_menu() {
+  $items = [];
+  // Settings Page.
+  $items['admin/config/tpps/cmap'] = [
+    'title' => 'CMAP Page Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['cmap_settings_page'],
+    'access arguments' => ['administer cmap'],
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'cmap.admin.inc',
+    'weight' => -100,
+  ];
+  $cmap_path = variable_get('cmap_path', 'cmap2');
+  $items[$cmap_path] = [
+    'title' => 'custom blocks',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['cmap_form'],
+    'access arguments' => ['view cmap page'],
+    'type' => MENU_NORMAL_ITEM,
+  ];
+  return $items;
+}
+
+/**
  * Original content of the block #17.
  *
  * Block's settings page:
