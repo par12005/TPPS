@@ -3,3 +3,4 @@ description = Builds CMAP page.
 package = TPPS
 version = 7.x-1.0
 core = 7.x
+configure = admin/config/tpps/cmap

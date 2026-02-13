@@ -27,8 +27,9 @@ function cmap_permission() {
 function cmap_menu() {
   $items = [];
   // Settings Page.
-  $items['admin/config/tpps/cmap'] = [
-    'title' => 'CMAP Page Settings',
+  $items['admin/config/cmap'] = [
+    'title' => 'CMAP',
+    'description' => 'CMAP Page Settings',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['cmap_settings_form'],
     'access arguments' => ['administer cmap'],
@@ -38,13 +39,31 @@ function cmap_menu() {
   ];
   $cmap_path = variable_get('cmap_path', 'cmap2');
   $items[$cmap_path] = [
-    'title' => 'custom blocks',
+    'title' => 'Treegenes Comparative Map Viewer',
+    // Block's description: summary of cmaps.
     'page callback' => 'drupal_get_form',
     'page arguments' => ['cmap_form'],
     'access arguments' => ['view cmap page'],
     'type' => MENU_NORMAL_ITEM,
   ];
   return $items;
+}
+
+/**
+ * Form callback. Builds CMAP page content including search form.
+ */
+function cmap_form(array $form, array &$form_state) {
+  //$form['#submit'][] = 'cmap_settings_form_submit';
+  $form['header'] = [
+    '#markup' => '<h2 style="font-size: 18px; padding-bottom: 10px;margin-bottom: 10px;">CMAP Overview</h2>
+    <p>
+    The TreeGenes CMAP repository hosts <strong>100</strong> genetic map sets for <strong>34</strong> unique species. These maps are connected to species and publication records, as well as supporting Genbank Bioprojects when available.  Map sets contain a variety of marker types including RAPDs, AFLPs, SSRs, ESTs, and SNPs.  Users may browse these maps, download the data directly, and submit their own map data <strong><a href="TG_Map/Upload">here</a></strong>.
+    </p>'
+];
+  $form['content'] = [
+    '#markup' => cmap_block_content(),
+  ];
+  return system_settings_form($form);
 }
 
 /**
