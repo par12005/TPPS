@@ -179,14 +179,6 @@ function cmap_build_content() {
     $linkageGroupCountList[$i] = $linkageGroupCount->fetchAssoc();
   }
 
-  // @TODO Move out.
-  function getLinkGroupCount($map_set_id, array $list) {
-    for ($j = 0; $j < count($list); $j++) {
-      if ($list[$j]['map_set_id'] == $map_set_id) {
-        return $j;
-      }
-    }
-  }
 
   // Get the map sets and maps available.
   $query = "select
@@ -248,7 +240,7 @@ function cmap_build_content() {
   for ($i = 0; $i < count($map_set_details); $i++) {
     // Prepare map_set_name for human-readability.
     $studyName = explode('_', $map_set_details[$i]['map_set_name']);
-    $linkageGroupIndex = getLinkGroupCount(
+    $linkageGroupIndex = cmap_get_link_group_count(
       $map_set_details[$i]['map_set_id'],
       $linkageGroupCountList
     );
@@ -316,4 +308,23 @@ function cmap_build_content() {
     $output .= "</div>";
   }
   return $output;
+}
+
+/**
+ * Gets number of the item in the list by it's id.
+ *
+ * @param mixed $map_set_id
+ *   Id of the something.
+ * @param array $list
+ *   List of something.
+ *
+ * @return int
+ *   Returns number of the item in the list.
+ */
+function cmap_get_link_group_count($map_set_id, array $list) {
+  for ($j = 0; $j < count($list); $j++) {
+    if ($list[$j]['map_set_id'] == $map_set_id) {
+      return $j;
+    }
+  }
 }
