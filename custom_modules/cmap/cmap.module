@@ -49,8 +49,47 @@ function cmap_menu() {
  * Form callback. Builds CMAP page content including search form.
  */
 function cmap_form(array $form, array &$form_state) {
+  $form['header'] = [
+    '#markup' => '<h2 class="cmap-header">' . t('CMAP Overview') . '</h2>'
+      . '<p>'
+      . t('The TreeGenes CMAP repository hosts <strong>100</strong>
+        genetic map sets for <strong>34</strong> unique species. These maps
+        are connected to species and publication records, as well as supporting
+        Genbank Bioprojects when available. Map sets contain a variety of marker
+        types including RAPDs, AFLPs, SSRs, ESTs, and SNPs.
+        Users may browse these maps, download the data directly, and submit
+        their own map data <strong>!link</strong>.',
+        ['!link' => l(t('here'), 'TG_Map/Upload')]
+      )
+      . '</p>'
+  ];
+  // Build dropdown menu options.
+  $options = cmap_get_options();
+
+  $id = $form_state['saved_values']['id'] ?? NULL;
+  $form['id'] = [
+    '#type' => 'select',
+    '#title' => NULL,
+    '#default_value' => $id,
+    '#options' => $options,
+  ];
+
+  $form['actions'] = [
+    '#type' => 'container',
+  ];
+  $form['actions']['filter'] = [
+    '#type' => 'submit',
+    '#value' => t('Filter this list'),
+    '#name' => 'submit',
+  ];
+  $form['actions']['reset'] = [
+    '#type' => 'button',
+    '#name' => 'reset',
+    '#value' => t('Reset'),
+  ];
+
   $form['content'] = [
-    '#markup' => cmap_build_content(),
+    '#markup' => cmap_build_content($id),
   ];
 
   $css = [
@@ -60,6 +99,47 @@ function cmap_form(array $form, array &$form_state) {
   $form['#attached'] = ['css' => [$css]];
 
   return $form;
+}
+
+/**
+ * Form 'cmap_form' validator.
+ */
+function cmap_form_validate(array $form, array &$form_state) {
+  switch ($form_state['clicked_button']['#name']) {
+    case 'submit':
+      if (empty($id = $form_state['values']['id'])) {
+        form_set_error('id', t('Please select organism'));
+      }
+      // Check if id exists.
+      $organism_id_list = array_keys(cmap_get_options());
+      if (!in_array($id, $organism_id_list)) {
+        form_set_error('id', t("Selected organism doesn't exists."));
+      }
+      break;
+
+    case 'reset':
+      drupal_goto($_GET['q']);
+      break;
+  }
+}
+
+/**
+ * Form 'cmap_form' submitter.
+ */
+function cmap_form_submit(array $form, array &$form_state) {
+  dpm( $form_state['triggering_element']['#name']);
+
+  switch ($form_state['triggering_element']['#name']) {
+    case 'submit':
+      dpm('submit');
+      $form_state['saved_values']['id'] = check_plain($form_state['values']['id']);
+      $form_state['rebuild'] = TRUE;
+      break;
+
+    default:
+      drupal_goto($_GET['q']);
+      break;
+  }
 }
 
 /**
@@ -73,62 +153,18 @@ function cmap_form(array $form, array &$form_state) {
  * Restrictions:
  * - Block is shown only at /cmap page.
  * - No other restrictions.
+ *
+ * @param $id int
+ *   Organism Id.
+ *
+ * @TODO Use db_select(), Drupal Form API.
+ * @TODO Use theme('table') to render HTML-table.
  */
-function cmap_build_content() {
-  $output = '
-    <h2 style="font-size: 18px; padding-bottom: 10px;margin-bottom: 10px;">CMAP Overview</h2>
-    <p>
-    The TreeGenes CMAP repository hosts <strong>100</strong> genetic map sets for <strong>34</strong> unique species. These maps are connected to species and publication records, as well as supporting Genbank Bioprojects when available.  Map sets contain a variety of marker types including RAPDs, AFLPs, SSRs, ESTs, and SNPs.  Users may browse these maps, download the data directly, and submit their own map data <strong><a href="TG_Map/Upload">here</a></strong>.
-    </p>';
+function cmap_build_content($id) {
+  $output = '';
 
-  if (isset($_GET["id"])) {
-    $filterID = filter_xss(htmlspecialchars($_GET["id"]));
-  }
-  else {
-    $filterID = "";
-  }
-
-  $query = "select
-      distinct tg.genus,
-      tg.species,
-      tg.organism_id
-    from chado.tg_code tg
-    inner join cmap_map_set
-      on tg.organism_id=cmap_map_set.species_id
-    order by tg.genus";
-  $speciesListDB = db_query($query);
-
-  // Iterate through the returned database.
-  for($i = 0; $i < $speciesListDB->rowCount(); $i++) {
-    $speciesList[$i] = $speciesListDB->fetchAssoc();
-  }
-
-  $output .= '
-    <form class="filterForm" id="filterCmapList" method="get" action="">
-    <select name="id" value="512">';
-
-  foreach ($speciesList as $species) {
-    // Truncate any ridiculously long names (species).
-    if (strlen($species['species']) > 80) {
-      $species['species'] = substr($species['species'], 0, 80). "...";
-    }
-    // echo "<option value=\"$species['organism_id']\">$species['genus'] $species['species']</option>";
-    if ($filterID == $species['organism_id']) {
-      $output .= "<option selected=\"selected\" name=\""
-        . $species['organism_id'] . "\" value=\"" . $species['organism_id']
-        . "\">" . $species['genus'] . " " . $species['species'] . "</option>";
-    }
-    else {
-      $output .= "<option name=\"" . $species['organism_id'] . "\" value=\""
-        . $species['organism_id'] . "\">".$species['genus'] . " " . $species['species']."</option>";
-    }
-  }
-
-  $output .= "</select>"
-    . "<input type=\"submit\" value=\"Filter this list\"></form>"
-    . "<form class=\"resetForm\"><input type=\"submit\" value=\"Reset\"></form><br />";
   // Get the map data.
-  if ($filterID == "") {
+  if ($id == "") {
     $query = "select
         map_set_id,
         map_set_name,
@@ -158,7 +194,7 @@ function cmap_build_content() {
       from cmap_map_set
       inner join chado.tg_code tg
         on cmap_map_set.species_id=tg.organism_id
-        and tg.organism_id='$filterID'
+        and tg.organism_id='$id'
       order by map_set_id";
   }
   $map_set_details_list = db_query($query);
@@ -179,7 +215,6 @@ function cmap_build_content() {
     $linkageGroupCountList[$i] = $linkageGroupCount->fetchAssoc();
   }
 
-
   // Get the map sets and maps available.
   $query = "select
       s.map_set_name,
@@ -193,9 +228,6 @@ function cmap_build_content() {
   for ($i = 0; $i < $mapsAvailable->rowCount(); $i++) {
     $mapsAvailableList[$i] = $mapsAvailable->fetchAssoc();
   }
-
-  // @TODO Review code below.
-  //
 
   // Get the Publication ID (chado.pub).
   // $query = "select map_set_id, cpub.pub_id, cpub.title
@@ -310,6 +342,12 @@ function cmap_build_content() {
   return $output;
 }
 
+
+
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// Helper functions.
+
 /**
  * Gets number of the item in the list by it's id.
  *
@@ -327,4 +365,44 @@ function cmap_get_link_group_count($map_set_id, array $list) {
       return $j;
     }
   }
+}
+
+/**
+ * Truncate any ridiculously long names (species).
+ *
+ * @param string $name
+ *   Species name.
+ *
+ * @return string
+ *   Returns name which has only 83 chars long.
+ */
+function cmap_trancate_long_name($name) {
+  if (strlen($name) > 80) {
+    return substr($name, 0, 80) . "...";
+  }
+  else {
+    return $name;
+  }
+}
+
+/**
+ * Build dropdown menu options.
+ *
+ * @return array
+ *   Returns list where keys are organism id and value is
+ *   genus+species.
+ */
+function cmap_get_options() {
+  $query = db_select('chado.tg_code', 'tg')
+    ->distinct()
+    ->fields('tg', ['genus', 'species', 'organism_id']);
+  $query->innerJoin('cmap_map_set', 'cms', 'tg.organism_id=cms.species_id');
+  $query->addExpression("CONCAT(tg.genus, ' ', tg.species)", 'full_name');
+  $query->orderBy('tg.genus');
+  $speciesList = $query->execute()->fetchAllAssoc('organism_id', PDO::FETCH_ASSOC);
+
+  foreach ($speciesList as $organism_id => $item) {
+    $options[$organism_id] = cmap_trancate_long_name($item['full_name']);
+  }
+  return $options;
 }

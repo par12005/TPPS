@@ -1,3 +1,8 @@
+.cmap-header {
+  font-size: 18px;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
 .speciesBox {
   background-color: #daeace;
   padding-left: 10px;
@@ -14,6 +19,8 @@
   align: right;
   vertical-align: top;
 }
+
+form#cmap-form,
 .filterForm {
   float: left;
   display: inline;
@@ -21,4 +28,5 @@
 .resetForm {
   float: right;
   display: inline;
+  border: none;
 }
