@@ -1,0 +1,24 @@
+.speciesBox {
+  background-color: #daeace;
+  padding-left: 10px;
+  border: 1px solid #323F37;
+  border-radius: 3px;
+  margin-top: 15px;
+}
+.studyTable {
+  border-collapse: separate;
+  border-spacing: 5px 0px;
+}
+.keyTD {
+  width: 150px;
+  align: right;
+  vertical-align: top;
+}
+.filterForm {
+  float: left;
+  display: inline;
+}
+.resetForm {
+  float: right;
+  display: inline;
+}

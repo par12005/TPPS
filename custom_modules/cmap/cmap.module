@@ -10,10 +10,6 @@
  */
 function cmap_permission() {
   return [
-    'view cmap page' => [
-      'title' => t('View "cmap" page'),
-      'description' => t('Allows to access and view CMAP page.'),
-    ],
     'administer cmap' => [
       'title' => t('Administer "cmap" module'),
       'description' => t('Allows to change all settings.'),
@@ -43,7 +39,7 @@ function cmap_menu() {
     // Block's description: summary of cmaps.
     'page callback' => 'drupal_get_form',
     'page arguments' => ['cmap_form'],
-    'access arguments' => ['view cmap page'],
+    'access callback' => TRUE,
     'type' => MENU_NORMAL_ITEM,
   ];
   return $items;
@@ -53,24 +49,24 @@ function cmap_menu() {
  * Form callback. Builds CMAP page content including search form.
  */
 function cmap_form(array $form, array &$form_state) {
-  //$form['#submit'][] = 'cmap_settings_form_submit';
-  $form['header'] = [
-    '#markup' => '<h2 style="font-size: 18px; padding-bottom: 10px;margin-bottom: 10px;">CMAP Overview</h2>
-    <p>
-    The TreeGenes CMAP repository hosts <strong>100</strong> genetic map sets for <strong>34</strong> unique species. These maps are connected to species and publication records, as well as supporting Genbank Bioprojects when available.  Map sets contain a variety of marker types including RAPDs, AFLPs, SSRs, ESTs, and SNPs.  Users may browse these maps, download the data directly, and submit their own map data <strong><a href="TG_Map/Upload">here</a></strong>.
-    </p>'
-];
   $form['content'] = [
-    '#markup' => cmap_block_content(),
+    '#markup' => cmap_build_content(),
   ];
-  return system_settings_form($form);
+
+  $css = [
+    'type' => 'file',
+    'data' => drupal_get_path('module', 'cmap') . '/cmap.css',
+  ];
+  $form['#attached'] = ['css' => [$css]];
+
+  return $form;
 }
 
 /**
  * Original content of the block #17.
  *
  * Block's settings page:
- * https://tgwebdev.cam.uchc.edu/admin/structure/block/manage/block/17/configure
+ * /admin/structure/block/manage/block/17/configure.
  *
  * Title: Treegenes Comparative Map Viewer
  * Desctiption: summary of cmaps
@@ -78,42 +74,12 @@ function cmap_form(array $form, array &$form_state) {
  * - Block is shown only at /cmap page.
  * - No other restrictions.
  */
-function cmap_block_content() {
-  $output = '<style type="text/css">
-    .speciesBox
-    {
-        background-color:#daeace;
-        padding-left:10px;
-        border:1px solid #323F37;
-        border-radius: 3px;
-        margin-top:15px;
-    }
-
-    .studyTable
-    {
-        border-collapse: separate;
-        border-spacing: 5px 0px;
-    }
-
-    .keyTD
-    {
-        width: 150px;
-        align: right;
-        vertical-align:top;
-    }
-
-    .filterForm
-    {
-        float:left;
-        display: inline;
-    }
-    .resetForm
-    {
-        float:right;
-        display: inline;
-    }
-
-    </style>';
+function cmap_build_content() {
+  $output = '
+    <h2 style="font-size: 18px; padding-bottom: 10px;margin-bottom: 10px;">CMAP Overview</h2>
+    <p>
+    The TreeGenes CMAP repository hosts <strong>100</strong> genetic map sets for <strong>34</strong> unique species. These maps are connected to species and publication records, as well as supporting Genbank Bioprojects when available.  Map sets contain a variety of marker types including RAPDs, AFLPs, SSRs, ESTs, and SNPs.  Users may browse these maps, download the data directly, and submit their own map data <strong><a href="TG_Map/Upload">here</a></strong>.
+    </p>';
 
   if (isset($_GET["id"])) {
     $filterID = filter_xss(htmlspecialchars($_GET["id"]));
@@ -122,11 +88,18 @@ function cmap_block_content() {
     $filterID = "";
   }
 
-  $query = "select distinct tg.genus, tg.species, tg.organism_id from chado.tg_code tg inner join cmap_map_set on tg.organism_id=cmap_map_set.species_id order by tg.genus";
+  $query = "select
+      distinct tg.genus,
+      tg.species,
+      tg.organism_id
+    from chado.tg_code tg
+    inner join cmap_map_set
+      on tg.organism_id=cmap_map_set.species_id
+    order by tg.genus";
   $speciesListDB = db_query($query);
 
-  //Iterate through the returned database
-  for($i = 0; $i< $speciesListDB->rowCount();$i++) {
+  // Iterate through the returned database.
+  for($i = 0; $i < $speciesListDB->rowCount(); $i++) {
     $speciesList[$i] = $speciesListDB->fetchAssoc();
   }
 
@@ -137,14 +110,17 @@ function cmap_block_content() {
   foreach ($speciesList as $species) {
     // Truncate any ridiculously long names (species).
     if (strlen($species['species']) > 80) {
-      $species['species'] = substr($species['species'], 0, 80)."...";
+      $species['species'] = substr($species['species'], 0, 80). "...";
     }
     // echo "<option value=\"$species['organism_id']\">$species['genus'] $species['species']</option>";
     if ($filterID == $species['organism_id']) {
-      $output .= "<option selected=\"selected\" name=\"" . $species['organism_id']."\" value=\"".$species['organism_id']."\">" . $species['genus'] . " " . $species['species'] . "</option>";
+      $output .= "<option selected=\"selected\" name=\""
+        . $species['organism_id'] . "\" value=\"" . $species['organism_id']
+        . "\">" . $species['genus'] . " " . $species['species'] . "</option>";
     }
     else {
-      $output .= "<option name=\"" . $species['organism_id'] . "\" value=\"" . $species['organism_id'] . "\">".$species['genus'] . " " . $species['species']."</option>";
+      $output .= "<option name=\"" . $species['organism_id'] . "\" value=\""
+        . $species['organism_id'] . "\">".$species['genus'] . " " . $species['species']."</option>";
     }
   }
 
@@ -153,17 +129,31 @@ function cmap_block_content() {
     . "<form class=\"resetForm\"><input type=\"submit\" value=\"Reset\"></form><br />";
   // Get the map data.
   if ($filterID == "") {
-    $query = "select map_set_id, map_set_name, map_set_short_name,
-        map_set_acc, tg.genus, tg.species, map_type_acc, published_on,
-       mapping_population
+    $query = "select
+        map_set_id,
+        map_set_name,
+        map_set_short_name,
+        map_set_acc,
+        tg.genus,
+        tg.species,
+        map_type_acc,
+        published_on,
+        mapping_population
      from cmap_map_set
      inner join chado.tg_code tg
        on cmap_map_set.species_id=tg.organism_id
      order by map_set_id";
   }
   else {
-    $query = "select map_set_id, map_set_name, map_set_short_name,
-        map_set_acc, tg.genus, tg.species, map_type_acc, published_on,
+    $query = "select
+        map_set_id,
+        map_set_name,
+        map_set_short_name,
+        map_set_acc,
+        tg.genus,
+        tg.species,
+        map_type_acc,
+        published_on,
         mapping_population
       from cmap_map_set
       inner join chado.tg_code tg
@@ -177,7 +167,9 @@ function cmap_block_content() {
   }
   // Get linkage group count (no need to filter by ID since we can do
   // this later without a multiple join SQL query).
-  $query = "select map_set_id, count(map_set_id) as count
+  $query = "select
+      map_set_id,
+      count(map_set_id) as count
     from cmap_map
     group by map_set_id
     order by map_set_id";
@@ -188,18 +180,19 @@ function cmap_block_content() {
   }
 
   // @TODO Move out.
-  function getLinkGroupCount($map_set_id,$list) {
-      for ($j = 0;$j < count($list);$j++)
-      {
-          if ($list[$j]['map_set_id'] == $map_set_id)
-          {
-              return $j;
-          }
+  function getLinkGroupCount($map_set_id, array $list) {
+    for ($j = 0; $j < count($list); $j++) {
+      if ($list[$j]['map_set_id'] == $map_set_id) {
+        return $j;
       }
+    }
   }
 
   // Get the map sets and maps available.
-  $query = "select s.map_set_name, s.map_set_id, m.map_name
+  $query = "select
+      s.map_set_name,
+      s.map_set_id,
+      m.map_name
     from cmap_map_set s
     join cmap_map m
       on m.map_set_id=s.map_set_id
@@ -217,7 +210,11 @@ function cmap_block_content() {
   // from cmap_map_set_pub inner
   // join chado.pub cpub on cmap_map_set_pub.pub_id=cpub.pub_id
   // order by map_set_id";
-  $query = "select map_set_id, cpub.pub_id, cpub.title, cbd13.entity_id
+  $query = "select
+      map_set_id,
+      cpub.pub_id,
+      cpub.title,
+      cbd13.entity_id
     from cmap_map_set_pub
     inner join chado.pub cpub
       on cmap_map_set_pub.pub_id=cpub.pub_id
@@ -232,7 +229,10 @@ function cmap_block_content() {
 
   // Get the bioproject accession links.
   $query = "select
-    dx.dbxref_id, dx.accession, p.project_id,c.cmap_map_set_id
+      dx.dbxref_id,
+      dx.accession,
+      p.project_id,
+      c.cmap_map_set_id
     from chado.dbxref dx
     join chado.project_dbxref p
       on dx.dbxref_id = p.dbxref_id
@@ -256,7 +256,7 @@ function cmap_block_content() {
       . "box\" class=\"speciesBox\">"
       . "<h4>" . $map_set_details[$i]['genus'] . " "
       . $map_set_details[$i]['species'] . ": " . $studyName[4]
-      . " (".$studyName[3] . ", " . $studyName[1] . ")</h4>"
+      . " (" . $studyName[3] . ", " . $studyName[1] . ")</h4>"
     // "<h4>".$map_set_details[$i]['map_set_name']."</h4>"
     . "<table class=\"studyTable\">"
     . "<tr><td class=\"keyTD\">Abbreviated name:</td><td class=\"valueTD\">"
@@ -317,4 +317,3 @@ function cmap_block_content() {
   }
   return $output;
 }
-
