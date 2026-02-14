@@ -88,8 +88,12 @@ function cmap_form(array $form, array &$form_state) {
     '#value' => t('Reset'),
   ];
 
+  // Main content.
   $form['content'] = [
-    '#markup' => cmap_build_content($id),
+    '#type' => 'container',
+    'list' => [
+      '#markup' => cmap_build_content($id),
+    ],
   ];
 
   $css = [
@@ -127,11 +131,8 @@ function cmap_form_validate(array $form, array &$form_state) {
  * Form 'cmap_form' submitter.
  */
 function cmap_form_submit(array $form, array &$form_state) {
-  dpm( $form_state['triggering_element']['#name']);
-
   switch ($form_state['triggering_element']['#name']) {
     case 'submit':
-      dpm('submit');
       $form_state['saved_values']['id'] = check_plain($form_state['values']['id']);
       $form_state['rebuild'] = TRUE;
       break;
@@ -154,9 +155,10 @@ function cmap_form_submit(array $form, array &$form_state) {
  * - Block is shown only at /cmap page.
  * - No other restrictions.
  *
- * @param $id int
+ * @param int $id
  *   Organism Id.
  *
+ * @TODO Update original code style to meet Drupal Conding Standards.
  * @TODO Use db_select(), Drupal Form API.
  * @TODO Use theme('table') to render HTML-table.
  */

@@ -1,8 +1,43 @@
+/* Text in the header */
 .cmap-header {
   font-size: 18px;
   padding-bottom: 10px;
   margin-bottom: 10px;
 }
+
+/* Filter form */
+form#cmap-form {
+  /* Adds white background. */
+  float: left;
+}
+form#cmap-form div.form-item-id {
+  float: left;
+  display: inline-block;
+  max-width: 530px;
+  margin: 0 0 10px 0;
+}
+
+form#cmap-form select#edit-id {
+  max-width: 100%;
+  width: 100%;
+  padding-right: 14px;
+  height: 31px;
+}
+form#cmap-form div#edit-actions {
+  display: inline-block;
+  float: right;
+  margin-bottom: 10px;
+  margin-left: 10px;
+}
+form#cmap-form div#edit-actions input#edit-reset {
+  margin-right: 0;
+}
+form#cmap-form div#edit-content {
+  clear: both;
+  margin-top: 10px;
+}
+
+/* Content */
 .speciesBox {
   background-color: #daeace;
   padding-left: 10px;
@@ -18,15 +53,4 @@
   width: 150px;
   align: right;
   vertical-align: top;
-}
-
-form#cmap-form,
-.filterForm {
-  float: left;
-  display: inline;
-}
-.resetForm {
-  float: right;
-  display: inline;
-  border: none;
 }
