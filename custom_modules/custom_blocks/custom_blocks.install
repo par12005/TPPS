@@ -1,0 +1,49 @@
+<?php
+
+/**
+ * @file
+ * Defines module schema and install/uninstall processes.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function custom_blocks_uninstall() {
+  db_delete('block')
+    ->condition('module', 'custom_blocks')
+    ->execute();
+  cache_clear_all('*', 'cache_block', TRUE);
+}
+
+/**
+ * Implements hook_install().
+ */
+function custom_blocks_install() {
+  // Force block discovery and update the block table.
+  // Note: works only for current theme.
+  _block_rehash();
+
+  // Place block 'featured_treegenes_resources' to theme's region.
+  $delta = 'featured_treegenes_resources';
+  $fields = [
+    'region' => 'content',
+    'status' => 1,
+    'weight' => 0,
+    'visibility' => BLOCK_VISIBILITY_LISTED,
+    'pages' => '<front>',
+    'title' => t('Featured TreeGenes Resources'),
+  ];
+  $num_updated = db_update('block')
+    ->fields($fields)
+    ->condition('module', 'custom_blocks')
+    ->condition('delta', 'featured_treegenes_resources')
+    ->execute();
+
+  if ($num_updated) {
+    $message = t('Block "@delta" has been placed in the Content region.',
+      ['@delta' => $delta]
+    );
+    drupal_set_message($message);
+    cache_clear_all('*', 'cache_block', TRUE);
+  }
+}

@@ -1,0 +1,79 @@
+<?php
+
+/**
+ * @file
+ * Main file for 'custom_blocks'.
+ */
+
+/**
+ * Implements hook_block_info().
+ */
+function custom_blocks_block_info() {
+  $blocks['featured_treegenes_resources'] = [
+    'info' => t('Featured TreeGenes Resources'),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+    // 'Properties' doesn't work on module installation.
+    'properties' => [
+      'administrative' => FALSE,
+      'weight' => 0,
+      // Enable by default.
+      'status' => 1,
+      // Place in Content region.
+      'region' => 'content',
+      'visibility' => BLOCK_VISIBILITY_LISTED,
+      'pages' => '<front>',
+    ],
+  ];
+
+  return $blocks;
+}
+
+/**
+ * This hook generates the contents of the blocks.
+ */
+function custom_blocks_block_view($delta = '') {
+  $block = [];
+  switch ($delta) {
+    case 'featured_treegenes_resources':
+      $block['subject'] = t('Featured TreeGenes Resources');
+      $block['content'] = custom_block_get_16_body();
+      break;
+
+  }
+  return $block;
+}
+
+/**
+ * Builds content of the block #16 ('Featured TreeGenes Resources'.
+ *
+ * @return string
+ *   Returns rendered HTML-table.
+ */
+function custom_block_get_16_body() {
+  global $base_url;
+  $output = '
+    <table>
+      <tr>
+        <td>
+          <div class="card">
+            <img typeof="foaf:Image" class="img-responsive" src="' . $base_url . '/sites/default/files/uploads/galaxy-ss.jpg" />
+            <h3 class="thumb-title"><a href="http://treegenes.cam.uchc.edu/">Galaxy</a></h3>
+          </div>
+        </td>
+        <td>
+          <div class="card">
+            <img typeof="foaf:Image" style="width: 246px; height: 220px;" class="img-responsive"  src="' . $base_url . '/sites/default/files/uploads/cartogratree2_ss_0.jpg" />
+            <h3 class="thumb-title"><a href="' . $base_url . '/ct">CartograTree</a></h3>
+          </div>
+        </td>
+        <td>
+          <div class="card">
+            <img typeof="foaf:Image" class="img-responsive" src="' . $base_url . '/sites/default/files/uploads/jbrowse-ss.jpg" />
+            <h3 class="thumb-title"><a href="' . $base_url . '/jbrowse">JBrowse</a></h3>
+          </div>
+        </td>
+      </tr>
+    </table>
+  ';
+  return $output;
+}
