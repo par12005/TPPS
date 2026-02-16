@@ -50,30 +50,30 @@ function custom_blocks_block_view($delta = '') {
  *   Returns rendered HTML-table.
  */
 function custom_block_get_16_body() {
-  global $base_url;
-  $output = '
-    <table>
-      <tr>
-        <td>
-          <div class="card">
-            <img typeof="foaf:Image" class="img-responsive" src="' . $base_url . '/sites/default/files/uploads/galaxy-ss.jpg" />
-            <h3 class="thumb-title"><a href="http://treegenes.cam.uchc.edu/">Galaxy</a></h3>
-          </div>
-        </td>
-        <td>
-          <div class="card">
-            <img typeof="foaf:Image" style="width: 246px; height: 220px;" class="img-responsive"  src="' . $base_url . '/sites/default/files/uploads/cartogratree2_ss_0.jpg" />
-            <h3 class="thumb-title"><a href="' . $base_url . '/ct">CartograTree</a></h3>
-          </div>
-        </td>
-        <td>
-          <div class="card">
-            <img typeof="foaf:Image" class="img-responsive" src="' . $base_url . '/sites/default/files/uploads/jbrowse-ss.jpg" />
-            <h3 class="thumb-title"><a href="' . $base_url . '/jbrowse">JBrowse</a></h3>
-          </div>
-        </td>
-      </tr>
-    </table>
-  ';
+  $rows = [
+    [
+      '<div class="card">
+        <img typeof="foaf:Image" class="img-responsive" src="' . url('sites/default/files/uploads/galaxy-ss.jpg') . '" />
+        <h3 class="thumb-title">' . l(t('Galaxy'), 'http://treegenes.cam.uchc.edu/') . '</h3>
+      </div>',
+
+      '<div class="card">
+        <img typeof="foaf:Image" class="img-responsive"
+          src="' . url('sites/default/files/uploads/ctree.png') . '" />
+        <h3 class="thumb-title">' . l(t('CartograPlant'), 'https://treegenesdb.org/cartograplant') . '</h3>
+      </div>',
+      '<div class="card">
+        <img typeof="foaf:Image" class="img-responsive" src="' . url('sites/default/files/uploads/jbrowse-ss.jpg') . '" />
+        <h3 class="thumb-title">' . l(t('JBrowse'), 'jbrowse') . '</h3>
+      </div>',
+    ],
+  ];
+  $output = theme('table', [
+    'rows' => $rows,
+    'attributes' => [
+      'id' => 'featured-treegenes-resources',
+    ],
+  ]);
+  drupal_add_css(drupal_get_path('module', 'custom_blocks') . '/custom_blocks.css');
   return $output;
 }
