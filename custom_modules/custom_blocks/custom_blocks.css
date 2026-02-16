@@ -1,3 +1,7 @@
+table#featured-treegenes-resources {
+  border: 1px solid #b5e0ba;
+}
 table#featured-treegenes-resources tr {
   background-color: transparent;
+  border: none;
 }
