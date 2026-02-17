@@ -46,4 +46,15 @@ function custom_blocks_install() {
     drupal_set_message($message);
     cache_clear_all('*', 'cache_block', TRUE);
   }
+
+  // Remove blocks by id.
+  $block_id_list = [17, 16];
+  foreach ($block_id_list as $block_id) {
+    db_delete('block')
+      ->condition('bid', $block_id)
+      ->execute();
+    db_delete('block_custom')
+      ->condition('bid', $block_id)
+      ->execute();
+  }
 }
