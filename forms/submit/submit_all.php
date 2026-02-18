@@ -553,6 +553,12 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
     $message = 'Project Id is empty.';
     throw new Exception($message);
   }
+  // @TODO Check if dbxref_id exists in DB.
+  // @TODO Implement check if dbxref_id on TPPS Step 1 submit.
+  if (empty($dbxref_id)) {
+    $message = 'Dbxref Id is empty.';
+    throw new Exception($message);
+  }
 
   tpps_chado_insert_record('project_dbxref', array(
     'project_id' => $project_id,
