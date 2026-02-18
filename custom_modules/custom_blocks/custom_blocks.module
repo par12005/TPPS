@@ -52,11 +52,10 @@ function custom_blocks_block_view($delta = '') {
 function custom_block_get_16_body() {
   $rows = [
     [
-      '<div class="card">
-        <img typeof="foaf:Image" class="img-responsive" src="' . url('sites/default/files/uploads/galaxy-ss.jpg') . '" />
-        <h3 class="thumb-title">' . l(t('Galaxy'), 'http://treegenes.cam.uchc.edu/') . '</h3>
-      </div>',
-
+      //'<div class="card">
+      //  <img typeof="foaf:Image" class="img-responsive" src="' . url('sites/default/files/uploads/galaxy-ss.jpg') . '" />
+      //  <h3 class="thumb-title">' . l(t('Galaxy'), 'http://treegenes.cam.uchc.edu/') . '</h3>
+      //</div>',
       '<div class="card">
         <img typeof="foaf:Image" class="img-responsive"
           src="' . url('sites/default/files/uploads/ctree.png') . '" />

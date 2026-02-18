@@ -5,3 +5,10 @@ table#featured-treegenes-resources tr {
   background-color: transparent;
   border: none;
 }
+table#featured-treegenes-resources .card {
+  display: inline-block;
+}
+table#featured-treegenes-resources td {
+  text-align: center;
+  padding: 10px;
+}
