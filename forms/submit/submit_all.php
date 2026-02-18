@@ -317,8 +317,8 @@ function tpps_nextflow_new_study_pipeline(array &$form_state) {
     }
 
     //TODO: add test or live
-    $nextflowManager = new NextFlowManager("TreeGenes/new-study-pipeline", 
-      $store_directory, 
+    $nextflowManager = new NextFlowManager("TreeGenes/new-study-pipeline",
+      $store_directory,
       variable_get('tpps_submitall_nxf_scratch_dir', '/scratch'),
       variable_get('tpps_submitall_nxf_nodes_to_exclude', NULL));
     $nextflowManager->addNextflowArgument('vcf', $vcf, false);
@@ -547,11 +547,15 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
 
   $primaryAuthor = check_plain($page1_values['primaryAuthor']);
   $seconds = $page1_values['publication']['secondaryAuthors'];
+  $project_id = $shared_state['ids']['project_id'];
 
-  //tpps_log(print_r($shared_state, 1));
+  if (empty($project_id)) {
+    $message = 'Project Id is empty.';
+    throw new Exception($message);
+  }
 
   tpps_chado_insert_record('project_dbxref', array(
-    'project_id' => $shared_state['ids']['project_id'],
+    'project_id' => $project_id,
     'dbxref_id' => $dbxref_id,
     'is_current' => TRUE,
   ));
@@ -2355,7 +2359,7 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
       tpps_log('VCF IMPORT MODE is ' . $vcf_import_mode, [], TRIPAL_INFO);
       # db operations
       tpps_genotype_vcf_processing($shared_state, $species_codes, $i, $job, $vcf_import_mode, $options);
-  
+
       # NextFlow Liftover + VCF standardization to FTP
       if (variable_get('tpps_submitall_run_nextflow', TRUE)) {
         // @TODO Run only when study has VCF files.
@@ -2390,8 +2394,8 @@ function tpps_generate_vcf_from_assay_and_assay_design(array &$options, array &$
   // Start building a nextflow run
   // First use the constructor to initialize the pipeline to run
   // Second add arguments
-  $nextflowManager = new NextFlowManager("TreeGenes/new-study-pipeline", 
-    $store_directory, 
+  $nextflowManager = new NextFlowManager("TreeGenes/new-study-pipeline",
+    $store_directory,
     variable_get('tpps_submitall_nxf_scratch_dir', '/scratch'),
     variable_get('tpps_submitall_nxf_nodes_to_exclude', NULL));
   $nextflowManager->addNextflowArgument('tgdr', $options['study_accession']);
@@ -2417,10 +2421,10 @@ function tpps_generate_vcf_from_assay_and_assay_design(array &$options, array &$
   $nextflowManager->addNextflowArgument('assay_design_snp_flank_col',
     AssayDesign::getHeaderIndex($organism_index, $shared_state, AssayDesign::DATA_TYPE_FLANK_SEQUENCE) ?? 'NA'
   );
-  $nextflowManager->addNextflowArgument('assay_design_path', 
+  $nextflowManager->addNextflowArgument('assay_design_path',
     AssayDesign::getFilePath($organism_index, $shared_state)
   );
-  $nextflowManager->addNextflowArgument('assay_design_snp_name_col', 
+  $nextflowManager->addNextflowArgument('assay_design_snp_name_col',
     AssayDesign::getHeaderIndex($organism_index, $shared_state, AssayDesign::DATA_TYPE_SNP_ID) ?? 'NA'
   );
   $nextflowManager->addNextflowArgument('assay_design_snp_rev_flank_col',
@@ -2434,8 +2438,8 @@ function tpps_generate_vcf_from_assay_and_assay_design(array &$options, array &$
   );
 
   // Speed up TPPS by checking if vcf already exists. WARNING does not check for marker information changes
-  if (variable_get('tpps_submitall_nxf_reuse_existing_vcf', false) 
-      && file_exists($vcf_file_location) 
+  if (variable_get('tpps_submitall_nxf_reuse_existing_vcf', false)
+      && file_exists($vcf_file_location)
       && file_exists($vcf_tbi_file_location)) {
     tpps_log("Vcf already exists reusing...", [], TRIPAL_INFO);
   } else {
@@ -2443,7 +2447,7 @@ function tpps_generate_vcf_from_assay_and_assay_design(array &$options, array &$
     tpps_log("Assay2Vcf JobId: " . $jobId, [], TRIPAL_INFO);
     $status = $nextflowManager->hasCompleted();
     tpps_log("Assay2Vcf Job Status: " . $status, [], TRIPAL_INFO);
-  
+
     if (!$nextflowManager->isSuccessful($status)) {
       $trace = $nextflowManager->extractStackTrace();
       tpps_log("StackTrace: " . $trace, [], TRIPAL_DEBUG);
