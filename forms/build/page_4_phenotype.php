@@ -374,11 +374,17 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     ]);
     $phenotype_names = [];
     for ($i = 1; $i <= $number; $i++) {
-      if (!empty($meta[$i]['name'])) {
-        $phenotype_names[] = is_array($meta[$i]['name'])
-          ? $meta[$i]['name']['#value'] : $meta[$i]['name'];
+      if (!empty($meta[$i]['synonym_name'])) {
+        $phenotype_names[] = is_array($meta[$i]['synonym_name'])
+          ? $meta[$i]['name']['#value'] : $meta[$i]['synonym_name'];
       }
     }
+    // @TODO Use PhenotypeManual class. Need to check if tpps_get_ajax_value()
+    // does something more then just get's value.
+    //$phenotype_names = PhenotypeManual::getPhenotypeNames(
+    //  str_replace('organism-', '', $id),
+    //  $form_state
+    //);
 
     // Get names of phenotypes in metadata file.
     $columns = tpps_get_ajax_value($form_state, [
@@ -449,10 +455,16 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       $time_default
     );
     if ($time_check) {
-      $time_options = array();
+      $time_options = [];
       foreach ($phenotype_names as $name) {
         $time_options[strtolower($name)] = $name;
       }
+
+
+      //PhenotypeMeta::getPhenotypeNames($organism_index, $form_state);
+      //PhenotypeManual::getPhenotypeNames($organism_index, $form_state);
+
+
       $form[$id]['phenotype']['time']['time_phenotypes'] = [
         '#type' => 'checkboxes',
         '#title' => t('Time-based Phenotypes: *'),
@@ -469,6 +481,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       $form[$id]['phenotype']['time']['time_values'] = [
         '#type' => 'fieldset',
         '#title' => t('PHENOTYPE TIME VALUES:'),
+        '#description' => t('Please select phenotype above to specify time.'),
       ];
 
       foreach ($time_options as $key => $name) {

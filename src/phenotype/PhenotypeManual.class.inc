@@ -420,19 +420,31 @@ class PhenotypeManual {
    *   Drupal Form State.
    *
    * @return array
-   *   Returns phenotype names or empty array if File Id wasn't found.
+   *   Returns phenotype names or empty array.
    */
   public static function getPhenotypeNames($organism_index, array $form_state) {
     $organism_key = 'organism-' . $organism_index;
 
     $list = [];
-    $phenotype_number = TppsArray::getValue($form_state['values'],
-      [$organism_key, 'phenotype', 'phenotypes-meta', 'number']
-    );
-    for ($i = 1; $i <= $phenotype_number; $i++) {
-      $list[] = TppsArray::getValue($form_state['values'],
-        [$organism_key, 'phenotype', 'phenotypes-meta', $i, 'name']
+    $parents = [TPPS_PAGE_4, $organism_key, 'phenotype', 'phenotypes-meta'];
+    $source_list = ['values', 'saved_values'];
+    foreach ($source_list as $source) {
+      $phenotype_number = TppsArray::getValue(
+        $form_state[$source],
+        array_merge($parents, ['number'])
       );
+      if (empty($phenotype_number)) {
+        continue;
+      }
+      for ($i = 1; $i <= $phenotype_number; $i++) {
+        $list[] = TppsArray::getValue(
+          $form_state[$source],
+          array_merge($parents, [$i, 'synonym_name'])
+        );
+      }
+    }
+    if (empty($phenotype_number) || empty($list)) {
+      throw new Exception("Can't find manually added phenotype's data.");
     }
     return $list;
   }
