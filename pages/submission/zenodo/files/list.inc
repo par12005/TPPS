@@ -18,8 +18,7 @@ function tpps_submission_zenodo_files_list_form(array $form, array &$form_state 
     ZenodoHost::printStatus();
   }
 
-  module_load_include('inc', 'tpps', 'pages/submission/list');
-  tpps_submission_list_validate_accession($accession);
+  TppsForm::validateAccession($accession);
 
   // Zenodo Deposition Widget.
   $path = 'tpps/submission';

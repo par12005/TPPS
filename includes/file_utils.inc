@@ -516,7 +516,7 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
   // 'metadata-groups'
   // @TODO Only validate and don't touch existing data. Collect data on submit.
   $group_path = array_pop($parents) . "-groups";
-  $values = TppsArray::getValue($form_state['values'], $parents);
+  $values = TppsArray::get($form_state['values'], $parents);
   // Initialize form column values in form state.
   $values[$new_end_columns] = [];
   // Hold onto the location of the columns in form state.
@@ -606,7 +606,7 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
   }
 
   $values[$group_path] = $groups;
-  TppsArray::setValue($form_state['values'], $parents, $values);
+  TppsArray::set($form_state['values'], $parents, $values);
   return $groups;
 }
 
@@ -625,12 +625,13 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
  *   The state of the form being validated.
  */
 function tpps_save_file_columns(array &$form, array &$form_state) {
-  $form_page = FormState::getPage($form_state);
+  $formState = tpps_form_state_load($form_state);
+  $form_page = $formState->getPage();
   if (!in_array($form_page, [TPPS_PAGE_3, TPPS_PAGE_4])) {
     // Currently only file fields on this pages are supported.
     return;
   }
-  $organism_number = FormState::getOrganismNumber($form_state);
+  $organism_number = $formState->getOrganismNumber();
   $extra_field_list = [
     'columns',
     'no-header',
@@ -706,7 +707,7 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
           // 'columns' element will be missing in this case and previous
           // check will skip further processing.
           // Left because it was in original code.
-          if (!FormState::hasAnyPhenotypeData($form_state, $i)) {
+          if (!$formState->hasAnyPhenotypeData($i)) {
             continue;
           }
           break;
@@ -719,7 +720,7 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
         $parents = array_merge([$organism_key], $parents);
       }
 
-      $fid = TppsArray::getValue($form_state['values'], $parents);
+      $fid = TppsArray::get($form_state['values'], $parents);
       if (empty($file = tpps_file_load($fid))) {
         continue;
       }
@@ -731,7 +732,7 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
       // @todo Could this check be removed? Left because it was in original code.
       if ($form_page == TPPS_PAGE_4) {
         if (
-          !FormState::hasPhenotypeMetaDataFile($form_state, $i)
+          !$formState->hasPhenotypeMetaDataFile($i)
           && $field_name == 'metadata'
         ) {
           continue;
@@ -739,12 +740,12 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
       }
       // Set value.
       foreach ($extra_field_list as $extra_name) {
-        TppsArray::setValue($form_state['values'],
+        TppsArray::set($form_state['values'],
           array_merge(
             $new_parents,
             [$field_name . '-' . $extra_name]
           ),
-          TppsArray::getValue($form, array_merge(
+          TppsArray::get($form, array_merge(
             $parents, ['#value', $extra_name]
           ))
         );
@@ -752,7 +753,7 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
 
       if (
         $form_page == TPPS_PAGE_3
-        && empty(FormState::getAccessionCheck($form_state))
+        && empty($formState->getAccessionCheck())
       ) {
         // Other species has the same settings.
         break;

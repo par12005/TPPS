@@ -88,6 +88,17 @@
  * $s2->load();
  * dpm($s2->status, 's2 status');
  * dpm($s2->get(['status']), 's2 state');
+ *
+ * ----------------------------------------------------------------------------
+ * Execution time.
+ *
+ * There are 2 ways to call any method (which takes the same time):
+ * 1. tpps_submission_load($a)->hasTag(4) // ~5.4 msec
+ * 2. $submission = new Submission($a); // ~2.4 msec
+ *    $submission->hasTag(4); // ~3 msec.
+ * Performance tip:
+ *   Using 'tpps_submission_load()' is good for a single method call
+ *   but in other cases it's better to re-use instance $submission.
  */
 
 /**
@@ -117,6 +128,7 @@ class Submission {
 
   // Name of the DB table where Submissions are stored.
   const TABLE = 'tpps_submission';
+
 
   /**
    * Submission accession.
@@ -243,7 +255,7 @@ class Submission {
    */
   public function __set($name, $value) {
     // Allow to overwrite magic with custom setter.
-    $func = 'set' . ucfirst($name);
+    $func = tpps_snake_to_camel_case('set_' . $name);
     if (method_exists($this, $func)) {
       $this->$func($value);
     }
@@ -271,7 +283,7 @@ class Submission {
    */
   public function &__get($name) {
     // Allow to overwrite magic with custom getter.
-    $func = 'get' . ucfirst($name);
+    $func = tpps_snake_to_camel_case('get_' . $name);
     if (method_exists($this, $func)) {
       return $this->$func();
     }
@@ -310,14 +322,14 @@ class Submission {
    *   was  found under $state.
    */
   public function set(array $parents, $value, $update_shared_state = FALSE) {
-    TppsArray::setValue($this->state, $parents, $value);
+    TppsArray::set($this->state, $parents, $value);
     // Update sharedState only if this value was there before.
     $key_exists = FALSE;
-    TppsArray::getValue($this->sharedState, $parents, $key_exists);
+    TppsArray::get($this->sharedState, $parents, $key_exists);
     // @todo Implement correct $parents for shared_state.
     // Shared State could have different $parents cause field was relocated.
     if ($key_exists || $update_shared_state) {
-      TppsArray::setValue($this->sharedState, $parents, $value);
+      TppsArray::set($this->sharedState, $parents, $value);
     }
     return $this;
   }
@@ -344,17 +356,17 @@ class Submission {
     // State.
     // Check if there is a list of parents.
     if (count($parents) >= 1) {
-      $parent_element = &TppsArray::getValue($this->state, $parents);
+      $parent_element = &TppsArray::get($this->state, $parents);
     }
     if (!empty($parent_element) && !empty($field_name)) {
       unset($parent_element[$field_name]);
     }
     // sharedState.
     $key_exists = FALSE;
-    TppsArray::getValue($this->sharedState, $parents, $key_exists);
+    TppsArray::get($this->sharedState, $parents, $key_exists);
     if ($key_exists) {
       if (count($parents) >= 1) {
-        $parent_element = &TppsArray::getValue($this->sharedState, $parents);
+        $parent_element = &TppsArray::get($this->sharedState, $parents);
       }
       if (!empty($parent_element) && !empty($field_name)) {
         unset($parent_element[$field_name]);
@@ -374,7 +386,7 @@ class Submission {
    */
   public function &get(array $parents = []) {
     $key_exists = FALSE;
-    $element = TppsArray::getValue($this->state, $parents, $key_exists);
+    $element = TppsArray::get($this->state, $parents, $key_exists);
     if ($key_exists) {
       return $element;
     }
@@ -615,7 +627,14 @@ class Submission {
     // class which updates every time submission is stored.
     $memory_updated = $this->get(['updated']);
     $cached_submission = SubmissionCache::get($this->accession, $reset = FALSE);
-    $db_record_updated = $cached_submission['date']['updated'];
+    if (is_null($cached_submission)) {
+      // Submission was removed.
+      // We could try to request cached Submission again with $reset=TRUE but
+      // seems it's not necessary.
+      return;
+    }
+
+    $db_record_updated = $cached_submission['date']['updated'] ?? NULL;
 
     if ($db_record_updated > $memory_updated) {
       // @todo Merge with submission from database somehow.
@@ -670,97 +689,451 @@ class Submission {
   }
 
   /**
-   * Delete submission from database.
+   * Checks if 'tpps_submission' table has record for this submission.
    *
-   * Removes only record from 'tpps_submission' table.
-   * See 'purge()' method for full study removement.
-   *
-   * @TODO Minor. Destroy object and do not allow chaining.
+   * @return bool
+   *   Returns TRUE record in 'public.tpps_submission' table found.
+   *   Returns FALSE otherwise.
    */
-  public function delete() {
-    if (empty($this->state['saved_values']['frontpage']['use_old_tgdr'])) {
-      if (!empty($this->dbxrefId)) {
-        db_delete('chado.dbxref')
-          ->condition('dbxref_id', $this->dbxrefId)
-          ->execute();
-      }
-    }
-    db_delete(static::TABLE)
+  public function hasDbRecord() {
+    return !empty(db_select(static::TABLE, 'ts')
+      ->fields('ts', ['tpps_submission_id'])
       ->condition('accession', $this->accession)
-      ->execute();
-    // If this study was imported we need to remove it from the list.
-    // @TODO Check if study was imported.
-    module_load_include('inc', 'tpps', 'includes/imported_studies_list');
-    ImportedSubmissionList::remove($this->accession);
-
-    SubmissionCache::remove($this->accession);
-    if (function_exists('module_invoke_all')) {
-      // 'tpps_submission_deleted().
-      module_invoke_all('submission_deleted', $this->accession);
-    }
-    // Be sure to unset at the very end.
-    $this->accession = NULL;
-    $this->state = NULL;
-    $this->sharedState = NULL;
-
-    // Do not allow chaining methods because object destroyed.
-    return NULL;
+      ->range(0, 1)
+      ->execute()
+      ->fetchField()
+    );
   }
 
   /**
-   * Removes Submission, it's files and all the data from db.
+   * Gets status of the files of the submission.
    *
-   * To remove only record from tpps_submission' table see Submission::delete().
+   * @return bool
+   *   Returns TRUE if submission has files and FALSE otherwise.
+   */
+  public function hasFiles() {
+    $cached_submission = SubmissionCache::get($this->accession);
+    if (empty($cached_submission)) {
+      $cached_submission = SubmissionCache::get($this->accession, $reset = TRUE);
+    }
+    if (!empty($cached_submission)) {
+      return !empty(count($cached_submission['file']['id_list']));
+    }
+    else {
+      $message = t(
+        "Can't get list of files for submission @accession",
+        ['@accession' => $this->accession]
+      );
+      //throw new Exception($message);
+    }
+  }
+
+  /**
+   * Gets list of all local VCF files.
+   *
+   * @return array
+   *   Returns associated array where key is organism index and value is a
+   *   path to the local VCF file stored on the server.
+   */
+  public function getLocalVcfList() {
+    $sharedState = new FormState($this->sharedState);
+    $list = [];
+    for ($i = 1; $i <= $this->getOrganismNumber(); $i++) {
+      $parents = $this->getLocalVcfParents($i);
+      $local_vcf = $sharedState->get($parents);
+      if (empty($local_vcf)) {
+        continue;
+      }
+      $list[$i] = strip_tags($local_vcf);
+    }
+    return $list;
+  }
+
+  /**
+   * Removes submission's files.
+   *
+   * Local VCF files will be removed only on live site and after confirmation.
+   * By default local VCF files are renamed (not removed).
+   *
+   * Drupal managed files will be removed if other studies not use them but
+   * in 'force' mode those files will be removed anyway.
    *
    * @param bool $force
-   *   Boolean indicating that the file should be deleted
-   *   if the file not in use by the file_usage table.
-   *   Removement of not used files are safe but I'm not sure that old studies
-   *   created correct records about usage of files so do NOT delete files
-   *   by default.
-   *   But for testing and Study Import file removement should be allowed.
+   *   Indicates that 'force mode' should be used.
+   *   In this mode:
+   *   1. Local VCF files will be removed on live (not on dev which
+   *      re-uses files from live-site).
+   *   2. Managed files will be removed even if other studies are using them.
    */
-  public function purge($force = FALSE) {
-    // @todo Minor. Query DB table 'file_usage' to find if there is orphan
-    // files related to this non-existing submission.
-    if (!empty($this->state)) {
-      // Remove usage of files first.
-      $fid_list = array_keys($this->getFileIdList());
-      foreach ($fid_list as $fid) {
-        if ($file = tpps_file_load($fid)) {
-          // Remove file usage record (not file itself).
-          Submission::deleteFileUsage($file, $this->getAccessionNumber());
-          if ($force) {
-            // Remove file from disk.
-            file_delete($file);
+  public function removeFiles($force = FALSE) {
+    $debug_mode = TRUE;
+
+    if (empty($this->sharedState)) {
+      return;
+    }
+    $sharedState = new FormState($this->sharedState);
+    // Flag which is TRUE when at least one file was removed.
+    $any_file_was_removed = FALSE;
+
+    // Remove local VCF files.
+    if ($force && is_live_site()) {
+      // Local VCF files must be removed only on live site because dev-site
+      // re-uses this files and often has clonned studies which shares the
+      // same local VCF files.
+      for ($i = 1; $i <= $this->getOrganismNumber(); $i++) {
+        $local_vcf_usage = $this->getLocalVcfUsage($i);
+        if ($local_vcf_usage == 1) {
+          // File exists and in use by only one study.
+          $path = $this->getLocalVcf($organism_index);
+          $parents = $this->getLocalVcfParents($i);
+
+          $file_path = strip_tags($local_vcf);
+          // Safer way is to rename file to allow rollback.
+          if (variable_get('tpps_submission_remove_local_vcf', FALSE)) {
+            $removement_result = unlink($file_path);
+          }
+          else {
+            // Do not remove but create a backup copy.
+            $removement_result = rename($file_path, $file_path . '.removed');
+          }
+          if ($removement_result) {
+            //$this->sharedState = $sharedState->unset($parents);
+            TppsArray::set($this->sharedState, $parents, NULL);
+            $any_file_was_removed = TRUE;
+          }
+          else {
+            $message = "File '@file_path' wasn't removed. Check permissions or file path.";
+            $params = ['@file_path' => $file_path];
+            drupal_set_message(t($message, $params), 'error');
+            watchdog('tpps', $message, $params, WATCHDOG_ERROR);
           }
         }
       }
     }
-    // Remove submission state from DB.
-    db_delete(static::TABLE)
-      ->condition('accession', $this->accession)
-      ->execute();
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Remove Drupal managed files.
+    $parent_list = $this->getFileParents();
+    foreach ($parent_list as $step => $step_list) {
+      foreach ($step_list as $parents) {
+        $new_parents = array_merge([$step], $parents);
+        $fid = (int) TppsArray::get($this->sharedState['saved_values'], $new_parents);
+        if (empty($fid)) {
+          continue;
+        }
+        if ($file = tpps_file_load($fid)) {
+          if (!TppsFile::isFileRemoveable($file, $this->accession)) {
+            // File used by other studies.
+            if ($force) {
+              // We still remove this file because of the 'force mode'.
+            }
+            else {
+              // Do NOT remove this file and do NOT reduce it's usage counter.
+              $message = "File '@fid' wasn't removed because stil in use: !usage";
+              $params = [
+                '@fid' => $fid,
+                '!usage' => TppsArray::print($usage),
+              ];
+              drupal_set_message(t($message, $params), 'error');
+              continue;
+            }
+          }
+          $count = (int) !$force;
+          $usage = TppsFile::getUsage($file);
+          // Remove file usage record (not file itself).
+          TppsFile::deleteUsage($file, $this->accession, $count);
+          // 0 - remove all ussage; 1 - (default) remove single usage.
+          // Remove file from disk.
+          $result = file_delete($file, $force);
+
+          if ($result === TRUE) {
+            // Sucess.
+            // Remove from submission.
+            // Note: Submission will be saved when all files will be processed.
+            $field_parents = array_merge(['saved_values'], $new_parents);
+            $this->set(
+              $field_parents,
+              $value = NULL,
+              $update_shared_state = TRUE
+            );
+            // Unset also sub-fields.
+            $field_name = $field_parents[count($field_parents) - 1];
+            $subfield_list = [
+              'columns',
+              'no-header',
+              'empty',
+              'groups',
+            ];
+            foreach ($subfield_list as $sub_name) {
+              $field_parents[count($field_parents) - 1]
+                = implode('-', [$field_name, $sub_name]);
+              $this->set(
+                $field_parents,
+                $value = NULL,
+                $update_shared_state = TRUE
+              );
+            }
+            // If at least one file was removed all data loaded to DB must be
+            // removed.
+            $any_file_was_removed = TRUE;
+          }
+          elseif ($result === FALSE) {
+            // Error.
+            $message = "File #@fid wasn't removed.";
+            $params = ['@fid' => $fid];
+            drupal_set_message(t($message, $params), 'error');
+            watchdog('tpps', $message, $params, WATCHDOG_ERROR);
+          }
+          elseif (is_array($result)) {
+            // Used by other modules/studies.
+            $message = "File #@fid wasn't removed because it's used by other studies: !usage";
+            $params = [
+              '@fid' => $fid,
+              '!usage' => TppsArray::print($usage),
+            ];
+            drupal_set_message(t($message, $params), 'error');
+            watchdog('tpps', $message, $params, WATCHDOG_ERROR);
+          }
+        }
+      }
+    }
+    if ($any_file_was_removed) {
+      // Clear submission data loaded into DB.
+      $this->clearDataBase();
+      // No need to manually update SubmissionCache because it will be updated
+      // automatically on submission's save.
+      $this->save();
+    }
+  }
+
+  /**
+   * Removes record from 'chado.dbxref' table.
+   *
+   * WARNING:
+   * Will also remove record from the 'public.tpps_submission' table
+   * using foreing key.
+   */
+  public function clearDbxrefTable() {
     db_delete('chado.dbxref')
       ->condition('accession', $this->accession)
       ->execute();
-    // Remove all data added during processing.
-    // @TODO Check if study was processed first.
-    module_load_include('inc', 'tpps', 'includes/submissions');
-    tpps_submission_clear_db($this->accession);
-    // If this study was imported we need to remove it from the list.
-    // @todo Check if study was imported to avoid extra moves.
-    ImportedSubmissionList::remove($this->accession);
-    // Update cached data.
+  }
+
+  /**
+   * Clears submission's data loaded into DB.
+   *
+   * This function is particularly useful when submitting a study to the
+   * database multiple times. Note that Tripal Entities should be manually
+   * un-published after this process has completed.
+   *
+   * @return bool
+   *   Returns TRUE if submission successfully cleared and FALSE otherwise.
+   *
+   * @todo Review:
+   *   tpps_submission_clear_db_extra($accession),
+   *   tpps_submission_full_clear_db($project_id).
+   */
+  public function clearDataBase() {
+    $this->sharedState['file_rank'] = 0;
+    $project_id = $this->sharedState['ids']['project_id'] ?? NULL;
+    if (empty($project_id)) {
+      return FALSE;
+    }
+    foreach ($this->getTableListToClearDataBase() as $table_name) {
+      $this->removeLoadedData($table_name);
+    }
+    $this->removeProjectData();
+    chado_query("UPDATE chado.project_dbxref SET is_current = FALSE WHERE project_id = $project_id");
+    $this->sharedState['file_rank'] = 0;
+
+
+// @TODO Uncomment.
+
+    //$this->sharedState['ids']['project_id'] = NULL;
+    // $this->save();
+    return TRUE;
+  }
+
+  /**
+   * Gets list of table names to be cleared.
+   *
+   * See clearDataBase() method.
+   *
+   * @return array
+   *   Returns list of table names with leading schema.
+   *
+   * @TODO Minor. Merge with getTableListToRemoveProjectData().
+   */
+  public function getTableListToClearDataBase() {
+    return [
+      'chado.phenotype_cvterm',
+      'chado.phenotype_to_synonym',
+      'chado.genotype_reads_per_plant',
+      'chado.plants_per_marker',
+      'chado.stock_genotype',
+      'chado.stock_phenotype',
+      'chado.stock',
+      'chado.phenotype',
+    ];
+  }
+
+  /**
+   * Removes study data loaded into given table.
+   *
+   * From function tpps_submission_clear_db().
+   *
+   * @param string $table
+   *   Table name with leading schema.
+   *
+   * @return mixed
+   *   Returns FALSE if 'project_id' not found in Shared State.
+   *   Returns TRUE when sql-query was successfully executed.
+   */
+  public function removeLoadedData($table) {
+    if (function_exists('tpps_log')) {
+      tpps_log('DELETE ' . $table . ' values...');
+    }
+    $sql = $this->getQueryToClearTable($table);
+    if (!empty($sql) && db_table_exists($table)) {
+      chado_query($sql);
+      return TRUE;
+    }
+    return FALSE;
+  }
+
+  /**
+   * Gets SQL-query to clear loaded data from given table.
+   *
+   * @param string $table
+   *   DB table name.
+   *
+   * @return mixed
+   *   Returns NULL if accession didn't pass validation or $project_id is empty
+   *   what means study wasn't loaded into database yet.
+   *   Returns SQL-query to remove loaded data from given table.
+   *
+   * @thrown Exception
+   *   Throws exception when SQL-query for given table wasn't found.
+   *   Note: there is no check if table actually exists in database.
+   */
+  public function getQueryToClearTable($table) {
+    $project_id = $this->sharedState['ids']['project_id'] ?? NULL;
+    if (empty($project_id)) {
+      return NULL;
+    }
+    // @TODO Execute $stocks_sql and use plain list of ids instead of query.
+    $stocks_sql = "SELECT stock_id FROM chado.project_stock WHERE project_id = $project_id";
+    // @TODO Minor. Move this check to class constructor method or just remove.
+    if (strpos($this->accession, 'TGDR') !== FALSE && strlen($this->accession) >= 7) {
+      $accession = strtoupper($this->accession);
+    }
+    else {
+      return NULL;
+    }
+
+    $sql = [
+      // Stocks_sql.
+      'chado.phenotype_cvterm' => 'DELETE FROM ' . $table . ' WHERE
+        phenotype_id IN (SELECT phenotype_id from chado.stock_phenotype WHERE
+        stock_id in (' . $stocks_sql . '))',
+      'chado.phenotype_to_synonym' => 'DELETE FROM ' . $table
+        . ' WHERE phenotype_id IN (SELECT phenotype_id FROM chado.stock_phenotype
+        WHERE stock_id IN (' . $stocks_sql . '))',
+      'chado.phenotype' => 'DELETE FROM ' . $table . ' WHERE phenotype_id IN
+        (SELECT phenotype_id FROM chado.stock_phenotype WHERE stock_id IN
+        (' . $stocks_sql . '))',
+      'chado.stock_genotype' => "DELETE FROM $table WHERE stock_id IN ( $stocks_sql)",
+      'chado.stock_phenotype' => "DELETE FROM $table WHERE stock_id IN ($stocks_sql)",
+      'chado.stock' => "DELETE FROM $table WHERE stock_id IN ($stocks_sql)"
+        // Force delete stock just in case by study accession name.
+        . " OR uniquename ILIKE '$accession-%'",
+
+      // Accession.
+      'chado.genotype_reads_per_plant' => "DELETE FROM $table WHERE study_accession = '$accession'",
+      'chado.plants_per_marker' => "DELETE FROM $table WHERE study_accession = '$accession'",
+      // Accession with suffix.
+      'chado.phenotype' => "DELETE FROM $table WHERE uniquename LIKE '$accession-%'",
+    ];
+    if (empty($sql[$table])) {
+      $message = t("Can't find sql-query for table @table.", ['@table' => $table]);
+      throw new Exception($message);
+    }
+    else {
+      return $sql[$table];
+    }
+  }
+
+  /**
+   * Removs SubmissionCache data.
+   */
+  public function removeSubmissionCache() {
     SubmissionCache::remove($this->accession);
+  }
+
+  /**
+   * Checks if submission has cached version.
+   *
+   * See 'SubmissionCache' class.
+   *
+   * @return bool
+   *   Returns TRUE if submission was cached and FALSE otherwise.
+   */
+  public function isCached() {
+    return !empty(SubmissionCache::get($this->accession, $reset = TRUE));
+  }
+
+  /**
+   * Removes parts of the Submission.
+   *
+   * @param mixed $options
+   *   List of options to be removed.
+   *   When string 'all' then all parts will be removed.
+   *   - Files will be removed in normal (not forced) mode.
+   *   - All Submission Tags (including system tags) will be removed.
+   *
+   * @todo Implement ability to specify parts.
+   */
+  public function remove($options) {
+    if ($options == 'all') {
+      $this->clearDataBase();
+      $this->removeAllTags();
+      $this->removeImportMeta();
+      $this->removeImportRecord();
+      $this->removeSharedState();
+      $this->removeSubmissionCache();
+      $this->removeZenodoDeposit();
+      $this->removeFiles($force = FALSE);
+    }
+    else {
+      throw new Exception('Ability to specify parts to be removed not yet implemented');
+    }
+  }
+
+  /**
+   * Totally removes the Submission.
+   *
+   * To remove only record from tpps_submission' table see Submission::remove().
+   */
+  public function purge() {
+    $this->remove('all');
+
+    // Note: Will also remove record from the 'public.tpps_submission' table
+    // using foreing key.
+    $this->clearDbxrefTable();
+
+    if (function_exists('module_invoke_all')) {
+      // 'tpps_submission_purged'.
+      module_invoke_all('submission_purged', $this->accession);
+    }
     // Unset current instance (in memory).
     $this->accession = NULL;
     $this->state = NULL;
     $this->sharedState = NULL;
-    if (function_exists('module_invoke_all')) {
-      // 'tpps_submission_purged().
-      module_invoke_all('submission_purged', $this);
-    }
+
+    // Update cached list of the accessions.
+    SubmissionCache::getAccessionList([], $reset = TRUE);
+    // Do not allow chaining methods because object destroyed.
+    return NULL;
   }
 
   /**
@@ -789,7 +1162,7 @@ class Submission {
     db_insert(static::TABLE)->fields($fields)->execute();
     // Add default tag.
     $tag = $this->isTppsc() ? 'TPPSc' : 'TPPS';
-    tpps_submission_add_tag($this->accession, $tag);
+    $this->addTag($tag);
     return $this;
   }
 
@@ -986,7 +1359,7 @@ class Submission {
   /**
    * Get TPPS Form Id.
    *
-   * See tpps_form_get_id();
+   * See TppsForm::getId();
    *
    * @return string
    *   Returns 'tpps_main' or 'tppsc_main'.
@@ -1029,6 +1402,50 @@ class Submission {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   /**
+   * Checks if submission's state has Import Metadata.
+   *
+   * @return bool
+   *   Returns TRUE if submission was imported and FALSE otherwise.
+   */
+  public function hasImportMeta() {
+    return !empty($this->get(['saved_values', 'tpps_submission_import']));
+  }
+
+  /**
+   * Removes Import Meta-data from State and SharedState.
+   */
+  public function removeImportMeta() {
+    // @TODO Minor. Test and use $this->unset().
+    $this->set(['saved_values', 'tpps_submission_import'], NULL, TRUE);
+    // Note: save() will update SubmissionCache.
+    $this->save();
+  }
+
+  /**
+   * Checks if submission was imported.
+   *
+   * @return bool
+   *   Returns TRUE if submission was imported and FALSE otherwise.
+   */
+  public function wasImported() {
+    return !empty(ImportedSubmissionList::get()[$this->accession]);
+  }
+
+  /**
+   * Removes record from the Imported submission list.
+   *
+   * This list is stored in variable because this is developer's tool and
+   * using separate table for this is overrill. Cache table also couldn't be
+   * used because this list must be stored for a long time.
+   */
+  public function removeImportRecord() {
+    // Check if study was imported to avoid extra moves.
+    if ($this->wasImported()) {
+      ImportedSubmissionList::remove($this->accession);
+    }
+  }
+
+  /**
    * Gets Import Metadata.
    *
    * Imported Studies has some extra information about export/import process.
@@ -1043,8 +1460,10 @@ class Submission {
       return $output;
     }
 
-    // @TODO Create property $importMeta?
-    $import_meta = $this->state['saved_values']['tpps_submission_import'] ?? NULL;
+    // @TODO ? Create Submission class's property $importMeta.
+    $import_meta = TppsArray::get($this->state,
+      ['saved_values', 'tpps_submission_import']
+    );
     if (empty($import_meta)) {
       return $output;
     }
@@ -1366,7 +1785,7 @@ class Submission {
       // Value.
       if (is_array($this->$name) && !empty($parents)) {
         $title = $name . '[' . implode('][', $parents) . ']';
-        $value = TppsArray::getValue($this->$name, $parents);
+        $value = TppsArray::get($this->$name, $parents);
       }
       else {
         $title = $name;
@@ -1575,16 +1994,46 @@ class Submission {
   public function hasLocalVcf($organism_index = 1) {
     $this->getSharedState();
     $organism_key = 'organism-' . $organism_index;
+    $vcf_file_location_parents = [
+      'saved_values',
+      TPPS_PAGE_4,
+      $organism_key,
+      'genotype',
+      'files',
+      'vcf_file-location',
+    ];
     if (
-      ($this->sharedState['saved_values'][TPPS_PAGE_4]
-        [$organism_key]['genotype']['files']
-        ['vcf_file-location'] ?? NULL) == 'remote'
-      && !empty($this->sharedState['saved_values'][TPPS_PAGE_4]
-        [$organism_key]['genotype']['files']['local_vcf'])
+        TppsArray::get($this->sharedState, $vcf_file_location_parents) == 'remote'
+        && !empty(TppsArray::get(
+          $this->sharedState,
+          $this->getLocalVcfParents($organism_index)
+        ))
     ) {
       return TRUE;
     }
     return FALSE;
+  }
+
+  /**
+   * Checks if study has local (located on server) VCF file.
+   *
+   * @param int $organism_index
+   *   Ordinal number of the organism at page.
+   *
+   * @return mixed
+   *   Returns path to the local VCF file.
+   *   Returns NULL if study has no local VCF file.
+   */
+  public function getLocalVcfParents($organism_index = 1) {
+    $organism_key = 'organism-' . $organism_index;
+    return [
+      'saved_values',
+      TPPS_PAGE_4,
+      $organism_key,
+      'genotype',
+      'files',
+      'local_vcf',
+    ];
   }
 
   /**
@@ -1602,9 +2051,34 @@ class Submission {
     if (!$this->hasLocalVcf($organism_index)) {
       return NULL;
     }
-    return $this->sharedState['saved_values'][TPPS_PAGE_4]
-      [$organism_key]['genotype']['files']['local_vcf'];
+    return TppsArray::get(
+      $this->sharedState,
+      $this->getLocalVcfParents($organism_index)
+    );
   }
+
+  /**
+   * Checks if study has local (located on server) VCF file.
+   *
+   * @param int $organism_index
+   *   Ordinal number of the organism at page.
+   *
+   * @return mixed
+   *   Returns number of studies which uses this file.
+   *   Returns NULL if organism in this study has no local VCF file.
+   */
+  public function getLocalVcfUsage($organism_index = 1) {
+    $path = $this->getLocalVcf($organism_index);
+    if (is_null($path)) {
+      return NULL;
+    }
+    return substr_count(
+      json_encode(SubmissionCache::get()),
+      json_encode($path)
+    );
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   /**
    * Gets name of the organism specified on Page 1.
@@ -1731,6 +2205,48 @@ class Submission {
     return !empty($this->getZenodoDepositId());
   }
 
+  /**
+   * Removes Zenodo Deposit and files.
+   */
+  public function removeZenodoDeposit() {
+    if (empty($deposit_id = $this->getZenodoDepositId())) {
+      return;
+    }
+
+    try {
+      $deposit = ZenodoDeposit::retrieve([
+        'deposit_id' => $deposit_id,
+      ]);
+      if ($deposit) {
+        if (empty($deposit['submitted'])) {
+          // Remove deposit.
+          // Note: When draft deposition is removing then all associated files
+          // will be removed automatically.
+          ZenodoDeposit::delete(['deposit_id' => $deposit_id]);
+        }
+        else {
+          $message = "Zenodo Deposit was published and can't be removed.";
+          throw new Exception($message);
+        }
+      }
+    }
+    catch (Exception $e) {
+      // @TODO Check Exception message. Possible responses when not found:
+      // Forbidden
+      // Access denied.
+      $message = t("Zenodo Deposit wasn't found on remote server.");
+      drupal_set_message($message);
+    }
+
+    // Unset store 'Zenodo Id' and 'Zenodo Record Id'.
+    $this->set([self::ZENODO_CONCEPT_RECORD_ID_KEY], NULL);
+    $this->set([self::ZENODO_DEPOSIT_ID_KEY], NULL);
+    $this->save();
+    $message = t("Removed 'Zenodo Deposit Id' and 'Zenodo Concept Id' from Submission.");
+    drupal_set_message($message);
+    // @TODO Minor. Implement hook?
+  }
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Concept Record Id.
   //
@@ -1816,8 +2332,7 @@ class Submission {
     for ($i = 1; $i <= $page1_values['organism']['number']; $i++) {
       $keyword_list[] = $page1_values['organism'][$i]['name'];
     }
-    module_load_include('inc', 'tpps', 'includes/form');
-    $keyword_list[] = tpps_form_get_study_type($page2_values['study_type']);
+    $keyword_list[] = TppsForm::getStudyType($page2_values['study_type']);
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Metadata.
     $metadata = (object) [
@@ -1870,7 +2385,7 @@ class Submission {
     foreach ($parent_list as $step => $step_list) {
       foreach ($step_list as $parents) {
         $new_parents = array_merge([$step], $parents);
-        $fid = (int) TppsArray::getValue($saved_values, $new_parents);
+        $fid = (int) TppsArray::get($saved_values, $new_parents);
         if (empty($fid)) {
           continue;
         }
@@ -1906,8 +2421,8 @@ class Submission {
         if ($file && $file->status != $status) {
           $file->status = $status;
           file_save($file);
-          if (static::isEmptyFileUsage($file, $this->accession)) {
-            static::addFileUsage($file, $this->accession);
+          if (TppsFile::isEmptyUsage($file, $this->accession)) {
+            TppsFile::addUsage($file, $this->accession);
           }
         }
       }
@@ -1922,7 +2437,7 @@ class Submission {
   /**
    * Gets hardcoded list of file field parents.
    *
-   * WARNING: Uses Submission Form Version 1 (AKA Submission Shared State).
+   * WARNING: For Shared State only.
    *
    * @return array
    *   Returns empty array if number of organisms is zero.
@@ -2069,69 +2584,6 @@ class Submission {
   // File Usage.
   // @TODO Minor. Create new File class.
 
-  /**
-   * Adds record about usage of the file.
-   *
-   * @param object $file
-   *   Drupal's Managed File object.
-   * @param string $accession
-   *   Submission's accession. Format: 'TGDRxxxx'.
-   * @param int $count
-   *   The number of references to add to the object. Defaults to 1.
-   */
-  public static function addFileUsage($file, $accession, $count = 1) {
-    $key = str_replace('TGDR', '', $accession);
-    if (Submission::isEmptyFileUsage($file, $accession)) {
-      file_usage_add($file, 'tpps', 'tpps_project', $key, $count);
-    }
-  }
-
-  /**
-   * Removes record about usage of the file.
-   *
-   * @param object $file
-   *   Drupal's Managed File object.
-   * @param string $accession
-   *   Submission's accession. Format: 'TGDRxxxx'.
-   * @param int $count
-   *   The number of references to add to the object. Defaults to 1.
-   */
-  public static function deleteFileUsage($file, $accession, $count = 1) {
-    $key = str_replace('TGDR', '', $accession);
-    file_usage_delete($file, 'tpps', 'tpps_project', $key, $count);
-  }
-
-  /**
-   * Gets file usage.
-   *
-   * @param object $file
-   *   Drupal's Managed File object.
-   * @param string $accession
-   *   Submission's accession. Format: 'TGDRxxxx'.
-   *
-   * @return int
-   *   Returns count of the usage for given study.
-   */
-  public static function getFileUsage($file, $accession) {
-    $key = str_replace('TGDR', '', $accession);
-    $usage = file_usage_list($file, 'tpps', 'tpps_project', $key);
-    return TppsArray::getValue($usage, ['tpps', 'tpps_project', $key]);
-  }
-
-  /**
-   * Checks if file usage is empty.
-   *
-   * @param object $file
-   *   Drupal's Managed File object.
-   * @param string $accession
-   *   Submission's accession. Format: 'TGDRxxxx'.
-   *
-   * @return bool
-   *   Returns TRUE if file has no usage record and FALSE otherwise.
-   */
-  public static function isEmptyFileUsage($file, $accession) {
-    return empty(Submission::getFileUsage($file, $accession));
-  }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Publication DOI field on Form Step 1.
@@ -2175,7 +2627,7 @@ class Submission {
       default:
         $parents = ['saved_values', TPPS_PAGE_1, 'dataset_doi'];
     }
-    return TppsArray::getValue($this->state, $parents);
+    return TppsArray::get($this->state, $parents);
   }
 
   /**
@@ -2203,21 +2655,21 @@ class Submission {
         $parents = ['saved_values', TPPS_PAGE_1, 'dataset_doi'];
     }
     // State.
-    $state_value = TppsArray::getValue($this->state, $parents);
+    $state_value = TppsArray::get($this->state, $parents);
     if ($state_value != $value) {
       $was_updated = TRUE;
-      TppsArray::setValue($this->state, $parents, $value);
+      TppsArray::set($this->state, $parents, $value);
     }
 
     // Shared State.
     $shared_state_parents = ['saved_values', TPPS_PAGE_1, 'dataset_doi'];
-    $shared_state_value = TppsArray::getValue(
+    $shared_state_value = TppsArray::get(
       $this->sharedState,
       $shared_state_parents
     );
     if ($shared_state_value != $value) {
       $was_updated = TRUE;
-      TppsArray::setValue($this->sharedState, $shared_state_parents, $value);
+      TppsArray::set($this->sharedState, $shared_state_parents, $value);
     }
     // Save changes.
     if ($save_on_change && $was_updated) {
@@ -2370,6 +2822,12 @@ class Submission {
         'abr' => t('Ex'),
         'path' => 'tpps/submission/' . $accession . '/export',
       ],
+      'clone' => [
+        'title' => t("Clone Submission"),
+        'name' => t('Clone'),
+        'abr' => t('Cl'),
+        'path' => 'tpps/submission/' . $accession . '/clone',
+      ],
       'compare' => [
         'title' => t("Compare submission with other one"),
         'name' => t('Compare'),
@@ -2377,10 +2835,16 @@ class Submission {
         'path' => 'tpps/submission/' . $accession . '/compare',
       ],
       'purge' => [
-        'title' => t("Remove submission and it's files"),
+        'title' => t("Totally remove submission"),
         'name' => t('Purge'),
         'abr' => t('Pu'),
         'path' => 'tpps/submission/' . $accession . '/purge',
+      ],
+      'remove' => [
+        'title' => t("Partly remove submission"),
+        'name' => t('Remove'),
+        'abr' => t('R'),
+        'path' => 'tpps/submission/' . $accession . '/remove',
       ],
       // Old pages:
       'admin_panel' => [
@@ -2425,6 +2889,12 @@ class Submission {
         'title' => t("Submission's VCF-files in JSON format"),
         'abr' => t('jVCF'),
         'path' => 'api/submission/' . $accession . '/vcf',
+      ],
+      'cache' => [
+        'name' => t('JSON Cached Submission'),
+        'title' => t("Cached submission's data in JSON format"),
+        'abr' => t('jCS'),
+        'path' => 'api/submission/' . $accession . '/cache',
       ],
     ];
 
@@ -2604,7 +3074,7 @@ class Submission {
    * @todo Move to 'TppsForm' class.
    */
   public function getStudyDataType() {
-    return TppsArray::getValue($this->state,
+    return TppsArray::get($this->state,
       ['saved_values', TPPS_PAGE_2, 'data_type']
     );
   }
@@ -2665,16 +3135,15 @@ class Submission {
       return NULL;
     }
     $list = [];
+    $formState = new FormState($this->state);
     for ($i = 1; $i <= $this->getOrganismNumber(); $i++) {
       $organism_index = $i;
       $organism_key = 'organism-' . $organism_index;
 
-      $list[$organism_index]['name'] = FormState::getOrganismName(
-        $this->state, $organism_index
-      );
+      $list[$organism_index]['name'] = $formState->getOrganismName($organism_index);
       // '0' means manually added phenotype.
       // '1' - metadata file was uploaded.
-      $is_metadata_in_file = TppsArray::getValue($this->state,
+      $is_metadata_in_file = $formState->get(
         ['saved_values', TPPS_PAGE_4, $organism_key, 'phenotype', 'check']
       );
       if ($is_metadata_in_file) {
@@ -2700,7 +3169,7 @@ class Submission {
       }
       else {
         // Manually added phenotypes.
-        $phenotype_number = TppsArray::getValue($this->state,
+        $phenotype_number = $formState->get(
           [
             'saved_values', TPPS_PAGE_4, $organism_key, 'phenotype',
             'phenotypes-meta', 'number'
@@ -2708,13 +3177,13 @@ class Submission {
         );
         for ($j = 1; $j <= $phenotype_number; $j++) {
           // Note; value '0' means no synonym was found.
-          $synonym_id = TppsArray::getValue($this->state,
+          $synonym_id = $formState->get(
             [
               'saved_values', TPPS_PAGE_4, $organism_key, 'phenotype',
               'phenotypes-meta', $j, 'synonym_id',
             ]
           );
-          $name = TppsArray::getValue($this->state,
+          $name = $formState::get(
             [
               'saved_values', TPPS_PAGE_4, $organism_key, 'phenotype',
               'phenotypes-meta', $j, 'name',
@@ -2726,6 +3195,224 @@ class Submission {
       }
     }
     return $list;
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Submission Tags.
+
+  /**
+   * Checks if submission has tag.
+   *
+   * @param mixed $tag_key
+   *   Tag id or name.
+   *
+   * @return bool
+   *   Returns TRUE if submission has given tag and FALSE otherwise.
+   */
+  public function hasTag($tag_key) {
+    return SubmissionTag::isLinked($tag_key, $this->accession);
+  }
+
+  /**
+   * Checks if submission has any tags.
+   *
+   * @return bool
+   *   Returns TRUE if submission has any tag and FALSE otherwise.
+   */
+  public function hasTags() {
+    return !empty($this->getTagIdList());
+  }
+
+  /**
+   * Adds the tag to a the submission.
+   *
+   * @param mixed $tag_key
+   *   The name or id of the tag to be added.
+   */
+  public function addTag($tag_key) {
+    SubmissionTag::link($tag_key, $this->accession);
+  }
+
+  /**
+   * Removes the tag from the submission.
+   *
+   * @param mixed $tag_key
+   *   The name or id of the tag to be removed.
+   */
+  public function removeTag($tag_key) {
+    SubmissionTag::unlink($tag_key, $this->accession);
+  }
+
+  /**
+   * Removes all tags associated with the submission.
+   *
+   * We can't use SubmissionTag::unlink() because it leaves 'system' tags
+   * (with Ids: 1 and 2), does extra check and call's hooks.
+   */
+  public function removeAllTags() {
+    // Remove all tags linked to submission.
+    db_delete(SubmissionTag::TABLE_SUBMISSION_TAG)
+      ->condition('tpps_submission_id', $this->id)
+      ->execute();
+
+    // Update SubmissionCache.
+    $cached = SubmissionCache::get();
+    $cached[$this->accession]['tags'] = [];
+    SubmissionCache::set($cached);
+  }
+
+  /**
+   * Gets list of tag ids.
+   *
+   * To get list of tag objects use 'getTagList()'.
+   * Execution time:
+   * first call (empty static cache) takes 3 msec, then 0.005 msec.
+   *
+   * @return array
+   *   Returns list of tag ids.
+   */
+  public function getTagIdList() {
+    return SubmissionCache::get($this->accession)['tags'];
+  }
+
+  /**
+   * Returns array of tags associated with a submission.
+   *
+   * To get only tag ids see 'getTagIdLIst()' which is faster.
+   * Execution time:
+   * first call: 5 msec, then 0.6 msec.
+   *
+   * @return array
+   *   Returns array of tag objects associated with the submission.
+   *   Returns empty array if submission has no tags.
+   */
+  public function getTagList() {
+    $query = db_select('tpps_submission_tag', 'st')->distinct();
+    $query->join('tpps_submission', 's', 's.tpps_submission_id = st.tpps_submission_id');
+    $query->join('tpps_tag', 't', 't.tpps_tag_id = st.tpps_tag_id');
+    $query->fields('t');
+    $query->condition('s.accession', $this->accession);
+    return $query->execute()->fetchAllAssoc('tpps_tag_id', PDO::FETCH_ASSOC);
+  }
+
+  /**
+   * Removes project's data in the database.
+   */
+  public function removeProjectData() {
+    $project_id = $this->sharedState['ids']['project_id'] ?? NULL;
+    if (empty($project_id)) {
+      return FALSE;
+    }
+    $verbose = (bool) function_exists('tpps_log');
+    $table_list = $this->getTableListToRemoveProjectData();
+    $message = 'Cleared "@table_name" for project @project_id';
+    foreach ($table_list as $table_name) {
+      $num_deleted = db_delete($table_name)
+        ->condition('project_id', $project_id)
+        ->execute();
+      if ($verbose) {
+        $params = ['@table_name' => $table_name, '@project_id' => $project_id];
+        if (!is_null($num_deleted)) {
+          $params['@num_deleted'] = $num_deleted;
+          $message .= '. Deleted: @num_deleted rows';
+        }
+        tpps_log($message, $params);
+      }
+    }
+  }
+
+  /**
+   * Gets list of the db tables to remove project's data.
+   *
+   * @TODO Minor. Merge with getTableListToClearDataBase().
+   */
+  public function getTableListToRemoveProjectData() {
+    return [
+      'chado.project_organism',
+      'chado.project_pub',
+      'chado.projectprop',
+      'chado.genotype_call',
+      'public.tpps_project_file_managed',
+    ];
+  }
+
+  /**
+   * Counts number of records created during study processing.
+   *
+   * @param string $table
+   *   Full table name (including schema).
+   *
+   * @return mixed
+   *   Returns number of records.
+   *   Returns NULL when:
+   *   1. Table doesn't exists;
+   *   2. Sql-query for this table wasn't found.
+   */
+  public function countLoadedRecords($table) {
+    $sql = $this->getQueryToClearTable($table);
+    if (empty($sql) || !db_table_exists($table)) {
+      return NULL;
+    }
+    $sql = str_ireplace('DELETE', 'SELECT count(*) ', $sql);
+    return db_query($sql)->fetchField();
+  }
+
+  /**
+   * Prepare data for Submission Export.
+   *
+   * @return string
+   *   Returns dump of the PHP-array which represents Submisison State array
+   *   with fixed files.
+   */
+  public function export() {
+    global $base_url;
+    $export = $this->getState();
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Removes some minor elements which could broke import.
+    //
+    // The main goal is to export all the data without changes at all but
+    // when it's not possible we need to remove them to allow import of more
+    // important parts to be completed.
+
+    // This is form element which has a lot of HTML code which breaks
+    // parsing of state on import. See TGDR1089.
+    unset($export['complete form']['comments']['#prefix']);
+    // Remove huge but useless for import dataset added by Tripal pipeline processing.
+    if (variable_get('tpps_submission_export_exclude_data', TRUE)) {
+      unset($export['data']);
+    }
+    if (variable_get('tpps_submission_export_exclude_tree_info', TRUE)) {
+      unset($export['tree_info']);
+    }
+
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Files.
+    $fid_list = array_keys($this->getFileIdList());
+
+    // Gets Submission file's metadata.
+    // @TODO Minor. Get rid of this code.
+    // It was added because we didn't had orignal site base url in exported state
+    // array but now we have. Also all types of files now could be downloaded using
+    // 'tpps/file/<file_id>/<secure_token>' URL.
+
+    // Builds associative array where:
+    // - key is File Id,
+    // - value is an array with File Metadata returned by file_load() and
+    // extra item 'url' which is File's absolute URL.
+    $files = [];
+    foreach ($fid_list as $fid) {
+      if ($file = tpps_file_load($fid)) {
+        $file->url = file_create_url($file->uri);
+        // To detect files manually uploaded to server use this check:
+        // if ($file->uri[0] == '/') {}.
+        // For those files $file-url will have an absolute path to file.
+        $files[$fid] = (array) $file;
+      }
+    }
+    $export['tpps_submission_export_files'] = $files;
+    $export['tpps_submission_export_site'] = $base_url;
+    return var_export($export, 1);
   }
 
 }

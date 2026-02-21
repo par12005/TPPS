@@ -110,7 +110,7 @@ class SnpAssay extends FileField {
     $organism_key = 'organism-' . $organism_index;
 
     // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
-    tpps_form_build_file_field([
+    TppsForm::buildFileField([
       'form' => &$form,
       'form_state' => $form_state,
       'parents' => static::getParents($organism_index, $form_state),

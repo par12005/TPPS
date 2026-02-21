@@ -34,8 +34,11 @@ function tpps_get_variable_list() {
     // See:
     // - Report::getList()
     // - tpps_reports_settings_form() (/admin/config/tpps/reports).
-    'tpps_report_missing_files_title' => 'List of missing files',
     'tpps_report_variable_list_title' => 'TPPS module variables',
+    // File.
+    'tpps_report_file_missing_title' => 'Files missing in filesystem',
+    'tpps_report_file_not_used_title' => 'Not used files',
+    'tpps_report_file_orphan_title' => 'Orphan files',
     // Synonym reports.
     'tpps_report_synonym_missing_title' => 'List of phenotypes without Synonyms',
     'tpps_report_synonym_unit_warning_title' => 'Unit Warning (list of phenotypes which unit differs from Synonym)',
@@ -2072,24 +2075,25 @@ function tpps_update_7116() {
 
     $submissions = tpps_load_submission_multiple(array(), FALSE);
     foreach ($submissions as $record) {
-      $state = tpps_load_submission($record->accession);
-      $tags = tpps_submission_get_tags($state['accession']);
+      $submission = new Submission($record->accession);
+      $state = $submission->state;
+      $tags = $submission->getTagList();
       if (count($tags) == 0) {
         if ((!isset($state['tpps_type']) or $state['tpps_type'] != 'tppsc')) {
-          tpps_submission_add_tag($state['accession'], 'TPPS');
+          $submission->addTag('TPPS');
         }
         else {
-          tpps_submission_add_tag($state['accession'], 'TPPSc');
+          $submission->addTag('TPPSc');
         }
 
         if ($state['status'] == 'Approved') {
           $data_type = $state['saved_values'][TPPS_PAGE_2]['data_type'];
           $env_phenotypes = FALSE;
           if (preg_match('/G/', $data_type)) {
-            tpps_submission_add_tag($state['accession'], 'Genotype');
+            $submission->addTag('Genotype');
           }
           if (preg_match('/P/', $data_type)) {
-            tpps_submission_add_tag($state['accession'], 'Phenotype');
+            $submission->addTag('Phenotype');
             $org_num = $state['saved_values'][TPPS_PAGE_1]['organism']['number'];
             for ($i = 1; $i <= $org_num; $i++) {
               $phenotype_num = $state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['phenotypes-meta']['number'];
@@ -2103,7 +2107,7 @@ function tpps_update_7116() {
             }
           }
           if (preg_match('/E/', $data_type) or $env_phenotypes) {
-            tpps_submission_add_tag($state['accession'], 'Environment');
+            $submission->addTag('Environment');
           }
         }
       }
@@ -2124,7 +2128,7 @@ function tpps_update_7117() {
   $transaction = db_transaction();
 
   try {
-    $id = tpps_get_tag_id('No Location Information');
+    $id = SubmissionTag::getId('No Location Information');
     if (!$id) {
       db_insert('tpps_tag')
         ->fields(array(
@@ -2135,7 +2139,7 @@ function tpps_update_7117() {
         ->execute();
     }
 
-    $id = tpps_get_tag_id('Approximate Coordinates');
+    $id = SubmissionTag::getId('Approximate Coordinates');
     if (!$id) {
       db_insert('tpps_tag')
         ->fields(array(
@@ -2148,17 +2152,16 @@ function tpps_update_7117() {
 
     $submissions = tpps_load_submission_multiple(array(), FALSE);
     foreach ($submissions as $record) {
-      $state = tpps_load_submission($record->accession);
-
+      $submission = new Submission($record->accession);
+      $state = $submission->state;
       if (!empty($state['saved_values'][TPPS_PAGE_3]['skip_validation'])) {
-        tpps_submission_add_tag($state['accession'], 'No Location Information');
+        $submission->addTag('No Location Information');
       }
-
       $org_num = $state['saved_values'][TPPS_PAGE_1]['organism']['number'];
       for ($i = 1; $i <= $org_num; $i++) {
         $species_i = $state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"];
         if (isset($species_i['exact_coords']) and !$species_i['exact_coords']) {
-          tpps_submission_add_tag($state['accession'], 'Approximate Coordinates');
+          $submission->addTag('Approximate Coordinates');
           break;
         }
       }
@@ -2509,4 +2512,13 @@ function tpps_update_7132() {
   variable_set('tpps_exclude_hash_sign_from_column_list', FALSE);
   variable_set('tpps_report_submission_file_type_title', "Submission's File Type");
   variable_set('tpps_report_submission_version_title', 'Submission Version Changes');
+}
+
+/**
+ * Set titles for File related reports.
+ */
+function tpps_update_7133() {
+  variable_set('tpps_report_file_missing_title', 'Files missing in filesystem');
+  variable_set('tpps_report_file_not_used_title', 'Not used files');
+  variable_set('tpps_report_file_orphan_title', 'Orphan files');
 }

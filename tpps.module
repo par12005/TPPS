@@ -103,7 +103,6 @@ module_load_include('inc', 'tpps', 'includes/submissions');
 require_once 'includes/match_trees.inc';
 require_once 'includes/ncbi_utils.inc';
 // All steps helper functions.
-module_load_include('inc', 'tpps', 'includes/form');
 module_load_include('inc', 'tpps', 'includes/form_utils');
 module_load_include('inc', 'tpps', 'includes/details');
 module_load_include('inc', 'tpps', 'includes/cvterm_utils');
@@ -446,41 +445,8 @@ function tpps_menu() {
     'type' => MENU_CALLBACK,
   ];
 
-  $items['tpps-tag'] = array(
-    'title' => 'TPPS Submission Tags',
-    'page callback' => 'tpps_submission_tag_manage',
-    'access callback' => 'tpps_access',
-    'access arguments' => array('administer tpps module'),
-    'type' => MENU_NORMAL_ITEM,
-  );
-
-  $items['tpps-tag/create'] = array(
-    'title' => 'Create new TPPS Submission Tag',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('tpps_submission_tag_create'),
-    'access callback' => 'tpps_access',
-    'access arguments' => array('administer tpps module'),
-    'type' => MENU_LOCAL_ACTION,
-  );
-
-  $items['tpps-tag/edit/%'] = array(
-    'title' => 'TPPS Edit Tag',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('tpps_submission_tag_edit', 2),
-    'access callback' => 'tpps_access',
-    'access arguments' => array('administer tpps module'),
-    'type' => MENU_NORMAL_ITEM,
-  );
-
-  $items['tpps-tag/%/%/%'] = array(
-    'title' => 'TPPS Add/Remove Tag',
-    'page callback' => 'tpps_submission_add_remove_tag',
-    'page arguments' => array(1, 2, 3),
-    'access callback' => 'tpps_access',
-    'access arguments' => array('administer tpps module'),
-    'type' => MENU_CALLBACK,
-  );
-
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  tpps_menu_add_submission_tag($items);
   tpps_menu_add_detials_pages($items);
   tpps_menu_add_settings_pages($items);
   Report::addAllMenuItems($items);
@@ -550,6 +516,8 @@ function tpps_permission() {
 /**
  * Access-callback. Checks if current user could access requested page.
  *
+ * Uses static caching without ability to reset.
+ *
  * @return bool
  *   Returns TRUE when user granted access and FALSE otherwise.
  */
@@ -567,66 +535,84 @@ function tpps_access() {
     return FALSE;
   }
 
-  // Special case. Study accession, owner and status.
-  switch ($permission) {
+  $static_cache = &drupal_static(__FUNCTION__);
+  $key = implode('', $args);
+  if (!isset($static_cache[$key])) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    case 'access tpps form':
-      $accession = $args[1] ?? NULL;
-      if (empty($accession) || $accession == 'new') {
-        return TRUE;
-      }
-      $submission = new Submission($accession);
-      if ($submission->doesNotExist()) {
-        // Study has no record in tpps_submission table.
-        return FALSE;
-      }
-
-      // Note: $submission->isTppsc() not always works correct so we allow
-      // admins and curation team to edit any study..
-      if (tpps_is_admin_or_curation()) {
-        return TRUE;
-      }
-      else {
-        // TPPS Form.
-        if ($submission->isCreator() && $submission->isIncompleteStatus()) {
-          return TRUE;
+    // Special case. Study accession, owner and status.
+    // Restrict access by default.
+    switch ($permission) {
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      case 'access tpps form':
+        $value = FALSE;
+        $accession = $args[1] ?? NULL;
+        if (empty($accession) || $accession == 'new') {
+          $value = TRUE;
         }
-      }
-      return FALSE;
+        else {
+          $submission = new Submission($accession);
+          if ($submission->doesNotExist()) {
+            // Study has no record in tpps_submission table.
+            $value = FALSE;
+          }
+          else {
+            // Note: $submission->isTppsc() not always works correct so we allow
+            // admins and curation team to edit any study..
+            if (tpps_is_admin_or_curation()) {
+              $value = TRUE;
+            }
+            else {
+              // TPPS Form.
+              $value = (bool) (
+                $submission->isCreator()
+                && $submission->isIncompleteStatus()
+              );
+            }
+          }
+        }
+        break;
 
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    case 'user tpps submissions':
-      if (tpps_is_admin_or_curation()) {
+      case 'user tpps submissions':
+        if (tpps_is_admin_or_curation()) {
+          $value = TRUE;
+        }
+        else {
+          $uid = $args[1] ?? NULL;
+          $value = (!empty($uid) && $uid == $user->uid);
+        }
+        break;
+
+      case 'view own tpps submission':
+        $accession = $args[1] ?? NULL;
+        // Allow admins to access any study.
+        if (user_access('administer tpps module', $user)) {
+          $value = TRUE;
+        }
+        else {
+          // Check if user submitted this study.
+          // @TODO Use SubmissionCache.
+          $submission = new Submission($accession);
+          $value = (bool) (
+            !$submission->isIncompleteStatus()
+            && $submission->isCreator()
+          );
+        }
+        break;
+
+      case 'tpps delete submission':
+        $accession = $args[1] ?? NULL;
+        $submission = new Submission($accession);
+        $value = (bool) ($submission->isCreator() && $submission->isIncompleteStatus());
+        break;
+
+      default:
+        // @todo Minor. Check if this is safe. Better to deny access by default.
         return TRUE;
-      }
-      $uid = $args[1] ?? NULL;
-      return (!empty($uid) && $uid == $user->uid);
-
+    }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    case 'view own tpps submission':
-      $accession = $args[1] ?? NULL;
-      // Allow admins to access any study.
-      if (user_access('administer tpps module', $user)) {
-        return TRUE;
-      }
-      // Check if user submitted this study.
-      $submission = new Submission($accession);
-      return (bool) (
-        !$submission->isIncompleteStatus()
-        && $submission->isCreator()
-      );
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    case 'tpps delete submission':
-      $accession = $args[1] ?? NULL;
-      $submission = new Submission($accession);
-      return (bool) ($submission->isCreator() && $submission->isIncompleteStatus());
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    default:
-      // @todo Minor. Check if this is safe. Better to deny access by default.
-      return TRUE;
+    $static_cache[$key] = $value;
   }
+  return $static_cache[$key];
 }
 
 /**
@@ -973,7 +959,7 @@ function tpps_form_field_process(array $element, array &$form_state, array $form
       . '<br />[ ' . implode(' ][ ', $element['#array_parents']) . ' ]';
   }
   // Adds custom validation of fields required using Drupal Form States AJAX.
-  $element['#element_validate'][] = 'tpps_form_validate_required_field';
+  $element['#element_validate'][] = 'TppsForm::validateRequiredField';
 
   return $element;
 }
@@ -1031,7 +1017,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
     if (!empty($form_state['saved_values'][$page])) {
       // @TODO Remove this if possible.
       // When form wasn't yet submitted or saved then there is no value.
-      $empty_field_parent = TppsArray::getValue(
+      $empty_field_parent = TppsArray::get(
         $form_state['saved_values'][$page], $parents
       );
       $empty_field_default_value = $empty_field_parent[$field_name]['other'] ?? NULL;
@@ -1050,7 +1036,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // "No Header" checkbox.
-    $no_header = TppsArray::getValue(
+    $no_header = TppsArray::get(
       $form_state['complete form'],
       array_merge($element['#parents'], ['#value', 'no-header'])
     );
@@ -1059,7 +1045,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
     if (!$no_header && ($callback != 'tpps_no_header_callback')) {
       $end = array_pop($parents);
       $parents[] = $end . '-no-header';
-      $no_header = TppsArray::getValue(
+      $no_header = TppsArray::get(
         $form_state['saved_values'][$form_state['stage']],
         $parents
       );
@@ -1110,7 +1096,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
       array_pop($item_parents);
       $item_parents[] = end($element['#parents']) . '-columns';
       $item_parents[] = $key;
-      $default = TppsArray::getValue($saved_vals, $item_parents);
+      $default = TppsArray::get($saved_vals, $item_parents);
       if (!isset($default)) {
         foreach ($options as $k => $val) {
           similar_text(strtolower($val), strtolower($item), $percent);
@@ -1213,7 +1199,7 @@ function tpps_form_alter(array &$form, array &$form_state, $form_id) {
   }
   // Remember fieldset collapsed state.
   if (variable_get('tpps_remember_fieldset_collapsed_state', FALSE)) {
-    tpps_form_add_fieldset_collapsed_state($form, $form_id);
+    TppsForm::addFieldsetCollapsedState($form, $form_id);
     tpps_form_add_js_setting($form, 'fieldsetCollapsedState',
       ['ajaxUrl' => '/' . TPPS_AJAX_URL . '/' . TPPS_RFCS_KEY]
     );
@@ -1352,7 +1338,9 @@ function tpps_leaves(array &$elements, array $vals, array $saved_vals) {
  */
 function tpps_page_build(&$page) {
   $form_id = $page['content']['system_main']['#form_id'] ?? NULL;
-  if (!in_array($form_id, ['tpps_main', 'tppsc_main'])) {
+  // List of forms where 'Tpps Status' block should be shown.
+  $form_list = ['tpps_main', 'tppsc_main'];
+  if (!in_array($form_id, $form_list)) {
     return $page;
   }
 
@@ -1401,9 +1389,8 @@ function tpps_page_build(&$page) {
  */
 function tpps_main(array $form, array &$form_state, $accession = NULL) {
   // @todo Minor.Use the same function to build form but set form_id manually.
-  module_load_include('inc', 'tpps', 'includes/form');
   // Note: we use the same function to build TPPS and TPPSc forms.
-  return tpps_form_build_main($form, $form_state, $accession);
+  return TppsForm::buildMain($form, $form_state, $accession);
 }
 
 /**
@@ -1418,11 +1405,12 @@ function tpps_main_validate(&$form, &$form_state) {
 
   // Always save user selection of data types for columns and other subfields.
   tpps_save_file_columns($form, $form_state);
+  $formState = new FormState($form_state);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // If the user is going backwards or simply saving their data in the form,
   // make sure to save the column data for the managed_file elements. The rest
   // of the validation function does not need to be completed.
-  $triggering_element = FormState::getTriggeringElement($form_state);
+  $triggering_element = $formState->getTriggeringElement();
   if (in_array($triggering_element, ['Back', 'Save'])) {
     return;
   }
@@ -1430,15 +1418,14 @@ function tpps_main_validate(&$form, &$form_state) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   switch ($form_state['stage']) {
     case 'frontpage':
-      if (FormState::getFormId($form_state) == 'tppsc_main') {
+      if ($formState->getFormId() == 'tppsc_main') {
         // Curation Form.
         if (
-          ($form_state['values']['use_old_tgdr'] ?? FALSE)
-          and !$form_state['values']['old_tgdr']
+          $formState->values(['use_old_tgdr'])
+          && !$formState->values(['old_tgdr'])
         ) {
-          form_set_error('old_tgdr',
-            t('Existing TGDR number: field is required.')
-          );
+          $message = t('Existing TGDR number: field is required.');
+          form_set_error('old_tgdr', $message);
         }
       }
       else {
@@ -1513,7 +1500,6 @@ function tpps_main_submit($form, &$form_state) {
   $submission = tpps_submission()->setState($form_state);
   $submission->setUid($user->uid);
 
-  module_load_include('inc', 'tpps', 'includes/form');
   module_load_include('inc', 'tpps', 'includes/submission_file');
 
   // Get Submission Form Version.
@@ -1537,18 +1523,19 @@ function tpps_main_submit($form, &$form_state) {
   // Note: If form version is up-to-date then nothing will be done.
   $submission->state = SubmissionVersion::upgrade($form_state);
 
+  $formState = new FormState($form_state);
   if ($submission->isTppsc()) {
     $form_state['status'] = Submission::STATUS_INCOMPLETE;
     // Use old TGDR.
     if (
-      $form_state['stage'] == 'frontpage'
-      && ($values['use_old_tgdr'] ?? FALSE)
+      $formState->stage == 'frontpage'
+      && $formState->values(['use_old_tgdr'])
     ) {
-      $form_state['dbxref_id'] = $form_state['values']['old_tgdr'];
+      $form_state['dbxref_id'] = $formState->values(['old_tgdr']);
       $form_state['accession'] = chado_select_record(
-        'dbxref', ['accession'], ['dbxref_id' => $form_state['dbxref_id']]
+        'dbxref', ['accession'], ['dbxref_id' => $formState->dbxref_id]
       )[0]->accession;
-      $values['accession'] = $form_state['accession'];
+      $values['accession'] = $formState->accession;
       tpps_create_submission($form_state, $user->uid);
     }
   }
@@ -1654,20 +1641,25 @@ function tpps_main_submit($form, &$form_state) {
  */
 function tppsc_main(array $form, array &$form_state, $accession = NULL) {
   // @todo Minor.Use the same function to build form but set form_id manually.
-  module_load_include('inc', 'tpps', 'includes/form');
   // Note: we use the same function to build TPPS and TPPSc forms.
-  return tpps_form_build_main($form, $form_state, $accession);
+  return TppsForm::buildMain($form, $form_state, $accession);
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 /**
  * Implements hook_block_view_alter().
+ *
+ * https://api.drupal.org/api/drupal/modules%21block%21block.api.php/function/hook_block_view_alter/7.x
+ *
+ * Note that instead of hook_block_view_alter(), which is called for all blocks,
+ * you can also use hook_block_view_MODULE_DELTA_alter() to alter a specific block.
  */
 function tpps_block_view_alter(&$data, $block) {
   switch ($block->delta) {
     case 'tpps_status':
-      // @todo Check if this block exists.
+      // Note: Block exists and appears on the /tpps/submission/TGDR1136/remove
+      // page in the right sidebar.
       $data['content'] = theme('submission_block', ['data' => $data]);
       break;
 
@@ -1973,17 +1965,19 @@ function tpps_flush_caches() {
  *    for caching system to have less unique pages and more pages with the
  *    same set of attached files.
  *
- * @param mixed $page_id
- *   When string it could be a 'theme', 'main' or a page name.
+ * @param mixed $page_key
+ *   'theme', 'main' or a page name.
  *   When integer it's TPPS Form Page Id.
  *
- *   What is $page_id?
- *   |                  | $page_id     | CSS       | JS        | File                          |
- *   +------------------+--------------+-----------+-----------+-------------------------------+
- *   Theme              | 'theme'      | Yes       | No        | /css/theme/<name>.css         |
- *   TPPS main CSS/JS   | 'main'       | Yes       | Yes       | /css/tpps.css                 |
- *   Specific Page Id   | $page_number | If exists | If exists | /css/tpps_page_${page_id}.css |
- *   Specific Page Name | $page_name   | If exists | If exists | /css/tpps_${page_name}.css    |
+ *   What is $page_key?
+ *   +--------------------+--------------+-----------+-----------+-------------------------------+
+ *   |                    | $page_key     | CSS       | JS        | File                          |
+ *   +--------------------+--------------+-----------+-----------+-------------------------------+
+ *   | Theme              | 'theme'      | Yes       | No        | /css/theme/<name>.css         |
+ *   | TPPS main CSS/JS   | 'main'       | Yes       | Yes       | /css/tpps.css                 |
+ *   | Specific Page Id   | $page_number | If exists | If exists | /css/tpps_page_${page_id}.css |
+ *   | Specific Page Name | $page_name   | If exists | If exists | /css/tpps_${page_name}.css    |
+ *   +--------------------+--------------+-----------+-----------+-------------------------------+
  *
  *   Constants like TPPS_PAGE_1 and etc could be used to improve code readablility.
  *   Custom Page Id like 'study_export' for 'TPPS Study Export Page'.
@@ -1999,13 +1993,7 @@ function tpps_flush_caches() {
  *
  * @TODO Minor. Get Form Id from the $form and use as a file name.
  */
-function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
-  $debug_mode = FALSE;
-  if ($debug_mode ?? FALSE) {
-    dpm(__FUNCTION__ . '(' . $page_id . ', '
-      . ($form === NULL ? 'NULL' : 'form') . ')'
-    );
-  }
+function tpps_add_css_js($page_key = 'main', array &$form = NULL) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Custom CSS Theme.
   $theme_path = TPPS_MODULE_PATH . '/css/themes/'
@@ -2040,34 +2028,37 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
         drupal_add_css($dark_theme_path);
       }
     }
-    if ($page_id == 'theme') {
-      // We only add theme.
-      return;
-    }
-    if ($page_id == 'main') {
-      // CSS.
-      drupal_add_css(TPPS_MODULE_PATH . TPPS_CSS_PATH);
-      // JS.
-      drupal_add_js(
-        ['tpps' => $js_settings],
-        ['type' => 'setting', 'scope' => 'header']
-      );
-      drupal_add_js(
-        TPPS_MODULE_PATH . TPPS_JS_HEADER_PATH,
-        ['type' => 'file', 'scope' => 'header']);
-      drupal_add_js(TPPS_MODULE_PATH . TPPS_JS_PATH);
-      if (variable_get('tpps_theme_fix_pager')) {
-        drupal_add_css(TPPS_MODULE_PATH . '/css/pager_fix.css');
-      }
-    }
-    else {
-      // Add custom page files. Like 'TPPS Study Export Page' and 'study_export'.
-      drupal_add_css(TPPS_MODULE_PATH . '/css/tpps_' . $page_id . '.css');
-      drupal_add_js(TPPS_MODULE_PATH . '/js/tpps_' . $page_id . '.js', [
-        'type' => 'file',
-        'weight' => 5,
-        'scope' => ($page_id == 'google_map' ? 'header' : 'footer'),
-      ]);
+    switch ($page_key) {
+      case 'theme':
+        // We only add theme.
+        return;
+
+      case 'main':
+        // CSS.
+        drupal_add_css(TPPS_MODULE_PATH . TPPS_CSS_PATH);
+        // JS.
+        drupal_add_js(
+          ['tpps' => $js_settings],
+          ['type' => 'setting', 'scope' => 'header']
+        );
+        drupal_add_js(
+          TPPS_MODULE_PATH . TPPS_JS_HEADER_PATH,
+          ['type' => 'file', 'scope' => 'header']);
+        drupal_add_js(TPPS_MODULE_PATH . TPPS_JS_PATH);
+        if (variable_get('tpps_theme_fix_pager')) {
+          drupal_add_css(TPPS_MODULE_PATH . '/css/pager_fix.css');
+        }
+        break;
+
+      default:
+        // Add custom page files. Like 'TPPS Study Export Page' and 'study_export'.
+        drupal_add_css(TPPS_MODULE_PATH . '/css/tpps_' . $page_key . '.css');
+        drupal_add_js(TPPS_MODULE_PATH . '/js/tpps_' . $page_key . '.js', [
+          'type' => 'file',
+          'weight' => 5,
+          'scope' => ($page_key == 'google_map' ? 'header' : 'footer'),
+        ]);
+        break;
     }
   }
   else {
@@ -2080,51 +2071,56 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
         $form['#attached']['css'][] = $dark_theme_path;
       }
     }
-    if ($page_id == 'theme') {
-      // We only add theme.
-      return;
-    }
-    if ($page_id == 'main') {
-      // JS.
-      $form['#attached']['js'][] = [
-        'type' => 'file',
-        'scope' => 'header',
-        'group' => JS_THEME,
-        'data' => TPPS_MODULE_PATH . TPPS_JS_HEADER_PATH,
-      ];
-      $form['#attached']['js'][] = [
-        'type' => 'setting',
-        'data' => ['tpps' => $js_settings],
-        'scope' => 'header',
-      ];
-      // Add main files.
-      $form['#attached']['js'][] = [
-        'type' => 'file',
-        'scope' => 'footer',
-        'group' => JS_THEME,
-        'data' => TPPS_MODULE_PATH . TPPS_JS_PATH,
-      ];
-      // CSS.
-      $form['#attached']['css'][] = TPPS_MODULE_PATH . TPPS_CSS_PATH;
-      if (variable_get('tpps_theme_fix_pager')) {
-        $form['#attached']['css'][] = TPPS_MODULE_PATH . '/css/pager_fix.css';
-      }
-    }
-    elseif ($page_id) {
-      // Features like 'autofocus' and etc.
-      $filename = 'tpps_' . $page_id;
-      if (is_numeric($page_id) && $page_id > 0) {
-        // TPPS/TPPSc Form pages.
-        $filename = 'tpps_page_' . $page_id;
-      }
-      // @TODO Minor. Check if JS/CSS file exists.
-      $form['#attached']['js'][] = [
-        'type' => 'file',
-        'scope' => ($page_id == 'google_map' ? 'header' : 'footer'),
-        'group' => JS_THEME,
-        'data' => TPPS_MODULE_PATH . '/js/' . $filename . '.js',
-      ];
-      $form['#attached']['css'][] = TPPS_MODULE_PATH . '/css/' . $filename . '.css';
+    switch ($page_key) {
+      case 'theme':
+        // We only add theme.
+        return;
+
+      case 'main':
+        // JS.
+        $form['#attached']['js'][] = [
+          'type' => 'file',
+          'scope' => 'header',
+          'group' => JS_THEME,
+          'data' => TPPS_MODULE_PATH . TPPS_JS_HEADER_PATH,
+        ];
+        $form['#attached']['js'][] = [
+          'type' => 'setting',
+          'data' => ['tpps' => $js_settings],
+          'scope' => 'header',
+        ];
+        // Add main files.
+        $form['#attached']['js'][] = [
+          'type' => 'file',
+          'scope' => 'footer',
+          'group' => JS_THEME,
+          'data' => TPPS_MODULE_PATH . TPPS_JS_PATH,
+        ];
+        // CSS.
+        $form['#attached']['css'][] = TPPS_MODULE_PATH . TPPS_CSS_PATH;
+        if (variable_get('tpps_theme_fix_pager')) {
+          $form['#attached']['css'][] = TPPS_MODULE_PATH . '/css/pager_fix.css';
+        }
+        break;
+
+      default:
+        if (!empty($page_key)) {
+          // Features like 'autofocus' and etc.
+          $filename = 'tpps_' . $page_key;
+          if (is_numeric($page_key) && $page_key > 0) {
+            // TPPS/TPPSc Form pages.
+            $filename = 'tpps_page_' . $page_key;
+          }
+          // @TODO Minor. Check if JS/CSS file exists.
+          $form['#attached']['js'][] = [
+            'type' => 'file',
+            'scope' => ($page_key == 'google_map' ? 'header' : 'footer'),
+            'group' => JS_THEME,
+            'data' => TPPS_MODULE_PATH . '/js/' . $filename . '.js',
+          ];
+          $form['#attached']['css'][] = TPPS_MODULE_PATH . '/css/' . $filename . '.css';
+        }
+        break;
     }
   }
 }
@@ -2367,7 +2363,7 @@ function tpps_menu_add_submission_pages(array &$items = []) {
   $items['tpps/submission/%/export'] = [
     'title callback' => 'tpps_submission_title',
     'title arguments' => [2, 3],
-    'description' => 'Export of TPPS Submission',
+    'description' => 'Export of the Submission',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_export_form', 2],
     'access arguments' => ['administer tpps module'],
@@ -2375,12 +2371,22 @@ function tpps_menu_add_submission_pages(array &$items = []) {
   ];
   $items['tpps/submission/%/export/json'] = [
     'type' => MENU_CALLBACK,
-    'title' => 'TPPS Submission Export',
+    'title' => 'The TPPS Submission Export',
     'description' => 'TPPS Submission Export in JSON format',
     'page callback' => 'tpps_submission_export_json',
     'page arguments' => [2],
     'access callback' => TRUE,
+    'file path' => TPPS_MODULE_PATH,
     'file' => 'pages/submission/export.json.inc',
+  ];
+  $items['tpps/submission/%/clone'] = [
+    'title callback' => 'tpps_submission_title',
+    'title arguments' => [2, 3],
+    'description' => 'Clone of the Submission',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_clone_form', 2],
+    'access arguments' => ['administer tpps module'],
+    'file' => 'pages/submission/clone.inc',
   ];
   // @TODO Menu item is depricated and could be removed in future.
   // Use /api/submission/<accession>/view instead.
@@ -2401,7 +2407,6 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_import_form', 2],
     'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
     'file' => 'pages/submission/import.inc',
   ];
   // Compare.
@@ -2458,9 +2463,17 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'pages/submission/purge_multiple.inc',
   ];
+  $items['tpps/submission/%/remove'] = [
+    'title callback' => 'tpps_submission_title',
+    'title arguments' => [2],
+    'description' => 'Remove TPPS Submission',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['submission_remove_form', 2],
+    'access arguments' => ['tpps delete submission'],
+  ];
   $items['tpps/submission/%/vcf/local/rename'] = [
     'title callback' => 'tpps_submission_title',
-    'title arguments' => [2, 3],
+    'title arguments' => [2],
     'description' => 'TPPS Submission Rename local VCF',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_local_vcf_rename_form', 2],
@@ -2618,6 +2631,20 @@ function tpps_menu_add_api(array &$items = []) {
     'delivery callback' => 'drupal_json_output',
   ];
 
+  $items['api/submission/%/tag/%/%'] = [
+    'title' => 'Link Submission and Tag',
+    'description' => 'Links Submission and Submission Tag',
+    'page callback' => 'tpps_api_submission_tag_action',
+    // 2: Study accession,
+    // 4: Tag Id,
+    // 5: Action ('link', 'unlink').
+    'page arguments' => [2, 4, 5],
+    'access callback' => 'tpps_api_access',
+      'access arguments' => ['administer tpps module'],
+    'file' => 'api/submission/tag.inc',
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Menu items from function tpps_api_paths().
 
@@ -2745,6 +2772,55 @@ function tpps_submission_title($accession = '', $op = '', $extra = '') {
       '@extra' => ($extra ? 'with ' . $extra : ''),
     ]
   );
+}
+
+/**
+ * Menu times for Submisssion Tags.
+ *
+ * @param array $items
+ *   Menu items.
+ */
+function tpps_menu_add_submission_tag(array &$items = []) {
+  $items = $items ?? [];
+  $items['tpps/tag'] = [
+    'title' => 'TPPS Submission Tags',
+    'page callback' => 'SubmissionTag::showTable',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'type' => MENU_NORMAL_ITEM,
+  ];
+  $items['tpps/tag/create'] = [
+    'title' => 'Create new TPPS Submission Tag',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['submission_tag_form'],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'type' => MENU_LOCAL_ACTION,
+  ];
+  $items['tpps/tag/%/edit'] = [
+    'title' => 'Edit Submission Tag',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['submission_tag_edit_form', 2],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'type' => MENU_NORMAL_ITEM,
+  ];
+  $items['tpps/tag/%/remove'] = [
+    'title' => 'Remove Submission Tag',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['submission_tag_remove_form', 2],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'type' => MENU_NORMAL_ITEM,
+  ];
+  $items['tpps/tag/%/info'] = [
+    'title' => "Tag's Info",
+    'page callback' => 'SubmissionTag::buildInfoPage',
+    'page arguments' => [2],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'type' => MENU_NORMAL_ITEM,
+  ];
 }
 
 /**
@@ -2889,18 +2965,33 @@ function tpps_phenotype_meta() {
 }
 
 /**
- * Loads TPPS Submission.
+ * Creates intance of the 'Submission' class.
  *
  * @param string $accession
  *   Submission Accession.
  *
  * @return object
- *   Returns Submission object.
+ *   Returns created instance to allow method chaining.
  */
 function tpps_submission_load($accession) {
   // @todo Minor. Use static caching.
   $submission = new Submission($accession);
   return $submission;
+}
+
+/**
+ * Creates instance of the 'FormState' class.
+ *
+ * @param array $form_state
+ *   Submission's Form State.
+ *   See 'public.tpps_submission.submission_state' db table.
+ *
+ * @return object
+ *   Returns created instance to allow method chaining.
+ */
+function tpps_form_state_load(array $form_state) {
+  $formState = new FormState($form_state);
+  return $formState;
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -3129,7 +3220,7 @@ function tpps_rest_api_request_complete(array $context = []) {
     unset($context['Response']);
   }
   $message = 'Rest API Request Complete. !context';
-  $params = ['!context' => TppsArray::printList($context)];
+  $params = ['!context' => TppsArray::print($context)];
   watchdog('tpps', $message, $params, WATCHDOG_WARNING);
 }
 
@@ -3355,8 +3446,8 @@ function tpps_form_tppsc_main_alter($form, $form_state) {
     if (!empty($file_list)) {
       foreach (array_keys($file_list) as $fid) {
         $file = tpps_file_load($fid);
-        if ($file && Submission::isEmptyFileUsage($file, $submission->accession)) {
-          Submission::addFileUsage($file, $submission->accession);
+        if ($file && TppsFile::isEmptyUsage($file, $submission->accession)) {
+          TppsFile::addUsage($file, $submission->accession);
         }
       }
     }
@@ -3372,14 +3463,14 @@ function tpps_form_tppsc_main_alter($form, $form_state) {
   }
   // File was removed from page using 'Remove' button.
   $parents = TppsArray::getPath($form_state['values']);
-  $fid = TppsArray::getValue($form, array_merge($parents, ['#default_value']));
+  $fid = TppsArray::get($form, array_merge($parents, ['#default_value']));
   $file = tpps_file_load($fid);
   if (
     !(empty($fid)) && !empty($file)
-    && empty(TppsArray::getValue($form_state['input'], array_merge($parents, ['fid'])))
+    && empty(TppsArray::get($form_state['input'], array_merge($parents, ['fid'])))
   ) {
     $accession = $form_state['input']['accession'];
-    Submission::deleteFileUsage($file, $accession);
+    TppsFile::deleteUsage($file, $accession);
   }
 }
 
@@ -3398,7 +3489,7 @@ function tpps_submission_saved($submission) {
   if (variable_get('tpps_submission_log_save_event', FALSE)) {
     $message = 'Submission "@accession" was saved. !stack';
     $params = [
-      '!stack' => TppsArray::printList(
+      '!stack' => TppsArray::print(
         debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 10)
       ),
       '@accession' => $submission->accession,
@@ -3467,11 +3558,11 @@ function tpps_cache_get_cid_list() {
 /**
  * Implements hook 'submission_purged'.
  */
-function tpps_submission_purged($submission) {
+function tpps_submission_purged($accession) {
   tpps_cache_clear_all();
   drupal_set_message(
     t("Submission @accession and it's files was removed and cache was cleared.",
-      ['@accession' => $submission->accession]
+      ['@accession' => $accession]
     )
   );
 }
@@ -3530,7 +3621,7 @@ function tpps_submission_cache_updated() {
     $message = 'Submission Cache was fully updated. !stack';
     $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 10);
     $params = [
-      '!stack' => TppsArray::printList($stack),
+      '!stack' => TppsArray::print($stack),
     ];
     watchdog('tpps', $message, $params, WATCHDOG_NOTICE);
   }
@@ -3545,7 +3636,7 @@ function tpps_submission_cache_single_updated($accession) {
     $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 10);
     $params = [
       '@accession' => $accession,
-      '!stack' => TppsArray::printList($stack),
+      '!stack' => TppsArray::print($stack),
     ];
     watchdog('tpps', $message, $params, WATCHDOG_NOTICE);
   }
@@ -3558,4 +3649,63 @@ function tpps_hook_info() {
   // Move hook_theme() into tpps.theme.inc file.
   $hooks['theme'] = ['group' => 'theme'];
   return $hooks;
+}
+
+/**
+ * Implements hook_forms().
+ */
+function tpps_forms() {
+  $forms = [];
+  $forms['submission_tag_form']['callback'] = 'FormCreateSubmissionTag::build';
+  $forms['submission_tag_edit_form']['callback'] = 'FormEditSubmissionTag::build';
+  $forms['submission_tag_remove_form']['callback'] = 'FormRemoveSubmissionTag::build';
+  $forms['submission_remove_form']['callback'] = 'FormRemoveSubmission::build';
+  return $forms;
+}
+
+/**
+ * Implements hook 'submission_tag_linked'.
+ *
+ * Shows message to the end user.
+ *
+ * @param string $accession
+ *   Submission accession. E.g., 'TGDR1234'.
+ * @param int $tag_id
+ *   Submission Tag Id.
+ */
+function tpps_submission_tag_linked($accession, $tag_id) {
+  $message = 'Tag "@tag_name" (#@tag_id) has been added to Submission "@accession".';
+  drupal_set_message(t($message, [
+    '@accession' => $accession,
+    '@tag_id' => $tag_id,
+    '@tag_name' => SubmissionTag::getName($tag_id),
+  ]));
+}
+
+/**
+ * Implements hook 'submission_tag_unlinked'.
+ *
+ * Shows message to the end user.
+ *
+ * @param string $accession
+ *   Submission accession. E.g., 'TGDR1234'.
+ * @param int $tag_id
+ *   Submission Tag Id.
+ * @param string $result
+ *   Status of the removement. Tags with ids 1 and 2 can't be removed and
+ *   this case require additional processing.
+ */
+function tpps_submission_tag_unlinked($accession, $tag_id, $result = 'success') {
+  if ($result == 'success') {
+    $message = 'Tag "@tag_name" (#@tag_id) has been removed from Submission "@accession".';
+  }
+  elseif ($result == 'protected') {
+    $message = 'Tag "@tag_name" (#@tag_id) cannot be removed from Submission "@accession".';
+  }
+
+  drupal_set_message(t($message, [
+    '@accession' => $accession,
+    '@tag_id' => $tag_id,
+    '@tag_name' => SubmissionTag::getName($tag_id),
+  ]));
 }

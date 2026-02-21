@@ -47,9 +47,9 @@ function tpps_report_submission_version() {
       $submission = new Submission($latest_accession);
       $changes = tpps_submission_form_version_changes($submission->state, $version);
       if (!empty($parents)) {
-        $changes = TppsArray::getValue($changes, $parents);
+        $changes = TppsArray::get($changes, $parents);
       }
-      return TppsArray::printList($changes);
+      return TppsArray::print($changes);
     }
   }
 }

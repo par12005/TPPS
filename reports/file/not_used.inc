@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Generates list of the imported studies.
+ * Shows list of the files which not used by any study.
  */
 
 /**
@@ -13,7 +13,7 @@
  * @param bool $reset
  *   Flag is cache must be resetted. Default if FALSE.
  */
-function tpps_admin_missing_files_report($reset = FALSE) {
+function tpps_report_file_not_used($reset = FALSE) {
   $reset = $_GET['reset'] ?? FALSE;
   $cid = __FUNCTION__;
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
@@ -24,8 +24,9 @@ function tpps_admin_missing_files_report($reset = FALSE) {
     $i = 0;
 
     $query = db_select('file_managed', 'fm')->fields('fm', ['fid', 'uri']);
-    $query->join('file_usage', 'fu', 'fm.fid = fu.fid');
+    $query->leftJoin('file_usage', 'fu', 'fm.fid = fu.fid');
     $query->addField('fu', 'id');
+    $query->isNull('fu.id');
     $query->orderBy('fid', 'DESC');
     $file_list = $query->execute()->fetchAll();
     // Note $file_list will have ALL files!
@@ -34,17 +35,42 @@ function tpps_admin_missing_files_report($reset = FALSE) {
     $options = ['query' => ['token' => variable_get('tpps_api_token')]];
     foreach ($file_list as $item) {
       $path = tpps_realpath($item->uri);
-      $accession = 'TGDR' . $item->id;
-      $submission = new Submission($accession);
-      if (!file_exists($path)) {
-        $rows[] = [
-          ++$i,
-          l($item->fid, 'api/file/' . $item->fid . '/info', $options),
-          $path,
-          $submission->doesNotExist() ? $accession : l($accession,
-          'api/submission/' . $accession . '/view/shared_state/saved_values/'),
-        ];
+      $accession = '';
+      if (!empty($item->id)) {
+        $accession = 'TGDR' . $item->id;
+        $submission = new Submission($accession);
+        if (!$submission->doesNotExist()) {
+          $accession = l($accession,
+            'api/submission/' . $accession . '/view/shared_state/saved_values/',
+            ['attributes' => ['title' => 'Submission exists']]
+          );
+        }
+        else {
+          $accession =
+            '<div title="Submission not found.">'
+            . $accession . '</div>';
+        }
       }
+      // File path.
+      if (file_exists($path)) {
+        $path = l($path,
+          'api/file/' . $item->fid . '/info',
+          [
+            'query' => ['token' => variable_get('tpps_api_token')],
+            'attributes' => ['title' => 'File exists'],
+          ]
+        );
+      }
+      else {
+        $path = '<div title="File not found.">' . $path . '</div';
+      }
+      // Build table's row.
+      $rows[] = [
+        ++$i,
+        $item->fid,
+        $path,
+        $accession,
+      ];
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     unset($_GET['reset']);

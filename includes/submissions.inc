@@ -8,7 +8,6 @@
  * module_load_include('inc', 'tpps', 'includes/submissions');
  *
  * @TODO Minor. Rename functions to use pattern 'tpps_submission_[action]'.
- * @TODO Move tag-functions to separate file.
  */
 
 module_load_include('inc', 'tpps', 'includes/submission_file');
@@ -185,8 +184,7 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
  */
 function tpps_submission_delete_callback($accession) {
   global $user;
-  $submission = new Submission($accession);
-  $submission->delete();
+  tpps_submission_load($accession)->purge();
   drupal_goto("user/{$user->uid}/tpps");
 }
 
@@ -235,336 +233,7 @@ function tpps_submission_add_alternative_accession(array $state, $alt_accession)
   }
 }
 
-/**
- * Display TPPS submission tags.
- *
- * @return string
- *   String of renderable HTML.
- */
-function tpps_submission_tag_manage() {
-
-  $query = db_select('tpps_tag', 't')
-    ->fields('t')
-    ->execute();
-
-  $rows = array();
-  while (($result = $query->fetchObject())) {
-    $color = !empty($result->color) ? $result->color : 'white';
-    $edit_link = $result->static ? "" : "<a href=\"tpps-tag/edit/{$result->tpps_tag_id}\">edit</a>";
-    $rows[$result->tpps_tag_id] = array(
-      "<span class=\"tag\" style=\"background-color:$color\"><span class=\"tag-text\">{$result->name}</span></span>",
-      $result->name,
-      $color,
-      $edit_link,
-    );
-  }
-
-  ksort($rows);
-
-  $vars = array(
-    'header' => array(
-      'Tag',
-      'Name',
-      'Color',
-      '',
-    ),
-    'rows' => $rows,
-    'attributes' => array(
-      'class' => array('view'),
-      'id' => 'tpps_table_display',
-    ),
-    'caption' => '',
-    'colgroups' => NULL,
-    'sticky' => FALSE,
-    'empty' => '',
-  );
-
-  $output = theme('table', $vars);
-  tpps_add_css_js('main');
-  return $output;
-}
-
-/**
- * Form to create a new submission tag.
- *
- * @param array $form
- *   The form object to be populated.
- * @param array $form_state
- *   The state of the form object to be populated.
- *
- * @return array
- *   The populated form object.
- *
- * @todo Minor. Move to includes/form.inc and rename to tpps_form_tag_create().
- */
-function tpps_submission_tag_create(array $form, array &$form_state) {
-  // This will add the color picker to the TPPS submission tags edit-color
-  // field id.
-  drupal_add_js(
-    'https://cdnjs.cloudflare.com/ajax/libs/tinyColorPicker/1.1.1/jqColorPicker.min.js',
-    'external'
-  );
-  // @TODO [VS] This file must be stored under /sites/all/libraries to allow
-  // other modules to reuse it and get updates independently from this module.
-  drupal_add_js(TPPS_MODULE_PATH . '/js/tag_colorpicker.js');
-
-  $form['name'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Name'),
-    '#description' => t('The name of the new tag'),
-    '#required' => TRUE,
-    '#prefix' => '<a href="/tpps-tag">Back to TPPS Submission Tags page</a>',
-  );
-
-  $form['color'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Color'),
-    '#description' => t('The color of the new tag. Can be the name of a color, like "red" or "blue", or can be a hexidecimal color like "#FFFFFF" or "#A2C32F". Hexidecimal colors must start with the "#" character.'),
-    '#required' => TRUE,
-    '#suffix' => '<div id="color-picker"><a>Toggle Color Picker</a></div>',
-  );
-
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Submit'),
-  );
-
-  return $form;
-}
-
-/**
- * Implements hook_form_validate().
- */
-function tpps_submission_tag_create_validate(&$form, &$form_state) {
-  $result = db_select('tpps_tag', 't')
-    ->fields('t')
-    ->condition('name', $form_state['values']['name'], 'ILIKE')
-    ->range(0, 1)
-    ->execute()->fetchObject();
-  if (!empty($result)) {
-    form_set_error('name', t("A tag already exists with this name. Please select a different name or use the existing tag."));
-  }
-}
-
-/**
- * Implements hook_form_submit().
- */
-function tpps_submission_tag_create_submit($form, &$form_state) {
-  db_insert('tpps_tag')
-    ->fields(array(
-      'name' => $form_state['values']['name'],
-      'color' => $form_state['values']['color'],
-    ))
-    ->execute();
-  drupal_goto('tpps-tag');
-}
-
-/**
- * Form to edit a submission tag.
- *
- * @param array $form
- *   The form object to be populated.
- * @param array $form_state
- *   The state of the form object to be populated.
- * @param mixed $tag_id
- *   The id of the tag being edited.
- *
- * @return array
- *   The populated form object.
- */
-function tpps_submission_tag_edit(array $form, array &$form_state, $tag_id = NULL) {
-  if (empty($tag_id)) {
-    drupal_goto('tpps-tag');
-  }
-
-  $tag = db_select('tpps_tag', 't')
-    ->fields('t')
-    ->condition('tpps_tag_id', $tag_id)
-    ->range(0, 1)
-    ->execute()->fetchObject();
-
-  if (empty($tag) or $tag->static) {
-    drupal_goto('tpps-tag');
-  }
-
-  $form = tpps_submission_tag_create($form, $form_state);
-
-  $form['name']['#default_value'] = $tag->name;
-  $form['color']['#default_value'] = $tag->color;
-
-  $form['id'] = array(
-    '#type' => 'hidden',
-    '#value' => $tag_id,
-  );
-
-  return $form;
-}
-
-/**
- * Implements hook_form_validate().
- */
-function tpps_submission_tag_edit_validate(&$form, &$form_state) {
-  $result = db_select('tpps_tag', 't')
-    ->fields('t')
-    ->condition('name', $form_state['values']['name'], 'ILIKE')
-    ->condition('tpps_tag_id', $form_state['values']['id'], '!=')
-    ->range(0, 1)
-    ->execute()->fetchObject();
-  if (!empty($result)) {
-    form_set_error('name', t("A tag already exists with this name. Please select a different name or use the existing tag."));
-  }
-}
-
-/**
- * Implements hook_form_submit().
- */
-function tpps_submission_tag_edit_submit($form, &$form_state) {
-  db_update('tpps_tag')
-    ->fields(array(
-      'name' => $form_state['values']['name'],
-      'color' => $form_state['values']['color'],
-    ))
-    ->condition('tpps_tag_id', $form_state['values']['id'])
-    ->execute();
-  drupal_goto('tpps-tag');
-}
-
-/**
- * Returns array of tags associated with a submission.
- *
- * @param string $accession
- *   The accession of the desired submission.
- *
- * @return array
- *   Array of tags associated with the submission.
- */
-function tpps_submission_get_tags($accession) {
-  $query = db_select('tpps_submission_tag', 'st');
-  $query->join('tpps_submission', 's', 's.tpps_submission_id = st.tpps_submission_id');
-  $query->join('tpps_tag', 't', 't.tpps_tag_id = st.tpps_tag_id');
-  $query->fields('t');
-  $query->condition('s.accession', $accession);
-  return $query->execute()->fetchAllAssoc('tpps_tag_id', PDO::FETCH_ASSOC);
-}
-
-/**
- * Removes default tags associated with a submission.
- *
- * @param string $accession
- *   The accession of the desired submission.
- */
-function tpps_submission_clear_default_tags($accession) {
-  $tags = array(
-    'Genotype',
-    'Phenotype',
-    'Environment',
-  );
-  foreach ($tags as $tag) {
-    tpps_submission_remove_tag($accession, $tag);
-  }
-}
-
-/**
- * Edit submission tags.
- *
- * @param string $type
- *   Either 'add' or 'remove'.
- * @param string $accession
- *   The accession of the desired submission.
- * @param mixed $tag
- *   The name or id of the tag to be added or removed.
- */
-function tpps_submission_add_remove_tag($type, $accession, $tag) {
-  $result = db_select('tpps_tag', 't')
-    ->fields('t')
-    ->condition('tpps_tag_id', $tag)
-    ->range(0, 1)
-    ->execute()->fetchObject();
-
-  if ($result->static) {
-    drupal_goto('tpps-tag');
-  }
-
-  if ($type == 'add') {
-    tpps_submission_add_tag($accession, $tag);
-  }
-  if ($type == 'remove') {
-    tpps_submission_remove_tag($accession, $tag);
-  }
-}
-
-/**
- * Adds a tag to a submission.
- *
- * @param string $accession
- *   The accession of the desired submission.
- * @param mixed $tag
- *   The name or id of the tag to be added.
- */
-function tpps_submission_add_tag($accession, $tag) {
-  if (gettype($tag) == 'string') {
-    $id = tpps_get_tag_id($tag);
-    if (!empty($id)) {
-      $tag = $id;
-    }
-  }
-  $tags = tpps_submission_get_tags($accession) ?? [];
-  if (!array_key_exists($tag, $tags)) {
-    $submission = new Submission($accession);
-    if ($submission->id) {
-      db_insert('tpps_submission_tag')
-        ->fields([
-          'tpps_submission_id' => $submission->id,
-          'tpps_tag_id' => $tag,
-        ])
-        ->execute();
-    }
-  }
-}
-
-/**
- * Removes a tag from a submission.
- *
- * @param string $accession
- *   The accession of the desired submission.
- * @param mixed $tag
- *   The name or id of the tag to be removed.
- */
-function tpps_submission_remove_tag($accession, $tag) {
-  if (gettype($tag) == 'string') {
-    $id = tpps_get_tag_id($tag);
-    if (!empty($id)) {
-      $tag = $id;
-    }
-  }
-  $submission = new Submission($accession);
-  db_delete('tpps_submission_tag')
-    ->condition('tpps_submission_id', $submission->id)
-    ->condition('tpps_tag_id', $tag)
-    ->execute();
-}
-
-/**
- * Returns the id of a tag based on the name.
- *
- * @param string $name
- *   The name of the desired tag.
- *
- * @return int
- *   The id of the tag.
- */
-function tpps_get_tag_id($name) {
-  $result = db_select('tpps_tag', 't')
-    ->fields('t', array('tpps_tag_id'))
-    ->condition('name', $name)
-    ->range(0, 1)
-    ->execute()->fetchObject();
-
-  if ($result) {
-    return $result->tpps_tag_id;
-  }
-  return FALSE;
-}
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 /**
  * Gives all files in an accession a standardized name.
@@ -761,57 +430,6 @@ function tpps_submission_full_clear_db($project_id) {
 }
 
 /**
- * Removes project's data in the database.
- *
- * @param int $project_id
- *   Project Id.
- * @param mixed $verbose
- *   Default is TRUE. When TRUE log messages using tpps_log() will be shown.
- */
-function tpps_project_clear_db($project_id = NULL, $verbose = TRUE) {
-  if (is_null($project_id)) {
-    throw new Exception('Project Id is required.');
-  }
-  $data = [
-    'chado' => [
-      'project_organism',
-      'project_pub',
-      'projectprop',
-      'genotype_call',
-    ],
-    'public' => [
-      'tpps_project_file_managed',
-    ],
-  ];
-
-  $message = 'Cleared "@table_name" for project @project_id';
-  foreach ($data as $schema => $table_list) {
-    foreach ($table_list as $table_name) {
-      if ($schema == 'chado') {
-        $sql = "DELETE FROM $table_name WHERE project_id = $project_id";
-        //chado_query($sql);
-        $num_deleted = db_delete($schema . '.' . $table_name)
-          ->condition('project_id', $project_id)
-          ->execute();
-      }
-      else {
-        $num_deleted = db_delete($schema . '.' . $table_name)
-          ->condition('project_id', $project_id)
-          ->execute();
-      }
-      if ($verbose) {
-        $params = ['@table_name' => $table_name, '@project_id' => $project_id];
-        if (!is_null($num_deleted)) {
-          $params['@num_deleted'] = $num_deleted;
-          $message .= '. Deleted: @num_deleted rows';
-        }
-        tpps_log($message, $params);
-      }
-    }
-  }
-}
-
-/**
  * Clears submission data from the database.
  *
  * This function is particularly useful when submitting a study to the database
@@ -822,75 +440,27 @@ function tpps_project_clear_db($project_id = NULL, $verbose = TRUE) {
  *   The accession number of the submission.
  *
  * @return bool
- *   Returns TRUE if submission successfully cleared.
+ *   Returns TRUE if submission successfully cleared and FALSE otherwise.
  */
 function tpps_submission_clear_db($accession) {
+  $time_start = time();
   $submission = new Submission($accession);
-  $submission->sharedState['file_rank'] = 0;
-  $project_id = $submission->sharedState['ids']['project_id'] ?? NULL;
-  if (empty($project_id)) {
-    return FALSE;
-  }
   if (empty($accession)) {
     throw new Exception('Accession cannot be empty');
   }
-
-  $time_start = time();
 
   // This will perform a full delete of feature ids as well (used to delete features
   // from TGDR665 and 674 6/29/2023)
   // tpps_submission_full_clear_db($project_id);
 
-  // @TODO Execute $stocks_sql and use plain list of ids instead of query.
-  $stocks_sql = "SELECT stock_id FROM chado.project_stock WHERE project_id = $project_id";
-  tpps_log($stocks_sql);
-  chado_query("UPDATE chado.project_dbxref SET is_current = FALSE WHERE project_id = $project_id");
-
-  tpps_project_clear_db($project_id);
-
-  chado_query("DELETE FROM chado.phenotype_cvterm WHERE phenotype_id IN (SELECT phenotype_id from chado.stock_phenotype WHERE stock_id in ($stocks_sql))");
-  tpps_log('DELETE chado.phenotype_to_synonym values for project...');
-  chado_query("DELETE FROM chado.phenotype_to_synonym WHERE phenotype_id IN (SELECT phenotype_id FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql))");
-  tpps_log('DELETE chado.phenotype values for project...');
-  chado_query("DELETE FROM chado.phenotype WHERE phenotype_id IN (SELECT phenotype_id FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql))");
-
-  $table_list = [
-    'chado.genotype_reads_per_plant',
-    'chado.plants_per_marker',
-  ];
-  foreach ($table_list as $table) {
-    if (db_table_exists($table)) {
-      tpps_log('DELETE $table values for accession $accession...');
-      chado_query("DELETE FROM $table WHERE study_accession = '" . strtoupper($accession) . "';");
-    }
+  $result = $submission->clearDataBase();
+  if ($result) {
+    tpps_log('FINISHED DB CLEAR DELETES');
+    tpps_log('Time taken to delete records: @time seconds.',
+      ['@time' => time() - $time_start]
+    );
   }
-  tpps_log('DELETE chado.stock_genotype values for project...');
-  chado_query("DELETE FROM chado.stock_genotype WHERE stock_id IN ($stocks_sql)");
-  tpps_log('DELETE chado.stock_phenotype values for project...');
-  chado_query("DELETE FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql)");
-  tpps_log('DELETE chado.stock values for project...');
-  chado_query("DELETE FROM chado.stock WHERE stock_id IN ($stocks_sql)");
-  tpps_log('DELETE chado.phenotype values for project...');
-  chado_query("DELETE FROM chado.phenotype WHERE uniquename LIKE '" . $accession . "-%';");
-
-  tpps_log('DELETE chado.plants_per_marker values for project...');
-  chado_query("DELETE FROM chado.plants_per_marker WHERE study_accession = '" . $accession . "';");
-  tpps_log('FINISHED DB CLEAR DELETES');
-  
-  $time_end = time();
-  tpps_log('Time taken to delete records: @time.', ['@time' => $time_end - $time_start]);
-
-  // Force delete stock just in case by study accession name.
-  // Make sure to ensure $accession is properly populated before doing this.
-  if (strpos($accession, 'TGDR') !== FALSE && strlen($accession) >= 7) {
-    chado_query("DELETE FROM chado.stock WHERE uniquename LIKE :accession", [
-      ':accession' => $accession . '-%'
-    ]);
-  }
-
-  $submission->sharedState['ids'] = ['project_id' => $project_id];
-  $submission->save();
-  return TRUE;
+  return $result;
 }
 
 /**
@@ -1112,24 +682,42 @@ function tpps_submission_edit_publication_submit($form, &$form_state) {
 /**
  * Builds list of accessions (values) and their dbxref_id's as a keys.
  *
+ * Cached version: ~3 msec.
+ * Non-cached version: ~280 msec.
+ *
  * @param bool $is_optional
  *   Should this list have an extra item '- Select -' which makes this
  *   dropdown list optional.
+ * @param bool $reset
+ *   Flag is cache must be resetted. Default if FALSE.
  *
  * @return array
  *   Returns array where keys are studie's dbxref_id and value is an
  *   accession (like TGDRxxxx).
  */
-function tpps_submission_get_tgdr_number_list($is_optional = TRUE) {
-  $result = db_query('SELECT dbxref_id, accession '
-    . 'FROM chado.dbxref '
-    . 'WHERE accession LIKE \'TGDR%\' '
-    . 'ORDER BY accession DESC;');
-  $list = $result->fetchAllKeyed();
-  if ($is_optional) {
-    $list = [0 => '- Select -'] + $list;
+function tpps_submission_get_tgdr_number_list($is_optional = TRUE, $reset = FALSE) {
+  $default_value = [];
+
+  $cid = __FUNCTION__;
+  $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+  $cache = cache_get($cid, $cache_bin);
+  $key = md5(json_encode(func_get_args()));
+  if ($reset || empty($cache) || empty($cache->data[$key])) {
+    $content = $default_value;
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    $content = db_query('SELECT dbxref_id, accession '
+      . 'FROM chado.dbxref '
+      . 'WHERE accession LIKE \'TGDR%\' '
+      . 'ORDER BY accession DESC;')->fetchAllKeyed();
+    if ($is_optional) {
+      $content = array_merge([0 => '- Select -'], $content);
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    $cache->data[$key] = $content;
+    cache_set($cid, $cache->data, $cache_bin);
   }
-  return $list;
+  $content = $cache->data[$key] ?? $default_value;
+  return $content;
 }
 
 /**

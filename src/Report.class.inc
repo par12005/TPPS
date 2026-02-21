@@ -3,6 +3,8 @@
 /**
  * @file
  * Contains 'Report' class.
+ *
+ * Documentation: /reports/README.md.
  */
 
 /**
@@ -340,14 +342,29 @@ class Report {
   public static function getList() {
     return [
       // Files.
-      'missing_files' => [
-        'url' => 'missing-files',
-        'title' => variable_get('tpps_report_missing_files_title',
-          'Files missing in filesystem'
-        ),
-        'description' => t("List of all (including submission's) files missing "
-        . "in filesystem but present in DB table 'file_managed'."),
-        'admin_panel' => TRUE,
+      'file' => [
+        'missing' => [
+          'title' => variable_get('tpps_report_file_missing_title',
+            'Files missing in filesystem'
+          ),
+          'description' => t("List of all (including submission's) files missing "
+          . "in filesystem but present in DB table 'file_managed'."),
+          'admin_panel' => TRUE,
+        ],
+        'not_used' => [
+          'title' => variable_get('tpps_report_file_not_used_title',
+            'Not used files'
+          ),
+          'description' => t("List of the files which not used by any study."),
+          'admin_panel' => TRUE,
+        ],
+        'orphan' => [
+          'title' => variable_get('tpps_report_file_orphan_title',
+            'Orphan files'
+          ),
+          'description' => t('List of the files which do not belong to any submission.'),
+          'admin_panel' => TRUE,
+        ],
       ],
       // Misc.
       'variable_list' => [
@@ -578,7 +595,7 @@ class Report {
         continue;
       }
       // @TODO Implement multiple levels support.
-      $sub_item_list = TppsArray::getValue($report_list, [$item]);
+      $sub_item_list = TppsArray::get($report_list, [$item]);
       if (!empty($sub_item_list)) {
         return static::buildOverviewPage($sub_item_list, [$item]);
       }

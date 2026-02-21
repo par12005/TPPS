@@ -5,13 +5,11 @@
  * TPPS Submission View.
  */
 
-module_load_include('inc', 'tpps', 'pages/submission/list');
-
 /**
  * Menu callback. Shows a single submission data.
  */
 function tpps_submission_view_form(array $form, array $form_state, $accession = '', $type = '') {
-  tpps_submission_list_validate_accession($accession);
+  TppsForm::validateAccession($accession);
   $submission = new Submission($accession);
 
   if ($submission->doesNotExist()) {
@@ -35,7 +33,7 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
   //module_load_include('inc', 'tpps', 'includes/submissions');
   $import_meta = $submission->getImportMeta();
   if (!empty($import_meta)) {
-    tpps_form_add_report($form, [
+    TppsForm::addReport($form, [
       'import_metadata' => [
         'title' => t('Import Metadata'),
         'data' => theme('item_list', [
@@ -145,7 +143,7 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
     }
   }
 
-  //tpps_submission_list_add_buttons($form);
+  // TppsForm::addSubmissionActionButtons($form);
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
   return $form;

@@ -1,3 +1,4 @@
+/* @TODO Use Drupa.behaviour to have this feature working more then one time. */
 jQuery(document).ready(function ($) {
   var picker = true;
   $('#edit-color').colorPicker({

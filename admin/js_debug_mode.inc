@@ -41,7 +41,7 @@ function tpps_js_debug_mode_settings_form(array $form, array &$form_state) {
     '#title' => t('JavaScript Debug Mode Notes'),
     '#collapsible' => TRUE,
   ];
-  tpps_form_add_fieldset_collapsed_state($form, $form_state, $fieldset);
+  TppsForm::addFieldsetCollapsedState($form, $form_state, $fieldset);
 
   $default_value = variable_get('tpps_js_debug_mode');
   $features = tpps_js_debug_mode_get_features_list();

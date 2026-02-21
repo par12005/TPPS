@@ -9,10 +9,20 @@ dependencies[] = ultimate_cron
 dependencies[] = jquery_update
 dependencies[] = tripal_eutils
 
+; Submission.
+files[] = src/submission/Submission.class.inc
+files[] = src/submission/SubmissionCache.class.inc
+files[] = src/submission/SubmissionVersion.class.inc
+files[] = src/submission/ImportedSubmissionList.class.inc
+files[] = src/submission/FormRemoveSubmission.class.inc
+
+; Submission Tag.
+files[] = src/submission_tag/SubmissionTag.class.inc
+files[] = src/submission_tag/FormCreateSubmissionTag.class.inc
+files[] = src/submission_tag/FormEditSubmissionTag.class.inc
+files[] = src/submission_tag/FormRemoveSubmissionTag.class.inc
+
 ; Main
-files[] = src/Submission.class.inc
-files[] = src/SubmissionCache.class.inc
-files[] = src/SubmissionVersion.class.inc
 files[] = src/Organism.class.inc
 files[] = src/ChadoDb.class.inc
 files[] = src/PhenotypeSynonym.class.inc
@@ -21,13 +31,15 @@ files[] = src/NextFlowManager.class.inc
 
 ; Misc
 files[] = src/RestAPI.class.inc
-files[] = src/ImportedSubmissionList.class.inc
 files[] = src/Report.class.inc
 files[] = src/FormState.class.inc
-files[] = src/TppsConfiguration.class.inc
-files[] = src/TppsArray.class.inc
-files[] = src/FormState.class.inc
 files[] = src/CVTerm.class.inc
+
+; Tpps. Elemental Entities.
+files[] = src/tpps/TppsConfiguration.class.inc
+files[] = src/tpps/TppsArray.class.inc
+files[] = src/tpps/TppsForm.class.inc
+files[] = src/tpps/TppsFile.class.inc
 
 ; Zenodo API.
 files[] = src/zenodo/Zenodo.class.inc
@@ -39,7 +51,6 @@ files[] = src/zenodo/ZenodoHost.class.inc
 ; files[] = src/zenodo/ZenodoRecords.class.inc
 
 ; File Fields.
-files[] = src/TppsFile.class.inc
 files[] = src/FileField.class.inc
 ; File Fields / Phenotype.
 files[] = src/phenotype/PhenotypeManual.class.inc

@@ -115,18 +115,15 @@ function tpps_submission_purge_multiple_form_submit(array $form, array &$form_st
     array_values($form_state['input']['tpps_submission_accession'] ?? [])
   );
   if (!empty($accession_list)) {
-    $submission = new Submission();
     foreach ($accession_list as $accession) {
       if ($accession == 'all_broken') {
         $data = tpps_submission_purge_multiple_get_range();
         for ($i = $data['latest_accession']; $i >= $data['last_real_accession']; $i--) {
-          $submission->accession = 'TGDR' . $i;
-          $submission->purge();
+          tpps_submission_load('TGDR' . $i)->purge();
         }
       }
       else {
-        $submission->accession = $accession;
-        $submission->purge();
+        tpps_submission_load($accession)->purge();
       }
     }
   }

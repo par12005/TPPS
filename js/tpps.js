@@ -482,19 +482,37 @@
             var tag_button = this;
             var info = this.id.match(/(TGDR[0-9]+)-tag-([0-9]*)-(add|remove)/);
             if (info.length == 4) {
-              var request = $.get('/tpps-tag/' + info[3] + '/' + info[1] + '/' + info[2]);
-              request.done(function (data) {
+              // 3: (add/remove), 1: Study accession, 2: Tag Id
+              // Note: Submission Tag won't be created but existing tag
+              // linked to submission. Tag won't be removed but unlinked.
+              let action = (info[3] == 'add' ? 'link' : (info[3] == 'remove' ? 'unlink' : ''));
+              let requestUrl = '/api/submission/' + info[1] + '/tag/' + info[2] + '/' + action;
+              $.get(requestUrl).done(function (data) {
                 if (info[3] == 'remove') {
                   $(tag_button).parent().hide();
                   var pattern = new RegExp('TGDR[0-9]+-tag-' + info[2] + '-add');
-                  $('span').filter(function() { return this.id.match(pattern); }).show();
+                  $('span')
+                    .filter(function() { return this.id.match(pattern); })
+                    .show();
+                  // To remove option from 'Remove Tag' dropdown menu and add
+                  // to 'Add Tag' we need to reload page because we can't just
+                  // move option to other select element. Drupal Form became
+                  // 'invalid' and error message appears: "An illegal choice
+                  // has been detected. Please contact the site administrator."
+                  // @TODO To avoid page reload: Add all options in both
+                  // dropdowns and then remove them on client side.
+                  location.reload();
+                  // Remove item from the dropdown menu.
+                  $('select#edit-tag-remove-option option[value="' + info[2] + '"]')
+                    .remove();
                 }
-                else {
+                else if (info[3] == 'add') {
                   $(tag_button).hide();
                   var pattern = new RegExp('TGDR[0-9]+-tag-' + info[2] + '-remove');
-                  $('span.tag-close').filter(function() {
-                    return this.id.match(pattern);
-                  }).parent().show();
+                  $('span.tag-close')
+                    .filter(function() {return this.id.match(pattern);})
+                    .parent()
+                    .show();
                 }
               });
             }

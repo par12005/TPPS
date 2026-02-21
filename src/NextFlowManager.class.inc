@@ -77,9 +77,9 @@ class NextFlowManager {
         $this->addNextflowArgument('resume', '', false);
     }
 
-    /** 
+    /**
      * Should be called within the constructor
-     * 
+     *
      * @param nxf running and output dir
      * @return output directory path
      */
@@ -295,7 +295,7 @@ class NextFlowManager {
      * Executes sbatch on cluster
      *
      * @throws Exception Failed to connect or Failed to get jobId
-     * @return jobId the SLURM job ID for monitoring status 
+     * @return jobId the SLURM job ID for monitoring status
      */
     public function submitJob(): string
     {
@@ -397,10 +397,10 @@ class NextFlowManager {
     public function writeConfig($nodesToExc) {
         $configFileName = $this->out_dir . "/" . 'clusterOptions.config';
         $configFile = fopen($configFileName, "w") or die("Unable to open config file " . $configFileName);
-    
+
         $clusterOptionsLine = "clusterOptions = { [ task.memory <= 245.GB ? '--qos=general' : '--qos=himem', '--exclude=" . $nodesToExc . "' ].join(' ').trim() }";
-    
-        $configContent = 
+
+        $configContent =
     "params {\n" .
     "    config_profile_description = 'The UConn HPC profile'\n" .
     "    config_profile_contact     = 'noah.reid@uconn.edu'\n" .
@@ -433,11 +433,11 @@ class NextFlowManager {
     "    autoMounts    = true\n" .
     "    conda.enabled = false\n" .
     "}\n";
-    
+
         fwrite($configFile, $configContent);
         fclose($configFile);
-    
+
         return $configFileName;
-    }    
+    }
 }
 ?>

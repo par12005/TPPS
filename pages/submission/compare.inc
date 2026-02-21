@@ -12,13 +12,11 @@
  * reviewed studies files was detected correclty using 'comolete form'.
  */
 
-module_load_include('inc', 'tpps', 'pages/submission/list');
-
 /**
  * TPPS Study Import Form.
  */
 function tpps_submission_compare_form(array $form, array &$form_state, $accession_1 = '', $accession_2 = '') {
-  tpps_submission_list_validate_accession($accession_1);
+  TppsForm::validateAccession($accession_1);
   $accession_list = SubmissionCache::getAccessionList();
   $form['tpps_submission_accession_1'] = [
     '#type' => 'select',
@@ -34,8 +32,8 @@ function tpps_submission_compare_form(array $form, array &$form_state, $accessio
     '#default_value' => $accession_2 ?? array_key_first($accession_list) ?? '',
     '#required' => TRUE,
   ];
-  tpps_form_autofocus($form, ['tpps_submission_accession_2']);
-  tpps_submission_list_add_buttons($form);
+  TppsForm::autofocus($form, ['tpps_submission_accession_2']);
+  TppsForm::addSubmissionActionButtons($form);
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
   return $form;
@@ -47,7 +45,7 @@ function tpps_submission_compare_form(array $form, array &$form_state, $accessio
 function tpps_submission_compare_form_submit(array $form, array &$form_state) {
   $accession_1 = $form_state['input']['tpps_submission_accession_1'] ?? NULL;
   $accession_2 = $form_state['input']['tpps_submission_accession_2'] ?? NULL;
-  tpps_submission_list_validate_accession($accession_1);
+  TppsForm::validateAccession($accession_1);
   if ($accession_1 == $accession_2) {
     drupal_set_message(t('Submission @accession_1 and @accession_2 are equal.',
       ['@accession_1' => $accession_1, '@accession_2' => $accession_2]

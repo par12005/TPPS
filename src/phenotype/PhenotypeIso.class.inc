@@ -192,7 +192,7 @@ class PhenotypeIso extends FileField {
     $parents = static::getParents($organism_index, $form_state);
     // @TODO Create a separate method to hide implementation.
     $form_field_error_name = implode('][', $parents);
-    $file_element = TppsArray::getValue($form, $parents);
+    $file_element = TppsArray::get($form, $parents);
 
     if (empty($fid = static::getFileId($organism_index, $form_state))) {
       $message = t("Phenotype Isotope/Mass Spectrometry File: field is required.");
@@ -361,7 +361,7 @@ class PhenotypeIso extends FileField {
     $parents = static::getCheckboxParents($organism_index);
     $key_exists = NULL;
     if (!empty($form_state['values'])) {
-      $value = TppsArray::getValue(
+      $value = TppsArray::get(
         $form_state['values'],
         $parents,
         $key_exists
@@ -371,7 +371,7 @@ class PhenotypeIso extends FileField {
       }
     }
     if (!empty($form_state['saved_values'][TPPS_PAGE_4])) {
-      $value = TppsArray::getValue(
+      $value = TppsArray::get(
         $form_state['saved_values'][TPPS_PAGE_4],
         $parents,
         $key_exists

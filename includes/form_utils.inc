@@ -125,19 +125,19 @@ function tpps_dynamic_list(array &$form, array &$form_state, $id, array $repeat,
         $new_value = preg_replace(
           $replace_pattern,
           $i,
-          TppsArray::getValue($repeat, $field)
+          TppsArray::get($repeat, $field)
         );
-        TppsArray::setValue($instance, $field, $new_value);
+        TppsArray::set($instance, $field, $new_value);
       }
     }
     foreach ($sub_keys as $key) {
-      $value = TppsArray::getValue($instance, $key);
-      TppsArray::setValue($instance, $key, NULL);
+      $value = TppsArray::get($instance, $key);
+      TppsArray::set($instance, $key, NULL);
       $new_key = [];
       foreach ($key as $key_item) {
         $new_key[] = preg_replace($replace_pattern, $i, $key_item);
       }
-      TppsArray::setValue($instance, $new_key, $value);
+      TppsArray::set($instance, $new_key, $value);
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -149,7 +149,7 @@ function tpps_dynamic_list(array &$form, array &$form_state, $id, array $repeat,
         continue;
       }
       $key_exists = FALSE;
-      $value = TppsArray::getValue($form_state,
+      $value = TppsArray::get($form_state,
         ['saved_values', $stage, $id, $i, $field_name], $key_exists
       );
       if ($key_exists && $value) {
@@ -159,7 +159,7 @@ function tpps_dynamic_list(array &$form, array &$form_state, $id, array $repeat,
     }
     $element[$i] = $instance;
   }
-  TppsArray::setValue($form, array_merge($parents, [$id]), $element);
+  TppsArray::set($form, array_merge($parents, [$id]), $element);
 }
 
 /**
@@ -201,7 +201,7 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
   $button_name = $state['triggering_element']['#name'] ?? '';
   if (preg_match('/^.*_(upload|remove)_button$/', $button_name)) {
     array_unshift($value_parents, 'complete form');
-    $val = TppsArray::getValue($state, $value_parents);
+    $val = TppsArray::get($state, $value_parents);
     if (isset($val['#type']) and $val['#type'] == 'hidden') {
       array_push($value_parents, '#value');
     }
@@ -211,7 +211,7 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
     // have recent changes from browser on AJAX-requests but 'input' has!
     array_unshift($value_parents, 'input');
   }
-  $val = TppsArray::getValue($state, $value_parents);
+  $val = TppsArray::get($state, $value_parents);
   if (isset($val) and array_key_exists($button_name, $options)) {
     $increment = $options[$button_name];
     $new_val = $val;
@@ -224,15 +224,15 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
     if (is_string($increment) and function_exists($increment)) {
       $new_val = $increment($button_name, $val);
     }
-    TppsArray::setValue($state, $value_parents, $new_val);
+    TppsArray::set($state, $value_parents, $new_val);
   }
   elseif (isset($val) and $button_name == $up) {
-    TppsArray::setValue($state, $value_parents, $val + 1);
+    TppsArray::set($state, $value_parents, $val + 1);
   }
   elseif (isset($val) and $button_name == $down and $val > $minimum) {
-    TppsArray::setValue($state, $value_parents, $val - 1);
+    TppsArray::set($state, $value_parents, $val - 1);
   }
-  $val = TppsArray::getValue($state, $value_parents);
+  $val = TppsArray::get($state, $value_parents);
   if (isset($val)) {
     return $val;
   }
@@ -243,7 +243,7 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
   // place with actual data for AJAX-requests.
   $saved_value_parents = $parents;
   array_unshift($saved_value_parents, 'saved_values', $page);
-  $saved_val = TppsArray::getValue($state, $saved_value_parents);
+  $saved_val = TppsArray::get($state, $saved_value_parents);
   if (isset($saved_val)) {
     return $saved_val;
   }
@@ -280,11 +280,11 @@ function tpps_get_ajax_value(array &$state, array $parents, $default = NULL, $fi
   $page = $state['stage'];
   $value_parents = $parents;
   array_unshift($value_parents, 'values');
-  $element = TppsArray::getValue($state, $value_parents);
+  $element = TppsArray::get($state, $value_parents);
   if (isset($element['#type']) and $element['#type'] != 'fieldset') {
     array_push($value_parents, '#value');
   }
-  $val = TppsArray::getValue($state, $value_parents);
+  $val = TppsArray::get($state, $value_parents);
   if (isset($val)) {
     return $val;
   }
@@ -292,11 +292,11 @@ function tpps_get_ajax_value(array &$state, array $parents, $default = NULL, $fi
   // @todo Minor. Combine with code above to avoid duplication. Use loop.
   $complete_parents = $parents;
   array_unshift($complete_parents, 'complete form');
-  $element = TppsArray::getValue($state, $complete_parents);
+  $element = TppsArray::get($state, $complete_parents);
   if (isset($element['#type']) and $element['#type'] != 'fieldset') {
     array_push($complete_parents, '#value');
   }
-  $val = TppsArray::getValue($state, $complete_parents);
+  $val = TppsArray::get($state, $complete_parents);
   if (isset($val)) {
     return $val;
   }
@@ -317,7 +317,7 @@ function tpps_get_ajax_value(array &$state, array $parents, $default = NULL, $fi
     }
   }
   array_unshift($saved_value_parents, 'saved_values', $page);
-  $saved_val = TppsArray::getValue($state, $saved_value_parents);
+  $saved_val = TppsArray::get($state, $saved_value_parents);
   return $saved_val ?? $default;
 }
 
@@ -334,7 +334,7 @@ function tpps_get_ajax_value(array &$state, array $parents, $default = NULL, $fi
  * @param array $old
  *   The old form state with the old information.
  *
- * @todo Minor. Move code to 'Submission' class.
+ * @todo Minor. Move code to 'FormState' class.
  */
 function tpps_form_state_info(array &$new, array &$old) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -476,7 +476,7 @@ function tpps_pre_validate_init($accession = NULL) {
   $jobs = [];
   foreach ($vcfs as $org_num => $fid) {
     $includes = [];
-    $includes[] = module_load_include('inc', 'tpps', 'includes/form_utils');
+    $includes[] = dodule_load_include('inc', 'tpps', 'includes/form_utils');
     $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
     $args = [$accession, $fid, $org_num];
     $jobs[] = tripal_add_job(
@@ -502,7 +502,7 @@ function tpps_compare_accession_file_vs_vcf_file_tree_ids($accession = NULL, $i 
   );
 
   $organism_key = 'organism-' . $i;
-  $genotype = TppsArray::getValue($submission->state, [
+  $genotype = TppsArray::get($submission->state, [
     'saved_values',
     TPPS_PAGE_4,
     $organism_key,

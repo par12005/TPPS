@@ -5,13 +5,11 @@
  * TPPS Submission Rename local VCF file.
  */
 
-module_load_include('inc', 'tpps', 'pages/submission/list');
-
 /**
  * Builds form "TPPS Submission Rename local VCF file".
  */
 function tpps_submission_local_vcf_rename_form(array $form, array &$form_state, $accession = '') {
-  tpps_submission_list_validate_accession($accession);
+  TppsForm::validateAccession($accession);
   if (empty($accession)) {
     $message = t("Empty accession.");
     drupal_set_message($message, 'error');
@@ -132,7 +130,7 @@ function tpps_submission_local_vcf_rename_form_submit(array $form, array &$form_
         'local_vcf',
         $form_version = 1
       );
-      TppsArray::setValue($submission->sharedState, $parents, $file_path);
+      TppsArray::set($submission->sharedState, $parents, $file_path);
       $updated = TRUE;
     }
   }

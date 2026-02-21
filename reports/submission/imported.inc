@@ -73,18 +73,18 @@ function tpps_report_submission_imported() {
       l(theme('submission_accession_link', ['accession' => $local]),
         'tpps/submission/' . $local . '/view', $params
       ),
-      $data[$local]['status'] ?? NULL,
-      $data[$local]['tripal_job']['status'] ?? '-',
-      $import_meta[SubmissionVersion::FORM_KEY] ?? NULL,
-      $import_meta['current_version'] ?? NULL,
-      $data[$local]['submitter']['uid'] ?? NULL,
-      $import_meta['full_date'] ?? NULL,
       implode(', ',
         Submission::getPageList([
           'accession' => $local,
           'destination' => 'admin/reports/tpps/submission/imported',
         ])
       ),
+      $data[$local]['status'] ?? NULL,
+      $data[$local]['tripal_job']['status'] ?? '-',
+      $import_meta[SubmissionVersion::FORM_KEY] ?? NULL,
+      $import_meta['current_version'] ?? NULL,
+      $data[$local]['submitter']['uid'] ?? NULL,
+      $import_meta['full_date'] ?? NULL,
     ];
   }
 
@@ -103,13 +103,13 @@ function tpps_report_submission_imported() {
     'header' => [
       t('Original <br /><strong>Accession</strong>'),
       t('Imported<br /><strong>Accession</strong>'),
+      t('Pages'),
       t('Submission<br /><strong>Status</strong>'),
       t('Tripal Job<br /><strong>Status</strong>'),
       t('Original') . $version_tags,
       t('Submitted') . $version_tags,
       t('UID'),
       t('Import Date'),
-      t('Pages'),
     ],
     'rows' => $rows,
     'empty' => t('No data'),

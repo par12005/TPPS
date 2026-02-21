@@ -83,7 +83,7 @@ function tpps_page_1_create_regular_form(array $form, array &$form_state) {
   );
 
   tpps_form_organism($form, $form_state);
-  tpps_form_add_buttons(['form' => &$form, 'page' => 'page_1']);
+  TppsForm::addButtons(['form' => &$form, 'page' => 'page_1']);
   return $form;
 }
 
@@ -141,13 +141,10 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#default_value' =>
       tpps_get_ajax_value($form_state, ['publication', 'status'], ''),
   ];
-  tpps_form_autofocus($form, ['publication', 'status']);
+  TppsForm::autofocus($form, ['publication', 'status']);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // DOI Fields.
   //
-  // Note:
-  // Checkbox 'use_old_tgdr' is defined in TPPSc/forms/build/front.php.
-  // Accession will be stored in 'old_tgdr' field.
   //
   // Field was relocated (v.2). ['doi'] -> ['publication', 'publication_doi'];
   $form['publication']['publication_doi'] = [
@@ -157,7 +154,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#default_value' => tpps_get_ajax_value(
       $form_state, ['publication', 'publication_doi'], ''
     ),
-    '#description' => tpps_form_get_doi_examples(),
+    '#description' => TppsForm::getDoiExamples(),
     '#prefix' => '<div id="doi-message"></div>',
     '#states' => [
       'visible' => [
@@ -175,7 +172,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#default_value' => tpps_get_ajax_value(
       $form_state, ['publication', 'dataset_doi'], ''
     ),
-    '#description' => tpps_form_get_doi_examples(),
+    '#description' => TppsForm::getDoiExamples(),
     '#states' => [
       'visible' => [
         [':input[name="publication[status]"]' => ['value' => 'Published']],
@@ -283,6 +280,9 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $form_state['ids']['project_id'] = tpps_get_project_id($form_state['dbxref_id']);
 
   // Load existing study data.
+  // Note:
+  // Checkbox 'use_old_tgdr' is defined in TPPSc/forms/build/front.php.
+  // 'dbxref id' of existing study is stored in 'old_tgdr' field.
   if (!empty($form_state['saved_values']['frontpage']['use_old_tgdr'])) {
     // Usage of existing accession:
     // $values['accession'] = TGDR864;
@@ -294,7 +294,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     // and fills form fields was removed in branch VS/page1_improvements.
   }
 
-  tpps_form_add_buttons(['form' => &$form, 'page' => 'page_1']);
+  TppsForm::addButtons(['form' => &$form, 'page' => 'page_1']);
   return $form;
 }
 

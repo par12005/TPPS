@@ -87,7 +87,7 @@ function tpps_front_create_form(array &$form, array $form_state) {
           '#options' => $options,
           '#default_value' => $form_state['saved_values']['frontpage']['accession'] ?? 'new',
         ];
-        tpps_form_autofocus($form, ['accession']);
+        TppsForm::autofocus($form, ['accession']);
         $form['use_old_tgdr'] = [
           '#type' => 'checkbox',
           '#title' => t('I would like to use an existing TGDR number'),
@@ -96,9 +96,11 @@ function tpps_front_create_form(array &$form, array $form_state) {
         $form['old_tgdr'] = [
           '#type' => 'select',
           '#title' => t('Existing TGDR number'),
-          '#options' => tpps_submission_get_tgdr_number_list(TRUE),
-          '#description' => t('<div class="error">WARNING: Using this TGDR '
-            . 'number will clear all data associated with this study!</div>'),
+          '#options' => tpps_submission_get_tgdr_number_list($is_optional = TRUE),
+          '#description' => '<div class="error">'
+            . t('WARNING: Using this TGDR number will clear all data '
+            . 'associated with this study!')
+            . '</div>',
           '#states' => [
             'visible' => [
               ':input[name="use_old_tgdr"]' => ['checked' => TRUE],
@@ -144,8 +146,17 @@ function tpps_front_create_form(array &$form, array $form_state) {
     $prefix_text .= "</div></div>";
 
     if (user_is_anonymous()) {
-      $prefix_text .= "<div style='text-align: center'>To begin submitting your data, please ensure that you're logged in to access upload features on this page.</div>";
-      $prefix_text .= "<div style='text-align: center'>If you do not have an account <a style='color: #e2b448;' href='/user/register'>register one here</a> or <a style='color: #e2b448' href='/user/login'>click here to login</a></div>";
+      // @todo Use css classes and theme-functions.
+      $prefix_text .= '<div style="text-align: center">'
+        . t("To begin submitting your data, please ensure that you're "
+        . "logged in to access upload features on this page.")
+        . '</div>';
+      // @todo Use l() instead of <a> tags.
+      $prefix_text .= '<div style="text-align: center">' .
+        t("If you do not have an account <a style='color: #e2b448;' "
+        . "href='/user/register'>register one here</a> or <a style='color: "
+        . "#e2b448' href='/user/login'>click here to login</a>")
+        . "</div>";
     }
 
     $form['description'] = ['#markup' => $prefix_text];

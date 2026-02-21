@@ -74,6 +74,7 @@ function tpps_report_submission_file($filter = NULL) {
     $report_data = [$accession => $data[$accession]];
   }
   else {
+    krsort($data);
     if ($filter == 'all') {
       $report_data = $data;
     }
@@ -109,7 +110,7 @@ function tpps_report_submission_file($filter = NULL) {
         case PhenotypeMeta::DOM_NAME:
           $report_data = [];
           foreach (array_keys($data) as $accession) {
-            $grouped_list = TppsArray::getValue($data,
+            $grouped_list = TppsArray::get($data,
               [$accession, 'file', SubmissionCache::FILE_GROUPED_LIST]
             );
             if (empty($grouped_list)) {
@@ -184,6 +185,7 @@ function tpps_report_submission_file_all_theme_single_row(array $context) {
   // New array must be used to have correct order of keys.
   $filter = ($context['is_single']) ? 'all' : $context['report_filter'];
 
+  $total_filesize = 0;
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   switch ($filter) {
     case Report::MISSING_FILES:
@@ -216,6 +218,8 @@ function tpps_report_submission_file_all_theme_single_row(array $context) {
             continue;
           }
           foreach ($field as $field_name => $fid) {
+            $file_size = $value['file']['id_list'][$fid] ?? 0;
+            $total_filesize += $file_size;
             if (in_array($fid, $value['file'][Report::MISSING_FILES])) {
               // File is missing in filesystem.
               $value['file']['grouped_list'][$group][$organism_label][$field_name]
@@ -223,16 +227,35 @@ function tpps_report_submission_file_all_theme_single_row(array $context) {
             }
             else {
               // File exists.
-              $value['file']['grouped_list'][$group][$organism_label][$field_name]
-                = theme('file_id',
+              if (is_numeric($fid)) {
+                $file_label = theme('file_id',
                   ['fid' => $fid, 'attributes' => ['title' => t('View Info')]]
-                ) . ' ' . theme('file_action_list',
-                  ['accession' => $accession, 'fid' => $fid]
                 );
+                $value['file']['grouped_list'][$group][$organism_label][$field_name]
+                  = $file_label
+                  . ' ' . theme('file_size', ['size' => $file_size])
+                  . ' ' . theme('file_action_list',
+                    ['accession' => $accession, 'fid' => $fid]
+                  );
+              }
+              else {
+                $file_label = theme('file_local_vcf',
+                  ['accession' => $accession, 'path' => $fid]
+                );
+              }
+              $value['file']['grouped_list'][$group][$organism_label][$field_name]
+                = $file_label . ' ' . theme('file_size', ['size' => $file_size]);
+              // Actions only for managed files (not for local VCF files).
+              if (is_numeric($fid)) {
+                $value['file']['grouped_list'][$group][$organism_label][$field_name]
+                  .= ' ' . theme('file_action_list',
+                    ['accession' => $accession, 'fid' => $fid]
+                  );
+              }
             }
           }
         }
-        $final_file_row[] = TppsArray::printList($value['file']['grouped_list'][$group]);
+        $final_file_row[] = TppsArray::print($value['file']['grouped_list'][$group]);
       }
       break;
   }
@@ -244,10 +267,12 @@ function tpps_report_submission_file_all_theme_single_row(array $context) {
         'accession' => $accession,
         'path' => 'admin/reports/tpps/submission/file/all/' . $accession,
         'show_version' => TRUE,
+        'show_load_time' => TRUE,
       ])
-        . '<br />['
-        . implode(', ', Submission::getPageList(['accession' => $accession]))
-        . ']',
+      . ' ' . theme('file_size', ['size' => $total_filesize])
+      . '<br />['
+      . implode(', ', Submission::getPageList(['accession' => $accession]))
+      . ']',
       theme('submission_submitter', $value),
       $value['stage'],
       $value['status'],
