@@ -36,10 +36,24 @@ function custom_blocks_block_info() {
     ],
   ];
 
+  $blocks['treegenes_data_summary_widget'] = [
+    'info' => t('TreeGenes Data Summary Widget (Splash)'),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+    'properties' => [
+      'administrative' => FALSE,
+      'weight' => 0,
+      'status' => 0,
+      'visibility' => BLOCK_VISIBILITY_LISTED,
+      'pages' => '<front>',
+    ],
+  ];
+
   return $blocks;
 }
 
 /**
+ * Implements hook_block_view().
+ *
  * This hook generates the contents of the blocks.
  */
 function custom_blocks_block_view($delta = '') {
@@ -50,6 +64,10 @@ function custom_blocks_block_view($delta = '') {
       $block['content'] = custom_block_get_16_body();
       break;
 
+    case 'treegenes_data_summary_widget':
+      $block['subject'] = NULL;
+      $block['content'] = custom_block_get_28_body();
+      break;
   }
   return $block;
 }
@@ -85,5 +103,111 @@ function custom_block_get_16_body() {
     ],
   ]);
   drupal_add_css(drupal_get_path('module', 'custom_blocks') . '/custom_blocks.css');
+  return $output;
+}
+
+/**
+ * Builds body of the block 28.
+ *
+ * Delta: 'treegenes_data_summary_widget'.
+ * Description: 'Splash - TreeGenes Data Summary Widget'.
+ */
+function custom_block_get_28_body() {
+  drupal_add_js('https://d3js.org/d3.v5.min.js', 'external');
+
+  // @TODO Cache data.
+  $sql_absolute_species_count = "
+  SELECT COUNT(*)
+  FROM (
+    SELECT organism.organism_id
+    FROM {organism}
+  ) AS COUNTTABLE;";
+
+  $sql_absolute_genus_count = "
+  SELECT COUNT(*) FROM (
+    SELECT DISTINCT(genus)
+    FROM {organism}
+  ) AS COUNTTABLE;";
+
+  $sql_absolute_orders_count = "
+  SELECT COUNT(*)
+  FROM (
+    SELECT  node.nid FROM node WHERE node.type LIKE 'order'
+  ) AS COUNTTABLE;";
+
+  $sql_sums_sql = "
+    SELECT
+      SUM(genomes) as genomes,
+      SUM(transcripts) as transcripts,
+      SUM(markers) as markers,
+      SUM(phenotypes) as phenotypes
+    FROM (
+      SELECT  SUM(genomes) as genomes,
+        SUM(transcripts) as transcripts,
+        SUM(markers) as markers,
+        SUM(phenotypes) as phenotypes
+      FROM chado.sequence_summary
+      GROUP BY chado.sequence_summary.order
+    ) AS TABLE1;";
+
+  $args = [];
+  $results_records_sums = chado_query($sql_sums_sql, $args);
+  $markers = 0;
+  $phenotypes = 0;
+  $transcripts = 0;
+  $genomes = 0;
+  foreach ($results_records_sums as $r) {
+    $markers = floor($r->markers / 1000) . 'K+';
+    $phenotypes = floor($r->phenotypes / 1000) . 'K+';
+    $transcripts = floor($r->transcripts / 1000 / 1000) . 'M+';
+    $genomes = $r->genomes;
+  }
+
+  $args = [];
+
+  /*Get total species count - absolute total*/
+  $result_records_absolute_species_count = cache_get('result_records_absolute_species_count', 'cache')->data;
+  if (
+    !isset($result_records_absolute_species_count)
+    || $result_records_absolute_species_count <= 0
+  ) {
+    $result_absolute_species_count = chado_query($sql_absolute_species_count, $args);
+    $result_records_absolute_species_count = 0;
+    foreach ($result_absolute_species_count as $r) {
+      $result_records_absolute_species_count = $r->count;
+      cache_set('result_records_absolute_species_count', $r->count, 'cache');
+    }
+  }
+
+  /*Get total genus count - absolute total*/
+  $result_absolute_genus_count = chado_query($sql_absolute_genus_count, $args);
+  $result_records_absolute_genus_count = 0;
+  foreach ($result_absolute_genus_count as $r) {
+    $result_records_absolute_genus_count = $r->count;
+  }
+
+  /*Get total orders count - absolute total*/
+  $result_absolute_orders_count = chado_query($sql_absolute_orders_count, $args);
+  $result_records_absolute_orders_count = 0;
+  foreach ($result_absolute_orders_count as $r) {
+    $result_records_absolute_orders_count = $r->count;
+  }
+
+  $settings = [
+    'custom_blocks' => [
+      'result_records_absolute_orders_count' => $result_records_absolute_orders_count,
+      'result_records_absolute_genus_count' => $result_records_absolute_genus_count,
+      'result_records_absolute_species_count' => $result_records_absolute_species_count,
+      'markers' => $markers,
+      'phenotypes' => $phenotypes,
+      'transcripts' => $transcripts,
+      'genomes' => $genomes,
+    ],
+  ];
+  drupal_add_js($settings, 'setting');
+  drupal_add_js(drupal_get_path('module', 'custom_blocks') . '/js/block_28.js');
+
+  $output = '<svg id="leaderboard" width="240" height="320"
+    style="margin-left: -15px;"></svg>';
   return $output;
 }
