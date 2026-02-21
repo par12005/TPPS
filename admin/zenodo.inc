@@ -124,21 +124,33 @@ function tpps_zenodo_settings_form_validate(array $form, array &$form_state) {
     // Validate token even stored in DB is the same just to be sure because
     // variable could be manually updated.
     variable_set($variable_name, $access_token);
+
     // Do request to check.
-    ZenodoHost::set($host);
-    try {
-      $response = ZenodoDeposit::list([]);
-      $message = t('Access token for Zenodo "<strong>@host_name</strong>" '
-        . 'Host is <strong>valid</strong>.', ['@host_name' => ucfirst($host)]
-      );
-      drupal_set_message($message);
+    if (variable_set('tpps_zenodo_validate_access_token', FALSE)) {
+      // @TODO Move Access token fields to separate form to avoid blocking of
+      // the other fields at form from updating.
+      ZenodoHost::set($host);
+      try {
+        $response = ZenodoDeposit::list([]);
+        $message = t('Access token for Zenodo "<strong>@host_name</strong>" '
+          . 'Host is <strong>valid</strong>.', ['@host_name' => ucfirst($host)]
+        );
+        drupal_set_message($message);
+      }
+      catch (Exception $e) {
+        $message = t('Access token for Zenodo "<strong>@host_name</strong>" '
+          . 'Host is <strong>invalid</strong>.', ['@host_name' => ucfirst($host)]
+        );
+        form_set_error('tpps_zenodo_access_token_' . $host, $message);
+        variable_set($variable_name, $old_access_token);
+      }
     }
-    catch (Exception $e) {
-      $message = t('Access token for Zenodo "<strong>@host_name</strong>" '
-        . 'Host is <strong>invalid</strong>.', ['@host_name' => ucfirst($host)]
+    else {
+      $message = t(
+        'Access token for <strong>@host</strong> was accepted without validation.',
+        ['@host' => $host]
       );
-      form_set_error('tpps_zenodo_access_token_' . $host, $message);
-      variable_set($variable_name, $old_access_token);
+      drupal_set_message($message, 'warning');
     }
   }
 }

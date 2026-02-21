@@ -116,7 +116,7 @@ class OtherMarker extends FileField {
       return;
     }
     $parents = static::getParents($organism_index, $form_state);
-    if (tpps_is_required_field_empty($form_state, $parents)) {
+    if (TppsForm::isRequiredFieldEmpty($form_state, $parents)) {
       // Validation failed and no need to do extra checks.
       return;
     }
@@ -155,7 +155,7 @@ class OtherMarker extends FileField {
 
     if (!form_get_errors()) {
       // @TODO Reuse SnpAssay::validateTrees().
-      $acc_no_header = TppsArray::getValue(
+      $acc_no_header = TppsArray::get(
         $form_state['saved_values'],
         [TPPS_PAGE_3, 'tree-accession', $species_index, 'file-no-header']
       );
@@ -214,7 +214,7 @@ class OtherMarker extends FileField {
       . 'If a column data type does not fit any of the options in the '
       . 'drop-down menu, you may set that drop-down menu to "N/A". '
       . 'Your file must contain one column with the Plant Identifier.');
-    tpps_form_build_file_field([
+    TppsForm::buildFileField([
       'form' => &$form,
       'form_state' => $form_state,
       'parents' => static::getParents($organism_index, $form_state),
@@ -267,7 +267,7 @@ class OtherMarker extends FileField {
     $options['headers'] = tpps_file_headers($fid);
     $options['type'] = 'other';
     // Value of the select-box 'Other Marker Type'.
-    $options['marker'] = TppsArray::getValue($shared_state, [
+    $options['marker'] = TppsArray::get($shared_state, [
       'saved_values',
       static::FORM_STEP,
       $organism_key,

@@ -35,7 +35,7 @@ function tpps_api_submission_view($submission) {
     if ($data) {
       array_shift($parents);
       $key_exist = FALSE;
-      $output = TppsArray::getValue($data, $parents, $key_exist);
+      $output = TppsArray::get($data, $parents, $key_exist);
       if ($key_exist && is_null($output)) {
         $output = 'NULL';
       }

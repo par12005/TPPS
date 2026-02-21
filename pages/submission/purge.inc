@@ -5,24 +5,53 @@
  * TPPS Submission View.
  */
 
-module_load_include('inc', 'tpps', 'pages/submission/list');
-
 /**
  * Menu callback. TPPS Study View Form.
  */
 function tpps_submission_purge_form(array $form, array &$form_state, $accession = '') {
-  tpps_submission_list_validate_accession($accession);
+  TppsForm::validateAccession($accession);
+
+  // Check if submission exists.
+  $submission = new Submission($accession);
+  if ($submission->doesNotExist()) {
+    $message = t("Submission @accession doesn't exists.", ['@accession' => $accession]);
+    drupal_set_message($message, 'warning');
+    drupal_goto('tpps/submission');
+  }
   $message = t(
     'Are you sure you want to purge Submission @accession?',
     ['@accession' => $accession]
   );
   $cancel_redirect = 'tpps/submission';
-  $description = t("Submission @accession and it's files will be removed.",
-      ['@accession' => $accession]
-    ) . '<br />' . l(
-        t('Submistion @accession view page', ['@accession' => $accession]),
-        'tpps/submission/' . $accession . '/view'
-      );
+  $description = t("Submission @accession will be totally removed, including:",
+    ['@accession' => $accession]
+  ) . theme('item_list', [
+    'items' => [
+      'Record in "public.tpps_submission" table',
+      'All the files (in force mode)',
+      "Submission's tags (in force mode)",
+      "Zenodo Deposit (not yet published)",
+      "Cached Submission",
+      "Data loaded into database",
+    ],
+  ])
+  . t('Useful links:')
+  . theme('item_list', [
+    'items' => [
+      t('To partly remove submission use "!remove_page_link".',
+      [
+        '!remove_page_link' => l(t('Submission Remove page'),
+          'tpps/submission/' . $accession . '/remove'
+        ),
+      ]),
+      t('To review submission submission use "!view_page_link".', [
+        '!view_page_link' => l(t('Submistion View page'),
+          'tpps/submission/' . $accession . '/view'
+        ),
+      ]),
+    ]
+  ]);
+
   $confirm_button_text = t('Purge');
   $cancel_button_text = t('Cancel');
   // @TODO Get accession from URL (if it's safe).
@@ -30,6 +59,7 @@ function tpps_submission_purge_form(array $form, array &$form_state, $accession 
     '#type' => 'hidden',
     '#value' => $accession,
   ];
+
   $form = confirm_form(
     $form,
     $message,
@@ -49,8 +79,12 @@ function tpps_submission_purge_form(array $form, array &$form_state, $accession 
  */
 function tpps_submission_purge_form_submit(array $form, array &$form_state) {
   $accession = $form_state['values']['tpps_submission_accession'] ?? NULL;
-  tpps_submission_list_validate_accession($accession);
-  // Remove study.
-  tpps_submission_load($accession)->purge();
+  TppsForm::validateAccession($accession);
+  // Purge study.
+  $purge_options = [
+    'clear_db' => TRUE,
+    'remove_files' => TRUE,
+  ];
+  tpps_submission_load($accession)->purge($purge_options);
   drupal_goto('tpps/submission');
 }

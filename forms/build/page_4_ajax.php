@@ -86,7 +86,7 @@ function tpps_page_4_file_dynamic(array $form, array &$form_state) {
   $parents = $form_state['triggering_element']['#parents'];
   array_pop($parents);
 
-  $element = TppsArray::getValue($form, $parents);
+  $element = TppsArray::get($form, $parents);
   // $element contains 'Other Information' fieldset which is parent.
   return $element;
 }

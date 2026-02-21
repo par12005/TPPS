@@ -19,7 +19,7 @@
  */
 function tpps_api_file_usage_delete($file, $accession, $count = NULL) {
   $count = $count ?? arg(6) ?? 1;
-  Submission::deleteFileUsage($file, $accession, $count);
+  TppsFile::deleteUsage($file, $accession, $count);
   $message = 'Removed all usage for file #@fid for submission "@accession".';
   if ($count) {
     $message = 'Removed @count usage for file #@fid for submission "@accession".';

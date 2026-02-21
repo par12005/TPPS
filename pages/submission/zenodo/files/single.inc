@@ -5,8 +5,6 @@
  * Zenodo Single File  page.
  */
 
-module_load_include('inc', 'tpps', 'pages/submission/list');
-
 /**
  * Menu callback. Shows Zenodo Action buttons.
  */
@@ -19,7 +17,7 @@ function tpps_submission_zenodo_files_single_form(array $form, array &$form_stat
     drupal_set_message($message, 'error');
     drupal_goto($path);
   }
-  tpps_submission_list_validate_accession($accession);
+  TppsForm::validateAccession($accession);
   $submission = new Submission($accession);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -97,7 +95,7 @@ function tpps_submission_zenodo_files_single_form(array $form, array &$form_stat
   // WARNING: This CSS class adds theme and design.
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
-  tpps_submission_list_add_buttons($form, FALSE);
+  TppsForm::addSubmissionActionButtons($form);
   return $form;
 }
 
@@ -267,8 +265,8 @@ function tpps_submission_zenodo_files_action($action, $deposit_id, $file_id, $ac
         ) {
           continue;
         }
-        foreach ($submission_cache['file']['id_list'] as $fid) {
-          if (empty($fid) || empty($file = tpps_file_load($fid))) {
+        foreach ($submission_cache['file']['id_list'] as $fid => $filesize) {
+          if (empty($fid) || is_null($filesize) || empty($file = tpps_file_load($fid))) {
             continue;
           }
           if (

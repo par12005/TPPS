@@ -124,7 +124,7 @@ class AssayDesign extends FileField {
     ];
 
     // Add file upload field.
-    tpps_form_build_file_field([
+    TppsForm::buildFileField([
       'form' => &$form,
       'form_state' => $form_state,
       'parents' => static::getParents($organism_index, $form_state),
@@ -138,12 +138,12 @@ class AssayDesign extends FileField {
         'visible' => $states,
         // Doesn't works as expected. Field is always required. Probably because
         // 'required_when_visible' feature doesn't support complex rules.
-        // See tpps_form_validate_required_field().
+        // See TppsForm::validateRequiredField().
         // 'required' => $states,
       ],
       'extra_elements' => [
         'empty' => [
-          '#default_value' => TppsArray::getValue($form_state,
+          '#default_value' => TppsArray::get($form_state,
             [
               'saved_values',
               static::FORM_STEP,
@@ -195,7 +195,7 @@ class AssayDesign extends FileField {
     $organism_key = 'organism-' . $organism_index;
 
     // Get 'SNPs' fieldset.
-    $snps = TppsArray::getValue(
+    $snps = TppsArray::get(
       $form_state['values'],
       [
         $organism_key,
@@ -799,7 +799,7 @@ class AssayDesign extends FileField {
     $required_cases = static::getRequiredColumns();
     $parents = static::getParents($organism_index, $form_state);
 
-    $fid = TppsArray::getValue($form_state['input'],
+    $fid = TppsArray::get($form_state['input'],
       array_merge($parents, ['fid'])
     );
     if (empty($file = tpps_file_load($fid)) || empty($file->filesize)) {
@@ -846,10 +846,10 @@ class AssayDesign extends FileField {
     $column_options = static::getColumnOptions();
 
     // Store under $form_state['saved_values'].
-    TppsArray::setValue(
+    TppsArray::set(
       $form_state['saved_values'][static::FORM_STEP],
       $parents,
-      TppsArray::getValue($form_state['input'], $parents)
+      TppsArray::get($form_state['input'], $parents)
     );
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

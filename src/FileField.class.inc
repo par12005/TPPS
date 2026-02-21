@@ -311,15 +311,15 @@ abstract class FileField {
     // id for validation (when form not yet submitted) from $form_state['input']
     // using 'fid' hidden sub-element of 'managed_file' element.
     $input_parents = array_merge($parents, ['fid']);
-    $value = TppsArray::getValue($form_state['input'], $input_parents, $key_exists);
+    $value = TppsArray::get($form_state['input'], $input_parents, $key_exists);
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     if ($key_exists === FALSE) {
-      $value = TppsArray::getValue($form_state['values'], $parents, $key_exists);
+      $value = TppsArray::get($form_state['values'], $parents, $key_exists);
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Saved Values.
     if ($key_exists === FALSE) {
-      $value = TppsArray::getValue(
+      $value = TppsArray::get(
         $form_state['saved_values'][static::FORM_STEP],
         $parents,
         $key_exists
@@ -336,7 +336,7 @@ abstract class FileField {
         '@field_title' => static::getFieldTitle(),
         '@oidx' => $organism_index,
         '@sub_field' => implode('/', $parents),
-        '!stack' => empty($stack) ? NULL : TppsArray::printList($stack),
+        '!stack' => empty($stack) ? NULL : TppsArray::print($stack),
       ];
       watchdog('tpps', $message, $params, WATCHDOG_WARNING);
 
@@ -518,7 +518,7 @@ abstract class FileField {
    *     'no-header'
    *   ));
    *
-   * See FileField::getValue() and TppsArray::getValue().
+   * See FileField::getValue() and TppsArray::get().
    *
    * @param int $organism_index
    *   Ordinal organism number at page.
@@ -587,7 +587,7 @@ abstract class FileField {
       ],
     ];
     foreach ($parent_list as $name => $parents) {
-      $value = TppsArray::getValue($form_state, $parents, $key_exists);
+      $value = TppsArray::get($form_state, $parents, $key_exists);
       if ($key_exists !== FALSE) {
         break;
       }
@@ -604,7 +604,7 @@ abstract class FileField {
         '@field_title' => static::getFieldTitle(),
         '@oidx' => $organism_index,
         '@sub_field' => implode('/', $parents),
-        '!stack' => empty($stack) ? NULL : TppsArray::printList($stack),
+        '!stack' => empty($stack) ? NULL : TppsArray::print($stack),
       ];
       watchdog('tpps', $message, $params, WATCHDOG_WARNING);
     }
@@ -661,7 +661,7 @@ abstract class FileField {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // 1. Use $form first.
     if (!empty($form)) {
-      $element = TppsArray::getValue($form, $parents, $key_exists);
+      $element = TppsArray::get($form, $parents, $key_exists);
       if ($key_exists) {
         return $element;
       }
@@ -675,7 +675,7 @@ abstract class FileField {
     }
     // Check if current field belongs to recently submitted form and we could
     // get form element from $form_state['complete form'].
-    $complete_form_step = TppsArray::getValue(
+    $complete_form_step = TppsArray::get(
       $form_state['complete form'],
       ['stage', '#value']
     );
@@ -690,7 +690,7 @@ abstract class FileField {
       throw new Exception(t($message, $params));
     }
     // Get form element.
-    $element = TppsArray::getValue($form_state['complete form'], $parents, $key_exists);
+    $element = TppsArray::get($form_state['complete form'], $parents, $key_exists);
     if ($key_exists === FALSE) {
       $message = "Form element wasn't found for field @field_name. "
         . "Field parents: @field_parents.";
@@ -806,10 +806,10 @@ abstract class FileField {
     $debug_mode = FALSE;
     // Check if current field belongs to recently submitted form and we could
     // get form element from $form_state['complete form'].
-    $complete_form_step = TppsArray::getValue($form_state['complete form'],
+    $complete_form_step = TppsArray::get($form_state['complete form'],
       ['stage', '#value']
     );
-    $input_step = TppsArray::getValue($form_state['input'], ['stage']);
+    $input_step = TppsArray::get($form_state['input'], ['stage']);
     if (static::FORM_STEP == $complete_form_step) {
       $file_element = static::getFormElement($organism_index, $form_state);
       $selected_columns = $file_element['#value']['columns'] ?? [];
@@ -819,7 +819,7 @@ abstract class FileField {
       // Note: there is no data yet under $form_state['saved_values'][$current_step].
       $parents = static::getParents($organism_index, $form_state, static::DOM_NAME);
       // For searching purposes: 'assay-design-columns'.
-      $selected_columns = TppsArray::getValue(
+      $selected_columns = TppsArray::get(
         $form_state['input'],
         array_merge($parents, ['columns'])
         );
@@ -835,7 +835,7 @@ abstract class FileField {
       // new simple structure.
       $parents = static::getParents($organism_index, $form_state, static::DOM_NAME . '-columns');
       // For searching purposes: 'assay-design-columns'.
-      $selected_columns = TppsArray::getValue($form_state['saved_values'][static::FORM_STEP], $parents);
+      $selected_columns = TppsArray::get($form_state['saved_values'][static::FORM_STEP], $parents);
       if ($debug_mode) {
         tpps_log_line();
         tpps_log($selected_columns, 'selected_columns');
@@ -977,7 +977,7 @@ abstract class FileField {
     );
     // Target File.
     $target_title = trim(str_replace(': *', '', $data['target_form_element']['#title']));
-    $target_fid = TppsArray::getValue(
+    $target_fid = TppsArray::get(
       $data['form_state'],
       // Use 'input' instead of 'saved_values' to get latest value.
       array_merge(['input'], $data['target_form_element']['#parents'], ['fid'])
@@ -1069,7 +1069,7 @@ abstract class FileField {
    * could be changed in future according to mockup in Figma.
    */
   public static function matchStudyDataType(array $form_state, $type) {
-    $study_type = strtolower(TppsArray::getValue($form_state,
+    $study_type = strtolower(TppsArray::get($form_state,
       ['saved_values', TPPS_PAGE_2, 'data_type']
     ));
     return (bool) (strpos($study_type, strtolower($type)) !== FALSE);
@@ -1256,7 +1256,7 @@ abstract class FileField {
    *   'tpps_project_file_managed' exists and FALSE otherwise.
    */
   public static function wasProcessed($organism_index, array $shared_state) {
-    $project_id = TppsArray::getValue($shared_state, ['ids', 'project_id']);
+    $project_id = TppsArray::get($shared_state, ['ids', 'project_id']);
     $result = db_select('tpps_project_file_managed', 't')
       ->fields('t', ['project_id'])
       ->condition('project_id', $project_id)
@@ -1279,7 +1279,7 @@ abstract class FileField {
     $fid = static::getFileId($organism_index, $form_state);
     if (tpps_file_remove($fid)) {
       $parents = static::getParents($organism_index, $form_state);
-      TppsArray::setValue($form_state['values'], $parents, $value = 0);
+      TppsArray::set($form_state['values'], $parents, $value = 0);
     }
   }
 
@@ -1816,7 +1816,7 @@ abstract class FileField {
     // For search purpose: 'snps-association-no-header'.
     if (
       // For validation we use just submitted value (not saved before).
-      static::FORM_STEP == TppsArray::getValue($form_state['input'], ['stage'])
+      static::FORM_STEP == TppsArray::get($form_state['input'], ['stage'])
     ) {
       // For just submitted form/step.
       // Example: ['organism-1', 'phenotype', 'file', 'no-header'].
@@ -1824,7 +1824,7 @@ abstract class FileField {
       $parents[] = 'no-header';
       // $form_state['values'] has no value but $form_state['input']
       // has is so we will use it.
-      $value = TppsArray::getValue($form_state['input'], $parents);
+      $value = TppsArray::get($form_state['input'], $parents);
     }
     else {
       // For processing only.
@@ -1833,7 +1833,7 @@ abstract class FileField {
       $parents = static::getParents($organism_index, $form_state,
         static::DOM_NAME . '-' . static::NO_HEADER
       );
-      $value = TppsArray::getValue($form_state['saved_values'], $parents);
+      $value = TppsArray::get($form_state['saved_values'], $parents);
     }
     return $value;
   }

@@ -41,6 +41,14 @@ function tpps_theme() {
       ],
       'file' => 'theme/submission.inc',
     ],
+    'submission_actions' => [
+      'variables' => [
+        'accession' => NULL,
+        'deposit_id' => NULL,
+        'edit_publication_information' => NULL,
+      ],
+      'file' => 'theme/submission.inc',
+    ],
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Zenodo.
     'zenodo_deposit_link' => [
@@ -62,6 +70,19 @@ function tpps_theme() {
       'variables' => [
         'fid' => NULL,
         'attributes' => NULL,
+      ],
+      'file' => 'theme/file.inc',
+    ],
+    'file_size' => [
+      'variables' => [
+        'size' => NULL,
+      ],
+      'file' => 'theme/file.inc',
+    ],
+    'file_local_vcf' => [
+      'variables' => [
+        'path' => NULL,
+        'accession' => NULL,
       ],
       'file' => 'theme/file.inc',
     ],

@@ -429,7 +429,7 @@ class PhenotypeManual {
     $parents = [TPPS_PAGE_4, $organism_key, 'phenotype', 'phenotypes-meta'];
     $source_list = ['values', 'saved_values'];
     foreach ($source_list as $source) {
-      $phenotype_number = TppsArray::getValue(
+      $phenotype_number = TppsArray::get(
         $form_state[$source],
         array_merge($parents, ['number'])
       );
@@ -437,7 +437,7 @@ class PhenotypeManual {
         continue;
       }
       for ($i = 1; $i <= $phenotype_number; $i++) {
-        $list[] = TppsArray::getValue(
+        $list[] = TppsArray::get(
           $form_state[$source],
           array_merge($parents, [$i, 'synonym_name'])
         );

@@ -1,40 +1,41 @@
-## Overview
+## Add new report
 
 TPPS module has own report system which allows to quickly add new reports.
 
 Main steps to add new report:
 1. Come up with report title.
-2. Add  variable which stores report's title to install/uninstall hooks.
-3. Create report's metadata.
+2. Add  variable which stores report's title to ```tpps_get_variable_list()```.
+
+3. Create report's metadata in Report::getList().
 4. Create new or clone existing (and update) report to have a report callback.
+   * for simple db-query: /reports/orgnaism/_list.inc
+   * for table (no sorting): /reports/doi/duplicates.inc
+5. Update code of this new file.
+   Menu callback name must have 'tpps_report_' prefix.
+6. Add variable name for new report title to ```tpps_reports_settings_form()```
+   as a commented string for searching purposes.
+7. To show on TPPS Admin Panel:
+   Register report and it's URL in ```tpps_admin_panel_get_reports()```.
+8. Use ```hook_update_N()``` to set value of the variable which holds report's title.
+9. Clear cache.
 
 
 ## Configuration
 
 * URL: admin/config/tpps/reports'
 
-## Rules
+## Naming rules
 
 1. Machine name uses underscores. E.g., 'organism_list'.
 2. URL uses hyphens. E.g., 'organism-list'.
  . Variable which holds report's title must have prefix 'tpps_report_' and suffix '_title'.
-4. Page callback must have prefix 'tpps_' and suffix '_report'.
-   E.g., 'tpps_new_organisms_report',
+4. Page callback must have prefix 'tpps_report_'.
+   E.g., 'tpps_report_file_orphan',
 5. Default value of the report title is required.
 6. Title stored in non-localized English in variable.
 
-## How to add new report
 
-1. Clone existing report to speed-up creation:
-   * for simple db-query: /reports/orgnaism/_list.inc
-   * for table (no sorting): /reports/doi/duplicates.inc
-2. Update code of this new file.
-3. Add variables which stores report title to hook_install/uninstall.
-4. Add metadata to ```Report::getList()```.
-5. Add commented new title variable name to ```tpps_reports_settings_form()```.
-6. Register report and it's URL in ```tpps_admin_panel_get_reports()```.
-7. Use ```hook_update_N()``` to set value of the variable which holds report's title.
-8. Clear cache.
+## Metatdata example
 
 Example of the item in function ```Report::getList()```:
 ```

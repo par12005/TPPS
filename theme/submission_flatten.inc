@@ -13,6 +13,10 @@
  */
 function theme_submission_block(array $variables) {
   global $base_url;
+  // Do not show block 'Tpps Status' on pages under this URL.
+  if (strpos($_GET['q'], 'tpps/submission') !== FALSE) {
+    return '';
+  }
   $data = $variables['data'] ?? NULL;
 
   $css = "
@@ -199,7 +203,7 @@ function theme_submission_page(array $variables) {
         $val_str = $val;
       }
       elseif (is_array($val)) {
-        $val_str = TppsArray::printList($val);
+        $val_str = TppsArray::print($val);
       }
       else {
         $val_str = filter_xss(check_plain($val));
@@ -208,7 +212,8 @@ function theme_submission_page(array $variables) {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       if ($key == 'tpps_submission_import') {
         $key_str = t('Import Metadata');
-        $import_meta = FormState::getImportMeta($variables['form_state']);
+        $import_meta = tpps_form_state_load($variables['form_state'])
+          ->getImportMeta();
         if (!empty($import_meta)) {
           $version = $import_meta[SubmissionVersion::FORM_KEY] ?? '-';
           $val_str = theme('item_list', [
@@ -477,8 +482,7 @@ function tpps_submission_flatten(array $state, array $options = []) {
   }
 
   if (!empty($page_2['study_type'])) {
-    module_load_include('inc', 'tpps', 'includes/form');
-    $data['Study Type'] = tpps_form_get_study_type($page_2['study_type']);
+    $data['Study Type'] = TppsForm::getStudyType($page_2['study_type']);
 
     if (!empty($page_2['study_info']['season'])) {
       $data['Seasons Assessed'] = implode($page_2['study_info']['season']);

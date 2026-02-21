@@ -5,8 +5,6 @@
  * Defines the data integrity checks for the fourth page of the form.
  */
 
-module_load_include('inc', 'tpps', 'includes/form');
-
 /**
  * Defines the data integrity checks for the fourth page of the form.
  *
@@ -285,12 +283,12 @@ function tpps_validate_genotype_snps(array &$genotype, $organism_index, array $f
   // Validate 'Reference Assembly used' field.
   // This field must be shown on any value of 'Marker Type' field.
   if (!$ref_genome) {
-    tpps_form_error_required($form_state,
+    TppsForm::errorRequired($form_state,
       [$organism_key, 'genotype', 'SNPs', 'ref-genome']
     );
   }
   elseif ($ref_genome === 'bio') {
-    tpps_is_required_field_empty(
+    TppsForm::isRequiredFieldEmpty(
       $form_state, [$organism_key, 'genotype', 'tripal_eutils', 'accession']
     );
     $connection = new \EUtils();
@@ -335,29 +333,29 @@ function tpps_validate_genotype_snps(array &$genotype, $organism_index, array $f
     $seqtype = trim($fasta_vals['seqtype']);
 
     if (!$file_upload and !$file_existing and !$file_remote) {
-      tpps_form_error_required($form_state,
+      TppsForm::errorRequired($form_state,
         [$organism_key, 'genotype', 'tripal_fasta', 'file']
       );
     }
 
     if ($db_id and !$re_accession) {
-      tpps_form_error_required($form_state,
+      TppsForm::errorRequired($form_state,
         [$organism_key, 'genotype', 'tripal_fasta', 'additional', 're_accession']
       );
     }
     if ($re_accession and !$db_id) {
-      tpps_form_error_required($form_state,
+      TppsForm::errorRequired($form_state,
         [$organism_key, 'genotype', 'tripal_fasta', 'additional', 'db_id']
       );
     }
 
     if (!$analysis_id) {
-      tpps_form_error_required($form_state,
+      TppsForm::errorRequired($form_state,
         [$organism_key, 'genotype', 'tripal_fasta', 'analysis_id']
       );
     }
     if (!$seqtype) {
-      tpps_form_error_required($form_state,
+      TppsForm::errorRequired($form_state,
         [$organism_key, 'genotype', 'tripal_fasta', 'seqtype']
       );
     }
@@ -368,31 +366,31 @@ function tpps_validate_genotype_snps(array &$genotype, $organism_index, array $f
   // End of 'Reference Assembly used' field validation.
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   if ($is_step2_genotype) {
-    tpps_is_required_field_empty($form_state,
+    TppsForm::isRequiredFieldEmpty($form_state,
       [$organism_key, 'genotype', $snps_fieldset, 'genotyping-type']
     );
   }
 
-  if (!tpps_is_required_field_empty($form_state,
+  if (!TppsForm::isRequiredFieldEmpty($form_state,
     [$organism_key, 'genotype', $snps_fieldset, 'genotyping-design'])
   ) {
     if ($snps['genotyping-design'] == TPPS_GENOTYPING_DESIGN_GBS) {
       $condition = (
-        !tpps_is_required_field_empty(
+        !TppsForm::isRequiredFieldEmpty(
           $form_state, [$organism_key, 'genotype', $snps_fieldset, 'GBS']
         )
         // 5 = 'Other'
         && $snps['GBS'] == '5'
       );
       if ($condition) {
-        !tpps_is_required_field_empty(
+        !TppsForm::isRequiredFieldEmpty(
           $form_state, [$organism_key, 'genotype', $snps_fieldset, 'GBS-other']
         );
       }
     }
     elseif ($snps['genotyping-design'] == TPPS_GENOTYPING_DESIGN_TARGETED_CAPTURE) {
       $condition = (
-        !tpps_is_required_field_empty($form_state, [
+        !TppsForm::isRequiredFieldEmpty($form_state, [
           $organism_key,
           'genotype',
           $snps_fieldset,
@@ -400,7 +398,7 @@ function tpps_validate_genotype_snps(array &$genotype, $organism_index, array $f
         ]) && $snps['targeted-capture'] == '2'
       );
       if ($condition) {
-        !tpps_is_required_field_empty($form_state,
+        !TppsForm::isRequiredFieldEmpty($form_state,
           [$organism_key, 'genotype', $snps_fieldset, 'targeted-capture-other']
         );
       }
@@ -415,13 +413,13 @@ function tpps_validate_genotype_snps(array &$genotype, $organism_index, array $f
       && trim($snps['local_vcf']) == ''
       && !$vcf
     ) {
-      tpps_form_error_required($form_state,
+      TppsForm::errorRequired($form_state,
         [$organism_key, 'genotype', $snps_fieldset, 'local_vcf']
       );
     }
     if (!$vcf && $snps['vcf_file-location'] == 'local') {
       // && trim($form_state['values'][$organism_key]['genotype'][$snps_fieldset]['local_vcf']) == ''
-      tpps_form_error_required($form_state,
+      TppsForm::errorRequired($form_state,
         [$organism_key, 'genotype', $snps_fieldset, 'vcf']
       );
     }
@@ -809,10 +807,10 @@ function tpps_validate_ssr(array &$form_state, $organism_index, $field_name) {
   // Validate.
   // @TODO Minor. Simplify condition. Use form_get_errors() after each check.
   $condition = (
-    !tpps_is_required_field_empty($form_state,
+    !TppsForm::isRequiredFieldEmpty($form_state,
       [$organism_key, 'genotype', $ssrs_fieldset, $ploidy_field_name]
     )
-    && !tpps_is_required_field_empty($form_state,
+    && !TppsForm::isRequiredFieldEmpty($form_state,
       [$organism_key, 'genotype', $ssrs_fieldset, $field_name]
     )
   );
@@ -915,10 +913,10 @@ function tpps_validate_genotype_ssr(array &$genotype, $organism_index, array $fo
   if (($genotype['does_study_include_ssr_cpssr_data'] ?? NULL) == "yes") {
     $ssrs_fieldset = 'ssrs_cpssrs';
     $field_name = 'SSRs/cpSSRs';
-    tpps_is_required_field_empty($form_state,
+    TppsForm::isRequiredFieldEmpty($form_state,
       [$organism_key, 'genotype', $ssrs_fieldset, $field_name]
     );
-    $field_value = TppsArray::getValue($genotype,
+    $field_value = TppsArray::get($genotype,
       [$ssrs_fieldset, $field_name]
     );
 
@@ -954,8 +952,8 @@ function tpps_validate_restore_file_field_on_form_rebuild(array &$form, array &$
   $debug_mode = FALSE;
   $key_exists = NULL;
   $new_key_exists = NULL;
-  $element = &TppsArray::getValue($form, $parents, $key_exists);
-  $new_element = &TppsArray::getValue($new_form, $parents, $new_key_exists);
+  $element = &TppsArray::get($form, $parents, $key_exists);
+  $new_element = &TppsArray::get($new_form, $parents, $new_key_exists);
   if (!$key_exists || empty($element) || !$new_key_exists || empty($new_element)) {
     return;
   }

@@ -131,7 +131,7 @@ class PhenotypeMeta extends FileField {
     if (empty($phenotype['metadata'])) {
       // $phenotype['metadata'] holds File Id of Phenotype Metadata file.
       // @TODO Use:
-      // tpps_form_error_required($form_state, [$organism_key, 'phenotype', 'metadata']);
+      // TppsForm::errorRequired($form_state, [$organism_key, 'phenotype', 'metadata']);
       form_set_error($organism_key . "][phenotype][metadata",
         t('Phenotype Metadata File: field is required.')
       );
@@ -249,7 +249,7 @@ class PhenotypeMeta extends FileField {
           . 'Phenotype File.<br />Phenotype File columns: @column_list.',
           [
             '@organism_id' => $organism_index,
-            'organism_name' => FormState::getOrganismName($form_state, $organism_index),
+            'organism_name' => tpps_form_state_load($form_state)->getOrganismName($organism_index),
             '@phenotype_name' => $phenotype_name,
             '@column_list' => implode(', ', $phenotype_data_header),
           ]
@@ -419,9 +419,9 @@ class PhenotypeMeta extends FileField {
   public static function getPhenotypeNameColumn($organism_index, array $form_state) {
     $organism_key = 'organism-' . $organism_index;
     $parents = [$organism_key, 'phenotype', 'metadata-columns'];
-    $column_list = TppsArray::getValue($form_state['input'], $parents)
-      ?? TppsArray::getValue($form_state['values'], $parents)
-      ?? TppsArray::getValue(
+    $column_list = TppsArray::get($form_state['input'], $parents)
+      ?? TppsArray::get($form_state['values'], $parents)
+      ?? TppsArray::get(
         $form_state['saved_values'][TPPS_PAGE_4],
         $parents
       ) ?? NULL;

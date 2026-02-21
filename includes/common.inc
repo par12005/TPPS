@@ -312,32 +312,6 @@ function tpps_js_debug_mode_get_features() {
 }
 
 /**
- * Get a list of DOI examples.
- *
- * Items are valid DOI.
- *
- * @return array
- *   Returns list of DOIs.
- */
-function tpps_doi_get_examples_list() {
-  return [
-    // Fake. Valid, not in use. DOI Information is empty.
-    // '10.1111/dryad.111',
-    // Empty info:
-    // '10.5061/dryad.269126c',
-    '10.5061/dryad.588d7',
-    // No species:
-    '10.5061/dryad.91mk9',
-    // 3 species:
-    '10.5061/dryad.vk43j',
-    // Valid, empty.
-    // '10.1002/ece3.4216',
-    // Not used, no species.
-    // '10.21267/IN.2016.6.2294',
-  ];
-}
-
-/**
  * Converts snake_case to camelCase.
  *
  * Idea: https://gist.github.com/carousel/1aacbea013d230768b3dec1a14ce5751

@@ -118,7 +118,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     tpps_log('Database cleared', [], TRIPAL_INFO);
 
 
-    tpps_submission_clear_default_tags($accession);
+    SubmissionTag::clear($accession);
     $submission->sharedState['file_rank'] = 0;
     $submission->sharedState['ids'] = [];
 
@@ -186,8 +186,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     //
     // Other solution is to call function tpps_submission_clear_db() but to
     // get latest changes we need to save current state of the $submission object.
-    tpps_project_clear_db($submission->sharedState['ids']['project_id']);
-
+    $submission->removeProjectData();
     tpps_tripal_entity_publish('Project',
       [
         $submission->sharedState['title'],
@@ -231,6 +230,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
 
     tpps_log('Complete!', [], TRIPAL_INFO);
     fclose($tpps_job_logger['log_file_handle']);
+
 
   }
   catch (Exception $e) {
@@ -1043,11 +1043,10 @@ function tpps_submit_page_2(array &$shared_state, TripalJob &$job = NULL) {
     'value' => $page2_values['data_type'],
   ));
 
-  module_load_include('inc', 'tpps', 'includes/form');
   tpps_chado_insert_record('projectprop', [
     'project_id' => $shared_state['ids']['project_id'],
     'type_id' => tpps_load_cvterm('study_type')->cvterm_id,
-    'value' => tpps_form_get_study_type($page2_values['study_type']),
+    'value' => TppsForm::getStudyType($page2_values['study_type']),
   ]);
 
   if (!empty($page2_values['study_info']['season'])) {
@@ -1201,6 +1200,7 @@ function tpps_submit_page_3(array &$shared_state, TripalJob &$job = NULL) {
   $shared_state['locations'] = [];
   $shared_state['tree_info'] = [];
   $stock_count = 0;
+  $accession = $shared_state['accession'];
   $loc_name = 'Location (latitude/longitude or country/state or population group)';
 
   if (!empty($page3_values['study_location'])) {
@@ -1322,7 +1322,7 @@ function tpps_submit_page_3(array &$shared_state, TripalJob &$job = NULL) {
     'records' => $records,
     'overrides' => $overrides,
     'locations' => &$shared_state['locations'],
-    'accession' => $shared_state['accession'],
+    'accession' => $accession,
     'single_file' => empty($page3_values['tree-accession']['check']),
     'org_names' => $names,
     'saved_ids' => &$shared_state['ids'],
@@ -1356,11 +1356,8 @@ function tpps_submit_page_3(array &$shared_state, TripalJob &$job = NULL) {
       case 'approximate':
         $options['exact'] = NULL;
         $options['precision'] = $tree_accession['coord_precision'] ?? NULL;
-        if (
-          !empty($tag_id = tpps_get_tag_id('No Location Information'))
-          && !array_key_exists($tag_id, tpps_submission_get_tags($shared_state['accession']))
-        ) {
-          tpps_submission_add_tag($shared_state['accession'], 'Approximate Coordinates');
+        if (!SubmissionTag::isLinked('No Location Information', $accession)) {
+          tpps_submission_load($accession)->addTag('Approximate Coordinates');
         }
         break;
 
@@ -1624,7 +1621,8 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
   if (empty($phenotype)) {
     return;
   }
-  tpps_submission_add_tag($shared_state['accession'], 'Phenotype');
+  tpps_submission_load($shared_state['accession'])
+    ->addTag('Phenotype');
 
   $year_cvterm_id = CVTerm::getId('year');
   if (empty($year_cvterm_id)) {
@@ -1727,7 +1725,8 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
         // @TODO Should new synonym be created?
         // @todo should this 'is_environmental_phenotype' be per phenotype (not synonym)?
       }
-      tpps_submission_add_tag($shared_state['accession'], 'Environment');
+      tpps_submission_load($shared_state['accession'])
+        ->addTag('Environment');
     }
 
     if ($phenotype['check'] == '1' || $phenotype['check'] == 'upload_file') {
@@ -1921,7 +1920,8 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
   }
 
   // Add tag genotype to this study.
-  tpps_submission_add_tag($shared_state['accession'], 'Genotype');
+  tpps_submission_load($shared_state['accession'])
+    ->addTag('Genotype');
 
   $genotype_count = 0;
   $genotype_total = 0;
@@ -6630,7 +6630,8 @@ function tpps_submit_environment(array &$form_state, $i, TripalJob &$job = NULL)
   if (empty($environment)) {
     return;
   }
-  tpps_submission_add_tag($form_state['accession'], 'Environment');
+  tpps_submission_load($shared_state['accession'])
+    ->addTag('Environment');
 
   $env_layers = isset($environment['env_layers']) ? $environment['env_layers'] : FALSE;
   $env_params = isset($environment['env_params']) ? $environment['env_params'] : FALSE;

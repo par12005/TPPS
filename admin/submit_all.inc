@@ -150,7 +150,7 @@ function tpps_submit_all_settings_form(array $form, array &$form_state) {
       '#title' => t('@log_type Settings', $params),
       '#collapsible' => TRUE,
     ];
-    tpps_form_add_fieldset_collapsed_state($form, $form_state, $key);
+    TppsForm::addFieldsetCollapsedState($form, $form_state, $key);
     if ($key == 'log_cli') {
       // Only CLI supports colorful output.
       $form[$key]['tpps_submitall_' . $key . '_colorful'] = [

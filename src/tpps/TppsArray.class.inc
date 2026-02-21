@@ -69,6 +69,9 @@ class TppsArray {
   /**
    * Replaces $old with $new in array's values and keys.
    *
+   * WARNING: $old and $new must have the same type (see gettype()).
+   * Type of the $new will be set to the type of $old.
+   *
    * @param array $array
    *   Array to be updated.
    * @param mixed $old
@@ -80,10 +83,18 @@ class TppsArray {
    *   Returns updated array.
    */
   public static function replace(array $array, $old, $new) {
-    // Source: tpps_change_tgdr_number();
-    $state_json = json_encode($array);
-    $state_json = str_replace($old, $new, $state_json);
-    return json_decode($state_json, TRUE);
+    // Note: if $old is integer but $new is string it cause an error
+    // because JSON representation are different.
+    // Both must have the same type.
+    settype($new, gettype($old));
+    // Using json_encode() for $old and $new allows to have slashes and
+    // other special chars in them.
+    $json = str_replace(
+      json_encode($old),
+      json_encode($new),
+      json_encode($array)
+    );
+    return json_decode($json, TRUE);
   }
 
   /**
@@ -238,7 +249,6 @@ class TppsArray {
    *   Returns FALSE otherwise.
    */
   public static function unset(array &$array, array $action_data) {
-    module_load_include('inc', 'tpps', 'includes/form');
     foreach ($action_data as $key => $item) {
       $params = [
         '@key' => ($item['field_name'] ?? $key),
@@ -250,7 +260,7 @@ class TppsArray {
         tpps_message($message, $params, 'error');
         continue;
       }
-      $target = &tpps_form_get_path($array, $item['parents']);
+      $target = &TppsForm::getPath($array, $item['parents']);
       if (empty($target['parent_element']) || empty($target['field_name'])) {
         if (variable_get('tpps_debug_mode', FALSE)) {
           // It's not an error because field would be not used in this submission.
@@ -292,7 +302,6 @@ class TppsArray {
     if ($debug_mode ?? FALSE) {
       dpm(print_r(debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 5), TRUE));
     }
-    module_load_include('inc', 'tpps', 'includes/form');
     foreach ($action_data as $key => $item) {
       if (empty($item['source']) || empty($item['target'])) {
         continue;
@@ -300,8 +309,8 @@ class TppsArray {
       // Note:
       // 'parent_element' is not a list of parents but a reference to element.
       // To get value use 'field_name' as key inside 'parent_element'.
-      $source = &tpps_form_get_path($array, $item['source']);
-      $target = &tpps_form_get_path($array, $item['target']);
+      $source = &TppsForm::getPath($array, $item['source']);
+      $target = &TppsForm::getPath($array, $item['target']);
       if (
         empty($source['parent_element']) || empty($source['field_name'])
         || empty($target['parent_element']) || empty($target['field_name'])
@@ -322,12 +331,12 @@ class TppsArray {
         continue;
       }
 
-      // @TODO Minor. Use TppsArray::getValue().
+      // @TODO Minor. Use TppsArray::get().
       $source_field_value = $source['parent_element'][$source['field_name']] ?? NULL;
       $target_field_value = $target['parent_element'][$target['field_name']] ?? NULL;
 
       if ($debug_mode ?? FALSE) {
-        drupal_set_message(TppsArray::printList([
+        drupal_set_message(TppsArray::print([
           'action' => __METHOD__,
           'source' => [
             '[ ' . implode(', ', $item['source']) . ' ]'
@@ -384,10 +393,10 @@ class TppsArray {
    * Gets value of the nested element from the array.
    *
    * To get value by reference use:
-   * $ref = &TppsArray::getValue($array, $parents);
+   * $ref = &TppsArray::get($array, $parents);
    *
    * To update value:
-   * $ref = &TppsArray::getValue($array, $parents);
+   * $ref = &TppsArray::get($array, $parents);
    * $ref = 'new value';
    *
    * Shortcut for function drupal_array_get_nested_value() with default value.
@@ -412,7 +421,7 @@ class TppsArray {
    *   Returns the reference (!) to the value of the element of the array.
    *   Returns $array when $parents is an empty array.
    */
-  public static function &getValue(&$array = NULL, array $parents = [], &$key_exists = NULL) {
+  public static function &get(&$array = NULL, array $parents = [], &$key_exists = NULL) {
     if (is_null($array)) {
       // $array could be a sub-element of the array (e.g., $form_state['input']
       // and be empty (doesn't exists) so needed element also doesn't exist.
@@ -446,7 +455,7 @@ class TppsArray {
    * @param mixed $value
    *   The value.
    */
-  public static function setValue(array &$array, array $parents, $value = NULL) {
+  public static function set(array &$array, array $parents, $value = NULL) {
     drupal_array_set_nested_value($array, $parents, $value);
   }
 
@@ -458,17 +467,21 @@ class TppsArray {
    *
    * @param array $list
    *   Array with data.
+   * @param string $title
+   *   Optional title for the list.
+   *   Note: HTML's H3 tag wil be used.
    *
    * @return string
    *   Returns rendered HTML list.
-   *
-   *   @todo move to TppsArray class.
    */
-  public static function printList(array $list = []) {
+  public static function print(array $list = [], $title = NULL) {
     $items = [];
+    if (empty($list)) {
+      return '';
+    }
     foreach ($list as $key => $value) {
       if (is_array($value)) {
-        $value = static::printList($value);
+        $value = static::print($value);
       }
       else {
         // Using check_plain() blocks HTML Links in the lists.
@@ -476,7 +489,10 @@ class TppsArray {
       }
       $items[] = '<strong>' . check_plain($key) . ':</strong> ' . $value;
     }
-    return theme('item_list', ['items' => $items]);
+    return theme('item_list', [
+      'items' => $items,
+      'title' => check_plain($title),
+    ]);
   }
 
   /**
@@ -542,9 +558,9 @@ class TppsArray {
       $marker_type_parents = $item['parents'];
       array_pop($marker_type_parents);
       $marker_type_parents[] = 'marker-type';
-      $marker_type_values = TppsArray::getValue($array, $marker_type_parents);
+      $marker_type_values = TppsArray::get($array, $marker_type_parents);
       if (!empty($marker_type_values[$key])) {
-        TppsArray::setValue($array, $item['parents'], 'yes');
+        TppsArray::set($array, $item['parents'], 'yes');
       }
     }
 

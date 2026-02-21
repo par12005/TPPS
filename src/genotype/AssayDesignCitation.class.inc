@@ -61,7 +61,7 @@ class AssayDesignCitation extends FileField {
    *   Returns value of the field EXISTING_STUDY_FIELD_NAME.
    */
   public static function getExistingStudy($organism_index, array $form_state) {
-    return TppsArray::getValue(
+    return TppsArray::get(
       $form_state['values'],
       static::getParents($organism_index, $form_state,
         static::EXISTING_STUDY_FIELD_NAME
@@ -211,7 +211,7 @@ class AssayDesignCitation extends FileField {
     $form_element['paper-doi'] = [
       '#type' => 'textfield',
       '#title' => t('Paper DOI:'),
-      '#description' => tpps_form_get_doi_examples(),
+      '#description' => TppsForm::getDoiExamples(),
       '#states' => $subelement_states,
       // Optional.
     ];
@@ -219,7 +219,7 @@ class AssayDesignCitation extends FileField {
       '#type' => 'textfield',
       '#title' => t('Dataset DOI:'),
       '#states' => $subelement_states,
-      '#description' => tpps_form_get_doi_examples(),
+      '#description' => TppsForm::getDoiExamples(),
       // Optional.
     ];
     tpps_add_css_js('suggestion', $form);
@@ -240,7 +240,7 @@ class AssayDesignCitation extends FileField {
    */
   public static function validate($organism_index, array &$form, array &$form_state) {
     $organism_key = 'organism-' . $organism_index;
-    $existing_studies_value = TppsArray::getValue(
+    $existing_studies_value = TppsArray::get(
       $form_state['values'],
       static::getParents($organism_index, $form_state,
         static::EXISTING_STUDY_FIELD_NAME
@@ -255,7 +255,7 @@ class AssayDesignCitation extends FileField {
       // Paper DOI and Dataset DOI are visible.
       // Validate DOI format if fields not empty because they are optional.
       foreach (['paper-doi', 'dataset-doi'] as $field_name) {
-        $value = trim(TppsArray::getValue(
+        $value = trim(TppsArray::get(
           $form_state['values'],
           array_merge($parents, [static::PARENT_FIELDSET, $field_name])
         ));

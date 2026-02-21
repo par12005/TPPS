@@ -22,8 +22,7 @@ function tpps_dataset_doi_files_form(array $form, array &$form_state = [], $acce
     drupal_set_message(t('Empty accession.'), 'error');
     drupal_goto('<front>');
   }
-  module_load_include('inc', 'tpps', 'pages/submission/list');
-  tpps_submission_list_validate_accession($accession);
+  TppsForm::validateAccession($accession);
 
   // Zenodo Deposition Widget.
   $path = 'tpps/' . $accession . '/dataset-doi';

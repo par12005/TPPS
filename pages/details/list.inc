@@ -118,21 +118,15 @@ function tpps_details_search(array $form, array $form_state) {
 }
 
 /**
- * Gets list af all tags.
+ * Gets list of all tags.
  *
  * @return string
  *   Returns rendered list of tags. Tag options as rendered HTML.
  */
 function tpps_details_tags_sort() {
-  $query = db_select('tpps_tag', 't');
-  $query->addField('t', 'tpps_tag_id', 'id');
-  $query->addField('t', 'name', 'name');
-  $query->addField('t', 'color', 'color');
-  $query->addField('t', 'static', 'static');
-  $query->orderBy('static', 'DESC')->orderBy('id');
-  $tags = $query->execute()->fetchAllAssoc('id', PDO::FETCH_ASSOC);
   return '<label for="tpps-tags-filter">' . t('Sort by tags:')
-    . '</label><div id="tpps-tags-filter">' . (tpps_show_tags($tags) ?? '')
+    . '</label><div id="tpps-tags-filter">'
+    . theme('submission_tag_list', ['tags' => SubmissionTag::load()])
     . '</div>';
 }
 

@@ -616,7 +616,7 @@ class PhenotypeData extends FileField {
     $parents = static::getCheckboxParents($organism_index);
     $key_exists = NULL;
     if (!empty($form_state['values'])) {
-      $value = TppsArray::getValue(
+      $value = TppsArray::get(
         $form_state['values'],
         $parents,
         $key_exists
@@ -626,7 +626,7 @@ class PhenotypeData extends FileField {
       }
     }
     if (!empty($form_state['saved_values'][TPPS_PAGE_4])) {
-      $value = TppsArray::getValue(
+      $value = TppsArray::get(
         $form_state['saved_values'][TPPS_PAGE_4],
         $parents,
         $key_exists

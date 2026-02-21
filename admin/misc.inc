@@ -36,7 +36,7 @@ function tpps_misc_settings_form(array $form, array &$form_state) {
     '#description' => t('Default is: <br/>'
       . '/^10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+$/'
       . '<br />Examples of valid DOI: !list',
-      ['!list' => theme('item_list', ['items' => tpps_doi_get_examples_list()])]
+      ['!list' => theme('item_list', ['items' => TppsForm::getDoiExamplesList()])]
     ),
   ];
 

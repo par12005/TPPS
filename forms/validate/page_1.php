@@ -14,7 +14,7 @@
  *   The state of the form that is being validated.
  */
 function tpps_page_1_validate_form(array &$form, array &$form_state) {
-  $form_id = tpps_form_get_id($form_state);
+  $form_id = TppsForm::getId($form_state);
   // Curation form.
   if ($form_id == 'tppsc_main') {
     if ($form_state['submitted'] == '1') {
@@ -33,17 +33,17 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
       $organism = &$form_values['organism'] ?? NULL;
       $organism_number = $form_values['organism']['number'] ?? NULL;
       // Publication.
-      tpps_is_required_field_empty($form_state, ['publication', 'status']);
+      TppsForm::isRequiredFieldEmpty($form_state, ['publication', 'status']);
       // Note:
       // $form_state['saved_values][PAGE_1]['primaryAuthor']
       // but $form['publication']['primaryAuthor'];
-      tpps_is_required_field_empty($form_state, ['publication', 'primaryAuthor']);
+      TppsForm::isRequiredFieldEmpty($form_state, ['publication', 'primaryAuthor']);
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       module_load_include('inc', 'tpps', 'includes/manage_doi');
 
       if ($publication_status == 'Published') {
         // 'Publication DOI' field is required (even for existing studies).
-        if (!tpps_is_required_field_empty($form_state, ['publication', 'publication_doi'])) {
+        if (!TppsForm::isRequiredFieldEmpty($form_state, ['publication', 'publication_doi'])) {
           if (!preg_match(tpps_doi_regex(), $publication_doi)) {
             form_set_error('publication_doi', 'Publication DOI: invalid format. '
               . 'Example DOI: "10.1111/dryad.111".'
@@ -58,7 +58,7 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
         }
         // Required Publication Extra Fields.
         foreach (['year', 'title', 'abstract', 'journal'] as $name) {
-          tpps_is_required_field_empty($form_state,
+          TppsForm::isRequiredFieldEmpty($form_state,
             ['publication', $name]
           );
         }

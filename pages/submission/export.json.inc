@@ -30,7 +30,7 @@ function tpps_submission_export_json($accession = '') {
   }
 
   module_load_include('inc', 'tpps', 'pages/submission/export');
-  tpps_submission_list_validate_accession($accession);
+  TppsForm::validateAccession($accession);
   // Get Submission State.
   $submission = new Submission($accession);
   if ($submission->doesExist()) {

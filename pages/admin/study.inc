@@ -277,68 +277,40 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Tags.
-  $submission_tags = tpps_submission_get_tags($submission->accession);
-  $tags_markup = "<div style='margin-bottom: 10px; font-weight: bold; "
-    . "text-decoration: underline;'><a target=\"_blank\" href=\"/tpps-tag\">"
-    . "Manage Global TPPS Submission Tags</a></div>";
+  $tags_markup = l(
+    t('Manage Global TPPS Submission Tags'),
+    'tpps/tag',
+    [
+      'attributes' => [
+        'class' => ['tpps-submission-tag'],
+        'target' => '_blank',
+        'rel' => 'noopener noreferrer',
+      ]
+    ]
+  );
   // Show current tags.
-  $tags_markup .= "<label class=\"control-label\">Current Tags:</label><br>";
+  $tags_markup .= "<br /><label class=\"control-label\">Current Tags:</label><br>";
   $image_path = TPPS_IMAGES_PATH;
-  $query = db_select('tpps_tag', 't')
-    ->fields('t')
-    ->execute();
-  while (($result = $query->fetchObject())) {
-    $color = !empty($result->color) ? $result->color : 'white';
-    $style = !array_key_exists($result->tpps_tag_id, $submission_tags) ? "display: none" : "";
-    // $tooltip = $result->static ? "This tag cannot be removed" : "";
-    $tooltip = '';
-    $tags_markup .= "<span title=\"$tooltip\" class=\"tag\" "
-      . "style=\"background-color:$color; $style\"><span "
-      . "class=\"tag-text\">{$result->name}</span>";
-    if (!$result->static) {
-      $tags_markup .= "<span id=\"{$submission->accession}-tag-"
-        . "{$result->tpps_tag_id}-remove\" "
-        . "class=\"tag-close\"><img src=\"/{$image_path}remove.png\"></span>";
+  foreach (SubmissionTag::load() as $tag) {
+    $color = empty($tag->color) ? 'white' : $tag->color;
+    $style = $submission->hasTag($tag->tpps_tag_id) ? '' : 'display: none;';
+    $tags_markup .= '<span class="tag" style="' . check_plain($style)
+      . '; background-color:' . check_plain($color) . '">'
+      . '<span class="tag-text">' . check_plain($tag->name) . '</span>';
+    if (!$tag->static) {
+      $tags_markup .= '<span id="' . check_plain($submission->accession)
+        . '-tag-' . check_plain($tag->tpps_tag_id) . '-remove" class="tag-close">'
+        . '<img src="' . url(TPPS_IMAGES_PATH . 'remove.png') . '"></span>';
     }
-    $tags_markup .= "</span>";
+    $tags_markup .= '</span>';
   }
-
-  // Show available tags.
-  // REMOVED ON 3/8/2023 by Risharde (code does not work)
-  // $tags_markup .= "<br><label class=\"control-label\">Available Tags (click to add):</label><br><div id=\"available-tags\">";
-  // $query = db_select('tpps_tag', 't')
-  //   ->fields('t')
-  //   ->condition('static', 0)
-  //   ->execute();
-  // while (($result = $query->fetchObject())) {
-  //   $color = $result->color;
-  //   if (empty($color)) {
-  //     $color = 'white';
-  //   }
-  //   $style = "";
-  //   if (array_key_exists($result->tpps_tag_id, $submission_tags)) {
-  //     $style = 'display: none';
-  //   }
-  //   $tags_markup .= "<span id=\"{$submission->accession}-tag-{$result->tpps_tag_id}-add\" class=\"tag add-tag\" style=\"background-color:{$color}; $style\"><span class=\"tag-text\">{$result->name}</span></span>";
-  // }
-  // $tags_markup .= "</div>";
-  // $tags_markup .= "<div style='margin-top: 10px;'><a href=\"/tpps-tag\">Manage Global TPPS Submission Tags</a></div>";
-  $form['tags'] = ['#markup' => "<div id=\"tags\">$tags_markup</div>"];
+  $form['tags'] = ['#markup' => '<div id="tags">' . $tags_markup . '</div>'];
 
   $form['TAG_REMOVE_CONTAINER'] = [
     '#prefix' => '<div class="tag-admin-container" style="display: '
       . 'inline-block; vertical-align: top; text-align: left; padding: 25px;">',
     '#suffix' => '</div>',
   ];
-
-  $submission_tags_ids = [];
-  foreach ($submission_tags as $submission_tag) {
-    // When study has no tags $submission_tags will be empty and cause warnings.
-    // This happens for TPPS Studies which has no tags at all.
-    if (isset($submission_tag['id'])) {
-      $submission_tags_ids = $submission_tag['id'];
-    }
-  }
 
   // This code will generate the tag options that we can delete.
   $current_tags_options = [];
@@ -718,7 +690,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
   $form[$section['key']]['state-status'] = [
     '#type' => 'select',
     '#title' => $section['title'],
-    '#options' => tpps_form_get_submission_status_list(),
+    '#options' => TppsForm::getSubmissionStatusList(),
     '#default_value' => $submission->status,
     '#description' => t('Warning: This feature is experimental and may '
       . 'cause unforseen issues. Please do not change the status of this '
@@ -865,8 +837,8 @@ function tpps_admin_panel_validate($form, &$form_state) {
           }
           if (!empty($form_state['values']["edit_file_{$fid}_file"])) {
             $file = tpps_file_load($fid);
-            if ($file && Submission::isEmptyFileUsage($file, $accession)) {
-              Submission::addFileUsage($file, $accession);
+            if ($file && TppsFile::isEmptyUsage($file, $accession)) {
+              TppsFile::addUsage($file, $accession);
             }
           }
         }
@@ -962,58 +934,19 @@ function tpps_admin_panel_submit($form, &$form_state) {
     }
   }
 
-  // We use '#name' instead of human-readable '#value' because '#value' could
-  // be localized and this code became broken.
+  // We're using '#name' instead of human-readable '#value' because '#value'
+  // could be localized and this code became broken.
   switch ($form_state['triggering_element']['#name']) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'add_tag':
       $tpps_tag_id = $form_state['values']['TAG_ADD_OPTION'];
-      // Insert tag for this tpps_submission_id.
-      chado_query('INSERT INTO tpps_submission_tag
-        (tpps_submission_id, tpps_tag_id)
-        VALUES (:tpps_submission_id, :tpps_tag_id)',
-        [
-          ':tpps_submission_id' => $tpps_submission_id,
-          ':tpps_tag_id' => $tpps_tag_id,
-        ]
-      );
-      // Get the tag name for the message alert.
-      $tag_name = "";
-      $tag_name_results = chado_query(
-        'SELECT * FROM tpps_tag WHERE tpps_tag_id = :tpps_tag_id',
-        [':tpps_tag_id' => $tpps_tag_id]
-      );
-      foreach ($tag_name_results as $row) {
-        $tag_name = $row->name;
-      }
-      drupal_set_message($tag_name . " has been added to the study");
+      SubmissionTag::link($tpps_tag_id, $accession);
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'remove_tag':
       $tpps_tag_id = $form_state['values']['TAG_REMOVE_OPTION'];
-      // Get the tag name for the message alert.
-      $tag_name = "";
-      $tag_name_results = chado_query(
-        'SELECT * FROM tpps_tag WHERE tpps_tag_id = :tpps_tag_id',
-        [':tpps_tag_id' => $tpps_tag_id]
-      );
-      foreach ($tag_name_results as $row) {
-        $tag_name = $row->name;
-      }
-      if ($tpps_tag_id > 2) {
-        chado_query('DELETE FROM tpps_submission_tag
-          WHERE tpps_submission_id = :tpps_submission_id
-          AND tpps_tag_id = :tpps_tag_id', [
-            ':tpps_submission_id' => $tpps_submission_id,
-            ':tpps_tag_id' => $tpps_tag_id
-          ]
-        );
-        drupal_set_message($tag_name . " successfully removed from study.");
-      }
-      else {
-        drupal_set_message($tag_name . " cannot be removed from study.","error");
-      }
+      SubmissionTag::unlink($tpps_tag_id, $accession);
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1478,7 +1411,6 @@ function tpps_admin_panel_get_reports() {
     'no_synonym' => $panel_url . '/no-synonyms',
     'unit_warning' => $panel_url . '/unit-warning',
     'order_family_not_exist' => $panel_url . '/order-family-not-exist',
-    'missing_files' => $panel_url . '/missing-files',
     'submissions_missing_files' => $panel_url . '/submissions-missing-files',
     'submissions_without_files' => $panel_url . '/submissions-without-files',
     'submissions_all_files' => $panel_url . '/submissions-all-files',
@@ -1488,6 +1420,9 @@ function tpps_admin_panel_get_reports() {
     'zenodo_submissions' => $panel_url . '/zenodo-submissions',
     'zenodo_depositions' => $panel_url . '/zenodo-depositions',
     'submission_version' => $panel_url . '/submission-version',
+    'file_missing' => $panel_url . '/file-missing',
+    'file_not_used' => $panel_url . '/file-not-used',
+    'file_orphan' => $panel_url . '/file-orphan',
   ];
 }
 

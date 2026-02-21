@@ -37,7 +37,7 @@ function tpps_submit_email(array $form_state) {
     ]
   );
   // Get human readable title of study type.
-  $params['study_type'] = tpps_form_get_study_type($page2_values['study_type']);
+  $params['study_type'] = TppsForm::getStudyType($page2_values['study_type']);
 
   // List of organism names.
   $params['organism_list'] = [];

@@ -34,10 +34,10 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
     }
   }
   $form['#tree'] = TRUE;
-  for ($i = 1; $i <= tpps_form_bus_get($form_bus, 'organism_number'); $i++) {
+  for ($i = 1; $i <= TppsForm::getBus($form_bus, 'organism_number'); $i++) {
     $organism_key = 'organism-' . $i;
     $form_bus['organism_id'] = $i;
-    $name = tpps_form_bus_get($form_bus, 'organism_name', $i);
+    $name = TppsForm::getBus($form_bus, 'organism_name', $i);
     $form[$organism_key] = [
       '#type' => 'fieldset',
       '#title' => t(strtoupper($name)),
@@ -65,9 +65,9 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Button's weight: -1000 (header) and 1000 (footer).
-  tpps_form_add_buttons(array_merge($form_bus, [
+  TppsForm::addButtons(array_merge($form_bus, [
     'page' => 'page_4',
-    'organism_number' => tpps_form_bus_get($form_bus, 'organism_number'),
+    'organism_number' => TppsForm::getBus($form_bus, 'organism_number'),
   ]));
   // Curation Tool's weight: 1100 (under button's in footer).
   tpps_add_curation_tool($form_bus);
@@ -204,8 +204,8 @@ function tpps_page4_add_data_type(array $form_bus) {
         [
           '@type_name' => ucfirst($type_name),
           '@type_lower_name' => strtolower($type_name),
-          '@current_organism_name' => tpps_form_bus_get($form_bus, 'organism_name', $i),
-          '@prev_organism_name' => tpps_form_bus_get($form_bus, 'organism_name', ($i - 1)),
+          '@current_organism_name' => TppsForm::getBus($form_bus, 'organism_name', $i),
+          '@prev_organism_name' => TppsForm::getBus($form_bus, 'organism_name', ($i - 1)),
         ]
       ),
       '#default_value' => ($form_bus['page4_values'][$organism_key][$type . '-repeat-check'] ?? 1),

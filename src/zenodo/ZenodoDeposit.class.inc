@@ -329,7 +329,7 @@ class ZenodoDeposit extends Zenodo {
             default:
               if (is_array($value)) {
                 // @TODO Check_plain.
-                $value = TppsArray::printList($value);
+                $value = TppsArray::print($value);
               }
               else {
                 $value = (string) $value;
@@ -381,12 +381,12 @@ class ZenodoDeposit extends Zenodo {
           }
         }
         // Link DOI to doi.org.
-        $doi = &TppsArray::getValue($deposition,
+        $doi = &TppsArray::get($deposition,
           ['metadata', 'prereserve_doi', 'doi']
         );
         $doi = l($doi, 'https://doi.org/' . $doi);
 
-        $output .= TppsArray::printList($deposition);
+        $output .= TppsArray::print($deposition);
         break;
     }
     return $output;

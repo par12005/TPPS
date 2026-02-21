@@ -22,8 +22,7 @@ function tpps_dataset_doi_view_form(array $form, array &$form_state = [], $acces
     );
     drupal_goto($_GET['q']);
   }
-  module_load_include('inc', 'tpps', 'pages/submission/list');
-  tpps_submission_list_validate_accession($accession);
+  TppsForm::validateAccession($accession);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Zenodo Deposition Widget.

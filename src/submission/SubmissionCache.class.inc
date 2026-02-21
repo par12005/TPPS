@@ -39,6 +39,10 @@
  *
  * Get all submissions:
  *   $data = SubmissionCache::getAll($reset);
+ *
+ * To get Submission tags:
+ *   $a = 'TGDR1200';
+ *   SubmissionCache::get()[$accession]['tags'];
  */
 
 /**
@@ -111,9 +115,13 @@ class SubmissionCache {
    * Note: statically cached.
    *
    * Performance (550 studies):
-   * - Full cache recreation: 39334 msec (40 seconds)
-   * - DB cache: 40 msec
-   * - Static cache: 0.005 msec
+   * - Full cache recreation: 8298 msec (~8 seconds)
+   * - DB cache: ~3 msec (mostly cache_get());
+   * - Static cache: ~0.004 msec
+   *
+   * Both ways to call gives the same execution time:
+   *   SubmissionCache::get()[$accession]['tags'];
+   *   SubmissionCache::get($accession)['tags'];
    *
    * @param string $accession
    *   Submission's accession. E.g., 'TGDRxxxx'.
@@ -132,36 +140,32 @@ class SubmissionCache {
     // Using static cache allows to avoid extra db query to get stored in db
     // cache and allows to update single items faster.
     $list = &drupal_static(static::CACHE_ID);
-    if ($reset || (empty($list) && !is_array($list))) {
+    if ($reset || empty($list)) {
       $cache = cache_get(static::CACHE_ID, static::CACHE_BIN);
-      if ($reset || empty($cache) || (empty($cache->data) && !is_array($cache->data))) {
+      if ($reset || empty($cache) || empty($cache->data)) {
         // Cache will be empty when module just installed and no submission yet.
         $list = [];
         // Note: Do not load cache from db but use statically cached list to
         // speed-up processing.
         $submission_list = tpps_load_submission_multiple();
-        // WARNIG: ksort do not respect keys and they will be lost but asort()
+        // WARNIG: krsort do not respect keys and they will be lost but asort()
         // doesn't work with objects in array values...
-        foreach ($submission_list as $accession => $submission) {
-          $accession = $submission->accession;
-          if (!empty($accession)) {
-            $list[$accession] = static::buildSingle($submission);
-          }
+        foreach ($submission_list as $submission) {
+          $list[$submission->accession] = static::buildSingle($submission);
         }
         // List of studies which must must be resubmitted.
         // Those studies are present in DB but doesn't have a record in
         // 'tpps_submission' table.
-        foreach (static::getResubmitList() as $accession) {
-          if (!empty($accession)) {
-            $list[$accession] = [];
+        foreach (static::getResubmitList() as $old_accession) {
+          if (!empty($old_accession)) {
+            $list[$old_accession] = [];
           }
         }
-        krsort($list, SORT_NATURAL);
+        static::set($list);
       }
       else {
         $list = $cache->data;
       }
-      static::set($list);
     }
     // Output.
     if (empty($accession)) {
@@ -216,7 +220,7 @@ class SubmissionCache {
   }
 
   /**
-   * Sets list of submissions.
+   * Sets list of cached submissions.
    */
   public static function set(array $new_list) {
     $list = &drupal_static(static::CACHE_ID);
@@ -226,7 +230,7 @@ class SubmissionCache {
   }
 
   /**
-   * Builds single submission data for cached.
+   * Builds single submission data to be cached.
    *
    * Those data could be used in reports to avoid full load of submission.
    *
@@ -247,9 +251,10 @@ class SubmissionCache {
       && empty($submission->state['saved_values'][TPPS_PAGE_1])
       // @TODO Check if publication title is empty (not set).
     ) {
-      // Note: There is no need to use Submission::purge() because it's probably
-      // not submitted fully study left on Step 1.
-      $submission->delete();
+      // @todo Minor. There is no need to use Submission::purge() because it's
+      // probably wasn't submitted fully (study left on Step 1).
+      // We could use $submission->remove() and a few removement options.
+      $submission->purge();
       // Study is treated as orphan (or empty) and will be removed when:
       // 1. It has no publication title.
       // 2. Page 1 wasn't submitted or saved yet.
@@ -266,16 +271,17 @@ class SubmissionCache {
     }
     $page1_values = $submission->get(['saved_values', TPPS_PAGE_1]);
     $data = [
-      //'accession' => $submission->accession,
+      'accession' => $submission->accession,
+      'id' => $submission->id,
       'status' => $submission->getStatus(),
       'stage' => $submission->getCurrentStage(),
       'project_id' => $submission->get(['ids', 'project_id']),
       SubmissionVersion::FORM_KEY => $submission->getFormVersion(),
       'publication' => [
-        'status' => TppsArray::getValue($page1_values,
+        'status' => TppsArray::get($page1_values,
           ['publication', 'status']
         ),
-        'title' => TppsArray::getValue($page1_values,
+        'title' => TppsArray::get($page1_values,
           ['publication', 'title']
         ),
         'publication_doi' => $submission->getPublicationDOI(),
@@ -294,11 +300,13 @@ class SubmissionCache {
         'updated' => $submission->state['updated'] ?? NULL,
         'cached' => REQUEST_TIME,
       ],
-      'tags' => tpps_submission_get_tags($submission->accession),
+      // Store only list of the tag ids.
+      // Used in pages/admin/panel.inc. See theme('submission_tag_list', ...).
+      'tags' => array_keys($submission->getTagList()),
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Files.
       static::FILES_CONTAINER => [
-         static::FILE_GROUPED_LIST => [
+        static::FILE_GROUPED_LIST => [
           Report::TREE_ACCESSION_FILES => [],
           Report::PHENOTYPE_FILES => [],
           Report::GENOTYPE_FILES => [],
@@ -316,7 +324,7 @@ class SubmissionCache {
     for ($n = 1; $n <= $submission->getOrganismNumber(); $n++) {
       $organism_key = 'organism-' . $n;
       // @TODO Use AssayDesign::getValue() if possible.
-      $assay_design_fid = TppsArray::getValue(
+      $assay_design_fid = TppsArray::get(
         $submission->sharedState,
         [
           'saved_values',
@@ -362,7 +370,6 @@ class SubmissionCache {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Files.
     $file_list = $submission->getFileIdList();
-    $data['file'][Report::FILE_ID_LIST] = array_keys($file_list);
 
     if (!empty($file_list)) {
       // List of files per group.
@@ -373,7 +380,13 @@ class SubmissionCache {
         if ($submission->hasLocalVcf($n)) {
           $organism_name = $submission->getOrganismName($n);
           $organism_label = check_plain($n . '. ' . $organism_name);
-          $file_row['genotype'][$organism_label]['local_vcf'] = $submission->getLocalVcf($n);
+          $real_path = $submission->getLocalVcf($n);
+          $file_row['genotype'][$organism_label]['local_vcf'] = $real_path;
+          // Get size of the local VCF file.
+          if (file_exists($real_path)) {
+            $data['file'][Report::FILE_ID_LIST][$real_path]
+              = filesize($real_path);
+          }
         }
       }
 
@@ -414,6 +427,12 @@ class SubmissionCache {
         // to 'File Info' API page.
         if (empty($file = tpps_file_load($fid))) {
           $data['file'][Report::MISSING_FILES][] = $fid;
+          $data['file'][Report::FILE_ID_LIST][$fid] = NULL;
+        }
+        else {
+          // Note: Report::FILE_ID_LIST = 'id_list'.
+          // File size in bytes.
+          $data['file'][Report::FILE_ID_LIST][$fid] = $file->filesize;
         }
         $field_name = check_plain(end($parents));
         $file_row[$group][$organism_label][$field_name] = $fid;
@@ -443,7 +462,31 @@ class SubmissionCache {
   }
 
   /**
+   * Updates single submission using prepared cached submission.
+   *
+   * To fully rebuild cached submission item:
+   *   SubmissionCache::updateSingle($submission);
+   *
+   * @param array $cached_submission
+   *   Cached TPPS Submission.
+   */
+  public static function setSingle(array $cached_submission) {
+    if (
+      empty($cached_submission)
+      || empty($cached_submission['accession'])
+    ) {
+      return;
+    }
+    $list = static::get();
+    $list[$cached_submission['accession']] = $cached_submission;
+    static::set($list);
+  }
+
+  /**
    * Updates single submission in the list of cached submissions.
+   *
+   * To partly update cached submission item:
+   *   SubmissionCache::setSingle($cached_submission);
    *
    * WARNING: Do not use in the loop. See buildSingle() method.
    *
@@ -465,6 +508,8 @@ class SubmissionCache {
     if (function_exists('module_invoke_all')) {
       module_invoke_all('submission_cache_single_updated', $submission->accession);
     }
+    // Rebuild accession lists.
+    SubmissionCache::getAccessionList([], $reset = TRUE);
   }
 
   /**
@@ -567,7 +612,7 @@ class SubmissionCache {
               continue;
             }
             $operation = $condition[2] ?? '=';
-            $existing_value = TppsArray::getValue($cached_submission, $parents);
+            $existing_value = TppsArray::get($cached_submission, $parents);
             if ($operation == '=') {
               $match[] = ($existing_value == $value);
             }
@@ -593,6 +638,19 @@ class SubmissionCache {
       cache_set($cid, $cache->data, $cache_bin);
     }
     return $cache->data[$key] ?? $default_value;
+  }
+
+  /**
+   * Checks if cached submission list has extra items.
+   *
+   * @return bool
+   *   Returns TRUE if list doesn't have extra items and FALSE otherwise.
+   */
+  public static function isValid() {
+    $list = array_keys(SubmissionCache::get());
+    return empty(
+      array_filter($list, function($x) {return strpos($x, 'TGDR') === FALSE;})
+    );
   }
 
 }
