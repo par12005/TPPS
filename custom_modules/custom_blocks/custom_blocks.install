@@ -48,7 +48,7 @@ function custom_blocks_install() {
   }
 
   // Remove blocks by id.
-  $block_id_list = [17, 16];
+  $block_id_list = [17, 16, 25];
   foreach ($block_id_list as $block_id) {
     db_delete('block')
       ->condition('bid', $block_id)

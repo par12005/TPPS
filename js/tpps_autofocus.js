@@ -11,6 +11,7 @@
  */
 (function($, Drupal) {
   $(document).ready(function() {
+  /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
     setTimeout(
       function() {
         var $element = $('[name="' + Drupal.settings.tpps.autoFocus.FieldName + '"');
@@ -20,5 +21,6 @@
       },
       Drupal.settings.tpps.autoFocus.Timeout
     );
+  /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
   });
 })(jQuery, Drupal);
