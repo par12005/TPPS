@@ -9,6 +9,7 @@
 form#cmap-form {
   /* Adds white background. */
   float: left;
+  color: #373a3c;
 }
 form#cmap-form div.form-item-id {
   float: left;
