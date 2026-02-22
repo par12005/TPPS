@@ -10,14 +10,22 @@
  *
  * Displays tags with proper styling.
  * Used at Study Details pages and tabs.
+ *
+ * Required keys:
+ *   'tags' - array
+ *     Assocciative array where key is tag id and value is array with keys
+ *     which are the represent fields of the DB table 'tpps_tag'.
  */
 function theme_submission_tag_list(array $variables) {
   if (!empty($variables['tags'])) {
-    foreach ($variables['tags'] as $tag_id) {
-      $tag = SubmissionTag::load($tag_id);
+    foreach ($variables['tags'] as $tag) {
+      if (empty($tag)) {
+        continue;
+      }
+      $color = check_plain($tag['color']);
       $display = ($display ?? '') . '<span class="tag" style="background-color:'
-        . (empty($tag->color) ? 'white' : $tag->color)
-        . '"><span class="tag-text">' . $tag->name . '</span></span>';
+        . (empty($color) ? 'white' : $color) . '"><span class="tag-text">'
+        . check_plain($tag['name']) . '</span></span>';
     }
     tpps_add_css_js('main');
     return $display ?? '';

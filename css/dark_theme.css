@@ -148,6 +148,7 @@ form.tppsc-form       .btn.form-button:focus {
 }
 
 div.messages pre,
+body.page-tpps-details .tag-text,
 form.tpps-admin-panel .tag-text,
 form.tpps-submission  .tag-text,
 form.tpps-form        .tag-text,

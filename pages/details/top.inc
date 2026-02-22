@@ -184,18 +184,16 @@ function tpps_details_top() {
         . $title . "'> ";
     }
 
-    $row = array(
+    $row = [
       "<a href=\"$base_url/tpps/details/{$sub->accession}\">{$sub->accession}</a>",
       "$warning<a href=\"$base_url/tpps/details/{$sub->accession}\">{$sub->title}</a>",
-      theme('submission_tag_list', [
-        'tags' => SubmissionCache::get()[$accession]['tags'],
-      ]),
+      theme('submission_tag_list', ['tags' => $submission->getTagList()]),
       implode('<br>', $species),
       $sub->tree_count,
       $sub->phenotypes_assessed,
       $sub->phen_count,
       $sub->gen_count,
-    );
+    ];
     $rows[$sub->accession] = $row;
   }
 

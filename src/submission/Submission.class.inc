@@ -3264,7 +3264,7 @@ class Submission {
   /**
    * Gets list of tag ids.
    *
-   * To get list of tag objects use 'getTagList()'.
+   * To get tag's data (array) use 'getTagList()'.
    * Execution time:
    * first call (empty static cache) takes 3 msec, then 0.005 msec.
    *
@@ -3272,7 +3272,7 @@ class Submission {
    *   Returns list of tag ids.
    */
   public function getTagIdList() {
-    return SubmissionCache::get($this->accession)['tags'];
+    return array_keys($this->getTagList());
   }
 
   /**

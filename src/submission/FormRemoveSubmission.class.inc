@@ -455,8 +455,9 @@ class FormRemoveSubmission {
     if ($submission->hasTags()) {
       $options['removeAllTags']['info'] = [
         'title' => t("Submission's Tags"),
-        'content' => theme('submission_tag_list',
-          ['tags' => $submission->getTagIdList()]
+        'content' => theme(
+          'submission_tag_list',
+          ['tags' => $submission->getTagList()]
         ),
       ];
     }

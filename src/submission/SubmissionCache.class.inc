@@ -30,9 +30,9 @@
  *
  * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * Data structure.
- * Data structure defined in SubmissionCache::buildSingle() and new items could be
- * added there. Each time Submission saved cached data for this single
- * submission will be udpate.
+ * Data structure defined in SubmissionCache::buildSingle() and new items
+ * could be added there. Each time Submission saved cached data for this
+ * single submission will be udpate.
  *
  * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * Usage.
@@ -40,9 +40,9 @@
  * Get all submissions:
  *   $data = SubmissionCache::getAll($reset);
  *
- * To get Submission tags:
+ * To get list of the ids of the submission tags:
  *   $a = 'TGDR1200';
- *   SubmissionCache::get()[$accession]['tags'];
+ *   SubmissionCache::getTags($accession);
  */
 
 /**
@@ -110,6 +110,23 @@ class SubmissionCache {
   }
 
   /**
+   * Gets list of the ids of the submission tags.
+   *
+   * @param string $accession
+   *   Submission's accession. E.g., 'TGDRxxxx'.
+   *   When not set (NULL) then list of the all submissions will be returned.
+   * @param bool $reset
+   *   Flag is cache must be resetted. Default if FALSE.
+   *
+   * @return mixed
+   *   Returns list of the ids of the submission tags.
+   */
+  public static function getTags($accession = NULL, $reset = FALSE) {
+    $cached = SubmissionCache::get($accession);
+    return $cached['tags'] ?? [];
+  }
+
+  /**
    * Gets single submission or list of the all submissions.
    *
    * Note: statically cached.
@@ -118,10 +135,6 @@ class SubmissionCache {
    * - Full cache recreation: 8298 msec (~8 seconds)
    * - DB cache: ~3 msec (mostly cache_get());
    * - Static cache: ~0.004 msec
-   *
-   * Both ways to call gives the same execution time:
-   *   SubmissionCache::get()[$accession]['tags'];
-   *   SubmissionCache::get($accession)['tags'];
    *
    * @param string $accession
    *   Submission's accession. E.g., 'TGDRxxxx'.
@@ -301,8 +314,7 @@ class SubmissionCache {
         'cached' => REQUEST_TIME,
       ],
       // Store only list of the tag ids.
-      // Used in pages/admin/panel.inc. See theme('submission_tag_list', ...).
-      'tags' => array_keys($submission->getTagList()),
+      'tags' => $submission->getTagIdList(),
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Files.
       static::FILES_CONTAINER => [

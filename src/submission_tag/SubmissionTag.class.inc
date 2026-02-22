@@ -5,7 +5,8 @@
  * Contains 'SubmissionTag' class.
  *
  * Theming:
- *   To show all tags: theme('submission_tag_list', ['tags' => $tag_id_list]);
+ *   To show all tags:
+ *   theme('submission_tag_list', ['tags' => $submission->getTagList()]);
  *
  * URL to manage tags:
  *   /tpps/tag - list
@@ -100,7 +101,7 @@ class SubmissionTag {
    *
    * @return mixed
    *   Returns object with single submission tag when $id is not empty.
-   *   Returns array of objects with all the submission tags when $id is empty.
+   *   Returns array of arrays with all the submission tags when $id is empty.
    */
   public static function load($tag_id = NULL, $reset = FALSE) {
     $list = &drupal_static(__METHOD__);
@@ -368,7 +369,7 @@ class SubmissionTag {
   public static function isLinked($tag_key, $accession) {
     return (bool) (
       !empty($tag_id = SubmissionTag::getId($tag_key))
-      && !empty($tag_list = SubmissionCache::get($accession)['tags'])
+      && !empty($tag_list = SubmissionCache::getTags($accession))
       && in_array($tag_id, $tag_list)
     );
   }
