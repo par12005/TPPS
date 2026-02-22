@@ -23,38 +23,45 @@ function custom_blocks_install() {
   // Note: works only for current theme.
   _block_rehash();
 
-  // Place block 'featured_treegenes_resources' to theme's region.
-  $delta = 'featured_treegenes_resources';
-  $fields = [
-    'region' => 'content',
-    'status' => 1,
-    'weight' => 0,
-    'visibility' => BLOCK_VISIBILITY_LISTED,
-    'pages' => '<front>',
-    'title' => t('Featured TreeGenes Resources'),
-  ];
-  $num_updated = db_update('block')
-    ->fields($fields)
-    ->condition('module', 'custom_blocks')
-    ->condition('delta', 'featured_treegenes_resources')
-    ->execute();
+  // Flag which indicates if cache must be cleared after any block's update.
+  $cache_must_be_cleared = FALSE;
+  $module_name = 'custom_blocks';
 
-  if ($num_updated) {
-    $message = t('Block "@delta" has been placed in the Content region.',
-      ['@delta' => $delta]
+  // Place blocks listed below into theme's region.
+  $delta_list = [
+    'featured_treegenes_resources',
+    'publication_details_page_title_and_header',
+  ];
+  $message = 'Block "@delta" has been placed in the Content region.';
+
+  foreach ($delta_list as $delta) {
+    $block_meta = custom_blocks_block_info();
+    if (empty($block_meta[$delta]['properties'])) {
+      continue;
+    }
+    $block = custom_blocks_block_view($delta);
+    $fields = array_merge(
+      $block_meta[$delta]['properties'],
+      // Get block title for end users.
+      ['title' => $block['subject'] ?? NULL]
     );
-    drupal_set_message($message);
+    $num_updated = db_update('block')
+      ->fields($fields)
+      ->condition('module', $module_name)
+      ->condition('delta', $delta)
+      ->execute();
+
+    if ($num_updated) {
+      $cache_must_be_cleared = TRUE;
+      drupal_set_message(t($message, ['@delta' => $delta]));
+    }
+  }
+
+  if ($cache_must_be_cleared) {
     cache_clear_all('*', 'cache_block', TRUE);
   }
 
   // Remove blocks by id.
-  $block_id_list = [17, 16, 25, 28];
-  foreach ($block_id_list as $block_id) {
-    db_delete('block')
-      ->condition('bid', $block_id)
-      ->execute();
-    db_delete('block_custom')
-      ->condition('bid', $block_id)
-      ->execute();
-  }
+  $bid_list = [17, 16, 25, 28];
+  //custom_blocks_remove($bid_list);
 }

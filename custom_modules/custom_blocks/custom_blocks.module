@@ -6,6 +6,24 @@
  */
 
 /**
+ * Removed blocks by block id.
+ *
+ * @param mixed $bid_list
+ *   Single block id or list of block ids.
+ */
+function custom_blocks_remove($bid_list) {
+  if (!is_array($bid_list)) {
+    $bid_list = [$bid_list];
+  }
+  db_delete('block')
+    ->condition('bid', $bid_list, 'IN')
+    ->execute();
+  db_delete('block_custom')
+    ->condition('bid', $bid_list, 'IN')
+    ->execute();
+}
+
+/**
  * Implements hook_page_build().
  */
 function custom_blocks_page_build(&$page) {
@@ -20,6 +38,7 @@ function custom_blocks_page_build(&$page) {
  * Implements hook_block_info().
  */
 function custom_blocks_block_info() {
+  // Block 16.
   $blocks['featured_treegenes_resources'] = [
     'info' => t('Featured TreeGenes Resources'),
     'cache' => DRUPAL_CACHE_GLOBAL,
@@ -33,9 +52,12 @@ function custom_blocks_block_info() {
       'region' => 'content',
       'visibility' => BLOCK_VISIBILITY_LISTED,
       'pages' => '<front>',
+      // Users cannot control block's visibility.
+      'custom' => 0,
     ],
   ];
 
+  // Block 28. Disabled (not used).
   $blocks['treegenes_data_summary_widget'] = [
     'info' => t('TreeGenes Data Summary Widget (Splash)'),
     'cache' => DRUPAL_CACHE_GLOBAL,
@@ -45,6 +67,24 @@ function custom_blocks_block_info() {
       'status' => 0,
       'visibility' => BLOCK_VISIBILITY_LISTED,
       'pages' => '<front>',
+      // Users cannot control block's visibility.
+      'custom' => 0,
+    ],
+  ];
+
+  // Block 22.
+  $blocks['publication_details_page_title_and_header'] = [
+    'info' => t('Page Title and Title Header for Publication Details'),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+    'properties' => [
+      'administrative' => FALSE,
+      'weight' => 0,
+      'status' => 1,
+      'region' => 'content',
+      'visibility' => BLOCK_VISIBILITY_LISTED,
+      'pages' => 'Publication/*',
+      // Users cannot control block's visibility.
+      'custom' => 0,
     ],
   ];
 
@@ -68,6 +108,12 @@ function custom_blocks_block_view($delta = '') {
       $block['subject'] = NULL;
       $block['content'] = custom_block_get_28_body();
       break;
+
+    case 'publication_details_page_title_and_header':
+      $block['subject'] = NULL;
+      $block['content'] = custom_block_get_22_body();
+      break;
+
   }
   return $block;
 }
@@ -210,4 +256,15 @@ function custom_block_get_28_body() {
   $output = '<svg id="leaderboard" width="240" height="320"
     style="margin-left: -15px;"></svg>';
   return $output;
+}
+
+/**
+ * Gets content of the block 22.
+ *
+ * Page Title and Title Header for Publication Details.
+ * Pages: 'Publication/*'.
+ */
+function custom_block_get_22_body() {
+  drupal_set_title('TreeGenes Literature');
+  return '<div class="block"><h2 id="publication_title_heading"></h2></div>';
 }
