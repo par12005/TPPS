@@ -111,7 +111,6 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
       t('Submitting User'),
       t('Title'),
       t('Date Submitted'),
-      t('Tags'),
       t('Actions'),
     ],
     'approved' => [
@@ -119,7 +118,6 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
       t('Submitting User'),
       t('Title'),
       t('Status'),
-      t('Tags'),
       t('Actions'),
     ],
     'incomplete' => [
@@ -128,7 +126,6 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
       t('Title'),
       t('Stage'),
       t('Last Updated'),
-      t('Tags'),
       t('Actions'),
     ],
   ];
@@ -311,14 +308,19 @@ function tpps_report_admin_panel_theme_single_row($accession, array $row, array 
     'path' => 'tpps-admin-panel/' . $accession,
   ]);
 
+  // Build list of Submission Tags.
+  $tags = [];
+  foreach ($row['tags'] as $tag_id) {
+    $tags[] = SubmissionTag::load($tag_id);
+  }
+
   switch ($row['status']) {
     case Submission::STATUS_PENDING_APPROVAL:
       $output['pending'][$number] = [
-        $view_link,
+        $view_link . theme('submission_tag_list', ['tags' => $tags]),
         theme('submission_submitter', $row),
         $row['publication']['title'],
         theme('submission_date', ['date' => $row['date']['completed']]),
-        theme('submission_tag_list', ['tags' => $row['tags']]),
         theme('submission_actions', [
           'accession' => $accession,
           'deposit_id' => $row['zenodo']['deposit_id'] ?? NULL,
@@ -373,11 +375,10 @@ function tpps_report_admin_panel_theme_single_row($accession, array $row, array 
         }
         else {
           $output['approved'][$number] = [
-            $view_link,
+            $view_link . theme('submission_tag_list', ['tags' => $tags]),
             theme('submission_submitter', $row),
             $row['publication']['title'],
             $status_label,
-            theme('submission_tag_list', ['tags' => $row['tags']]),
             theme('submission_actions', [
               'accession' => $accession,
               'deposit_id' => $row['zenodo']['deposit_id'] ?? NULL,
@@ -388,11 +389,10 @@ function tpps_report_admin_panel_theme_single_row($accession, array $row, array 
       }
       else {
         $output['approved'][$number] = [
-          $view_link,
+          $view_link . theme('submission_tag_list', ['tags' => $tags]),
           theme('submission_submitter', $row),
           $row['publication']['title'],
           $status_label,
-          theme('submission_tag_list', ['tags' => $row['tags']]),
           theme('submission_actions', [
             'accession' => $accession,
             'deposit_id' => $row['zenodo']['deposit_id'] ?? NULL,
@@ -430,12 +430,11 @@ function tpps_report_admin_panel_theme_single_row($accession, array $row, array 
       }
 
       $output['incomplete'][$number] = [
-        $view_link,
+        $view_link . theme('submission_tag_list', ['tags' => $tags]),
         theme('submission_submitter', $row),
         $row['publication']['title'] ?? t('Title not provided yet'),
         check_plain($stage),
         theme('submission_date', ['date' => $row['date']['updated']]),
-        theme('submission_tag_list', ['tags' => $row['tags']]),
         theme('submission_actions', [
           'accession' => $accession,
           'deposit_id' => $row['zenodo']['deposit_id'] ?? NULL,

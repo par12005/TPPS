@@ -19,13 +19,17 @@
  *
  * Usage
  * To get tag name:
- *   SubmissionTag::load($tag_id)->name;
+ *   SubmissionTag::load($tag_id)['name'];
  *
  * Related classes:
  *   'SubmissionTag',
  *   'FormCreateSubmissionTag',
  *   'FormEditSubmissionTag',
  *   'FormRemoveSubmissionTag'.
+ *
+ * Pages where tags are shown:
+ *   /tpps-admin-panel
+ *   /tpps/details/$accession
  */
 
 // @todo Review:
@@ -99,8 +103,8 @@ class SubmissionTag {
    * @param bool $reset
    *   Flag to reset cache.
    *
-   * @return mixed
-   *   Returns object with single submission tag when $id is not empty.
+   * @return array
+   *   Returns array with single submission tag when $id is not empty.
    *   Returns array of arrays with all the submission tags when $id is empty.
    */
   public static function load($tag_id = NULL, $reset = FALSE) {
@@ -112,7 +116,7 @@ class SubmissionTag {
         ->orderBy('static', 'DESC')
         ->orderBy('tpps_tag_id')
         ->execute()
-        ->fetchAllAssoc('tpps_tag_id');
+        ->fetchAllAssoc('tpps_tag_id', PDO::FETCH_ASSOC);
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     }
     if (empty($tag_id)) {

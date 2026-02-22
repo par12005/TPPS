@@ -24,7 +24,7 @@ function tpps_api_submission_tag_action($accession, $tag_key, $action) {
     empty($accession) || !in_array($action, ['link', 'unlink'])
     || empty($tag_id = SubmissionTag::getId($tag_key))
     || empty($tag = SubmissionTag::load($tag_id))
-    || $tag->static
+    || $tag['static']
    ) {
     return FALSE;
   }

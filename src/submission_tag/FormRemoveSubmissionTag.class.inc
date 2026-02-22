@@ -33,8 +33,8 @@ class FormRemoveSubmissionTag {
     $message = t('Are you sure, you want to remove submission tag #@tag_id '
       . '"<strong>@tag_name</strong>"?',
       [
-        '@tag_name' => $tag->name,
-        '@tag_id' => $tag->tpps_tag_id,
+        '@tag_name' => $tag['name'],
+        '@tag_id' => $tag['tpps_tag_id'],
       ]
     );
     $cancel_redirect = SubmissionTag::BASE_URL . '/' . $tag_id;

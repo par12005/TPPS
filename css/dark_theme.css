@@ -32,11 +32,17 @@ body a, body a:hover {
   /*color: #648b6b !important;*/
 }
 
+div#file-diagnostics,
+form#tpps-submission-edit-publication,
 .page-tpps-tag,
 /*body.html div#block-system-main,*/
 #main .region-sidebar-second div.block.contextual-links-region,
 #main .region-sidebar-second div.block.contextual-links-region form,
 footer#footer,
+
+form#tpps-details-search,
+form#tpps-details-search select,
+form#tpps-details-search input,
 
 form.tpps,
 form#submission-remove-form,

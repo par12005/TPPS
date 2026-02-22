@@ -292,14 +292,14 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
   $tags_markup .= "<br /><label class=\"control-label\">Current Tags:</label><br>";
   $image_path = TPPS_IMAGES_PATH;
   foreach (SubmissionTag::load() as $tag) {
-    $color = empty($tag->color) ? 'white' : $tag->color;
-    $style = $submission->hasTag($tag->tpps_tag_id) ? '' : 'display: none;';
+    $color = empty($tag['color']) ? 'white' : $tag['color'];
+    $style = $submission->hasTag($tag['tpps_tag_id']) ? '' : 'display: none;';
     $tags_markup .= '<span class="tag" style="' . check_plain($style)
       . '; background-color:' . check_plain($color) . '">'
-      . '<span class="tag-text">' . check_plain($tag->name) . '</span>';
-    if (!$tag->static) {
+      . '<span class="tag-text">' . check_plain($tag['name']) . '</span>';
+    if (!$tag['static']) {
       $tags_markup .= '<span id="' . check_plain($submission->accession)
-        . '-tag-' . check_plain($tag->tpps_tag_id) . '-remove" class="tag-close">'
+        . '-tag-' . check_plain($tag['tpps_tag_id']) . '-remove" class="tag-close">'
         . '<img src="' . url(TPPS_IMAGES_PATH . 'remove.png') . '"></span>';
     }
     $tags_markup .= '</span>';

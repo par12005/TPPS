@@ -140,7 +140,12 @@ function theme_submission_accession_link(array $variables) {
     }
   }
   if ($path) {
-    $output = l($output, $path, ['html' => TRUE]);
+    $output = l($output, $path,
+      [
+        'html' => TRUE,
+        'attributes' => ['class' => ['submission_accession_link']],
+      ]
+    );
   }
   return $output;
 }
