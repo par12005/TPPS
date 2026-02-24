@@ -87,7 +87,8 @@ function custom_blocks_block_info() {
     'cache' => DRUPAL_CACHE_GLOBAL,
     'properties' => [
       'administrative' => FALSE,
-      'weight' => 0,
+      // Upper.
+      'weight' => -100,
       'status' => 1,
       'region' => 'content',
       'visibility' => BLOCK_VISIBILITY_LISTED,

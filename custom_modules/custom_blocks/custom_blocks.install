@@ -47,7 +47,7 @@ function custom_blocks_install() {
       $block_meta[$delta]['properties'],
       // Get block title for end users.
       [
-        'title' => ($block['subject'] ?? $block_meta[$delta]['info']),
+        'title' => ($block['subject'] ?? ''),
         'module' => $module_name,
         'delta' => $delta,
         'theme' => $theme_name,
