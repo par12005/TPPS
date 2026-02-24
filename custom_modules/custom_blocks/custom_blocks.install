@@ -32,11 +32,11 @@ function custom_blocks_install() {
     'featured_treegenes_resources',
     'publication_details_page_title',
   ];
-  $message = 'Block "@delta" has been placed in the Content region.';
 
   module_load_include('module', 'custom_blocks');
   $block_meta = custom_blocks_block_info();
 
+  $theme_name = 'dawn';
   foreach ($delta_list as $delta) {
     if (empty($block_meta[$delta]['properties'])) {
       continue;
@@ -48,6 +48,9 @@ function custom_blocks_install() {
       // Get block title for end users.
       [
         'title' => ($block['subject'] ?? $block_meta[$delta]['info']),
+        'module' => $module_name,
+        'delta' => $delta,
+        'theme' => $theme_name,
       ]
     );
 
@@ -55,17 +58,22 @@ function custom_blocks_install() {
       ->fields($fields)
       ->condition('module', $module_name)
       ->condition('delta', $delta)
+      ->condition('theme', $theme_name)
       ->execute();
 
     if ($num_updated) {
-      $cache_must_be_cleared = TRUE;
-      drupal_set_message(t($message, ['@delta' => $delta]));
+      drupal_set_message(t(
+        'Block "@delta" has been placed in the Content region.',
+        ['@delta' => $delta]
+      ));
+    }
+    else {
+      $num_updated = db_insert('block')
+        ->fields($fields)
+        ->execute();
     }
   }
-
-  if ($cache_must_be_cleared) {
-    cache_clear_all('*', 'cache_block', TRUE);
-  }
+  cache_clear_all('*', 'cache_block', TRUE);
 
   // Remove blocks by id.
   $bid_list = [17, 16, 25, 28];
