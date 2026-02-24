@@ -275,7 +275,7 @@ class TppsForm {
    * @return array
    *   Returns array with path to field.
    */
-  public static function getRieldPath(array $field, array $path) {
+  public static function getFieldPath(array $field, array $path) {
     return $field['#parents'] ?? ($field['#tree'] ? $path : $field['#name']) ?? [];
   }
 
