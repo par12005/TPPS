@@ -30,21 +30,27 @@ function custom_blocks_install() {
   // Place blocks listed below into theme's region.
   $delta_list = [
     'featured_treegenes_resources',
-    'publication_details_page_title_and_header',
+    'publication_details_page_title',
   ];
   $message = 'Block "@delta" has been placed in the Content region.';
 
+  module_load_include('module', 'custom_blocks');
+  $block_meta = custom_blocks_block_info();
+
   foreach ($delta_list as $delta) {
-    $block_meta = custom_blocks_block_info();
     if (empty($block_meta[$delta]['properties'])) {
       continue;
     }
     $block = custom_blocks_block_view($delta);
+    unset($block_meta[$delta]['properties']['administrative']);
     $fields = array_merge(
       $block_meta[$delta]['properties'],
       // Get block title for end users.
-      ['title' => $block['subject'] ?? NULL]
+      [
+        'title' => ($block['subject'] ?? $block_meta[$delta]['info']),
+      ]
     );
+
     $num_updated = db_update('block')
       ->fields($fields)
       ->condition('module', $module_name)

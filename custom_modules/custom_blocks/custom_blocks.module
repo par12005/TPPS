@@ -32,6 +32,15 @@ function custom_blocks_page_build(&$page) {
     // Add JS (Block 25) to pages: /nafgs, /nafgs/*.
     drupal_add_js(drupal_get_path('module', 'custom_blocks') . '/js/nafgs.js');
   }
+  elseif (strpos($path, 'Publication') === 0) {
+    // Add JS (Block 22) to pages: /Publication/*.
+    //
+    //
+    // @TODO Place in header.
+    drupal_add_js(
+      drupal_get_path('module', 'custom_blocks') . '/js/block_22.js'
+    );
+  }
 }
 
 /**
@@ -40,7 +49,7 @@ function custom_blocks_page_build(&$page) {
 function custom_blocks_block_info() {
   // Block 16.
   $blocks['featured_treegenes_resources'] = [
-    'info' => t('Featured TreeGenes Resources'),
+    'info' => 'Featured TreeGenes Resources',
     'cache' => DRUPAL_CACHE_GLOBAL,
     // 'Properties' doesn't work on module installation.
     'properties' => [
@@ -59,7 +68,7 @@ function custom_blocks_block_info() {
 
   // Block 28. Disabled (not used).
   $blocks['treegenes_data_summary_widget'] = [
-    'info' => t('TreeGenes Data Summary Widget (Splash)'),
+    'info' => 'TreeGenes Data Summary Widget. Splash',
     'cache' => DRUPAL_CACHE_GLOBAL,
     'properties' => [
       'administrative' => FALSE,
@@ -73,8 +82,8 @@ function custom_blocks_block_info() {
   ];
 
   // Block 22.
-  $blocks['publication_details_page_title_and_header'] = [
-    'info' => t('Page Title and Title Header for Publication Details'),
+  $blocks['publication_details_page_title'] = [
+    'info' => 'Page Header and Title for Publication Details',
     'cache' => DRUPAL_CACHE_GLOBAL,
     'properties' => [
       'administrative' => FALSE,
@@ -109,7 +118,7 @@ function custom_blocks_block_view($delta = '') {
       $block['content'] = custom_block_get_28_body();
       break;
 
-    case 'publication_details_page_title_and_header':
+    case 'publication_details_page_title':
       $block['subject'] = NULL;
       $block['content'] = custom_block_get_22_body();
       break;

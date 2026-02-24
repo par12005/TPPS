@@ -32,6 +32,13 @@ body a, body a:hover {
   /*color: #648b6b !important;*/
 }
 
+div.entity-tripalentity div.field-label-hidden div {
+  width: 100%
+}
+
+div.entity-tripalentity,
+div.entity-tripalentity div.field-items,
+div.entity-tripalentity div.field-label,
 div#file-diagnostics,
 form#tpps-submission-edit-publication,
 .page-tpps-tag,
