@@ -631,7 +631,8 @@ class Submission {
       // Submission was removed.
       // We could try to request cached Submission again with $reset=TRUE but
       // seems it's not necessary.
-      return;
+      //
+      //return;
     }
 
     $db_record_updated = $cached_submission['date']['updated'] ?? NULL;
