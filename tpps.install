@@ -891,9 +891,9 @@ function tpps_schema() {
     'fields' => [
       'doi' => [
         'description' => 'DOI (Digital Object Identifier).',
-        'type' => 'int',
-        'size' => 'big',
-        'not null' => FALSE,
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => TRUE,
       ],
       'created' => [
         'type' => 'int',
@@ -901,7 +901,7 @@ function tpps_schema() {
         'default' => 0,
         'description' => 'Unix timestamp of when the entry was created.',
       ],
-      'page' => [
+      'serp' => [
         'description' => 'SERP (Search Engine Results Page).',
         'type' => 'text',
         'size' => 'medium',
@@ -2552,11 +2552,11 @@ function tpps_update_7133() {
 }
 
 /**
- * Creates table 'tpps_doi_lookup'.
+ * Creates table 'tpps_google_scholar'.
  */
 function tpps_update_7134() {
   // Create new db table.
-  $table_name = 'tpps_doi_lookup';
+  $table_name = GoogleScholar::TABLE;
   if (!db_table_exists($table_name)) {
     if ($table_schema = tpps_schema()[$table_name]) {
       $transaction = db_transaction();
