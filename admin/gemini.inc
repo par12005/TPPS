@@ -68,6 +68,8 @@ function tpps_gemini_settings_form(array $form, array &$form_state) {
  * @return array
  *   Returns associative array where key is a module name and value is a human
  *   readable description.
+ *
+ * @TODO Minor. Move to 'Gemini' class.
  */
 function tpps_gemini_get_models() {
   return [
