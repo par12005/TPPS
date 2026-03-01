@@ -15,12 +15,16 @@ function tpps_get_variable_list() {
   return [
     // DOI.
     'tpps_doi_lookup_method' => 'gemini',
+    // DOI / Google Scholar.
+    'tpps_doi_google_scholar_debug_mode' => FALSE,
+    'tpps_doi_google_scholar_delay' => 5,
+    // DOI / Gemini.
+    'tpps_doi_gemini_system_instruction' => '',
+    'tpps_doi_gemini_generation_config' => '',
+
     // Gemini.
     'tpps_gemini_model' => '',
     'tpps_gemini_api_key' => '',
-    // Google Scholar.
-    'tpps_google_scholar_debug_mode' => FALSE,
-    'tpps_google_scholar_delay' => 5,
     // General.
     'tpps_watchdog_cleanup' => FALSE,
     'tpps_ncbi_api_delay' => 300,
@@ -2617,13 +2621,17 @@ function tpps_update_7133() {
  * Configure 'DOI Lookup', 'Google Scholar' and 'Gemini AI'.
  */
 function tpps_update_7134() {
-  variable_set('tpps_doi_lookup_method', 'gemini');
-  // Gemini AI.
+  // Gemini.
   variable_set('tpps_gemini_model', '');
   variable_set('tpps_gemini_api_key', '');
-  // Google Scholar.
-  variable_set('tpps_google_scholar_debug_mode', FALSE);
-  variable_set('tpps_google_scholar_delay', 5);
+  // DOI.
+  variable_set('tpps_doi_lookup_method', 'gemini');
+  // DOI / Google Scholar.
+  variable_set('tpps_doi_google_scholar_debug_mode', FALSE);
+  variable_set('tpps_doi_google_scholar_delay', 5);
+  // DOI / Gemini.
+  variable_set('tpps_doi_gemini_system_instruction', '');
+  variable_set('tpps_doi_gemini_generation_config', '');
   // Create new db table.
   $table_list = [
     'tpps_doi',
