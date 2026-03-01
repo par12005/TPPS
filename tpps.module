@@ -462,6 +462,17 @@ function tpps_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'tpps.ajax.inc',
   ];
+  // Note: DOI contains '/' so we use 2 arguments.
+  $items['tpps/doi/%/%'] = [
+    'title' => 'DOI Lookup',
+    'description' => 'Publication DOI Lookup using Gemini AI.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_doi_lookup_form', 2, 3],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['access content'],
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'pages/doi/lookup.inc',
+  ];
   return $items;
 }
 

@@ -119,6 +119,9 @@ class Organism {
    *   Class property name.
    * @param mixed $value
    *   Value to be set.
+   *
+   * @throws Exception
+   *   When requested non-existing property.
    */
   public function __set($name, $value) {
     // Allow to overwrite magic with custom setter.
@@ -131,9 +134,7 @@ class Organism {
         $this->$name = $value;
       }
       else {
-        throw new InexistentPropertyException(
-          t('Inexistent property: @name', ['@name' => $name])
-        );
+        throw new Exception("Inexistent property: $name");
       }
     }
     return $this;
@@ -147,6 +148,9 @@ class Organism {
    *
    * @return mixed
    *   Returns property value.
+   *
+   * @throws Exception
+   *   When requested non-existing property.
    */
   public function &__get($name) {
     // Allow to overwrite magic with custom getter.

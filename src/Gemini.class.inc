@@ -19,6 +19,14 @@
  */
 class Gemini {
 
+
+  /**
+   * Gemini API response.
+   *
+   * @var string
+   */
+  protected $response;
+
   /**
    * Gemini model name.
    *
@@ -125,6 +133,9 @@ class Gemini {
    *   Class property name.
    * @param mixed $value
    *   Value to be set.
+   *
+   * @throws Exception
+   *   When requested non-existing property.
    */
   public function __set($name, $value) {
     // Allow to overwrite magic with custom setter.
@@ -137,9 +148,7 @@ class Gemini {
         $this->$name = $value;
       }
       else {
-        throw new InexistentPropertyException(
-          t('Inexistent property: @name', ['@name' => $name])
-        );
+        throw new Exception("Inexistent property: $name");
       }
     }
     return $this;
@@ -153,6 +162,9 @@ class Gemini {
    *
    * @return mixed
    *   Returns property value.
+   *
+   * @throws Exception
+   *   When requested non-existing property.
    */
   public function &__get($name) {
     // Allow to overwrite magic with custom getter.
@@ -203,7 +215,7 @@ class Gemini {
     ];
     if (!empty($this->systemInstruction)) {
       $payload['system_instruction'] = [
-        'parts' => [['text': $this->systemInstruction]],
+        'parts' => [['text' => $this->systemInstruction]],
       ];
     }
     if (!empty($this->generationConfig)) {
@@ -213,7 +225,7 @@ class Gemini {
       $payload['tools'] = $this->tools;
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // @TODO Do the request.
+    // Do the request.
     $header = [
       'x-goog-api-key: ' . $this->apiKey,
       'Content-Type: application/json',

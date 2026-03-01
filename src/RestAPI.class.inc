@@ -378,8 +378,9 @@ class RestAPI {
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
     // The maximum number of seconds for curl operation.
-    curl_setopt($curl, CURLOPT_TIMEOUT, static::getTimeout());
-    curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, static::getTimeout());
+    // Note: disabled because valid requests failed because of timeout.
+    //curl_setopt($curl, CURLOPT_TIMEOUT, static::getTimeout());
+    //curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, static::getTimeout());
 
     // EXECUTE:
     $execution_time_start = microtime(1);
