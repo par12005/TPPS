@@ -12,6 +12,21 @@
  * Job just after import. Required more work with code.
  */
 
+//{
+//  "responseMimeType": "application/json",
+//  "responseJsonSchema": {
+//    "type": "object",
+//    "properties": {
+//      "title": { "type": "string" },
+//      "journal": { "type": "string" },
+//      "authors": { "type": "string" },
+//      "date": { "type": "string" },
+//      "abstract": { "type": "string" }
+//    },
+//    "required": ["title", "authors", "date", "abstract", "journal"]
+//  }
+//}
+
 module_load_include('inc', 'tpps', 'includes/imported_studies_list');
 module_load_include('inc', 'tpps', 'pages/submission/import');
 
@@ -99,14 +114,30 @@ function tpps_doi_lookup_form_submit(array $form, array &$form_state) {
   if (!empty($values['tpps_doi_lookup_system_instruction'])) {
     $gemini->systemInstruction = $values['tpps_doi_lookup_system_instruction'];
   }
-  if (!empty($values['tpps_doi_lookup_generation_config'])) {
-    $gemini->generationConfig = $values['tpps_doi_lookup_generation_config'];
-  }
-  //$gemini->tools = [
-  //  [
-  //    "google_search" => [],
-  //  ]
-  //];
+  //if (!empty($values['tpps_doi_lookup_generation_config'])) {
+  //  $gemini->generationConfig = $values['tpps_doi_lookup_generation_config'];
+  //}
+  //else {
+    $gemini->generationConfig = [
+      "responseMimeType" => "application/json",
+      "responseJsonSchema" => [
+        "type" => "object",
+        "properties" => [
+          "title" => (object) ["type" => "string"],
+          "journal" => (object) ["type" => "string"],
+          "authors" => (object) ["type" => "string"],
+          "date" => (object) ["type" => "string"],
+          "abstract" => (object) ["type" => "string"],
+        ],
+        "required" => ["title", "authors", "date", "abstract", "journal"],
+      ],
+    ];
+  //}
+
+
+  // Note:
+  // Disabled because requiests failed and doesn't actually required.
+  //$gemini->tools = [["google_search" => (object) []]];
   $response = $gemini->ask(
     $values['tpps_doi_lookup_question']
   );

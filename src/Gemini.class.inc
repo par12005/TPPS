@@ -96,6 +96,7 @@ class Gemini {
    * and perform complex computational tasks.
    *
    * https://ai.google.dev/gemini-api/docs/tools
+   * Usage: $gemini->tools = [["google_search" => (object) []]];
    *
    * @var array
    */
