@@ -2322,6 +2322,24 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/zenodo.inc',
   ];
+  $items['admin/config/tpps/google-scholar'] = [
+    'title' => 'Google Scholar',
+    'description' => 'Google Scholar Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_google_scholar_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/google_scholar.inc',
+  ];
+  $items['admin/config/tpps/gemini'] = [
+    'title' => 'Gemini',
+    'description' => 'Gemini Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_gemini_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/gemini.inc',
+  ];
 }
 
 /**

@@ -13,6 +13,14 @@
  */
 function tpps_get_variable_list() {
   return [
+    // Gemini.
+    'tpps_gemini_model' => '',
+    'tpps_gemini_api_key' => '',
+    // Google Scholar.
+    'tpps_google_scholar_debug_mode' => FALSE,
+    'tpps_google_scholar_method' => 'gemini_ai',
+    'tpps_google_scholar_delay' => 5,
+    // General.
     'tpps_watchdog_cleanup' => FALSE,
     'tpps_ncbi_api_delay' => 300,
     'tpps_ncbi_api_max_attempt_number' => 5,
@@ -2552,9 +2560,16 @@ function tpps_update_7133() {
 }
 
 /**
- * Creates table 'tpps_google_scholar'.
+ * Configure 'Google Scholar' and 'Gemini AI'.
  */
 function tpps_update_7134() {
+  // Gemini AI.
+  variable_set('tpps_gemini_model', '');
+  variable_set('tpps_gemini_api_key', '');
+  // Google Scholar.
+  variable_set('tpps_google_scholar_debug_mode', FALSE);
+  variable_set('tpps_google_scholar_method', 'gemini_ai');
+  variable_set('tpps_google_scholar_delay', 5);
   // Create new db table.
   $table_name = GoogleScholar::TABLE;
   if (!db_table_exists($table_name)) {

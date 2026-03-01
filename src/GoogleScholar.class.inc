@@ -17,6 +17,16 @@
  * 4. Parse.
  *
  * n. Update if stored pages is outdated.
+ *
+ * @TODO Imitate form https://scholar.google.com/ submit (with cookies).
+ *
+ * :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+ * Core Concepts:
+ * Respect robots.txt: Be aware that scraping is against Google Scholar's Terms of Service, and you should check scholar.google.com/robots.txt before starting .
+ * Use Proxies: To avoid IP bans, you'll need to use residential or rotating proxies to distribute your requests .
+ * Rotate User-Agents: Mimic different browsers and devices to avoid detection .
+ * Add Delays: Introduce random delays (e.g., 10-60 seconds) between requests to avoid rate-limiting.
+ * Handle Dynamic Content: For complex pages, you might need tools like Playwright or Selenium to render JavaScript.
  */
 
 /**
@@ -32,7 +42,7 @@ class GoogleScholar {
 
   // Default value of the delay between requests.
   // Value 10-60 seconds is suggested over the internet to avoid IP address ban.
-  const DEFAULT_DELAY = 60;
+  const DEFAULT_DELAY = 5;
 
   /**
    * Indicates if 'Debug Mode' is enabled/disabled.
@@ -117,6 +127,7 @@ class GoogleScholar {
     $this->delay = variable_get(
       'tpps_google_scholar_delay', static::DEFAULT_DELAY
     );
+    $this->debugMode = variable_get('tpps_google_scholar_debug_mode', FALSE);
     return $this;
   }
 
@@ -305,6 +316,29 @@ class GoogleScholar {
     }
     return 'https://scholar.google.com/scholar?hl=en&as_sdt=0%2C5&q='
       . urlencode(check_plain($this->doi)) . '&btnG=';
+  }
+
+  /**
+   * Scraps SERP to get publication info.
+   *
+   * @throws Exception
+   *   When $doi is empty.
+   *   When data loaded from DB but $serp is empty.
+   */
+  public function parse() {
+    if (empty($this->doi)) {
+      throw new Exception("Can't create URL because of the empty DOI.");
+    }
+    if (!$this->isLoaded()) {
+      $this->load();
+    }
+    if (empty($this->serp)) {
+      // @TODO Call $this->request().
+      throw new Exception("Empty SERP.");
+    }
+
+    // @TODO parse.
+    // Store result.
   }
 
 }
