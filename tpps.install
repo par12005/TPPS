@@ -13,12 +13,13 @@
  */
 function tpps_get_variable_list() {
   return [
+    // DOI.
+    'tpps_doi_lookup_method' => 'gemini',
     // Gemini.
     'tpps_gemini_model' => '',
     'tpps_gemini_api_key' => '',
     // Google Scholar.
     'tpps_google_scholar_debug_mode' => FALSE,
-    'tpps_google_scholar_method' => 'gemini_ai',
     'tpps_google_scholar_delay' => 5,
     // General.
     'tpps_watchdog_cleanup' => FALSE,
@@ -918,6 +919,59 @@ function tpps_schema() {
     ],
     'unique keys' => [
       'doi_created' => ['doi', 'created'],
+    ],
+  ];
+
+  // Table to store DOI lookup results.
+  $schema['tpps_doi'] = [
+    'description' => 'Stores Google Scholar SERP.',
+    'fields' => [
+      'doi' => [
+        'description' => 'DOI (Digital Object Identifier).',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ],
+      'source' => [
+        'description' => 'Source of the information: gemini, google_scholar.',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ],
+      'authors' => [
+        'description' => 'Authors (primary and secondary).',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ],
+      'date' => [
+        'description' => 'Publication Date.',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ],
+      'title' => [
+        'description' => 'Publication Title.',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ],
+      'journal' => [
+        'description' => 'Publication Journal.',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ],
+      'abstract' => [
+        'description' => 'Publication Abstract.',
+        // varchar/normal: mysql: 64KB, postgresql: 1GB.
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ],
+    ],
+    'unique keys' => [
+      'doi_source' => ['doi', 'source'],
     ],
   ];
 
@@ -2560,27 +2614,32 @@ function tpps_update_7133() {
 }
 
 /**
- * Configure 'Google Scholar' and 'Gemini AI'.
+ * Configure 'DOI Lookup', 'Google Scholar' and 'Gemini AI'.
  */
 function tpps_update_7134() {
+  variable_set('tpps_doi_lookup_method', 'gemini');
   // Gemini AI.
   variable_set('tpps_gemini_model', '');
   variable_set('tpps_gemini_api_key', '');
   // Google Scholar.
   variable_set('tpps_google_scholar_debug_mode', FALSE);
-  variable_set('tpps_google_scholar_method', 'gemini_ai');
   variable_set('tpps_google_scholar_delay', 5);
   // Create new db table.
-  $table_name = GoogleScholar::TABLE;
-  if (!db_table_exists($table_name)) {
-    if ($table_schema = tpps_schema()[$table_name]) {
-      $transaction = db_transaction();
-      try {
-        db_create_table($table_name, $table_schema);
-      }
-      catch (\Exception $e) {
-        $transaction->rollback();
-        throw $e;
+  $table_list = [
+    'tpps_doi',
+    GoogleScholar::TABLE,
+  ];
+  foreach ($table_list as $table_name) {
+    if (!db_table_exists($table_name)) {
+      if ($table_schema = tpps_schema()[$table_name]) {
+        $transaction = db_transaction();
+        try {
+          db_create_table($table_name, $table_schema);
+        }
+        catch (\Exception $e) {
+          $transaction->rollback();
+          throw $e;
+        }
       }
     }
   }
