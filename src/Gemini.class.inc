@@ -9,6 +9,8 @@
  * To get/update API Key: https://aistudio.google.com/apikey
  *
  * https://ai.google.dev/api?hl=ru#text-only-prompt
+ *
+ * This class doesn't store response and do not use logs.
  */
 
 /**
@@ -19,13 +21,35 @@
  */
 class Gemini {
 
+  /**
+   * Whole Gemini API response.
+   *
+   * We receive JSON but $response contains PHP-array.
+   *
+   * @var array
+   */
+  protected $response;
 
   /**
-   * Gemini API response.
+   * Response Id.
+   *
+   * Example: "M5ikaY2XM57D-sAPmPSI4AY"
    *
    * @var string
    */
-  protected $response;
+  protected $responseId;
+
+  /**
+   * Response.
+   *
+   * Note: If JSON format was requested in $generationConfig then $answer
+   * will be JSON-string and must be decoded.
+   *
+   * $response['candidates'][0]['content']['parts'][0]['text'];
+   *
+   * @var string
+   */
+  protected $answer;
 
   /**
    * Gemini model name.
@@ -231,7 +255,27 @@ class Gemini {
       'x-goog-api-key: ' . $this->apiKey,
       'Content-Type: application/json',
     ];
-    return $this->response = RestAPI::post($this->url, $payload, $header);
+
+    try {
+      $json_response = RestAPI::post($this->url, $payload, $header);
+      $response = json_decode($json_response, TRUE);
+    }
+    catch (Exception $e) {
+      // @TODO Minor. Code 429 (Too many requiests).
+      $message = $e->getMessage();
+      $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
+      watchdog('tpps', $message . '<pre>@backtrace</pre>',
+        ['@backtrace' => print_r($stack, 1)],
+        WATCHDOG_ERROR
+      );
+      // throw new Exception($message, $e->getCode());
+      drupal_set_message($e->getCode() . ' ' . $message);
+    }
+
+    $this->response = $response;
+    $this->responseId = $response['responseId'];
+    $this->answer = $response['candidates'][0]['content']['parts'][0]['text'];
+    return $this->answer;
   }
 
 }

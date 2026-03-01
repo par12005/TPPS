@@ -2,14 +2,7 @@
 
 /**
  * @file
- * TPPS Submission Clone Form.
- *
- * @TODO Minor. Implement ability to set accession number. Currently there is
- * no ability to specify accession. Only next one could be used
- * or existing one overritten.
- * @TODO Minor. Set Submission::STATUS_APPROVED status and do necessary changes.
- * Just setting Submission::STATUS_APPROVED status don't allow to run Tripal
- * Job just after import. Required more work with code.
+ * TPPS DOI Lookup Form.
  */
 
 //{
@@ -27,25 +20,21 @@
 //  }
 //}
 
-module_load_include('inc', 'tpps', 'includes/imported_studies_list');
-module_load_include('inc', 'tpps', 'pages/submission/import');
-
-// @TOdO Set status 'Approved'.
 
 /**
- * TPPS Submission Import Form.
+ * TPPS DOI Lookup Form.
  */
 function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2 = '') {
   if (!empty($doi2)) {
     $doi = $doi1 . '/' . $doi2;
   }
   else {
-    $doi = variable_get('tpps_doi_lookup_question');
+    $doi = variable_get('tpps_doi_lookup_doi');
   }
 
-  $form['tpps_doi_lookup_question'] = [
-    '#type' => 'textarea',
-    '#title' => t('Question'),
+  $form['tpps_doi_lookup_doi'] = [
+    '#type' => 'textfield',
+    '#title' => t('DOI'),
     '#default_value' => $doi,
   ];
   $form['tpps_doi_lookup_system_instruction'] = [
@@ -57,16 +46,6 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
         'https://ai.google.dev/gemini-api/docs/text-generation#system-instructions'
     ),
     '#default_value' => variable_get('tpps_doi_lookup_system_instruction', ''),
-  ];
-  $form['tpps_doi_lookup_generation_config'] = [
-    '#type' => 'textarea',
-    '#title' => t('Generation Config Object'),
-    '#description' => t('Format: JSON. See !link.', [
-      '!link' => l(t('Gemini: GenerationConfig'),
-        'https://ai.google.dev/api/generate-content#v1beta.GenerationConfig'
-      )
-    ]),
-    '#default_value' => variable_get('tpps_doi_lookup_generation_config', ''),
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -106,7 +85,7 @@ function tpps_doi_lookup_form_submit(array $form, array &$form_state) {
   //dpm(print_r($form_state, 1));
 
   $values = &$form_state['values'];
-  if (empty($values['tpps_doi_lookup_question'])) {
+  if (empty($values['tpps_doi_lookup_doi'])) {
     return;
   }
 
@@ -114,32 +93,50 @@ function tpps_doi_lookup_form_submit(array $form, array &$form_state) {
   if (!empty($values['tpps_doi_lookup_system_instruction'])) {
     $gemini->systemInstruction = $values['tpps_doi_lookup_system_instruction'];
   }
-  //if (!empty($values['tpps_doi_lookup_generation_config'])) {
-  //  $gemini->generationConfig = $values['tpps_doi_lookup_generation_config'];
-  //}
-  //else {
-    $gemini->generationConfig = [
-      "responseMimeType" => "application/json",
-      "responseJsonSchema" => [
-        "type" => "object",
-        "properties" => [
-          "title" => (object) ["type" => "string"],
-          "journal" => (object) ["type" => "string"],
-          "authors" => (object) ["type" => "string"],
-          "date" => (object) ["type" => "string"],
-          "abstract" => (object) ["type" => "string"],
-        ],
-        "required" => ["title", "authors", "date", "abstract", "journal"],
+
+
+  // Answer in JSON format.
+  $gemini->generationConfig = [
+    "responseMimeType" => "application/json",
+    "responseJsonSchema" => [
+      "type" => "object",
+      "properties" => [
+        "doi" => (object) ["type" => "string"],
+        "title" => (object) ["type" => "string"],
+        "journal" => (object) ["type" => "string"],
+        "date" => (object) ["type" => "string"],
+        "authors" => (object) ["type" => "string"],
+        "abstract" => (object) ["type" => "string"],
       ],
-    ];
-  //}
+      "required" => ["title", "authors", "date", "abstract", "journal"],
+    ],
+  ];
 
-
+  // @TODO Try to allow internet search to get better results.
   // Note:
   // Disabled because requiests failed and doesn't actually required.
   //$gemini->tools = [["google_search" => (object) []]];
-  $response = $gemini->ask(
-    $values['tpps_doi_lookup_question']
+
+  $gemini->ask(
+    $values['tpps_doi_lookup_doi']
   );
-  dpm(var_export($response, 1));
+  $fields = json_decode($gemini->answer, TRUE);
+
+  if ($fields === NULL || $fields === FALSE) {
+    // An error occurred during decoding.
+    $error_code = json_last_error();
+    $error_message = json_last_error_msg();
+    throw new Exception("JSON decoding error: [{$error_code}] {$error_message}");
+  }
+
+  // Store to DB.
+  $fields['source'] = 'gemini';
+  // @TODO Remove this debug code.
+  $fields['doi'] = $fields['doi']
+    ?? $values['tpps_doi_lookup_doi']
+    ?? '10.1002\/ece3.4216';
+
+  db_insert('tpps_doi')->fields($fields)->execute();
+
+
 }
