@@ -3218,18 +3218,74 @@ function tpps_zenodo_deposit_create_alter(array &$data = []) {
 }
 
 /**
+ * Implements hook 'rest_api_request_started'.
+ *
+ * @param array $context
+ *   Request's context.
+ *   Keys: see RestAPI::doRequest().
+ */
+function tpps_rest_api_request_started(array $context = []) {
+  // Make record in 'tpps_rest_api_request_log' table.
+  if (empty($context['request_id'])) {
+    return;
+  }
+  $table_name = 'tpps_rest_api_request_log';
+  // Check if record exists.
+  $record_exists = db_select($table_name, 't')
+    ->fields('t', ['request_id'])
+    ->condition('id', $context['request_id'])
+    ->range(0, 1)
+    ->execute()
+    ->fetchField();
+  // Do not update existing records.
+  $message = 'Rest API Request !report_link created.';
+  if (!$record_exists) {
+    // Convert arrays into JSON format.
+    $list = [
+      'request_payload',
+      'request_header',
+    ];
+    foreach ($list as $name) {
+      $db_log_data[$name] = json_encode($db_log_data[$name], TRUE);
+    }
+    // Add
+    // 'created' => time(),
+    db_insert($table_name)
+      ->fields($db_log_data)
+      ->execute();
+    $message .= ' Log record was created.';
+  }
+  $params = [
+    '!report_link' => l(
+      t('#@request_id', ['@request_id' => $context['request_id']]),
+      'admin/reports/db/public.' . $table_name,
+      ['query' => ['request_id' => $context['request_id']]]
+    ),
+  ];
+  watchdog('tpps_rest_api', $message, $params);
+}
+
+/**
  * Implements hook 'rest_api_request_complete'.
  *
  * @param array $context
  *   Request's context.
- *   Keys:
- *   'Code' - int. HTTP code.
- *   'Message' - string. HTTP code message.
- *   'Execution Time' - float. Request execution time in milliseconds.
- *   'Request' - array. Keys are 'Method', 'URL', 'Payload', 'Headers'.
- *   'Response' - mixed. Remote server's response.
+ *   Keys: see RestAPI::doRequest().
  */
-function tpps_rest_api_request_complete(array $context = []) {
+function tpps_rest_api_request_completed(array $context = []) {
+  //// Make watchdog record.
+  //$max_execution_time = variable_get('tpps_rest_api_max_execution_time', 5000);
+  //$method = $context['request_method'] ?? NULL;
+  //if (
+  //  // Log very long requests automatically.
+  //  ($context['response_time'] ?? 0) >= $max_execution_time
+  //  || (
+  //    // Allowed logging for this method.
+  //    RestAPI::isLogRequestTypeAllowed($method)
+  //    // ... and either request or response logging is logged.
+  //    && (RestAPI::isLogRequestAllowed() || RestAPI::isLogResponseAllowed())
+  //  )
+  //) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Make record in 'tpps_rest_api_log' table.
   if (!empty($context['request_id'])) {
@@ -3268,46 +3324,6 @@ function tpps_rest_api_request_complete(array $context = []) {
         ['query' => ['request_id' => $context['request_id']]]
       ),
     ];
-    watchdog('tpps_rest_api', $message, $params);
-  }
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Make watchdog record.
-  $max_execution_time = variable_get('tpps_rest_api_max_execution_time', 5000);
-  $method = $context['request_method'] ?? NULL;
-  if (
-    // Log very long requests automatically.
-    ($context['response_time'] ?? 0) >= $max_execution_time
-    || (
-      // Allowed logging for this method.
-      RestAPI::isLogRequestTypeAllowed($method)
-      // ... and either request or response logging is logged.
-      && (RestAPI::isLogRequestAllowed() || RestAPI::isLogResponseAllowed())
-    )
-  ) {
-    $watchdog_data = $context;
-    // Note: Execution time will always be shown.
-    if (!RestAPI::isLogRequestAllowed()) {
-      $field_list = [
-        'request_url',
-        'request_method',
-        'request_payload',
-        'request_header',
-      ];
-      foreach ($field_list as $name) {
-        unset($watchdog_data[$name]);
-      }
-    }
-    if (!RestAPI::isLogResponseAllowed()) {
-      $field_list = [
-        'response_body',
-      ];
-      foreach ($field_list as $name) {
-        unset($watchdog_data[$name]);
-      }
-    }
-    $message = 'Rest API Request Complete. !context';
-    $params = ['!context' => TppsArray::print($watchdog_data)];
     watchdog('tpps_rest_api', $message, $params);
   }
 }

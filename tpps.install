@@ -979,68 +979,92 @@ function tpps_schema() {
     ],
   ];
 
-  // Log table for 'RestAPI' class.
-  $schema['tpps_rest_api_log'] = [
-    'description' => "Stores 'RestAPI' class requests and responses .",
+  // Table to log requests made by 'RestAPI' class.
+  $schema['tpps_rest_api_request_log'] = [
+    'description' => "Stores REST API requests.",
     'fields' => [
       // Request Id is an md5 hash of all request's data to be able to find
       // exactly the same request in log.
       'request_id' => [
-        'description' => 'Unique Request Identifier.',
+        'description' => 'The unique request identifier.',
         'type' => 'varchar',
         'size' => 'normal',
         'not null' => TRUE,
       ],
-      'request_created' => [
-        'description' => 'Unix timestamp of the request.',
-        'type' => 'varchar',
+      'created' => [
+        'description' => 'The first time request was created. Format: UNIX timestamp.',
+        'type' => 'int',
         'size' => 'normal',
         'not null' => TRUE,
       ],
-      'request_method' => [
+      'method' => [
         // @TODO Use 'enum'?
         'description' => 'HTTP method: post, get, put, delete.',
         'type' => 'varchar',
         'size' => 'normal',
         'not null' => TRUE,
       ],
-      'request_url' => [
+      'url' => [
         'description' => 'API Endpoint.',
         'type' => 'varchar',
         'size' => 'normal',
         'not null' => TRUE,
       ],
-      'request_payload' => [
+      'payload' => [
         'description' => "POST request's payload. Format: JSON-string.",
         'type' => 'varchar',
         'size' => 'normal',
         'not null' => TRUE,
       ],
-      'request_header' => [
+      'header' => [
         'description' => 'HTTP Headers. Format: JSON-string.',
         'type' => 'varchar',
         'size' => 'normal',
         'not null' => TRUE,
       ],
-      // Response.
-      //
-      // Note: There is no need to store message text because it could be
-      // obtained  by the HTTP Response Code.
-      // RestAPI::getHttpCodeMessage($code);
-      'response_code' => [
+    ],
+    'unique keys' => [
+      // It's possible that the same request will bring different API response.
+      // For example response is time-based.
+      'request_id_created' => ['request_id', 'created'],
+    ],
+  ];
+
+  // Table to log responses obtained by 'RestAPI' class.
+  // Note: There is no need to store message text because it could be
+  // obtained  by the HTTP Response Code.
+  // RestAPI::getHttpCodeMessage($code);
+  $schema['tpps_rest_api_response_log'] = [
+    'description' => "Stores REST API responses.",
+    'fields' => [
+      // Request Id is an md5 hash of all request's data to be able to find
+      // exactly the same request in log.
+      'request_id' => [
+        'description' => 'The unique request identifier.',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ],
+      'started' => [
+        'description' => 'The moment request was started. Format: UNIX timestamp.',
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ],
+      'code' => [
         'description' => "HTTP Response Code.",
         'type' => 'int',
         'size' => 'normal',
         'not null' => TRUE,
       ],
-      'response_time' => [
-        'description' => 'Request execution time, msec.',
-        'type' => 'varchar',
-        'size' => 'normal',
+      'duration' => [
+        'description' => 'Request processing time, msec.',
+        'type' => 'int',
+        'size' => 'small',
         'not null' => TRUE,
       ],
-      'response_body' => [
-        'description' => 'API response. Format: JSON-string.',
+      'body' => [
+        'description' => 'Body of the API response. Format: JSON-string.',
         // varchar/normal: mysql: 64KB, postgresql: 1GB.
         'type' => 'varchar',
         'size' => 'normal',
@@ -1050,8 +1074,15 @@ function tpps_schema() {
     'unique keys' => [
       // It's possible that the same request will bring different API response.
       // For example response is time-based.
-      'doi_source' => ['request_id', 'request_created'],
+      'request_id_started' => ['request_id', 'started'],
     ],
+    'foreign keys' => [
+      'request_id' => [
+        'table' => 'tpps_rest_api_request_log',
+        'columns' => ['request_id' => 'request_id'],
+      ],
+    ],
+
   ];
 
   return $schema;
@@ -2711,7 +2742,8 @@ function tpps_update_7134() {
   $table_list = [
     'tpps_doi',
     GoogleScholar::TABLE,
-    'tpps_rest_api_log',
+    'tpps_rest_api_request_log',
+    'tpps_rest_api_response_log',
   ];
   foreach ($table_list as $table_name) {
     if (!db_table_exists($table_name)) {

@@ -376,7 +376,20 @@ class RestAPI {
         ]);
       }
     }
-
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Allow other modules to react on start of the request.
+    if (function_exists('module_invoke_all')) {
+      // tpps_rest_api_request_started().
+      $context = [
+        'request_id' => $request_id,
+        'method' => $method,
+        'url' => $url,
+        'payload' => $payload ?? NULL,
+        'header' => $header ?? NULL,
+      ];
+      module_invoke_all('rest_api_request_started', $context);
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // OPTIONS:
     // See http://www.php.net/manual/en/function.curl-setopt.php
     curl_setopt($curl, CURLOPT_URL, $url);
@@ -387,6 +400,7 @@ class RestAPI {
     //curl_setopt($curl, CURLOPT_TIMEOUT, static::getTimeout());
     //curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, static::getTimeout());
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // EXECUTE:
     $execution_time_start = microtime(1);
     $response = curl_exec($curl);
@@ -411,26 +425,17 @@ class RestAPI {
     $code = $info['http_code'];
     $message = static::getHttpCodeMessage($code);
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Allow other modules to react on request.
+    // Allow other modules to react on request's finish.
     if (function_exists('module_invoke_all')) {
-      // tpps_rest_api_request_complete().
-      module_invoke_all(
-        'rest_api_request_complete',
-        [
-          // Request.
-          'request_id' => $request_id,
-          'request_created' => REQUEST_TIME,
-          'request_method' => $method,
-          'request_url' => $url,
-          'request_payload' => $payload ?? NULL,
-          'request_header' => $header ?? NULL,
-          // Response.
-          'response_code' => $code,
-          'response_message' => $message,
-          'response_time' => $execution_time,
-          'response_body' => $response,
-        ]
-      );
+      // tpps_rest_api_request_completed().
+      $context = [
+        'request_id' => $request_id,
+        'code' => $code,
+        //'message' => $message,
+        'duration' => $execution_time,
+        'body' => $response,
+      ];
+      module_invoke_all('rest_api_request_completed', $context);
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     if ($code == 0 && empty($response)) {
