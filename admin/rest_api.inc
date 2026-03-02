@@ -29,16 +29,6 @@ function tpps_rest_api_settings_form(array $form, array &$form_state) {
     '#title' => t('Log Request types'),
     '#default_value' => variable_get('tpps_rest_api_log_type', []),
   ];
-  $form['watchdog']['tpps_rest_api_log_show_request'] = [
-    '#type' => 'checkbox',
-    '#title' => t('Show Request'),
-    '#default_value' => variable_get('tpps_rest_api_log_show_request'),
-  ];
-  $form['watchdog']['tpps_rest_api_log_show_response'] = [
-    '#type' => 'checkbox',
-    '#title' => t('Show Response'),
-    '#default_value' => variable_get('tpps_rest_api_log_show_response'),
-  ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $form['time'] = [
     '#type' => 'fieldset',

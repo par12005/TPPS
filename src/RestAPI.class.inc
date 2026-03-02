@@ -37,39 +37,6 @@ class RestAPI {
   }
 
   /**
-   * Checks if given HTTP Request type was selected for logging.
-   *
-   * @param string $type
-   *   HTTP Request type. Possible values 'put', 'get', 'post', 'delete'.
-   *
-   * @return bool
-   *   Return TRUE if given type was selected and FALSE otherwise.
-   */
-  public static function isLogRequestTypeAllowed($type) {
-    return in_array(strtolower($type), static::getLogRequestTypes());
-  }
-
-  /**
-   * Checks if request logging is allowed.
-   *
-   * @return bool
-   *   Returns TRUE when logging is allowed and FALSE otherwise.
-   */
-  public static function isLogRequestAllowed() {
-    return variable_get('tpps_rest_api_log_show_request', FALSE);
-  }
-
-  /**
-   * Checks if response logging is allowed.
-   *
-   * @return bool
-   *   Returns TRUE when logging is allowed and FALSE otherwise.
-   */
-  public static function isLogResponseAllowed() {
-    return variable_get('tpps_rest_api_log_show_response', FALSE);
-  }
-
-  /**
    * Gets timeout value.
    *
    * The maximum number of seconds to allow cURL functions to execute.
@@ -429,6 +396,7 @@ class RestAPI {
     if (function_exists('module_invoke_all')) {
       // tpps_rest_api_request_completed().
       $context = [
+        'request' => $context,
         'request_id' => $request_id,
         'code' => $code,
         //'message' => $message,
