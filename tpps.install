@@ -928,7 +928,7 @@ function tpps_schema() {
 
   // Table to store DOI lookup results.
   $schema['tpps_doi'] = [
-    'description' => 'Stores Google Scholar SERP.',
+    'description' => 'Stores DOI publication information.',
     'fields' => [
       'doi' => [
         'description' => 'DOI (Digital Object Identifier).',
@@ -976,6 +976,81 @@ function tpps_schema() {
     ],
     'unique keys' => [
       'doi_source' => ['doi', 'source'],
+    ],
+  ];
+
+  // Log table for 'RestAPI' class.
+  $schema['tpps_rest_api_log'] = [
+    'description' => "Stores 'RestAPI' class requests and responses .",
+    'fields' => [
+      // Request Id is an md5 hash of all request's data to be able to find
+      // exactly the same request in log.
+      'request_id' => [
+        'description' => 'Unique Request Identifier.',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ],
+      'request_created' => [
+        'description' => 'Unix timestamp of the request.',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ],
+      'request_method' => [
+        // @TODO Use 'enum'?
+        'description' => 'HTTP method: post, get, put, delete.',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ],
+      'request_url' => [
+        'description' => 'API Endpoint.',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ],
+      'request_payload' => [
+        'description' => "POST request's payload. Format: JSON-string.",
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ],
+      'request_header' => [
+        'description' => 'HTTP Headers. Format: JSON-string.',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ],
+      // Response.
+      //
+      // Note: There is no need to store message text because it could be
+      // obtained  by the HTTP Response Code.
+      // RestAPI::getHttpCodeMessage($code);
+      'response_code' => [
+        'description' => "HTTP Response Code.",
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ],
+      'response_time' => [
+        'description' => 'Request execution time, msec.',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ],
+      'response_body' => [
+        'description' => 'API response. Format: JSON-string.',
+        // varchar/normal: mysql: 64KB, postgresql: 1GB.
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ],
+    ],
+    'unique keys' => [
+      // It's possible that the same request will bring different API response.
+      // For example response is time-based.
+      'doi_source' => ['request_id', 'request_created'],
     ],
   ];
 
@@ -2636,6 +2711,7 @@ function tpps_update_7134() {
   $table_list = [
     'tpps_doi',
     GoogleScholar::TABLE,
+    'tpps_rest_api_log',
   ];
   foreach ($table_list as $table_name) {
     if (!db_table_exists($table_name)) {

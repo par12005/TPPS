@@ -13,6 +13,9 @@
  *  RestAPI::delete($url);
  *
  *  @todo Minor. Do not use dpm().
+ *  @TODO Convert to dynamyc (not static) class to store response data
+ *  after request and generated 'requestId' in __construct() method.
+ *  Give each request a nickname to store in log.
  */
 
 /**
@@ -349,6 +352,8 @@ class RestAPI {
    */
   public static function doRequest($method, $url, $payload = [], array $header = []) {
     $method = strtoupper($method);
+    $request_id = static::getRequestId($method, $url, $payload, $header);
+
     $curl = curl_init();
     // Why not use CURLOPT_POS: https://stackoverflow.com/a/74812403
     curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
@@ -412,16 +417,18 @@ class RestAPI {
       module_invoke_all(
         'rest_api_request_complete',
         [
-          'Code' => $code,
-          'Message' => $message,
-          'Execution Time' => $execution_time,
-          'Request' => [
-            'Method' => $method,
-            'URL' => $url,
-            'Payload' => $payload ?? NULL,
-            'Headers' => $header ?? NULL,
-          ],
-          'Response' => $response,
+          // Request.
+          'request_id' => $request_id,
+          'request_created' => REQUEST_TIME,
+          'request_method' => $method,
+          'request_url' => $url,
+          'request_payload' => $payload ?? NULL,
+          'request_header' => $header ?? NULL,
+          // Response.
+          'response_code' => $code,
+          'response_message' => $message,
+          'response_time' => $execution_time,
+          'response_body' => $response,
         ]
       );
     }
@@ -453,6 +460,37 @@ class RestAPI {
       }
       throw new Exception('RestAPI HTTP-request: ' . $message, $code);
     }
+  }
+
+  /**
+   * Generates unique id for request.
+   *
+   * All request data are used to be able to find the same requests in log.
+   *
+   * @param string $method
+   *   HTTP method. Possible values are: 'POST', 'GET', 'PUT', 'DELETE'.
+   * @param string $url
+   *   API Endpoint URL.
+   * @param mixed $payload
+   *   Payload. Required for POST-requests (payload).
+   *   Could be a URL query part for GET-requests.
+   *   To send JSON use header: 'Content-Type: application/json'.
+   * @param array $header
+   *   HTTP-headers. Required for POST-requests.
+   *
+   * @return string
+   *   Returns md5 hash of the all the request data.
+   *
+   * @TODO Be sure to remove time-based data from the request's payload to
+   * avoid duplicates.
+   */
+  public static function getRequestId($method, $url, $payload = [], array $header = []) {
+    return md5(json_encode([
+      'method' => strtoupper($method),
+      'url' => $url,
+      'payload' => $payload,
+      'header' => $header,
+    ]));
   }
 
 }
