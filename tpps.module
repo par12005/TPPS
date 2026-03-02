@@ -3233,15 +3233,7 @@ function tpps_rest_api_request_started(array $context = []) {
   if (empty($context[$key])) {
     return;
   }
-  // Check if record exists.
-  $record_exists = db_select($table_name, 't')
-    ->fields('t', [$key])
-    ->condition($key, $context[$key])
-    ->range(0, 1)
-    ->execute()
-    ->fetchField();
-  // Do not update existing records.
-  if (!$record_exists) {
+  if (!RestAPI::isRequestExists($context[$key])) {
     $context['created'] = time();
     // Convert arrays into JSON format.
     foreach (['payload', 'header'] as $name) {
@@ -3273,6 +3265,7 @@ function tpps_rest_api_request_started(array $context = []) {
  * @param array $context
  *   Request's context.
  *   Keys: see RestAPI::doRequest().
+ *   To check if response exists: RestAPI::isResponseExists($request_id);
  */
 function tpps_rest_api_request_completed(array $context = []) {
   $table_name = 'tpps_rest_api_response_log';

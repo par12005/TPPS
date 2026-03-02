@@ -15,7 +15,9 @@
  *  @todo Minor. Do not use dpm().
  *  @TODO Convert to dynamyc (not static) class to store response data
  *  after request and generated 'requestId' in __construct() method.
- *  Give each request a nickname to store in log.
+ *  @TODO Idea: Give each request a nickname to store in log.
+ *  @TODO Allow in the call of ::doRequest() decide if previous response
+ *  could be used.
  */
 
 /**
@@ -321,90 +323,99 @@ class RestAPI {
     $method = strtoupper($method);
     $request_id = static::getRequestId($method, $url, $payload, $header);
 
-    $curl = curl_init();
-    // Why not use CURLOPT_POS: https://stackoverflow.com/a/74812403
-    curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
-    curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
+    if (RestAPI::isResponseExists($request_id)) {
+      // Reuse stored response if possible.
+      extract(static::loadResponse($request_id));
+    }
+    else {
+      $curl = curl_init();
+      // Why not use CURLOPT_POS: https://stackoverflow.com/a/74812403
+      curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
+      curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
 
-    if (!empty($payload)) {
-      if (in_array($method, ['POST', 'DELETE', 'PUT'])) {
-        curl_setopt($curl, CURLOPT_SAFE_UPLOAD, TRUE);
-        // Different processing of array and string:
-        // https://stackoverflow.com/questions/5224790
-        curl_setopt($curl, CURLOPT_POSTFIELDS, $payload);
+      if (!empty($payload)) {
+        if (in_array($method, ['POST', 'DELETE', 'PUT'])) {
+          curl_setopt($curl, CURLOPT_SAFE_UPLOAD, TRUE);
+          // Different processing of array and string:
+          // https://stackoverflow.com/questions/5224790
+          curl_setopt($curl, CURLOPT_POSTFIELDS, $payload);
+        }
+        else {
+          // GET.
+          // Note: $payload contains URL's query.
+          $url = url($url, [
+            'https' => TRUE,
+            'external' => TRUE,
+            'query' => $payload,
+          ]);
+        }
       }
-      else {
-        // GET.
-        // Note: $payload contains URL's query.
-        $url = url($url, [
-          'https' => TRUE,
-          'external' => TRUE,
-          'query' => $payload,
-        ]);
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Allow other modules to react on start of the request.
+      if (function_exists('module_invoke_all')) {
+        // tpps_rest_api_request_started().
+        $context = [
+          'request_id' => $request_id,
+          'method' => $method,
+          'url' => $url,
+          'payload' => $payload ?? NULL,
+          'header' => $header ?? NULL,
+        ];
+        module_invoke_all('rest_api_request_started', $context);
+      }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // OPTIONS:
+      // See http://www.php.net/manual/en/function.curl-setopt.php
+      curl_setopt($curl, CURLOPT_URL, $url);
+      curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+      curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+      // The maximum number of seconds for curl operation.
+      // Note: disabled because valid requests failed because of timeout.
+      //curl_setopt($curl, CURLOPT_TIMEOUT, static::getTimeout());
+      //curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, static::getTimeout());
+
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // EXECUTE:
+      $execution_time_start = microtime(1);
+      $response = curl_exec($curl);
+      $info = curl_getinfo($curl);
+      curl_close($curl);
+
+      // Execution time.
+      $execution_time = (microtime(1) - $execution_time_start) * 1000;
+
+      // Prepare response.
+      if ($info['content_type'] == 'application/json') {
+        if (!empty($response)) {
+          // PHP's json_decode() could throw an exception of invalid JSON.
+          // @todo Minor. Use try and catch block.
+          $response = static::decodeJSON($response);
+        }
+        else {
+          $response = NULL;
+        }
+      }
+      // Validate HTTP request code.
+      $code = $info['http_code'];
+      $message = static::getHttpCodeMessage($code);
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Allow other modules to react on request's finish.
+      if (function_exists('module_invoke_all')) {
+        // tpps_rest_api_request_completed().
+        $context = [
+          'request' => $context,
+          'request_id' => $request_id,
+          'code' => $code,
+          //'message' => $message,
+          'duration' => $execution_time,
+          'body' => $response,
+        ];
+        module_invoke_all('rest_api_request_completed', $context);
       }
     }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Allow other modules to react on start of the request.
-    if (function_exists('module_invoke_all')) {
-      // tpps_rest_api_request_started().
-      $context = [
-        'request_id' => $request_id,
-        'method' => $method,
-        'url' => $url,
-        'payload' => $payload ?? NULL,
-        'header' => $header ?? NULL,
-      ];
-      module_invoke_all('rest_api_request_started', $context);
-    }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // OPTIONS:
-    // See http://www.php.net/manual/en/function.curl-setopt.php
-    curl_setopt($curl, CURLOPT_URL, $url);
-    curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-    // The maximum number of seconds for curl operation.
-    // Note: disabled because valid requests failed because of timeout.
-    //curl_setopt($curl, CURLOPT_TIMEOUT, static::getTimeout());
-    //curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, static::getTimeout());
 
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // EXECUTE:
-    $execution_time_start = microtime(1);
-    $response = curl_exec($curl);
-    $info = curl_getinfo($curl);
-    curl_close($curl);
 
-    // Execution time.
-    $execution_time = (microtime(1) - $execution_time_start) * 1000;
 
-    // Prepare response.
-    if ($info['content_type'] == 'application/json') {
-      if (!empty($response)) {
-        // PHP's json_decode() could throw an exception of invalid JSON.
-        // @todo Minor. Use try and catch block.
-        $response = static::decodeJSON($response);
-      }
-      else {
-        $response = NULL;
-      }
-    }
-    // Validate HTTP request code.
-    $code = $info['http_code'];
-    $message = static::getHttpCodeMessage($code);
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Allow other modules to react on request's finish.
-    if (function_exists('module_invoke_all')) {
-      // tpps_rest_api_request_completed().
-      $context = [
-        'request' => $context,
-        'request_id' => $request_id,
-        'code' => $code,
-        //'message' => $message,
-        'duration' => $execution_time,
-        'body' => $response,
-      ];
-      module_invoke_all('rest_api_request_completed', $context);
-    }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     if ($code == 0 && empty($response)) {
       throw new Exception($message);
@@ -464,6 +475,92 @@ class RestAPI {
       'payload' => $payload,
       'header' => $header,
     ]));
+  }
+
+  /**
+   * Checks if the request exists in DB.
+   *
+   * @param string $request_id
+   *   Unique request identificator.
+   *
+   * @return bool
+   *   Returns TRUE if record for given $request_id found in DB.
+   *   Returns FALSE otherwise.
+   */
+  public static function isRequestExists($request_id) {
+    return (bool) db_select('tpps_rest_api_request_log', 't')
+      ->fields('t', ['request_id'])
+      ->condition('request_id', $request_id)
+      ->range(0, 1)
+      ->orderBy('created', 'DESC')
+      ->execute()
+      ->fetchField();
+  }
+
+  /**
+   * Checks if the response exists in DB.
+   *
+   * @param string $request_id
+   *   Unique request identificator.
+   * @param int $started
+   *   Optional. Unix timestamp of the moment when response was requested.
+   *   When NULL last response will be used.
+   *
+   * @return bool
+   *   Returns TRUE if record for given $request_id found in DB.
+   *   Returns FALSE otherwise.
+   */
+  public static function isResponseExists($request_id, $started = NULL) {
+    $query = db_select('tpps_rest_api_response_log', 't')
+      ->fields('t', ['request_id'])
+      ->condition('request_id', $request_id)
+      ->range(0, 1)
+      ->orderBy('started', 'DESC');
+    if (!is_null($started)) {
+      $query->condition('started', $started);
+    }
+    return (bool) $query->execute()->fetchField();
+  }
+
+  /**
+   * Loads Rest API response from database.
+   *
+   * Usage example:
+   * extract(static::loadResponse($request_id));
+   *
+   * @param string $request_id
+   *   Unique request identificator.
+   * @param int $started
+   *   Optional. Unix timestamp of the moment when response was requested.
+   *   When NULL last response will be used.
+   *
+   * @return array
+   *   Returns associative array with keys:
+   *     'request_id',
+   *     'started',
+   *     'code',
+   *     'duration',
+   *     'info',
+   *     'response',
+   */
+  public static function loadResponse($request_id, $started = NULL) {
+    $query = db_select('tpps_rest_api_response_log', 't')
+      ->fields('t', [])
+      ->condition('request_id', $request_id)
+      ->range(0, 1)
+      ->orderBy('started', 'DESC');
+    if (!is_null($started)) {
+      $query->condition('started', $started);
+    }
+    $result = $query->execute()->fetchAssoc();
+
+    // Curl info doesn't store in DB so we just create empty variable.
+    $result['info'] = [];
+    $result['response'] = json_decode($result['body'], TRUE);
+    unset($result['body']);
+    $result['message'] = static::getHttpCodeMessage($result['code']);
+
+    return $result;
   }
 
 }
