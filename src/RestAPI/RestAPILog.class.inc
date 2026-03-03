@@ -87,7 +87,7 @@ class RestAPILog {
       foreach (['payload', 'header'] as $name) {
         $context[$name] = json_encode($context[$name], TRUE);
       }
-      db_insert(self::RESPONSE_TABLE)->fields($context)->execute();
+      db_insert(self::REQUEST_TABLE)->fields($context)->execute();
       return TRUE;
     }
   }

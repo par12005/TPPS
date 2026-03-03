@@ -135,8 +135,20 @@ function tpps_doi_lookup_form_submit(array $form, array &$form_state) {
   $fields['doi'] = $fields['doi']
     ?? $values['tpps_doi_lookup_doi']
     ?? '10.1002\/ece3.4216';
+  // Check if record exists.
+  $is_record_exists = (bool) db_select('tpps_doi', 't')
+    ->fields('t', ['doi'])
+    ->condition('doi', $fields['doi'])
+    ->condition('source', $fields['source'])
+    ->range(0, 1)
+    ->execute()
+    ->fetchField();
 
-  db_insert('tpps_doi')->fields($fields)->execute();
-
-
+  if ($is_record_exists) {
+    drupal_set_message('Record already exists. DOI: ' . $fields['doi']);
+  }
+  else {
+    drupal_set_message('Created new record. DOI: ' . $fields['doi']);
+    db_insert('tpps_doi')->fields($fields)->execute();
+  }
 }
