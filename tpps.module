@@ -3227,19 +3227,11 @@ function tpps_zenodo_deposit_create_alter(array &$data = []) {
  *   Keys: see RestAPI::doRequest().
  */
 function tpps_rest_api_request_started(array $context = []) {
-  // Make record in 'tpps_rest_api_request_log' table.
-  $table_name = 'tpps_rest_api_request_log';
-  $key = 'request_id';
-  if (empty($context[$key])) {
+  if (empty($context['request_id'])) {
+    // @todo ? Watchdog record?
     return;
   }
-  if (!RestAPI::isRequestExists($context[$key])) {
-    $context['created'] = time();
-    // Convert arrays into JSON format.
-    foreach (['payload', 'header'] as $name) {
-      $context[$name] = json_encode($context[$name], TRUE);
-    }
-    db_insert($table_name)->fields($context)->execute();
+  if (RestAPILog::saveRequest($context)) {
     $message = '!aRest API Request !report_link was logged.';
   }
   else {
@@ -3248,9 +3240,9 @@ function tpps_rest_api_request_started(array $context = []) {
   $params = [
     '!a' => '<a href=#></a>',
     '!report_link' => l(
-      t('#@request_id', ['@request_id' => $context[$key]]),
-      'admin/reports/db/public.' . $table_name,
-      ['query' => [$key => $context[$key]]]
+      t('#@request_id', ['@request_id' => $context['request_id']]),
+      'admin/reports/db/public.' . RestAPILog::REQUEST_TABLE,
+      ['query' => ['request_id' => $context['request_id']]]
     ),
   ];
   watchdog('tpps_rest_api', $message, $params);
@@ -3265,39 +3257,26 @@ function tpps_rest_api_request_started(array $context = []) {
  * @param array $context
  *   Request's context.
  *   Keys: see RestAPI::doRequest().
- *   To check if response exists: RestAPI::isResponseExists($request_id);
+ *   To check if response exists: RestAPILog::isResponseExists($request_id);
  */
 function tpps_rest_api_request_completed(array $context = []) {
-  $table_name = 'tpps_rest_api_response_log';
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Make record in 'tpps_rest_api_log' table.
   if (empty($context['request_id'])) {
+    // @todo ? Watchdog record?
     return;
   }
-  // Get request's data.
-  $request = $context['request'];
-  unset($context['request']);
-  // Store Response data.
-  $context['started'] = time();
-  $context['duration'] = intval(round($context['duration']));
-  $context['body'] = json_encode($context['body'], TRUE);
-  // Note: No need to check if the same response exists because it could
-  // have time-based items (like request time) and this check will never
-  // give any result. Just store every response.
-  db_insert($table_name)->fields($context)->execute();
-
-  // Watchdog message.
-  $message = '!aResponse to Rest API request !report_link was logged.';
-  $params = [
-    '!a' => '<a href=#></a>',
-    '!report_link' => l(
-      t('#@request_id', ['@request_id' => $context['request_id']]),
-      'admin/reports/db/public.' . $table_name,
-      ['query' => ['request_id' => $context['request_id']]]
-    ),
-  ];
-  watchdog('tpps_rest_api', $message, $params);
-
+  if (RestAPILog::saveResponse($context)) {
+    // Watchdog message.
+    $message = '!aResponse to Rest API request !report_link was logged.';
+    $params = [
+      '!a' => '<a href=#></a>',
+      '!report_link' => l(
+        t('#@request_id', ['@request_id' => $context['request_id']]),
+        'admin/reports/db/public.' . RestAPILog::RESPONSE_TABLE,
+        ['query' => ['request_id' => $context['request_id']]]
+      ),
+    ];
+    watchdog('tpps_rest_api', $message, $params);
+  }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Record very long requests.
   $max_execution_time = variable_get('tpps_rest_api_max_execution_time', 5000);
@@ -3309,7 +3288,7 @@ function tpps_rest_api_request_completed(array $context = []) {
       '@duration' => $context['duration'],
       '!report_link' => l(
         t('#@request_id', ['@request_id' => $context['request_id']]),
-        'admin/reports/db/public.' . $table_name,
+        'admin/reports/db/public.' . RestAPILog::RESPONSE_TABLE,
         ['query' => ['request_id' => $context['request_id']]]
       ),
     ];

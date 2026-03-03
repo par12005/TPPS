@@ -27,29 +27,6 @@ function tpps_rest_api_settings_form(array $form, array &$form_state) {
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Watchdog Logging.
-  //
-  //
-  // @TODO Review and remove.
-  $form['watchdog'] = [
-    '#type' => 'fieldset',
-    '#title' => t('Watchdog Logging'),
-    '#collapsible' => TRUE,
-    '#description' => t('Requests longer then max execution time will be '
-      . 'logged automatically.'),
-  ];
-  $form['watchdog']['tpps_rest_api_log_type'] = [
-    '#type' => 'checkboxes',
-    '#options' => [
-      'get' => 'GET',
-      'post' => 'POST',
-      'put' => 'PUT',
-      'delete' => 'DELETE',
-    ],
-    '#title' => t('Log Request types'),
-    '#default_value' => variable_get('tpps_rest_api_log_type', []),
-  ];
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $form['time'] = [
     '#type' => 'fieldset',
     '#title' => t('Time'),
