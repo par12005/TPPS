@@ -473,6 +473,16 @@ function tpps_menu() {
     'type' => MENU_NORMAL_ITEM,
     'file' => 'pages/doi/lookup.inc',
   ];
+  $items['tpps/doi/lookup'] = [
+    'title' => 'DOI Lookup',
+    'description' => 'Publication DOI Lookup using Gemini AI.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_doi_lookup_form'],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['access content'],
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'pages/doi/lookup.inc',
+  ];
   return $items;
 }
 
