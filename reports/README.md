@@ -5,18 +5,18 @@ TPPS module has own report system which allows to quickly add new reports.
 Main steps to add new report:
 1. Come up with report title.
 2. Add  variable which stores report's title to ```tpps_get_variable_list()```.
+3. Use ```hook_update_N()``` to set value of the variable which holds report's title.
 
-3. Create report's metadata in Report::getList().
-4. Create new or clone existing (and update) report to have a report callback.
+4. Create report's metadata in Report::getList().
+5. Create new or clone existing (and update) report to have a report callback.
    * for simple db-query: /reports/orgnaism/_list.inc
    * for table (no sorting): /reports/doi/duplicates.inc
-5. Update code of this new file.
+6. Update code of this new file.
    Menu callback name must have 'tpps_report_' prefix.
-6. Add variable name for new report title to ```tpps_reports_settings_form()```
+7. Add variable name for new report title to ```tpps_reports_settings_form()```
    as a commented string for searching purposes.
-7. To show on TPPS Admin Panel:
+8. To show on TPPS Admin Panel:
    Register report and it's URL in ```tpps_admin_panel_get_reports()```.
-8. Use ```hook_update_N()``` to set value of the variable which holds report's title.
 9. Clear cache.
 
 

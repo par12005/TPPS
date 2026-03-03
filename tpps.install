@@ -61,6 +61,7 @@ function tpps_get_variable_list() {
     'tpps_report_organism_new_title' => 'New Organisms',
     'tpps_report_organism_order_family_not_exist_title' => 'Order/Family not exist',
     // DOI reports.
+    'tpps_report_doi_all_title' => 'All DOI',
     'tpps_report_doi_duplicates_title' => 'DOI Duplicates',
     'tpps_report_doi_missing_title' => 'Missing DOI',
     // Zenodo reports.
@@ -2741,6 +2742,7 @@ function tpps_update_7134() {
 
   // Rest API.
   variable_set('tpps_rest_api_use_response_cache', FALSE);
+  variable_set('tpps_report_doi_all_title', 'All DOI');
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Remove outdated variables.
   variable_del('tpps_rest_api_log_show_response');

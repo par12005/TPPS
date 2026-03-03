@@ -46,6 +46,7 @@ function tpps_reports_settings_form(array $form, array &$form_state) {
   // 'tpps_report_organism_new_title'.
   // 'tpps_report_organism_order_family_not_exist_title'.
   // DOI:
+  // 'tpps_report_doi_all_title'.
   // 'tpps_report_doi_duplicates_title'.
   // 'tpps_report_doi_missing_title'.
   // Zenodo:

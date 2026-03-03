@@ -1406,6 +1406,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
 function tpps_admin_panel_get_reports() {
   $panel_url = 'tpps-admin-panel/reports';
   // Format: <Report Key> => <Path related to $panel_url>.
+  // @TODO Check if order is important.
   return [
     'missing_doi' => $panel_url . '/missing-doi',
     'no_synonym' => $panel_url . '/no-synonyms',
@@ -1416,9 +1417,14 @@ function tpps_admin_panel_get_reports() {
     'submissions_all_files' => $panel_url . '/submissions-all-files',
     'submissions_type_files' => $panel_url . '/submissions-type-files',
     'organism_list' => $panel_url . '/organism-list',
+
+    'doi_all' => $panel_url . '/doi-all',
     'doi_duplicates' => $panel_url . '/doi-duplicates',
+    'doi_missing' => $panel_url . '/doi-missing',
+
     'zenodo_submissions' => $panel_url . '/zenodo-submissions',
     'zenodo_depositions' => $panel_url . '/zenodo-depositions',
+
     'submission_version' => $panel_url . '/submission-version',
     'file_missing' => $panel_url . '/file-missing',
     'file_not_used' => $panel_url . '/file-not-used',

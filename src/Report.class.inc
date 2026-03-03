@@ -437,6 +437,11 @@ class Report {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // DOI.
       'doi' => [
+        'all' => [
+          'title' => variable_get('tpps_report_doi_all_title', 'All DOI'),
+          'description' => t('List of submissions which has Publication DOI.'),
+          'admin_panel' => TRUE,
+        ],
         'duplicates' => [
           'title' => variable_get('tpps_report_doi_duplicates_title', 'DOI Duplicates'),
           'description' => t('List of submissions with the same Publication DOI.'),
