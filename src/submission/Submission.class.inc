@@ -3184,7 +3184,7 @@ class Submission {
               'phenotypes-meta', $j, 'synonym_id',
             ]
           );
-          $name = $formState::get(
+          $name = $formState->get(
             [
               'saved_values', TPPS_PAGE_4, $organism_key, 'phenotype',
               'phenotypes-meta', $j, 'name',
