@@ -9,8 +9,28 @@
  * TPPS REST API Class Settings Form.
  */
 function tpps_rest_api_settings_form(array $form, array &$form_state) {
+  // Re-use stored responses.
+  $form['cache'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Response caching'),
+    '#collapsible' => TRUE,
+    '#description' => t('All requests and responses are stored automatically.'),
+  ];
+  // @TODO Critical. Replace with more complex rule.
+  // WARNING: Use only at dev-server.
+  $form['cache']['tpps_rest_api_use_response_cache'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Use Cached Responses'),
+    '#default_value' => variable_get('tpps_rest_api_use_response_cache', FALSE),
+    '#description' => t('WARNING: For development only because this rule '
+    . 'will be applied to all requests.'),
+  ];
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Watchdog Logging.
+  //
+  //
+  // @TODO Review and remove.
   $form['watchdog'] = [
     '#type' => 'fieldset',
     '#title' => t('Watchdog Logging'),

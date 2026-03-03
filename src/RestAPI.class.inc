@@ -8,11 +8,11 @@
  * Do not use any caching in class. Caching must be done outside the class
  * because not all responses and not all methods could be cached.
  *
+ *
  * Usage:
  *  RestAPI::post($url, $payload);
  *  RestAPI::delete($url);
  *
- *  @todo Minor. Do not use dpm().
  *  @TODO Convert to dynamyc (not static) class to store response data
  *  after request and generated 'requestId' in __construct() method.
  *  @TODO Idea: Give each request a nickname to store in log.
@@ -323,7 +323,10 @@ class RestAPI {
     $method = strtoupper($method);
     $request_id = static::getRequestId($method, $url, $payload, $header);
 
-    if (RestAPI::isResponseExists($request_id)) {
+    if (
+      variable_get('tpps_rest_api_use_response_cache', FALSE)
+      && RestAPI::isResponseExists($request_id)
+    ) {
       // Reuse stored response if possible.
       extract(static::loadResponse($request_id));
     }
@@ -413,8 +416,6 @@ class RestAPI {
         module_invoke_all('rest_api_request_completed', $context);
       }
     }
-
-
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     if ($code == 0 && empty($response)) {
@@ -514,6 +515,7 @@ class RestAPI {
     $query = db_select('tpps_rest_api_response_log', 't')
       ->fields('t', ['request_id'])
       ->condition('request_id', $request_id)
+      ->condition('code', 200)
       ->range(0, 1)
       ->orderBy('started', 'DESC');
     if (!is_null($started)) {
@@ -547,6 +549,7 @@ class RestAPI {
     $query = db_select('tpps_rest_api_response_log', 't')
       ->fields('t', [])
       ->condition('request_id', $request_id)
+      ->condition('code', 200)
       ->range(0, 1)
       ->orderBy('started', 'DESC');
     if (!is_null($started)) {

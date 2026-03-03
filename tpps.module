@@ -3281,6 +3281,9 @@ function tpps_rest_api_request_completed(array $context = []) {
   $context['started'] = time();
   $context['duration'] = intval(round($context['duration']));
   $context['body'] = json_encode($context['body'], TRUE);
+  // Note: No need to check if the same response exists because it could
+  // have time-based items (like request time) and this check will never
+  // give any result. Just store every response.
   db_insert($table_name)->fields($context)->execute();
 
   // Watchdog message.

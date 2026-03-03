@@ -164,6 +164,7 @@ function tpps_get_variable_list() {
     'tpps_rest_api_log_type' => [],
     'tpps_rest_api_timeout' => 30,
     'tpps_rest_api_max_execution_time' => 5000,
+    'tpps_rest_api_use_response_cache' => FALSE,
 
     // Misc Settings.
     'tpps_theme_fix_pager' => FALSE,
@@ -2725,6 +2726,8 @@ function tpps_update_7133() {
  * Configure 'DOI Lookup', 'Google Scholar' and 'Gemini AI'.
  */
 function tpps_update_7134() {
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Set new variables.
   // Gemini.
   variable_set('tpps_gemini_model', '');
   variable_set('tpps_gemini_api_key', '');
@@ -2736,6 +2739,14 @@ function tpps_update_7134() {
   // DOI / Gemini.
   variable_set('tpps_doi_gemini_system_instruction', '');
   variable_set('tpps_doi_gemini_generation_config', '');
+
+  // Rest API.
+  variable_set('tpps_rest_api_use_response_cache', FALSE);
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Remove outdated variables.
+  variable_del('tpps_rest_api_log_show_response');
+  variable_del('tpps_rest_api_log_show_request');
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Create new db table.
   $table_list = [
     'tpps_doi',
@@ -2758,7 +2769,4 @@ function tpps_update_7134() {
     }
   }
   cache_clear_all();
-  // Remove outdated variables.
-  variable_del('tpps_rest_api_log_show_response');
-  variable_del('tpps_rest_api_log_show_request');
 }
