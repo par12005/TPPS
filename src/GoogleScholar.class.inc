@@ -242,6 +242,9 @@ class GoogleScholar {
    *
    * @throws Exception
    *   When request is not allowed because of the delay.
+   *
+   * @todo Minor. Get front page and grab hidden fields. Emulate form
+   * submission using GET-method.
    */
   public function request() {
     if (!$this->isRequestAllowed()) {
@@ -251,7 +254,6 @@ class GoogleScholar {
     // Do the request.
     $url = $this->buildUrl();
     try {
-
       if ($this->debugMode) {
         $response = "test page";
       }
