@@ -139,37 +139,6 @@ class RestAPILog {
   }
 
   /**
-   * Generates unique id for request.
-   *
-   * All request data are used to be able to find the same requests in log.
-   *
-   * @param string $method
-   *   HTTP method. Possible values are: 'POST', 'GET', 'PUT', 'DELETE'.
-   * @param string $url
-   *   API Endpoint URL.
-   * @param mixed $payload
-   *   Payload. Required for POST-requests (payload).
-   *   Could be a URL query part for GET-requests.
-   *   To send JSON use header: 'Content-Type: application/json'.
-   * @param array $header
-   *   HTTP-headers. Required for POST-requests.
-   *
-   * @return string
-   *   Returns md5 hash of the all the request data.
-   *
-   * @TODO Be sure to remove time-based data from the request's payload to
-   * avoid duplicates.
-   */
-  public static function createRequestId($method, $url, $payload = [], array $header = []) {
-    return md5(json_encode([
-      'method' => strtoupper($method),
-      'url' => $url,
-      'payload' => $payload,
-      'header' => $header,
-    ]));
-  }
-
-  /**
    * Loads Rest API response from database.
    *
    * Usage example:

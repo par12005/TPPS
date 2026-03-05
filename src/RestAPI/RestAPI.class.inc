@@ -8,14 +8,29 @@
  * Do not use any caching in class. Caching must be done outside the class
  * because not all responses and not all methods could be cached.
  *
+ *  How to create an instnace of the 'RestAPI' class?
+ *    $api = new RestAPI($context);
+ *    $api->doRequest();
+ *    or
+ *    $api = tpps_rest_api($context)->doRequest();
+ *    or
+ *    $api = tpps_rest_api()
+ *      ->url($url)
+ *      ->header($header)
+ *      // ...
+ *      ->get();
  *
- * Usage:
- *  RestAPI::post($url, $payload);
- *  RestAPI::delete($url);
+ * DB Tables:
+ *   - public.tpps_rest_api_request_log
+ *   - public.tpps_rest_api_response_log.
  *
- *  @TODO Convert to dynamyc (not static) class to store response data
- *  after request and generated 'requestId' in __construct() method.
- *  @TODO Idea: Give each request a nickname to store in log.
+ * Logging:
+ *   See 'RestAPILog' class.
+ *   Request is stored when doRequest() was called.
+ *   Response is stored when request was received.
+ *
+ *  @TODO Implement tags.
+ *  @TODO Implement ability to enable/disable logging per request.
  *  @TODO Allow in the call of ::doRequest() decide if previous response
  *  could be used.
  */
@@ -28,22 +43,483 @@
  */
 class RestAPI {
 
+
+  // @TODO Add doc-comment for each property.
+  // @TODO Add 'tag' support and column in DB.
+  // @todo remove 'query' from $payload for GET requests.
+
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Request related properties.
+
   /**
-   * Gets timeout value.
+   * Required. API Endpoint URL.
    *
-   * The maximum number of seconds to allow cURL functions to execute.
-   * To set in milliseconds use: CURLOPT_TIMEOUT_MS.
-   * https://curl.se/libcurl/c/CURLOPT_TIMEOUT.html.
+   * For GET request $query property could be used.
    *
-   * @return int
-   *   Returns value of the timeout in milliseconds.
+   * @var string
    */
-  public static function getTimeout() {
-    return variable_get('tpps_rest_api_timeout', 30);
+  protected $url;
+
+  /**
+   * Optional. Query part of the URL.
+   *
+   * @var mixed
+   */
+  protected $query;
+
+  /**
+   * Required. HTTP method. Possible values are: 'POST', 'GET', 'PUT', 'DELETE'.
+   *
+   * Use uppercase.
+   *
+   * @var string
+   */
+  protected $method;
+
+  /**
+   * HTTP Headers.
+   *
+   * Required for POST-requests.
+   *
+   * List of headers (stored as strings).
+   * Stored in 'tpps_rest_api_request_log.header' column.
+   *
+   * @var array
+   */
+  protected $header = [];
+
+  /**
+   * Optional. Paylod for POST, PUT requests.
+   *
+   * Also used by GET request to have 'query'.
+   *
+   * To send JSON use header: 'Content-Type: application/json'.
+   * Stored in 'tpps_rest_api_request_log.payload' column.
+   *
+   * @var mixed
+   *   String or array.
+   */
+  protected $payload = [];
+
+  /**
+   * Unix timestamp of the moment when request was created.
+   *
+   * Automatically generated.
+   * Stored in 'tpps_rest_api_request_log.created' column.
+   *
+   * @var int
+   */
+  protected $created;
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Extra request data.
+
+  /**
+   * Unique hash (md5) of the all the request data.
+   *
+   * Automatically generated.
+   * Having this id allows to find the same requests.
+   * Stored in columns:
+   * - 'tpps_rest_api_request_log.request_id',
+   * - 'tpps_rest_api_response_log.request_id'.
+   *
+   * @var string
+   */
+  protected $requestId;
+
+  /**
+   * Optional tag for request.
+   *
+   * Stored in tpps_rest_api_response_log.tag column.
+   *
+   * @var string
+   */
+  protected $tag;
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Response related properties.
+
+  /**
+   * HTPP Code of the response status.
+   *
+   * See 'HttpCode' class.
+   * Stored in 'tpps_rest_api_response_log.code' column.
+   *
+   * @var int
+   */
+  protected $code;
+
+  /**
+   * Human readable message of the the HTTP Code of the response.
+   *
+   * Message doesn't stored in DB but could always be obtained by $code:
+   * HttpCode::getMessage($code).
+   *
+   * @var string
+   */
+  protected $message;
+
+  /**
+   * Whole response body.
+   *
+   * Stored in 'tpps_rest_api_response_log.body' column.
+   *
+   * @var string
+   */
+  protected $body = [];
+  /**
+   * Unix timestamp of the moment when request was created.
+   *
+   * Stored in 'tpps_rest_api_response_log.started' column.
+   *
+   * @var int
+   */
+  protected $started;
+
+  /**
+   * Request processing time in msec.
+   *
+   * Time between sending request and getting response.
+   * Stored in 'tpps_rest_api_response_log.duration' column.
+   *
+   * @var int
+   */
+  protected $duration;
+
+  /**
+   * Creates request from $context data.
+   *
+   * @param array $context
+   *   Associative array. Keys are:
+   *   - 'url' string. Required. API Endpoint URL.
+   *   - 'method' string. Required. HTTP Method.
+   *     One of 'GET', 'POST', 'PUT' or 'DELETE'.
+   *   - 'payload' array. Optional. Payload for POST and PUT requests.
+   *   - header' array. Optional. List of HTTP headers (as strings).
+   *
+   * @return object
+   *   Returns $this to allow method chaining.
+   */
+  public function createRequest(array $context) {
+    $this->url = $context['url'] ?? '';
+    $this->method = strtoupper($context['method'] ?? '');
+    $this->payload = $context['payload'] ?? [];
+    $this->header = $context['header'] ?? [];
+    $this->created = time();
+
+    // @TODO Add tag.
+    return $this;
+  }
+
+  /**
+   * Generates unique id for request.
+   *
+   * All request data are used to be able to find the same requests in log.
+   *
+   * Creates md5 hash of the all the request data.
+   *
+   * @TODO Be sure to remove time-based data from the request's payload to
+   * avoid duplicates.
+   */
+  public function createRequestId() {
+    $this->requestId = md5(json_encode([
+      'method' => strtoupper($this->method),
+      'url' => $this->url,
+      'payload' => $this->payload,
+      'header' => $this->header,
+    ]));
+  }
+
+  /**
+   * Checks if required properties was set.
+   *
+   * @throws Exception
+   *   When required properties wasn't set or empty.
+   */
+  public function validateRequest() {
+    if (empty($context['url'])) {
+      throw new Exception("Required property 'url' is empty.");
+    }
+    if (empty($context['method'])) {
+      throw new Exception("Required property 'method' is empty.");
+    }
+  }
+
+  /**
+   * Class constructor.
+   */
+  public function __construct(array $context = []) {
+    if (!empty($context)) {
+      $this->createRequest($context);
+    }
+    return $this;
+  }
+
+  /**
+   * Magic setter.
+   *
+   * @param string $name
+   *   Class property name.
+   * @param mixed $value
+   *   Value to be set.
+   *
+   * @throws Exception
+   *   When requested non-existing property.
+   */
+  public function __set($name, $value) {
+    // Allow to overwrite magic with custom setter.
+    $func = tpps_snake_to_camel_case('set_' . $name);
+    if (method_exists($this, $func)) {
+      $this->$func($value);
+    }
+    else {
+      if (property_exists($this, $name)) {
+        $this->$name = $value;
+      }
+      else {
+        throw new Exception("Inexistent property: $name");
+      }
+    }
+    return $this;
+  }
+
+  /**
+   * Magic getter.
+   *
+   * @param string $name
+   *   Class property name.
+   *
+   * @return mixed
+   *   Returns property value.
+   *
+   * @throws Exception
+   *   When requested non-existing property.
+   */
+  public function &__get($name) {
+    // Allow to overwrite magic with custom getter.
+    $func = tpps_snake_to_camel_case('get_' . $name);
+    if (method_exists($this, $func)) {
+      return $this->$func();
+    }
+    else {
+      if (property_exists($this, $name)) {
+        return $this->$name;
+      }
+      else {
+        throw new Exception("Inexistent property: $name");
+      }
+    }
+    return $this;
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Methods.
+
+  /**
+   * Performs POST-request.
+   *
+   * Could be used to update/create entity.
+   *
+   * @return object
+   *   Returns current object to allow mehtod chaining.
+   */
+  public function post() {
+    $this->method = 'POST';
+    if (empty($this->header)) {
+      $this->header = ['Content-Type: application/json'];
+    }
+    // @TODO Minor. Implement more complex check. Regexp?
+    if (in_array('Content-Type: application/json', $this->header)) {
+      $this->payload = json_encode($this->payload);
+    }
+    $this->doRequest();
+    return $this;
+  }
+
+  /**
+   * Performs GET-request.
+   *
+   * Could be used to get lists or load entity.
+   *
+   * @return object
+   *   Returns current object to allow mehtod chaining.
+   */
+  public function get() {
+    $this->method = 'GET';
+    $this->doRequest();
+    return $this;
+  }
+
+  /**
+   * Performs PUT-request.
+   *
+   * @return object
+   *   Returns current object to allow mehtod chaining.
+   */
+  public function put() {
+    if (empty($this->header)) {
+      $this->header = ['Content-Type: application/json'];
+    }
+    // @TODO Minor. Implement more complex check. Regexp?
+    if (in_array('Content-Type: application/json', $this->header)) {
+      $this->payload = json_encode($this->payload);
+    }
+
+    $this->method = 'DELETE';
+    $this->doRequest();
+    return $this;
+  }
+
+  /**
+   * Performs DELETE-request.
+   *
+   * @return object
+   *   Returns current object to allow mehtod chaining.
+   */
+  public function delete() {
+    $this->method = 'DELETE';
+    $this->doRequest();
+    return $this;
+  }
+
+  /**
+   * Performs REST API calls.
+   *
+   * @return object
+   *   Returns instance to allow method chaining.
+   *
+   * @throws Exception
+   *   When response code is not 200-204.
+   */
+  public function doRequest() {
+
+    $this->validateRequest();
+    $this->method = strtoupper($this->method);
+    $this->createRequestId();
+
+    if (
+      variable_get('tpps_rest_api_use_response_cache', FALSE)
+      && RestAPILog::isResponseExists($this->requestId)
+    ) {
+      // Reuse stored response if possible.
+      extract(RestAPILog::loadResponse($this->requestId));
+    }
+    else {
+      $curl = curl_init();
+      // Why not use CURLOPT_POS: https://stackoverflow.com/a/74812403
+      curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $this->method);
+      curl_setopt($curl, CURLOPT_HTTPHEADER, $this->header);
+
+      if (!empty($this->payload)) {
+        if (in_array($this->method, ['POST', 'DELETE', 'PUT'])) {
+          curl_setopt($curl, CURLOPT_SAFE_UPLOAD, TRUE);
+          // Different processing of array and string:
+          // https://stackoverflow.com/questions/5224790
+          curl_setopt($curl, CURLOPT_POSTFIELDS, $this->payload);
+        }
+        else {
+          // GET.
+          // Note: $payload contains URL's query.
+          $this->url = url($this->url, [
+            'https' => TRUE,
+            'external' => TRUE,
+            'query' => $this->payload['query'] ?? [],
+          ]);
+        }
+      }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Allow other modules to react on start of the request.
+      if (function_exists('module_invoke_all')) {
+        // tpps_rest_api_request_started().
+        $context = [
+          'request_id' => $this->requestId,
+          'method' => $this->method,
+          'url' => $this->url,
+          'payload' => $this->payload ?? NULL,
+          'header' => $this->header ?? NULL,
+        ];
+        module_invoke_all('rest_api_request_started', $context);
+      }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // OPTIONS:
+      // See http://www.php.net/manual/en/function.curl-setopt.php
+      curl_setopt($curl, CURLOPT_URL, $this->url);
+      curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+      curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+      // The maximum number of seconds for curl operation.
+      // Note: disabled because valid requests failed because of timeout.
+      //curl_setopt($curl, CURLOPT_TIMEOUT, $this->getTimeout());
+      //curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, $this->getTimeout());
+
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // EXECUTE:
+      $execution_time_start = microtime(1);
+      $response = curl_exec($curl);
+      $info = curl_getinfo($curl);
+      curl_close($curl);
+
+      // Execution time.
+      $this->duration = (microtime(1) - $execution_time_start) * 1000;
+
+      // Prepare response.
+      if ($info['content_type'] == 'application/json') {
+        if (!empty($response)) {
+          // PHP's json_decode() could throw an exception of invalid JSON.
+          // @todo Minor. Use try and catch block.
+          $this->response = static::decodeJSON($response);
+        }
+        else {
+          $this->response = NULL;
+        }
+      }
+      // Validate HTTP request code.
+      $this->code = $info['http_code'];
+      $this->message = HttpCode::getMessage($this->code);
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Allow other modules to react on request's finish.
+      if (function_exists('module_invoke_all')) {
+        // tpps_rest_api_request_completed().
+        $context = [
+          'request' => $context,
+          'request_id' => $this->requestId,
+          'code' => $this->code,
+          //'message' => $message,
+          'duration' => $execution_time,
+          'body' => $this->response,
+        ];
+        module_invoke_all('rest_api_request_completed', $context);
+      }
+    }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    if ($this->code == 0 && empty($this->response)) {
+      throw new Exception($this->message);
+    }
+    if ($this->code < 200  && $this->code > 204) {
+      // Codes: https://developers.zenodo.org/?shell#http-status-codes
+      $exception_data = [
+        'payload' => empty($this->payload) ? [] : json_decode($this->payload),
+        'url' => $this->url,
+        'method' => $this->method,
+        'header' => $this->header,
+        'response' => $this->response,
+        'code' => $this->code,
+        'message' => $this->message,
+        'curl_info' => $info,
+        'backtrace' => debug_backtrace(
+          !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS
+        ),
+      ];
+      if (function_exists('drupal_alter')) {
+        // tpps_rest_api_exception_alter().
+        drupal_alter('rest_api_exception', $this->message, $exception_data);
+      }
+      throw new Exception('RestAPI HTTP-request: ' . $this->message, $this->code);
+    }
+
+    return $this;
+  }
 
   /**
    * Decode JSON and handles invalid JSON.
@@ -57,6 +533,8 @@ class RestAPI {
    *
    * @return array
    *   Returns decoded data.
+   *
+   * @TODO Update!
    */
   public static function decodeJSON($json) {
     $data = json_decode((string) $json, $associative = TRUE);
@@ -69,249 +547,19 @@ class RestAPI {
   }
 
   /**
-   * Makes POST-request.
+   * Gets timeout value.
    *
-   * Could be used to update/create entity.
+   * The maximum number of seconds to allow cURL functions to execute.
+   * To set in milliseconds use: CURLOPT_TIMEOUT_MS.
+   * https://curl.se/libcurl/c/CURLOPT_TIMEOUT.html.
    *
-   * @param string $url
-   *   API Endpoint URL.
-   * @param mixed $data
-   *   Data for request. Could be string or JSON-string.
-   * @param array $header
-   *   HTTP-headers.
+   * @return int
+   *   Returns value of the timeout in milliseconds.
    *
-   * @return mixed
-   *   Returns API response.
+   * @todo Minor. ?Convert into private method?
    */
-  public static function post($url, $data = [], array $header = []) {
-    // @TODO Minor. Implement more complex check. Regexp?
-    if (in_array('Content-Type: application/json', $header)) {
-      $data = json_encode($data);
-    }
-    if (empty($header)) {
-      $header = [
-        'Content-Type: application/json',
-      ];
-      $data = json_encode($data);
-    }
-    return self::doRequest('POST', $url, $data, $header);
-  }
-
-  /**
-   * Makes GET-request.
-   *
-   * Could be used to get lists or load entity.
-   *
-   * @param string $url
-   *   API Endpoint URL.
-   * @param array $data
-   *   Data for request.
-   *   WARNING: Item 'query' is a sub-element of the $data.
-   * @param array $header
-   *   HTTP-headers.
-   *
-   * @return mixed
-   *   Returns API response.
-   */
-  public static function get($url, array $data = [], array $header = []) {
-    $query = $data['query'] ?? [];
-    return self::doRequest('GET', $url, $query, $header);
-  }
-
-  /**
-   * Makes PUT-request.
-   *
-   * Could be used to sort entities.
-   *
-   * @param string $url
-   *   API Endpoint URL.
-   * @param mixed $data
-   *   Data for request.
-   * @param array $header
-   *   HTTP-headers.
-   *
-   * @return mixed
-   *   Returns API response.
-   */
-  public static function put($url, $data = [], array $header = []) {
-    // @TODO Minor. Implement more complex check. Regexp?
-    if (in_array('Content-Type: application/json', $header)) {
-      $data = json_encode($data);
-    }
-    if (empty($header)) {
-      $header = [
-        'Content-Type: application/json',
-      ];
-      $data = json_encode($data);
-    }
-    return self::doRequest('PUT', $url, $data, $header);
-  }
-
-  /**
-   * Makes DELETE-request.
-   *
-   * Could be used to sort entities.
-   *
-   * @param string $url
-   *   API Endpoint URL.
-   * @param array $data
-   *   Data for request.
-   *
-   * @return mixed
-   *   Returns API response.
-   */
-  public static function delete($url, array $data = []) {
-    return self::doRequest('DELETE', $url, $data);
-  }
-
-  /**
-   * Performs REST API calls.
-   *
-   * @param string $method
-   *   HTTP method. Possible values are: 'POST', 'GET', 'PUT', 'DELETE'.
-   * @param string $url
-   *   API Endpoint URL.
-   * @param mixed $payload
-   *   Payload. Required for POST-requests (payload).
-   *   Could be a URL query part for GET-requests.
-   *   To send JSON use header: 'Content-Type: application/json'.
-   * @param array $header
-   *   HTTP-headers. Required for POST-requests.
-   *
-   * @return mixed
-   *   Returns API response.
-   *
-   * @throws \Exception
-   *   Zenodo Deposit was not found.
-   *
-   * @todo Convert to private or protected method if it's possible for static.
-   */
-  public static function doRequest($method, $url, $payload = [], array $header = []) {
-    $method = strtoupper($method);
-    $request_id = RestAPILog::createRequestId($method, $url, $payload, $header);
-
-    if (
-      variable_get('tpps_rest_api_use_response_cache', FALSE)
-      && RestAPILog::isResponseExists($request_id)
-    ) {
-      // Reuse stored response if possible.
-      extract(RestAPILog::loadResponse($request_id));
-    }
-    else {
-      $curl = curl_init();
-      // Why not use CURLOPT_POS: https://stackoverflow.com/a/74812403
-      curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
-      curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
-
-      if (!empty($payload)) {
-        if (in_array($method, ['POST', 'DELETE', 'PUT'])) {
-          curl_setopt($curl, CURLOPT_SAFE_UPLOAD, TRUE);
-          // Different processing of array and string:
-          // https://stackoverflow.com/questions/5224790
-          curl_setopt($curl, CURLOPT_POSTFIELDS, $payload);
-        }
-        else {
-          // GET.
-          // Note: $payload contains URL's query.
-          $url = url($url, [
-            'https' => TRUE,
-            'external' => TRUE,
-            'query' => $payload,
-          ]);
-        }
-      }
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Allow other modules to react on start of the request.
-      if (function_exists('module_invoke_all')) {
-        // tpps_rest_api_request_started().
-        $context = [
-          'request_id' => $request_id,
-          'method' => $method,
-          'url' => $url,
-          'payload' => $payload ?? NULL,
-          'header' => $header ?? NULL,
-        ];
-        module_invoke_all('rest_api_request_started', $context);
-      }
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // OPTIONS:
-      // See http://www.php.net/manual/en/function.curl-setopt.php
-      curl_setopt($curl, CURLOPT_URL, $url);
-      curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-      curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-      // The maximum number of seconds for curl operation.
-      // Note: disabled because valid requests failed because of timeout.
-      //curl_setopt($curl, CURLOPT_TIMEOUT, static::getTimeout());
-      //curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, static::getTimeout());
-
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // EXECUTE:
-      $execution_time_start = microtime(1);
-      $response = curl_exec($curl);
-      $info = curl_getinfo($curl);
-      curl_close($curl);
-
-      // Execution time.
-      $execution_time = (microtime(1) - $execution_time_start) * 1000;
-
-      // Prepare response.
-      if ($info['content_type'] == 'application/json') {
-        if (!empty($response)) {
-          // PHP's json_decode() could throw an exception of invalid JSON.
-          // @todo Minor. Use try and catch block.
-          $response = static::decodeJSON($response);
-        }
-        else {
-          $response = NULL;
-        }
-      }
-      // Validate HTTP request code.
-      $code = $info['http_code'];
-      $message = HttpCode::getMessage($code);
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Allow other modules to react on request's finish.
-      if (function_exists('module_invoke_all')) {
-        // tpps_rest_api_request_completed().
-        $context = [
-          'request' => $context,
-          'request_id' => $request_id,
-          'code' => $code,
-          //'message' => $message,
-          'duration' => $execution_time,
-          'body' => $response,
-        ];
-        module_invoke_all('rest_api_request_completed', $context);
-      }
-    }
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    if ($code == 0 && empty($response)) {
-      throw new Exception($message);
-    }
-    if ($code >= 200  && $code <= 204) {
-      // Codes: https://developers.zenodo.org/?shell#http-status-codes
-      return $response;
-    }
-    else {
-      $exception_data = [
-        'payload' => empty($payload) ? [] : json_decode($payload),
-        'url' => $url,
-        'method' => $method,
-        'header' => $header,
-        'response' => $response,
-        'code' => $code,
-        'message' => $message,
-        'curl_info' => $info,
-        'backtrace' => debug_backtrace(
-          !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS
-        ),
-      ];
-      if (function_exists('drupal_alter')) {
-        // tpps_rest_api_exception_alter().
-        drupal_alter('rest_api_exception', $message, $exception_data);
-      }
-      throw new Exception('RestAPI HTTP-request: ' . $message, $code);
-    }
+  public function getTimeout() {
+    return variable_get('tpps_rest_api_timeout', 30);
   }
 
 }
