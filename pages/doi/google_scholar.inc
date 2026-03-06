@@ -18,17 +18,19 @@ function tpps_doi_google_scholar_page($doi1 = '', $doi2 = '') {
 
   $gs = new GoogleScholar($doi);
   $url = $gs->buildUrl();
-  $port = 8100;
-  $proxy = 'tgwebdev.cam.uchc.edu';
-  $url = 'https://' . $proxy . ':' . $port . '/' . $gs->buildUrl();
+  $proxy = variable_set('tpps_doi_lookup_proxy');
+  if (empty($proxy)) {
+    drupal_set_message(t('Set CORS Proxy Server URL'), 'error');
+    drupal_goto('admin/config/tpps/doi');
+  }
+  $url = $proxy . $gs->buildUrl();
 
-  $output = '
-  <div class="field_myiframe">
+  $output = '<div>
   <h3>DOI: ' . $doi . '</h3>
   <iframe src="' . $url . '" width="500px" height="300px"
     name="google_scholar" target="google_scholar"
     class="google-scholar">' . $url . '</iframe>
-</div>';
+  </div>';
 
   return $output;
 }

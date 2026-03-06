@@ -14,7 +14,7 @@
 function tpps_get_variable_list() {
   return [
     // DOI.
-    'tpps_doi_lookup_method' => 'gemini',
+    'tpps_doi_lookup_proxy' => '',
     // DOI / Google Scholar.
     'tpps_doi_google_scholar_debug_mode' => FALSE,
     'tpps_doi_google_scholar_delay' => 5,
@@ -2732,7 +2732,7 @@ function tpps_update_7134() {
   variable_set('tpps_gemini_model', '');
   variable_set('tpps_gemini_api_key', '');
   // DOI.
-  variable_set('tpps_doi_lookup_method', 'gemini');
+  variable_set('tpps_doi_lookup_proxy', ''),
   // DOI / Google Scholar.
   variable_set('tpps_doi_google_scholar_debug_mode', FALSE);
   variable_set('tpps_doi_google_scholar_delay', 5);

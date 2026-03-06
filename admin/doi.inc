@@ -21,14 +21,15 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
       ]
     ]),
   ];
-  $form['tpps_doi_lookup_method'] = [
-    '#type' => 'select',
-    '#title' => t('Lookup method'),
-    '#options' => [
-      'gemini' => t('Gemini'),
-      'google_scholar' => t('Google Scholar Scraper'),
-    ],
-    '#default_value' => variable_get('tpps_doi_lookup_method'),
+  $form['tpps_doi_lookup_proxy'] = [
+    '#type' => 'textfield',
+    '#title' => t('CORS Proxy Server URL'),
+    '#default_value' => variable_get('tpps_doi_lookup_proxy'),
+    '#description' => t('We use <a href="@cors_anywhere_url">CORS Anywhere</a> '
+      . 'which is a NodeJS proxy which adds CORS headers to the proxied '
+      . 'request. So Google Scholar SERP could be shown at site in iframe.',
+      ['@cors_anywhere_url' => 'https://github.com/Rob--W/cors-anywhere']
+    ),
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -43,11 +44,6 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
     '#type' => 'fieldset',
     '#title' => t('Google Scholar Scraper'),
     '#collapsible' => TRUE,
-    '#states' => [
-      'visible' => [
-        ':input[name="tpps_doi_lookup_method"]' => ['value' => 'google_scholar'],
-      ],
-    ],
   ];
   $form['google_scholar']['info'] = [
     '#markup' => theme('item_list', [
@@ -79,11 +75,6 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
     '#type' => 'fieldset',
     '#title' => t('Gemini'),
     '#collapsible' => TRUE,
-    '#states' => [
-      'visible' => [
-        ':input[name="tpps_doi_lookup_method"]' => ['value' => 'gemini'],
-      ],
-    ],
     '#description' => t('Using Gemini AI allows to avoid risks caused by scrapping.')
     . '<br />' . t('Be sure to set API Key at !setting_page.',
       [
