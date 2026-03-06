@@ -18,7 +18,7 @@ function tpps_doi_google_scholar_page($doi1 = '', $doi2 = '') {
 
   $gs = new GoogleScholar($doi);
   $url = $gs->buildUrl();
-  $proxy = variable_set('tpps_doi_lookup_proxy');
+  $proxy = variable_get('tpps_doi_lookup_proxy');
   if (empty($proxy)) {
     drupal_set_message(t('Set CORS Proxy Server URL'), 'error');
     drupal_goto('admin/config/tpps/doi');

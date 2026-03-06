@@ -37,6 +37,26 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
     '#title' => t('DOI'),
     '#default_value' => $doi,
   ];
+
+  // @TODo show iframe if DOI is not empty.
+
+  $gs = new GoogleScholar($doi);
+  $url = $gs->buildUrl();
+
+  // @todo Check if $url and $proxy exists.
+  $proxy = variable_get('tpps_doi_lookup_proxy');
+  $url = $proxy . $gs->buildUrl();
+
+  dpm($url);
+
+  // @todo Hide iframe.
+  // @todo Get it dynamically when DOI field updated.
+  $form['google_scholar_serp'] = [
+    '#markup' => '<iframe src="' . $url . '" width="500px" height="300px"
+      name="google_scholar" target="google_scholar"
+      id="google-scholar">' . $url . '</iframe>',
+  ];
+
   $form['tpps_doi_lookup_system_instruction'] = [
     '#type' => 'textarea',
     '#title' => t('System Instruction'),
@@ -47,6 +67,12 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
     ),
     '#default_value' => variable_get('tpps_doi_lookup_system_instruction', ''),
   ];
+
+
+
+
+
+
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $form['info'] = [
