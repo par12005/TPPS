@@ -18,6 +18,9 @@ function tpps_doi_google_scholar_page($doi1 = '', $doi2 = '') {
 
   $gs = new GoogleScholar($doi);
   $url = $gs->buildUrl();
+  $port = 8100;
+  $proxy = 'tgwebdev.cam.uchc.edu';
+  $url = 'https://' . $proxy . ':' . $port . '/' . $gs->buildUrl();
 
   $output = '
   <div class="field_myiframe">
