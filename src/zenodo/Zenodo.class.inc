@@ -79,18 +79,9 @@ class Zenodo {
    *   See https://developers.zenodo.org/?python#representation
    */
   public static function list(array $data, $reset = FALSE) {
-    $key = 'list';
-    //ksort($data);
-    // @TODO Check if only this key could be used.
-    if (!empty($data)) {
-      $key = ($data['deposit_id'] ?? '') . ($data['file_id'] ?? '');
-      if (empty($key)) {
-        $key = md5(json_encode($data));
-      }
-    }
+    $key = ZenodoHost::get() . ($data['deposit_id'] ?? '') . ($data['file_id'] ?? '');
     $static_cache = &drupal_static(__METHOD__);
     if ($reset || !isset($static_cache[$key])) {
-      $data['query'] = $data['query'] ?? [];
       if (function_exists('drupal_alter')) {
         // Call all implementations of hooks:
         // - hook_zenodo_deposit_list_alter(),
@@ -99,8 +90,14 @@ class Zenodo {
       }
       $data['url'] = static::buildUrl($data);
       static::delay();
-      $data['response'] = RestAPI::get($data['url'], $data);
-      $static_cache[$key] = $data['response'] ?? '';
+      $data['response'] = ($api = new RestAPI($data))->get()->response;
+      if ($api->code == HttpCode::OK) {
+        $static_cache[$key] = $data['response'];
+      }
+      else {
+        // 403 Forbidden. Response will be HTML with error message.
+        $static_cache[$key] = [];
+      }
     }
     return $static_cache[$key];
   }
@@ -136,7 +133,7 @@ class Zenodo {
       $data['url'] = static::buildUrl($data);
       try {
         static::delay();
-        $data['response'] = RestAPI::get($data['url'], $data);
+        $data['response'] = (new RestAPI($data))->get()->response;
       }
       catch (Exception $e) {
         if ($e->getCode() == 404) {
@@ -230,7 +227,7 @@ class Zenodo {
 
     $data['url'] = static::buildUrl($data);
     static::delay();
-    $data['response'] = RestAPI::delete($data['url']);
+    $data['response'] = (new RestAPI($data))->delete()->response;
 
     // Note: When Deposit not found we stil need to remove it's id from Submission.
     if (function_exists('module_invoke_all')) {
@@ -287,11 +284,11 @@ class Zenodo {
     $data['url'] = static::buildUrl($data);
     static::delay();
     if (static::getClassName() == 'ZenodoDeposit') {
-      $data['response'] = RestAPI::post($data['url'], $data['payload'], $data['header']);
+      $data['response'] = (new RestAPI($data))->post()->response;
     }
     elseif (static::getClassName() == 'ZenodoFile') {
       // We use New Bucket API which require PUT instead of POST method.
-      $data['response'] = RestAPI::put($data['url'], $data['payload'], $data['header']);
+      $data['response'] = (new RestAPI($data))->put()->response;
     }
 
     if (function_exists('module_invoke_all')) {
@@ -336,7 +333,7 @@ class Zenodo {
     static::validateRequired(['metadata'], $data['payload']);
     $data['url'] = static::buildUrl($data);
     static::delay();
-    $data['response'] = RestAPI::put($data['url'], $data['payload']);
+    $data['response'] = (new RestAPI($data))->put()->response;
 
     if (function_exists('module_invoke_all')) {
       // tpps_zenodo_file_updated().

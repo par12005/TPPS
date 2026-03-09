@@ -3234,7 +3234,7 @@ function tpps_zenodo_deposit_create_alter(array &$data = []) {
  *
  * @param array $context
  *   Request's context.
- *   Keys: see RestAPI::doRequest().
+ *   Keys: see RestAPI->doRequest().
  */
 function tpps_rest_api_request_started(array $context = []) {
   if (empty($context['request_id'])) {
@@ -3266,7 +3266,7 @@ function tpps_rest_api_request_started(array $context = []) {
  *
  * @param array $context
  *   Request's context.
- *   Keys: see RestAPI::doRequest().
+ *   Keys: see RestAPI->doRequest().
  *   To check if response exists: RestAPILog::isResponseExists($request_id);
  */
 function tpps_rest_api_request_completed(array $context = []) {
@@ -3379,7 +3379,7 @@ function tpps_zenodo_file_create_alter(array &$data) {
 /**
  * Implements alter-hook 'rest_api_exception'.
  *
- * Allows alter exception messages thrown in RestAPI::doRequest().
+ * Allows alter exception messages thrown in RestAPI->doRequest().
  *
  * @param string $message
  *   Original exceptin message which could be modified.

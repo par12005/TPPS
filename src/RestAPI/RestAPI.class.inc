@@ -9,6 +9,8 @@
  * because not all responses and not all methods could be cached.
  *
  *  How to create an instnace of the 'RestAPI' class?
+ *    $data['response'] = (new RestAPI($data))->get()->response;
+ *    or
  *    $api = new RestAPI($context);
  *    $api->doRequest();
  *    or
@@ -64,9 +66,11 @@ class RestAPI {
   /**
    * Optional. Query part of the URL.
    *
-   * @var mixed
+   * Used to build API Endpoint URL for GET requests.
+   *
+   * @var array
    */
-  protected $query;
+  protected $query = [];
 
   /**
    * Required. HTTP method. Possible values are: 'POST', 'GET', 'PUT', 'DELETE'.
@@ -187,6 +191,21 @@ class RestAPI {
    */
   protected $duration;
 
+
+  /**
+   * API response.
+   *
+   * @var mixed
+   */
+  protected $response;
+
+  /**
+   * Result of the curl_getinfo().
+   *
+   * @var array
+   */
+  protected $curlInfo;
+
   /**
    * Creates request from $context data.
    *
@@ -202,10 +221,11 @@ class RestAPI {
    *   Returns $this to allow method chaining.
    */
   public function createRequest(array $context) {
-    $this->url = $context['url'] ?? '';
-    $this->method = strtoupper($context['method'] ?? '');
-    $this->payload = $context['payload'] ?? [];
-    $this->header = $context['header'] ?? [];
+    $this->url = $context['url'] ?? $this->url ?? '';
+    $this->method = strtoupper($context['method'] ?? $this->method ?? '');
+    $this->payload = $context['payload'] ?? $this->payload ?? [];
+    $this->header = $context['header'] ?? $this->header ?? [];
+    $this->query = $context['query'] ?? $this->query ?? [];
     $this->created = time();
 
     // @TODO Add tag.
@@ -219,6 +239,9 @@ class RestAPI {
    *
    * Creates md5 hash of the all the request data.
    *
+   * @return object
+   *   Returns $this to allow method chaining.
+   *
    * @TODO Be sure to remove time-based data from the request's payload to
    * avoid duplicates.
    */
@@ -229,6 +252,7 @@ class RestAPI {
       'payload' => $this->payload,
       'header' => $this->header,
     ]));
+    return $this;
   }
 
   /**
@@ -238,16 +262,19 @@ class RestAPI {
    *   When required properties wasn't set or empty.
    */
   public function validateRequest() {
-    if (empty($context['url'])) {
+    if (empty($this->url)) {
       throw new Exception("Required property 'url' is empty.");
     }
-    if (empty($context['method'])) {
+    if (empty($this->method)) {
       throw new Exception("Required property 'method' is empty.");
     }
   }
 
   /**
    * Class constructor.
+   *
+   * @return object
+   *   Returns $this to allow method chaining.
    */
   public function __construct(array $context = []) {
     if (!empty($context)) {
@@ -263,6 +290,9 @@ class RestAPI {
    *   Class property name.
    * @param mixed $value
    *   Value to be set.
+   *
+   * @return object
+   *   Returns $this to allow method chaining.
    *
    * @throws Exception
    *   When requested non-existing property.
@@ -310,7 +340,7 @@ class RestAPI {
         throw new Exception("Inexistent property: $name");
       }
     }
-    return $this;
+    //return $this;
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -334,6 +364,7 @@ class RestAPI {
       $this->payload = json_encode($this->payload);
     }
     $this->doRequest();
+
     return $this;
   }
 
@@ -348,6 +379,7 @@ class RestAPI {
   public function get() {
     $this->method = 'GET';
     $this->doRequest();
+
     return $this;
   }
 
@@ -368,6 +400,7 @@ class RestAPI {
 
     $this->method = 'DELETE';
     $this->doRequest();
+
     return $this;
   }
 
@@ -380,6 +413,7 @@ class RestAPI {
   public function delete() {
     $this->method = 'DELETE';
     $this->doRequest();
+
     return $this;
   }
 
@@ -393,11 +427,9 @@ class RestAPI {
    *   When response code is not 200-204.
    */
   public function doRequest() {
-
     $this->validateRequest();
     $this->method = strtoupper($this->method);
     $this->createRequestId();
-
     if (
       variable_get('tpps_rest_api_use_response_cache', FALSE)
       && RestAPILog::isResponseExists($this->requestId)
@@ -418,17 +450,14 @@ class RestAPI {
           // https://stackoverflow.com/questions/5224790
           curl_setopt($curl, CURLOPT_POSTFIELDS, $this->payload);
         }
-        else {
-          // GET.
-          // Note: $payload contains URL's query.
-          $this->url = url($this->url, [
-            'https' => TRUE,
-            'external' => TRUE,
-            'query' => $this->payload['query'] ?? [],
-          ]);
-        }
       }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      $this->url = url($this->url, [
+        'https' => TRUE,
+        'external' => TRUE,
+        'query' => $this->query ?? [],
+      ]);
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Allow other modules to react on start of the request.
       if (function_exists('module_invoke_all')) {
         // tpps_rest_api_request_started().
@@ -441,7 +470,7 @@ class RestAPI {
         ];
         module_invoke_all('rest_api_request_started', $context);
       }
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // OPTIONS:
       // See http://www.php.net/manual/en/function.curl-setopt.php
       curl_setopt($curl, CURLOPT_URL, $this->url);
@@ -452,31 +481,30 @@ class RestAPI {
       //curl_setopt($curl, CURLOPT_TIMEOUT, $this->getTimeout());
       //curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, $this->getTimeout());
 
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // EXECUTE:
       $execution_time_start = microtime(1);
       $response = curl_exec($curl);
-      $info = curl_getinfo($curl);
+      $this->curlInfo = curl_getinfo($curl);
       curl_close($curl);
 
+      // Validate HTTP request code.
+      $this->code = $this->curlInfo['http_code'];
+      $this->message = HttpCode::getMessage($this->code);
       // Execution time.
       $this->duration = (microtime(1) - $execution_time_start) * 1000;
 
       // Prepare response.
-      if ($info['content_type'] == 'application/json') {
-        if (!empty($response)) {
-          // PHP's json_decode() could throw an exception of invalid JSON.
-          // @todo Minor. Use try and catch block.
-          $this->response = static::decodeJSON($response);
-        }
-        else {
-          $this->response = NULL;
-        }
+      $this->response = empty($response) ? NULL : $response;
+      if (
+        !empty($response)
+        && $this->curlInfo['content_type'] == 'application/json'
+      ) {
+        // @todo Minor. Use try and catch block.
+        // PHP's json_decode() could throw an exception of invalid JSON.
+        $this->response = json_decode($this->response, TRUE);
       }
-      // Validate HTTP request code.
-      $this->code = $info['http_code'];
-      $this->message = HttpCode::getMessage($this->code);
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Allow other modules to react on request's finish.
       if (function_exists('module_invoke_all')) {
         // tpps_rest_api_request_completed().
@@ -484,8 +512,8 @@ class RestAPI {
           'request' => $context,
           'request_id' => $this->requestId,
           'code' => $this->code,
-          //'message' => $message,
-          'duration' => $execution_time,
+          // 'message' => $message,
+          'duration' => $this->duration,
           'body' => $this->response,
         ];
         module_invoke_all('rest_api_request_completed', $context);
@@ -506,7 +534,7 @@ class RestAPI {
         'response' => $this->response,
         'code' => $this->code,
         'message' => $this->message,
-        'curl_info' => $info,
+        'curl_info' => $this->curlInfo,
         'backtrace' => debug_backtrace(
           !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS
         ),
@@ -519,31 +547,6 @@ class RestAPI {
     }
 
     return $this;
-  }
-
-  /**
-   * Decode JSON and handles invalid JSON.
-   *
-   * Idea: https://stackoverflow.com/a/44448921/1041470.
-   * See: https://www.php.net/manual/en/class.jsonexception.php.
-   * https://stackoverflow.com/questions/31578927.
-   *
-   * @param string $json
-   *   JSON string.
-   *
-   * @return array
-   *   Returns decoded data.
-   *
-   * @TODO Update!
-   */
-  public static function decodeJSON($json) {
-    $data = json_decode((string) $json, $associative = TRUE);
-    // @TODO Minor. Use JSON_THROW_ON_ERROR (PHP 7.3+) if possible.
-    if (JSON_ERROR_NONE !== json_last_error()) {
-      $message = 'Unable to parse response body into JSON. ' . json_last_error();
-      throw new RuntimeException($message);
-    }
-    return $data === NULL ? [] : $data;
   }
 
   /**

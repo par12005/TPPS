@@ -504,7 +504,7 @@ function hook_zenodo_deposit_before_create(array $data) {
 /**
  * Implements alter-hook 'rest_api_exception'.
  *
- * Called from RestAPI::doRequest() when API responded with HTTP code different
+ * Called from RestAPI->doRequest() when API responded with HTTP code different
  * from 200..204.
  *
  * @param string $message

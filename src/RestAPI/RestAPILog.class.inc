@@ -27,7 +27,7 @@ class RestAPILog {
    *
    * @param array $context
    *   Request's context.
-   *   Keys: see RestAPI::doRequest().
+   *   Keys: see RestAPI->doRequest().
    *   To check if response exists:
    *     RestAPILog::isResponseExists($request_id).
    *
@@ -64,7 +64,7 @@ class RestAPILog {
    *
    * @param array $context
    *   Request's context.
-   *   Keys: see RestAPI::doRequest().
+   *   Keys: see RestAPI->doRequest().
    *
    * @return bool
    *   Returns TRUE when new record was created and FALSE when the same

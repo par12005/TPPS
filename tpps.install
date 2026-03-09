@@ -1032,7 +1032,7 @@ function tpps_schema() {
   // Table to log responses obtained by 'RestAPI' class.
   // Note: There is no need to store message text because it could be
   // obtained  by the HTTP Response Code.
-  // RestAPI::getHttpCodeMessage($code);
+  // HttpCode->getMessage($code);
   $schema['tpps_rest_api_response_log'] = [
     'description' => "Stores REST API responses.",
     'fields' => [
@@ -2732,7 +2732,7 @@ function tpps_update_7134() {
   variable_set('tpps_gemini_model', '');
   variable_set('tpps_gemini_api_key', '');
   // DOI.
-  variable_set('tpps_doi_lookup_proxy', ''),
+  variable_set('tpps_doi_lookup_proxy', '');
   // DOI / Google Scholar.
   variable_set('tpps_doi_google_scholar_debug_mode', FALSE);
   variable_set('tpps_doi_google_scholar_delay', 5);

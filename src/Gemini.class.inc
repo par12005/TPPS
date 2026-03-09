@@ -257,8 +257,11 @@ class Gemini {
     ];
 
     try {
-      $json_response = RestAPI::post($this->url, $payload, $header);
-      $response = json_decode($json_response, TRUE);
+      $response = (new RestAPI([
+        'url' => $this->url,
+        'payload' => $payload,
+        'header' => $header,
+      ]))->post()->response;
     }
     catch (Exception $e) {
       // @TODO Minor. Code 429 (Too many requiests).

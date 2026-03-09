@@ -252,13 +252,12 @@ class GoogleScholar {
     }
 
     // Do the request.
-    $url = $this->buildUrl();
     try {
       if ($this->debugMode) {
         $response = "test page";
       }
       else {
-        $response = RestAPI::get($url);
+        $response = (new RestAPI(['url' => $this->buildUrl()])->get()->response;
       }
     }
     catch (Exception $e) {

@@ -290,7 +290,7 @@ class ZenodoHost {
     // global (default) host.
     try {
       static::get();
-      // Using ZenodoDeposit instate of RestAPI::get() allows to use static caching.
+      // Using ZenodoDeposit instate of RestAPI->get() allows to use static caching.
       ZenodoDeposit::retrieve(['deposit_id' => $data['deposit_id']]);
     }
     catch (Exception $e) {
@@ -301,7 +301,8 @@ class ZenodoHost {
       $data['url'] = ZenodoDeposit::buildUrl($data);
       try {
         static::delay();
-        RestAPI::get($data['url']);
+        // Why no response used? My quess: Need to catch exception only.
+        (new RestAPI($data))->get();
         if (function_exists('module_invoke_all')) {
           // tpps_zenodo_host_changed.
           module_invoke_all(static::getHookName('changed'), static::get());
