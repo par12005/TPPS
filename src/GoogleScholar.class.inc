@@ -257,7 +257,7 @@ class GoogleScholar {
         $response = "test page";
       }
       else {
-        $response = (new RestAPI(['url' => $this->buildUrl()])->get()->response;
+        $response = (new RestAPI(['url' => $this->buildUrl()]))->get()->response;
       }
     }
     catch (Exception $e) {
@@ -310,6 +310,34 @@ class GoogleScholar {
   }
 
   /**
+   * Gets query (url params) to build URL to get SERP.
+   *
+   * @return array
+   *   Returns query for url().
+   */
+  public function getQuery() {
+    return [
+      'hl' => 'en',
+      'as_sdt' => '0,5',
+      'q' => urlencode(check_plain($this->doi)),
+      'btnG' => NULL,
+    ];
+  }
+
+  /**
+   * Gets Endopoint URL.
+   *
+   * @return string
+   *   Returns Endpoint URL.
+   */
+  public function getEndpointUrl() {
+    return variable_get(
+      'tpps_doi_google_scholar_serp_url',
+      'https://scholar.google.com/scholar'
+    );
+  }
+
+  /**
    * Builds URL to get SERP.
    *
    * @return string
@@ -319,8 +347,11 @@ class GoogleScholar {
     if (empty($this->doi)) {
       throw new Exception("Can't create URL because of the empty DOI.");
     }
-    return 'https://scholar.google.com/scholar?hl=en&as_sdt=0%2C5&q='
-      . urlencode(check_plain($this->doi)) . '&btnG=';
+    $url = url(
+      $this->getEndpointURL(),
+      ['query' => $this->getQuery()]
+    );
+    return $url;
   }
 
   /**

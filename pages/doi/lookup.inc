@@ -47,10 +47,11 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   $proxy = variable_get('tpps_doi_lookup_proxy');
   $url = $proxy . $gs->buildUrl();
 
-  dpm($url);
+
+// @TODO Remove debug code.
+$url = 'https://tgwebdev.cam.uchc.edu/devel/php';
 
   // @todo Hide iframe.
-  // @todo Get it dynamically when DOI field updated.
   $form['google_scholar_serp'] = [
     '#markup' => '<iframe src="' . $url . '" width="500px" height="300px"
       name="google_scholar" target="google_scholar"
@@ -68,11 +69,26 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
     '#default_value' => variable_get('tpps_doi_lookup_system_instruction', ''),
   ];
 
-
-
-
-
-
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Add JS.
+  $js_settings = [
+    'doi_lookup' => [
+      'field' => '#edit-tpps-doi-lookup-doi',
+      'doi' => $doi,
+      'proxy' => variable_get('tpps_doi_lookup_proxy'),
+      'endpoint' => $gs->getEndpointURL(),
+      'query' => $gs->getQuery(),
+    ],
+  ];
+  $form['#attached']['js'][] = [
+    'type' => 'setting',
+    'data' => ['tpps' => $js_settings],
+    'scope' => 'footer',
+    'group' => JS_THEME,
+    'weight' => 5,
+  ];
+  // Add JS-logic.
+  tpps_add_css_js('doi_lookup', $form);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $form['info'] = [

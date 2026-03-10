@@ -18,6 +18,7 @@ function tpps_get_variable_list() {
     // DOI / Google Scholar.
     'tpps_doi_google_scholar_debug_mode' => FALSE,
     'tpps_doi_google_scholar_delay' => 5,
+    'tpps_doi_google_scholar_serp_url' => 'https://scholar.google.com/scholar',
     // DOI / Gemini.
     'tpps_doi_gemini_system_instruction' => '',
     'tpps_doi_gemini_generation_config' => '',
@@ -2742,6 +2743,7 @@ function tpps_update_7134() {
   // DOI / Google Scholar.
   variable_set('tpps_doi_google_scholar_debug_mode', FALSE);
   variable_set('tpps_doi_google_scholar_delay', 5);
+  variable_set('tpps_doi_google_scholar_serp_url', 'https://scholar.google.com/scholar');
   // DOI / Gemini.
   variable_set('tpps_doi_gemini_system_instruction', '');
   variable_set('tpps_doi_gemini_generation_config', '');

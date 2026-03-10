@@ -42,31 +42,42 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
   // @TODO Minor. Create report for db table.
   $form['google_scholar'] = [
     '#type' => 'fieldset',
-    '#title' => t('Google Scholar Scraper'),
+    '#title' => t('Google Scholar'),
     '#collapsible' => TRUE,
-  ];
-  $form['google_scholar']['info'] = [
-    '#markup' => theme('item_list', [
-      'items' => [
-        'DB table: public.tpps_google_scholar',
-      ],
-    ]),
-  ];
-  $form['google_scholar']['tpps_doi_google_scholar_debug_mode'] = [
-    '#type' => 'checkbox',
-    '#title' => t('Debug Mode'),
-    '#default_value' => variable_get('tpps_doi_google_scholar_debug_mode'),
-    '#description' => t('When enabled no actual requests to Google Scholar '
-      . 'will be performed.'),
-  ];
-  $form['google_scholar']['tpps_doi_google_scholar_delay'] = [
-    '#type' => 'textfield',
-    '#title' => t('Mininal delay between requests (in seconds)'),
-    '#default_value' => variable_get(
-      'tpps_doi_google_scholar_delay', GoogleScholar::DEFAULT_DELAY
-    ),
-    '#description' => t('Introduce random delays (e.g., 2-10 seconds) '
-      . 'between requests to avoid rate-limiting.'),
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    'info' => [
+      '#markup' => theme('item_list', [
+        'items' => ['DB table: public.tpps_google_scholar'],
+      ]),
+    ],
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    'tpps_doi_google_scholar_serp_url' => [
+      '#type' => 'textfield',
+      '#title' => t('URL of the Google Scholar SERP '),
+      '#default_value' => variable_get('tpps_doi_google_scholar_serp_url'),
+      '#description' => t('This URL must be allowed by CORS Anywhere Proxy server'
+        . ' and will be used by GoogleScholar class to build Endpoint URL.'
+      ),
+    ],
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    'tpps_doi_google_scholar_debug_mode' => [
+      '#type' => 'checkbox',
+      '#title' => t('Debug Mode'),
+      '#default_value' => variable_get('tpps_doi_google_scholar_debug_mode'),
+      '#description' => t('When enabled no actual requests to Google Scholar '
+        . 'will be performed.'),
+    ],
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // @TODO Use this delay for AJAX-requests from client to backend.
+    'tpps_doi_google_scholar_delay' => [
+      '#type' => 'textfield',
+      '#title' => t('Mininal delay between requests (in seconds)'),
+      '#default_value' => variable_get(
+        'tpps_doi_google_scholar_delay', GoogleScholar::DEFAULT_DELAY
+      ),
+      '#description' => t('Introduce random delays (e.g., 2-10 seconds) '
+        . 'between requests to avoid rate-limiting.'),
+    ],
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
