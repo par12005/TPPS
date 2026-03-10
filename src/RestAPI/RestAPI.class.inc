@@ -23,8 +23,8 @@
  *      ->get();
  *
  * DB Tables:
- *   - public.tpps_rest_api_request_log
- *   - public.tpps_rest_api_response_log.
+ *   - public.tpps_rest_api_request
+ *   - public.tpps_rest_api_response.
  *
  * Logging:
  *   See 'RestAPILog' class.
@@ -87,7 +87,7 @@ class RestAPI {
    * Required for POST-requests.
    *
    * List of headers (stored as strings).
-   * Stored in 'tpps_rest_api_request_log.header' column.
+   * Stored in 'tpps_rest_api_request.header' column.
    *
    * @var array
    */
@@ -99,7 +99,7 @@ class RestAPI {
    * Also used by GET request to have 'query'.
    *
    * To send JSON use header: 'Content-Type: application/json'.
-   * Stored in 'tpps_rest_api_request_log.payload' column.
+   * Stored in 'tpps_rest_api_request.payload' column.
    *
    * @var mixed
    *   String or array.
@@ -110,7 +110,7 @@ class RestAPI {
    * Unix timestamp of the moment when request was created.
    *
    * Automatically generated.
-   * Stored in 'tpps_rest_api_request_log.created' column.
+   * Stored in 'tpps_rest_api_request.created' column.
    *
    * @var int
    */
@@ -125,21 +125,21 @@ class RestAPI {
    * Automatically generated.
    * Having this id allows to find the same requests.
    * Stored in columns:
-   * - 'tpps_rest_api_request_log.request_id',
-   * - 'tpps_rest_api_response_log.request_id'.
+   * - 'tpps_rest_api_request.request_id',
+   * - 'tpps_rest_api_response.request_id'.
    *
    * @var string
    */
   protected $requestId;
 
   /**
-   * Optional tag for request.
+   * Optional. Label for request to make requests searchable by humans.
    *
-   * Stored in tpps_rest_api_response_log.tag column.
+   * Stored in tpps_rest_api_response.tag column.
    *
    * @var string
    */
-  protected $tag;
+  protected $tag = NULL;
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Response related properties.
@@ -148,7 +148,7 @@ class RestAPI {
    * HTPP Code of the response status.
    *
    * See 'HttpCode' class.
-   * Stored in 'tpps_rest_api_response_log.code' column.
+   * Stored in 'tpps_rest_api_response.code' column.
    *
    * @var int
    */
@@ -167,7 +167,7 @@ class RestAPI {
   /**
    * Whole response body.
    *
-   * Stored in 'tpps_rest_api_response_log.body' column.
+   * Stored in 'tpps_rest_api_response.body' column.
    *
    * @var string
    */
@@ -175,7 +175,7 @@ class RestAPI {
   /**
    * Unix timestamp of the moment when request was created.
    *
-   * Stored in 'tpps_rest_api_response_log.started' column.
+   * Stored in 'tpps_rest_api_response.started' column.
    *
    * @var int
    */
@@ -185,7 +185,7 @@ class RestAPI {
    * Request processing time in msec.
    *
    * Time between sending request and getting response.
-   * Stored in 'tpps_rest_api_response_log.duration' column.
+   * Stored in 'tpps_rest_api_response.duration' column.
    *
    * @var int
    */
@@ -226,6 +226,7 @@ class RestAPI {
     $this->payload = $context['payload'] ?? $this->payload ?? [];
     $this->header = $context['header'] ?? $this->header ?? [];
     $this->query = $context['query'] ?? $this->query ?? [];
+    $this->tag = $context['tag'] ?? $this->tag ?? NULL;
     $this->created = time();
 
     // @TODO Add tag.
@@ -256,10 +257,39 @@ class RestAPI {
   }
 
   /**
+   * Setter for $tag property.
+   *
+   * @param mixed $value
+   *   Optional value of the tag.
+   *   When empty tag will be generated automatically using request's data.
+   *
+   * @return object
+   *   Returns $this to allow method chaining.
+   */
+  public function setTag($value = NULL) {
+    if (!is_null($value)) {
+      $this->tag = $value;
+    }
+    elseif (empty($this->tag)) {
+      // Respect existing value of the tag.
+      // Url without query.
+      $url = strtok($this->url, '?');
+      // Remove schema from url.
+      $protocols = ['http://', 'https://'];
+      $url = str_replace($protocols, '', $url);
+      $this->tag = implode(' ', [$this->method, $url]);
+    }
+    return $this;
+  }
+
+  /**
    * Checks if required properties was set.
    *
    * @throws Exception
    *   When required properties wasn't set or empty.
+   *
+   * @todo Convert to private method if it's for internal usage only or
+   * return $this to support method chaining.
    */
   public function validateRequest() {
     if (empty($this->url)) {
@@ -299,6 +329,7 @@ class RestAPI {
    */
   public function __set($name, $value) {
     // Allow to overwrite magic with custom setter.
+    // Method naming rule: 'set<PropertyName>'.
     $func = tpps_snake_to_camel_case('set_' . $name);
     if (method_exists($this, $func)) {
       $this->$func($value);
@@ -461,12 +492,14 @@ class RestAPI {
       // Allow other modules to react on start of the request.
       if (function_exists('module_invoke_all')) {
         // tpps_rest_api_request_started().
+        $this->setTag();
         $context = [
           'request_id' => $this->requestId,
           'method' => $this->method,
           'url' => $this->url,
           'payload' => $this->payload ?? NULL,
           'header' => $this->header ?? NULL,
+          'tag' => $this->tag ?? NULL,
         ];
         module_invoke_all('rest_api_request_started', $context);
       }

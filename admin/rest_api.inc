@@ -10,6 +10,12 @@
  */
 function tpps_rest_api_settings_form(array $form, array &$form_state) {
   // Re-use stored responses.
+  //
+  //
+  // @TODO Checkbox to save:
+  // Request/Response
+  //   Each HTTP mehtod
+  //   Each tag.
   $form['cache'] = [
     '#type' => 'fieldset',
     '#title' => t('Response caching'),

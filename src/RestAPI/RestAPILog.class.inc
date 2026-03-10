@@ -14,10 +14,10 @@
 class RestAPILog {
 
   // Name of the DB table which stores requests.
-  const REQUEST_TABLE = 'tpps_rest_api_request_log';
+  const REQUEST_TABLE = 'tpps_rest_api_request';
 
   // Name of the DB table which stores responses.
-  const RESPONSE_TABLE = 'tpps_rest_api_response_log';
+  const RESPONSE_TABLE = 'tpps_rest_api_response';
 
   /**
    * Saves RestAPI Response.
@@ -65,6 +65,7 @@ class RestAPILog {
    * @param array $context
    *   Request's context.
    *   Keys: see RestAPI->doRequest().
+   *   'tag' is optional.
    *
    * @return bool
    *   Returns TRUE when new record was created and FALSE when the same
@@ -82,7 +83,7 @@ class RestAPILog {
       return FALSE;
     }
     else {
-      $context['created'] = time();
+      $context['created'] = $context['created'] ?? time();
       // Convert arrays into JSON format.
       foreach (['payload', 'header'] as $name) {
         $context[$name] = json_encode($context[$name], TRUE);
@@ -103,7 +104,7 @@ class RestAPILog {
    *   Returns FALSE otherwise.
    */
   public static function isRequestExists($request_id) {
-    return (bool) db_select('tpps_rest_api_request_log', 't')
+    return (bool) db_select(self::REQUEST_TABLE, 't')
       ->fields('t', ['request_id'])
       ->condition('request_id', $request_id)
       ->range(0, 1)
@@ -126,7 +127,7 @@ class RestAPILog {
    *   Returns FALSE otherwise.
    */
   public static function isResponseExists($request_id, $started = NULL) {
-    $query = db_select('tpps_rest_api_response_log', 't')
+    $query = db_select(self::RESPONSE_TABLE, 't')
       ->fields('t', ['request_id'])
       ->condition('request_id', $request_id)
       ->condition('code', HttpCode::OK)
@@ -160,7 +161,7 @@ class RestAPILog {
    *     'response',
    */
   public static function loadResponse($request_id, $started = NULL) {
-    $query = db_select('tpps_rest_api_response_log', 't')
+    $query = db_select(self::RESPONSE_TABLE, 't')
       ->fields('t', [])
       ->condition('request_id', $request_id)
       ->condition('code', HttpCode::OK)
