@@ -5,6 +5,14 @@
  * Misc. AJAX-callbacks.
  *
  * See /tpps.ajax.inc.
+ *
+ * How to add new AJAX-callback?
+ * 1. Add new function with 'tpps_ajax_' prefix.
+ * 2. Use function name withtout prefix 'tpps_ajax_' at client side.
+ *
+ * Example:
+ * function: tpps_ajax_save_google_scholar_serp()
+ * URL: /ajax/tpps/save_google_scholar_serp
  */
 
 /**
@@ -146,4 +154,38 @@ function tpps_ajax_remember_fieldset_collapsed_state(array $data) {
   }
   $_SESSION[TPPS_RFCS_KEY][$data['form_id']][$data['name']] = (int) $data['value'];
   return TRUE;
+}
+
+/**
+ * AJAX callback for 'Save Google Scholar SERP'.
+ *
+ * Stores content of the Google Scholar SERP for certain DOI.
+ *
+ * @param array $data
+ *   POST data. Required keys are: 'serp' and 'doi'.
+ *
+ * @return bool
+ *   Returns TRUE in case of success and FALSE otherwise.
+ */
+function tpps_ajax_save_google_scholar_serp(array $data) {
+  $response['success'] = FALSE;
+  if (empty($data['serp']) || empty($data['doi'])) {
+    $response['errors'][] = t("Empty SERP or DOI.");
+  }
+  else {
+    // Save Google Scholar SERP for this DOI.
+    $gs = new GoogleScholar();
+    $gs->doi = $data['doi'];
+    $gs->serp = $data['serp'];
+    $gs->save();
+
+    // @TODO Parse using Gemini
+
+    $response['success'] = TRUE;
+    // @TODO Fill publication info.
+    $response['publication_info'] = [];
+  }
+
+  return $response;
+
 }

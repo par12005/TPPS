@@ -37,7 +37,11 @@
       // Get Google Scholar iframe content.
       $('iframe#google-scholar').on('load', function() {
         // The iframe and its contents have finished loading
-        var $iframeContents = $(this).contents();
+        let $iframeContents = $(this).contents();
+
+
+
+
 // @TODO Send content to backend.
         //
         //$iframeContents.find("body").append("<p>Content added after load.</p>");

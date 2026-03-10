@@ -374,6 +374,7 @@ class GoogleScholar {
     }
 
     // @TODO parse.
+    // @TODO Use Gemini class.
     // Store result.
   }
 
