@@ -38,15 +38,20 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
     '#default_value' => $doi,
   ];
 
-  // @TODo show iframe if DOI is not empty.
+// @TODo show iframe if DOI is not empty.
 
   $gs = new GoogleScholar($doi);
+
+// @TODO If there is a SERP for this DOI it will be loaded. Check 'tpps_doi'
+// for the data first.
+
   $url = $gs->buildUrl();
 
   // @todo Check if $url and $proxy exists.
-  $proxy = variable_get('tpps_doi_lookup_proxy');
-  $url = $proxy . $gs->buildUrl();
+  //$proxy = variable_get('tpps_doi_lookup_proxy');
+  //$url = $proxy . $gs->buildUrl();
 
+  //$url = 'https://tgwebdev.cam.uchc.edu/corsanywhere/https://142.250.120.104/scholar?hl=en&as_sdt=0%2C7&q=ok&btnG=';
 
 // @TODO Remove debug code.
 $url = 'https://tgwebdev.cam.uchc.edu/devel/php';
@@ -78,6 +83,7 @@ $url = 'https://tgwebdev.cam.uchc.edu/devel/php';
       'proxy' => variable_get('tpps_doi_lookup_proxy'),
       'endpoint' => $gs->getEndpointURL(),
       'query' => $gs->getQuery(),
+      'delay' => $gs->delay,
     ],
   ];
   $form['#attached']['js'][] = [

@@ -4,29 +4,37 @@
  * @file
  * Contains 'GoogleScholar' class.
  *
+ * Saves/loads Google Scholar SERP for certain DOI in table 'tpps_google_scholar'.
+ * This class do not request SERP directly.
+ * Manages delay between requests.
+ * Manages parsing. Data will be stored in 'tpps_doi' table.
+ *
+ * Workaround.
+ *
+ * Direct requests to Google Scholar will be blocked.
+ * Setup CORS Anywhere proxy server which cuts some headers from the Google
+ * Scholar GET-request of the search result page (SERP).
+ * Use client's browser to get Google Scholar response in iframe.
+ * Note: curl requests looks like a a bot/scraper requests and will be blocked.
+ * Request from client's browser looks more natural (has cookies and etc.).
+ * Content from client's browser will be sent to backend and saved by this class.
+ *
+ *
  * Usage:
+ *  // Save SERP.
+ *  $gs = new GoogleScholar();
+ *  $gs->doi = $doi;
+ *  $gs->serp = $content;
+ *  $gs->save();
+ *  // Load SERP.
  *  $gs = new GoogleScholar($doi);
- *  $gs->request();
- *  $gs->getJornal();
- *  $gs->update();
+ *  dpm($gs->serp);
  *
- * Workflow
- * 1. Set DOI.
- * 2. Get response using RestAPI.
- * 3. Store in DB.
- * 4. Parse.
- *
- * n. Update if stored pages is outdated.
- *
- * @TODO Imitate form https://scholar.google.com/ submit (with cookies).
  *
  * :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
- * Core Concepts:
- * Respect robots.txt: Be aware that scraping is against Google Scholar's Terms of Service, and you should check scholar.google.com/robots.txt before starting .
- * Use Proxies: To avoid IP bans, you'll need to use residential or rotating proxies to distribute your requests .
- * Rotate User-Agents: Mimic different browsers and devices to avoid detection .
- * Add Delays: Introduce random delays (e.g., 10-60 seconds) between requests to avoid rate-limiting.
- * Handle Dynamic Content: For complex pages, you might need tools like Playwright or Selenium to render JavaScript.
+ * @todo Request Google scholar front page at first step to emulate human's
+ * behavior. Note: form uses hidden fields which could be changed anytime.
+ * @todo Add Delays: Introduce random delays (e.g., 10-60 seconds) between requests to avoid rate-limiting.
  */
 
 /**
@@ -38,11 +46,12 @@
 class GoogleScholar {
 
   // Name of the DB table where SERP is stored.
-  const TABLE = 'tpps_google_scholar';
-
+  const SERP_TABLE = 'tpps_google_scholar';
+  // Name of the DB table where stored DOI publication information.
+  const DOI_TABLE = 'tpps_doi';
   // Default value of the delay between requests.
   // Value 10-60 seconds is suggested over the internet to avoid IP address ban.
-  const DEFAULT_DELAY = 5;
+  const DEFAULT_DELAY = 2;
 
   /**
    * Indicates if 'Debug Mode' is enabled/disabled.
@@ -71,6 +80,19 @@ class GoogleScholar {
   protected $isLoaded = FALSE;
 
   /**
+   * Indicates that SERP data was found in DB.
+   *
+   * When there is no record for given DOI than after calling load()
+   * $isLoaded will be TRUE but $isExists will be FALSE.
+   * Property $isLoaded used to avoid multiple requests to DB (instead
+   * of static caching).
+   *
+   * @var bool
+   */
+  protected $isExists = FALSE;
+
+
+  /**
    * Unix timestamp of the moment when SERP was obtained and saved into DB.
    *
    * Stored in tpps_google_scholar.created as int.
@@ -89,7 +111,7 @@ class GoogleScholar {
   protected $serp;
 
   /**
-   * Unix timestamp of the last request.
+   * Unix timestamp of the last request stored in table 'tpps_google_scholar'.
    *
    * @var int
    */
@@ -116,18 +138,21 @@ class GoogleScholar {
    *   When db table which stores Google Scholar SERP doen't exists.
    */
   public function __construct(string $doi = NULL) {
-    if (!db_table_exists(static::TABLE)) {
-      throw new Exception('DB table ' . static::TABLE . ' not found.');
+    if (!db_table_exists(self::SERP_TABLE)) {
+      throw new Exception('DB table ' . self::SERP_TABLE . ' not found.');
     }
     if (!empty($doi)) {
       $this->doi = $doi;
       $this->load();
-      $this->getLastRequestTime();
     }
     $this->delay = variable_get(
-      'tpps_google_scholar_delay', static::DEFAULT_DELAY
+      'tpps_google_scholar_delay',
+      static::DEFAULT_DELAY
     );
-    $this->debugMode = variable_get('tpps_google_scholar_debug_mode', FALSE);
+    $this->debugMode = variable_get(
+      'tpps_google_scholar_debug_mode',
+      FALSE
+    );
     return $this;
   }
 
@@ -200,8 +225,9 @@ class GoogleScholar {
     if (empty($this->doi)) {
       throw new Exception(t('Study accession is empty.'));
     }
+    $this->isLoaded = TRUE;
     // Get data from DB.
-    $result = db_select(static::TABLE, 't')
+    $result = db_select(self::SERP_TABLE, 't')
       ->fields('t')
       ->condition('doi', $this->doi)
       // Load latest record.
@@ -211,8 +237,13 @@ class GoogleScholar {
     if ($result) {
       $this->created = $result['created'] ?? 0;
       $this->serp = $result['serp'] ?? '';
+      $this->isExists = !empty($this->serp);
     }
-    $this->isLoaded = TRUE;
+    else {
+      $this->isExists = FALSE;
+    }
+
+
     return $this;
   }
 
@@ -229,84 +260,12 @@ class GoogleScholar {
     if (empty($this->serp)) {
       throw new Exception('Empty SERP.');
     }
-    db_insert(static::TABLE)->fields([
+    db_insert(self::SERP_TABLE)->fields([
       'doi' => $this->doi,
       'created' => REQUEST_TIME,
       'serp' => $this->serp,
     ])->execute();
     $this->created = REQUEST_TIME;
-  }
-
-  /**
-   * Preforms request to Google Scholar web-site.
-   *
-   * @throws Exception
-   *   When request is not allowed because of the delay.
-   *
-   * @todo Minor. Get front page and grab hidden fields. Emulate form
-   * submission using GET-method.
-   */
-  public function request() {
-    if (!$this->isRequestAllowed()) {
-      throw new Exception('Request is not allowed because of the delay');
-    }
-
-    // Do the request.
-    try {
-      if ($this->debugMode) {
-        $response = "test page";
-      }
-      else {
-        $response = (new RestAPI(['url' => $this->buildUrl()]))->get()->response;
-      }
-    }
-    catch (Exception $e) {
-      $message = $e->getMessage();
-      $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
-      watchdog('tpps', $message . '<pre>@backtrace</pre>',
-        ['@backtrace' => print_r($stack, 1)],
-        WATCHDOG_ERROR
-      );
-      throw new Exception($message, $e->getCode());
-    }
-    $this->serp = $response;
-    $this->save();
-    $this->isLoaded = TRUE;
-  }
-
-  /**
-   * Gets last request time from database.
-   *
-   * Assume that each request is stored in database.
-   * Uses public.tpps_google_scholar.created field of the latest record.
-   *
-   * @return int
-   *   Returns latest request time as Unix timestamp.
-   */
-  public function getLastRequestTime() {
-    $last_created = db_select(static::TABLE, 't')
-      ->fields('t', ['created'])
-      ->range(0, 1)->orderBy('created')
-      ->execute()->fetchField();
-    return $this->lastRequestTime = $last_created ?? (time() - $this->delay);
-  }
-
-  /**
-   * Checks if new request is allowed.
-   *
-   * New request is allowed after $this->delay seconds past lastest request.
-   *
-   * @return bool
-   *   Returns TRUE when request is allowe and FALSE otherwise.
-   */
-  public function isRequestAllowed() {
-    if (empty($this->lastRequest)) {
-      $last_created = $this->getLastRequestTime();
-    }
-    else {
-      $last_created = $this->lastRequestTime;
-    }
-    return (bool) (time() - $this->delay >= $last_created);
   }
 
   /**
@@ -373,9 +332,9 @@ class GoogleScholar {
       throw new Exception("Empty SERP.");
     }
 
-    // @TODO parse.
+    // @TODO parse. Use 2 options: own parser and Gemini.
     // @TODO Use Gemini class.
-    // Store result.
+    // Store result into 'tpps_doi'.
   }
 
 }
