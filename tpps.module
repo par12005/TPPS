@@ -472,17 +472,6 @@ function tpps_menu() {
     'type' => MENU_NORMAL_ITEM,
     'file' => 'pages/doi/lookup.inc',
   ];
-  // Show Google Scholar SERP in the iframe.
-  $items['tpps/doi/google-scholar'] = [
-    'title' => 'DOI Google Scholar',
-    'description' => 'SERP of the Google Scholar for given DOI.',
-    'page callback' => 'tpps_doi_google_scholar_page',
-    'page arguments' => [3, 4],
-    'access callback' => 'tpps_access',
-    'access arguments' => ['access content'],
-    'type' => MENU_NORMAL_ITEM,
-    'file' => 'pages/doi/google_scholar.inc',
-  ];
   return $items;
 }
 
