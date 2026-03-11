@@ -187,5 +187,27 @@ function tpps_ajax_save_google_scholar_serp(array $data) {
   }
 
   return $response;
+}
 
+/**
+ * AJAX callback for 'Get publication data by DOI'.
+ *
+ * @param array $data
+ *   POST data. Required keys are: 'doi'.
+ *
+ * @return bool
+ *   Returns TRUE in case of success and FALSE otherwise.
+ */
+function tpps_ajax_get_publication_data(array $data) {
+  $response['success'] = FALSE;
+  if (empty($data['doi'])) {
+    $response['errors'][] = t('Empty DOI.');
+  }
+  else {
+    $response['doi'] = $doi;
+    $response['publication_data'] = PublicationDOI::load($doi);
+    $response['success'] = TRUE;
+    // @TODO Fill publication info.
+  }
+  return $response;
 }

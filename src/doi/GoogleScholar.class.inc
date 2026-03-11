@@ -46,7 +46,7 @@
 class GoogleScholar {
 
   // Name of the DB table where SERP is stored.
-  const SERP_TABLE = 'tpps_google_scholar';
+  const TABLE = 'tpps_google_scholar';
   // Default value of the delay between requests.
   // Value 10-60 seconds is suggested over the internet to avoid IP address ban.
   const DEFAULT_DELAY = 2;
@@ -136,8 +136,8 @@ class GoogleScholar {
    *   When db table which stores Google Scholar SERP doen't exists.
    */
   public function __construct(string $doi = NULL) {
-    if (!db_table_exists(self::SERP_TABLE)) {
-      throw new Exception('DB table ' . self::SERP_TABLE . ' not found.');
+    if (!db_table_exists(self::TABLE)) {
+      throw new Exception('DB table ' . self::TABLE . ' not found.');
     }
     if (!empty($doi)) {
       $this->doi = $doi;
@@ -225,7 +225,7 @@ class GoogleScholar {
     }
     $this->isLoaded = TRUE;
     // Get data from DB.
-    $result = db_select(self::SERP_TABLE, 't')
+    $result = db_select(self::TABLE, 't')
       ->fields('t')
       ->condition('doi', $this->doi)
       // Load latest record.
@@ -258,7 +258,7 @@ class GoogleScholar {
     if (empty($this->serp)) {
       throw new Exception('Empty SERP.');
     }
-    db_insert(self::SERP_TABLE)->fields([
+    db_insert(self::TABLE)->fields([
       'doi' => $this->doi,
       'created' => REQUEST_TIME,
       'serp' => $this->serp,
