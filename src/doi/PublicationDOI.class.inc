@@ -67,4 +67,84 @@ class PublicationDOI {
     return FALSE;
   }
 
+  /**
+   * Loads publication data from DB table.
+   *
+   * @param string $doi
+   *   DOI (Digital Object Identifier).
+   *
+   * @return array
+   *   Returns record from DB table for given DOI if exists.
+   *   Returns empty array if record wasn't found.
+   */
+  public static function load($doi) {
+    $data = db_select(self::TABLE, 't')
+      ->fields('t', [])
+      ->condition('doi', $doi)
+      ->range(0, 1)
+      ->execute()
+      ->fetchAssoc();
+    if (empty($data)) {
+      return [];
+    }
+    return $data;
+  }
+
+  /**
+   * Gets DB table schema.
+   *
+   * Used in hook_install().
+   * Table name: PublicationDOI::TABLE.
+   *
+   * @return array
+   *   Returns db table schema.
+   */
+  public static function getSchema() {
+    return [
+      'description' => 'Stores DOI publication information.',
+      'fields' => [
+        'doi' => [
+          'description' => 'DOI (Digital Object Identifier).',
+          'type' => 'varchar',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ],
+        'authors' => [
+          'description' => 'Authors (primary and secondary).',
+          'type' => 'varchar',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ],
+        'date' => [
+          'description' => 'Publication Date.',
+          'type' => 'varchar',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ],
+        'title' => [
+          'description' => 'Publication Title.',
+          'type' => 'varchar',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ],
+        'journal' => [
+          'description' => 'Publication Journal.',
+          'type' => 'varchar',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ],
+        'abstract' => [
+          'description' => 'Publication Abstract.',
+          // varchar/normal: mysql: 64KB, postgresql: 1GB.
+          'type' => 'varchar',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ],
+      ],
+      'unique keys' => [
+        'doi' => ['doi'],
+      ],
+    ];
+  }
+
 }

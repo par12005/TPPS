@@ -926,59 +926,15 @@ function tpps_schema() {
     ],
   ];
 
-  // Table to store DOI lookup results.
-  $schema['tpps_publication_doi'] = [
-    'description' => 'Stores DOI publication information.',
-    'fields' => [
-      'doi' => [
-        'description' => 'DOI (Digital Object Identifier).',
-        'type' => 'varchar',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ],
-      'source' => [
-        'description' => 'Source of the information: gemini, google_scholar.',
-        'type' => 'varchar',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ],
-      'authors' => [
-        'description' => 'Authors (primary and secondary).',
-        'type' => 'varchar',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ],
-      'date' => [
-        'description' => 'Publication Date.',
-        'type' => 'varchar',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ],
-      'title' => [
-        'description' => 'Publication Title.',
-        'type' => 'varchar',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ],
-      'journal' => [
-        'description' => 'Publication Journal.',
-        'type' => 'varchar',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ],
-      'abstract' => [
-        'description' => 'Publication Abstract.',
-        // varchar/normal: mysql: 64KB, postgresql: 1GB.
-        'type' => 'varchar',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ],
-    ],
-    'unique keys' => [
-      'doi_source' => ['doi', 'source'],
-    ],
-  ];
 
+  $class_file = dirname(__FILE__) . '/src/doi/PublicationDOI.class.inc';
+  if (file_exists($class_file)) {
+    require_once $class_file;
+  }
+  $schema[PublicationDOI::TABLE] = PublicationDOI::getSchema();
+
+
+// @TODO Move other tables into classes.
   // Table to log requests made by 'RestAPI' class.
   $schema['tpps_rest_api_request'] = [
     'description' => "Stores REST API requests.",
