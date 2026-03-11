@@ -11,6 +11,24 @@
       let doi_field_selector = settings.tpps.doi_lookup.field;
       $(doi_field_selector).blur(function() {
         let doi = $(this).val();
+
+        // @TODO
+        // 1. Request publication data from PublicationDOI::TABLE.
+        // 2. If there is no data - check delay.
+        let delay = settings.tpps.doi_lookup.delay;
+
+
+
+        // 3. Build new url and create iframe.
+        // 4. Get iframe content and send to backend.
+        //    - store into 'tpps_google_scholar' table.
+        //    - parse content
+        //    - store to PublicationDIO::TABLE.
+        //    - send back publication information.
+        // 5. Show publication information at page.
+        //
+
+
         let $iframe=$('#google-scholar');
         let proxy_url = buildUrl (settings, doi);
         $iframe.attr('src', proxy_url).innerHTML(proxy_url);

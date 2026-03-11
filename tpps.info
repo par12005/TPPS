@@ -38,8 +38,11 @@ files[] = src/RestAPI/RestAPILog.class.inc
 files[] = src/Report.class.inc
 files[] = src/FormState.class.inc
 files[] = src/CVTerm.class.inc
-files[] = src/GoogleScholar.class.inc
-files[] = src/Gemini.class.inc
+
+; DOI
+files[] = src/doi/GoogleScholar.class.inc
+files[] = src/doi/Gemini.class.inc
+files[] = src/doi/PublicationDOI.class.inc
 
 ; Tpps. Elemental Entities.
 files[] = src/tpps/TppsConfiguration.class.inc

@@ -7,7 +7,7 @@
  * Saves/loads Google Scholar SERP for certain DOI in table 'tpps_google_scholar'.
  * This class do not request SERP directly.
  * Manages delay between requests.
- * Manages parsing. Data will be stored in 'tpps_doi' table.
+ * Manages parsing. Data will be stored in PublicationDOI::TABLE table.
  *
  * Workaround.
  *
@@ -47,8 +47,6 @@ class GoogleScholar {
 
   // Name of the DB table where SERP is stored.
   const SERP_TABLE = 'tpps_google_scholar';
-  // Name of the DB table where stored DOI publication information.
-  const DOI_TABLE = 'tpps_doi';
   // Default value of the delay between requests.
   // Value 10-60 seconds is suggested over the internet to avoid IP address ban.
   const DEFAULT_DELAY = 2;
@@ -332,9 +330,65 @@ class GoogleScholar {
       throw new Exception("Empty SERP.");
     }
 
-    // @TODO parse. Use 2 options: own parser and Gemini.
-    // @TODO Use Gemini class.
-    // Store result into 'tpps_doi'.
+    $use_gemini = TRUE;
+    if ($use_gemini) {
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+      $gemini = new Gemini();
+      if (!empty($values['tpps_doi_lookup_system_instruction'])) {
+        $gemini->systemInstruction = variable_get(
+          'tpps_doi_lookup_system_instruction',
+          'Get DOI publication information for given page source.'
+        );
+      }
+      // Answer in JSON format.
+      $gemini->generationConfig = [
+        "responseMimeType" => "application/json",
+        "responseJsonSchema" => [
+          "type" => "object",
+          "properties" => [
+            "doi" => (object) ["type" => "string"],
+            "title" => (object) ["type" => "string"],
+            "journal" => (object) ["type" => "string"],
+            "date" => (object) ["type" => "string"],
+            "authors" => (object) ["type" => "string"],
+            "abstract" => (object) ["type" => "string"],
+          ],
+          "required" => ["title", "authors", "date", "abstract", "journal"],
+        ],
+      ];
+
+      // @TODO Try to allow internet search to get better results.
+      // Note:
+      // Disabled because requiests failed and doesn't actually required.
+      //$gemini->tools = [["google_search" => (object) []]];
+
+      $gemini->ask($this->serp);
+      $fields = json_decode($gemini->answer, TRUE);
+
+      if ($fields === NULL || $fields === FALSE) {
+        // An error occurred during decoding.
+        $error_code = json_last_error();
+        $error_message = json_last_error_msg();
+        throw new Exception("JSON decoding error: [{$error_code}] {$error_message}");
+      }
+
+      // Store to DB.
+      $fields['source'] = 'gemini';
+      // @TODO Remove this debug code.
+      $fields['doi'] = $this->doi ?? '10.1002\/ece3.4216';
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    }
+    else {
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Custom parser.
+      // @TODO Minor. Implement custom parser.
+      //
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    }
+
+    // Store result.
+    PublicationDOI::save($fields);
   }
 
 }

@@ -927,7 +927,7 @@ function tpps_schema() {
   ];
 
   // Table to store DOI lookup results.
-  $schema['tpps_doi'] = [
+  $schema['tpps_publication_doi'] = [
     'description' => 'Stores DOI publication information.',
     'fields' => [
       'doi' => [
@@ -2759,7 +2759,7 @@ function tpps_update_7134() {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Create new db table.
   $table_list = [
-    'tpps_doi',
+    PublicationDOI::TABLE,
     GoogleScholar::TABLE,
     'tpps_rest_api_request',
     'tpps_rest_api_response',
