@@ -18,7 +18,20 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
       'items' => [
         l(t('Report "DOI Duplicates"'), 'admin/reports/tpps/doi/duplicates'),
         l(t('Report "Missing DOI"'), 'admin/reports/tpps/doi/missing'),
-      ]
+        l(t('Report "DOI Duplicates"'), 'admin/reports/tpps/doi/duplicates'),
+        l(t('Gemini: System instructions and other configurations'),
+          'https://ai.google.dev/gemini-api/docs/text-generation#system-instructions'
+        ),
+        l(t('Gemini: GenerationConfig'),
+          'https://ai.google.dev/api/generate-content#v1beta.GenerationConfig'
+        ),
+        l(t('Gemini: Response Schema'),
+          'https://ai.google.dev/api/caching#Schema'
+        ),
+        l(t('JSON text generation guide'),
+          'https://ai.google.dev/gemini-api/docs/structured-output?example=recipe'
+        ),
+      ],
     ]),
   ];
   $form['tpps_doi_lookup_proxy'] = [
@@ -29,6 +42,10 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
       . 'which is a NodeJS proxy which adds CORS headers to the proxied '
       . 'request. So Google Scholar SERP could be shown at site in iframe.',
       ['@cors_anywhere_url' => 'https://github.com/Rob--W/cors-anywhere']
+
+    )
+    . theme('item_list',
+      ['items' => ['https://tgwebdev.cam.uchc.edu/corsanywhere']]
     ),
   ];
 

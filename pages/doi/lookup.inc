@@ -32,59 +32,26 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
     $doi = variable_get('tpps_doi_lookup_doi');
   }
 
-  $form['tpps_doi_lookup_doi'] = [
-    '#type' => 'textfield',
-    '#title' => t('DOI'),
-    '#default_value' => $doi,
-  ];
-
-// @TODo show iframe if DOI is not empty.
-
   $gs = new GoogleScholar($doi);
-
-  // @TODO If there is a SERP for this DOI it will be loaded.
-  // Check PublicationDOI::TABLE for the data first.
-
-  $url = $gs->buildUrl();
-
-  // @todo Check if $url and $proxy exists.
-  //$proxy = variable_get('tpps_doi_lookup_proxy');
-  //$url = $proxy . $gs->buildUrl();
-
-  //$url = 'https://tgwebdev.cam.uchc.edu/corsanywhere/https://142.250.120.104/scholar?hl=en&as_sdt=0%2C7&q=ok&btnG=';
-
-// @TODO Remove debug code.
-$url = 'https://tgwebdev.cam.uchc.edu/devel/php';
-
-  // @todo Hide iframe.
-  $form['google_scholar_serp'] = [
-    '#markup' => '<iframe src="' . $url . '" width="500px" height="300px"
-      name="google_scholar" target="google_scholar"
-      id="google-scholar">' . $url . '</iframe>',
-  ];
-
-  $form['tpps_doi_lookup_system_instruction'] = [
-    '#type' => 'textarea',
-    '#title' => t('System Instruction'),
-    '#description' => t('Format: plain text. You can guide the behavior of '
-      . 'Gemini models with system instructions.') . '<br />'
-      . l(t('Gemini: System instructions and other configurations'),
-        'https://ai.google.dev/gemini-api/docs/text-generation#system-instructions'
-    ),
-    '#default_value' => variable_get('tpps_doi_lookup_system_instruction', ''),
-  ];
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Add JS.
   $js_settings = [
     'doi_lookup' => [
+      // Selector for the textfield with DOI.
       'field' => '#edit-tpps-doi-lookup-doi',
+      // Selector for the iframe which holds Google Scholar SERP.
+      'iframe' => 'iframe#google-scholar',
       'doi' => $doi,
       'proxy' => variable_get('tpps_doi_lookup_proxy'),
       'endpoint' => $gs->getEndpointURL(),
       'query' => $gs->getQuery(),
       // Delay between requests of the same client.
       'delay' => $gs->delay,
+      'ajax_path' => '/ajax/tpps/get_publication_data',
+
+// @TODO Remove debug code.
+      // Makes proxy URL broken to avoid Google Scholar ban.
+      'debug' => 'debug/',
     ],
   ];
   $form['#attached']['js'][] = [
@@ -98,25 +65,41 @@ $url = 'https://tgwebdev.cam.uchc.edu/devel/php';
   tpps_add_css_js('doi_lookup', $form);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  $form['info'] = [
-    '#markup' => theme('item_list', [
-      'title' => t('Useful links'),
-      'items' => [
-        l(t('Report "DOI Duplicates"'), 'admin/reports/tpps/doi/duplicates'),
-        l(t('Gemini: System instructions and other configurations'),
-          'https://ai.google.dev/gemini-api/docs/text-generation#system-instructions'
-        ),
-        l(t('Gemini: GenerationConfig'),
-          'https://ai.google.dev/api/generate-content#v1beta.GenerationConfig'
-        ),
-        l(t('Gemini: Response Schema'),
-          'https://ai.google.dev/api/caching#Schema'
-        ),
-        l(t('JSON text generation guide'),
-          'https://ai.google.dev/gemini-api/docs/structured-output?example=recipe'
-        ),
-      ]
-    ]),
+  $form['tpps_doi_lookup_doi'] = [
+    '#type' => 'textfield',
+    '#title' => t('DOI'),
+    '#default_value' => $doi,
+  ];
+  $form['tpps_doi_lookup_result'] = [
+    '#markup' => '<div style="border: 1px solid white; display: none;" id="dumpContainer"></div>',
+  ];
+
+// @TODo show iframe if DOI is not empty.
+
+
+  // @TODO Check if publication data already loaded in $gs.
+
+  // @TODO If there is a SERP for this DOI it will be loaded.
+  // Check PublicationDOI::TABLE for the data first.
+
+  $url = $gs->buildUrl();
+
+  // @todo Check if $url and $proxy exists.
+  //$proxy = variable_get('tpps_doi_lookup_proxy');
+  //$url = $proxy . $gs->buildUrl();
+
+  //$url = 'https://tgwebdev.cam.uchc.edu/corsanywhere/https://142.250.120.104/scholar?hl=en&as_sdt=0%2C7&q=ok&btnG=';
+
+// @TODO Remove debug code.
+
+  $url = 'https://tgwebdev.cam.uchc.edu/devel/php';
+
+  // @todo Hide iframe.
+  $form['google_scholar_serp'] = [
+    '#markup' => '<iframe  style="display: none;"
+      src="' . $url . '" width="500px" height="300px"
+      name="google_scholar" target="google_scholar"
+      id="google-scholar">' . $url . '</iframe>',
   ];
 
   TppsForm::autofocus($form, ['tpps_doi_lookup_question']);
