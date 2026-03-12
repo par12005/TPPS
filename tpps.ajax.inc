@@ -51,12 +51,17 @@ function tpps_ajax_callback($callback = '', array $payload = NULL) {
   $content_type = $_SERVER['CONTENT_TYPE'] ?? NULL;
   if (!empty($content_type) && strpos($content_type, 'application/json') !== FALSE) {
     // This is a JSON request.
-    $payload = json_decode(file_get_contents('php://input'), TRUE);
+    $content = file_get_contents('php://input');
+    if (empty($content)) {
+      $payload = [];
+    }
+    else {
+      $payload = json_decode($content, TRUE);
+    }
   }
   else {
     $payload = $payload ?? $_POST ?? [];
   }
-
   if (function_exists($function)) {
     $result = call_user_func($function, $payload);
     if (empty($result)) {
