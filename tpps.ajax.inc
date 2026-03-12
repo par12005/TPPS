@@ -42,11 +42,21 @@ module_load_include('inc', 'tpps', 'ajax_callbacks/study_details');
  *   - 'warnings' - array. Optional. List of localized messages.
  *   - Other data which could be proccessed by JS code in browser.
  */
-function tpps_ajax_callback($callback = '', $payload = NULL) {
+function tpps_ajax_callback($callback = '', array $payload = NULL) {
   $function = 'tpps_ajax_' . check_plain($callback);
   // If we never succed we fail.
   $response['success'] = FALSE;
-  $payload = $payload ?? $_POST;
+
+  // Get payload.
+  $content_type = $_SERVER['CONTENT_TYPE'] ?? NULL;
+  if (!empty($content_type) && strpos($content_type, 'application/json') !== FALSE) {
+    // This is a JSON request.
+    $payload = json_decode(file_get_contents('php://input'), TRUE);
+  }
+  else {
+    $payload = $payload ?? $_POST ?? [];
+  }
+
   if (function_exists($function)) {
     $result = call_user_func($function, $payload);
     if (empty($result)) {

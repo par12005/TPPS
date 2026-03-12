@@ -453,6 +453,7 @@ function tpps_menu() {
   tpps_menu_add_submission_pages($items);
   tpps_menu_add_api($items);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // /ajax/tpps/<command>.
   $items[TPPS_AJAX_URL . '/%'] = [
     // Use POST to send data and GET to just get data.
     'page callback' => 'tpps_ajax_callback',
