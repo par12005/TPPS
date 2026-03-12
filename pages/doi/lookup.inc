@@ -47,7 +47,8 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
       'query' => $gs->getQuery(),
       // Delay between requests of the same client.
       'delay' => $gs->delay,
-      'ajax_path' => '/ajax/tpps/get_publication_data',
+      'ajax_get_path' => '/ajax/tpps/get_publication_data',
+      'ajax_save_path' => '/ajax/tpps/save_google_scholar_serp',
 
 // @TODO Remove debug code.
       // Makes proxy URL broken to avoid Google Scholar ban.

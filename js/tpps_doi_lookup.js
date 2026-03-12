@@ -11,29 +11,25 @@
     attach: function (context, settings) {
       // TPPS DOI Lookup.
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      let doi_field_selector = settings.tpps.doi_lookup.field;
-      $(doi_field_selector).blur(function() {
+      $(settings.tpps.doi_lookup.field).blur(function() {
         let doi = $(this).val();
+        // Check if doi was really changed.
+        if (Drupal.tpps.publicationDOI[doi]) {
+          //console.log('Re-used already received data.');
+          return;
+        }
         $('#dumpContainer').html('').hide();
-        // 1. Request publication data from PublicationDOI::TABLE.
+        // Request publication data from PublicationDOI::TABLE.
         $.ajax({
-          url: settings.tpps.doi_lookup.ajax_path,
+          url: settings.tpps.doi_lookup.ajax_get_path,
           type: 'POST',
           contentType: 'application/json',
           dataType: 'json',
           data: JSON.stringify({"doi": doi}),
           success: function(response) {
-console.log('Success:', response);
-            if (response.publication_data.length !== 0) {
-              Drupal.tpps.publicationDOI[doi] = response.publication_data;
-              // Show at page.
-              var jsonString = JSON.stringify(Drupal.tpps.publicationDOI[doi], null, 2);
-              $('#dumpContainer').html(
-                '<pre style="margin: 5px; color: white !important;">'
-                + jsonString + '</pre>'
-              ).show();
-
-
+            //console.log('Success:', response);
+            if (response && response.publication_data && response.publication_data.length !== 0) {
+              showPublicationData(response.publication_data);
             }
             else {
               // Calculate delay.
@@ -45,15 +41,12 @@ console.log('Success:', response);
                   delay = 0;
                 }
               }
-console.log(delay);
               // Build iframe for Google Scholar SERP.
               setTimeout(function() {
                 settings.tpps.doi_lookup.last_request = $.now();
                 // Build iframe.
-console.log('build iframe.');
                 let $iframe=$(settings.tpps.doi_lookup.iframe);
                 let proxy_url = buildUrl(settings, doi);
-console.log(proxy_url);
                 if (proxy_url) {
                   $iframe.attr('src', proxy_url);
                   // .innerHTML(proxy_url);
@@ -65,18 +58,6 @@ console.log(proxy_url);
             console.error('Error:', error);
           }
         });
-
-        // @TODO
-        // 3. Build new url and create iframe.
-        // 4. Get iframe content and send to backend.
-        //    - store into 'tpps_google_scholar' table.
-        //    - parse content
-        //    - store to PublicationDIO::TABLE.
-        //    - send back publication information.
-        // 5. Show publication information at page.
-        //
-
-
       });
 
       /**
@@ -103,16 +84,50 @@ console.log(proxy_url);
         return url;
       }
 
+      /**
+       * Shows Publication Data.
+       *
+       * @param object data
+       *   DOI Publication data
+       */
+      function showPublicationData(data) {
+        Drupal.tpps.publicationDOI[data.doi] = data;
+        // Show at page.
+        var jsonString = JSON.stringify(data, null, 2);
+        $('#dumpContainer').html(
+          '<pre style="margin: 5px; color: white !important;">'
+          + jsonString + '</pre>'
+        ).show();
+      }
+
       // Get Google Scholar iframe content.
       $(settings.tpps.doi_lookup.iframe).on('load', function() {
+        let doi = $(settings.tpps.doi_lookup.field).val();
         // The iframe and its contents have finished loading
         let iframeContent = $(this).contents().find('html').html();
-        console.log(iframeContent);
-// @TODO Send content to backend.
-        //
-        //$iframeContents.find("body").append("<p>Content added after load.</p>");
+        // Send content to backend.
+        $.ajax({
+          url: settings.tpps.doi_lookup.ajax_save_path,
+          type: 'POST',
+          contentType: 'application/json',
+          dataType: 'json',
+          data: JSON.stringify({
+            "doi": doi,
+            "serp": btoa(unescape(encodeURIComponent(iframeContent)))
+          }),
+          success: function(response) {
+            if (response && response.publication_data && response.publication_data.length !== 0) {
+              showPublicationData(response.publication_data);
+            }
+            else {
+              console.log('Got empty data');
+            }
+          },
+          error: function(xhr, status, error) {
+            console.error('Error:', error);
+          }
+        });
       });
-
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     }
   }

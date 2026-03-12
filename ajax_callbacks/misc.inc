@@ -157,39 +157,6 @@ function tpps_ajax_remember_fieldset_collapsed_state(array $data) {
 }
 
 /**
- * AJAX callback for 'Save Google Scholar SERP'.
- *
- * Stores content of the Google Scholar SERP for certain DOI.
- *
- * @param array $data
- *   POST data. Required keys are: 'serp' and 'doi'.
- *
- * @return bool
- *   Returns TRUE in case of success and FALSE otherwise.
- */
-function tpps_ajax_save_google_scholar_serp(array $data) {
-  $response['success'] = FALSE;
-  if (empty($data['serp']) || empty($data['doi'])) {
-    $response['errors'][] = t("Empty SERP or DOI.");
-  }
-  else {
-    // Save Google Scholar SERP for this DOI.
-    $gs = new GoogleScholar();
-    $gs->doi = $data['doi'];
-    $gs->serp = $data['serp'];
-    $gs->save();
-
-    // @TODO Parse using Gemini
-
-    $response['success'] = TRUE;
-    // @TODO Fill publication info.
-    $response['publication_info'] = [];
-  }
-
-  return $response;
-}
-
-/**
  * AJAX callback for 'Get publication data by DOI'.
  *
  * @param array $payload
@@ -206,8 +173,44 @@ function tpps_ajax_get_publication_data(array $payload) {
     $response['errors'][] = t('Empty DOI.');
   }
   else {
-    $response['doi'] = $payload['doi'];
-    $response['publication_data'] = PublicationDOI::load($payload['doi']);
+    $doi = $payload['doi'];
+    $response['doi'] = $doi;
+    $response['publication_data'] = PublicationDOI::load($doi);
+    $response['success'] = TRUE;
+  }
+  return $response;
+}
+
+/**
+ * AJAX callback for 'Save Google Scholar SERP'.
+ *
+ * @param array $payload
+ *   POST payload. Required keys are: 'serp'.
+ *   See tpps_ajax_callback().
+ *
+ * @return array
+ *   Returns response.
+ *   Key 'success' will have value TRUE in case of success and FALSE otherwise.
+ */
+function tpps_ajax_save_google_scholar_serp(array $payload) {
+  $response['success'] = FALSE;
+  if (empty($payload['doi'])) {
+    $response['errors'][] = t('Empty DOI.');
+  }
+  elseif (empty($payload['serp'])) {
+    $response['errors'][] = t('Empty Google Scholar SERP.');
+  }
+  else {
+    $doi = $payload['doi'];
+    $gs = new GoogleScholar($doi);
+    $gs->serp = base64_decode($payload['serp']);
+    $gs->save();
+
+    // @todo Gemini AI.
+
+    $doi = '10.1002/ece3.4216';
+    $response['doi'] = $doi;
+    $response['publication_data'] = PublicationDOI::load($doi);
     $response['success'] = TRUE;
   }
   return $response;
