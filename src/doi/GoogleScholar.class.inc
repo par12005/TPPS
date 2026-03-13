@@ -54,7 +54,8 @@ class GoogleScholar {
   const TABLE = 'tpps_google_scholar';
   // Default value of the delay between requests.
   // Value 10-60 seconds is suggested over the internet to avoid IP address ban.
-  const DEFAULT_DELAY = 2;
+  const DEFAULT_DELAY = 5;
+
   const SERP_URL = 'https://scholar.google.com/scholar';
 
   /**
@@ -151,7 +152,7 @@ class GoogleScholar {
     }
     $this->delay = variable_get(
       'tpps_google_scholar_delay',
-      static::DEFAULT_DELAY
+      self::DEFAULT_DELAY
     );
     $this->debugMode = variable_get(
       'tpps_google_scholar_debug_mode',

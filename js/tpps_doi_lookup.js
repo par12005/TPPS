@@ -58,7 +58,7 @@
                 let $iframe=$(doi_lookup.iframe);
                 let proxy_url = buildUrl(settings, doi);
                 if (proxy_url) {
-                  $iframe.attr('src', proxy_url);
+                  $iframe.attr('src', proxy_url).show();
                 }
               }, delay);
             }
@@ -108,6 +108,7 @@
           '<pre style="margin: 5px; color: white !important;">'
           + jsonString + '</pre>'
         ).show();
+        $(doi_lookup.iframe).hide();
       }
 
       /**

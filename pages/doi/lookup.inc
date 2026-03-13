@@ -5,31 +5,16 @@
  * TPPS DOI Lookup Form.
  */
 
-//{
-//  "responseMimeType": "application/json",
-//  "responseJsonSchema": {
-//    "type": "object",
-//    "properties": {
-//      "title": { "type": "string" },
-//      "journal": { "type": "string" },
-//      "authors": { "type": "string" },
-//      "date": { "type": "string" },
-//      "abstract": { "type": "string" }
-//    },
-//    "required": ["title", "authors", "date", "abstract", "journal"]
-//  }
-//}
-
-
 /**
  * TPPS DOI Lookup Form.
  */
 function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2 = '') {
+  $doi = '';
   if (!empty($doi2)) {
     $doi = $doi1 . '/' . $doi2;
   }
   else {
-    $doi = variable_get('tpps_doi_lookup_doi');
+    //$doi = variable_get('tpps_doi_lookup_doi');
   }
   $publication_data = PublicationDOI::load($doi);
 
@@ -54,7 +39,7 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
 
 // @TODO Remove debug code.
       // Makes proxy URL broken to avoid Google Scholar ban.
-      'debug' => 'debug',
+      //'debug' => 'debug',
 // End of the debug code.
     ],
   ];
@@ -69,19 +54,28 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   tpps_add_css_js('doi_lookup', $form);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $doi_list = [
+    '10.1002/ajb2.1504',
+    '10.1186/s12870-023-04428-z',
+    '10.1186/s12862-016-0810-1',
+    '10.1038/s41437-024-00684-3',
+    '10.5061/dryad.269126c',
+    '10.3732/apps.1300025',
+    '10.1038/sdata.2015.6',
+    '10.5061/dryad.1mt1h',
+    '10.1002/ece3.4216',
+  ];
+  $options = ['attributes' => ['class' => ['tpps-suggestion']]];
+  foreach ($doi_list as $value) {
+    $items[] = l($value, '', $options);
+  }
   $form['tpps_doi_lookup_doi'] = [
     '#type' => 'textfield',
     '#title' => t('DOI'),
     '#default_value' => $doi,
-    '#description' => 'Examples:' . theme('item_list', [
-      'items' => [
-        '<a href"#" class="tpps-suggestion">10.1002/ece3.4216</a> - fake data.',
-        '<a href"#" class="tpps-suggestion">10.1002/ajb2.1504</a> - real SERP.',
-        '<a href"#" class="tpps-suggestion">10.1038/sdata.2015.6</a> - no data yet in database.',
-        '<a href"#" class="tpps-suggestion">10.5061/dryad.269126c</a> - no data.',
-      ],
-    ]),
+    '#description' => 'Examples:' . theme('item_list', ['items' => $items]),
   ];
+
   tpps_add_css_js('suggestion', $form);
 
   $form['tpps_doi_lookup_result'] = [
@@ -91,26 +85,17 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   // @TODO If there is a SERP for this DOI it will be loaded.
   // Check PublicationDOI::TABLE for the data first.
 
-
-  $debug_mode = 1;
+  $debug_mode = 0;
   $show_iframe = FALSE;
   if (empty($doi)) {
     $url = '';
-    if ($debug_mode ?? 0) {
-      $show_iframe = TRUE;
-    }
   }
   else {
-    $url = empty($publication_data) ? $gs->buildUrl() : '';
-// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-// @TODO Remove debug code.
-    $show_iframe = TRUE;
-    if ($debug_mode ?? 0) {
-      $url = 'https://tgwebdev.cam.uchc.edu/devel/php';
-      $show_iframe = TRUE;
+    $url = '';
+    if (empty($publication_data)) {
+      $url = variable_get('tpps_doi_lookup_proxy')
+        . '/' . str_replace('%252F', '/', $gs->buildUrl());
     }
-// End of debug code.
-// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   }
 
   $form['google_scholar_serp'] = [
@@ -125,6 +110,7 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
 
+  return $form;
   // We only store DOI into variable. Other work must be done using AJAX.
   return system_settings_form($form);
 }

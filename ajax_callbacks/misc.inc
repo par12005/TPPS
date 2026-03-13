@@ -205,10 +205,9 @@ function tpps_ajax_save_google_scholar_serp(array $payload) {
     $gs = new GoogleScholar($doi);
     $gs->serp = base64_decode($payload['serp']);
     $gs->save();
+    // Parse using Gemini AI.
+    $gs->parse();
 
-    // @todo Gemini AI.
-
-    $doi = '10.1002/ece3.4216';
     $response['doi'] = $doi;
     $response['publication_data'] = PublicationDOI::load($doi);
     $response['success'] = TRUE;
