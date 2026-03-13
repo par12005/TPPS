@@ -14,7 +14,7 @@
       $(doi_lookup.field).blur(function() {
         let doi = $.trim($(this).val());
         if (doi == '') {
-console.log('Empty value of the DOI.');
+          console.log('DOI Lookup: Empty value of the DOI.');
           return;
         }
 
@@ -59,13 +59,12 @@ console.log('Empty value of the DOI.');
                 let proxy_url = buildUrl(settings, doi);
                 if (proxy_url) {
                   $iframe.attr('src', proxy_url);
-                  // .innerHTML(proxy_url);
                 }
               }, delay);
             }
           },
           error: function(xhr, status, error) {
-            console.error('Error:', error);
+            console.error('DOI Lookup Error:', error);
           }
         });
       });
@@ -87,8 +86,8 @@ console.log('Empty value of the DOI.');
         query["q"] = doi;
         if (doi_lookup.proxy != '') {
           url = doi_lookup.proxy
-            + doi_lookup.debug
-            + doi_lookup.endpoint
+            + (doi_lookup.debug ?? '')
+            + '/' + doi_lookup.endpoint
             + '?' + $.param(query);
         }
         return url;
@@ -111,10 +110,13 @@ console.log('Empty value of the DOI.');
         ).show();
       }
 
-      // Get Google Scholar iframe content.
-      $(doi_lookup.iframe).on('load', function() {
+      /**
+       * Sends content of the iframe to backend to store in database.
+       */
+      function saveIframeContent() {
         let doi = $(doi_lookup?.field).val();
-        if (doi == '' || doi_lookup?.debug != '') {
+        if (doi == '') {
+          console.log("DOI Lookup: Empty DOI. Can't save iframe content");
           return;
         }
 
@@ -131,18 +133,24 @@ console.log('Empty value of the DOI.');
             "serp": btoa(unescape(encodeURIComponent(iframeContent)))
           }),
           success: function(response) {
-            if (response && response.publication_data && response.publication_data.length !== 0) {
+            if (
+              response && response.publication_data
+              && response.publication_data.length !== 0
+            ) {
               showPublicationData(response.publication_data);
             }
             else {
-              console.log('Got empty data');
+              console.log('DOI Lookup: Got empty data');
             }
           },
           error: function(xhr, status, error) {
-            console.error('Error:', error);
+            console.error('DOI Lookup Error:', error);
           }
         });
-      });
+      };
+
+      // Save Google Scholar iframe content when it was loaded.
+      $(doi_lookup.iframe).on('load', saveIframeContent);
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     }
   }

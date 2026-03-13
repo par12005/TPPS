@@ -54,7 +54,8 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
 
 // @TODO Remove debug code.
       // Makes proxy URL broken to avoid Google Scholar ban.
-      'debug' => 'debug/',
+      'debug' => 'debug',
+// End of the debug code.
     ],
   ];
   $form['#attached']['js'][] = [
@@ -72,7 +73,17 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
     '#type' => 'textfield',
     '#title' => t('DOI'),
     '#default_value' => $doi,
+    '#description' => 'Examples:' . theme('item_list', [
+      'items' => [
+        '<a href"#" class="tpps-suggestion">10.1002/ece3.4216</a> - fake data.',
+        '<a href"#" class="tpps-suggestion">10.1002/ajb2.1504</a> - real SERP.',
+        '<a href"#" class="tpps-suggestion">10.1038/sdata.2015.6</a> - no data yet in database.',
+        '<a href"#" class="tpps-suggestion">10.5061/dryad.269126c</a> - no data.',
+      ],
+    ]),
   ];
+  tpps_add_css_js('suggestion', $form);
+
   $form['tpps_doi_lookup_result'] = [
     '#markup' => '<div style="border: 1px solid white; display: none;" id="dumpContainer"></div>',
   ];
@@ -91,16 +102,12 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   }
   else {
     $url = empty($publication_data) ? $gs->buildUrl() : '';
-
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 // @TODO Remove debug code.
+    $show_iframe = TRUE;
     if ($debug_mode ?? 0) {
       $url = 'https://tgwebdev.cam.uchc.edu/devel/php';
       $show_iframe = TRUE;
-    }
-    else {
-      $show_iframe = FALSE;
-      $url = '';
     }
 // End of debug code.
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
