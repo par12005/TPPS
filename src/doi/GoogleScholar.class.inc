@@ -4,10 +4,13 @@
  * @file
  * Contains 'GoogleScholar' class.
  *
- * Saves/loads Google Scholar SERP for certain DOI in table 'tpps_google_scholar'.
- * This class do not request SERP directly.
- * Manages delay between requests.
- * Manages parsing. Data will be stored in PublicationDOI::TABLE table.
+ * What this class does?
+ * 1. Saves/loads Google Scholar SERP for certain DOI into DB table:
+ * 'tpps_google_scholar'.
+ * 2. This class DO NOT requests SERP directly because those requests will be
+ * blocked by Google Scholar.
+ * 3. Manages delay between requests.
+ * 4. Manages parsing. Data will be stored in PublicationDOI::TABLE table.
  *
  * Workaround.
  *
@@ -34,7 +37,9 @@
  * :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * @todo Request Google scholar front page at first step to emulate human's
  * behavior. Note: form uses hidden fields which could be changed anytime.
- * @todo Add Delays: Introduce random delays (e.g., 10-60 seconds) between requests to avoid rate-limiting.
+ * @todo Currently every call of save() will create new record in DB table.
+ * This means that table size will grow very quickly but it means we have a
+ * history. Find a way to remove outdated data.
  */
 
 /**
@@ -50,6 +55,7 @@ class GoogleScholar {
   // Default value of the delay between requests.
   // Value 10-60 seconds is suggested over the internet to avoid IP address ban.
   const DEFAULT_DELAY = 2;
+  const SERP_URL = 'https://scholar.google.com/scholar';
 
   /**
    * Indicates if 'Debug Mode' is enabled/disabled.
@@ -229,8 +235,10 @@ class GoogleScholar {
       ->fields('t')
       ->condition('doi', $this->doi)
       // Load latest record.
-      ->range(0, 1)->orderBy('created')
-      ->execute()->fetchAssoc();
+      ->range(0, 1)
+      ->orderBy('created', 'DESC')
+      ->execute()
+      ->fetchAssoc();
     // Set properties.
     if ($result) {
       $this->created = $result['created'] ?? 0;
@@ -240,7 +248,6 @@ class GoogleScholar {
     else {
       $this->isExists = FALSE;
     }
-
 
     return $this;
   }
@@ -290,7 +297,7 @@ class GoogleScholar {
   public function getEndpointUrl() {
     return variable_get(
       'tpps_doi_google_scholar_serp_url',
-      'https://scholar.google.com/scholar'
+      GoogleScholar::SERP_URL
     );
   }
 

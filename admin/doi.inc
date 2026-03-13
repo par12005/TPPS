@@ -74,7 +74,8 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
       '#default_value' => variable_get('tpps_doi_google_scholar_serp_url'),
       '#description' => t('This URL must be allowed by CORS Anywhere Proxy server'
         . ' and will be used by GoogleScholar class to build Endpoint URL.'
-      ),
+      )
+      . theme('item_list', ['items' => [GoogleScholar::SERP_URL]]),
     ],
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     'tpps_doi_google_scholar_debug_mode' => [
