@@ -329,7 +329,7 @@ class GoogleScholar {
     if (empty($this->doi)) {
       throw new Exception("Can't create URL because of the empty DOI.");
     }
-    if (!$this->isLoaded()) {
+    if (!$this->isLoaded) {
       $this->load();
     }
     if (empty($this->serp)) {
@@ -371,6 +371,9 @@ class GoogleScholar {
       //$gemini->tools = [["google_search" => (object) []]];
 
       $gemini->ask($this->serp);
+
+ //dpm(json_decode($gemini->response, 1));
+
       $fields = json_decode($gemini->answer, TRUE);
 
       if ($fields === NULL || $fields === FALSE) {
@@ -381,9 +384,9 @@ class GoogleScholar {
       }
 
       // Store to DB.
-      $fields['source'] = 'gemini';
       // @TODO Remove this debug code.
-      $fields['doi'] = $this->doi ?? '10.1002\/ece3.4216';
+      $fields['doi'] = $this->doi;
+
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     }
     else {

@@ -246,9 +246,9 @@ class Gemini {
     if (!empty($this->generationConfig)) {
       $payload['generationConfig'] = $this->generationConfig;
     }
-    if (!empty($this->tools)) {
-      $payload['tools'] = $this->tools;
-    }
+    //if (!empty($this->tools)) {
+    //  $payload['tools'] = $this->tools;
+    //}
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Do the request.
     $header = [
@@ -275,10 +275,16 @@ class Gemini {
       drupal_set_message($e->getCode() . ' ' . $message);
     }
 
-    $this->response = $response;
-    $this->responseId = $response['responseId'];
-    $this->answer = $response['candidates'][0]['content']['parts'][0]['text'];
-    return $this->answer;
+    $response = json_decode($response, 1);
+    if (empty($response['responseId'])) {
+      throw new Exception('Wrong JSON in response.');
+    }
+    else {
+      $this->response = $response;
+      $this->responseId = $response['responseId'];
+      $this->answer = $response['candidates'][0]['content']['parts'][0]['text'];
+      return $this->answer;
+    }
   }
 
 }
