@@ -31,6 +31,7 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   else {
     $doi = variable_get('tpps_doi_lookup_doi');
   }
+  $publication_data = PublicationDOI::load($doi);
 
   $gs = new GoogleScholar($doi);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -41,7 +42,7 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
       'field' => '#edit-tpps-doi-lookup-doi',
       // Selector for the iframe which holds Google Scholar SERP.
       'iframe' => 'iframe#google-scholar',
-      'doi' => $doi,
+      // 'doi' => $doi,
       'proxy' => variable_get('tpps_doi_lookup_proxy'),
       'endpoint' => $gs->getEndpointURL(),
       'query' => $gs->getQuery(),
@@ -49,6 +50,7 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
       'delay' => $gs->delay,
       'ajax_get_path' => '/ajax/tpps/get_publication_data',
       'ajax_save_path' => '/ajax/tpps/save_google_scholar_serp',
+      'publication_data' => [$doi => $publication_data],
 
 // @TODO Remove debug code.
       // Makes proxy URL broken to avoid Google Scholar ban.
@@ -75,35 +77,44 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
     '#markup' => '<div style="border: 1px solid white; display: none;" id="dumpContainer"></div>',
   ];
 
-// @TODo show iframe if DOI is not empty.
-
-
-  // @TODO Check if publication data already loaded in $gs.
-
   // @TODO If there is a SERP for this DOI it will be loaded.
   // Check PublicationDOI::TABLE for the data first.
 
-  $url = $gs->buildUrl();
 
-  // @todo Check if $url and $proxy exists.
-  //$proxy = variable_get('tpps_doi_lookup_proxy');
-  //$url = $proxy . $gs->buildUrl();
+  $debug_mode = 1;
+  $show_iframe = FALSE;
+  if (empty($doi)) {
+    $url = '';
+    if ($debug_mode ?? 0) {
+      $show_iframe = TRUE;
+    }
+  }
+  else {
+    $url = empty($publication_data) ? $gs->buildUrl() : '';
 
-  //$url = 'https://tgwebdev.cam.uchc.edu/corsanywhere/https://142.250.120.104/scholar?hl=en&as_sdt=0%2C7&q=ok&btnG=';
-
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 // @TODO Remove debug code.
+    if ($debug_mode ?? 0) {
+      $url = 'https://tgwebdev.cam.uchc.edu/devel/php';
+      $show_iframe = TRUE;
+    }
+    else {
+      $show_iframe = FALSE;
+      $url = '';
+    }
+// End of debug code.
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  }
 
-  $url = 'https://tgwebdev.cam.uchc.edu/devel/php';
-
-  // @todo Hide iframe.
   $form['google_scholar_serp'] = [
-    '#markup' => '<iframe  style="display: none;"
-      src="' . $url . '" width="500px" height="300px"
+    '#markup' => '<iframe style="'
+      . ($show_iframe ? 'margin: 30px 0 0 0;' : 'display: none')
+      . '" src="' . $url . '" width="100%" height="300px"
       name="google_scholar" target="google_scholar"
       id="google-scholar">' . $url . '</iframe>',
   ];
 
-  TppsForm::autofocus($form, ['tpps_doi_lookup_question']);
+  TppsForm::autofocus($form, ['tpps_doi_lookup_doi']);
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
 

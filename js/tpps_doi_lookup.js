@@ -4,24 +4,34 @@
  * TPPS DOI Lookup.
  */
 (function ($) {
-  Drupal.tpps = Drupal.tpps || {};
-  Drupal.tpps.publicationDOI = Drupal.tpps.publicationDOI || {};
-
   Drupal.behaviors.doi_lookup = {
     attach: function (context, settings) {
+
+      let doi_lookup = settings.tpps.doi_lookup;
+
       // TPPS DOI Lookup.
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      $(settings.tpps.doi_lookup.field).blur(function() {
-        let doi = $(this).val();
+      $(doi_lookup.field).blur(function() {
+        let doi = $.trim($(this).val());
+        if (doi == '') {
+console.log('Empty value of the DOI.');
+          return;
+        }
+
         // Check if doi was really changed.
-        if (Drupal.tpps.publicationDOI[doi]) {
+        if (
+          doi_lookup?.publication_data != undefined
+          && doi_lookup.publication_data[doi] != undefined
+        ) {
+          showPublicationData(doi_lookup.publication_data[doi]);
           //console.log('Re-used already received data.');
           return;
         }
         $('#dumpContainer').html('').hide();
+
         // Request publication data from PublicationDOI::TABLE.
         $.ajax({
-          url: settings.tpps.doi_lookup.ajax_get_path,
+          url: doi_lookup.ajax_get_path,
           type: 'POST',
           contentType: 'application/json',
           dataType: 'json',
@@ -34,18 +44,18 @@
             else {
               // Calculate delay.
               let delay = 0;
-              let last_request = settings.tpps.doi_lookup.last_request;
+              let last_request = doi_lookup.last_request;
               if (last_request) {
-                delay = (last_request + (settings.tpps.doi_lookup.delay * 1000)) - $.now();
+                delay = (last_request + (doi_lookup.delay * 1000)) - $.now();
                 if (delay < 0) {
                   delay = 0;
                 }
               }
               // Build iframe for Google Scholar SERP.
               setTimeout(function() {
-                settings.tpps.doi_lookup.last_request = $.now();
+                doi_lookup.last_request = $.now();
                 // Build iframe.
-                let $iframe=$(settings.tpps.doi_lookup.iframe);
+                let $iframe=$(doi_lookup.iframe);
                 let proxy_url = buildUrl(settings, doi);
                 if (proxy_url) {
                   $iframe.attr('src', proxy_url);
@@ -73,12 +83,12 @@
        */
       function buildUrl (settings, doi) {
         let url = '';
-        let query = settings.tpps.doi_lookup.query;
+        let query = doi_lookup.query;
         query["q"] = doi;
-        if (settings.tpps.doi_lookup.proxy != '') {
-          url = settings.tpps.doi_lookup.proxy
-            + settings.tpps.doi_lookup.debug
-            + settings.tpps.doi_lookup.endpoint
+        if (doi_lookup.proxy != '') {
+          url = doi_lookup.proxy
+            + doi_lookup.debug
+            + doi_lookup.endpoint
             + '?' + $.param(query);
         }
         return url;
@@ -91,7 +101,8 @@
        *   DOI Publication data
        */
       function showPublicationData(data) {
-        Drupal.tpps.publicationDOI[data.doi] = data;
+        doi_lookup.publication_data = doi_lookup.publication_data ?? {};
+        doi_lookup.publication_data[data.doi] = data;
         // Show at page.
         var jsonString = JSON.stringify(data, null, 2);
         $('#dumpContainer').html(
@@ -101,13 +112,17 @@
       }
 
       // Get Google Scholar iframe content.
-      $(settings.tpps.doi_lookup.iframe).on('load', function() {
-        let doi = $(settings.tpps.doi_lookup.field).val();
+      $(doi_lookup.iframe).on('load', function() {
+        let doi = $(doi_lookup?.field).val();
+        if (doi == '' || doi_lookup?.debug != '') {
+          return;
+        }
+
         // The iframe and its contents have finished loading
         let iframeContent = $(this).contents().find('html').html();
         // Send content to backend.
         $.ajax({
-          url: settings.tpps.doi_lookup.ajax_save_path,
+          url: doi_lookup.ajax_save_path,
           type: 'POST',
           contentType: 'application/json',
           dataType: 'json',
