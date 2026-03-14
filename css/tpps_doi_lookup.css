@@ -1,0 +1,19 @@
+/**
+ * @file
+ * Styles for DOI Lookup feature.
+ *
+ * See /pages/doi/lookup.inc.
+ * URL: /tpps/doi/lookup
+ */
+
+#dumpContainer {
+  border: 1px solid white;
+  display: none;
+}
+
+iframe#google-scholar {
+  margin: 30px 0 0 0;
+  width: 100%;
+  height: 300px;
+  display: none;
+}

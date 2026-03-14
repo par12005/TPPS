@@ -13,9 +13,6 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   if (!empty($doi2)) {
     $doi = $doi1 . '/' . $doi2;
   }
-  else {
-    //$doi = variable_get('tpps_doi_lookup_doi');
-  }
   $publication_data = PublicationDOI::load($doi);
 
   $gs = new GoogleScholar($doi);
@@ -54,32 +51,27 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   tpps_add_css_js('doi_lookup', $form);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  $doi_list = [
-    '10.1002/ajb2.1504',
-    '10.1186/s12870-023-04428-z',
-    '10.1186/s12862-016-0810-1',
-    '10.1038/s41437-024-00684-3',
-    '10.5061/dryad.269126c',
-    '10.3732/apps.1300025',
-    '10.1038/sdata.2015.6',
-    '10.5061/dryad.1mt1h',
-    '10.1002/ece3.4216',
-  ];
+  // Build list of suggestions.
+  $doi_list = db_select(PublicationDOI::TABLE, 't')
+    ->fields('t', ['doi'])
+    ->execute()
+    ->fetchCol('doi');
   $options = ['attributes' => ['class' => ['tpps-suggestion']]];
   foreach ($doi_list as $value) {
     $items[] = l($value, '', $options);
   }
+  tpps_add_css_js('suggestion', $form);
+
+  // DOI Field.
   $form['tpps_doi_lookup_doi'] = [
     '#type' => 'textfield',
     '#title' => t('DOI'),
     '#default_value' => $doi,
-    '#description' => 'Examples:' . theme('item_list', ['items' => $items]),
+    '#description' => 'Parsed DOI:' . theme('item_list', ['items' => $items]),
   ];
-
-  tpps_add_css_js('suggestion', $form);
-
+  // @TODO Move to CSS.
   $form['tpps_doi_lookup_result'] = [
-    '#markup' => '<div style="border: 1px solid white; display: none;" id="dumpContainer"></div>',
+    '#markup' => '<div id="dumpContainer"></div>',
   ];
 
   // @TODO If there is a SERP for this DOI it will be loaded.
@@ -99,11 +91,8 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   }
 
   $form['google_scholar_serp'] = [
-    '#markup' => '<iframe style="'
-      . ($show_iframe ? 'margin: 30px 0 0 0;' : 'display: none')
-      . '" src="' . $url . '" width="100%" height="300px"
-      name="google_scholar" target="google_scholar"
-      id="google-scholar">' . $url . '</iframe>',
+    '#markup' => '<iframe id="google-scholar" target="google_scholar"
+     src="' . $url . '">' . $url . '</iframe>',
   ];
 
   TppsForm::autofocus($form, ['tpps_doi_lookup_doi']);

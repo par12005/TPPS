@@ -17,6 +17,8 @@
           console.log('DOI Lookup: Empty value of the DOI.');
           return;
         }
+        // Block DOI field while processing.
+        $(this).prop('disabled', true);
 
         // Check if doi was really changed.
         if (
@@ -25,6 +27,7 @@
         ) {
           showPublicationData(doi_lookup.publication_data[doi]);
           //console.log('Re-used already received data.');
+          $(doi_lookup.iframe).hide();
           return;
         }
         $('#dumpContainer').html('').hide();
@@ -51,6 +54,7 @@
                   delay = 0;
                 }
               }
+              console.log('DOI Lookup. Delay: ' + delay);
               // Build iframe for Google Scholar SERP.
               setTimeout(function() {
                 doi_lookup.last_request = $.now();
@@ -105,17 +109,18 @@
         // Show at page.
         var jsonString = JSON.stringify(data, null, 2);
         $('#dumpContainer').html(
-          '<pre style="margin: 5px; color: white !important;">'
+          '<pre style="margin: 5px; color: white !important; text-wrap:auto;">'
           + jsonString + '</pre>'
         ).show();
-        $(doi_lookup.iframe).hide();
+        //$(doi_lookup.iframe).hide();
+        $(this).prop('disabled', false);
       }
 
       /**
        * Sends content of the iframe to backend to store in database.
        */
       function saveIframeContent() {
-        let doi = $(doi_lookup?.field).val();
+        let doi = $.trim($(doi_lookup?.field).val());
         if (doi == '') {
           console.log("DOI Lookup: Empty DOI. Can't save iframe content");
           return;
@@ -123,6 +128,14 @@
 
         // The iframe and its contents have finished loading
         let iframeContent = $(this).contents().find('html').html();
+
+        // Check if CORS Anywhere Proxy failed.
+        let error_message = 'Not found because of proxy error: Error: getaddrinfo ENOTFOUND scholar.google.com';
+        if (iframeContent.includes(error_message)) {
+          console.error('DOI Lookup. Proxy server is down.');
+          return;
+        }
+
         // Send content to backend.
         $.ajax({
           url: doi_lookup.ajax_save_path,
