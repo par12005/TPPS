@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains 'PublicationDOI' class.
+ * Contains static 'PublicationDOI' class.
  */
 
 /**
@@ -142,6 +142,29 @@ class PublicationDOI {
         'doi' => ['doi'],
       ],
     ];
+  }
+
+  /**
+   * Gets list of DOI used in all studies.
+   *
+   * @param bool $reset
+   *   Flag is cache must be resetted. Default if FALSE.
+   *
+   * @return array
+   *   Returns list of DOI.
+   *   Key is study accession and value is publication DOI.
+   */
+  public static function getList($reset = FALSE) {
+    $list = [];
+    $data = SubmissionCache::getAll($reset);
+    foreach ($data as $accession => $cached_submission) {
+      $doi = $cached_submission['publication']['publication_doi'] ?? NULL;
+      if (empty($doi)) {
+        continue;
+      }
+      $list[$accession] = $doi;
+    }
+    return $list;
   }
 
 }
