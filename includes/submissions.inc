@@ -25,7 +25,7 @@ module_load_include('inc', 'tpps', 'includes/submission_file');
  * @return mixed
  *   Returns Submission From State array or NULL if not found.
  *
- * @TODO Move to other file.
+ * @todo Move to other file.
  */
 function tpps_api_get_submission_state($accession) {
   return tpps_submission($accession)->getState();
@@ -34,8 +34,13 @@ function tpps_api_get_submission_state($accession) {
 /**
  * This function loads multiple TPPS submissions based on conditions.
  *
+ * To load all submissions: Submission::loadAll().
  * To have sorting:
- * asort(tpps_load_submission_multiple(...), SORT_NATURAL);
+ *   asort(tpps_load_submission_multiple(...), SORT_NATURAL);
+ *
+ * Execution time (138 studies):
+ *  Single Query: 715 msec (current),
+ *  Multiple Queries: 1150 msec (before, outdated).
  *
  * @param array $conditions
  *   The conditions that each TPPS submission must meet.
@@ -43,13 +48,24 @@ function tpps_api_get_submission_state($accession) {
  * @return array
  *   An array of loaded TPPS submissions or their form_states.
  *
- * @TODO Cache this list.
- * @TODO load_multiple() usually accepts list of Ids but not $conditions.
+ * @todo Cache this list.
+ * @todo load_multiple() usually accepts list of Ids but not $conditions.
  * Better to rename to *_search().
  */
 function tpps_load_submission_multiple(array $conditions = []) {
-  $list = [];
-  $query = db_select('tpps_submission', 's')->fields('s', ['accession']);
+  $output = [];
+  // We exclude only 'shared_state' field.
+  $field_list = [
+    'accession',
+    'uid',
+    'status',
+    'dbxref_id',
+    'tpps_submission_id',
+    'submission_state',
+  ];
+  $query = db_select('tpps_submission', 't')
+    ->fields('t', $field_list)
+    ->orderBy('accession', 'DESC');
   if (!empty($conditions)) {
     foreach ($conditions as $key => $cond) {
       if (!empty($cond)) {
@@ -66,12 +82,11 @@ function tpps_load_submission_multiple(array $conditions = []) {
       }
     }
   }
-
-  $result = $query->execute()->fetchCol('accession');
-  foreach ($result as $accession) {
-    $list[$accession] = new Submission($accession);
+  $result = $query->execute()->fetchAllAssoc('accession', PDO::FETCH_ASSOC);
+  foreach ($result as $accession => $data) {
+    $output[$accession] = new Submission($accession, $data);
   }
-  return $list;
+  return $output;
 }
 
 /**

@@ -437,9 +437,28 @@ class Report {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // DOI.
       'doi' => [
-        'all' => [
-          'title' => variable_get('tpps_report_doi_all_title', 'All DOI'),
-          'description' => t('List of submissions which has Publication DOI.'),
+        'submission' => [
+          'publication' => [
+            'title' => variable_get('tpps_report_doi_submission_publication_title', 'Publication DOI'),
+            'description' => t('List of submissions which has Publication DOI.'),
+            'admin_panel' => TRUE,
+          ],
+          'dataset' => [
+            'title' => variable_get('tpps_report_doi_submission_dataset_title', 'Dataset DOI'),
+            // Note: Zenodo Deposition shown different data.
+            'description' => t('List of submissions which has Dataset DOI.'),
+            'admin_panel' => TRUE,
+          ],
+          'all' => [
+            'title' => variable_get('tpps_report_doi_submission_all_title', 'All DOI'),
+            // Note: Zenodo Deposition shown different data.
+            'description' => t('List of submissions which has Publication/Dataset DOI.'),
+            'admin_panel' => TRUE,
+          ],
+        ],
+        'scraped' => [
+          'title' => variable_get('tpps_report_doi_scraped_title', 'Scraped DOI'),
+          'description' => t('List of the DOI data parsed from a websites.'),
           'admin_panel' => TRUE,
         ],
         'duplicates' => [

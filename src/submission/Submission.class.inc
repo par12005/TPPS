@@ -230,17 +230,36 @@ class Submission {
   /**
    * Class constructor.
    *
+   * Submission object could be built usnig provided $data or using data stared
+   * in database by $accession.
+   *
+   * Execution time:
+   *   NULL, NULL: 0.004 msec,
+   *   $accession, NULL: 4 msec,
+   *   $accession + $data:  1 msec.
+   * If there is no loadeded data - it's better to allow Submisison object to
+   * load data from DB.
+   *
    * @param string $accession
    *   Study accession. Format is 'TGDRxxxx'.
    *   If $accession wasn't specified then it left unset and
    *   could be set using $submission->state = $state which will
    *   populate $this->accession with value form $state array.
+   * @param array $data
+   *   Optional. Array with Submisisons data. Keys are the same as table
+   *   'tpps_submission' has. When empty data will be loaded from DB table
+   *   using $accession. Could be used to speed-up Submission object creation
+   *   if submisison's data already was loaded into memory.
+   *   See SubmissionCache::getAllSubmissions().
    */
-  public function __construct(string $accession = NULL) {
+  public function __construct(string $accession = NULL, array $data = NULL) {
     // @todo Minor. Validate $accession.
     if (!empty($accession)) {
       $this->accession = $accession;
-      $this->load();
+      $this->load(
+        $generate_shared_state = FALSE,
+        $data
+      );
     }
     return $this;
   }
@@ -1184,44 +1203,53 @@ class Submission {
    *   it will be generated.
    *   This could create ethernal loop when record in DB has not 'sharedState'.
    *   Default is TRUE.
+   * @param array $data
+   *   Optional. Array with Submisisons data. Keys are the same as table
+   *   'tpps_submission' has. When empty data will be loaded from DB table
+   *   using $accession. Could be used to speed-up Submission object creation
+   *   if submisison's data already was loaded into memory.
+   *   See SubmissionCache::getAllSubmissions().
    */
-  public function load($generate_shared_state = FALSE) {
+  public function load($generate_shared_state = FALSE, array $data = NULL) {
     global $user;
     if (empty($this->accession)) {
       throw new Exception(t('Study accession is empty.'));
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Get data from DB.
-    $result = db_select(static::TABLE, 'ts')
-      ->fields('ts')
-      ->condition('accession', $this->accession)
-      ->range(0, 1)
-      ->execute()
-      ->fetchAssoc();
-    // Backup option.
-    if (!$result) {
-      // Search for alternative accessions.
-      $query = db_select(static::TABLE, 'ts');
-      $query->join(
-        'tpps_submission_dbxref',
-        's_dbx',
-        'ts.tpps_submission_id = s_dbx.tpps_submission_id');
-      $query->join(
-        'chado.dbxref',
-        'dbx',
-        'dbx.dbxref_id = s_dbx.dbxref_id'
-      );
-      $result = $query->fields('ts')
-        ->condition('dbx.accession', $this->accession)
+    if (empty($data)) {
+      // Get data from DB.
+      $result = db_select(static::TABLE, 'ts')
+        ->fields('ts')
+        ->condition('accession', $this->accession)
         ->range(0, 1)
         ->execute()
         ->fetchAssoc();
+      // Backup option.
+      if (!$result) {
+        // Search for alternative accessions.
+        $query = db_select(static::TABLE, 'ts');
+        $query->join(
+          'tpps_submission_dbxref',
+          's_dbx',
+          'ts.tpps_submission_id = s_dbx.tpps_submission_id');
+        $query->join(
+          'chado.dbxref',
+          'dbx',
+          'dbx.dbxref_id = s_dbx.dbxref_id'
+        );
+        $result = $query->fields('ts')
+          ->condition('dbx.accession', $this->accession)
+          ->range(0, 1)
+          ->execute()
+          ->fetchAssoc();
+      }
+      $data = $result;
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Load object's properties.
-    if ($result) {
+    if ($data) {
       // Note:
       // When 'submission_state' became "broken" when edited (and saved)
       // directly in phpPgAdmin it produces:
@@ -1230,18 +1258,25 @@ class Submission {
       // /var/www/Drupal/sites/all/modules/TGDR/includes/submissions.inc).
       // So to avoid this we do simple check:
       $this->state = [];
-      if (strpos($result['submission_state'], '&quot;accession&quot;') === FALSE) {
-        $this->state = unserialize($result['submission_state'] ?? '') ?? [];
+      if (
+        !empty($data['submission_state'])
+        && strpos($data['submission_state'], '&quot;accession&quot;') === FALSE
+      ) {
+        $this->state = unserialize($data['submission_state'] ?? '') ?? [];
       }
+      // Shared State.
       $this->sharedState = [];
-      if (strpos($result['shared_state'], '&quot;accession&quot;') === FALSE) {
-        $this->sharedState = unserialize($result['shared_state'] ?? '') ?? [];
+      if (
+        !empty($data['shared_state'])
+        && strpos($data['shared_state'], '&quot;accession&quot;') === FALSE
+      ) {
+        $this->sharedState = unserialize($data['shared_state'] ?? '') ?? [];
       }
       // Note: no need to set $this->accession.
-      $this->id = $result['tpps_submission_id'] ?? 0;
-      $this->uid = $result['uid'] ?? $user->uid;
-      $this->dbxrefId = $result['dbxref_id'] ?? 0;
-      $this->status = $result['status']
+      $this->id = $data['tpps_submission_id'] ?? 0;
+      $this->uid = $data['uid'] ?? $user->uid;
+      $this->dbxrefId = $data['dbxref_id'] ?? 0;
+      $this->status = $data['status']
         ?? $this->state['status']
         ?? $this->sharedState['status']
         ?? Submission::STATUS_INCOMPLETE;
