@@ -15,6 +15,14 @@ function tpps_theme() {
         'string' => NULL,
       ],
     ],
+    // DOI.
+    'doi_link' => [
+      'variables' => [
+        'doi' => NULL,
+      ],
+      'file' => 'theme/doi.inc',
+    ],
+    // Submission.
     'submission_accession_link' => [
       'variables' => [
         'accession' => NULL,

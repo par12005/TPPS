@@ -36,7 +36,7 @@ function tpps_report_doi_submission_dataset($reset = FALSE) {
       . theme('submission_pages', [
         'accession' => $accession,
       ]),
-      $dataset_doi ?? NULL,
+      theme('doi_link', ['doi' => $dataset_doi]),
     ];
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
