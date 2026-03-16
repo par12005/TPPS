@@ -49,6 +49,12 @@ function tpps_theme() {
       ],
       'file' => 'theme/submission.inc',
     ],
+    'submission_pages' => [
+      'variables' => [
+        'accession' => NULL,
+      ],
+      'file' => 'theme/submission.inc',
+    ],
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Zenodo.
     'zenodo_deposit_link' => [

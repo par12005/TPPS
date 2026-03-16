@@ -27,10 +27,15 @@ function tpps_report_doi_submission_dataset($reset = FALSE) {
     $rows[] = [
       ++$i,
       // Accession link.
-      l($title, 'api/submission/'
-        . $accession . '/view/shared_state/saved_values/'
-        . TPPS_PAGE_1 . '/doi'
-      ),
+      theme('submission_accession_link', [
+        'accession' => $accession,
+        'path' => 'tpps/details/' . $accession,
+        'show_version' => TRUE,
+        'show_load_time' => TRUE,
+      ])
+      . theme('submission_pages', [
+        'accession' => $accession,
+      ]),
       $dataset_doi ?? NULL,
     ];
   }

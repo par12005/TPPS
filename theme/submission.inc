@@ -96,9 +96,25 @@ function theme_submission_submitter($variables) {
  *
  * Usage: theme('submission_accession_link', $vars);
  *
+ * Example:
+ *  theme('submission_accession_link', [
+ *    'accession' => $accession,
+ *    'path' => 'api/submission/' . $accession . '/view/state/saved_values/'
+ *      . TPPS_PAGE_1 . '/doi',
+ *    'show_version' => TRUE,
+ *    'show_load_time' => TRUE,
+ *  ]),
+ *
  * @param array $variables
  *   Data for theming.
- *   'accession' - String to be processed.
+ *   'accession' string
+ *     Required. Study accession (e.g., 'TGDRxxxx') to be processed.
+ *   'path' string
+ *     Optional. Default is NULL.
+ *   'show_version' bool
+ *     Optional. Default is FALSE.
+ *   'show_load_time' bool
+ *     Optional. Default is FALSE.
  *
  * @return string
  *   Returns string where 1st char is wrapped with '<strong>' HTML-tag.
@@ -155,6 +171,12 @@ function theme_submission_accession_link(array $variables) {
  *
  * Uses static caching for action list template.
  * Usage: theme('submission_actions', $vars);
+ *
+ * Example:
+ *  theme('submission_actions', [
+ *    'accession' => $accession,
+ *  ]),
+ * Output: like at TPPS Admin Panel.
  *
  * @param array $variables
  *   Data for theming.
@@ -224,5 +246,34 @@ function theme_submission_actions(array $variables) {
   $name = empty($deposit_id) ? 'create' : 'view';
   $output .= '<style>.admin-panel-action-list .' . $accession . '_'
     . $name . '_link {display: none;}</style>';
+  return $output;
+}
+
+
+/**
+ * Shows submission's pages (first letters).
+ *
+ * Usage: theme('submission_pages', $vars);
+ *
+ * Example:
+ *  theme('submission_pages', [
+ *    'accession' => $accession,
+ *  ]),
+ * Output: like at TPPS Admin Panel.
+ *
+ * @param array $variables
+ *   Data for theming.
+ *   'accession' - string. Submission's acession. E.g., 'TGDR1234'.
+ *
+ * @return string
+ *   Returns string where 1st char is wrapped with '<strong>' HTML-tag.
+ */
+function theme_submission_pages(array $variables) {
+  $output = '';
+  $accession = $variables['accession'] ?? NULL;
+  if (!empty($accession)) {
+    $page_list = Submission::getPageList(['accession' => $accession]);
+    $output = '[' . implode(', ', $page_list) . ']';
+  }
   return $output;
 }
