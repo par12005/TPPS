@@ -41,11 +41,16 @@ function tpps_report_doi_all_form(array $form, array &$form_state) {
 //dpm($report);
 
     foreach ($report as $doi => $data) {
-      $header = [];
-      $row = [];
+      $header = [' '];
+      $rows = [];
       foreach ($data as $source => $item) {
         $header[] = $source;
-        $row[] = TppsArray::printTable($item);
+        foreach ($item as $key => $value) {
+          if (empty($rows[$key])) {
+            $rows[$key][] = '<strong>' . $key . '</strong>';
+          }
+          $rows[$key][] = $value;
+        }
       }
       $form[$doi] = [
         '#type' => 'fieldset',
@@ -57,7 +62,7 @@ function tpps_report_doi_all_form(array $form, array &$form_state) {
 
         '#markup' => theme('table', [
           'header' => $header,
-          'rows' => [$row],
+          'rows' => $rows,
           'empty' => t('No data'),
         ]),
       ];
