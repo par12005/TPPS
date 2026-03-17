@@ -38,7 +38,7 @@ function tpps_report_doi_scraped_pubmed_form(array $form, array &$form_state) {
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
         // Table.
-        'table' => ['#markup' => TppsArray::printTable($item)],
+        $source => ['#markup' => TppsArray::printTable($item)],
       ];
     }
   }
