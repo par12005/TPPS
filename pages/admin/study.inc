@@ -1412,20 +1412,33 @@ function tpps_admin_panel_get_reports() {
     'no_synonym' => $panel_url . '/no-synonyms',
     'unit_warning' => $panel_url . '/unit-warning',
     'order_family_not_exist' => $panel_url . '/order-family-not-exist',
+    'organism_list' => $panel_url . '/organism-list',
+
+    // DOI.
+    'doi_duplicates' => $panel_url . '/doi-duplicates',
+    'doi_missing' => $panel_url . '/doi-missing',
+    // DOI / Submission.
+    'doi_submission_all' => $panel_url . '/doi-submission-all',
+    'doi_submission_publication' => $panel_url . '/doi-submission-publication',
+    'doi_submission_dataset' => $panel_url . '/doi-submission-dataset',
+    // DOI / Scraped.
+    'doi_scraped_all' => $panel_url . '/doi-scraped-all',
+    'doi_scraped_google_scholar' => $panel_url . '/doi-scraped-google-scholar',
+    'doi_scraped_pubmed' => $panel_url . '/doi-scraped-pubmed',
+    // Zenodo.
+    'zenodo_submissions' => $panel_url . '/zenodo-submissions',
+    'zenodo_depositions' => $panel_url . '/zenodo-depositions',
+
+    // Submission.
+    'submission_version' => $panel_url . '/submission-version',
+    // Submission / File.
+
+// @TODO Update!
     'submissions_missing_files' => $panel_url . '/submissions-missing-files',
     'submissions_without_files' => $panel_url . '/submissions-without-files',
     'submissions_all_files' => $panel_url . '/submissions-all-files',
     'submissions_type_files' => $panel_url . '/submissions-type-files',
-    'organism_list' => $panel_url . '/organism-list',
-
-    'doi_all' => $panel_url . '/doi-all',
-    'doi_duplicates' => $panel_url . '/doi-duplicates',
-    'doi_missing' => $panel_url . '/doi-missing',
-
-    'zenodo_submissions' => $panel_url . '/zenodo-submissions',
-    'zenodo_depositions' => $panel_url . '/zenodo-depositions',
-
-    'submission_version' => $panel_url . '/submission-version',
+    // File.
     'file_missing' => $panel_url . '/file-missing',
     'file_not_used' => $panel_url . '/file-not-used',
     'file_orphan' => $panel_url . '/file-orphan',

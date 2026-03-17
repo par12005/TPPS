@@ -457,9 +457,30 @@ class Report {
           ],
         ],
         'scraped' => [
-          'title' => variable_get('tpps_report_doi_scraped_title', 'Scraped DOI'),
-          'description' => t('List of the DOI data parsed from a websites.'),
-          'admin_panel' => TRUE,
+          'all' => [
+            'title' => variable_get(
+              'tpps_report_doi_scraped_all_title',
+              'All Scraped DOI'
+            ),
+            'description' => t('Shows publication data scraped from all sources.'),
+            'admin_panel' => TRUE,
+          ],
+          'google_scholar' => [
+            'title' => variable_get(
+              'tpps_report_doi_scraped_google_scholar_title',
+              'Google Scholar Sraped DOI'
+            ),
+            'description' => t('Shows publication data scraped from Gooble Scholar web-site.'),
+            'admin_panel' => TRUE,
+          ],
+          'pubmed' => [
+            'title' => variable_get(
+              'tpps_report_doi_scraped_pubmed_title',
+              'PubMed Sraped DOI'
+            ),
+            'description' => t('Shows publication data scraped from PubMed web-site.'),
+            'admin_panel' => TRUE,
+          ],
         ],
         'duplicates' => [
           'title' => variable_get('tpps_report_doi_duplicates_title', 'DOI Duplicates'),

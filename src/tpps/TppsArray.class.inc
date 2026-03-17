@@ -496,6 +496,46 @@ class TppsArray {
   }
 
   /**
+   * Dumps array using item list.
+   *
+   * WARNING: Be sure to use check_plain() for data in the $list before call.
+   * Note: uses recursion.
+   *
+   * @param array $list
+   *   Array with data.
+   * @param string $title
+   *   Optional title for the list.
+   *   Note: HTML's H3 tag wil be used.
+   *
+   * @return string
+   *   Returns rendered HTML list.
+   */
+  public static function printTable(array $list = [], $title = NULL) {
+    $rows = [];
+    if (empty($list)) {
+      return '';
+    }
+    foreach ($list as $key => $value) {
+      if (is_array($value)) {
+        $value = TppsArray::printTable($value);
+      }
+      else {
+        // Using check_plain() blocks HTML Links in the lists.
+        // $value = check_plain($value);
+      }
+      $rows[] = [
+        '<strong>' . check_plain($key) . '</strong>',
+        $value,
+      ];
+    }
+    return theme('table', [
+      'rows' => $rows,
+      'title' => check_plain($title),
+      'empty' => t('No data'),
+    ]);
+  }
+
+  /**
    * Gets path to the array element as a list of parents.
    *
    * $array = [

@@ -46,11 +46,16 @@ function tpps_reports_settings_form(array $form, array &$form_state) {
   // 'tpps_report_organism_new_title'.
   // 'tpps_report_organism_order_family_not_exist_title'.
   // DOI:
-  // 'tpps_report_doi_publication_title'.
-  // 'tpps_report_doi_dataset_title'.
-  // 'tpps_report_doi_scraped_title'.
   // 'tpps_report_doi_duplicates_title'.
   // 'tpps_report_doi_missing_title'.
+  // DOI / Submission.
+  // 'tpps_report_doi_submission_publication_title'.
+  // 'tpps_report_doi_submission_dataset_title'.
+  // 'tpps_report_doi_submission_all_title'.
+  // DOI / Scraped.
+  // 'tpps_report_doi_scraped_all_title'.
+  // 'tpps_report_doi_scraped_pubmed_title'.
+  // 'tpps_report_doi_scraped_google_scholar_title'.
   // Zenodo:
   // 'tpps_report_zenodo_deposition_title'.
   // Submission:
