@@ -150,10 +150,10 @@ class PublicationDOI {
    * Gets DB table schema.
    *
    * Used in hook_install().
-   * Table name: PublicationDOI::TABLE.
+   * Table name: self::TABLE.
    *
    * Usage example:
-   *   $field_list = array_keys(PublicationDOI::getSchema()['fields']);
+   *   $field_list = array_keys(self::getSchema()['fields']);
    *   unset($field_list['source']);
    *
    * @return array

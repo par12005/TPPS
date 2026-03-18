@@ -402,4 +402,47 @@ class GoogleScholar {
     PublicationDOI::save($fields);
   }
 
+  /**
+   * Gets DB table schema.
+   *
+   * Table to store Google Scholar SERP pages.
+   * Used in hook_install().
+   * Table name: self::TABLE.
+   *
+   * Usage example:
+   *   $field_list = array_keys(self::getSchema()['fields']);
+   *   unset($field_list['source']);
+   *
+   * @return array
+   *   Returns db table schema.
+   */
+  public static function getSchema() {
+    return [
+      'description' => 'Stores Google Scholar SERP.',
+      'fields' => [
+        'doi' => [
+          'description' => 'DOI (Digital Object Identifier).',
+          'type' => 'varchar',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ],
+        'created' => [
+          'type' => 'int',
+          'not null' => TRUE,
+          'default' => 0,
+          'description' => 'Unix timestamp of when the entry was created.',
+        ],
+        'serp' => [
+          'description' => 'SERP (Search Engine Results Page).',
+          'type' => 'text',
+          'size' => 'medium',
+          'not null' => TRUE,
+        ],
+      ],
+      'unique keys' => [
+        'doi_created' => ['doi', 'created'],
+      ],
+    ];
+  }
+
 }
