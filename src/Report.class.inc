@@ -648,6 +648,55 @@ class Report {
     return "Empty";
   }
 
+  /**
+   * Builds report using nested data structure.
+   *
+   * 1st level: fieldsets.
+   * 2nd level: table's columns. Name is a header of the column.
+   *
+   * @param array $form
+   *   Required. Drupal Form array. Will be updated by reference.
+   * @param array $data
+   *   Optional. Data for the report.
+   *   Data structure is 2 level nested.
+   *   Last level has an array of arrays to be compared.
+   */
+  public static function print2Level(array &$form, array $data = NULL) {
+    if (empty($data)) {
+      $form['info'] = [
+        '#markup' => t('No data'),
+      ];
+    }
+    else {
+      foreach ($data as $level1_key => $level1_item) {
+        $header = [' '];
+        $rows = [];
+        foreach ($level1_item as $level2_key => $level2_item) {
+          $header[] = $level2_key;
+          foreach ($level2_item as $key => $value) {
+            if (empty($rows[$key])) {
+              $rows[$key][] = '<strong>' . $key . '</strong>';
+            }
+            $rows[$key][] = $value;
+          }
+        }
+        $form[$level1_key] = [
+          '#type' => 'fieldset',
+          '#title' => $level1_key,
+          '#collapsible' => TRUE,
+          '#collapsed' => 0,
+        ];
+        $form[$level1_key][$level2_key] = [
+          '#markup' => theme('table', [
+            'header' => $header,
+            'rows' => $rows,
+            'empty' => t('No data'),
+          ]),
+        ];
+      }
+    }
+  }
+
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

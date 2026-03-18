@@ -208,7 +208,7 @@ class PublicationDOI {
         ],
       ],
       'unique keys' => [
-        'doi' => ['doi'],
+        'doi_source' => ['doi', 'source'],
       ],
     ];
   }

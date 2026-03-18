@@ -18,29 +18,23 @@ function tpps_report_doi_scraped_pubmed() {
  * Form shows DOI publication data in tables under fieldset.
  */
 function tpps_report_doi_scraped_pubmed_form(array $form, array &$form_state) {
-  $form = [];
+  $report = [];
   $source = PublicationDOI::SOURCE_PM;
-  $data = db_select(PublicationDOI::TABLE, 't')
+  $result = db_select(PublicationDOI::TABLE, 't')
     ->fields('t', [])
     ->condition('source', $source)
     ->execute()
     ->fetchAllAssoc('doi', PDO::FETCH_ASSOC);
-  if (empty($data)) {
-    $form['info'] = [
-      '#markup' => t('No data'),
-    ];
-  }
-  else {
-    foreach ($data as $item) {
-      $form[$item['doi']] = [
-        '#type' => 'fieldset',
-        '#title' => $item['doi'],
-        '#collapsible' => TRUE,
-        '#collapsed' => TRUE,
-        // Table.
-        $source => ['#markup' => TppsArray::printTable($item)],
-      ];
+  if (!empty($result)) {
+    // Build 2 level structure for report.
+    foreach ($result as $item) {
+      $doi = $item['doi'];
+      $source = $item['source'];
+      unset($item['doi']);
+      unset($item['source']);
+      $report[$doi][$source] = $item;
     }
   }
+  Report::print2Level($form, $report);
   return $form;
 }
