@@ -50,53 +50,61 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Google Scholar settings.
+  // SERP Provider's settings.
   //
-  // Resources:
-  // Class: /src/GoogleScholar.class.inc.
-  // DB table: public.tpps_google_scholar.
-  //
-  // @TODO Minor. Create report for db table.
-  $form['google_scholar'] = [
-    '#type' => 'fieldset',
-    '#title' => t('Google Scholar'),
-    '#collapsible' => TRUE,
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    'info' => [
-      '#markup' => theme('item_list', [
-        'items' => ['DB table: public.tpps_google_scholar'],
-      ]),
-    ],
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    'tpps_doi_google_scholar_serp_url' => [
-      '#type' => 'textfield',
-      '#title' => t('URL of the Google Scholar SERP '),
-      '#default_value' => variable_get('tpps_doi_google_scholar_serp_url'),
-      '#description' => t('This URL must be allowed by CORS Anywhere Proxy server'
-        . ' and will be used by GoogleScholar class to build Endpoint URL.'
-      )
-      . theme('item_list', ['items' => [GoogleScholar::SERP_URL]]),
-    ],
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    'tpps_doi_google_scholar_debug_mode' => [
-      '#type' => 'checkbox',
-      '#title' => t('Debug Mode'),
-      '#default_value' => variable_get('tpps_doi_google_scholar_debug_mode'),
-      '#description' => t('When enabled no actual requests to Google Scholar '
-        . 'will be performed.'),
-    ],
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // @TODO Use this delay for AJAX-requests from client to backend.
-    'tpps_doi_google_scholar_delay' => [
-      '#type' => 'textfield',
-      '#title' => t('Mininal delay between requests (in seconds)'),
-      '#default_value' => variable_get(
-        'tpps_doi_google_scholar_delay', GoogleScholar::DEFAULT_DELAY
-      ),
-      '#description' => t('Introduce random delays (e.g., 2-10 seconds) '
-        . 'between requests to avoid rate-limiting.'),
-    ],
-  ];
+  // Classes:
+  // - /src/GoogleScholar.class.inc,
+  // - /src/PubMed.class.inc.
+  // DB tables:
+  // - 'tpps_google_scholar',
+  // - 'tpps_pubmed'.
+  $serp_provider_list = ['GoogleScholar', 'PubMed'];
+  foreach ($serp_provider_list as $class_name) {
+    $name = constant($class_name . '::KEY');
+    $human_name = ucwords(str_replace('_', ' ', $name));
+    $params = ['@serp_provider' => $human_name];
+    $form[$name] = [
+      '#type' => 'fieldset',
+      '#title' => t('@serp_provider', $params),
+      '#collapsible' => TRUE,
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      'info' => [
+        '#markup' => theme('item_list', [
+          'items' => ['DB table: public.tpps_' . $name],
+        ]),
+      ],
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // 'tpps_doi_google_scholar_serp_url',
+      'tpps_doi_' . $name . '_serp_url' => [
+        '#type' => 'textfield',
+        '#title' => t('URL of the @serp_provider SERP ', $params),
+        '#default_value' => variable_get('tpps_doi_' . $name . '_serp_url'),
+        '#description' => t('This URL must be allowed by CORS Anywhere Proxy server'
+          . ' and will be used to build Endpoint URL.'
+        )
+        . theme('item_list', ['items' => [constant($class_name . '::SERP_URL')]]),
+      ],
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      'tpps_doi_' . $name . '_debug_mode' => [
+        '#type' => 'checkbox',
+        '#title' => t('Debug Mode'),
+        '#default_value' => variable_get('tpps_doi_' . $name . '_debug_mode'),
+        '#description' => t('When enabled no actual requests will be performed.'),
+      ],
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // @TODO Use this delay for AJAX-requests from client to backend.
+      'tpps_doi_' . $name . '_delay' => [
+        '#type' => 'textfield',
+        '#title' => t('Mininal delay between requests (in seconds)'),
+        '#default_value' => variable_get(
+          'tpps_doi_' . $name . '_delay',
+          constant($class_name . '::DEFAULT_DELAY')
+        ),
+        '#description' => t('Introduce random delays (e.g., 2-10 seconds) '
+          . 'between requests to avoid rate-limiting.'),
+      ],
+    ];
+  }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // DOI / Gemini.

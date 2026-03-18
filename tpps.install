@@ -19,6 +19,10 @@ function tpps_get_variable_list() {
     'tpps_doi_google_scholar_debug_mode' => FALSE,
     'tpps_doi_google_scholar_delay' => GoogleScholar::DEFAULT_DELAY,
     'tpps_doi_google_scholar_serp_url' => GoogleScholar::SERP_URL,
+    // DOI / PubMed.
+    'tpps_doi_pubmed_debug_mode' => FALSE,
+    'tpps_doi_pubmed_delay' => PubMed::DEFAULT_DELAY,
+    'tpps_doi_pubmed_serp_url' => PubMed::SERP_URL,
     // DOI / Gemini.
     'tpps_doi_gemini_system_instruction' => '',
     'tpps_doi_gemini_generation_config' => '',
@@ -2678,13 +2682,17 @@ function tpps_update_7134() {
   // Gemini.
   variable_set('tpps_gemini_model', '');
   variable_set('tpps_gemini_api_key', '');
-  // DOI.
+  // DOI Lookup.
   variable_set('tpps_doi_lookup_proxy', '');
-  // DOI / Google Scholar.
+  // DOI Lookup / Google Scholar.
   variable_set('tpps_doi_google_scholar_debug_mode', FALSE);
   variable_set('tpps_doi_google_scholar_delay', GoogleScholar::DEFAULT_DELAY);
   variable_set('tpps_doi_google_scholar_serp_url', GoogleScholar::SERP_URL);
-  // DOI / Gemini.
+  // DOI Lookup / PubMed.
+  variable_set('tpps_doi_pubmed_debug_mode', FALSE);
+  variable_set('tpps_doi_pubmed_delay', PubMed::DEFAULT_DELAY);
+  variable_set('tpps_doi_pubmed_serp_url', PubMed::SERP_URL);
+  // DOI Lookup / Gemini.
   variable_set('tpps_doi_gemini_system_instruction', '');
   variable_set('tpps_doi_gemini_generation_config', '');
 
