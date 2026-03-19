@@ -29,6 +29,9 @@ class PubMed extends DoiSerp {
   // Example: https://pubmed.ncbi.nlm.nih.gov/32638366/
   const SERP_URL = 'https://pubmed.ncbi.nlm.nih.gov/';
 
+  // Name of the GET-query parameter which holds DOI.
+  const QUERY_PARAM = 'term';
+
   /**
    * Gets query (url params) to build URL to get SERP.
    *
@@ -37,7 +40,7 @@ class PubMed extends DoiSerp {
    */
   public function getQuery() {
     return [
-      'term' => urlencode(check_plain($this->doi)),
+      self::QUERY_PARAM => urlencode(check_plain($this->doi)),
     ];
   }
 

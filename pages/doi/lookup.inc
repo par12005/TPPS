@@ -13,12 +13,13 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   if (!empty($doi2)) {
     $doi = $doi1 . '/' . $doi2;
   }
-  $publication_data = PublicationDOI::load($doi);
 
-  $gs = new GoogleScholar($doi);
-  $pubmed = new PubMed($doi);
+  $serp_providers = [
+    GoogleScholar::KEY => new GoogleScholar($doi),
+    PubMed::KEY => new PubMed($doi),
+  ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Add JS.
+  // Add JS settings.
   $js_settings = [
     'doi_lookup' => [
       // Selector for the textfield with DOI.
@@ -26,31 +27,27 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
       // Selector for the iframe which holds Google Scholar SERP.
       // 'doi' => $doi,
       'proxy' => variable_get('tpps_doi_lookup_proxy'),
-      'google_scholar' => [
-        'iframe' => 'iframe#google-scholar',
-        'endpoint' => $gs->getEndpointURL(),
-        'query' => $gs->getQuery(),
-        // Delay between requests of the same client.
-        'delay' => $gs->delay,
-        'ajax_save_path' => '/ajax/tpps/save_google_scholar_serp',
-      ],
-      'pubmed' => [
-        'iframe' => 'iframe#pubmed',
-        'endpoint' => $pubmed->getEndpointURL(),
-        'query' => $pubmed->getQuery(),
-        // Delay between requests of the same client.
-        'delay' => $pubmed->delay,
-        'ajax_save_path' => '/ajax/tpps/save_pubmed_serp',
-      ],
-      'ajax_get_path' => '/ajax/tpps/get_publication_data',
-      'publication_data' => [$doi => $publication_data],
-
-// @TODO Remove debug code.
-      // Makes proxy URL broken to avoid Google Scholar ban.
-      //'debug' => 'debug',
-// End of the debug code.
+      'serp_providers' => array_keys($serp_providers),
+      'ajax_get_publication_data_path' => '/ajax/tpps/get_publication_data',
     ],
   ];
+  foreach ($serp_providers as $name => $provider) {
+
+// @TODO Update 'source' column in DB table to use DoiSerp::KEY.
+
+    $publication_data[$name] = PublicationDOI::load($doi, $name);
+    $js_settings['doi_lookup'][$name] = [
+      'iframe' => 'iframe#' . $name,
+      'dump_container' => '#' . $name . '_dump_container',
+      'endpoint' => $provider->getEndpointURL(),
+      'query' => $provider->getQuery(),
+      'query_param' =>constant($provider . '::QUERY_PARAM'),
+      // Delay between requests of the same client.
+      'delay' => $provider->delay,
+      'ajax_save_path' => '/ajax/tpps/save_' . $name . '_serp',
+      'publication_data' => [$doi => $publication_data],
+    ];
+  }
   $form['#attached']['js'][] = [
     'type' => 'setting',
     'data' => ['tpps' => $js_settings],
@@ -81,30 +78,33 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
     '#description' => 'Parsed DOI:' . theme('item_list', ['items' => $items]),
   ];
 
-  // @todo Move to CSS.
-  // @todo If there is a SERP for this DOI it will be loaded.
-  // Check PublicationDOI::TABLE for the data first.
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  $gs_url = '';
-  $pubmed_url = '';
+  $url_list = [];
   if (!empty($doi) && empty($publication_data)) {
-    $gs_url = variable_get('tpps_doi_lookup_proxy')
-      . '/' . str_replace('%252F', '/', $gs->buildUrl());
-    $pubmed_url = variable_get('tpps_doi_lookup_proxy')
-      . '/' . str_replace('%252F', ' ', $pubmed->buildUrl());
+    $proxy = variable_get('tpps_doi_lookup_proxy');
+    foreach ($serp_providers as $name => $provider) {
+      if ($provider->scrapeAllowed) {
+        // Note: PubMed replaces '/' in DOI with space.
+        $fixed_provider_url = str_replace('%252F', '/', $provider->buildUrl());
+        $url_list[$name] = $proxy . '/' . $fixed_provider_url;
+      }
+    }
   }
-  // @todo Add setting to allow/block serp provider.
-  $form['google_scholar_serp'] = [
-    '#markup' => '<div id="google_scholar_dump_container"></div>
-      <iframe id="google-scholar" target="google_scholar"
-        src="' . $gs_url . '">' . $gs_url . '</iframe>',
-  ];
-  $form['pubmed_serp'] = [
-    '#markup' => '<div id="pubmed_dump_container"></div>
-      <iframe id="pubmed" target="pubmed"
-        src="' . $pubmed_url . '">' . $pubmed_url . '</iframe>',
-  ];
+  foreach ($serp_providers as $name => $provider) {
+    if (!$provider->scrapeAllowed) {
+      continue;
+    }
+    $url = $url_list[$name] ?? '';
+    // 'google_scholar_serp',
+    // 'pubmed_serp'.
+    $form[$name . '_serp'] = [
+      // 'google_scholar_dump_container',
+      // 'pubmed_dump_container'.
+      '#markup' => '<div id="' . $name . '_dump_container"></div>
+        <iframe id="' . $name . '" src="' . $url . '"
+        target="' . $name . '">' . $url . '</iframe>',
+    ];
+  }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   TppsForm::autofocus($form, ['tpps_doi_lookup_doi']);

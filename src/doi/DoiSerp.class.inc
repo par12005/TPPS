@@ -39,11 +39,25 @@ abstract class DoiSerp {
   // Path to the SERP page.
   // Used to build URL for iframe.
   const SERP_URL = '';
+  // Name of the GET-query parameter which holds DOI.
+  const QUERY_PARAM = '';
+
+  /**
+   * Indicates if DOI SERP provider is allowed for scraping.
+   *
+   * Default value is stored in variable:
+   *   'tpps_doi_' . self::KEY . '_scrape_allowed'.
+   * To change in run-time (overwrite default value) use:
+   *   $provider->scrapeAllowed = FALSE;
+   *
+   * @var bool
+   */
+  protected $scrapeAllowed = TRUE;
 
   /**
    * Indicates if 'Debug Mode' is enabled/disabled.
    *
-   * To change in run-time: $gs->debugMode = TRUE;
+   * To change in run-time: $provider->debugMode = TRUE;
    *
    * @var bool
    */
@@ -132,6 +146,10 @@ abstract class DoiSerp {
       $this->doi = $doi;
       $this->load();
     }
+    $this->scrapeAllowed = variable_get(
+      'tpps_doi_' . self::KEY . '_scrape_allowed',
+      TRUE
+    );
     $this->delay = variable_get(
       'tpps_doi_' . self::KEY . '_delay',
       self::DEFAULT_DELAY

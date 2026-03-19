@@ -172,10 +172,16 @@ function tpps_ajax_get_publication_data(array $payload) {
   if (empty($payload['doi'])) {
     $response['errors'][] = t('Empty DOI.');
   }
+  elseif (empty($payload['source'])) {
+    $response['errors'][] = t('Empty publication data source.');
+  }
   else {
-    $doi = $payload['doi'];
-    $response['doi'] = $doi;
-    $response['publication_data'] = PublicationDOI::load($doi);
+    $response['doi'] = $payload['doi'];
+    $response['source'] = $payload['source'];
+    $response['publication_data'] = PublicationDOI::load(
+      $payload['doi'],
+      $payload['source']
+    );
     $response['success'] = TRUE;
   }
   return $response;

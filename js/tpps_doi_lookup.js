@@ -11,65 +11,75 @@
 
       // TPPS DOI Lookup.
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      $(doi_lookup.field).blur(function() {
-        let doi = $.trim($(this).val());
-        if (doi == '') {
-          console.log('DOI Lookup: Empty value of the DOI.');
-          return;
-        }
-        // Block DOI field while processing.
-        $(this).prop('disabled', true);
-
-        // Check if doi was really changed.
-        if (
-          doi_lookup?.publication_data != undefined
-          && doi_lookup.publication_data[doi] != undefined
-        ) {
-          showPublicationData(doi_lookup.publication_data[doi]);
-          //console.log('Re-used already received data.');
-          $(doi_lookup.iframe).hide();
-          return;
-        }
-        $('#dumpContainer').html('').hide();
-
-        // Request publication data from PublicationDOI::TABLE.
-        $.ajax({
-          url: doi_lookup.ajax_get_path,
-          type: 'POST',
-          contentType: 'application/json',
-          dataType: 'json',
-          data: JSON.stringify({"doi": doi}),
-          success: function(response) {
-            //console.log('Success:', response);
-            if (response && response.publication_data && response.publication_data.length !== 0) {
-              showPublicationData(response.publication_data);
-            }
-            else {
-              // Calculate delay.
-              let delay = 0;
-              let last_request = doi_lookup.last_request;
-              if (last_request) {
-                delay = (last_request + (doi_lookup.delay * 1000)) - $.now();
-                if (delay < 0) {
-                  delay = 0;
-                }
-              }
-              console.log('DOI Lookup. Delay: ' + delay);
-              // Build iframe for Google Scholar SERP.
-              setTimeout(function() {
-                doi_lookup.last_request = $.now();
-                // Build iframe.
-                let $iframe=$(doi_lookup.iframe);
-                let proxy_url = buildUrl(settings, doi);
-                if (proxy_url) {
-                  $iframe.attr('src', proxy_url).show();
-                }
-              }, delay);
-            }
-          },
-          error: function(xhr, status, error) {
-            console.error('DOI Lookup Error:', error);
+      doi_lookup.serp_providers.forEach(function(provider_name) {
+        $(doi_lookup.[provider_name].field).blur(function() {
+          let doi = $.trim($(this).val());
+          if (doi == '') {
+            console.log('DOI Lookup: Empty value of the DOI.');
+            return;
           }
+          // Block DOI field while processing.
+          $(this).prop('disabled', true);
+          // Check if doi was really changed.
+          if (
+            doi_lookup[provider_name].publication_data != undefined
+            && doi_lookup[provider_name].publication_data[doi] != undefined
+          ) {
+            showPublicationData(
+              provider_name,
+              doi_lookup[provider_name].publication_data[doi]
+            );
+            //console.log('Re-used already received data.');
+            $(doi_lookup.iframe).hide();
+            return;
+          }
+          $(doi_lookup[provider_name].dump_container).html('').hide();
+
+  // @TODO ajax_path name was changed.
+  // @TODO use both serp_providers.
+
+          // Request publication data from PublicationDOI::TABLE.
+          $.ajax({
+            url: doi_lookup.ajax_get_publication_data_path,
+            type: 'POST',
+            contentType: 'application/json',
+            dataType: 'json',
+            data: JSON.stringify({"doi": doi, "source": provider_name}),
+            success: function(response) {
+              //console.log('Success:', response);
+              if (response && response.publication_data && response.publication_data.length !== 0) {
+                showPublicationData(
+                  response.source,
+                  response.publication_data
+                );
+              }
+              else {
+                // Calculate delay.
+                let delay = 0;
+                let last_request = doi_lookup[provider_name].last_request;
+                if (last_request) {
+                  delay = (last_request + (doi_lookup[provider_name].delay * 1000)) - $.now();
+                  if (delay < 0) {
+                    delay = 0;
+                  }
+                }
+                console.log('DOI Lookup. Delay: ' + delay);
+                // Build iframe for Google Scholar SERP.
+                setTimeout(function() {
+                  doi_lookup[provider_name].last_request = $.now();
+                  // Build iframe.
+                  let $iframe=$(doi_lookup[provider_name].iframe);
+                  let proxy_url = buildUrl(provider_name, doi);
+                  if (proxy_url) {
+                    $iframe.attr('src', proxy_url).show();
+                  }
+                }, delay);
+              }
+            },
+            error: function(xhr, status, error) {
+              console.error('DOI Lookup Error:', error);
+            }
+          });
         });
       });
 
@@ -84,14 +94,15 @@
        * @return string
        *   Retuns URL with proxy (CORS anywhere).
        */
-      function buildUrl (settings, doi) {
+      function buildUrl(provider_name, doi) {
         let url = '';
-        let query = doi_lookup.query;
-        query["q"] = doi;
+        let query = doi_lookup[provider_name].query;
+        let query_param = doi_lookup[provider_name].query_param;
+        query[query_param] = doi;
+
         if (doi_lookup.proxy != '') {
           url = doi_lookup.proxy
-            + (doi_lookup.debug ?? '')
-            + '/' + doi_lookup.endpoint
+            + '/' + doi_lookup[provider_name].endpoint
             + '?' + $.param(query);
         }
         return url;
@@ -103,12 +114,13 @@
        * @param object data
        *   DOI Publication data
        */
-      function showPublicationData(data) {
-        doi_lookup.publication_data = doi_lookup.publication_data ?? {};
-        doi_lookup.publication_data[data.doi] = data;
+      function showPublicationData(provider_name, data) {
+        doi_lookup[provider_name].publication_data
+          = doi_lookup[provider_name].publication_data ?? {};
+        doi_lookup[provider_name].publication_data[data.doi] = data;
         // Show at page.
         var jsonString = JSON.stringify(data, null, 2);
-        $('#dumpContainer').html(
+        $(doi_lookup[provider_name].dump_container).html(
           '<pre style="margin: 5px; color: white !important; text-wrap:auto;">'
           + jsonString + '</pre>'
         ).show();
@@ -119,8 +131,8 @@
       /**
        * Sends content of the iframe to backend to store in database.
        */
-      function saveIframeContent() {
-        let doi = $.trim($(doi_lookup?.field).val());
+      function saveIframeContent(provider_name) {
+        let doi = $.trim($(doi_lookup[provider_name].field).val());
         if (doi == '') {
           console.log("DOI Lookup: Empty DOI. Can't save iframe content");
           return;
@@ -130,7 +142,8 @@
         let iframeContent = $(this).contents().find('html').html();
 
         // Check if CORS Anywhere Proxy failed.
-        let error_message = 'Not found because of proxy error: Error: getaddrinfo ENOTFOUND scholar.google.com';
+        let error_message = 'Not found because of proxy error: Error: '
+          + 'getaddrinfo ENOTFOUND scholar.google.com';
         if (iframeContent.includes(error_message)) {
           console.error('DOI Lookup. Proxy server is down.');
           return;
@@ -138,12 +151,13 @@
 
         // Send content to backend.
         $.ajax({
-          url: doi_lookup.ajax_save_path,
+          url: doi_lookup[provider_name].ajax_save_path,
           type: 'POST',
           contentType: 'application/json',
           dataType: 'json',
           data: JSON.stringify({
             "doi": doi,
+            "source": provider_name,
             "serp": btoa(unescape(encodeURIComponent(iframeContent)))
           }),
           success: function(response) {
@@ -151,7 +165,10 @@
               response && response.publication_data
               && response.publication_data.length !== 0
             ) {
-              showPublicationData(response.publication_data);
+              showPublicationData(
+                response.source,
+                response.publication_data
+              );
             }
             else {
               console.log('DOI Lookup: Got empty data');
@@ -164,7 +181,9 @@
       };
 
       // Save Google Scholar iframe content when it was loaded.
-      $(doi_lookup.iframe).on('load', saveIframeContent);
+      $(doi_lookup.iframe).on('load', function() {
+        saveIframeContent(provider_name);
+      });
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     }
   }

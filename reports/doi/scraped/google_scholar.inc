@@ -20,7 +20,7 @@ function tpps_report_doi_scraped_google_scholar() {
 function tpps_report_doi_scraped_google_scholar_form(array $form, array &$form_state) {
   $report = [];
 
-  $source = PublicationDOI::SOURCE_GS;
+  $source = GoogleScholar::KEY;
   $result = db_select(PublicationDOI::TABLE, 't')
     ->fields('t', [])
     ->condition('source', $source)

@@ -59,6 +59,8 @@ class GoogleScholar extends DoiSerp {
   // Path to the SERP page.
   // Used to build URL for iframe.
   const SERP_URL = 'https://scholar.google.com/scholar';
+  // Name of the GET-query parameter which holds DOI.
+  const QUERY_PARAM = 'q';
 
   /**
    * Gets query (url params) to build URL to get SERP.
@@ -70,7 +72,7 @@ class GoogleScholar extends DoiSerp {
     return [
       'hl' => 'en',
       'as_sdt' => '0,5',
-      'q' => urlencode(check_plain($this->doi)),
+      self::QUERY_PARAM => urlencode(check_plain($this->doi)),
       'btnG' => NULL,
     ];
   }
