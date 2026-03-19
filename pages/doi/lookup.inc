@@ -15,8 +15,8 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   }
 
   $serp_providers = [
-    GoogleScholar::KEY => new GoogleScholar($doi),
     PubMed::KEY => new PubMed($doi),
+    GoogleScholar::KEY => new GoogleScholar($doi),
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Add JS settings.
@@ -41,7 +41,7 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
       'dump_container' => '#' . $name . '_dump_container',
       'endpoint' => $provider->getEndpointURL(),
       'query' => $provider->getQuery(),
-      'query_param' =>constant($provider . '::QUERY_PARAM'),
+      'query_param' => constant(get_class($provider) . '::QUERY_PARAM'),
       // Delay between requests of the same client.
       'delay' => $provider->delay,
       'ajax_save_path' => '/ajax/tpps/save_' . $name . '_serp',
@@ -62,6 +62,7 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   // Build list of suggestions.
   $doi_list = db_select(PublicationDOI::TABLE, 't')
     ->fields('t', ['doi'])
+    ->groupBy('doi')
     ->execute()
     ->fetchCol('doi');
   $options = ['attributes' => ['class' => ['tpps-suggestion']]];
@@ -75,7 +76,17 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
     '#type' => 'textfield',
     '#title' => t('DOI'),
     '#default_value' => $doi,
-    '#description' => 'Parsed DOI:' . theme('item_list', ['items' => $items]),
+    '#description' =>
+    //theme('item_list', [
+    //  'items' => [
+    //    l('https://treegenesdb.org/admin/reports/tpps/doi/duplicates',
+    //    'https://treegenesdb.org/admin/reports/tpps/doi/duplicates'),
+    //    l('https://tgwebdev.cam.uchc.edu/admin/reports/tpps/doi/submission/all',
+    //    'https://tgwebdev.cam.uchc.edu/admin/reports/tpps/doi/submission/all'
+    //    ),
+    //  ],
+    //]) .
+    'Parsed DOI:' . theme('item_list', ['items' => $items]),
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -98,11 +109,18 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
     // 'google_scholar_serp',
     // 'pubmed_serp'.
     $form[$name . '_serp'] = [
+      '#type' => 'fieldset',
+      '#title' => $name,
+      '#collapsed' => FALSE,
+      '#collapsible' => TRUE,
       // 'google_scholar_dump_container',
       // 'pubmed_dump_container'.
-      '#markup' => '<div id="' . $name . '_dump_container"></div>
-        <iframe id="' . $name . '" src="' . $url . '"
-        target="' . $name . '">' . $url . '</iframe>',
+      'data' => [
+        '#markup' => '<div class="dump_container" id="' . $name
+          . '_dump_container"></div>
+          <iframe id="' . $name . '" class="serp" src="' . $url . '"
+          target="' . $name . '">' . $url . '</iframe>',
+      ],
     ];
   }
 

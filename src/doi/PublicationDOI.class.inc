@@ -92,13 +92,13 @@ class PublicationDOI {
    */
   public static function load($doi, $source) {
     // Build query.
-    $query = db_select(self::TABLE, 't')
+    $data = db_select(static::TABLE, 't')
       ->fields('t', [])
       ->condition('doi', $doi)
-      ->range(0, 1);
-    $query->condition('source', $source);
-    // Get data.
-    $data = $query->execute()->fetchAssoc();
+      ->condition('source', $source)
+      ->range(0, 1)
+      ->execute()
+      ->fetchAssoc();
     // Output.
     if (empty($data)) {
       return [];

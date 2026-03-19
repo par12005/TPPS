@@ -204,17 +204,59 @@ function tpps_ajax_save_google_scholar_serp(array $payload) {
     $response['errors'][] = t('Empty DOI.');
   }
   elseif (empty($payload['serp'])) {
-    $response['errors'][] = t('Empty Google Scholar SERP.');
+    $response['errors'][] = t('Empty SERP.');
+  }
+  elseif (empty($payload['source'])) {
+    $response['errors'][] = t('Empty source.');
   }
   else {
     $doi = $payload['doi'];
-    $gs = new GoogleScholar($doi);
-    $gs->serp = base64_decode($payload['serp']);
-    $gs->save();
+    $provider = new GoogleScholar($doi);
+    $provider->serp = base64_decode($payload['serp']);
+    $provider->save();
     // Parse using Gemini AI.
-    $gs->parse();
+    $provider->parse();
 
-    $response['doi'] = $doi;
+    $response['doi'] = $payload['doi'];
+    $response['source'] = $payload['source'];
+    $response['publication_data'] = PublicationDOI::load($doi);
+    $response['success'] = TRUE;
+  }
+  return $response;
+}
+
+/**
+ * AJAX callback for 'Save Google Scholar SERP'.
+ *
+ * @param array $payload
+ *   POST payload. Required keys are: 'serp'.
+ *   See tpps_ajax_callback().
+ *
+ * @return array
+ *   Returns response.
+ *   Key 'success' will have value TRUE in case of success and FALSE otherwise.
+ */
+function tpps_ajax_save_pubmed_serp(array $payload) {
+  $response['success'] = FALSE;
+  if (empty($payload['doi'])) {
+    $response['errors'][] = t('Empty DOI.');
+  }
+  elseif (empty($payload['serp'])) {
+    $response['errors'][] = t('Empty SERP.');
+  }
+  elseif (empty($payload['source'])) {
+    $response['errors'][] = t('Empty source.');
+  }
+  else {
+    $doi = $payload['doi'];
+    $provider = new PubMed($doi);
+    $provider->serp = base64_decode($payload['serp']);
+    $provider->save();
+    // Parse using Gemini AI.
+    $provider->parse();
+
+    $response['doi'] = $payload['doi'];
+    $response['source'] = $payload['source'];
     $response['publication_data'] = PublicationDOI::load($doi);
     $response['success'] = TRUE;
   }

@@ -74,34 +74,50 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
         ]),
       ],
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // 'tpps_doi_google_scholar_serp_url',
-      'tpps_doi_' . $name . '_serp_url' => [
-        '#type' => 'textfield',
-        '#title' => t('URL of the @serp_provider SERP ', $params),
-        '#default_value' => variable_get('tpps_doi_' . $name . '_serp_url'),
-        '#description' => t('This URL must be allowed by CORS Anywhere Proxy server'
-          . ' and will be used to build Endpoint URL.'
-        )
-        . theme('item_list', ['items' => [constant($class_name . '::SERP_URL')]]),
-      ],
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      'tpps_doi_' . $name . '_debug_mode' => [
+      'tpps_doi_' . $name . '_scrape_allowed' => [
         '#type' => 'checkbox',
-        '#title' => t('Debug Mode'),
-        '#default_value' => variable_get('tpps_doi_' . $name . '_debug_mode'),
-        '#description' => t('When enabled no actual requests will be performed.'),
+        '#title' => t('Allow scraping'),
+        '#default_value' => variable_get('tpps_doi_' . $name . '_scrape_allowed'),
+        '#description' => t('When enabled search page results will be '
+          . 'used to scrape data.'),
       ],
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // @TODO Use this delay for AJAX-requests from client to backend.
-      'tpps_doi_' . $name . '_delay' => [
-        '#type' => 'textfield',
-        '#title' => t('Mininal delay between requests (in seconds)'),
-        '#default_value' => variable_get(
-          'tpps_doi_' . $name . '_delay',
-          constant($class_name . '::DEFAULT_DELAY')
-        ),
-        '#description' => t('Introduce random delays (e.g., 2-10 seconds) '
-          . 'between requests to avoid rate-limiting.'),
+      'tpps_doi_' . $name . '_scrape_container' => [
+        '#type' => 'container',
+        '#states' => [
+          'visible' => [
+            ':input[name="tpps_doi_google_scholar_scrape_allowed"]' => ['checked' => TRUE],
+          ],
+        ],
+        'tpps_doi_' . $name . '_debug_mode' => [
+          '#type' => 'checkbox',
+          '#title' => t('Debug Mode'),
+          '#default_value' => variable_get('tpps_doi_' . $name . '_debug_mode'),
+          '#description' => t('When enabled no actual requests will be performed.'),
+        ],
+        // 'tpps_doi_google_scholar_serp_url',
+        // 'tpps_doi_pubmed_serp_url',
+        'tpps_doi_' . $name . '_serp_url' => [
+          '#type' => 'textfield',
+          '#title' => t('URL of the @serp_provider SERP ', $params),
+          '#default_value' => variable_get('tpps_doi_' . $name . '_serp_url'),
+          '#description' => t('This URL must be allowed by CORS Anywhere '
+            . 'Proxy server and will be used to build Endpoint URL.'
+          )
+          . theme('item_list', ['items' => [constant($class_name . '::SERP_URL')]]),
+        ],
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // @TODO Use this delay for AJAX-requests from client to backend.
+        'tpps_doi_' . $name . '_delay' => [
+          '#type' => 'textfield',
+          '#title' => t('Mininal delay between requests (in seconds)'),
+          '#default_value' => variable_get(
+            'tpps_doi_' . $name . '_delay',
+            constant($class_name . '::DEFAULT_DELAY')
+          ),
+          '#description' => t('Introduce random delays (e.g., 2-10 seconds) '
+            . 'between requests to avoid rate-limiting.'),
+        ],
       ],
     ];
   }

@@ -11,13 +11,13 @@
  * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * How to extend class?
  *
- * 1. Come up with unique name. It will be self::KEY.
+ * 1. Come up with unique name. It will be static::KEY.
  * 2. Constant TABLE must have 'tpps_' prefix
  *    and usually has KEY constant as suffix.
  * 3. Create Drupal variables:
- *    'tpps_doi_' . self::KEY . '_serp_url',
- *    'tpps_doi_' . self::KEY . '_delay',
- *    'tpps_doi_' . self::KEY . '_debug_mode'.
+ *    'tpps_doi_' . static::KEY . '_serp_url',
+ *    'tpps_doi_' . static::KEY . '_delay',
+ *    'tpps_doi_' . static::KEY . '_debug_mode'.
  * 4. Implement getQuery() method.
  * 5. Register class in *.install file.
  * 6. Add iframe to /tpps/doi/lookup page.
@@ -46,7 +46,7 @@ abstract class DoiSerp {
    * Indicates if DOI SERP provider is allowed for scraping.
    *
    * Default value is stored in variable:
-   *   'tpps_doi_' . self::KEY . '_scrape_allowed'.
+   *   'tpps_doi_' . static::KEY . '_scrape_allowed'.
    * To change in run-time (overwrite default value) use:
    *   $provider->scrapeAllowed = FALSE;
    *
@@ -139,23 +139,27 @@ abstract class DoiSerp {
    *   When db table which stores Google Scholar SERP doen't exists.
    */
   public function __construct(string $doi = NULL) {
-    if (!db_table_exists(self::TABLE)) {
-      throw new Exception('DB table ' . self::TABLE . ' not found.');
+
+
+//dpm(print_r(debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 5), TRUE));
+
+    if (!empty(static::TABLE) && !db_table_exists(static::TABLE)) {
+      throw new Exception('DB table "' . static::TABLE . '" not found.');
     }
     if (!empty($doi)) {
       $this->doi = $doi;
       $this->load();
     }
     $this->scrapeAllowed = variable_get(
-      'tpps_doi_' . self::KEY . '_scrape_allowed',
+      'tpps_doi_' . static::KEY . '_scrape_allowed',
       TRUE
     );
     $this->delay = variable_get(
-      'tpps_doi_' . self::KEY . '_delay',
-      self::DEFAULT_DELAY
+      'tpps_doi_' . static::KEY . '_delay',
+      static::DEFAULT_DELAY
     );
     $this->debugMode = variable_get(
-      'tpps_doi_' . self::KEY . '_debug_mode',
+      'tpps_doi_' . static::KEY . '_debug_mode',
       FALSE
     );
     return $this;
@@ -414,7 +418,7 @@ abstract class DoiSerp {
    */
   public static function getSchema() {
     return [
-      'description' => 'Stores SERP of the ' . self::KEY . ' website.',
+      'description' => 'Stores SERP of the ' . static::KEY . ' website.',
       'fields' => [
         'doi' => [
           'description' => 'DOI (Digital Object Identifier).',
@@ -449,7 +453,7 @@ abstract class DoiSerp {
    *   No trailing slash.
    */
   public function getEndpointUrl() {
-    return variable_get('tpps_doi_' . self::KEY . '_serp_url', self::SERP_URL);
+    return variable_get('tpps_doi_' . static::KEY . '_serp_url', static::SERP_URL);
   }
 
 }

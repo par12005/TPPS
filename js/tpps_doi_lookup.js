@@ -12,7 +12,14 @@
       // TPPS DOI Lookup.
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       doi_lookup.serp_providers.forEach(function(provider_name) {
-        $(doi_lookup.[provider_name].field).blur(function() {
+
+        // Save Google Scholar iframe content when it was loaded.
+        $(doi_lookup[provider_name].iframe).on('load', function() {
+          saveIframeContent(provider_name);
+        });
+
+        // Get publication data by DOI.
+        $(doi_lookup.field).blur(function() {
           let doi = $.trim($(this).val());
           if (doi == '') {
             console.log('DOI Lookup: Empty value of the DOI.');
@@ -35,9 +42,7 @@
           }
           $(doi_lookup[provider_name].dump_container).html('').hide();
 
-  // @TODO ajax_path name was changed.
-  // @TODO use both serp_providers.
-
+          // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
           // Request publication data from PublicationDOI::TABLE.
           $.ajax({
             url: doi_lookup.ajax_get_publication_data_path,
@@ -46,7 +51,6 @@
             dataType: 'json',
             data: JSON.stringify({"doi": doi, "source": provider_name}),
             success: function(response) {
-              //console.log('Success:', response);
               if (response && response.publication_data && response.publication_data.length !== 0) {
                 showPublicationData(
                   response.source,
@@ -63,7 +67,6 @@
                     delay = 0;
                   }
                 }
-                console.log('DOI Lookup. Delay: ' + delay);
                 // Build iframe for Google Scholar SERP.
                 setTimeout(function() {
                   doi_lookup[provider_name].last_request = $.now();
@@ -73,6 +76,7 @@
                   if (proxy_url) {
                     $iframe.attr('src', proxy_url).show();
                   }
+                  $(doi_lookup.field).prop('disabled', false);
                 }, delay);
               }
             },
@@ -86,8 +90,8 @@
       /**
        * Build URL for Google Scholar iFrame.
        *
-       * @param object $settings
-       *   Drupal.settings.
+       * @param string provider_name
+       *   Key of the SERP provider.
        * @param string $doi
        *   DOI
        *
@@ -99,7 +103,6 @@
         let query = doi_lookup[provider_name].query;
         let query_param = doi_lookup[provider_name].query_param;
         query[query_param] = doi;
-
         if (doi_lookup.proxy != '') {
           url = doi_lookup.proxy
             + '/' + doi_lookup[provider_name].endpoint
@@ -132,7 +135,7 @@
        * Sends content of the iframe to backend to store in database.
        */
       function saveIframeContent(provider_name) {
-        let doi = $.trim($(doi_lookup[provider_name].field).val());
+        let doi = $.trim($(doi_lookup.field).val());
         if (doi == '') {
           console.log("DOI Lookup: Empty DOI. Can't save iframe content");
           return;
@@ -179,12 +182,6 @@
           }
         });
       };
-
-      // Save Google Scholar iframe content when it was loaded.
-      $(doi_lookup.iframe).on('load', function() {
-        saveIframeContent(provider_name);
-      });
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     }
   }
 })(jQuery, Drupal);

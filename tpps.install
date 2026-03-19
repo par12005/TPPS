@@ -922,6 +922,7 @@ function tpps_schema() {
     }
   }
   $schema[GoogleScholar::TABLE] = GoogleScholar::getSchema();
+  $schema[PubMed::TABLE] = PubMed::getSchema();
   $schema[PublicationDOI::TABLE] = PublicationDOI::getSchema();
 
 // @TODO Move other tables into classes.
@@ -2685,7 +2686,10 @@ function tpps_update_7134() {
   variable_set('tpps_gemini_model', '');
   variable_set('tpps_gemini_api_key', '');
   // DOI Lookup.
-  variable_set('tpps_doi_lookup_proxy', '');
+  variable_set(
+    'tpps_doi_lookup_proxy',
+    'https://tgwebdev.cam.uchc.edu/corsanywhere'
+  );
   // DOI Lookup / Google Scholar.
   variable_set('tpps_doi_google_scholar_scrape_allowed', TRUE);
   variable_set('tpps_doi_google_scholar_debug_mode', FALSE);
@@ -2720,6 +2724,7 @@ function tpps_update_7134() {
   $table_list = [
     PublicationDOI::TABLE,
     GoogleScholar::TABLE,
+    PubMed::TABLE,
     'tpps_rest_api_request',
     'tpps_rest_api_response',
   ];
