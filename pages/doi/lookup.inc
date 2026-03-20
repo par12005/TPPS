@@ -72,21 +72,26 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   tpps_add_css_js('suggestion', $form);
 
   // DOI Field.
+  $description = '';
+  if (variable_get('tpps_doi_lookup_show_report_links', FALSE)) {
+    $description .= theme('item_list', [
+      'items' => [
+        l('https://treegenesdb.org/admin/reports/tpps/doi/duplicates',
+        'https://treegenesdb.org/admin/reports/tpps/doi/duplicates'),
+        l('https://tgwebdev.cam.uchc.edu/admin/reports/tpps/doi/submission/all',
+        'https://tgwebdev.cam.uchc.edu/admin/reports/tpps/doi/submission/all'
+        ),
+      ],
+    ]);
+  }
+  if (variable_get('tpps_doi_lookup_show_suggestions', TRUE)) {
+    $description .= 'Parsed DOI:' . theme('item_list', ['items' => $items]);
+  }
   $form['tpps_doi_lookup_doi'] = [
     '#type' => 'textfield',
     '#title' => t('DOI'),
     '#default_value' => $doi,
-    '#description' =>
-    //theme('item_list', [
-    //  'items' => [
-    //    l('https://treegenesdb.org/admin/reports/tpps/doi/duplicates',
-    //    'https://treegenesdb.org/admin/reports/tpps/doi/duplicates'),
-    //    l('https://tgwebdev.cam.uchc.edu/admin/reports/tpps/doi/submission/all',
-    //    'https://tgwebdev.cam.uchc.edu/admin/reports/tpps/doi/submission/all'
-    //    ),
-    //  ],
-    //]) .
-    'Parsed DOI:' . theme('item_list', ['items' => $items]),
+    '#description' => $description,
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

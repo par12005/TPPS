@@ -48,6 +48,21 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
       ['items' => ['https://tgwebdev.cam.uchc.edu/corsanywhere']]
     ),
   ];
+  $form['tpps_doi_lookup_show_report_links'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Show DOI Report links'),
+    '#default_value' => variable_get('tpps_doi_lookup_show_report_links'),
+    '#description' => t('When enabled list of DOI-related reports at '
+      . 'live and dev-sites will be shown under DOI input field.'),
+  ];
+  $form['tpps_doi_lookup_show_suggestions'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Suggest DOI'),
+    '#default_value' => variable_get('tpps_doi_lookup_show_suggestions'),
+    '#description' => t('When enabled list of DOI will be shown under DOI '
+      . 'input field. Click on this DOI will insert it into field and '
+      . 'starts processing'),
+  ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // SERP Provider's settings.
@@ -86,7 +101,7 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
         '#type' => 'container',
         '#states' => [
           'visible' => [
-            ':input[name="tpps_doi_google_scholar_scrape_allowed"]' => ['checked' => TRUE],
+            ':input[name="tpps_doi_' . $name . '_scrape_allowed"]' => ['checked' => TRUE],
           ],
         ],
         'tpps_doi_' . $name . '_debug_mode' => [

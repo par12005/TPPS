@@ -15,6 +15,8 @@ function tpps_get_variable_list() {
   return [
     // DOI.
     'tpps_doi_lookup_proxy' => '',
+    'tpps_doi_lookup_show_report_links' => FALSE,
+    'tpps_doi_lookup_show_suggestions' => TRUE,
     // DOI / Google Scholar.
     'tpps_doi_google_scholar_scrape_allowed' => TRUE,
     'tpps_doi_google_scholar_debug_mode' => FALSE,
@@ -2690,6 +2692,8 @@ function tpps_update_7134() {
     'tpps_doi_lookup_proxy',
     'https://tgwebdev.cam.uchc.edu/corsanywhere'
   );
+  variable_set('tpps_doi_lookup_show_report_links', FALSE);
+  variable_set('tpps_doi_lookup_show_suggestions', TRUE);
   // DOI Lookup / Google Scholar.
   variable_set('tpps_doi_google_scholar_scrape_allowed', TRUE);
   variable_set('tpps_doi_google_scholar_debug_mode', FALSE);
