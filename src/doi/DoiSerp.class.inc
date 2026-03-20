@@ -456,4 +456,14 @@ abstract class DoiSerp {
     return variable_get('tpps_doi_' . static::KEY . '_serp_url', static::SERP_URL);
   }
 
+  /**
+   * Gets class name.
+   *
+   * @return string
+   *   Returns class name.
+   */
+  public function getClassName() {
+    return static::class;
+  }
+
 }

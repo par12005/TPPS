@@ -41,7 +41,7 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
       'dump_container' => '#' . $name . '_dump_container',
       'endpoint' => $provider->getEndpointURL(),
       'query' => $provider->getQuery(),
-      'query_param' => constant(get_class($provider) . '::QUERY_PARAM'),
+      'query_param' => constant($provider->getClassName() . '::QUERY_PARAM'),
       // Delay between requests of the same client.
       'delay' => $provider->delay,
       'ajax_save_path' => '/ajax/tpps/save_' . $name . '_serp',
@@ -110,7 +110,7 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
     // 'pubmed_serp'.
     $form[$name . '_serp'] = [
       '#type' => 'fieldset',
-      '#title' => $name,
+      '#title' => $provider->getClassName(),
       '#collapsed' => FALSE,
       '#collapsible' => TRUE,
       // 'google_scholar_dump_container',
