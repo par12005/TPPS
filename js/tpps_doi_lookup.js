@@ -6,20 +6,20 @@
 (function ($) {
   Drupal.behaviors.doi_lookup = {
     attach: function (context, settings) {
-
       let doi_lookup = settings.tpps.doi_lookup;
-
-      // TPPS DOI Lookup.
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       doi_lookup.serp_providers.forEach(function(provider_name) {
 
-        // Save Google Scholar iframe content when it was loaded.
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // Event: iframe got content.
         $(doi_lookup[provider_name].iframe).on('load', function() {
+          // Save Google Scholar iframe content when it was loaded.
           saveIframeContent(provider_name);
         });
 
-        // Get publication data by DOI.
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // Event: DOI entered.
         $(doi_lookup.field).blur(function() {
+          // Get publication data by DOI.
           let doi = $.trim($(this).val());
           if (doi == '') {
             console.log('DOI Lookup: Empty value of the DOI.');
@@ -84,6 +84,27 @@
               console.error('DOI Lookup Error:', error);
             }
           });
+
+
+          // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+          // Debug code to get new URL after redirect.
+          if (0) {
+            $.ajax({
+              url: 'https://tgwebdev.cam.uchc.edu/corsanywhere/https://pubmed.ncbi.nlm.nih.gov/?term=10.1038/sdata.2015.6',
+              type: 'GET',
+              success: function(response) {
+                console.log(response);
+              },
+              error: function(xhr, status, error) {
+                console.log(status);
+                console.log(xhr);
+                console.error('DOI Lookup Error:', error);
+              }
+            });
+          }
+
+
+
         });
       });
 
