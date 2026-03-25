@@ -469,7 +469,7 @@ function tpps_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_doi_lookup_form'],
     'access callback' => 'tpps_access',
-    'access arguments' => ['access content'],
+    'access arguments' => ['access administration pages'],
     'type' => MENU_NORMAL_ITEM,
     'file' => 'pages/doi/lookup.inc',
   ];
