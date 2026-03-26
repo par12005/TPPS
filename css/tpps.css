@@ -324,3 +324,10 @@ form .fieldset-title {
 a.submission_accession_link {
   display: block;
 }
+
+
+html form input.hg.form-text,
+.ajax-progress .throbber {
+  background: url('/misc/throbber-active.gif') no-repeat;
+  background-position: 90% 10%;
+}

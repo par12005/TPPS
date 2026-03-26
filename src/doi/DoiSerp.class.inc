@@ -15,7 +15,8 @@
  * 2. Constant TABLE must have 'tpps_' prefix
  *    and usually has KEY constant as suffix.
  * 3. Create Drupal variables:
- *    'tpps_doi_' . static::KEY . '_serp_url',
+ *    'tpps_doi_' . static::KEY . '_serp_path',
+ *    'tpps_doi_' . static::KEY . '_use_ip',
  *    'tpps_doi_' . static::KEY . '_delay',
  *    'tpps_doi_' . static::KEY . '_debug_mode'.
  * 4. Implement getQuery() method.
@@ -36,11 +37,15 @@ abstract class DoiSerp {
   // Default value of the delay between requests.
   // Value 10-60 seconds is suggested over the internet to avoid IP address ban.
   const DEFAULT_DELAY = 5;
-  // Path to the SERP page.
+  // Relative path to the SERP page.
   // Used to build URL for iframe.
-  const SERP_URL = '';
+  const SERP_PATH = '';
   // Name of the GET-query parameter which holds DOI.
   const QUERY_PARAM = '';
+  // Domain name (without schema because HTTPS will always be used).
+  const HOST_NAME = '';
+  // IPv4 address.
+  const HOST_IP = '';
 
   /**
    * Indicates if DOI SERP provider is allowed for scraping.
@@ -453,7 +458,12 @@ abstract class DoiSerp {
    *   No trailing slash.
    */
   public function getEndpointUrl() {
-    return variable_get('tpps_doi_' . static::KEY . '_serp_url', static::SERP_URL);
+    $host = static::HOST_NAME;
+    if (variable_get('tpps_doi_' . static::KEY . '_use_ip', FALSE)) {
+      $host = static::HOST_IP;
+    }
+    $path = variable_get('tpps_doi_' . static::KEY . '_serp_path', static::SERP_PATH);
+    return 'https://' . $host . '/' . $path;
   }
 
   /**

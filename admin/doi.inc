@@ -110,16 +110,26 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
           '#default_value' => variable_get('tpps_doi_' . $name . '_debug_mode'),
           '#description' => t('When enabled no actual requests will be performed.'),
         ],
-        // 'tpps_doi_google_scholar_serp_url',
-        // 'tpps_doi_pubmed_serp_url',
-        'tpps_doi_' . $name . '_serp_url' => [
+        // 'tpps_doi_google_scholar_use_ip',
+        // 'tpps_doi_pubmed_use_ip',
+        'tpps_doi_' . $name . '_use_ip' => [
+          '#type' => 'checkbox',
+          '#title' => t('Use IP Address'),
+          '#default_value' => variable_get('tpps_doi_' . $name . '_use_ip'),
+          '#description' => t('Default is unchecked. When checked then '
+            . 'IP-address will be used instead of domain name to avoid '
+            . 'DNS-dependency.'),
+        ],
+        // 'tpps_doi_google_scholar_serp_path',
+        // 'tpps_doi_pubmed_serp_path',
+        'tpps_doi_' . $name . '_serp_path' => [
           '#type' => 'textfield',
-          '#title' => t('URL of the @serp_provider SERP ', $params),
-          '#default_value' => variable_get('tpps_doi_' . $name . '_serp_url'),
-          '#description' => t('This URL must be allowed by CORS Anywhere '
+          '#title' => t('Relative path to the @serp_provider SERP ', $params),
+          '#default_value' => variable_get('tpps_doi_' . $name . '_serp_path'),
+          '#description' => t('This path must be allowed by CORS Anywhere '
             . 'Proxy server and will be used to build Endpoint URL.'
           )
-          . theme('item_list', ['items' => [constant($class_name . '::SERP_URL')]]),
+          . theme('item_list', ['items' => [constant($class_name . '::SERP_PATH')]]),
         ],
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // @TODO Use this delay for AJAX-requests from client to backend.

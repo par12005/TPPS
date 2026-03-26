@@ -56,11 +56,15 @@ class GoogleScholar extends DoiSerp {
   // Default value of the delay between requests.
   // Value 10-60 seconds is suggested over the internet to avoid IP address ban.
   const DEFAULT_DELAY = 5;
-  // Path to the SERP page.
+  // Path to the SERP page without leading slash '/'.
   // Used to build URL for iframe.
-  const SERP_URL = 'https://scholar.google.com/scholar';
+  const SERP_PATH = 'scholar';
   // Name of the GET-query parameter which holds DOI.
   const QUERY_PARAM = 'q';
+  // Domain name (without schema because HTTPS will always be used).
+  const HOST_NAME = 'scholar.google.com';
+  // Alternative IP address: 142.251.37.100.
+  const HOST_IP = '142.250.180.68';
 
   /**
    * Gets query (url params) to build URL to get SERP.
