@@ -73,12 +73,16 @@ class GoogleScholar extends DoiSerp {
    *   Returns query for url().
    */
   public function getQuery() {
-    return [
+    $query = [
       'hl' => 'en',
       'as_sdt' => '0,5',
       self::QUERY_PARAM => urlencode(check_plain($this->doi)),
       'btnG' => NULL,
     ];
+    if (variable_get('tpps_doi_' . static::KEY . '_unique_url', FALSE)) {
+      $query['z'] = REQUEST_TIME;
+    }
+    return $query;
   }
 
 }

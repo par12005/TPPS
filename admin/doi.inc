@@ -120,6 +120,16 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
             . 'IP-address will be used instead of domain name to avoid '
             . 'DNS-dependency.'),
         ],
+        // 'tpps_doi_google_scholar_unique_url',
+        // 'tpps_doi_pubmed_unique_url',
+        'tpps_doi_' . $name . '_unique_url' => [
+          '#type' => 'checkbox',
+          '#title' => t('Make URL unique'),
+          '#default_value' => variable_get('tpps_doi_' . $name . '_unique_url'),
+          '#description' => t('Default is unchecked. When checked then '
+            . 'unique parameter will be added to the Endpoint URL to make '
+            . 'it unique and disable caching.'),
+        ],
         // 'tpps_doi_google_scholar_serp_path',
         // 'tpps_doi_pubmed_serp_path',
         'tpps_doi_' . $name . '_serp_path' => [
