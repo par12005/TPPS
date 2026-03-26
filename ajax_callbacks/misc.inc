@@ -41,11 +41,12 @@ function tpps_ajax_get_doi($data = NULL) {
   // Validate.
   // Note: Could be used for 'Publication DOI' and 'Dataset DOI' so key is 'doi'.
   $doi = $data['doi'] ?? NULL;
+  $params = ['!doi_link' => theme('doi_link', ['doi' => $doi])];
   if (!preg_match(tpps_doi_regex(), $doi)) {
-    $response['errors'][] = t('Invalid DOI format. Example DOI: 10.1111/dryad.111');
+    $response['errors'][] = t('DOI !doi_link has invalid format. Example DOI: 10.NNNN/dryad.NNN');
   }
   else {
-    $response['statuses'][] = t('DOI is valid.');
+    $response['statuses'][] = t('DOI !doi_link is valid.', $params);
     // Check if DOI in use.
     $doi_check_source = variable_get(
       'tpps_page_1_doi_check_source',
@@ -54,20 +55,21 @@ function tpps_ajax_get_doi($data = NULL) {
     if ($doi_check_source == 'public.tpps_submissions') {
       if ($accession = tpps_doi_get_accession($doi)) {
         $response['warnings'][]
-          = t('WARNING: DOI is already used by @accession.',
-            ['@accession' => $accession]);
+          = t('WARNING: DOI !doi_link is already used by @accession.',
+            array_merge($params, ['@accession' => $accession])
+          );
       }
       else {
-        $response['statuses'][] = t('DOI is not in use.');
+        $response['statuses'][] = t('DOI !doi_link is not in use.', $params);
       }
     }
     else {
       if (tpps_doi_count_dbxref($doi) == 0) {
-        $response['statuses'][] = t('DOI is not in use.');
+        $response['statuses'][] = t('DOI !doi_link is not in use.', $params);
       }
       else {
         $response['warnings'][]
-          = t('This DOI is already in use for another submission.');
+          = t('DOI !doi_link is used by another submission.', $params);
       }
     }
     // DOI is valid so we could try to get data.
@@ -78,7 +80,7 @@ function tpps_ajax_get_doi($data = NULL) {
     else {
       $response['success'] = FALSE;
       $response['warnings'][]
-        = t('DOI Information is empty.');
+        = t('DOI !doi_link: no publication information found.', $params);
     }
   }
   return $response;
