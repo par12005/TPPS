@@ -44,7 +44,9 @@ function tpps_report_submission_zenodo($reset = FALSE) {
       'conceptrecid' => theme('zenodo_concept_record_link',
         ['conceptrecid' => $conceptrecid, 'host' => $host]
       ),
-      'publication_doi' => $item['publication']['publication_doi'] ?? '',
+      'publication_doi' => theme('doi_link', [
+        'doi' => $item['publication']['publication_doi'] ?? '',
+      ]),
       'dataset_doi' => $item['publication']['dataset_doi'] ?? '',
       'deposition_files' => l(
         t('View Files'), 'tpps/submission/' . $accession . '/zenodo/files'
