@@ -77,9 +77,9 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
     $description .= theme('item_list', [
       'items' => [
         l('https://treegenesdb.org/admin/reports/tpps/doi/duplicates',
-        'https://treegenesdb.org/admin/reports/tpps/doi/duplicates'),
+          'https://treegenesdb.org/admin/reports/tpps/doi/duplicates'),
         l('https://tgwebdev.cam.uchc.edu/admin/reports/tpps/doi/submission/all',
-        'https://tgwebdev.cam.uchc.edu/admin/reports/tpps/doi/submission/all'
+          'https://tgwebdev.cam.uchc.edu/admin/reports/tpps/doi/submission/all'
         ),
       ],
     ]);
@@ -132,7 +132,7 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   TppsForm::autofocus($form, ['tpps_doi_lookup_doi']);
   $form['#attributes']['class'][] = 'tpps-submission';
-  tpps_add_css_js('theme', $form);
+  tpps_add_css_js('main', $form);
 
   return $form;
 }

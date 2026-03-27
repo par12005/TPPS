@@ -55,19 +55,19 @@ form.tppsc-form,
 .tpps-submission input.form-text,
 .tpps-form input.form-text,
 .tppsc-form input.form-text {
-  background: #373a3c;
+  background-color: #373a3c;
 }
 
 .tpps-admin-panel select,
 .tpps-submission select,
 .tpps-form select,
 .tppsc-form select {
-  background: #373a3c !important;
+  background-color: #373a3c !important;
 }
 
 /* Submission Tag. To allow overwrite on fly */
 form.tpps input.form-text {
-  background: #373a3c;
+  background-color: #373a3c;
 }
 
 form.tpps,

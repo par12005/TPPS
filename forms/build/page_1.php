@@ -163,13 +163,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
         [':input[name="publication[status]"]' => ['value' => 'In Preparation or Submitted']],
       ],
     ],
-    '#attributes' => [
-      'class' => [
-        'hg',
-        'ajax-progress',
-        'throbber',
-      ],
-    ],
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Field was relocated (v.2). [] -> ['publication'];

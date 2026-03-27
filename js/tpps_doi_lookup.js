@@ -13,7 +13,13 @@
         // Event: iframe got content.
         $(doi_lookup[provider_name].iframe).on('load', function() {
           // Save Google Scholar iframe content when it was loaded.
+          $(doi_lookup.field)
+            .addClass('tpps-throbber')
+            .prop('disabled', true);
           saveIframeContent(provider_name);
+          $(doi_lookup.field)
+            .removeClass('tpps-throbber')
+            .prop('disabled', false);
         });
 
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -21,12 +27,14 @@
         $(doi_lookup.field).blur(function() {
           // Get publication data by DOI.
           let doi = $.trim($(this).val());
-          if (doi == '') {
-            console.log('DOI Lookup: Empty value of the DOI.');
+          if (!doi) {
+            // Empty DOI. Nothing to do and it's not an error.
             return;
           }
           // Block DOI field while processing.
-          $(this).prop('disabled', true);
+          $(this)
+            .addClass('tpps-throbber')
+            .prop('disabled', true);
           // Check if doi was really changed.
           if (
             doi_lookup[provider_name].publication_data != undefined
@@ -36,7 +44,6 @@
               provider_name,
               doi_lookup[provider_name].publication_data[doi]
             );
-            //console.log('Re-used already received data.');
             $(doi_lookup.iframe).hide();
             return;
           }
@@ -76,7 +83,9 @@
                   if (proxy_url) {
                     $iframe.attr('src', proxy_url).show();
                   }
-                  $(doi_lookup.field).prop('disabled', false);
+                  $(doi_lookup.field)
+                    .removeClass('tpps-throbber')
+                    .prop('disabled', false);
                 }, delay);
               }
             },
@@ -149,7 +158,9 @@
           + jsonString + '</pre>'
         ).show();
         //$(doi_lookup.iframe).hide();
-        $(this).prop('disabled', false);
+        $(doi_lookup.field)
+          .removeClass('tpps-throbber')
+          .prop('disabled', false);
       }
 
       /**
@@ -157,7 +168,7 @@
        */
       function saveIframeContent(provider_name) {
         let doi = $.trim($(doi_lookup.field).val());
-        if (doi == '') {
+        if (!doi) {
           console.log("DOI Lookup: Empty DOI. Can't save iframe content");
           return;
         }

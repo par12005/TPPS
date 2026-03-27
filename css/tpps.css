@@ -44,11 +44,11 @@ div#autocomplete {
 }
 table {
   border: 1px solid #b5e0ba;
-  background: #ffffff;
+  background-color: #ffffff;
   width: 100%;
 }
 thead th {
-  background: #ffffff;
+  background-color: #ffffff;
   border-top: 0px solid #000000 !important;
   padding: 10px;
 }
@@ -127,7 +127,7 @@ th > div.form-type-select > .ajax-progress {
 }
 #tpps_table_display,
 .tpps_table {
-  background: #ffffff;
+  background-color: #ffffff;
   border: 1px solid #b5e0ba;
   border-radius: 4px;
   padding: 0px 10px;
@@ -201,7 +201,7 @@ a.fieldset-title {
 }
 /* Highlight disabled form fields */
 form input:disabled {
-  background: silver;
+  background-color: silver;
 }
 /**
  * Make visible all options of dropdown when multiple options enabled.
@@ -267,7 +267,7 @@ form div.warning {
   border-radius: 4px;
   border: 1px solid #bebebe;
   padding: 4px;
-  background: white;
+  background-color: white;
 }
 #autocomplete li {
   -webkit-border-radius: 2px;
@@ -276,10 +276,10 @@ form div.warning {
   padding: 2px;
 }
 #autocomplete li:hover {
-  background: silver;
+  background-color: silver;
 }
 select option:selected {
-  background: silver;
+  background-color: silver;
 }
 .tpps-hidden {
   display: none;
@@ -325,9 +325,13 @@ a.submission_accession_link {
   display: block;
 }
 
-
-html form input.hg.form-text,
-.ajax-progress .throbber {
-  background: url('/misc/throbber-active.gif') no-repeat;
-  background-position: 90% 10%;
+/**
+ * How to use?
+ * 1. Use: tpps_add_css_js('main', $form);
+ * 2. $(this).prop('disabled', true).addClass('tpps-throbber');
+ */
+.tpps-throbber {
+  background-image: url('../images/tpps-throbber.svg');
+  background-position: right center;
+  background-repeat: no-repeat;
 }
