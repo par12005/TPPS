@@ -13,11 +13,18 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   if (!empty($doi2)) {
     $doi = $doi1 . '/' . $doi2;
   }
+  // Check if any SERP providers are enabled.
+  // List of existing providers.
+  $serp_provider_list = ['GoogleScholar', 'PubMed'];
+  // List of enabled providers.
+  $serp_providers = [];
+  foreach ($serp_provider_list as $class_name) {
+    $name = constant($class_name . '::KEY');
+    if (variable_get('tpps_doi_' . $name . '_scrape_allowed')) {
+      $serp_providers[$name] = new $class_name($doi);
+    }
+  }
 
-  $serp_providers = [
-    PubMed::KEY => new PubMed($doi),
-    GoogleScholar::KEY => new GoogleScholar($doi),
-  ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Add JS settings.
   $js_settings = [
@@ -27,6 +34,7 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
       // Selector for the iframe which holds Google Scholar SERP.
       // 'doi' => $doi,
       'proxy' => variable_get('tpps_doi_lookup_proxy'),
+      // List of the SERP Provider KEYs.
       'serp_providers' => array_keys($serp_providers),
       'ajax_get_publication_data_path' => '/ajax/tpps/get_publication_data',
     ],
