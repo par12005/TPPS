@@ -5,10 +5,8 @@
  * TPPS DOI Lookup Form.
  */
 
-// @TODO Update 'source' column in DB table to use DoiSerp::KEY.
-//
-//
-//
+// @TODO Check if 'source' column in DB table uses DoiSerp::KEY.
+
 /**
  * TPPS DOI Lookup Form.
  */
@@ -33,19 +31,32 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
     ]);
   }
   // Build list of suggestions.
-  if (variable_get('tpps_doi_lookup_show_suggestions', TRUE)) {
+  if (variable_get('tpps_doi_lookup_show_suggestions')) {
     $options = ['attributes' => ['class' => ['tpps-suggestion']]];
+    $all_doi_list = PublicationDOI::getList();
     $doi_list = db_select(PublicationDOI::TABLE, 't')
       ->fields('t', ['doi'])
       ->groupBy('doi')
       ->execute()
       ->fetchCol('doi');
-    foreach ($doi_list as $value) {
-      $suggestions[] = l($value, '', $options);
+    // Build list of other DOIs.
+    foreach ($all_doi_list as $value) {
+      if (in_array($value, $doi_list)) {
+        // Processed.
+        $suggestions[] = l($value, '', $options);
+      }
+      else {
+        // Not yet processed.
+        $other_doi_list[] = l($value, '', $options);
+      }
     }
-    $description .= 'Parsed DOI:' . theme('item_list', ['items' => $suggestions]);
+    $description .= 'Parsed DOI:'
+      . theme('item_list', ['items' => $suggestions]);
+    $description .= 'Not yet parsed DOI:'
+      . theme('item_list', ['items' => $other_doi_list]);
   }
-  // Create field.
+
+  // Create main DOI field.
   $form['tpps_doi_lookup_doi'] = [
     '#type' => 'textfield',
     '#title' => t('DOI'),

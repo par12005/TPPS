@@ -239,7 +239,7 @@ abstract class DoiSerp {
     }
     $this->isLoaded = TRUE;
     // Get data from DB.
-    $result = db_select(self::TABLE, 't')
+    $result = db_select(static::TABLE, 't')
       ->fields('t')
       ->condition('doi', $this->doi)
       // Load latest record.
@@ -273,7 +273,7 @@ abstract class DoiSerp {
     if (empty($this->serp)) {
       throw new Exception('Empty SERP.');
     }
-    db_insert(self::TABLE)->fields([
+    db_insert(static::TABLE)->fields([
       'doi' => $this->doi,
       'created' => REQUEST_TIME,
       'serp' => $this->serp,
@@ -331,7 +331,7 @@ abstract class DoiSerp {
         $gemini->systemInstruction = variable_get(
           'tpps_doi_lookup_system_instruction',
           '
-          Get DOI publication information for given page source.
+          Get DOI publication information from given source code of the page.
           Journal must not have year.
           Use "NA" for empty values.
           '
@@ -411,11 +411,11 @@ abstract class DoiSerp {
    *
    * Table to store Google Scholar SERP pages.
    * Used in hook_install().
-   * Table name: self::TABLE.
+   * Table name: static::TABLE.
    * Table must have 'doi' and 'created' fields.
    *
    * Usage example:
-   *   $field_list = array_keys(self::getSchema()['fields']);
+   *   $field_list = array_keys(static::getSchema()['fields']);
    *   unset($field_list['source']);
    *
    * @return array

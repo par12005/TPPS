@@ -225,7 +225,7 @@ function tpps_ajax_save_google_scholar_serp(array $payload) {
 
     $response['doi'] = $payload['doi'];
     $response['source'] = $payload['source'];
-    $response['publication_data'] = PublicationDOI::load($doi);
+    $response['publication_data'] = PublicationDOI::load($doi, $payload['source']);
     $response['success'] = TRUE;
   }
   return $response;
@@ -263,7 +263,7 @@ function tpps_ajax_save_pubmed_serp(array $payload) {
 
     $response['doi'] = $payload['doi'];
     $response['source'] = $payload['source'];
-    $response['publication_data'] = PublicationDOI::load($doi);
+    $response['publication_data'] = PublicationDOI::load($doi, $payload['source']);
     $response['success'] = TRUE;
   }
   return $response;

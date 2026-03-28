@@ -52,6 +52,7 @@
             $(doi_lookup['publication_data'][provider_name]).length
             && $(doi_lookup['publication_data'][provider_name][doi]).length
           ) {
+            console.log(provider_name + ': show already loaded data.');
             showPublicationData(
               provider_name,
               doi_lookup['publication_data'][provider_name][doi]
@@ -59,11 +60,13 @@
             $(doi_lookup.iframe).hide();
           }
           else {
+            console.log(provider_name + ': data not loadeded yet.');
             // No pre-loaded publication data found.
             // Let's get SERP.
             $(doi_lookup[provider_name].dump_container).html('').hide();
             // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
             // Request publication data from PublicationDOI::TABLE.
+            console.log(provider_name + ': request data from backend.');
             $.ajax({
               url: doi_lookup.ajax_get_publication_data_path,
               type: 'POST',
@@ -72,9 +75,11 @@
               data: JSON.stringify({"doi": doi, "source": provider_name}),
               success: function(response) {
                 if (response && response.publication_data && $(response.publication_data).length) {
+                  console.log(provider_name + ': show received data.');
                   showPublicationData(response.source, response.publication_data);
                 }
                 else {
+                  console.log(provider_name + ': received no data.');
                   // No saved publication data.
                   // Let's get SERP if scraping is allowed.
                   if (
@@ -90,6 +95,7 @@
                         delay = 0;
                       }
                     }
+                    console.log(provider_name + ': delay.');
                     // Build iframe for Google Scholar SERP.
                     setTimeout(function() {
                       doi_lookup[provider_name].last_request = $.now();
@@ -99,6 +105,7 @@
                       if (proxy_url) {
                         $iframe.attr('src', proxy_url).show();
                       }
+                      console.log(provider_name + ': iframe updated.');
                       disableThrobber();
                     }, delay);
                   }
@@ -114,14 +121,14 @@
 
       doi_lookup.serp_providers.forEach(function(provider_name) {
         // Event: iframe got content.
-        if ($(doi_lookup[provider_name]).length) {
-          $(doi_lookup[provider_name].iframe).on('load', function() {
-            // Save Google Scholar iframe content when it was loaded.
-            enableThrobber();
-            saveIframeContent(provider_name);
-            disableThrobber();
-          });
-        }
+        $(doi_lookup[provider_name].iframe).on('load', function() {
+          console.log(provider_name + ': iframe content loadeded.');
+          // Save Google Scholar iframe content when it was loaded.
+          enableThrobber();
+          saveIframeContent(provider_name);
+          console.log(provider_name + ': saved iframe content.');
+          disableThrobber();
+        });
       });
 
       /**
@@ -193,7 +200,8 @@
         }
 
         // The iframe and its contents have finished loading
-        let iframeContent = $(this).contents().find('html').html();
+        let iframeContent = $(doi_lookup[provider_name].iframe)
+          .contents().find('html').html();
 
         // Check if CORS Anywhere Proxy failed.
         let error_message = 'Not found because of proxy error: Error: '
