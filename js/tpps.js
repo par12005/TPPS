@@ -1,3 +1,10 @@
+/**
+ * @file
+ *
+ * Main JS file for TPPS module.
+ */
+
+/* global jQuery:readonly, Drupal:writable */
 (function ($, Drupal) {
 
   // Submit form on 'Enter' pressing in any field (except 'Upload' buttons).
@@ -838,6 +845,5 @@
         }
       }
     }
-  };
+  }
 })(jQuery, Drupal);
-/* [/VS] */

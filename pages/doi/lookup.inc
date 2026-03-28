@@ -5,6 +5,10 @@
  * TPPS DOI Lookup Form.
  */
 
+// @TODO Update 'source' column in DB table to use DoiSerp::KEY.
+//
+//
+//
 /**
  * TPPS DOI Lookup Form.
  */
@@ -13,74 +17,10 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   if (!empty($doi2)) {
     $doi = $doi1 . '/' . $doi2;
   }
-  // Check if any SERP providers are enabled.
-  // List of existing providers.
-  $serp_provider_list = ['GoogleScholar', 'PubMed'];
-  // List of enabled providers.
-  $serp_providers = [];
-  foreach ($serp_provider_list as $class_name) {
-    $name = constant($class_name . '::KEY');
-    if (variable_get('tpps_doi_' . $name . '_scrape_allowed')) {
-      $serp_providers[$name] = new $class_name($doi);
-    }
-  }
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Add JS settings.
-  $js_settings = [
-    'doi_lookup' => [
-      // Selector for the textfield with DOI.
-      'field' => '#edit-tpps-doi-lookup-doi',
-      // Selector for the iframe which holds Google Scholar SERP.
-      // 'doi' => $doi,
-      'proxy' => variable_get('tpps_doi_lookup_proxy'),
-      // List of the SERP Provider KEYs.
-      'serp_providers' => array_keys($serp_providers),
-      'ajax_get_publication_data_path' => '/ajax/tpps/get_publication_data',
-    ],
-  ];
-  foreach ($serp_providers as $name => $provider) {
-
-// @TODO Update 'source' column in DB table to use DoiSerp::KEY.
-
-    $publication_data[$name] = PublicationDOI::load($doi, $name);
-    $js_settings['doi_lookup'][$name] = [
-      'iframe' => 'iframe#' . $name,
-      'dump_container' => '#' . $name . '_dump_container',
-      'endpoint' => $provider->getEndpointURL(),
-      'query' => $provider->getQuery(),
-      'query_param' => constant($provider->getClassName() . '::QUERY_PARAM'),
-      // Delay between requests of the same client.
-      'delay' => $provider->delay,
-      'ajax_save_path' => '/ajax/tpps/save_' . $name . '_serp',
-      'publication_data' => [$doi => $publication_data],
-    ];
-  }
-  $form['#attached']['js'][] = [
-    'type' => 'setting',
-    'data' => ['tpps' => $js_settings],
-    'scope' => 'footer',
-    'group' => JS_THEME,
-    'weight' => 5,
-  ];
-  // Add JS-logic.
-  tpps_add_css_js('doi_lookup', $form);
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Build list of suggestions.
-  $doi_list = db_select(PublicationDOI::TABLE, 't')
-    ->fields('t', ['doi'])
-    ->groupBy('doi')
-    ->execute()
-    ->fetchCol('doi');
-  $options = ['attributes' => ['class' => ['tpps-suggestion']]];
-  foreach ($doi_list as $value) {
-    $items[] = l($value, '', $options);
-  }
-  tpps_add_css_js('suggestion', $form);
-
   // DOI Field.
   $description = '';
+  // Build list of DOI-related reports.
   if (variable_get('tpps_doi_lookup_show_report_links', FALSE)) {
     $description .= theme('item_list', [
       'items' => [
@@ -92,9 +32,20 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
       ],
     ]);
   }
+  // Build list of suggestions.
   if (variable_get('tpps_doi_lookup_show_suggestions', TRUE)) {
-    $description .= 'Parsed DOI:' . theme('item_list', ['items' => $items]);
+    $options = ['attributes' => ['class' => ['tpps-suggestion']]];
+    $doi_list = db_select(PublicationDOI::TABLE, 't')
+      ->fields('t', ['doi'])
+      ->groupBy('doi')
+      ->execute()
+      ->fetchCol('doi');
+    foreach ($doi_list as $value) {
+      $suggestions[] = l($value, '', $options);
+    }
+    $description .= 'Parsed DOI:' . theme('item_list', ['items' => $suggestions]);
   }
+  // Create field.
   $form['tpps_doi_lookup_doi'] = [
     '#type' => 'textfield',
     '#title' => t('DOI'),
@@ -103,22 +54,56 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  $url_list = [];
-  if (!empty($doi) && empty($publication_data)) {
-    $proxy = variable_get('tpps_doi_lookup_proxy');
-    foreach ($serp_providers as $name => $provider) {
-      if ($provider->scrapeAllowed) {
-        // Note: PubMed replaces '/' in DOI with space.
-        $fixed_provider_url = str_replace('%252F', '/', $provider->buildUrl());
-        $url_list[$name] = $proxy . '/' . $fixed_provider_url;
-      }
+  // JS Settings.
+  $proxy = variable_get('tpps_doi_lookup_proxy');
+  $js_settings = [
+    'doi_lookup' => [
+      // Selector for the textfield with DOI.
+      'field' => '#edit-tpps-doi-lookup-doi',
+      // Selector for the iframe which holds Google Scholar SERP.
+      'proxy' => $proxy,
+      // List of the SERP Provider KEYs.
+      'ajax_get_publication_data_path' => '/ajax/tpps/get_publication_data',
+      'publication_data' => [],
+    ],
+  ];
+  // Check if any SERP providers are enabled.
+  // List of existing providers.
+  $serp_provider_class_list = ['GoogleScholar', 'PubMed'];
+
+  // List of enabled providers.
+  $serp_providers = [];
+  foreach ($serp_provider_class_list as $class_name) {
+    $name = constant($class_name . '::KEY');
+    $provider = new $class_name($doi);
+    $serp_providers[$name] = $provider;
+    // Publication data per provider.
+    if (!empty($publication_data = PublicationDOI::load($doi, $name))) {
+      $js_settings['doi_lookup']['publication_data'][$name][$doi]
+        = $publication_data;
     }
-  }
-  foreach ($serp_providers as $name => $provider) {
-    if (!$provider->scrapeAllowed) {
-      continue;
+    // List of existing SERP Providers.
+    $js_settings['doi_lookup']['serp_providers'][] = $name;
+    // Metadata of the providers allowed for scraping.
+    $js_settings['doi_lookup'][$name] = [
+      'scrape_allowed' => $provider->scrapeAllowed,
+      'iframe' => 'iframe#' . $name,
+      'dump_container' => '#' . $name . '_dump_container',
+      'endpoint' => $provider->getEndpointURL(),
+      'query' => $provider->getQuery(),
+      'query_param' => constant($provider->getClassName() . '::QUERY_PARAM'),
+      // Delay between requests of the same client.
+      'delay' => $provider->delay,
+      'ajax_save_path' => '/ajax/tpps/save_' . $name . '_serp',
+    ];
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    $url = '';
+    if (!empty($doi) && empty($publication_data)) {
+      // Note: PubMed replaces '/' in DOI with space.
+      $fixed_provider_url = str_replace('%252F', '/', $provider->buildUrl());
+      $url = $proxy . '/' . $fixed_provider_url;
     }
-    $url = $url_list[$name] ?? '';
     // 'google_scholar_serp',
     // 'pubmed_serp'.
     $form[$name . '_serp'] = [
@@ -136,6 +121,19 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
       ],
     ];
   }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Add JS settings.
+  $form['#attached']['js'][] = [
+    'type' => 'setting',
+    'data' => ['tpps' => $js_settings],
+    'scope' => 'footer',
+    'group' => JS_THEME,
+    'weight' => 5,
+  ];
+  // Add JS-logic.
+  tpps_add_css_js('doi_lookup', $form);
+
+  tpps_add_css_js('suggestion', $form);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   TppsForm::autofocus($form, ['tpps_doi_lookup_doi']);

@@ -3,119 +3,140 @@
  *
  * TPPS DOI Lookup.
  */
-(function ($) {
+
+/* global jQuery:readonly, Drupal:writable */
+(function ($, Drupal) {
   Drupal.behaviors.doi_lookup = {
     attach: function (context, settings) {
       let doi_lookup = settings.tpps.doi_lookup;
-      doi_lookup.serp_providers.forEach(function(provider_name) {
 
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        // Event: iframe got content.
-        $(doi_lookup[provider_name].iframe).on('load', function() {
-          // Save Google Scholar iframe content when it was loaded.
-          $(doi_lookup.field)
-            .addClass('tpps-throbber')
-            .prop('disabled', true);
-          saveIframeContent(provider_name);
-          $(doi_lookup.field)
-            .removeClass('tpps-throbber')
-            .prop('disabled', false);
-        });
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Event: DOI entered.
+      $(doi_lookup.field).blur(function() {
+        // Note: there is no need to check if it's new DOI (or was it really
+        // changed) because we store server's responses and re-use them and
+        // DOI field is blocked during AJAX-requests to prevent changes and
+        // spam-requests to the backend server.
 
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        // Event: DOI entered.
-        $(doi_lookup.field).blur(function() {
-          // Get publication data by DOI.
-          let doi = $.trim($(this).val());
-          if (!doi) {
-            // Empty DOI. Nothing to do and it's not an error.
-            return;
-          }
-          // Block DOI field while processing.
-          $(this)
-            .addClass('tpps-throbber')
-            .prop('disabled', true);
-          // Check if doi was really changed.
-          if (
-            doi_lookup[provider_name].publication_data != undefined
-            && doi_lookup[provider_name].publication_data[doi] != undefined
-          ) {
-            showPublicationData(
-              provider_name,
-              doi_lookup[provider_name].publication_data[doi]
-            );
-            $(doi_lookup.iframe).hide();
-            return;
-          }
-          $(doi_lookup[provider_name].dump_container).html('').hide();
+        // Get value of the DOI field.
+// @TODO Add full URL support beside short DOI value.
+        let doi = $.trim($(this).val());
+        if (!doi) {
+          // Empty DOI. Nothing to do and it's not an error.
+          return;
+        }
 
-          // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-          // Request publication data from PublicationDOI::TABLE.
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // Debug code to get new URL after redirect.
+        if (0) {
           $.ajax({
-            url: doi_lookup.ajax_get_publication_data_path,
-            type: 'POST',
-            contentType: 'application/json',
-            dataType: 'json',
-            data: JSON.stringify({"doi": doi, "source": provider_name}),
+            url: 'https://tgwebdev.cam.uchc.edu/corsanywhere/https://pubmed.ncbi.nlm.nih.gov/?term=10.1038/sdata.2015.6',
+            type: 'GET',
             success: function(response) {
-              if (response && response.publication_data && response.publication_data.length !== 0) {
-                showPublicationData(
-                  response.source,
-                  response.publication_data
-                );
-              }
-              else {
-                // Calculate delay.
-                let delay = 0;
-                let last_request = doi_lookup[provider_name].last_request;
-                if (last_request) {
-                  delay = (last_request + (doi_lookup[provider_name].delay * 1000)) - $.now();
-                  if (delay < 0) {
-                    delay = 0;
-                  }
-                }
-                // Build iframe for Google Scholar SERP.
-                setTimeout(function() {
-                  doi_lookup[provider_name].last_request = $.now();
-                  // Build iframe.
-                  let $iframe=$(doi_lookup[provider_name].iframe);
-                  let proxy_url = buildUrl(provider_name, doi);
-                  if (proxy_url) {
-                    $iframe.attr('src', proxy_url).show();
-                  }
-                  $(doi_lookup.field)
-                    .removeClass('tpps-throbber')
-                    .prop('disabled', false);
-                }, delay);
-              }
+              console.log(response);
             },
             error: function(xhr, status, error) {
+              console.log(status);
+              console.log(xhr);
               console.error('DOI Lookup Error:', error);
             }
           });
+        }
 
-
-          // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-          // Debug code to get new URL after redirect.
-          if (0) {
+        // Block DOI field while processing.
+        enableThrobber();
+        // Get publication data by DOI.
+        doi_lookup.serp_providers.forEach(function(provider_name) {
+          // Format: doi_lookup['publication_data'][$provider_name][$doi]
+          if (
+            $(doi_lookup['publication_data'][provider_name]).length
+            && $(doi_lookup['publication_data'][provider_name][doi]).length
+          ) {
+            showPublicationData(
+              provider_name,
+              doi_lookup['publication_data'][provider_name][doi]
+            );
+            $(doi_lookup.iframe).hide();
+          }
+          else {
+            // No pre-loaded publication data found.
+            // Let's get SERP.
+            $(doi_lookup[provider_name].dump_container).html('').hide();
+            // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+            // Request publication data from PublicationDOI::TABLE.
             $.ajax({
-              url: 'https://tgwebdev.cam.uchc.edu/corsanywhere/https://pubmed.ncbi.nlm.nih.gov/?term=10.1038/sdata.2015.6',
-              type: 'GET',
+              url: doi_lookup.ajax_get_publication_data_path,
+              type: 'POST',
+              contentType: 'application/json',
+              dataType: 'json',
+              data: JSON.stringify({"doi": doi, "source": provider_name}),
               success: function(response) {
-                console.log(response);
+                if (response && response.publication_data && $(response.publication_data).length) {
+                  showPublicationData(response.source, response.publication_data);
+                }
+                else {
+                  // No saved publication data.
+                  // Let's get SERP if scraping is allowed.
+                  if (
+                    $(doi_lookup[provider_name]).length
+                     && doi_lookup[provider_name].scrape_allowed
+                  ) {
+                    // Calculate delay.
+                    let delay = 0;
+                    let last_request = doi_lookup[provider_name].last_request;
+                    if (last_request) {
+                      delay = (last_request + (doi_lookup[provider_name].delay * 1000)) - $.now();
+                      if (delay < 0) {
+                        delay = 0;
+                      }
+                    }
+                    // Build iframe for Google Scholar SERP.
+                    setTimeout(function() {
+                      doi_lookup[provider_name].last_request = $.now();
+                      // Build iframe.
+                      let $iframe=$(doi_lookup[provider_name].iframe);
+                      let proxy_url = buildUrl(provider_name, doi);
+                      if (proxy_url) {
+                        $iframe.attr('src', proxy_url).show();
+                      }
+                      disableThrobber();
+                    }, delay);
+                  }
+                }
               },
               error: function(xhr, status, error) {
-                console.log(status);
-                console.log(xhr);
                 console.error('DOI Lookup Error:', error);
               }
             });
           }
-
-
-
         });
       });
+
+      doi_lookup.serp_providers.forEach(function(provider_name) {
+        // Event: iframe got content.
+        if ($(doi_lookup[provider_name]).length) {
+          $(doi_lookup[provider_name].iframe).on('load', function() {
+            // Save Google Scholar iframe content when it was loaded.
+            enableThrobber();
+            saveIframeContent(provider_name);
+            disableThrobber();
+          });
+        }
+      });
+
+      /**
+       * Enables throbber icon and disables DOI field.
+       */
+      function enableThrobber() {
+        $(doi_lookup.field).addClass('tpps-throbber').prop('disabled', true);
+      }
+
+      /**
+       * Disables throbber icon and enables DOI field.
+       */
+      function disableThrobber() {
+        $(doi_lookup.field).removeClass('tpps-throbber').prop('disabled', false);
+      }
 
       /**
        * Build URL for Google Scholar iFrame.
@@ -148,9 +169,9 @@
        *   DOI Publication data
        */
       function showPublicationData(provider_name, data) {
-        doi_lookup[provider_name].publication_data
-          = doi_lookup[provider_name].publication_data ?? {};
-        doi_lookup[provider_name].publication_data[data.doi] = data;
+        doi_lookup['publication_data'][provider_name]
+          = doi_lookup['publication_data'][provider_name] ?? {};
+        doi_lookup['publication_data'][provider_name][data.doi] = data;
         // Show at page.
         var jsonString = JSON.stringify(data, null, 2);
         $(doi_lookup[provider_name].dump_container).html(
@@ -158,9 +179,7 @@
           + jsonString + '</pre>'
         ).show();
         //$(doi_lookup.iframe).hide();
-        $(doi_lookup.field)
-          .removeClass('tpps-throbber')
-          .prop('disabled', false);
+        disableThrobber();
       }
 
       /**
@@ -198,7 +217,7 @@
           success: function(response) {
             if (
               response && response.publication_data
-              && response.publication_data.length !== 0
+              && $(response.publication_data).length
             ) {
               showPublicationData(
                 response.source,

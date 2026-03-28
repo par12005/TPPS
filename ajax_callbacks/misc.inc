@@ -168,6 +168,10 @@ function tpps_ajax_remember_fieldset_collapsed_state(array $data) {
  * @return array
  *   Returns response.
  *   Key 'success' will have value TRUE in case of success and FALSE otherwise.
+ *
+ * @todo Minor. Remove $payload['source'] and return data for all sources
+ * in single response. Problem is in processing response in JS at client side
+ * without the loop.
  */
 function tpps_ajax_get_publication_data(array $payload) {
   $response['success'] = FALSE;
