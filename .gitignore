@@ -13,3 +13,4 @@ cscope.out
 **.patch
 **.diff
 output-*.txt
+eslint.config.mjs
