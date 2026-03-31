@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains 'SubmissionCache' class.
+ * Contains static 'SubmissionCache' class.
  *
  * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * Overview.
@@ -16,7 +16,8 @@
  *
  * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * Caching.
- * Cached data is stored in TPPS_CACHE_BIN which uses own table 'cache_tpps'.
+ * Cached data is stored in SubmissionCache::CACHE_BIN which uses own DB table
+ * 'cache_tpps_submission'.
  * Custom cache id is used to separate from other cached data and allow other
  * code to reuse this list.
  *
@@ -55,12 +56,12 @@ class SubmissionCache {
 
   // Cache Id.
   // Used to store most used submision's data for reports.
-  // See TPPS_CACHE_BIN constant.
+  // See SubmissionCache::CACHE_BIN constant.
   const CACHE_ID = 'tpps_submission_list';
 
-  // Cache bin name.
-  // If custom cache bin wasn't yet created for some reasons we use common one.
-  const CACHE_BIN = 'cache_tpps_submission' ?? 'cache';
+  // Cache bin name (equals to the DB table name).
+  // @TODO Create new const 'TABLE' for DB table name.
+  const CACHE_BIN = 'cache_tpps_submission';
 
   // The name of the key used to reset cache in GET-request.
   // VALUE will be CACHE_BIN.
@@ -598,8 +599,7 @@ class SubmissionCache {
   public static function getAccessionList(array $condition_list = [], $reset = FALSE) {
     $default_value = [1];
     $cid = __METHOD__;
-    $cache_bin = TPPS_CACHE_BIN ?? 'cache';
-    $cache = cache_get($cid, $cache_bin);
+    $cache = cache_get($cid, static::CACHE_BIN);
 
     $key = md5(json_encode($condition_list));
     if ($reset || empty($cache) || empty($cache->data[$key])) {
@@ -647,7 +647,7 @@ class SubmissionCache {
       krsort($list, SORT_NATURAL);
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       $cache->data[$key] = $list;
-      cache_set($cid, $cache->data, $cache_bin);
+      cache_set($cid, $cache->data, static::CACHE_BIN);
     }
     return $cache->data[$key] ?? $default_value;
   }
@@ -663,6 +663,18 @@ class SubmissionCache {
     return empty(
       array_filter($list, function($x) {return strpos($x, 'TGDR') === FALSE;})
     );
+  }
+
+  /**
+   * Gets DB table schema.
+   *
+   * Used in hook_install().
+   *
+   * @return array
+   *   Returns db table schema.
+   */
+  public static getSchema() {
+    return drupal_get_schema_unprocessed('system', 'cache');
   }
 
 }

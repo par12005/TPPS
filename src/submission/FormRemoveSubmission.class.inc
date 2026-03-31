@@ -404,7 +404,10 @@ class FormRemoveSubmission {
       'default_value' => FALSE,
       'title' => t("Submission Cache"),
       'status_method' => 'isCached',
-      'description' => t("Remove the record from the 'cache_tpps_submission' table."),
+      'description' => t(
+        "Remove the record from the '@bin' table.",
+        ['@bin' => SubmissionCache::CACHE_BIN]
+      ),
       'links' => [
         l(t("View JSON Submission Cache"), 'api/submission/' . $accession . '/cache'),
         l(t('View content of the "public.cache_tpps_submission" table.'),
