@@ -39,7 +39,7 @@ function tpps_report_doi_duplicates($reset = FALSE) {
       }
       $rows[] = [
         ++$i,
-        theme('doi_link', ['doi' => $publication_doi]),
+        PublicationDOI::print($publication_doi),
         theme('item_list', ['items' => $accession_list]),
       ];
     }

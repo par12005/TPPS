@@ -665,4 +665,22 @@ class PublicationDOI {
 
   }
 
+  /**
+   * Prints DOI as hyperlink.
+   *
+   * @param string $doi
+   *   Optional. DOI.
+   *
+   * @return string
+   *   Returns rendered HTML tag <A> where anchor is a DOI and href is a link to
+   *   https://doi.org/ site which will redirect to the publication.
+   *   If $doi is empty returns empty string.
+   */
+  public static function print($doi = NULL) {
+    if (!empty($doi)) {
+      $output = theme('doi_link', ['doi' => $doi]);
+    }
+    return $output ?? '';
+  }
+
 }

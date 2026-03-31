@@ -41,7 +41,7 @@ function tpps_ajax_get_doi($data = NULL) {
   // Validate.
   // Note: Could be used for 'Publication DOI' and 'Dataset DOI' so key is 'doi'.
   $doi = $data['doi'] ?? NULL;
-  $params = ['!doi_link' => theme('doi_link', ['doi' => $doi])];
+  $params = ['!doi_link' => PublicationDOI::print($doi)];
   if (!preg_match(tpps_doi_regex(), $doi)) {
     $response['errors'][] = t('DOI !doi_link has invalid format. Example DOI: 10.NNNN/dryad.NNN');
   }
