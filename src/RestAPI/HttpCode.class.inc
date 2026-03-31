@@ -69,6 +69,7 @@ class HttpCode {
       101 => 'Switching Protocols',
       102 => 'Processing', // WebDAV; RFC 2518
       103 => 'Early Hints', // RFC 8297
+      // 2xx
       200 => 'OK',
       201 => 'Created',
       202 => 'Accepted',
@@ -79,6 +80,7 @@ class HttpCode {
       207 => 'Multi-Status', // WebDAV; RFC 4918
       208 => 'Already Reported', // WebDAV; RFC 5842
       226 => 'IM Used', // RFC 3229
+      // 3xx
       300 => 'Multiple Choices',
       301 => 'Moved Permanently',
       302 => 'Found', // Previously "Moved temporarily"

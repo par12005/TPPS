@@ -28,8 +28,9 @@ function tpps_rest_api_settings_form(array $form, array &$form_state) {
     '#type' => 'checkbox',
     '#title' => t('Use Cached Responses'),
     '#default_value' => variable_get('tpps_rest_api_use_response_cache', FALSE),
-    '#description' => t('WARNING: For development only because this rule '
-    . 'will be applied to all requests.'),
+    '#description' => t('Only latest valid response will be used.'
+      . '<br />WARNING: For development only because this rule '
+      . 'will be applied to all requests.'),
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

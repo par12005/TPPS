@@ -165,14 +165,6 @@ class RestAPI {
   protected $message;
 
   /**
-   * Whole response body.
-   *
-   * Stored in 'tpps_rest_api_response.body' column.
-   *
-   * @var string
-   */
-  protected $body = [];
-  /**
    * Unix timestamp of the moment when request was created.
    *
    * Stored in 'tpps_rest_api_response.started' column.
@@ -193,7 +185,9 @@ class RestAPI {
 
 
   /**
-   * API response.
+   * Remote server's response.
+   *
+   * Stored in 'tpps_rest_api_response.body' column.
    *
    * @var mixed
    */

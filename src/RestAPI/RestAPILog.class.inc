@@ -28,8 +28,10 @@ class RestAPILog {
    * @param array $context
    *   Request's context.
    *   Keys: see RestAPI->doRequest().
-   *   To check if response exists:
+   *   To check if any response exists:
    *     RestAPILog::isResponseExists($request_id).
+   *   To check if valid response exists:
+   *     RestAPILog::isValidResponseExists($request_id).
    *
    * @return bool
    *   Returns TRUE in case of success and FALSE otherwise.
@@ -114,13 +116,15 @@ class RestAPILog {
   }
 
   /**
-   * Checks if the response exists in DB.
+   * Checks if any response exists in DB.
+   *
+   * WARNING: Invalid requests also logged and will be counted..
    *
    * @param string $request_id
    *   Unique request identificator.
    * @param int $started
    *   Optional. Unix timestamp of the moment when response was requested.
-   *   When NULL last response will be used.
+   *   When empty then latest response will be loaded.
    *
    * @return bool
    *   Returns TRUE if record for given $request_id found in DB.
@@ -130,7 +134,6 @@ class RestAPILog {
     $query = db_select(self::RESPONSE_TABLE, 't')
       ->fields('t', ['request_id'])
       ->condition('request_id', $request_id)
-      ->condition('code', HttpCode::OK)
       ->range(0, 1)
       ->orderBy('started', 'DESC');
     if (!is_null($started)) {
@@ -140,7 +143,38 @@ class RestAPILog {
   }
 
   /**
+   * Checks if valid response exists in DB.
+   *
+   * Valid request:
+   * 1. Code 2xx
+   * 2. Non-empty body of the response.
+   *
+   * Use method isResponseExists() to get any response.
+   *
+   * @param string $request_id
+   *   Unique request identificator.
+   *
+   * @return bool
+   *   Returns TRUE if record for given $request_id found in DB.
+   *   Returns FALSE otherwise.
+   */
+  public static function isValidResponseExists($request_id) {
+    return (bool) db_select(self::RESPONSE_TABLE, 't')
+      ->fields('t', ['request_id'])
+      ->condition('request_id', $request_id)
+      ->condition('code', 200, '>=')
+      ->condition('code', 299, '<=')
+      ->condition('body', '', '!=')
+      ->range(0, 1)
+      ->orderBy('started', 'DESC')
+      ->execute()
+      ->fetchField();
+  }
+
+  /**
    * Loads Rest API response from database.
+   *
+   * WARNING: Status code won't be checked and invalid responses will be loaded.
    *
    * Usage example:
    * extract(RestAPILog::loadResponse($request_id));
@@ -149,7 +183,7 @@ class RestAPILog {
    *   Unique request identificator.
    * @param int $started
    *   Optional. Unix timestamp of the moment when response was requested.
-   *   When NULL last response will be used.
+   *   When empty then latest response will be loaded.
    *
    * @return array
    *   Returns associative array with keys:
@@ -164,7 +198,6 @@ class RestAPILog {
     $query = db_select(self::RESPONSE_TABLE, 't')
       ->fields('t', [])
       ->condition('request_id', $request_id)
-      ->condition('code', HttpCode::OK)
       ->range(0, 1)
       ->orderBy('started', 'DESC');
     if (!is_null($started)) {
@@ -177,6 +210,96 @@ class RestAPILog {
     $result['response'] = json_decode($result['body'], TRUE);
     unset($result['body']);
     $result['message'] = HttpCode::getMessage($result['code']);
+
+    return $result;
+  }
+
+  /**
+   * Loads only valid Rest API response from database.
+   *
+   * Valis response:
+   * 1. code 2xx
+   * 2. Not empty body.
+   * 3. Latest response (no 'started' date).
+   *
+   * To load invalid responses use loadResponse() method.
+   *
+   * Usage example:
+   * extract(RestAPILog::loadValidResponse($request_id));
+   *
+   * @param string $request_id
+   *   Unique request identificator.
+   *
+   * @return array
+   *   Returns associative array with keys:
+   *     'request_id',
+   *     'started',
+   *     'code',
+   *     'duration',
+   *     'info',
+   *     'response',
+   */
+  public static function loadValidResponse($request_id) {
+    $result = db_select(self::RESPONSE_TABLE, 't')
+      ->fields('t', [])
+      ->condition('request_id', $request_id)
+      ->condition('code', 200, '>=')
+      ->condition('code', 299, '<=')
+      ->condition('body', '', '!=')
+      ->range(0, 1)
+      ->orderBy('started', 'DESC')
+      ->execute()
+      ->fetchAssoc();
+
+    // Curl info doesn't store in DB so we just create empty variable.
+    $result['info'] = [];
+    $result['response'] = json_decode($result['body'], TRUE);
+    unset($result['body']);
+    $result['message'] = HttpCode::getMessage($result['code']);
+
+    return $result;
+  }
+
+
+  /**
+   * Loads Rest API response from database.
+   *
+   * WARNING: Status code won't be checked and invalid responses will be loaded.
+   *
+   * Usage example:
+   * extract(RestAPILog::loadResponse($request_id));
+   *
+   * @param string $request_id
+   *   Unique request identificator.
+   * @param int $started
+   *   Optional. Unix timestamp of the moment when response was requested.
+   *   When empty then latest response will be loaded.
+   *
+   * @return array
+   *   Returns associative array with keys:
+   *     'request_id',
+   *     'started',
+   *     'code',
+   *     'duration',
+   *     'info',
+   *     'response',
+   */
+  public static function loadAllResponses($request_id) {
+    $result = db_select(self::RESPONSE_TABLE, 't')
+      ->fields('t', [])
+      ->condition('request_id', $request_id)
+      // ->orderBy('started', 'DESC')
+      ->execute()
+      ->fetchAllAssoc('started', PDO::FETCH_ASSOC);
+
+    foreach ($result as &$item) {
+      // Curl info doesn't store in DB so we just create empty variable.
+      $item['info'] = [];
+      // @TODO Use original 'body' instead of new 'response'.
+      $item['response'] = json_decode($item['body'], TRUE);
+      unset($item['body']);
+      $item['message'] = HttpCode::getMessage($item['code']);
+    }
 
     return $result;
   }

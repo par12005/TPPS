@@ -3257,7 +3257,7 @@ function tpps_rest_api_request_started(array $context = []) {
  * @param array $context
  *   Request's context.
  *   Keys: see RestAPI->doRequest().
- *   To check if response exists: RestAPILog::isResponseExists($request_id);
+ *   To check if response exists: RestAPILog::isResponseExists($request_id).
  */
 function tpps_rest_api_request_completed(array $context = []) {
   if (empty($context['request_id'])) {
