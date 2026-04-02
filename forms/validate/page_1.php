@@ -19,7 +19,7 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
   if ($form_id == 'tppsc_main') {
     if ($form_state['submitted'] == '1') {
       $form_values = &$form_state['values'];
-      //$old_tgdr = $form_state['saved_values']['frontpage']['old_tgdr'] ?? NULL;
+      // $old_tgdr = $form_state['saved_values']['frontpage']['old_tgdr'] ?? NULL;
       // DOI.
       $publication_doi = $form_values['publication']['publication_doi'] ?? NULL;
       $dataset_doi = $form_values['publication']['dataset_doi'] ?? NULL;
@@ -36,26 +36,27 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
       TppsForm::isRequiredFieldEmpty($form_state, ['publication', 'status']);
       // Note:
       // $form_state['saved_values][PAGE_1]['primaryAuthor']
-      // but $form['publication']['primaryAuthor'];
-      TppsForm::isRequiredFieldEmpty($form_state, ['publication', 'primaryAuthor']);
+      // but $form['publication']['primaryAuthor'].
+      TppsForm::isRequiredFieldEmpty($form_state,
+        ['publication', 'primaryAuthor']
+      );
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       module_load_include('inc', 'tpps', 'includes/manage_doi');
 
       if ($publication_status == 'Published') {
         // 'Publication DOI' field is required (even for existing studies).
-        if (!TppsForm::isRequiredFieldEmpty($form_state, ['publication', 'publication_doi'])) {
-          if (!preg_match(tpps_doi_regex(), $publication_doi)) {
-            form_set_error('publication_doi', 'Publication DOI: invalid format. '
-              . 'Example DOI: "10.1111/dryad.111".'
-            );
-          }
+        if (
+          !TppsForm::isRequiredFieldEmpty($form_state,
+            ['publication', 'publication_doi']
+          )
+        ) {
+          tpps_validate_doi_field('publication', $form_state, $form);
         }
-        // 'Dataset DOI' is optional.
-        if ($dataset_doi && !preg_match(tpps_doi_regex(), $dataset_doi)) {
-          form_set_error('dataset_doi', 'Dataset DOI: invalid format. '
-            . 'Example DOI: "10.1111/dryad.111".'
-          );
+        // 'Dataset DOI' is optional so check only if we have value.
+        if ($dataset_doi) {
+          tpps_validate_doi_field('dataset', $form_state, $form);
         }
+
         // Required Publication Extra Fields.
         foreach (['year', 'title', 'abstract', 'journal'] as $name) {
           TppsForm::isRequiredFieldEmpty($form_state,
@@ -65,15 +66,11 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
       }
       elseif ($publication_status == 'In Preparation or Submitted') {
         // Both DOI fields are optional so we check only format.
-        if ($publication_doi && !preg_match(tpps_doi_regex(), $publication_doi)) {
-          form_set_error('publication_doi', 'Publication DOI: invalid format. '
-            . 'Example DOI: "10.1111/dryad.111".'
-          );
+        if ($publication_doi) {
+          tpps_validate_doi_field('publication', $form_state, $form);
         }
-        if ($dataset_doi && !preg_match(tpps_doi_regex(), $dataset_doi)) {
-          form_set_error('dataset_doi', 'Dataset DOI: invalid format. '
-            . 'Example DOI: "10.1111/dryad.111".'
-          );
+        if ($dataset_doi) {
+          tpps_validate_doi_field('dataset', $form_state, $form);
         }
       }
       else {
@@ -219,5 +216,41 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
         }
       }
     }
+  }
+}
+
+/**
+ * Validates DOI Field of the given type.
+ *
+ * @param string $type
+ *   Type of the DOI. Possible values: 'publication' and 'dataset'.
+ * @param array $form_state
+ *   Drupal Form State array.
+ */
+function tpps_validate_doi_field($type, array &$form_state, array &$form) {
+  $doi = $form_state['values']['publication'][$type . '_doi'] ?? NULL;
+  $human_name = check_plain(ucfirst($type));
+  $form_values = &$form_state['values'];
+
+  $first_doi = DOI::searchFirst($doi);
+  if ($first_doi) {
+    if ($doi != $first_doi) {
+      $form_state['values']['publication'][$type . '_doi'] = $first_doi;
+      $message = '@type DOI: Entered value "@init" was replaced with the valid "@new".';
+      drupal_set_message(t($message, [
+        '@init' => $doi,
+        '@new' => $first_doi,
+        '@type' => $human_name,
+      ]));
+      form_set_value($form['publication'][$type . '_doi'], $first_doi, $form_state);
+    }
+    else {
+      // Valid DOI.
+    }
+  }
+  else {
+    form_set_error($type . '_doi', t('@type DOI: Invalid format. '
+      . 'Example DOI: "10.1111/dryad.111".', ['@type' => $human_name]
+    ));
   }
 }

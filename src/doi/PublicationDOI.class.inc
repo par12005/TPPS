@@ -14,7 +14,7 @@
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class PublicationDOI {
+class PublicationDOI extends DOI {
 
   // Name of the DB table where stored DOI publication information.
   const TABLE = 'tpps_publication_doi';
@@ -494,7 +494,7 @@ class PublicationDOI {
       '10.5061/dryad.77j02',
       '10.5061/dryad.p502g',
       '10.1371/journal.pone.0015529',
-      '10.1007/s10592-020-01281-7#Sec9',
+      '10.1007/s10592-020-01281-7',
       '10.1111/mec.12129',
       '10.1111/mec.15264',
       '10.5061/dryad.xksn02vcs',
@@ -662,25 +662,6 @@ class PublicationDOI {
       '10.1038/hdy.2015.100',
       '10.1111/mec.12969',
     ];
-
-  }
-
-  /**
-   * Prints DOI as hyperlink.
-   *
-   * @param string $doi
-   *   Optional. DOI.
-   *
-   * @return string
-   *   Returns rendered HTML tag <A> where anchor is a DOI and href is a link to
-   *   https://doi.org/ site which will redirect to the publication.
-   *   If $doi is empty returns empty string.
-   */
-  public static function print($doi = NULL) {
-    if (!empty($doi)) {
-      $output = theme('doi_link', ['doi' => $doi]);
-    }
-    return $output ?? '';
   }
 
 }

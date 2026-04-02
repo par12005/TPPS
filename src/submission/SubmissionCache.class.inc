@@ -661,7 +661,11 @@ class SubmissionCache {
   public static function isValid() {
     $list = array_keys(SubmissionCache::get());
     return empty(
-      array_filter($list, function($x) {return strpos($x, 'TGDR') === FALSE;})
+      array_filter($list,
+        function ($x) {
+          return strpos($x, 'TGDR') === FALSE;
+        }
+      )
     );
   }
 
@@ -673,7 +677,7 @@ class SubmissionCache {
    * @return array
    *   Returns db table schema.
    */
-  public static getSchema() {
+  public static function getSchema() {
     return drupal_get_schema_unprocessed('system', 'cache');
   }
 
