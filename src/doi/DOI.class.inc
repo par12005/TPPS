@@ -71,14 +71,69 @@ class DOI {
    * Use trim() before call this method.
    * Leading/trailing spaces are not allowed.
    *
-   * @param string $string
-   *   String where DOI will be searched.
+   * @param string $doi
+   *   String which contains DOI.
    *
    * @return bool
    *   Returns TRUE if given string is a valid DOI and FALSE otherwise.
    */
-  public static function isValid($string) {
-    return (bool) preg_match(static::REGEX, $string);
+  public static function isValid($doi) {
+    return (bool) preg_match(static::REGEX, $doi);
+  }
+
+  /**
+   * Counts DOI in 'chado.dbxref' table.
+   *
+   * @param string $doi
+   *   DOI value.
+   * @param bool $reset
+   *   Flag is cache must be resetted. Default if FALSE.
+   *
+   * @return int
+   *   Returns number of records for given DOI in 'chado.dbxref' table.
+   *
+   * @TODO Minor. Find better name.
+   */
+  public static function countDbxref($doi, $reset = FALSE) {
+    $cid = __FUNCTION__;
+    $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+    $cache = cache_get($cid, $cache_bin);
+    $is_cache_allowed = variable_get('tpps_page_1_cache_ajax_responses', TRUE);
+    if ($reset || !$is_cache_allowed ||  empty($cache) || empty($cache->data[strtolower($doi)])) {
+      $result = db_select('chado.dbxref', 'd')
+        ->condition('accession', $doi)
+        ->execute()
+        ->fetchAll();
+      $cache->data[strtolower($doi)] = count($result);
+      cache_set($cid, $cache->data, $cache_bin);
+    }
+    return $cache->data[strtolower($doi)] ?? NULL;
+  }
+
+  /**
+   * Searches for DOI in already submitted studies.
+   *
+   * @param string $doi
+   *   DOI value.
+   * @param bool $reset
+   *   Flag is cache must be resetted. Default if FALSE.
+   *
+   * @return string
+   *   Returns accession in format 'TGDRxxx'.
+   *   Returns FALSE if DOI wasn't found.
+   */
+  public static function getAccession($doi, $reset = FALSE) {
+    if (empty($doi)) {
+      return FALSE;
+    }
+    $doi = strtolower($doi);
+    $data = SubmissionCache::getAll($reset);
+    foreach ($data as $accession => $cached_submission) {
+      if (strtolower($cached_submission['publication']['publication_doi']) == $doi) {
+        return $accession;
+      }
+    }
+    return FALSE;
   }
 
 }

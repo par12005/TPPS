@@ -3612,11 +3612,14 @@ function tpps_cache_clear_all($list = NULL, $force = FALSE) {
 function tpps_cache_get_cid_list() {
   return [
     // Checked:
-    'tpps_doi_count_dbxref',
     'tpps_synonym_list',
     'tpps_unit_list',
+
+    // @TODO Minor. Rename both cid.
     // Responses of DataDryad API.
     'tpps_get_doi_info',
+    'tpps_doi_count_dbxref',
+
     // Custom list on TPPS Admin Panel.
     'tpps_admin_panel_cache_new_species_list',
 

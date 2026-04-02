@@ -37,13 +37,13 @@ function tpps_ajax_get_doi($data = NULL) {
       'success' => FALSE,
     ];
   }
-  module_load_include('inc', 'tpps', 'includes/manage_doi');
   // Validate.
   // Note: Could be used for 'Publication DOI' and 'Dataset DOI' so key is 'doi'.
   $doi = $data['doi'] ?? NULL;
-  $params = ['!doi_link' => PublicationDOI::print($doi)];
-  if (!preg_match(tpps_doi_regex(), $doi)) {
-    $response['errors'][] = t('DOI !doi_link has invalid format. Example DOI: 10.NNNN/dryad.NNN');
+  $params = ['!doi_link' => DOI::print($doi)];
+  if (!DOI::isValid($doi)) {
+    $message = 'DOI !doi_link has invalid format. Example DOI: 10.NNNN/dryad.NNN';
+    $response['errors'][] = t($message, $params);
   }
   else {
     $response['statuses'][] = t('DOI !doi_link is valid.', $params);
@@ -53,7 +53,7 @@ function tpps_ajax_get_doi($data = NULL) {
       'public.tpps_submissions'
     );
     if ($doi_check_source == 'public.tpps_submissions') {
-      if ($accession = tpps_doi_get_accession($doi)) {
+      if ($accession = DOI::getAccession($doi)) {
         $response['warnings'][]
           = t('WARNING: DOI !doi_link is already used by @accession.',
             array_merge($params, ['@accession' => $accession])
@@ -64,7 +64,7 @@ function tpps_ajax_get_doi($data = NULL) {
       }
     }
     else {
-      if (tpps_doi_count_dbxref($doi) == 0) {
+      if (DOI::countDbxref($doi) == 0) {
         $response['statuses'][] = t('DOI !doi_link is not in use.', $params);
       }
       else {
@@ -73,7 +73,7 @@ function tpps_ajax_get_doi($data = NULL) {
       }
     }
     // DOI is valid so we could try to get data.
-    $response['doi_info'] = tpps_get_doi_info($doi);
+    $response['doi_info'] = PublicationDOI::getInfo($doi);
     if (!empty($response['doi_info'])) {
       $response['success'] = TRUE;
     }

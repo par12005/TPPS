@@ -40,9 +40,8 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
       TppsForm::isRequiredFieldEmpty($form_state,
         ['publication', 'primaryAuthor']
       );
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      module_load_include('inc', 'tpps', 'includes/manage_doi');
 
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       if ($publication_status == 'Published') {
         // 'Publication DOI' field is required (even for existing studies).
         if (
