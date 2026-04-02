@@ -2728,6 +2728,8 @@ function tpps_update_7134() {
   variable_set('tpps_report_doi_scraped_all_title', 'All Scraped DOI');
   variable_set('tpps_report_doi_scraped_google_scholar_title', 'Google Scholar Scraped DOI');
   variable_set('tpps_report_doi_scraped_pubmed_title', 'PubMed Scraped DOI');
+
+  variable_set('tpps_validation_regex_doi', '/10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+/');
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Remove outdated variables.
   variable_del('tpps_rest_api_log_show_response');

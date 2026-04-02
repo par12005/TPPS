@@ -29,12 +29,9 @@ function tpps_misc_settings_form(array $form, array &$form_state) {
     '#type' => 'textfield',
     '#title' => t('DOI'),
     '#description' => t('Regex to check if DOI format is valid.'),
-    '#default_value' => variable_get(
-      'tpps_validation_regex_doi',
-      '/^10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+$/'
-    ),
+    '#default_value' => variable_get('tpps_validation_regex_doi'),
     '#description' => t('Default is: <br/>'
-      . '/^10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+$/'
+      . '/10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+/'
       . '<br />Examples of valid DOI: !list',
       ['!list' => theme('item_list', ['items' => TppsForm::getDoiExamplesList()])]
     ),

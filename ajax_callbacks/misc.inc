@@ -32,14 +32,15 @@
 function tpps_ajax_get_doi($data = NULL) {
   if (empty($data)) {
     // Empty request. Expected DOI value.
-    return [
-      'errors' => [t('Empty POST requrest.')],
-      'success' => FALSE,
-    ];
+    return ['errors' => [t('Empty POST requrest.')], 'success' => FALSE];
   }
   // Validate.
   // Note: Could be used for 'Publication DOI' and 'Dataset DOI' so key is 'doi'.
   $doi = $data['doi'] ?? NULL;
+  if (empty($doi)) {
+    return ['errors' => [t('Empty DOI.')], 'success' => FALSE];
+  }
+  $doi = DOI::searchFirst($doi);
   $params = ['!doi_link' => DOI::print($doi)];
   if (!DOI::isValid($doi)) {
     $message = 'DOI !doi_link has invalid format. Example DOI: 10.NNNN/dryad.NNN';
