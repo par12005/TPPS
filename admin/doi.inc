@@ -156,6 +156,46 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
       ],
     ];
   }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // DOI Lookup / Dryad.
+  $form['dryad'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Dryad'),
+    '#collapsible' => TRUE,
+    '#description' => t('Dryad service has an API.'),
+  ];
+  $form['dryad']['tpps_doi_dryad_delay'] = [
+    '#type' => 'textfield',
+    '#title' => t('Mininal delay between requests (in seconds)'),
+    '#default_value' => variable_get('tpps_doi_dryad_delay'),
+    '#description' => t('Introduce random delays (e.g., 1-5 seconds) '
+      . 'between requests to avoid rate-limiting.'),
+  ];
+  $form['dryad']['tpps_doi_dryad_endpoint_path'] = [
+    '#type' => 'textfield',
+    '#title' => t('Relative Path to the API Endpoint'),
+    '#default_value' => variable_get('tpps_doi_dryad_endpoint_path'),
+    '#description' => t('Note: no leading and trailing slashes.')
+      . '<br />'
+      . t('Default value: @path.', ['@path' => Dryad::ENDPOINT_PATH]),
+  ];
+  $form['dryad']['tpps_doi_dryad_use_ip'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Use IP Address'),
+    '#default_value' => variable_get('tpps_doi_dryad_use_ip'),
+    '#description' => t('Default is unchecked. When checked then '
+      . 'IP-address will be used instead of domain name to avoid '
+      . 'DNS-dependency.'),
+  ];
+  $form['dryad']['tpps_doi_dryad_unique_url'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Make URL unique'),
+    '#default_value' => variable_get('tpps_doi_dryad_unique_url'),
+    '#description' => t('Default is unchecked. When checked then '
+      . 'unique parameter will be added to the Endpoint URL to make '
+      . 'it unique and disable caching.'),
+  ];
+
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // DOI / Gemini.

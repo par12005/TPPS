@@ -5,20 +5,17 @@
  * Note: tpps.js file will be added to the footer of the document.
  */
 
+/* global Drupal, jQuery */
 Drupal.tpps = Drupal.tpps || {};
 Drupal.tpps.lastValue = Drupal.tpps.lastValue || {};
+
 // Used to cache AJAX-requests responces to avoid extra server load.
-// Controlled by:
-// JS-variable 'Drupal.settings.tpps.cacheAjaxResponses' and
-// Drupal-variable 'tpps_page_1_cache_ajax_responses';
+// @TODO Review and remove.
 Drupal.tpps.ajaxCache = Drupal.tpps.ajaxCache || {};
 
 (function ($, Drupal) {
 
-  Drupal.behaviors.tppsHeader = {
-    attach:function (context) {
-    }
-  };
+  Drupal.behaviors.tppsHeader = {};
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

@@ -110,7 +110,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $js_data = [
     'tpps' => [
       'ajaxUrl' => TPPS_AJAX_URL,
-      'cacheAjaxResponses' => variable_get('tpps_page_1_cache_ajax_responses', TRUE),
       'useLiveProxy' => variable_get('tpps_page_1_use_live_proxy', FALSE),
     ],
   ];

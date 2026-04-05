@@ -597,7 +597,7 @@
 
     // Get tab content.
     // @todo Minor. Add caching for ajax requests.
-    // See Drupal.settings.tpps.cacheAjaxResponses
+    // See Drupal.settings.tpps.ajaxCache
     let path_parts = path.match(/[^\/]+/g);
     var request = jQuery.ajax({
         xhr: function() {

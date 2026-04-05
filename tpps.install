@@ -13,27 +13,32 @@
  */
 function tpps_get_variable_list() {
   return [
-    // DOI.
+    // DOI Lookup.
     'tpps_doi_lookup_proxy' => '',
     'tpps_doi_lookup_show_report_links' => FALSE,
     'tpps_doi_lookup_show_suggestions' => TRUE,
-    // DOI / Google Scholar.
+    // DOI Lookup / Google Scholar.
     'tpps_doi_google_scholar_scrape_allowed' => TRUE,
     'tpps_doi_google_scholar_debug_mode' => FALSE,
     'tpps_doi_google_scholar_use_ip' => FALSE,
     'tpps_doi_google_scholar_unique_url' => FALSE,
     'tpps_doi_google_scholar_delay' => GoogleScholar::DEFAULT_DELAY,
     'tpps_doi_google_scholar_serp_path' => GoogleScholar::SERP_PATH,
-    // DOI / PubMed.
+    // DOI Lookup / PubMed.
     'tpps_doi_pubmed_scrape_allowed' => TRUE,
     'tpps_doi_pubmed_debug_mode' => FALSE,
     'tpps_doi_pubmed_use_ip' => FALSE,
     'tpps_doi_pubmed_unique_url' => FALSE,
     'tpps_doi_pubmed_delay' => PubMed::DEFAULT_DELAY,
     'tpps_doi_pubmed_serp_path' => PubMed::SERP_PATH,
-    // DOI / Gemini.
+    // DOI Lookup / Gemini.
     'tpps_doi_gemini_system_instruction' => '',
     'tpps_doi_gemini_generation_config' => '',
+    // DOI Lookup / Dryad.
+    'tpps_doi_dryad_use_ip' => FALSE,
+    'tpps_doi_dryad_endpoint_path' => Dryad::ENDPOINT_PATH,
+    'tpps_doi_dryad_unique_url' => FALSE,
+    'tpps_doi_dryad_delay' => Dryad::DEFAULT_DELAY,
 
     // Gemini.
     'tpps_gemini_model' => '',
@@ -132,8 +137,6 @@ function tpps_get_variable_list() {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Form. Page 1 Settings.
     'tpps_page_1_doi_check_source' => 'public.tpps_submissions',
-    'tpps_page_1_cache_ajax_responses' => TRUE,
-    'tpps_page_1_dryad_api_url' => 'http://datadryad.org/api/v2/datasets/',
     'tpps_page_1_ajax_debug' => FALSE,
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Form. Page 4 Settings.
@@ -2714,6 +2717,12 @@ function tpps_update_7134() {
   variable_set('tpps_doi_pubmed_unique_url', FALSE);
   variable_set('tpps_doi_pubmed_delay', PubMed::DEFAULT_DELAY);
   variable_set('tpps_doi_pubmed_serp_path', PubMed::SERP_PATH);
+  // DOI Lookup / Dryad.
+  variable_set('tpps_doi_dryad_use_ip', FALSE);
+  variable_set('tpps_doi_dryad_endpoint_path', Dryad::ENDPOINT_PATH);
+  variable_set('tpps_doi_dryad_unique_url', FALSE);
+  variable_set('tpps_doi_dryad_delay', Dryad::DEFAULT_DELAY);
+
   // DOI Lookup / Gemini.
   variable_set('tpps_doi_gemini_system_instruction', '');
   variable_set('tpps_doi_gemini_generation_config', '');
@@ -2735,6 +2744,8 @@ function tpps_update_7134() {
   variable_del('tpps_rest_api_log_show_response');
   variable_del('tpps_rest_api_log_show_request');
   variable_del('tpps_rest_api_log_type');
+  variable_del('tpps_page_1_dryad_api_url');
+  variable_del('tpps_page_1_cache_ajax_responses');
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Create new db table.
   $table_list = [

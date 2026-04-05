@@ -27,30 +27,6 @@ function tpps_form_page_1_settings_form(array $form, array &$form_state) {
       . "number (TGDRxxx) which will be shown to user in warning message."
     ),
   ];
-  $form['tpps_page_1_cache_ajax_responses'] = [
-    '#type' => 'checkbox',
-    '#title' => t('Cache AJAX responses'),
-    '#default_value' => variable_get('tpps_page_1_cache_ajax_responses', TRUE),
-    '#description' => t(
-      'Default is checked.<br />'
-      . "When checked request's data and related response will be cached using "
-      . " custom 'TPPS' cache bin which could be cleared separately."
-      . '<br />NOTE: Cached AJAX requests/respondes will be removed '
-      . 'each time this setting become checked.'
-    ),
-  ];
-  $form['tpps_page_1_dryad_api_url'] = [
-    '#type' => 'textfield',
-    '#title' => t('Dryad API Endpoint URL'),
-    '#default_value' => variable_get(
-      'tpps_page_1_dryad_api_url',
-      'http://datadryad.org/api/v2/datasets/'
-    ),
-    '#description' => t(
-      'Default: http://datadryad.org/api/v2/datasets/<br />'
-      . 'URL to get DOI publication information.'
-    ),
-  ];
   $form['tpps_page_1_ajax_debug'] = [
     '#type' => 'checkbox',
     '#title' => t('AJAX Debug Mode'),
@@ -60,20 +36,5 @@ function tpps_form_page_1_settings_form(array $form, array &$form_state) {
       . 'When checked debug data will be added to AJAX response.'
     ),
   ];
-  $form['#submit'][] = 'tpps_form_page_1_settings_form_submit';
   return system_settings_form($form);
-}
-
-/**
- * Form submitter.
- */
-function tpps_form_page_1_settings_form_submit(array $form, array &$form_state) {
-  // Clear cache on change only.
-  if (
-    ($form_state['values']['tpps_page_1_cache_ajax_responses'] ?? NULL)
-    != variable_get('tpps_page_1_cache_ajax_responses', TRUE)
-  ) {
-    // @TODO Minor. Clear only ajax requests.
-    tpps_cache_clear_all();
-  }
 }

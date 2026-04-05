@@ -3,6 +3,8 @@
  *
  * TPPS Page 1 form specific JS-code.
  */
+
+/* global Drupal, jQuery, dog */
 (function($, Drupal) {
   var doiSelector = 'input[name="publication[publication_doi]"]';
   var doiMessageBox = '#doi-message';
@@ -190,8 +192,7 @@
     ) {
       dog('Value was\'t changed.', featureName);
       if (
-        Drupal.settings.tpps.cacheAjaxResponses
-        && 'ajaxCache' in Drupal.tpps
+        'ajaxCache' in Drupal.tpps
         && typeof (Drupal.tpps.ajaxCache[organismName]) != 'undefined'
       ) {
         dog('AJAX-request response found in cache.', featureName);
@@ -233,8 +234,7 @@
 
     // Check if there is a cached AJAX-request response.
     if (
-      Drupal.settings.tpps.cacheAjaxResponses
-      && 'ajaxCache' in Drupal.tpps
+      'ajaxCache' in Drupal.tpps
       && typeof (Drupal.tpps.ajaxCache[organismName]) != 'undefined'
     ) {
       dog('AJAX-request response found in cache.', featureName);
@@ -420,8 +420,7 @@
 
             // Check if we have cached result first.
             if (
-              Drupal.settings.tpps.cacheAjaxResponses
-              && 'ajaxCache' in Drupal.tpps
+              'ajaxCache' in Drupal.tpps
               && typeof (Drupal.tpps.ajaxCache[doi]) != 'undefined'
             ) {
               dog('AJAX-request response found in cache.', featureName);

@@ -86,28 +86,19 @@ class DOI {
    *
    * @param string $doi
    *   DOI value.
-   * @param bool $reset
-   *   Flag is cache must be resetted. Default if FALSE.
    *
    * @return int
    *   Returns number of records for given DOI in 'chado.dbxref' table.
    *
-   * @TODO Minor. Find better name.
+   * @todo Minor. Find better name.
    */
-  public static function countDbxref($doi, $reset = FALSE) {
-    $cid = __FUNCTION__;
-    $cache_bin = TPPS_CACHE_BIN ?? 'cache';
-    $cache = cache_get($cid, $cache_bin);
-    $is_cache_allowed = variable_get('tpps_page_1_cache_ajax_responses', TRUE);
-    if ($reset || !$is_cache_allowed ||  empty($cache) || empty($cache->data[strtolower($doi)])) {
-      $result = db_select('chado.dbxref', 'd')
-        ->condition('accession', $doi)
-        ->execute()
-        ->fetchAll();
-      $cache->data[strtolower($doi)] = count($result);
-      cache_set($cid, $cache->data, $cache_bin);
-    }
-    return $cache->data[strtolower($doi)] ?? NULL;
+  public static function countDbxref($doi) {
+    return db_select('chado.dbxref', 'd')
+      ->fields(NULL, ['accession'])
+      ->condition('accession', $doi)
+      ->countQuery()
+      ->execute()
+      ->fetchField();
   }
 
   /**
