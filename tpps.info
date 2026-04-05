@@ -41,11 +41,12 @@ files[] = src/CVTerm.class.inc
 
 ; DOI
 files[] = src/doi/DoiSerp.class.inc
-files[] = src/doi/GoogleScholar.class.inc
-files[] = src/doi/PubMed.class.inc
 files[] = src/doi/Gemini.class.inc
 files[] = src/doi/DOI.class.inc
 files[] = src/doi/PublicationDOI.class.inc
+files[] = src/doi/GoogleScholar.class.inc
+files[] = src/doi/PubMed.class.inc
+files[] = src/doi/Dryad.class.inc
 
 ; Tpps. Elemental Entities.
 files[] = src/tpps/TppsConfiguration.class.inc

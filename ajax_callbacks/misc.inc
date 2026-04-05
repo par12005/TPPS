@@ -74,7 +74,7 @@ function tpps_ajax_get_doi($data = NULL) {
       }
     }
     // DOI is valid so we could try to get data.
-    $response['doi_info'] = PublicationDOI::getInfo($doi);
+    $response['doi_info'] = Dryad::getInfo($doi);
     if (!empty($response['doi_info'])) {
       $response['success'] = TRUE;
     }

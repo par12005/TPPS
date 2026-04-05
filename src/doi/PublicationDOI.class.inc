@@ -687,8 +687,10 @@ class PublicationDOI extends DOI {
 
     // @TODO Use 'RestAPI' class.
     if ($reset || !$is_cache_allowed || empty($cache) || !isset($cache->data[$key])) {
-      $api_endpoint = variable_get('tpps_page_1_dryad_api_url',
-        'http://datadryad.org/api/v2/datasets/');
+      $api_endpoint = variable_get(
+        'tpps_page_1_dryad_api_url',
+        'http://datadryad.org/api/v2/datasets/'
+      );
       $url = $api_endpoint . urlencode('doi:' . $doi);
       // Note: json_decode() could throw an exception on invalid data.
       try {
