@@ -26,7 +26,7 @@ function tpps_report_organism_list() {
   return '<h2>' . $page_title . '</h2>' . Report::print([
     'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
     'page_title' => $page_title,
-    'formatter' => 'tpps_admin_' . $name . '_report_formatter',
+    'formatter' => 'tpps_report_' . $name . '_formatter',
     'table_attributes' => ['class' => ['view' , 'tpps_table']],
     'items_per_page' => variable_get('tpps_report_items_per_page', 15),
     'header' => [

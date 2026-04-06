@@ -14,7 +14,7 @@ File /src/Report.class.inc:
 
 Report file:
 5. Create new or clone existing (and update) report to have a report callback.
-   * for simple db-query: /reports/orgnaism/_list.inc
+   * for simple db-query (with formatter): /reports/orgnaism/_list.inc
    * for table (no sorting): /reports/doi/duplicates.inc
 6. Update code of this new file.
    * Menu callback name must have 'tpps_report_' prefix.

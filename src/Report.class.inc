@@ -550,6 +550,46 @@ class Report {
           ],
         ],
       ],
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Rest API.
+      'rest_api' => [
+        'request' => [
+          'list' => [
+            'title' => variable_get(
+              'tpps_report_rest_api_request_list_title',
+              'Rest API Request List'
+            ),
+            'description' => t('List of the all Rest API Requests.'),
+            'admin_panel' => TRUE,
+          ],
+          'body' => [
+            'title' => variable_get(
+              'tpps_report_rest_api_request_body_title',
+              'Rest API Request Body'
+            ),
+            'description' => t('Rest API Request Body.'),
+            'admin_panel' => FALSE,
+          ],
+        ],
+        'response' => [
+          'list' => [
+            'title' => variable_get(
+              'tpps_report_rest_api_response_list_title',
+              'Rest API Response List'
+            ),
+            'description' => t('List of the all Rest API Responses.'),
+            'admin_panel' => TRUE,
+          ],
+          'body' => [
+            'title' => variable_get(
+              'tpps_report_rest_api_response_body_title',
+              'Rest API Response Body'
+            ),
+            'description' => t('Rest API Response Body.'),
+            'admin_panel' => FALSE,
+          ],
+        ],
+      ],
     ];
   }
 

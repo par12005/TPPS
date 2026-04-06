@@ -304,4 +304,134 @@ class RestAPILog {
     return $result;
   }
 
+  public static function getSchema($type) {
+    // Request.
+    // Table to log requests made by 'RestAPI' class.
+    if ($type == 'request') {
+      return [
+        'description' => "Stores REST API requests.",
+        'fields' => [
+          // Request Id is an md5 hash of all request's data to be able to find
+          // exactly the same request in log.
+          'request_id' => [
+            'description' => 'The unique request identifier.',
+            'type' => 'varchar',
+            'size' => 'normal',
+            'not null' => TRUE,
+          ],
+          'tag' => [
+            'description' => 'Request description for humans.',
+            'type' => 'varchar',
+            'size' => 'normal',
+            'not null' => FALSE,
+          ],
+          'created' => [
+            'description' => 'The first time request was created. Format: UNIX timestamp.',
+            'type' => 'int',
+            'size' => 'normal',
+            'not null' => TRUE,
+          ],
+          'method' => [
+            // @TODO Use 'enum'?
+            'description' => 'HTTP method: post, get, put, delete.',
+            'type' => 'varchar',
+            'size' => 'normal',
+            'not null' => TRUE,
+          ],
+          'url' => [
+            'description' => 'API Endpoint.',
+            'type' => 'varchar',
+            'size' => 'normal',
+            'not null' => TRUE,
+          ],
+          'payload' => [
+            'description' => "POST request's payload. Format: JSON-string.",
+            'type' => 'varchar',
+            'size' => 'normal',
+            'not null' => TRUE,
+          ],
+          'header' => [
+            'description' => 'HTTP Headers. Format: JSON-string.',
+            'type' => 'varchar',
+            'size' => 'normal',
+            'not null' => TRUE,
+          ],
+        ],
+        'unique keys' => [
+          // It's possible that the same request will bring different API response.
+          // For example response is time-based.
+          'request_id_created' => ['request_id', 'created'],
+        ],
+      ];
+    }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Response.
+    if ($type == 'response') {
+      // Table to log responses obtained by 'RestAPI' class.
+      // Note: There is no need to store message text because it could be
+      // obtained  by the HTTP Response Code.
+      // HttpCode->getMessage($code);
+      return [
+        'description' => "Stores REST API responses.",
+        'fields' => [
+          'id' => [
+            'description' => 'The unique response identifier.',
+            'type' => 'serial',
+            'size' => 'normal',
+            'unsigned' => TRUE,
+            'not null' => TRUE,
+          ],
+          // Request Id is an md5 hash of all request's data to be able to find
+          // exactly the same request in log.
+          'request_id' => [
+            'description' => 'The unique request identifier.',
+            'type' => 'varchar',
+            'size' => 'normal',
+            'not null' => TRUE,
+          ],
+          'started' => [
+            'description' => 'The moment request was started. Format: UNIX timestamp.',
+            'type' => 'int',
+            'size' => 'normal',
+            'not null' => TRUE,
+          ],
+          'code' => [
+            'description' => "HTTP Response Code.",
+            'type' => 'int',
+            'size' => 'normal',
+            'not null' => TRUE,
+          ],
+          'duration' => [
+            'description' => 'Request processing time, msec.',
+            'type' => 'int',
+            'size' => 'small',
+            'not null' => TRUE,
+          ],
+          'body' => [
+            'description' => 'Body of the API response. Format: JSON-string.',
+            // varchar/normal: mysql: 64KB, postgresql: 1GB.
+            'type' => 'varchar',
+            'size' => 'normal',
+            'not null' => TRUE,
+          ],
+        ],
+        'primary key' => [
+          'id',
+        ],
+        'unique keys' => [
+          // It's possible that the same request will bring different API response.
+          // For example response is time-based.
+          'request_id_started' => ['request_id', 'started'],
+        ],
+        'foreign keys' => [
+          'request_id' => [
+            'table' => 'tpps_rest_api_request',
+            'columns' => ['request_id' => 'request_id'],
+          ],
+        ],
+      ];
+    }
+  }
+
 }

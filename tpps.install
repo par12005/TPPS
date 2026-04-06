@@ -103,6 +103,11 @@ function tpps_get_variable_list() {
     // NCBI API.
     'tpps_report_organism_ncbi_all_title' => 'All organisms and their NCBI Taxonomy Ids',
     'tpps_report_organism_ncbi_missing_title' => 'Organisms without NCBI Taxonomy Id',
+    // Rest API.
+    'tpps_report_rest_api_request_list_title' => 'Rest API Request List',
+    'tpps_report_rest_api_request_body_title' => 'Rest API Request Body',
+    'tpps_report_rest_api_response_list_title' => 'Rest API Response List',
+    'tpps_report_rest_api_response_body_title' => 'Rest API Response Body',
 
     // Submission.
     'tpps_submission_secret_key' => '',
@@ -922,6 +927,7 @@ function tpps_schema() {
     'doi/GoogleScholar',
     'doi/PublicationDOI',
     'submission/SubmissionCache',
+    'RestAPI/RestAPILog',
   ];
   foreach ($class_list as $path) {
     $class_file = dirname(__FILE__) . '/src/' . $path . '.class.inc';
@@ -935,119 +941,9 @@ function tpps_schema() {
   // Add custom cache table to have ability to clear only module's data.
   $schema[SubmissionCache::CACHE_BIN] = SubmissionCache::getSchema();
   $schema[TPPS_CACHE_BIN] = drupal_get_schema_unprocessed('system', 'cache');
-
-// @TODO Move other tables into classes.
-  // Table to log requests made by 'RestAPI' class.
-  $schema['tpps_rest_api_request'] = [
-    'description' => "Stores REST API requests.",
-    'fields' => [
-      // Request Id is an md5 hash of all request's data to be able to find
-      // exactly the same request in log.
-      'request_id' => [
-        'description' => 'The unique request identifier.',
-        'type' => 'varchar',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ],
-      'tag' => [
-        'description' => 'Request description for humans.',
-        'type' => 'varchar',
-        'size' => 'normal',
-        'not null' => FALSE,
-      ],
-      'created' => [
-        'description' => 'The first time request was created. Format: UNIX timestamp.',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ],
-      'method' => [
-        // @TODO Use 'enum'?
-        'description' => 'HTTP method: post, get, put, delete.',
-        'type' => 'varchar',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ],
-      'url' => [
-        'description' => 'API Endpoint.',
-        'type' => 'varchar',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ],
-      'payload' => [
-        'description' => "POST request's payload. Format: JSON-string.",
-        'type' => 'varchar',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ],
-      'header' => [
-        'description' => 'HTTP Headers. Format: JSON-string.',
-        'type' => 'varchar',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ],
-    ],
-    'unique keys' => [
-      // It's possible that the same request will bring different API response.
-      // For example response is time-based.
-      'request_id_created' => ['request_id', 'created'],
-    ],
-  ];
-
-  // Table to log responses obtained by 'RestAPI' class.
-  // Note: There is no need to store message text because it could be
-  // obtained  by the HTTP Response Code.
-  // HttpCode->getMessage($code);
-  $schema['tpps_rest_api_response'] = [
-    'description' => "Stores REST API responses.",
-    'fields' => [
-      // Request Id is an md5 hash of all request's data to be able to find
-      // exactly the same request in log.
-      'request_id' => [
-        'description' => 'The unique request identifier.',
-        'type' => 'varchar',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ],
-      'started' => [
-        'description' => 'The moment request was started. Format: UNIX timestamp.',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ],
-      'code' => [
-        'description' => "HTTP Response Code.",
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ],
-      'duration' => [
-        'description' => 'Request processing time, msec.',
-        'type' => 'int',
-        'size' => 'small',
-        'not null' => TRUE,
-      ],
-      'body' => [
-        'description' => 'Body of the API response. Format: JSON-string.',
-        // varchar/normal: mysql: 64KB, postgresql: 1GB.
-        'type' => 'varchar',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ],
-    ],
-    'unique keys' => [
-      // It's possible that the same request will bring different API response.
-      // For example response is time-based.
-      'request_id_started' => ['request_id', 'started'],
-    ],
-    'foreign keys' => [
-      'request_id' => [
-        'table' => 'tpps_rest_api_request',
-        'columns' => ['request_id' => 'request_id'],
-      ],
-    ],
-
-  ];
+  // RestAPI.
+  $schema[RestAPILog::REQUEST_TABLE] = RestAPILog::getSchema('request');
+  $schema[RestAPILog::RESPONSE_TABLE] = RestAPILog::getSchema('response');
 
   return $schema;
 }
@@ -2737,8 +2633,14 @@ function tpps_update_7134() {
   variable_set('tpps_report_doi_scraped_all_title', 'All Scraped DOI');
   variable_set('tpps_report_doi_scraped_google_scholar_title', 'Google Scholar Scraped DOI');
   variable_set('tpps_report_doi_scraped_pubmed_title', 'PubMed Scraped DOI');
+  // Rest API.
+  variable_set('tpps_report_rest_api_request_list_title', 'Rest API Request List');
+  variable_set('tpps_report_rest_api_request_body_title', 'Rest API Request Body');
+  variable_set('tpps_report_rest_api_response_list_title', 'Rest API Response List');
+  variable_set('tpps_report_rest_api_response_body_title', 'Rest API Response Body');
 
   variable_set('tpps_validation_regex_doi', '/10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+/');
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Remove outdated variables.
   variable_del('tpps_rest_api_log_show_response');
@@ -2752,8 +2654,8 @@ function tpps_update_7134() {
     PublicationDOI::TABLE,
     GoogleScholar::TABLE,
     PubMed::TABLE,
-    'tpps_rest_api_request',
-    'tpps_rest_api_response',
+    RestAPILog::REQUEST_TABLE,
+    RestAPILog::RESPONSE_TABLE,
   ];
   foreach ($table_list as $table_name) {
     if (!db_table_exists($table_name)) {
