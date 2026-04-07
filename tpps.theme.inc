@@ -16,6 +16,12 @@ function tpps_theme() {
       ],
       'file' => 'theme/misc.inc',
     ],
+    'http_method' => [
+      'variables' => [
+        'method' => NULL,
+      ],
+      'file' => 'theme/misc.inc',
+    ],
     'fcbold' => [
       'variables' => [
         'string' => NULL,

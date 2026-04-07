@@ -74,6 +74,10 @@ function tpps_report_rest_api_request_list_formatter(string $name, $value, array
       }
       break;
 
+    case 'method':
+      $formatted = theme('http_method', ['method' => $formatted]);
+      break;
+
     case 'header':
       $formatted = json_decode($value, 1);
       if (!empty($formatted)) {
