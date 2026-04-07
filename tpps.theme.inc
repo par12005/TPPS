@@ -10,6 +10,12 @@
  */
 function tpps_theme() {
   return [
+    'http_code' => [
+      'variables' => [
+        'code' => NULL,
+      ],
+      'file' => 'theme/misc.inc',
+    ],
     'fcbold' => [
       'variables' => [
         'string' => NULL,
