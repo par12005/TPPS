@@ -22,8 +22,8 @@ function tpps_report_rest_api_response_list() {
       'duration',
       'body',
     ]);
-  //$query->join('public.' . RestAPILog::REQUEST_TABLE, 't2', 't2.request_id = t.request_id');
-  //$query->addField('t2', '.tag');
+  $query->join('public.' . RestAPILog::REQUEST_TABLE, 't2', 't2.request_id = t.request_id');
+  $query->addField('t2', 'tag');
 
   return '<h2>' . $page_title . '</h2>' . Report::print([
     'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
@@ -38,6 +38,7 @@ function tpps_report_rest_api_response_list() {
       ['data' => t('HTTP Code'), 'field' => 't.code'],
       ['data' => t('Duration, msec'), 'field' => 't.duration'],
       ['data' => t('Body'), 'field' => 't.body'],
+      ['data' => t('Request'), 'field' => 't.tag'],
     ],
     'query' => $query,
   ]);
@@ -81,8 +82,7 @@ function tpps_report_rest_api_response_list_formatter(string $name, $value, arra
     case 'request_id':
       if (!empty($value)) {
         $formatted = l($formatted, 'admin/reports/tpps/rest_api/request/'
-          . $formatted)
-        . ' ' . $row['tag'];
+          . $formatted);
       }
       break;
 
@@ -105,12 +105,7 @@ function tpps_report_rest_api_response_list_formatter(string $name, $value, arra
       break;
 
     case 'code':
-      if (!empty($value)) {
-        $color = ($value == HttpCode::OK) ? 'green' : 'red';
-        $formatted = '<span style="color:' . $color . '"><strong>'
-          . $formatted . '</strong> '
-          . HttpCode::getMessage($formatted) . '</span>';
-      }
+      $formatted = theme('http_code', ['code' => $formatted]);
       break;
 
   }

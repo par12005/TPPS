@@ -3,6 +3,9 @@
 /**
  * @file
  * Contains 'HttpCode' class.
+ *
+ * Theme:
+ *   $formatted = theme('http_code', ['code' => $formatted]);
  */
 
 /**
