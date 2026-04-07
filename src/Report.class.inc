@@ -562,12 +562,12 @@ class Report {
             'description' => t('List of the all Rest API Requests.'),
             'admin_panel' => TRUE,
           ],
-          'body' => [
+          'single' => [
             'title' => variable_get(
-              'tpps_report_rest_api_request_body_title',
+              'tpps_report_rest_api_request_single_title',
               'Rest API Request Body'
             ),
-            'description' => t('Rest API Request Body.'),
+            'description' => t('Rest API Request.'),
             'admin_panel' => FALSE,
           ],
         ],
