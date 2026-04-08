@@ -22,6 +22,15 @@
  *      // ...
  *      ->get();
  *
+ * How to add 'tag'?
+ *   $response = (new RestAPI([
+ *     'url' => $url,
+ *     'tag' => tag,
+ *   ])->get()->response();
+ *   or
+ *   $api = new RestAPI($context);
+ *   $api->tag = $tag;
+ *
  * DB Tables:
  *   - public.tpps_rest_api_request
  *   - public.tpps_rest_api_response.
@@ -223,7 +232,6 @@ class RestAPI {
     $this->tag = $context['tag'] ?? $this->tag ?? NULL;
     $this->created = time();
 
-    // @TODO Add tag.
     return $this;
   }
 
