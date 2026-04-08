@@ -22,6 +22,14 @@ function tpps_theme() {
       ],
       'file' => 'theme/misc.inc',
     ],
+    'json' => [
+      'variables' => [
+        'title' => NULL,
+        'json' => NULL,
+      ],
+      'file' => 'theme/misc.inc',
+    ],
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     'fcbold' => [
       'variables' => [
         'string' => NULL,

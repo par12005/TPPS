@@ -9,24 +9,35 @@
  * Menu callback. Shows list of the all Rest API Requests.
  */
 function tpps_report_rest_api_request_list() {
-  $name = 'rest_api_request_list';
-  $page_title = variable_get('tpps_report_' . $name . '_title', 'Rest API Request List');
+  $report_name = 'rest_api_request_list';
+  $page_title = variable_get('tpps_report_' . $report_name . '_title', 'Rest API Request List');
 
   // WARNING: Report::print() requires db_select() not db_query().
+  $field_list = [
+    'request_id',
+    'created',
+    'method',
+    'url',
+    'header',
+    'payload',
+  ];
   $query = db_select(RestAPILog::REQUEST_TABLE, 't')
-    ->fields('t', [
-      'request_id',
-      'created',
-      'method',
-      'url',
-      'header',
-      'payload',
-    ]);
+    ->fields('t', $field_list);
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Get related responses.
+  $query->addExpression("string_agg(CAST(res.id AS VARCHAR), ',')", 'response_list');
+  $query->leftJoin(RestAPILog::RESPONSE_TABLE, 'res', 'res.request_id = t.request_id');
+
+  // Group by ALL columns from the request table that you're selecting.
+  foreach ($field_list as $field_name) {
+    $query->groupBy('t.' . $field_name);
+  }
 
   return '<h2>' . $page_title . '</h2>' . Report::print([
     'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
     'page_title' => $page_title,
-    'formatter' => 'tpps_report_' . $name . '_formatter',
+    'formatter' => 'tpps_report_' . $report_name . '_formatter',
     'table_attributes' => ['class' => ['view' , 'tpps_table']],
     'items_per_page' => variable_get('tpps_report_items_per_page', 15),
     'header' => [
@@ -36,6 +47,7 @@ function tpps_report_rest_api_request_list() {
       ['data' => t('URL'), 'field' => 't.url'],
       ['data' => t('Header'), 'field' => 't.header'],
       ['data' => t('Payload'), 'field' => 't.payload'],
+      ['data' => t('Responses'), 'field' => 'response_list'],
     ],
     'query' => $query,
   ]);
@@ -65,11 +77,12 @@ function tpps_report_rest_api_request_list_formatter(string $name, $value, array
     return $formatted;
   }
   $name = check_plain($name);
+  $url = 'admin/reports/tpps/rest_api/request/single/' . $row['request_id'];
   switch ($name) {
 
     case 'request_id':
       if (!empty($value)) {
-        $formatted = l($formatted, 'admin/reports/tpps/rest_api/request/'
+        $formatted = l($formatted, 'admin/reports/tpps/rest_api/request/single/'
           . $formatted);
       }
       break;
@@ -79,31 +92,31 @@ function tpps_report_rest_api_request_list_formatter(string $name, $value, array
       break;
 
     case 'header':
+    case 'payload':
       $formatted = json_decode($value, 1);
       if (!empty($formatted)) {
-        if (is_array($formatted)) {
-          $formatted = TppsArray::print($formatted);
-        }
+        $formatted = l(t('View'), $url);
       }
       else {
         $formatted = '';
       }
       break;
 
-    case 'payload':
-      $formatted = json_decode($value, 1);
-      if (!empty($formatted)) {
-        $url = 'admin/reports/tpps/rest_api/request/single/' . $row['request_id'];
-        $formatted = check_plain(substr(var_export($formatted, 1), 0, 50)) . '... ' . l(t('View more'), $url);
-      }
-      else {
-        $formatted = 'Empty';
-      }
-      break;
-
     case 'created':
       if (!empty($value)) {
         $formatted = format_date($formatted, 'custom', "Y/m/d H:i:s O");
+      }
+      break;
+
+    case 'response_list':
+      if (!empty($value)) {
+        $list = explode(',', $value);
+        $items = [];
+        foreach ($list as $response_id) {
+          $url = 'admin/reports/tpps/rest_api/response/body/' . $response_id;
+          $items[] = l($response_id, $url);
+        }
+        $formatted = theme('item_list', ['items' => $items]);
       }
       break;
 

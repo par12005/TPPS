@@ -19,10 +19,10 @@ function tpps_report_rest_api_response_body() {
 
   $output = '';
   // WARNING: Report::print() requires db_select() not db_query().
-  $query = db_select('public.tpps_rest_api_response', 't')
+  $query = db_select(RestAPILog::RESPONSE_TABLE, 't')
     ->fields('t', [])
     ->condition('id', $id);
-  $query->join('public.' . RestAPILog::REQUEST_TABLE, 't2', 't2.request_id = t.request_id');
+  $query->join(RestAPILog::REQUEST_TABLE, 't2', 't2.request_id = t.request_id');
   $query->addField('t2', 'tag', 'tag');
 
   $result = $query->execute()->fetchAssoc();
@@ -34,7 +34,7 @@ function tpps_report_rest_api_response_body() {
     'items' => [
       l(
         t('View Request "@hash"', ['@hash' => $result['request_id']]),
-        '/admin/reports/tpps/rest_api/request/' . $result['request_id']
+        '/admin/reports/tpps/rest_api/request/single/' . $result['request_id']
       ),
       check_plain($result['tag']),
     ]
@@ -54,38 +54,9 @@ function tpps_report_rest_api_response_body() {
     ]
   ]);
 
-  $title = t('Response Body');
-  $body = $result['body'] ?? '';
-  $body = json_decode($body, 1);
-
-  $output .= '<h3>' . $title . '</h3>';
-  if (is_array($body)) {
-    $output .= TppsArray::print($body);
-  }
-  elseif (is_string($body)) {
-    if ($body !== strip_tags($body)) {
-      // HTML.
-      $output .= "<iframe srcdoc='" . $body . "' " . '
-        style="width: 100%; height: 500px; border: 2px solid silver;">
-        </iframe>';
-    }
-    else {
-
-// @TODO Responses from dryad server was twice encoded into JSON. Check why it happens.
-      $body2 = json_decode($body, 1);
-      if (is_array($body2)) {
-        $output .= TppsArray::print($body2);
-      }
-      else {
-        $output .= '<pre style="border: 2px solid red; padding: 20px">'
-          . var_export($body, 1) . '</pre>';
-      }
-    }
-  }
-  else {
-    dpm(var_export($body, 1));
-    $output .= 'Unknown format';
-  }
-
+  $output .= theme('json', [
+    'title' => t('Response Body'),
+    'json' => $result['body'] ?? '',
+  ]);
   return $output;
 }

@@ -457,10 +457,21 @@ class RestAPI {
     $this->createRequestId();
     if (
       variable_get('tpps_rest_api_use_response_cache', FALSE)
-      && RestAPILog::isResponseExists($this->requestId)
+      && RestAPILog::isValidResponseExists($this->requestId)
     ) {
       // Reuse stored response if possible.
-      extract(RestAPILog::loadResponse($this->requestId));
+      extract(RestAPILog::loadValidResponse($this->requestId));
+
+      dpm('used cache');
+
+
+
+
+
+
+// @TODO Fill class's properties.
+
+
     }
     else {
       $curl = curl_init();

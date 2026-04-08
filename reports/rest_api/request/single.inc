@@ -8,7 +8,7 @@
 /**
  * Menu callback. Shows Rest API Response Body.
  */
-function tpps_report_rest_api_response_body() {
+function tpps_report_rest_api_request_single() {
 
   $id = arg(6);
   if (empty($id)) {
@@ -19,73 +19,58 @@ function tpps_report_rest_api_response_body() {
 
   $output = '';
   // WARNING: Report::print() requires db_select() not db_query().
-  $query = db_select('public.tpps_rest_api_response', 't')
-    ->fields('t', [])
-    ->condition('id', $id);
-  $query->join('public.' . RestAPILog::REQUEST_TABLE, 't2', 't2.request_id = t.request_id');
-  $query->addField('t2', 'tag', 'tag');
+  $field_list = [
+    'request_id',
+    'created',
+    'method',
+    'url',
+    'header',
+    'payload',
+  ];
+  $query = db_select(RestAPILog::REQUEST_TABLE, 't')
+    ->fields('t', $field_list);
+  $query->condition('t.request_id', $id);
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Get related responses.
+  $query->addExpression("string_agg(CAST(res.id AS VARCHAR), ',')", 'response_list');
+  $query->leftJoin(RestAPILog::RESPONSE_TABLE, 'res', 'res.request_id = t.request_id');
+
+  // Group by ALL columns from the request table that you're selecting.
+  foreach ($field_list as $field_name) {
+    $query->groupBy('t.' . $field_name);
+  }
 
   $result = $query->execute()->fetchAssoc();
 
+  // Special care about some data.
+  $header = $result['header'];
+  $payload = $result['payload'];
+  $response_list = $result['response_list'] ?? NULL;
+  unset($result['header']);
+  unset($result['payload']);
+  unset($result['response_list']);
 
-  // Request.
-  $output .= theme('item_list', [
-    'title' => t('Request'),
-    'items' => [
-      l(
-        t('View Request "@hash"', ['@hash' => $result['request_id']]),
-        '/admin/reports/tpps/rest_api/request/' . $result['request_id']
-      ),
-      check_plain($result['tag']),
-    ]
-  ]);
-  $output .= theme('item_list', [
-    'title' => t('Response'),
-    'items' => [
-      t('Code: !value', [
-        '!value' => theme('http_code', ['code' => $result['code']]),
-      ]),
-      t('Duration (msec): @value', ['@value' => $result['duration']]),
-      t('Started: @value', [
-        '@value' => format_date($result['started'], 'custom', "Y/m/d H:i:s O")
-          . ' (' . $result['started'] . ')',
-      ]),
-      'Response Id: ' . check_plain($result['id']),
-    ]
-  ]);
+  // Plain data.
+  $output .= TppsArray::print($result, t('Metadata'));
 
-  $title = t('Response Body');
-  $body = $result['body'] ?? '';
-  $body = json_decode($body, 1);
-
-  $output .= '<h3>' . $title . '</h3>';
-  if (is_array($body)) {
-    $output .= TppsArray::print($body);
-  }
-  elseif (is_string($body)) {
-    if ($body !== strip_tags($body)) {
-      // HTML.
-      $output .= "<iframe srcdoc='" . $body . "' " . '
-        style="width: 100%; height: 500px; border: 2px solid silver;">
-        </iframe>';
+  // Response list.
+  if (!empty($response_list)) {
+    $list = explode(',', $response_list);
+    $items = [];
+    foreach ($list as $response_id) {
+      $url = 'admin/reports/tpps/rest_api/response/body/' . $response_id;
+      $items[] = l($response_id, $url);
     }
-    else {
-
-// @TODO Responses from dryad server was twice encoded into JSON. Check why it happens.
-      $body2 = json_decode($body, 1);
-      if (is_array($body2)) {
-        $output .= TppsArray::print($body2);
-      }
-      else {
-        $output .= '<pre style="border: 2px solid red; padding: 20px">'
-          . var_export($body, 1) . '</pre>';
-      }
-    }
+    $output .= theme('item_list', [
+      'items' => $items,
+      'title' => t('Response List'),
+    ]);
   }
-  else {
-    dpm(var_export($body, 1));
-    $output .= 'Unknown format';
-  }
+  // Header.
+  $output .= theme('json', ['title' => t('Header'), 'json' => $header]);
+  // Payload.
+  $output .= theme('json', ['title' => t('Payload'), 'json' => $payload]);
 
   return $output;
 }
