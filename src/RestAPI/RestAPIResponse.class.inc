@@ -40,17 +40,21 @@ class RestAPIResponse {
     if (empty($context['request_id'])) {
       throw new Exception("Empty 'request_id'.");
     }
-    // Get request's data.
-    $request = $context['request'];
-    unset($context['request']);
+
+    $data = $context;
+    unset($data['cache_request']);
+    unset($data['cache_response']);
+    unset($data['use_cached_response']);
+    unset($data['request']);
+
     // Store Response data.
-    $context['started'] = time();
-    $context['duration'] = intval(round($context['duration']));
-    $context['body'] = json_encode($context['body'], TRUE);
+    $data['started'] = time();
+    $data['duration'] = intval(round($data['duration']));
+    $data['body'] = json_encode($data['body'], TRUE);
     // Note: No need to check if the same response exists because it could
     // have time-based items (like request time) and this check will never
     // give any result. Just store every response.
-    db_insert(static::TABLE)->fields($context)->execute();
+    db_insert(static::TABLE)->fields($data)->execute();
     return TRUE;
   }
 
@@ -70,15 +74,7 @@ class RestAPIResponse {
    *   Returns FALSE otherwise.
    */
   public static function isExists($request_id, $started = NULL) {
-    $query = db_select(static::TABLE, 't')
-      ->fields('t', ['request_id'])
-      ->condition('request_id', $request_id)
-      ->range(0, 1)
-      ->orderBy('started', 'DESC');
-    if (!is_null($started)) {
-      $query->condition('started', $started);
-    }
-    return (bool) $query->execute()->fetchField();
+    return (bool) static::load($request_id, $started);
   }
 
   /**
@@ -98,21 +94,13 @@ class RestAPIResponse {
    *   Returns FALSE otherwise.
    */
   public static function isValidExists($request_id) {
-    return (bool) db_select(static::TABLE, 't')
-      ->fields('t', ['request_id'])
-      ->condition('request_id', $request_id)
-      ->condition('code', 200, '>=')
-      ->condition('code', 299, '<=')
-      ->condition('body', '', '!=')
-      ->range(0, 1)
-      ->orderBy('started', 'DESC')
-      ->execute()
-      ->fetchField();
+    return (bool) static::loadValid($request_id);
   }
 
   /**
    * Loads Rest API response from database.
    *
+   * Uses static caching.
    * WARNING: Status code won't be checked and invalid responses will be loaded.
    *
    * Usage example:
@@ -123,6 +111,8 @@ class RestAPIResponse {
    * @param int $started
    *   Optional. Unix timestamp of the moment when response was requested.
    *   When empty then latest response will be loaded.
+   * @param bool $reset
+   *   TRUE to reset static cache. Default is FALSE.
    *
    * @return array
    *   Returns associative array with keys:
@@ -133,30 +123,37 @@ class RestAPIResponse {
    *     'info',
    *     'response',
    */
-  public static function load($request_id, $started = NULL) {
-    $query = db_select(static::TABLE, 't')
-      ->fields('t', [])
-      ->condition('request_id', $request_id)
-      ->range(0, 1)
-      ->orderBy('started', 'DESC');
-    if (!is_null($started)) {
-      $query->condition('started', $started);
+  public static function load($request_id, $started = NULL, $reset = FALSE) {
+
+    $static_cache = &drupal_static(__METHOD__);
+    $key = md5(json_encode(array_slice(func_get_args(), 0, -1)));
+    if ($reset || !isset($static_cache[$key])) {
+      $query = db_select(static::TABLE, 't')
+        ->fields('t', [])
+        ->condition('request_id', $request_id)
+        ->range(0, 1)
+        ->orderBy('started', 'DESC');
+      if (!is_null($started)) {
+        $query->condition('started', $started);
+      }
+      $result = $query->execute()->fetchAssoc();
+      if (!empty($result)) {
+        // Curl info doesn't store in DB so we just create empty variable.
+        $result['info'] = [];
+        $result['response'] = json_decode($result['body'], TRUE);
+        unset($result['body']);
+        $result['message'] = HttpCode::getMessage($result['code']);
+      }
+      $static_cache[$key] = $result;
     }
-    $result = $query->execute()->fetchAssoc();
-
-    // Curl info doesn't store in DB so we just create empty variable.
-    $result['info'] = [];
-    $result['response'] = json_decode($result['body'], TRUE);
-    unset($result['body']);
-    $result['message'] = HttpCode::getMessage($result['code']);
-
-    return $result;
+    return $static_cache[$key];
   }
 
   /**
    * Loads only valid Rest API response from database.
    *
-   * Valis response:
+   * Uses static caching.
+   * Valid response:
    * 1. code 2xx
    * 2. Not empty body.
    * 3. Latest response (no 'started' date).
@@ -168,6 +165,8 @@ class RestAPIResponse {
    *
    * @param string $request_id
    *   Unique request identificator.
+   * @param bool $reset
+   *   TRUE to reset static cache. Default is FALSE.
    *
    * @return array
    *   Returns associative array with keys:
@@ -178,25 +177,30 @@ class RestAPIResponse {
    *     'info',
    *     'response',
    */
-  public static function loadValid($request_id) {
-    $result = db_select(static::TABLE, 't')
-      ->fields('t', [])
-      ->condition('request_id', $request_id)
-      ->condition('code', 200, '>=')
-      ->condition('code', 299, '<=')
-      ->condition('body', '', '!=')
-      ->range(0, 1)
-      ->orderBy('started', 'DESC')
-      ->execute()
-      ->fetchAssoc();
-
-    // Curl info doesn't store in DB so we just create empty variable.
-    $result['info'] = [];
-    $result['response'] = json_decode($result['body'], TRUE);
-    unset($result['body']);
-    $result['message'] = HttpCode::getMessage($result['code']);
-
-    return $result;
+  public static function loadValid($request_id, $reset = FALSE) {
+    $static_cache = &drupal_static(__METHOD__);
+    $key = md5(json_encode(array_slice(func_get_args(), 0, -1)));
+    if ($reset || !isset($static_cache[$key])) {
+      $result = db_select(static::TABLE, 't')
+        ->fields('t', [])
+        ->condition('request_id', $request_id)
+        ->condition('code', 200, '>=')
+        ->condition('code', 299, '<=')
+        ->condition('body', '', '!=')
+        ->range(0, 1)
+        ->orderBy('started', 'DESC')
+        ->execute()
+        ->fetchAssoc();
+      if (!empty($result)) {
+        // Curl info doesn't store in DB so we just create empty variable.
+        $result['info'] = [];
+        $result['response'] = json_decode($result['body'], TRUE);
+        unset($result['body']);
+        $result['message'] = HttpCode::getMessage($result['code']);
+      }
+      $static_cache[$key] = $result;
+    }
+    return $static_cache[$key];
   }
 
   /**

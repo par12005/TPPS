@@ -40,10 +40,11 @@
  *   Request is stored when doRequest() was called.
  *   Response is stored when request was received.
  *
- *  @TODO Implement tags.
- *  @TODO Implement ability to enable/disable logging per request.
- *  @TODO Allow in the call of ::doRequest() decide if previous response
+ *  @todo Implement ability to enable/disable logging per request.
+ *  @todo Allow in the call of ::doRequest() decide if previous response
  *  could be used.
+ *  @todo Change structure of the $header to array with key-value format
+ *  instead of list of the strings.
  */
 
 /**
@@ -210,26 +211,92 @@ class RestAPI {
   protected $curlInfo;
 
   /**
+   * Controls if request must be stored in DB.
+   *
+   * When TRUE request will be stored.
+   * See class 'RestAPIRequest' which manages responses stored in DB.
+   * When FALSE then responses won't be saved into DB.
+   * Global settings controlled by variable: 'tpps_rest_api_cache_requests'.
+   * Each request could overwrite global setting.
+   *
+   * @var bool
+   */
+  protected $cacheRequest;
+
+  /**
+   * Controls if response must be stored in DB.
+   *
+   * When TRUE response will be stored.
+   *   See class 'RestAPIResponse' which manages responses stored in DB.
+   * When FALSE then responses won't be saved into DB.
+   * Global settings controlled by variable: 'tpps_rest_api_cache_responses'.
+   * Each request could overwrite global setting.
+   *
+   * @var bool
+   */
+  protected $cacheResponse;
+
+  /**
+   * Allow to use cached response instead of actual API Request.
+   *
+   * When TRUE latest valid response will be used (if exists).
+   * When FALSE then API will be request to get most up-to-date data.
+   * Global settings controlled by variable: 'tpps_rest_api_use_cached_responses'.
+   * Each request could overwrite global setting.
+   *
+   * @var bool
+   */
+  protected $useCachedResponse;
+
+  /**
    * Creates request from $context data.
    *
    * @param array $context
    *   Associative array. Keys are:
-   *   - 'url' string. Required. API Endpoint URL.
-   *   - 'method' string. Required. HTTP Method.
+   *   - 'url' string
+   *      Required. API Endpoint URL.
+   *   - 'method' string
+   *     Required. HTTP Method.
    *     One of 'GET', 'POST', 'PUT' or 'DELETE'.
-   *   - 'payload' array. Optional. Payload for POST and PUT requests.
-   *   - header' array. Optional. List of HTTP headers (as strings).
+   *   - 'payload' array
+   *     Optional. Payload for POST and PUT requests.
+   *   - 'header' array
+   *     Optional. List of HTTP headers (as strings).
+   *   - 'cache_request' bool
+   *     Optional. Default is TRUE.
+   *     When TRUE then request will be stored in database.
+   *     Global setting controlled by variable: 'tpps_rest_api_cache_requests'.
+   *   - 'cache_response' bool
+   *     Optional. Default is TRUE.
+   *     When TRUE then response will be stored in database.
+   *     Global setting controlled by variable: 'tpps_rest_api_cache_responses'.
+   *     When FALSE any response won't be stored in database.
+   *   - 'use_cached_response' bool
+   *     Optional. Default is FALSE.
+   *     When TRUE latest cached and valid response will be used instead of
+   *     actual REST API Request.
    *
    * @return object
    *   Returns $this to allow method chaining.
    */
   public function createRequest(array $context) {
+    // Required.
     $this->url = $context['url'] ?? $this->url ?? '';
     $this->method = strtoupper($context['method'] ?? $this->method ?? '');
+    // Conditional.
     $this->payload = $context['payload'] ?? $this->payload ?? [];
     $this->header = $context['header'] ?? $this->header ?? [];
     $this->query = $context['query'] ?? $this->query ?? [];
+    // Optional.
     $this->tag = $context['tag'] ?? $this->tag ?? NULL;
+
+    $this->cacheRequest = $context['cache_request']
+      ?? variable_get('tpps_rest_api_cache_requests', TRUE);
+    $this->cacheResponse = $context['cache_response']
+      ?? variable_get('tpps_rest_api_cache_responses', TRUE);
+    $this->useCachedResponse = $context['use_cached_response']
+      ?? variable_get('tpps_rest_api_use_cached_responses', FALSE);
+    // Generated.
     $this->created = time();
 
     return $this;
@@ -260,17 +327,26 @@ class RestAPI {
    *
    * @return object
    *   Returns $this to allow method chaining.
-   *
-   * @TODO Be sure to remove time-based data from the request's payload to
-   * avoid duplicates.
    */
   public function createRequestId() {
     $this->requestId = md5(json_encode([
       'method' => strtoupper($this->method),
+      // WARNING:
+      // Be sure to remove time-based data from the request's payload and URL
+      // to avoid duplicate records in DB.
       'url' => $this->url,
       'payload' => $this->payload,
       'header' => $this->header,
+      // Using this extra data allows to have multiple almost the same requests
+      // but they are not the same. Also it solves issue with updating existing
+      // records in DB. Currently we do not update but only insert because it's
+      // easier and faster.
+      'cache_response' => $this->cacheResponse,
+      'use_cached_response' => $this->useCachedResponse,
+      // No sense to use 'cacheRequest' because if it's FALSE there is no
+      // record in DB.
     ]));
+
     return $this;
   }
 
@@ -278,13 +354,14 @@ class RestAPI {
    * Setter for $tag property.
    *
    * @param mixed $value
+   *
    *   Optional value of the tag.
    *   When empty tag will be generated automatically using request's data.
    *
    * @return object
    *   Returns $this to allow method chaining.
    */
-  public function setTag($value = NULL) {
+  public function generateTag($value = NULL) {
     if (!is_null($value)) {
       $this->tag = $value;
     }
@@ -323,10 +400,10 @@ class RestAPI {
    *
    * @param mixed $context
    *   Request's metadata.
-   *   When array then it must have class's property as a key and value will be
-   *   set to this class's property.
+   *   When array then it must have class's property as a key and value
+   *     will be set to this class's property.
    *   When string (or integer) then it's treated as a Request Id and metadata
-   *   will be loaded from DB if there is a record with this 'Request Id'.
+   *     will be loaded from DB if there is a record with this 'Request Id'.
    *
    * @return object
    *   Returns $this to allow method chaining.
@@ -334,11 +411,17 @@ class RestAPI {
   public function __construct($context = NULL) {
     if (!empty($context)) {
       if (is_array($context)) {
+        // Request's metadata.
         $this->createRequest($context);
       }
       else {
+        // Request's Id.
         $this->loadRequest($request_id);
       }
+    }
+    else {
+      // If $context is empty it's not an error because request's metadata
+      // could be set later.
     }
     return $this;
   }
@@ -401,7 +484,6 @@ class RestAPI {
         throw new Exception("Inexistent property: $name");
       }
     }
-    //return $this;
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -492,20 +574,15 @@ class RestAPI {
     $this->method = strtoupper($this->method);
     $this->createRequestId();
     if (
-      variable_get('tpps_rest_api_use_response_cache', FALSE)
+      $this->useCachedResponse
       && RestAPIResponse::isValidExists($this->requestId)
     ) {
       // Reuse stored response if possible.
       foreach (RestAPIResponse::loadValid($this->requestId) as $key => $vlaue) {
         $this->$key = $value;
       }
-
-// @TODO Fill class's properties.
-
-
     }
     else {
-      return;
       $curl = curl_init();
       // Why not use CURLOPT_POS: https://stackoverflow.com/a/74812403
       curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $this->method);
@@ -529,7 +606,7 @@ class RestAPI {
       // Allow other modules to react on start of the request.
       if (function_exists('module_invoke_all')) {
         // tpps_rest_api_request_started().
-        $this->setTag();
+        $this->generateTag();
         $context = [
           'request_id' => $this->requestId,
           'method' => $this->method,
@@ -537,6 +614,10 @@ class RestAPI {
           'payload' => $this->payload ?? NULL,
           'header' => $this->header ?? NULL,
           'tag' => $this->tag ?? NULL,
+          // Caching settings.
+          'cache_request' => $this->cacheRequest,
+          'cache_response' => $this->cacheResponse,
+          'use_cached_response' => $this->useCachedResponse,
         ];
         module_invoke_all('rest_api_request_started', $context);
       }
@@ -585,6 +666,10 @@ class RestAPI {
           // 'message' => $message,
           'duration' => $this->duration,
           'body' => $this->response,
+          // Caching settings.
+          'cache_request' => $this->cacheRequest,
+          'cache_response' => $this->cacheResponse,
+          'use_cached_response' => $this->useCachedResponse,
         ];
         module_invoke_all('rest_api_request_completed', $context);
       }

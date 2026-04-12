@@ -3231,21 +3231,23 @@ function tpps_rest_api_request_started(array $context = []) {
     // @todo ? Watchdog record?
     return;
   }
-  if (RestAPIRequest::save($context)) {
-    $message = '!aRest API Request !report_link was logged.';
+  if ($context['cache_request']) {
+    if (RestAPIRequest::save($context)) {
+      $message = '!aRest API Request !report_link was logged.';
+    }
+    else {
+      $message = '!aRest API Request !report_link already exists.';
+    }
+    $params = [
+      '!a' => '<a href=#></a>',
+      '!report_link' => l(
+        t('#@request_id', ['@request_id' => $context['request_id']]),
+        'admin/reports/db/public.' . RestAPIRequest::TABLE,
+        ['query' => ['request_id' => $context['request_id']]]
+      ),
+    ];
+    watchdog('tpps_rest_api', $message, $params);
   }
-  else {
-    $message = '!aRest API Request !report_link already exists.';
-  }
-  $params = [
-    '!a' => '<a href=#></a>',
-    '!report_link' => l(
-      t('#@request_id', ['@request_id' => $context['request_id']]),
-      'admin/reports/db/public.' . RestAPIRequest::TABLE,
-      ['query' => ['request_id' => $context['request_id']]]
-    ),
-  ];
-  watchdog('tpps_rest_api', $message, $params);
 }
 
 /**
@@ -3264,35 +3266,37 @@ function tpps_rest_api_request_completed(array $context = []) {
     // @todo ? Watchdog record?
     return;
   }
-  if (RestAPIResponse::save:($context)) {
-    // Watchdog message.
-    $message = '!aResponse to Rest API request !report_link was logged.';
-    $params = [
-      '!a' => '<a href=#></a>',
-      '!report_link' => l(
-        t('#@request_id', ['@request_id' => $context['request_id']]),
-        'admin/reports/db/public.' . RestAPIResponse::TABLE,
-        ['query' => ['request_id' => $context['request_id']]]
-      ),
-    ];
-    watchdog('tpps_rest_api', $message, $params);
-  }
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Record very long requests.
-  $max_execution_time = variable_get('tpps_rest_api_max_execution_time', 5000);
-  $method = $request['method'] ?? NULL;
-  if (($context['duration'] ?? 0) >= $max_execution_time) {
-    $message = '!aRequest !report_link was processed too long: @duration msec.';
-    $params = [
-      '!a' => '<a href=#></a>',
-      '@duration' => $context['duration'],
-      '!report_link' => l(
-        t('#@request_id', ['@request_id' => $context['request_id']]),
-        'admin/reports/db/public.' . RestAPIResponse::TABLE,
-        ['query' => ['request_id' => $context['request_id']]]
-      ),
-    ];
-    watchdog('tpps_rest_api', $message, $params);
+  if ($context['cache_response']) {
+    if (RestAPIResponse::save:($context)) {
+      // Watchdog message.
+      $message = '!aResponse to Rest API request !report_link was logged.';
+      $params = [
+        '!a' => '<a href=#></a>',
+        '!report_link' => l(
+          t('#@request_id', ['@request_id' => $context['request_id']]),
+          'admin/reports/db/public.' . RestAPIResponse::TABLE,
+          ['query' => ['request_id' => $context['request_id']]]
+        ),
+      ];
+      watchdog('tpps_rest_api', $message, $params);
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Record very long requests.
+    $max_execution_time = variable_get('tpps_rest_api_max_execution_time', 5000);
+    $method = $request['method'] ?? NULL;
+    if (($context['duration'] ?? 0) >= $max_execution_time) {
+      $message = '!aRequest !report_link was processed too long: @duration msec.';
+      $params = [
+        '!a' => '<a href=#></a>',
+        '@duration' => $context['duration'],
+        '!report_link' => l(
+          t('#@request_id', ['@request_id' => $context['request_id']]),
+          'admin/reports/db/public.' . RestAPIResponse::TABLE,
+          ['query' => ['request_id' => $context['request_id']]]
+        ),
+      ];
+      watchdog('tpps_rest_api', $message, $params);
+    }
   }
 }
 

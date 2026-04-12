@@ -64,12 +64,14 @@ class RestAPIRequest {
       return FALSE;
     }
     else {
-      $context['created'] = $context['created'] ?? time();
+      $data = $context;
+      unset($data['cache_request']);
+      $data['created'] = $data['created'] ?? time();
       // Convert arrays into JSON format.
       foreach (['payload', 'header'] as $name) {
-        $context[$name] = json_encode($context[$name], TRUE);
+        $data[$name] = json_encode($context[$name], TRUE);
       }
-      db_insert(static::TABLE)->fields($context)->execute();
+      db_insert(static::TABLE)->fields($data)->execute();
       return TRUE;
     }
   }
@@ -134,6 +136,20 @@ class RestAPIRequest {
           'type' => 'varchar',
           'size' => 'normal',
           'not null' => FALSE,
+        ],
+        'cache_response' => [
+          'type' => 'int',
+          'size' => 'tiny',
+          'not null' => TRUE,
+          'default' => 0,
+          'description' => 'Controls if response could be cached. 0 = FALSE, 1 = TRUE.',
+        ],
+        'use_cached_response' => [
+          'type' => 'int',
+          'size' => 'tiny',
+          'not null' => TRUE,
+          'default' => 0,
+          'description' => 'Controls if cached response could be used. 0 = FALSE, 1 = TRUE.',
         ],
         'created' => [
           'description' => 'The first time request was created. Format: UNIX timestamp.',
