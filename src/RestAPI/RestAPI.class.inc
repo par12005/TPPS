@@ -321,12 +321,24 @@ class RestAPI {
   /**
    * Class constructor.
    *
+   * @param mixed $context
+   *   Request's metadata.
+   *   When array then it must have class's property as a key and value will be
+   *   set to this class's property.
+   *   When string (or integer) then it's treated as a Request Id and metadata
+   *   will be loaded from DB if there is a record with this 'Request Id'.
+   *
    * @return object
    *   Returns $this to allow method chaining.
    */
-  public function __construct(array $context = []) {
+  public function __construct($context = NULL) {
     if (!empty($context)) {
-      $this->createRequest($context);
+      if (is_array($context)) {
+        $this->createRequest($context);
+      }
+      else {
+        $this->loadRequest($request_id);
+      }
     }
     return $this;
   }
@@ -484,20 +496,16 @@ class RestAPI {
       && RestAPILog::isValidResponseExists($this->requestId)
     ) {
       // Reuse stored response if possible.
-      extract(RestAPILog::loadValidResponse($this->requestId));
-
-      dpm('used cache');
-
-
-
-
-
+      foreach (RestAPILog::loadValidResponse($this->requestId) as $key => $vlaue) {
+        $this->$key = $value;
+      }
 
 // @TODO Fill class's properties.
 
 
     }
     else {
+      return;
       $curl = curl_init();
       // Why not use CURLOPT_POS: https://stackoverflow.com/a/74812403
       curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $this->method);
