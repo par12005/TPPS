@@ -36,7 +36,7 @@
  *   - public.tpps_rest_api_response.
  *
  * Logging:
- *   See 'RestAPILog' class.
+ *   See 'RestAPIResponse' and 'RestAPIRequest' classes.
  *   Request is stored when doRequest() was called.
  *   Response is stored when request was received.
  *
@@ -246,7 +246,7 @@ class RestAPI {
    */
   public function loadRequest($request_id) {
     $this->createRequest(
-      RestAPILog::loadRequest($request_id)
+      RestAPIRequest::load($request_id)
     );
     return $this;
   }
@@ -493,10 +493,10 @@ class RestAPI {
     $this->createRequestId();
     if (
       variable_get('tpps_rest_api_use_response_cache', FALSE)
-      && RestAPILog::isValidResponseExists($this->requestId)
+      && RestAPIResponse::isValidExists($this->requestId)
     ) {
       // Reuse stored response if possible.
-      foreach (RestAPILog::loadValidResponse($this->requestId) as $key => $vlaue) {
+      foreach (RestAPIResponse::loadValid($this->requestId) as $key => $vlaue) {
         $this->$key = $value;
       }
 

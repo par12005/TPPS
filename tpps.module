@@ -3231,7 +3231,7 @@ function tpps_rest_api_request_started(array $context = []) {
     // @todo ? Watchdog record?
     return;
   }
-  if (RestAPILog::saveRequest($context)) {
+  if (RestAPIRequest::save($context)) {
     $message = '!aRest API Request !report_link was logged.';
   }
   else {
@@ -3241,7 +3241,7 @@ function tpps_rest_api_request_started(array $context = []) {
     '!a' => '<a href=#></a>',
     '!report_link' => l(
       t('#@request_id', ['@request_id' => $context['request_id']]),
-      'admin/reports/db/public.' . RestAPILog::REQUEST_TABLE,
+      'admin/reports/db/public.' . RestAPIRequest::TABLE,
       ['query' => ['request_id' => $context['request_id']]]
     ),
   ];
@@ -3257,21 +3257,21 @@ function tpps_rest_api_request_started(array $context = []) {
  * @param array $context
  *   Request's context.
  *   Keys: see RestAPI->doRequest().
- *   To check if response exists: RestAPILog::isResponseExists($request_id).
+ *   To check if response exists: RestAPIResponse::isExists($request_id).
  */
 function tpps_rest_api_request_completed(array $context = []) {
   if (empty($context['request_id'])) {
     // @todo ? Watchdog record?
     return;
   }
-  if (RestAPILog::saveResponse($context)) {
+  if (RestAPIResponse::save:($context)) {
     // Watchdog message.
     $message = '!aResponse to Rest API request !report_link was logged.';
     $params = [
       '!a' => '<a href=#></a>',
       '!report_link' => l(
         t('#@request_id', ['@request_id' => $context['request_id']]),
-        'admin/reports/db/public.' . RestAPILog::RESPONSE_TABLE,
+        'admin/reports/db/public.' . RestAPIResponse::TABLE,
         ['query' => ['request_id' => $context['request_id']]]
       ),
     ];
@@ -3288,7 +3288,7 @@ function tpps_rest_api_request_completed(array $context = []) {
       '@duration' => $context['duration'],
       '!report_link' => l(
         t('#@request_id', ['@request_id' => $context['request_id']]),
-        'admin/reports/db/public.' . RestAPILog::RESPONSE_TABLE,
+        'admin/reports/db/public.' . RestAPIResponse::TABLE,
         ['query' => ['request_id' => $context['request_id']]]
       ),
     ];

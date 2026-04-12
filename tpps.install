@@ -927,7 +927,8 @@ function tpps_schema() {
     'doi/GoogleScholar',
     'doi/PublicationDOI',
     'submission/SubmissionCache',
-    'RestAPI/RestAPILog',
+    'RestAPI/RestAPIResponse',
+    'RestAPI/RestAPIRequest',
   ];
   foreach ($class_list as $path) {
     $class_file = dirname(__FILE__) . '/src/' . $path . '.class.inc';
@@ -942,8 +943,8 @@ function tpps_schema() {
   $schema[SubmissionCache::CACHE_BIN] = SubmissionCache::getSchema();
   $schema[TPPS_CACHE_BIN] = drupal_get_schema_unprocessed('system', 'cache');
   // RestAPI.
-  $schema[RestAPILog::REQUEST_TABLE] = RestAPILog::getSchema('request');
-  $schema[RestAPILog::RESPONSE_TABLE] = RestAPILog::getSchema('response');
+  $schema[RestAPIRequest::TABLE] = RestAPIRequest::getSchema();
+  $schema[RestAPIResponse::TABLE] = RestAPIResponse::getSchema();
 
   return $schema;
 }
@@ -2654,8 +2655,8 @@ function tpps_update_7134() {
     PublicationDOI::TABLE,
     GoogleScholar::TABLE,
     PubMed::TABLE,
-    RestAPILog::REQUEST_TABLE,
-    RestAPILog::RESPONSE_TABLE,
+    RestAPIRequest::TABLE,
+    RestAPIResponse::TABLE,
   ];
   foreach ($table_list as $table_name) {
     if (!db_table_exists($table_name)) {

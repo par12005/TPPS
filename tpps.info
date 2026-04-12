@@ -32,7 +32,8 @@ files[] = src/NextFlowManager.class.inc
 ; RestAPI
 files[] = src/RestAPI/RestAPI.class.inc
 files[] = src/RestAPI/HttpCode.class.inc
-files[] = src/RestAPI/RestAPILog.class.inc
+files[] = src/RestAPI/RestAPIResponse.class.inc
+files[] = src/RestAPI/RestAPIRequest.class.inc
 
 ; Misc
 files[] = src/Report.class.inc
