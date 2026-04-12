@@ -27,7 +27,6 @@ function tpps_report_rest_api_response_body() {
 
   $result = $query->execute()->fetchAssoc();
 
-
   // Request.
   $output .= theme('item_list', [
     'title' => t('Request'),
@@ -37,7 +36,7 @@ function tpps_report_rest_api_response_body() {
         '/admin/reports/tpps/rest_api/request/single/' . $result['request_id']
       ),
       check_plain($result['tag']),
-    ]
+    ],
   ]);
   $output .= theme('item_list', [
     'title' => t('Response'),
@@ -47,8 +46,8 @@ function tpps_report_rest_api_response_body() {
       ]),
       t('Duration (msec): @value', ['@value' => $result['duration']]),
       t('Started: @value', [
-        '@value' => format_date($result['started'], 'custom', "Y/m/d H:i:s O")
-          . ' (' . $result['started'] . ')',
+        '@value' => format_date($result['created'], 'custom', "Y/m/d H:i:s O")
+          . ' (' . $result['created'] . ')',
       ]),
       'Response Id: ' . check_plain($result['id']),
     ]

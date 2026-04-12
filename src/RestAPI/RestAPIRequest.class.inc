@@ -82,7 +82,7 @@ class RestAPIRequest {
    * Valis response:
    * 1. code 2xx
    * 2. Not empty body.
-   * 3. Latest response (no 'started' date).
+   * 3. Latest response (no 'created' date).
    *
    * To load invalid responses use RestAPIResponse::load() method.
    *
@@ -95,7 +95,7 @@ class RestAPIRequest {
    * @return array
    *   Returns associative array with keys:
    *     'request_id',
-   *     'started',
+   *     'created',
    *     'code',
    *     'duration',
    *     'info',

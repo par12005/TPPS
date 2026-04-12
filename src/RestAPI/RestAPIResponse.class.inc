@@ -48,7 +48,7 @@ class RestAPIResponse {
     unset($data['request']);
 
     // Store Response data.
-    $data['started'] = time();
+    $data['created'] = time();
     $data['duration'] = intval(round($data['duration']));
     $data['body'] = json_encode($data['body'], TRUE);
     // Note: No need to check if the same response exists because it could
@@ -65,7 +65,7 @@ class RestAPIResponse {
    *
    * @param string $request_id
    *   Unique request identificator.
-   * @param int $started
+   * @param int $created
    *   Optional. Unix timestamp of the moment when response was requested.
    *   When empty then latest response will be loaded.
    *
@@ -73,8 +73,8 @@ class RestAPIResponse {
    *   Returns TRUE if record for given $request_id found in DB.
    *   Returns FALSE otherwise.
    */
-  public static function isExists($request_id, $started = NULL) {
-    return (bool) static::load($request_id, $started);
+  public static function isExists($request_id, $created = NULL) {
+    return (bool) static::load($request_id, $created);
   }
 
   /**
@@ -108,7 +108,7 @@ class RestAPIResponse {
    *
    * @param string $request_id
    *   Unique request identificator.
-   * @param int $started
+   * @param int $created
    *   Optional. Unix timestamp of the moment when response was requested.
    *   When empty then latest response will be loaded.
    * @param bool $reset
@@ -117,13 +117,13 @@ class RestAPIResponse {
    * @return array
    *   Returns associative array with keys:
    *     'request_id',
-   *     'started',
+   *     'created',
    *     'code',
    *     'duration',
    *     'info',
    *     'response',
    */
-  public static function load($request_id, $started = NULL, $reset = FALSE) {
+  public static function load($request_id, $created = NULL, $reset = FALSE) {
 
     $static_cache = &drupal_static(__METHOD__);
     $key = md5(json_encode(array_slice(func_get_args(), 0, -1)));
@@ -132,9 +132,9 @@ class RestAPIResponse {
         ->fields('t', [])
         ->condition('request_id', $request_id)
         ->range(0, 1)
-        ->orderBy('started', 'DESC');
-      if (!is_null($started)) {
-        $query->condition('started', $started);
+        ->orderBy('created', 'DESC');
+      if (!is_null($created)) {
+        $query->condition('created', $created);
       }
       $result = $query->execute()->fetchAssoc();
       if (!empty($result)) {
@@ -156,7 +156,7 @@ class RestAPIResponse {
    * Valid response:
    * 1. code 2xx
    * 2. Not empty body.
-   * 3. Latest response (no 'started' date).
+   * 3. Latest response (no 'created' date).
    *
    * To load invalid responses use RestAPIResponse::load() method.
    *
@@ -171,7 +171,7 @@ class RestAPIResponse {
    * @return array
    *   Returns associative array with keys:
    *     'request_id',
-   *     'started',
+   *     'created',
    *     'code',
    *     'duration',
    *     'info',
@@ -188,7 +188,7 @@ class RestAPIResponse {
         ->condition('code', 299, '<=')
         ->condition('body', '', '!=')
         ->range(0, 1)
-        ->orderBy('started', 'DESC')
+        ->orderBy('created', 'DESC')
         ->execute()
         ->fetchAssoc();
       if (!empty($result)) {
@@ -217,7 +217,7 @@ class RestAPIResponse {
    * @return array
    *   Returns associative array with keys:
    *     'request_id',
-   *     'started',
+   *     'created',
    *     'code',
    *     'duration',
    *     'info',
@@ -227,9 +227,9 @@ class RestAPIResponse {
     $result = db_select(static::TABLE, 't')
       ->fields('t', [])
       ->condition('request_id', $request_id)
-      // ->orderBy('started', 'DESC')
+      // ->orderBy('created', 'DESC')
       ->execute()
-      ->fetchAllAssoc('started', PDO::FETCH_ASSOC);
+      ->fetchAllAssoc('created', PDO::FETCH_ASSOC);
 
     foreach ($result as &$item) {
       // Curl info doesn't store in DB so we just create empty variable.
@@ -274,8 +274,8 @@ class RestAPIResponse {
           'size' => 'normal',
           'not null' => TRUE,
         ],
-        'started' => [
-          'description' => 'The moment request was started. Format: UNIX timestamp.',
+        'created' => [
+          'description' => 'The moment when getting response was started. Format: UNIX timestamp.',
           'type' => 'int',
           'size' => 'normal',
           'not null' => TRUE,
@@ -306,7 +306,7 @@ class RestAPIResponse {
       'unique keys' => [
         // It's possible that the same request will bring different API response.
         // For example response is time-based.
-        'request_id_started' => ['request_id', 'started'],
+        'request_id_created' => ['request_id', 'created'],
       ],
       'foreign keys' => [
         'request_id' => [

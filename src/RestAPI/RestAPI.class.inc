@@ -40,9 +40,6 @@
  *   Request is stored when doRequest() was called.
  *   Response is stored when request was received.
  *
- *  @todo Implement ability to enable/disable logging per request.
- *  @todo Allow in the call of ::doRequest() decide if previous response
- *  could be used.
  *  @todo Change structure of the $header to array with key-value format
  *  instead of list of the strings.
  */
@@ -54,12 +51,6 @@
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
 class RestAPI {
-
-
-  // @TODO Add doc-comment for each property.
-  // @TODO Add 'tag' support and column in DB.
-  // @todo remove 'query' from $payload for GET requests.
-
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Request related properties.
@@ -177,11 +168,11 @@ class RestAPI {
   /**
    * Unix timestamp of the moment when request was created.
    *
-   * Stored in 'tpps_rest_api_response.started' column.
+   * Stored in 'tpps_rest_api_response.created' column.
    *
    * @var int
    */
-  protected $started;
+  protected $created;
 
   /**
    * Request processing time in msec.

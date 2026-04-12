@@ -17,7 +17,7 @@ function tpps_report_rest_api_response_list() {
     ->fields('t', [
       'id',
       'request_id',
-      'started',
+      'created',
       'code',
       'duration',
       'body',
@@ -34,7 +34,7 @@ function tpps_report_rest_api_response_list() {
     'header' => [
       ['data' => t('Id'), 'field' => 't.id', 'sort' => 'desc'],
       ['data' => t('Request Id'), 'field' => 't.request_id'],
-      ['data' => t('Started'), 'field' => 't.started'],
+      ['data' => t('Started'), 'field' => 't.created'],
       ['data' => t('HTTP Code'), 'field' => 't.code'],
       ['data' => t('Duration, msec'), 'field' => 't.duration'],
       ['data' => t('Body'), 'field' => 't.body'],
@@ -97,10 +97,9 @@ function tpps_report_rest_api_response_list_formatter(string $name, $value, arra
       }
       break;
 
-    case 'started':
+    case 'created':
       if (!empty($value)) {
         $formatted = format_date($formatted, 'custom', "Y/m/d H:i:s O");
-          //. ' (' . $formatted . ')';
       }
       break;
 
