@@ -236,6 +236,22 @@ class RestAPI {
   }
 
   /**
+   * Loads existing request from DB.
+   *
+   * @param string $request_id
+   *   Unique Request Id.
+   *
+   * @return object
+   *   Returns $this to allow method chaining.
+   */
+  public function loadRequest($request_id) {
+    $this->createRequest(
+      RestAPILog::loadRequest($request_id)
+    );
+    return $this;
+  }
+
+  /**
    * Generates unique id for request.
    *
    * All request data are used to be able to find the same requests in log.

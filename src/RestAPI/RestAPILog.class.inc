@@ -239,6 +239,41 @@ class RestAPILog {
    *     'info',
    *     'response',
    */
+  public static function loadRequest($request_id) {
+    return db_select(self::REQUEST_TABLE, 't')
+      ->fields('t', [])
+      ->condition('request_id', $request_id)
+      ->range(0, 1)
+      ->orderBy('created', 'DESC')
+      ->execute()
+      ->fetchAssoc();
+  }
+
+  /**
+   * Loads only valid Rest API response from database.
+   *
+   * Valis response:
+   * 1. code 2xx
+   * 2. Not empty body.
+   * 3. Latest response (no 'started' date).
+   *
+   * To load invalid responses use loadResponse() method.
+   *
+   * Usage example:
+   * extract(RestAPILog::loadValidResponse($request_id));
+   *
+   * @param string $request_id
+   *   Unique request identificator.
+   *
+   * @return array
+   *   Returns associative array with keys:
+   *     'request_id',
+   *     'started',
+   *     'code',
+   *     'duration',
+   *     'info',
+   *     'response',
+   */
   public static function loadValidResponse($request_id) {
     $result = db_select(self::RESPONSE_TABLE, 't')
       ->fields('t', [])
@@ -259,7 +294,6 @@ class RestAPILog {
 
     return $result;
   }
-
 
   /**
    * Loads Rest API response from database.
