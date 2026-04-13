@@ -3254,7 +3254,7 @@ function tpps_rest_api_request_started(array $context = []) {
  * Implements hook 'rest_api_request_completed'.
  *
  * Called from class 'RestAPI'.
- * If we got response we save it anyway. No need to check if the same response exists.
+ * No need to check if response exists because response will be saved anyway.
  *
  * @param array $context
  *   Request's context.
@@ -3267,7 +3267,7 @@ function tpps_rest_api_request_completed(array $context = []) {
     return;
   }
   if ($context['cache_response']) {
-    if (RestAPIResponse::save:($context)) {
+    if (RestAPIResponse::save($context)) {
       // Watchdog message.
       $message = '!aResponse to Rest API request !report_link was logged.';
       $params = [

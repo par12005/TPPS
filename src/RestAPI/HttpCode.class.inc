@@ -30,43 +30,6 @@ class HttpCode {
    *   message.
    */
   public static function getMessage($code = NULL) {
-    /**
-     * Content from http://en.wikipedia.org/wiki/List_of_HTTP_status_codes
-     *
-     * You may also want a list of unofficial codes:
-     *
-     *  103 => 'Checkpoint',
-     *  218 => 'This is fine', // Apache Web Server
-     *  419 => 'Page Expired', // Laravel Framework
-     *  420 => 'Method Failure', // Spring Framework
-     *  420 => 'Enhance Your Calm', // Twitter
-     *  430 => 'Request Header Fields Too Large', // Shopify
-     *  450 => 'Blocked by Windows Parental Controls', // Microsoft
-     *  498 => 'Invalid Token', // Esri
-     *  499 => 'Token Required', // Esri
-     *  509 => 'Bandwidth Limit Exceeded', // Apache Web Server/cPanel
-     *  526 => 'Invalid SSL Certificate', // Cloudflare and Cloud Foundry's gorouter
-     *  529 => 'Site is overloaded', // Qualys in the SSLLabs
-     *  530 => 'Site is frozen', // Pantheon web platform
-     *  598 => 'Network read timeout error', // Informal convention
-     *  440 => 'Login Time-out', // IIS
-     *  449 => 'Retry With', // IIS
-     *  451 => 'Redirect', // IIS
-     *  444 => 'No Response', // nginx
-     *  494 => 'Request header too large', // nginx
-     *  495 => 'SSL Certificate Error', // nginx
-     *  496 => 'SSL Certificate Required', // nginx
-     *  497 => 'HTTP Request Sent to HTTPS Port', // nginx
-     *  499 => 'Client Closed Request', // nginx
-     *  520 => 'Web Server Returned an Unknown Error', // Cloudflare
-     *  521 => 'Web Server Is Down', // Cloudflare
-     *  522 => 'Connection Timed Out', // Cloudflare
-     *  523 => 'Origin Is Unreachable', // Cloudflare
-     *  524 => 'A Timeout Occurred', // Cloudflare
-     *  525 => 'SSL Handshake Failed', // Cloudflare
-     *  526 => 'Invalid SSL Certificate', // Cloudflare
-     *  527 => 'Railgun Error', // Cloudflare
-     */
     $http_code_list = [
       100 => 'Continue',
       101 => 'Switching Protocols',
@@ -139,6 +102,63 @@ class HttpCode {
       if ($code === 0) {
         return 'Curl timeout reached.';
       }
+      if (isset($http_code_list[$code])) {
+        return $http_code_list[$code];
+      }
+      else {
+        return static::getUnofficialMessage($code) ?? 'Unknown';
+      }
+    }
+    return $http_code_list;
+  }
+
+  /**
+   * Gets unofficial message by HTTP-response code.
+   *
+   * Content from http://en.wikipedia.org/wiki/List_of_HTTP_status_codes.
+   *
+   * @param int $code
+   *   HTTP Response code.
+   *
+   * @return mixed
+   *   Returns list of all codes or string with a human readable response code
+   *   message.
+   */
+  public static function getUnofficialMessage($code = NULL) {
+    $http_code_list = [
+      103 => 'Checkpoint',
+      218 => 'This is fine', // Apache Web Server
+      419 => 'Page Expired', // Laravel Framework
+      420 => 'Method Failure', // Spring Framework
+      420 => 'Enhance Your Calm', // Twitter
+      430 => 'Request Header Fields Too Large', // Shopify
+      450 => 'Blocked by Windows Parental Controls', // Microsoft
+      498 => 'Invalid Token', // Esri
+      499 => 'Token Required', // Esri
+      509 => 'Bandwidth Limit Exceeded', // Apache Web Server/cPanel
+      526 => 'Invalid SSL Certificate', // Cloudflare and Cloud Foundry's gorouter
+      529 => 'Site is overloaded', // Qualys in the SSLLabs
+      530 => 'Site is frozen', // Pantheon web platform
+      598 => 'Network read timeout error', // Informal convention
+      440 => 'Login Time-out', // IIS
+      449 => 'Retry With', // IIS
+      451 => 'Redirect', // IIS
+      444 => 'No Response', // nginx
+      494 => 'Request header too large', // nginx
+      495 => 'SSL Certificate Error', // nginx
+      496 => 'SSL Certificate Required', // nginx
+      497 => 'HTTP Request Sent to HTTPS Port', // nginx
+      499 => 'Client Closed Request', // nginx
+      520 => 'Web Server Returned an Unknown Error', // Cloudflare
+      521 => 'Web Server Is Down', // Cloudflare
+      522 => 'Connection Timed Out', // Cloudflare
+      523 => 'Origin Is Unreachable', // Cloudflare
+      524 => 'A Timeout Occurred', // Cloudflare
+      525 => 'SSL Handshake Failed', // Cloudflare
+      526 => 'Invalid SSL Certificate', // Cloudflare
+      527 => 'Railgun Error', // Cloudflare
+    ];
+    if (!is_null($code)) {
       return $http_code_list[$code] ?? 'Unknown';
     }
     return $http_code_list;
