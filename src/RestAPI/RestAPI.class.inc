@@ -107,16 +107,6 @@ class RestAPI {
    */
   protected $payload = [];
 
-  /**
-   * Unix timestamp of the moment when request was created.
-   *
-   * Automatically generated.
-   * Stored in 'tpps_rest_api_request.created' column.
-   *
-   * @var int
-   */
-  protected $created;
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Extra request data.
 
@@ -320,7 +310,7 @@ class RestAPI {
    *   Returns $this to allow method chaining.
    */
   public function createRequestId() {
-    $this->requestId = md5(json_encode([
+    $new_request_id = md5(json_encode([
       'method' => strtoupper($this->method),
       // WARNING:
       // Be sure to remove time-based data from the request's payload and URL
@@ -337,6 +327,14 @@ class RestAPI {
       // No sense to use 'cacheRequest' because if it's FALSE there is no
       // record in DB.
     ]));
+    if (!empty($this->requestId) && $this->requestId != $new_request_id) {
+      // Case when rules of the RequestId generation was changed and we have
+      // outdated values of the request Id in database.
+      // And request's data was loaded using request Id from DB (not created
+      // from $context). Both DB tables (request and response) must be updated.
+      $this->replaceRequestId($new_request_id);
+    }
+    $this->requestId = $new_request_id;
 
     return $this;
   }
@@ -600,6 +598,7 @@ class RestAPI {
         $this->generateTag();
         $context = [
           'request_id' => $this->requestId,
+          'created' => $this->created,
           'method' => $this->method,
           'url' => $this->url,
           'payload' => $this->payload ?? NULL,
@@ -654,6 +653,7 @@ class RestAPI {
           'request' => $context,
           'request_id' => $this->requestId,
           'code' => $this->code,
+          'created' => $this->created,
           // 'message' => $message,
           'duration' => $this->duration,
           'body' => $this->response,
@@ -709,6 +709,38 @@ class RestAPI {
    */
   public function getTimeout() {
     return variable_get('tpps_rest_api_timeout', 30);
+  }
+
+  /**
+   * Replaces Request Id in 2 DB tables (request and response).
+   *
+   * @param string $new_request_id
+   *   New Request Id. See method 'createRequestId()'.
+   */
+  public function replaceRequestId($new_request_id) {
+    if (
+      empty($request_id = $this->requestId)
+      || $request_id == $new_request_id
+    ) {
+      return;
+    }
+    // Update 2 tables.
+    $fields = ['request_id' => $new_request_id];
+    $table_list = [RestAPIRequest::TABLE, RestAPIResponse::TABLE];
+
+    $transaction = db_transaction();
+    try {
+      foreach ($table_list as $table_name) {
+        db_update($table_name)
+          ->fields($fields)
+          ->condition('request_id', $request_id)
+          ->execute();
+      }
+    }
+    catch (Exception $e) {
+      $transaction->rollback();
+      watchdog_exception('tpps_rest_api', $e);
+    }
   }
 
 }

@@ -191,4 +191,17 @@ class RestAPIRequest {
     ];
   }
 
+  /**
+   * Gets all request ids.
+   *
+   * @return array
+   *   Returns list of all the request Ids.
+   */
+  public static function getAll() {
+    return db_select(static::TABLE, 't')
+      ->fields('t', ['request_id'])
+      ->execute()
+      ->fetchCol('request_id');
+  }
+
 }

@@ -3,6 +3,9 @@
 /**
  * @file
  * Contains 'RestAPIResponse' class.
+ *
+ * Note: Request and Response uses the same name 'created' but values could be
+ * totally different.
  */
 
 /**
@@ -48,6 +51,9 @@ class RestAPIResponse {
     unset($data['request']);
 
     // Store Response data.
+    // Note: $context['created'] is a moment when request (not response) was
+    // created. Sometimes request would be created a long time ago but response
+    // created just now.
     $data['created'] = time();
     $data['duration'] = intval(round($data['duration']));
     $data['body'] = json_encode($data['body'], TRUE);
