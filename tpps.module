@@ -3218,6 +3218,28 @@ function tpps_zenodo_deposit_create_alter(array &$data = []) {
 }
 
 /**
+ * Implements hook 'rest_api_response_loaded'.
+ *
+ * @param array $context
+ *   Keys: 'request_id' and 'response_id'.
+ */
+function tpps_rest_api_response_loaded(array $context = []) {
+  if (
+    !empty($context['request_id'])
+    && !empty($context['response_id'])
+  ) {
+    watchdog(
+      'tpps_rest_api',
+      "Loaded response '@id' for request '@request_id'.",
+      [
+        '@id' => $context['response_id'],
+        '@request_id' => $context['request_id'],
+      ]
+    );
+  }
+}
+
+/**
  * Implements hook 'rest_api_request_started'.
  *
  * Called from class 'RestAPI'.

@@ -81,7 +81,7 @@ function tpps_report_rest_api_response_list_formatter(string $name, $value, arra
 
     case 'request_id':
       if (!empty($value)) {
-        $formatted = l($formatted, 'admin/reports/tpps/rest_api/request/'
+        $formatted = l($formatted, 'admin/reports/tpps/rest_api/request/single/'
           . $formatted);
       }
       break;

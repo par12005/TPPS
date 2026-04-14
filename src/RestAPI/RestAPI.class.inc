@@ -164,6 +164,9 @@ class RestAPI {
    */
   protected $created;
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Response.
+
   /**
    * Request processing time in msec.
    *
@@ -173,7 +176,6 @@ class RestAPI {
    * @var int
    */
   protected $duration;
-
 
   /**
    * Remote server's response.
@@ -286,6 +288,8 @@ class RestAPI {
   /**
    * Loads existing request from DB.
    *
+   * WARNING: Existing property values will be overwritten with new data.
+   *
    * @param string $request_id
    *   Unique Request Id.
    *
@@ -293,9 +297,11 @@ class RestAPI {
    *   Returns $this to allow method chaining.
    */
   public function loadRequest($request_id) {
-    $this->createRequest(
-      RestAPIRequest::load($request_id)
-    );
+    if (RestAPIRequest::isExists($request_id)) {
+      $context = RestAPIRequest::load($request_id);
+      $this->createRequest($context);
+      $this->requestId = $context['request_id'];
+    }
     return $this;
   }
 
@@ -405,6 +411,9 @@ class RestAPI {
       }
       else {
         // Request's Id.
+        $request_id = $context;
+        // WARNING: Cached Response is missing 'curlInfo'.
+        // See method isCachedResponse().
         $this->loadRequest($request_id);
       }
     }
@@ -413,6 +422,21 @@ class RestAPI {
       // could be set later.
     }
     return $this;
+  }
+
+  /**
+   * Checks if Cached Response was loaded instead of the real request.
+   *
+   * @return bool
+   *   Returns TRUE if was used Response stored in database.
+   *   Returns FALSE if data was obtained directly from external API.
+   */
+  public function isCachedResponse() {
+    return (bool) (
+      !empty($this->response)
+      && !empty($this->code)
+      && empty($this->curlInfo)
+    );
   }
 
   /**
@@ -562,14 +586,30 @@ class RestAPI {
     $this->validateRequest();
     $this->method = strtoupper($this->method);
     $this->createRequestId();
+
     if (
       $this->useCachedResponse
       && RestAPIResponse::isValidExists($this->requestId)
     ) {
+      // WARNING: Cached Response is missing 'curlInfo'.
       // Reuse stored response if possible.
-      foreach (RestAPIResponse::loadValid($this->requestId) as $key => $vlaue) {
-        $this->$key = $value;
+      $response_data = RestAPIResponse::loadValid($this->requestId);
+      foreach ($response_data as $key => $value) {
+        switch ($key) {
+          case 'id':
+          case 'created':
+          case 'request_id':
+            continue;
+
+          case 'duration':
+          case 'code':
+          case 'response':
+            // Note: DB column 'body' represents 'response'.
+            $this->$key = $value;
+            break;
+        }
       }
+      $this->message = HttpCode::getMessage($this->code);
     }
     else {
       $curl = curl_init();

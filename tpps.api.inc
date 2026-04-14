@@ -525,6 +525,28 @@ function hook_rest_api_exception($message, array $exception_context) {
 }
 
 /**
+ * Implements hook 'rest_api_response_loaded'.
+ *
+ * @param array $context
+ *   Keys: 'request_id' and 'response_id'.
+ */
+function hook_rest_api_response_loaded(array $context = []) {
+  if (
+    !empty($context['request_id'])
+    && !empty($context['response_id'])
+  ) {
+    watchdog(
+      'tpps_rest_api',
+      "Loaded response '@id' for request '@request_id'.",
+      [
+        '@id' => $context['response_id'],
+        '@request_id' => $constext['request_id'],
+      ]
+    );
+  }
+}
+
+/**
  * Implements 'submission_dataset_doi_updated'.
  *
  * Called from Submission::updateDatasetDOI().

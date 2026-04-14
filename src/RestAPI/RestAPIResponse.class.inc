@@ -152,6 +152,15 @@ class RestAPIResponse {
       }
       $static_cache[$key] = $result;
     }
+
+    if (function_exists('module_invoke_all')) {
+      // tpps_rest_api_request_completed().
+      $context = [
+        'request_id' => $request_id,
+        'response_id' => $static_cache[$key]['id'],
+      ];
+      module_invoke_all('rest_api_response_loaded', $context);
+    }
     return $static_cache[$key];
   }
 
@@ -206,6 +215,16 @@ class RestAPIResponse {
       }
       $static_cache[$key] = $result;
     }
+
+    if (function_exists('module_invoke_all')) {
+      // tpps_rest_api_request_completed().
+      $context = [
+        'request_id' => $request_id,
+        'response_id' => $static_cache[$key]['id'],
+      ];
+      module_invoke_all('rest_api_response_loaded', $context);
+    }
+
     return $static_cache[$key];
   }
 
@@ -240,12 +259,13 @@ class RestAPIResponse {
     foreach ($result as &$item) {
       // Curl info doesn't store in DB so we just create empty variable.
       $item['info'] = [];
-      // @TODO Use original 'body' instead of new 'response'.
+      // @todo Use original 'body' instead of new 'response'.
       $item['response'] = json_decode($item['body'], TRUE);
       unset($item['body']);
       $item['message'] = HttpCode::getMessage($item['code']);
     }
 
+    // @todo ?Should I add the hook to have watchdog record?
     return $result;
   }
 
