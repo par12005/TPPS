@@ -45,6 +45,8 @@ function tpps_reports_settings_form(array $form, array &$form_state) {
   //
   // Organism:
   // 'tpps_report_organism_list_title'.
+  // 'tpps_report_organism_genus_title'.
+  // 'tpps_report_organism_species_title'.
   // 'tpps_report_organism_new_title'.
   // 'tpps_report_organism_order_family_not_exist_title'.
   //

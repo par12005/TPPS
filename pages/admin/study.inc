@@ -1413,6 +1413,8 @@ function tpps_admin_panel_get_reports() {
     'unit_warning' => $panel_url . '/unit-warning',
     'order_family_not_exist' => $panel_url . '/order-family-not-exist',
     'organism_list' => $panel_url . '/organism-list',
+    'organism_genus_list' => $panel_url . '/organism-genus-list',
+    'organism_species_list' => $panel_url . '/organism-species-list',
 
     // DOI.
     'doi_duplicates' => $panel_url . '/doi-duplicates',

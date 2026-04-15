@@ -2557,6 +2557,29 @@ function tpps_menu_add_submission_pages(array &$items = []) {
  */
 function tpps_menu_add_api(array &$items = []) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Organism API.
+  $items['api/organism/%/%'] = [
+    // File Object with extra absolute path and URL for downloading.
+    'title' => 'Organism Info',
+    'page callback' => 'tpps_api_organism_info',
+    // 2: Managed File Id.
+    'page arguments' => [2, 3],
+    'access callback' => 'tpps_api_access',
+    'file' => 'api/organism/info.inc',
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  ];
+  $items['api/organism/%'] = [
+    // File Object with extra absolute path and URL for downloading.
+    'title' => 'Organism Info',
+    'page callback' => 'tpps_api_organism_info',
+    // 2: Managed File Id.
+    'page arguments' => [2],
+    'access callback' => 'tpps_api_access',
+    'file' => 'api/organism/info.inc',
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  ];
   // File API.
   $items['api/file/%file/info'] = [
     // File Object with extra absolute path and URL for downloading.

@@ -401,6 +401,20 @@ class Report {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Organism.
       'organism' => [
+        'genus' => [
+          'title' => variable_get('tpps_report_organism_genus_title',
+            'Organism Genus List'
+          ),
+          'description' => t("List of all the organism's genuses and number of species in it."),
+          'admin_panel' => FALSE,
+        ],
+        'species' => [
+          'title' => variable_get('tpps_report_organism_species_title',
+            'Organism Species List'
+          ),
+          'description' => t("List of all the organism's species in genus."),
+          'admin_panel' => FALSE,
+        ],
         'list' => [
           'title' => variable_get('tpps_report_organism_list_title',
             'Organism List'

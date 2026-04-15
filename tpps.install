@@ -76,6 +76,8 @@ function tpps_get_variable_list() {
     'tpps_report_synonym_list_title' => 'Phenotype Synonyms',
     // Organism reports.
     'tpps_report_organism_list_title' => 'Organism List',
+    'tpps_report_organism_genus_title' => 'Organism Genus List',
+    'tpps_report_organism_species_title' => 'Organism Species List',
     'tpps_report_organism_new_title' => 'New Organisms',
     'tpps_report_organism_order_family_not_exist_title' => 'Order/Family not exist',
     // DOI reports.
@@ -2643,6 +2645,9 @@ function tpps_update_7134() {
   variable_set('tpps_report_rest_api_request_single_title', 'Rest API Request');
   variable_set('tpps_report_rest_api_response_list_title', 'Rest API Response List');
   variable_set('tpps_report_rest_api_response_body_title', 'Rest API Response Body');
+  // Organism / Genus.
+  variable_set('tpps_report_organism_genus_title', 'Organism Genus List');
+  variable_set('tpps_report_organism_species_title', 'Organism Species List');
 
   variable_set('tpps_validation_regex_doi', '/10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+/');
 
