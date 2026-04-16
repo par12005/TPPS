@@ -8,15 +8,56 @@
 /**
  * Menu callback. Shows list of all organisms.
  */
-function tpps_report_organism_all_list() {
+function tpps_report_organism_all() {
   $name = 'organism_all';
   $page_title = variable_get('tpps_report_' . $name . '_title', 'All Organism List');
-  $table = 'chado.organism';
 
   // WARNING: Report::print() requires db_select() not db_query().
-  $query = db_select($table, 'o')->fields('o', []);
-  $query->addExpression("CONCAT(o.genus, ' ', o.species)", 'organism_name');
+  $query = db_select('chado.organism', 'o')->fields('o', ['organism_id']);
   $query->orderBy('organism_id');
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $add_accession = 0;
+  // Get study accession.
+  if ($add_accession ?? FALSE) {
+    $query->leftJoin(
+      'chado.project_organism',
+      'cpo',
+      'o.organism_id = cpo.organism_id'
+    );
+    $query->addField('cpo', 'project_id');
+    $query->leftJoin(
+      'chado.project_dbxref',
+      'cpd',
+      'cpo.project_id = cpd.project_id'
+    );
+
+// @BUG: Multiple 'dbxref_id' in 'project_dbxref' for the same 'project_id'.
+
+    $query->leftJoin(
+      'public.tpps_submission',
+      'pts',
+      'cpd.dbxref_id = pts.dbxref_id'
+    );
+    $query->addField('pts', 'accession');
+  }
+  $query->addExpression("CONCAT(o.genus, ' ', o.species)", 'organism_name');
+
+  // Header.
+  $header = [
+    ['data' => t('Organism Id'), 'field' => 'o.organism_id'],
+  ];
+  if ($add_accession ?? FALSE) {
+    $header[] = [
+      'data' => t('Project Id'),
+      'field' => 'cpo.project_id',
+    ];
+    $header[] = [
+      'data' => t('Accession'),
+      'field' => 'pts.accession',
+    ];
+  }
+  $header[] = ['data' => t('Organism Name'), 'field' => 'organism_name'];
 
   return '<h2>' . $page_title . '</h2>' . Report::print([
     'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
@@ -24,10 +65,7 @@ function tpps_report_organism_all_list() {
     'formatter' => 'tpps_report_' . $name . '_formatter',
     'table_attributes' => ['class' => ['view' , 'tpps_table']],
     'items_per_page' => variable_get('tpps_report_items_per_page', 15),
-    'header' => [
-      ['data' => t('Organism Id'), 'field' => 'o.organism_id'],
-      ['data' => t('Organism Name'), 'field' => 'organism_name'],
-    ],
+    'header' => $header,
     'query' => $query,
   ]);
 }
@@ -50,7 +88,7 @@ function tpps_report_organism_all_list() {
  *   Returns formatted value.
  *   Empty value will not be formatted and returned as is.
  */
-function tpps_report_organism_list_formatter(string $name, $value, array &$row) {
+function tpps_report_organism_all_formatter(string $name, $value, array &$row) {
   $formatted = check_plain($value);
   if (empty($name) || empty($value)) {
     return $formatted;

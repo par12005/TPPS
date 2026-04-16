@@ -411,7 +411,7 @@ class Organism {
       return FALSE;
     }
     if (empty($table)) {
-      $table = self::TABLE_ORGANISM;
+      $table = static::TABLE_ORGANISM;
     }
     $sql = 'select organism_id from {' . $table
       . '} where organism_id = :id limit 1';
