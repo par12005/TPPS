@@ -30,39 +30,52 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
       ],
     ]);
   }
-  // Build list of suggestions.
-  if (variable_get('tpps_doi_lookup_show_suggestions')) {
-    $options = ['attributes' => ['class' => ['tpps-suggestion']]];
-    $all_doi_list = PublicationDOI::getList();
-    $doi_list = db_select(PublicationDOI::TABLE, 't')
-      ->fields('t', ['doi'])
-      ->groupBy('doi')
-      ->execute()
-      ->fetchCol('doi');
-    // Build list of other DOIs.
-    foreach ($all_doi_list as $value) {
-      if (in_array($value, $doi_list)) {
-        // Processed.
-        $suggestions[] = l($value, '', $options);
+  $options = PublicationDOI::buildOptions();
+  $module_exists = module_exists('select_or_other');
+  if (!$module_exists) {
+    // Build list of suggestions.
+    if (variable_get('tpps_doi_lookup_show_suggestions')) {
+      $params = ['attributes' => ['class' => ['tpps-suggestion']]];
+      // Build list of other DOIs.
+      foreach ($options[PublicationDOI::PD_KEY] as $value) {
+        $suggestions[] = l($value, '', $params);
       }
-      else {
+      foreach ($options[PublicationDOI::NOPD_KEY] as $value) {
         // Not yet processed.
-        $other_doi_list[] = l($value, '', $options);
+        $other_doi_list[] = l($value, '', $params);
       }
+      $description .= theme('item_list', [
+        'title' => t(PublicationDOI::PD_KEY),
+        'items' => $suggestions,
+      ]) . theme('item_list', [
+        'title' => t(PublicationDOI::NOPD_KEY),
+        'items' => $other_doi_list,
+      ]);
     }
-    $description .= 'Parsed DOI:'
-      . theme('item_list', ['items' => $suggestions]);
-    $description .= 'Not yet parsed DOI:'
-      . theme('item_list', ['items' => $other_doi_list]);
   }
 
-  // Create main DOI field.
-  $form['tpps_doi_lookup_doi'] = [
-    '#type' => 'textfield',
-    '#title' => t('DOI'),
-    '#default_value' => $doi,
-    '#description' => $description,
-  ];
+  if ($module_exists) {
+    // Create main DOI field.
+    $form['tpps_doi_lookup_doi'] = [
+      '#type' => 'select_or_other',
+      '#title' => t('DOI'),
+      '#default_value' => $doi,
+      '#description' => $description,
+      '#options' => $options,
+      '#attributes' => ['class' => ['tpps_doi_lookup_doi']],
+    ];
+  }
+  else {
+    // Create main DOI field.
+    $form['tpps_doi_lookup_doi'] = [
+      '#type' => 'textfield',
+      '#title' => t('DOI'),
+      '#default_value' => $doi,
+      '#description' => $description,
+      '#attributes' => ['class' => ['tpps_doi_lookup_doi']],
+    ];
+    tpps_add_css_js('suggestion', $form);
+  }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // JS Settings.
@@ -70,7 +83,7 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   $js_settings = [
     'doi_lookup' => [
       // Selector for the textfield with DOI.
-      'field' => '#edit-tpps-doi-lookup-doi',
+      'field' => '.tpps_doi_lookup_doi',
       // Selector for the iframe which holds Google Scholar SERP.
       'proxy' => $proxy,
       // List of the SERP Provider KEYs.
@@ -144,7 +157,6 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   // Add JS-logic.
   tpps_add_css_js('doi_lookup', $form);
 
-  tpps_add_css_js('suggestion', $form);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   TppsForm::autofocus($form, ['tpps_doi_lookup_doi']);

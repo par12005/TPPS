@@ -12,7 +12,9 @@
 
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Event: DOI entered.
-      $(doi_lookup.field).blur(function() {
+      function getPublicationData(field) {
+        $(field).addClass('get-publication-data-processed');
+
         // Note: there is no need to check if it's new DOI (or was it really
         // changed) because we store server's responses and re-use them and
         // DOI field is blocked during AJAX-requests to prevent changes and
@@ -20,7 +22,7 @@
 
         // Get value of the DOI field.
 // @TODO Add full URL support beside short DOI value.
-        let doi = $.trim($(this).val());
+        let doi = $.trim($(field).val());
         if (!doi) {
           // Empty DOI. Nothing to do and it's not an error.
           return;
@@ -107,6 +109,7 @@
                       }
                       console.log(provider_name + ': iframe updated.');
                       disableThrobber();
+                      $(field).removeClass('get-publication-data-processed');
                     }, delay);
                   }
                 }
@@ -117,6 +120,25 @@
             });
           }
         });
+      }
+
+      // Change-event for select-or-other field.
+      $(doi_lookup.field).change(function() {
+        if (
+          !($(this).hasClass('get-publication-data-processed'))
+          && $.trim($(this).val())
+        ) {
+          getPublicationData(this);
+        }
+      });
+      // Blur-event for textfield.
+      $(doi_lookup.field).blur(function() {
+        if (
+          !($(this).hasClass('get-publication-data-processed'))
+          && $.trim($(this).val())
+        ) {
+          getPublicationData(this);
+        }
       });
 
       doi_lookup.serp_providers.forEach(function(provider_name) {
@@ -187,6 +209,7 @@
         ).show();
         //$(doi_lookup.iframe).hide();
         disableThrobber();
+        $(doi_lookup.field).removeClass('get-publication-data-processed');
       }
 
       /**

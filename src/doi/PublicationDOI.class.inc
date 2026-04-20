@@ -19,6 +19,13 @@ class PublicationDOI extends DOI {
   // Name of the DB table where stored DOI publication information.
   const TABLE = 'tpps_publication_doi';
 
+  // This key used in a list of DOI to separate DOI which was already parsed and has publication data.
+  // Used in the dropdown menu and suggestions.
+  const PD_KEY = 'Has publication data';
+  // Key used to separate DOIs which has no publication data yes.
+  // Used in the dropdown menu and suggestions.
+  const NOPD_KEY = "Doesn't have publication data";
+
   /**
    * Checks if the record for given DOI exists in DB table.
    *
@@ -662,6 +669,41 @@ class PublicationDOI extends DOI {
       '10.1038/hdy.2015.100',
       '10.1111/mec.12969',
     ];
+  }
+
+  /**
+   * Builds 2 level list of DOIs.
+   *
+   * @return array
+   *   Returns 2 level array.
+   */
+  public static function buildOptions() {
+    $yes = t('Has publication data');
+    $no = t("Doesn't have publication data");
+    $output = [
+      static::PD_KEY => [],
+      static::NOPD_KEY => [],
+    ];
+
+    // @todo Cache data.
+    $all_doi_list = PublicationDOI::getList();
+    $parsed_doi_list = db_select(PublicationDOI::TABLE, 't')
+      ->fields('t', ['doi'])
+      ->groupBy('doi')
+      ->execute()
+      ->fetchCol('doi');
+
+    foreach ($all_doi_list as $value) {
+      if (in_array($value, $parsed_doi_list)) {
+        // Processed.
+        $output[static::PD_KEY][$value] = $value;
+      }
+      else {
+        // Not yet processed.
+        $output[static::NOPD_KEY][$value] = $value;
+      }
+    }
+    return $output;
   }
 
 }
