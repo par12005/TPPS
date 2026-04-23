@@ -3273,9 +3273,16 @@ function tpps_rest_api_response_loaded(array $context = []) {
  */
 function tpps_rest_api_request_started(array $context = []) {
   if (empty($context['request_id'])) {
-    // @todo ? Watchdog record?
+    $params = ['@function' => __FUNCTION__];
+    watchdog('tpps', '@function: empty "request_id".', $params, 'error');
     return;
   }
+
+  if ($debug_mode ?? 0) {
+    $params = ['@dump' => var_export($context, 1), '@function' => __FUNCTION__];
+    watchdog('tpps_rest_api', '@function: <pre>@dump</pre>', $params);
+  }
+
   if ($context['cache_request']) {
     if (RestAPIRequest::save($context)) {
       $message = '!aRest API Request !report_link was logged.';
@@ -3307,6 +3314,12 @@ function tpps_rest_api_request_started(array $context = []) {
  *   To check if response exists: RestAPIResponse::isExists($request_id).
  */
 function tpps_rest_api_request_completed(array $context = []) {
+
+  if ($debug_mode ?? 0) {
+    $params = ['@dump' => var_export($context, 1), '@function' => __FUNCTION__];
+    watchdog('tpps_rest_api', '@function: <pre>@dump</pre>', $params);
+  }
+
   if (empty($context['request_id'])) {
     // @todo ? Watchdog record?
     return;
