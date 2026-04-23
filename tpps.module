@@ -2557,6 +2557,20 @@ function tpps_menu_add_submission_pages(array &$items = []) {
  */
 function tpps_menu_add_api(array &$items = []) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // DOI Publication Info.
+  $items['api/doi/%'] = [
+    // File Object with extra absolute path and URL for downloading.
+    'title' => 'DOI Publication Info',
+    'page callback' => 'tpps_api_doi_info',
+    // 2: First part of the DOI (before '/')
+    // 3: Second part of the DOI (after '/')
+    // 4: Data source: 'google_scholar', 'pubmed'
+    'page arguments' => [2],
+    'access callback' => 'tpps_api_access',
+    'file' => 'api/doi/info.inc',
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'drupal_json_output',
+  ];
   // Organism API.
   $items['api/organism/%/%'] = [
     // File Object with extra absolute path and URL for downloading.
