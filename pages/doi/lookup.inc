@@ -22,9 +22,11 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   if (variable_get('tpps_doi_lookup_show_report_links', FALSE)) {
     $description .= theme('item_list', [
       'items' => [
-        l('https://treegenesdb.org/admin/reports/tpps/doi/duplicates',
+        l('Proxy Server Status', 'corsanywhere'),
+        l('DOI Lookup Settings', 'admin/config/tpps/doi'),
+        l('DOI Duplicates report at live site',
           'https://treegenesdb.org/admin/reports/tpps/doi/duplicates'),
-        l('https://tgwebdev.cam.uchc.edu/admin/reports/tpps/doi/submission/all',
+        l('All DOI report at live site',
           'https://tgwebdev.cam.uchc.edu/admin/reports/tpps/doi/submission/all'
         ),
       ],
