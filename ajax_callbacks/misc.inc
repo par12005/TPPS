@@ -218,7 +218,9 @@ function tpps_ajax_save_google_scholar_serp(array $payload) {
   }
   else {
     $doi = $payload['doi'];
-    $provider = new GoogleScholar($doi);
+    $provider = new GoogleScholar();
+    // Skip loading serp from database even if it exists.
+    $provider->doi = $doi;
     $provider->serp = base64_decode($payload['serp']);
     $provider->save();
     // Parse using Gemini AI.
