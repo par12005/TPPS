@@ -71,6 +71,7 @@ class RestAPIRequest {
       foreach (['payload', 'header'] as $name) {
         $data[$name] = json_encode($context[$name], TRUE);
       }
+      $data['use_cached_response'] = (int) $data['use_cached_response'];
       db_insert(static::TABLE)->fields($data)->execute();
       return TRUE;
     }
