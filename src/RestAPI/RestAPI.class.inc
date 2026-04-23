@@ -272,16 +272,6 @@ class RestAPI {
     $this->query = $context['query'] ?? $this->query ?? [];
     // Optional.
     $this->tag = $context['tag'] ?? $this->tag ?? NULL;
-
-    $this->cacheRequest = $context['cache_request']
-      ?? variable_get('tpps_rest_api_cache_requests', TRUE);
-    $this->cacheResponse = $context['cache_response']
-      ?? variable_get('tpps_rest_api_cache_responses', TRUE);
-    $this->useCachedResponse = $context['use_cached_response']
-      ?? variable_get('tpps_rest_api_use_cached_responses', FALSE);
-    // Generated.
-    $this->created = time();
-
     return $this;
   }
 
@@ -404,6 +394,11 @@ class RestAPI {
    *   Returns $this to allow method chaining.
    */
   public function __construct($context = NULL) {
+
+    $this->cacheRequest = variable_get('tpps_rest_api_cache_requests', TRUE);
+    $this->cacheResponse = variable_get('tpps_rest_api_cache_responses', TRUE);
+    $this->useCachedResponse = variable_get('tpps_rest_api_use_cached_responses', FALSE);
+
     if (!empty($context)) {
       if (is_array($context)) {
         // Request's metadata.
@@ -583,6 +578,7 @@ class RestAPI {
    *   When response code is not 200-204.
    */
   public function doRequest() {
+    $this->created = time();
     $this->validateRequest();
     $this->method = strtoupper($this->method);
     $this->createRequestId();
@@ -634,7 +630,6 @@ class RestAPI {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Allow other modules to react on start of the request.
       if (function_exists('module_invoke_all')) {
-        // tpps_rest_api_request_started().
         $this->generateTag();
         $context = [
           'request_id' => $this->requestId,
@@ -649,6 +644,7 @@ class RestAPI {
           'cache_response' => $this->cacheResponse,
           'use_cached_response' => $this->useCachedResponse,
         ];
+        // tpps_rest_api_request_started().
         module_invoke_all('rest_api_request_started', $context);
       }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
