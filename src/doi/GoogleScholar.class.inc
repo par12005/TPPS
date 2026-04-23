@@ -64,7 +64,9 @@ class GoogleScholar extends DoiSerp {
   // Domain name (without schema because HTTPS will always be used).
   const HOST_NAME = 'scholar.google.com';
   // Alternative IP address: 142.251.37.100.
-  const HOST_IP = '142.250.180.68';
+  // 216.58.207.4,
+  // 142.250.180.68.
+  const HOST_IP = '216.58.207.4';
 
   /**
    * Gets query (url params) to build URL to get SERP.
