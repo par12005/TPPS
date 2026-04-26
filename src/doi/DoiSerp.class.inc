@@ -117,6 +117,15 @@ abstract class DoiSerp {
   protected $serp;
 
   /**
+   * SERP hash.
+   *
+   * Stored in tpps_google_scholar.md5 as varchar 32 byte.
+   *
+   * @var string
+   */
+  protected $md5;
+
+  /**
    * Unix timestamp of the last request stored in table 'tpps_google_scholar'.
    *
    * @var int
@@ -251,6 +260,7 @@ abstract class DoiSerp {
     if ($result) {
       $this->created = $result['created'] ?? 0;
       $this->serp = $result['serp'] ?? '';
+      $this->md5 = $result['md5'] ?? '';
       $this->isExists = !empty($this->serp);
     }
     else {
@@ -263,6 +273,10 @@ abstract class DoiSerp {
   /**
    * Saves SERP into database.
    *
+   * @return bool
+   *   Returns TRUE if new record was created and FALSE otherwise (the same
+   *   SERP already exists in database).
+   *
    * @throws Exception
    *   When $this->doi or $this->serp is empty.
    */
@@ -273,12 +287,26 @@ abstract class DoiSerp {
     if (empty($this->serp)) {
       throw new Exception('Empty SERP.');
     }
-    db_insert(static::TABLE)->fields([
-      'doi' => $this->doi,
-      'created' => REQUEST_TIME,
-      'serp' => $this->serp,
-    ])->execute();
+    $this->md5 = md5($this->serp);
     $this->created = REQUEST_TIME;
+
+    $is_exists = (bool) db_select(static::TABLE, 't')
+      ->fields('t', ['doi'])
+      ->condition('doi', $this->doi)
+      ->condition('md5', $this->md5)
+      ->range(0, 1)
+      ->execute()
+      ->fetchField();
+    if (!$is_exists) {
+      db_insert(static::TABLE)->fields([
+        'doi' => $this->doi,
+        'created' => $this->created,
+        'serp' => $this->serp,
+        'md5' => $this->md5,
+      ])->execute();
+      return TRUE;
+    }
+    return FALSE;
   }
 
   /**
@@ -443,9 +471,15 @@ abstract class DoiSerp {
           'size' => 'medium',
           'not null' => TRUE,
         ],
+        'md5' => [
+          'description' => 'Hash of the serp string to check uniqueness.',
+          'type' => 'varchar',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ],
       ],
       'unique keys' => [
-        'doi_created' => ['doi', 'created'],
+        'doi_md5' => ['doi', 'md5'],
       ],
     ];
   }
