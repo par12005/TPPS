@@ -222,14 +222,22 @@ function tpps_ajax_save_google_scholar_serp(array $payload) {
     // Skip loading serp from database even if it exists.
     $provider->doi = $doi;
     $provider->serp = base64_decode($payload['serp']);
-    $provider->save();
-    // Parse using Gemini AI.
-    $provider->parse();
+    if (
+      strpos($provider->serp, 'Not found because of proxy error') === FALSE
+      && strpos($provider->serp, '404 Not Found') === FALSE
+    ) {
+      $provider->save();
+      // Parse using Gemini AI.
+      $provider->parse();
 
-    $response['doi'] = $payload['doi'];
-    $response['source'] = $payload['source'];
-    $response['publication_data'] = PublicationDOI::load($doi, $payload['source']);
-    $response['success'] = TRUE;
+      $response['doi'] = $payload['doi'];
+      $response['source'] = $payload['source'];
+      $response['publication_data'] = PublicationDOI::load($doi, $payload['source']);
+      $response['success'] = TRUE;
+    }
+    else {
+      $response['errors'][] = t('Proxy error.');
+    }
   }
   return $response;
 }
@@ -260,14 +268,23 @@ function tpps_ajax_save_pubmed_serp(array $payload) {
     $doi = $payload['doi'];
     $provider = new PubMed($doi);
     $provider->serp = base64_decode($payload['serp']);
-    $provider->save();
-    // Parse using Gemini AI.
-    $provider->parse();
 
-    $response['doi'] = $payload['doi'];
-    $response['source'] = $payload['source'];
-    $response['publication_data'] = PublicationDOI::load($doi, $payload['source']);
-    $response['success'] = TRUE;
+    if (
+      strpos($provider->serp, 'Not found because of proxy error') === FALSE
+      && strpos($provider->serp, '404 Not Found') === FALSE
+    ) {
+      $provider->save();
+      // Parse using Gemini AI.
+      $provider->parse();
+
+      $response['doi'] = $payload['doi'];
+      $response['source'] = $payload['source'];
+      $response['publication_data'] = PublicationDOI::load($doi, $payload['source']);
+      $response['success'] = TRUE;
+    }
+    else {
+      $response['errors'][] = t('Proxy error.');
+    }
   }
   return $response;
 }
