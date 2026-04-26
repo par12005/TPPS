@@ -206,7 +206,6 @@ function tpps_ajax_get_publication_data(array $payload) {
  *   Key 'success' will have value TRUE in case of success and FALSE otherwise.
  */
 function tpps_ajax_save_google_scholar_serp(array $payload) {
-  $response['success'] = FALSE;
   if (empty($payload['doi'])) {
     $response['errors'][] = t('Empty DOI.');
   }
@@ -233,7 +232,6 @@ function tpps_ajax_save_google_scholar_serp(array $payload) {
       $response['doi'] = $payload['doi'];
       $response['source'] = $payload['source'];
       $response['publication_data'] = PublicationDOI::load($doi, $payload['source']);
-      $response['success'] = TRUE;
     }
     else {
       $response['errors'][] = t('Proxy error.');
@@ -254,7 +252,6 @@ function tpps_ajax_save_google_scholar_serp(array $payload) {
  *   Key 'success' will have value TRUE in case of success and FALSE otherwise.
  */
 function tpps_ajax_save_pubmed_serp(array $payload) {
-  $response['success'] = FALSE;
   if (empty($payload['doi'])) {
     $response['errors'][] = t('Empty DOI.');
   }
@@ -280,7 +277,6 @@ function tpps_ajax_save_pubmed_serp(array $payload) {
       $response['doi'] = $payload['doi'];
       $response['source'] = $payload['source'];
       $response['publication_data'] = PublicationDOI::load($doi, $payload['source']);
-      $response['success'] = TRUE;
     }
     else {
       $response['errors'][] = t('Proxy error.');
