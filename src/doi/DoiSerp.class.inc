@@ -360,23 +360,14 @@ abstract class DoiSerp {
       //$gemini->tools = [["google_search" => (object) []]];
 
       $gemini->ask($this->serp);
-
- //dpm(json_decode($gemini->response, 1));
-
-      $fields = json_decode($gemini->answer, TRUE);
-
+      $fields = json_decode($gemini->answer, 1);
       if ($fields === NULL || $fields === FALSE) {
         // An error occurred during decoding.
         $error_code = json_last_error();
         $error_message = json_last_error_msg();
         throw new Exception("JSON decoding error: [{$error_code}] {$error_message}");
       }
-
-      // Store to DB.
-      // @TODO Remove this debug code.
-      $fields['doi'] = $this->doi;
-
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      $fields['source'] = static::KEY;
     }
     else {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -388,7 +379,16 @@ abstract class DoiSerp {
 
     // Store result (if possible).
     if (class_exists('PublicationDOI', $autoload = TRUE)) {
-      PublicationDOI::save($fields);
+      if (!PublicationDOI::save($fields)) {
+        watchdog('tpps_google_scholar',
+          "Parsed DOI publication data wasn't saved into database. <pre>@dump</pre>",
+          ['@dump' => print_r($fields, 1)],
+          'error'
+        );
+      }
+    }
+    else {
+      watchdog('tpps_google_scholar', "Class PublicationDOI not found", [], 'error');
     }
     return $fields;
   }
