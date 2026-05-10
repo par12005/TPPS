@@ -86,7 +86,6 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
     'doi_lookup' => [
       // Selector for the textfield with DOI.
       'field' => '.tpps_doi_lookup_doi',
-      // Selector for the iframe which holds Google Scholar SERP.
       'proxy' => $proxy,
       // List of the SERP Provider KEYs.
       'ajax_get_publication_data_path' => '/ajax/tpps/get_publication_data',
@@ -113,7 +112,6 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
     // Metadata of the providers allowed for scraping.
     $js_settings['doi_lookup'][$name] = [
       'scrape_allowed' => $provider->scrapeAllowed,
-      'iframe' => 'iframe#' . $name,
       'dump_container' => '#' . $name . '_dump_container',
       'endpoint' => $provider->getEndpointURL(),
       'query' => $provider->getQuery(),
@@ -140,10 +138,7 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
       // 'google_scholar_dump_container',
       // 'pubmed_dump_container'.
       'data' => [
-        '#markup' => '<div class="dump_container" id="' . $name
-          . '_dump_container"></div>
-          <iframe id="' . $name . '" class="serp" src="' . $url . '"
-          target="' . $name . '">' . $url . '</iframe>',
+        '#markup' => '<div class="dump_container" id="' . $name . '_dump_container"></div>',
       ],
     ];
   }

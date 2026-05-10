@@ -28,11 +28,18 @@
           return;
         }
 
+
+
+
+
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Debug code to get new URL after redirect.
         if (0) {
+          let pubmed_url = 'https://pubmed.ncbi.nlm.nih.gov/25202587/';
+          //let pubmed_url = 'https://pubmed.ncbi.nlm.nih.gov/?term=10.1038/sdata.2015.6';
+          console.log(pubmed_url);
           $.ajax({
-            url: 'https://tgwebdev.cam.uchc.edu/corsanywhere/https://pubmed.ncbi.nlm.nih.gov/?term=10.1038/sdata.2015.6',
+            url: 'https://tgwebdev.cam.uchc.edu/corsanywhere/' + pubmed_url,
             type: 'GET',
             success: function(response) {
               console.log(response);
@@ -44,6 +51,8 @@
             }
           });
         }
+
+
 
         // Block DOI field while processing.
         enableThrobber();
@@ -59,7 +68,6 @@
               provider_name,
               doi_lookup['publication_data'][provider_name][doi]
             );
-            $(doi_lookup.iframe).hide();
           }
           else {
             console.log(provider_name + ': data not loadeded yet.');
@@ -98,18 +106,40 @@
                       }
                     }
                     console.log(provider_name + ': delay.');
-                    // Build iframe for Google Scholar SERP.
                     setTimeout(function() {
                       doi_lookup[provider_name].last_request = $.now();
-                      // Build iframe.
-                      let $iframe=$(doi_lookup[provider_name].iframe);
+                      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::
+                      // GET-request via CORS-proxy to get SERP.
                       let proxy_url = buildUrl(provider_name, doi);
                       if (proxy_url) {
-                        $iframe.attr('src', proxy_url).show();
+                        // URL for debug:
+                        // proxy_url = 'https://cors-anywhere-ldq5.onrender.com/'
+                        // + 'https://scholar.google.com/scholar?hl=en'
+                        // + '&as_sdt=0%2C5&q=10.5061%2Fdryad.6s82f20&btnG=';
+                        $.ajax({
+                          method: 'GET',
+                          url: proxy_url,
+                          headers: {
+                            //'x-requested-with': 'https://tgwebdev.cam.uchc.edu'
+                            'X-Requested-With': 'XMLHttpRequest'
+                          }
+                        })
+                        .done(function(data) {
+                          //console.log('Success:', data);
+                          // @TODO Check data.length.
+                          // Send SERP to backend.
+                          saveSERP(provider_name, data);
+                          console.log(provider_name + ': SERP sent to backend.');
+                        })
+                        .fail(function(error) {
+                          console.error('Error: ', error);
+                        })
+                        .always(function() {
+                          disableThrobber();
+                          $(field).removeClass('get-publication-data-processed');
+                          console.log('Request via CORS Proxy completed.');
+                        });
                       }
-                      console.log(provider_name + ': iframe updated.');
-                      disableThrobber();
-                      $(field).removeClass('get-publication-data-processed');
                     }, delay);
                   }
                 }
@@ -139,18 +169,6 @@
         ) {
           getPublicationData(this);
         }
-      });
-
-      doi_lookup.serp_providers.forEach(function(provider_name) {
-        // Event: iframe got content.
-        $(doi_lookup[provider_name].iframe).on('load', function() {
-          console.log(provider_name + ': iframe content loadeded.');
-          // Save Google Scholar iframe content when it was loaded.
-          enableThrobber();
-          saveIframeContent(provider_name);
-          console.log(provider_name + ': saved iframe content.');
-          disableThrobber();
-        });
       });
 
       /**
@@ -207,30 +225,32 @@
           '<pre style="margin: 5px; color: white !important; text-wrap:auto;">'
           + jsonString + '</pre>'
         ).show();
-        //$(doi_lookup.iframe).hide();
         disableThrobber();
         $(doi_lookup.field).removeClass('get-publication-data-processed');
       }
 
       /**
-       * Sends content of the iframe to backend to store in database.
+       * Sends SERP Content to backend to store in database.
        */
-      function saveIframeContent(provider_name) {
+      function saveSERP(provider_name, serpContent) {
         let doi = $.trim($(doi_lookup.field).val());
         if (!doi) {
-          console.log("DOI Lookup: Empty DOI. Can't save iframe content");
+          console.log("DOI Lookup: Empty DOI. Can't send SERP to backend.");
           return;
         }
-
-        // The iframe and its contents have finished loading
-        let iframeContent = $(doi_lookup[provider_name].iframe)
-          .contents().find('html').html();
 
         // Check if CORS Anywhere Proxy failed.
         let error_message = 'Not found because of proxy error: Error: '
           + 'getaddrinfo ENOTFOUND scholar.google.com';
-        if (iframeContent.includes(error_message)) {
+        if (serpContent.includes(error_message)) {
           console.error('DOI Lookup. Proxy server is down.');
+          return;
+        }
+
+        // Check if there is any publication data for this DOI present at SERP.
+        let not_found_message = '- did not match any articles.';
+        if (serpContent.includes(not_found_message)) {
+          console.error('DOI Lookup. No publication data found.');
           return;
         }
 
@@ -243,7 +263,9 @@
           data: JSON.stringify({
             "doi": doi,
             "source": provider_name,
-            "serp": btoa(unescape(encodeURIComponent(iframeContent)))
+            "serp": btoa(unescape(encodeURIComponent(serpContent)))
+            // Modern fix:
+            //"serp": btoa(serpContent)
           }),
           success: function(response) {
             if (
