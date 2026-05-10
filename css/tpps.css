@@ -335,3 +335,12 @@ a.submission_accession_link {
   background-position: right center;
   background-repeat: no-repeat;
 }
+
+/* Add to select field. */
+.tpps-select-throbber {
+  background-position: right center;
+  background-repeat: no-repeat;
+  padding-right: 50px;
+  background-image: url('../images/tpps-throbber.svg');
+  display: table-cell;
+}

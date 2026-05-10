@@ -175,14 +175,29 @@
        * Enables throbber icon and disables DOI field.
        */
       function enableThrobber() {
-        $(doi_lookup.field).addClass('tpps-throbber').prop('disabled', true);
+        if ($(doi_lookup.field).hasClass('form-select')) {
+          // Select box.
+          $(doi_lookup.field).prop('disabled', true)
+            .parent('.form-type-select').addClass('tpps-select-throbber');
+        }
+        else {
+          // Textfield.
+          $(doi_lookup.field).addClass('tpps-throbber').prop('disabled', true);
+        }
       }
 
       /**
        * Disables throbber icon and enables DOI field.
        */
       function disableThrobber() {
-        $(doi_lookup.field).removeClass('tpps-throbber').prop('disabled', false);
+        if ($(doi_lookup.field).hasClass('form-select')) {
+          // Select box.
+          $(doi_lookup.field).prop('disabled', false)
+            .parent('.form-type-select').removeClass('tpps-select-throbber');
+        }
+        else {
+          $(doi_lookup.field).removeClass('tpps-throbber').prop('disabled', false);
+        }
       }
 
       /**
