@@ -39,10 +39,10 @@ files[] = src/RestAPI/RestAPIRequest.class.inc
 files[] = src/Report.class.inc
 files[] = src/FormState.class.inc
 files[] = src/CVTerm.class.inc
+files[] = src/Gemini.class.inc
 
 ; DOI
 files[] = src/doi/DoiSerp.class.inc
-files[] = src/doi/Gemini.class.inc
 files[] = src/doi/DOI.class.inc
 files[] = src/doi/PublicationDOI.class.inc
 files[] = src/doi/GoogleScholar.class.inc
