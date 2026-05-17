@@ -21,42 +21,18 @@
         // spam-requests to the backend server.
 
         // Get value of the DOI field.
-// @TODO Add full URL support beside short DOI value.
         let doi = $.trim($(field).val());
+        // Convert full DOI format into short.
+        doi = doi.replace("https://doi.org/", "");
         if (!doi) {
           // Empty DOI. Nothing to do and it's not an error.
           return;
         }
-
-
-
-
-
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        // Debug code to get new URL after redirect.
-        if (0) {
-          let pubmed_url = 'https://pubmed.ncbi.nlm.nih.gov/25202587/';
-          //let pubmed_url = 'https://pubmed.ncbi.nlm.nih.gov/?term=10.1038/sdata.2015.6';
-          console.log(pubmed_url);
-          $.ajax({
-            url: 'https://tgwebdev.cam.uchc.edu/corsanywhere/' + pubmed_url,
-            type: 'GET',
-            success: function(response) {
-              console.log(response);
-            },
-            error: function(xhr, status, error) {
-              console.log(status);
-              console.log(xhr);
-              console.error('DOI Lookup Error:', error);
-            }
-          });
-        }
-
-
-
         // Block DOI field while processing.
         enableThrobber();
-        // Get publication data by DOI.
+
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // Load existing publication data from backend.
         doi_lookup.serp_providers.forEach(function(provider_name) {
           // Format: doi_lookup['publication_data'][$provider_name][$doi]
           if (
@@ -74,7 +50,8 @@
             // No pre-loaded publication data found.
             // Let's get SERP.
             $(doi_lookup[provider_name].dump_container).html('').hide();
-            // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+            // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
             // Request publication data from PublicationDOI::TABLE.
             console.log(provider_name + ': request data from backend.');
             $.ajax({
@@ -108,6 +85,7 @@
                     console.log(provider_name + ': delay.');
                     setTimeout(function() {
                       doi_lookup[provider_name].last_request = $.now();
+
                       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::
                       // GET-request via CORS-proxy to get SERP.
                       let proxy_url = buildUrl(provider_name, doi);
@@ -116,13 +94,13 @@
                         // proxy_url = 'https://cors-anywhere-ldq5.onrender.com/'
                         // + 'https://scholar.google.com/scholar?hl=en'
                         // + '&as_sdt=0%2C5&q=10.5061%2Fdryad.6s82f20&btnG=';
+
+                        // ::::::::::::::::::::::::::::::::::::::::::::::::::::
+                        // Get SERP.
                         $.ajax({
                           method: 'GET',
                           url: proxy_url,
-                          headers: {
-                            //'x-requested-with': 'https://tgwebdev.cam.uchc.edu'
-                            'X-Requested-With': 'XMLHttpRequest'
-                          }
+                          headers: {'X-Requested-With': 'XMLHttpRequest'}
                         })
                         .done(function(data) {
                           //console.log('Success:', data);
@@ -140,12 +118,17 @@
                           console.log('Request via CORS Proxy completed.');
                         });
                       }
+                      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
                     }, delay);
                   }
                 }
               },
               error: function(xhr, status, error) {
                 console.error('DOI Lookup Error:', error);
+                console.error('Status:', xhr.status);
+                console.error('Response:', xhr.responseText);
+                console.error('ReadyState:', xhr.readyState);
               }
             });
           }
@@ -263,8 +246,10 @@
         }
 
         // Check if there is any publication data for this DOI present at SERP.
-        let not_found_message = '- did not match any articles.';
-        if (serpContent.includes(not_found_message)) {
+        if (
+          doi_lookup[provider_name].not_found_token != ''
+          && serpContent.includes(doi_lookup[provider_name].not_found_token)
+        ) {
           console.error('DOI Lookup. No publication data found.');
           return;
         }

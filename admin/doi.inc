@@ -89,6 +89,9 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
         ]),
       ],
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // 'tpps_doi_google_scholar_scrape_allowed',
+      // 'tpps_doi_pubmed_scrape_allowed',
+      // 'tpps_doi_dryad_scrape_allowed',
       'tpps_doi_' . $name . '_scrape_allowed' => [
         '#type' => 'checkbox',
         '#title' => t('Allow scraping'),
@@ -112,6 +115,7 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
         ],
         // 'tpps_doi_google_scholar_use_ip',
         // 'tpps_doi_pubmed_use_ip',
+        // 'tpps_doi_dryad_use_ip',
         'tpps_doi_' . $name . '_use_ip' => [
           '#type' => 'checkbox',
           '#title' => t('Use IP Address'),
@@ -122,6 +126,7 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
         ],
         // 'tpps_doi_google_scholar_unique_url',
         // 'tpps_doi_pubmed_unique_url',
+        // 'tpps_doi_dryad_unique_url',
         'tpps_doi_' . $name . '_unique_url' => [
           '#type' => 'checkbox',
           '#title' => t('Make URL unique'),
@@ -132,6 +137,7 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
         ],
         // 'tpps_doi_google_scholar_serp_path',
         // 'tpps_doi_pubmed_serp_path',
+        // 'tpps_doi_dryad_serp_path',
         'tpps_doi_' . $name . '_serp_path' => [
           '#type' => 'textfield',
           '#title' => t('Relative path to the @serp_provider SERP ', $params),
@@ -152,6 +158,20 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
           ),
           '#description' => t('Introduce random delays (e.g., 2-10 seconds) '
             . 'between requests to avoid rate-limiting.'),
+        ],
+        // 'tpps_doi_google_scholar_not_found_token',
+        // 'tpps_doi_pubmed_not_found_token',
+        // 'tpps_doi_dryad_not_found_token',
+        'tpps_doi_' . $name . '_not_found_token' => [
+          '#type' => 'textfield',
+          '#title' => t('Not found Token'),
+          '#default_value' => variable_get(
+            'tpps_doi_' . $name . '_not_found_token',
+            constant($class_name . '::NOT_FOUND_TOKEN')
+          ),
+          '#description' => t('String which appears on page when publication '
+            . "data not found and page shouldn't be processed."
+          ),
         ],
       ],
     ];

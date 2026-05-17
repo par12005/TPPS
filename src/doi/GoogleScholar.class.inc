@@ -67,6 +67,8 @@ class GoogleScholar extends DoiSerp {
   // 216.58.207.4,
   // 142.250.180.68.
   const HOST_IP = '216.58.207.4';
+  // Token to detect page without publication data.
+  const NOT_FOUND_TOKEN = '- did not match any articles.';
 
   /**
    * Gets query (url params) to build URL to get SERP.

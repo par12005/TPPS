@@ -46,6 +46,8 @@ abstract class DoiSerp {
   const HOST_NAME = '';
   // IPv4 address.
   const HOST_IP = '';
+  // Token to detect page without publication data.
+  const NOT_FOUND_TOKEN = '';
 
   /**
    * Indicates if DOI SERP provider is allowed for scraping.
@@ -361,7 +363,8 @@ abstract class DoiSerp {
           '
           Get DOI publication information from given source code of the page.
           Journal must not have year.
-          Use "NA" for empty values.
+          Authors must be separated by commas (not semicolons).
+          Use string "NA" for empty values.
           '
         );
       }
@@ -508,6 +511,19 @@ abstract class DoiSerp {
    */
   public function getClassName() {
     return static::class;
+  }
+
+  /**
+   * Gets string to detect that page has no publication data.
+   *
+   * When DOI not found provider shows suggestions or empty string which
+   * shouldn't be processed.
+   *
+   * @return string
+   *   Returns string which allows to detect missing publication data at page.
+   */
+  public function getNotFoundString() {
+    return variable_get('tpps_doi_' . static::KEY . '_not_found_token', '');
   }
 
 }

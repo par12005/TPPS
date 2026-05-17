@@ -119,6 +119,7 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
       // Delay between requests of the same client.
       'delay' => $provider->delay,
       'ajax_save_path' => '/ajax/tpps/save_' . $name . '_serp',
+      'not_found_token' => $provider->getNotFoundString(),
     ];
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

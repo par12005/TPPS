@@ -34,6 +34,8 @@ class PubMed extends DoiSerp {
   const HOST_NAME = 'pubmed.ncbi.nlm.nih.gov';
   // Alternative IP address: 142.251.37.100.
   const HOST_IP = '130.14.29.110';
+  // Token to detect page without publication data.
+  const NOT_FOUND_TOKEN = 'The following terms were not found in PubMed';
 
   /**
    * Gets query (url params) to build URL to get SERP.

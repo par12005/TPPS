@@ -31,6 +31,8 @@ class Dryad {
   //
   // @TODO Use this delay.
   const DEFAULT_DELAY = 2;
+  // Token to detect page without publication data.
+  const NOT_FOUND_TOKEN = '';
 
   /**
    * Gets DOI Publication information from remote server dryad.
