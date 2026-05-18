@@ -4,7 +4,7 @@
  * @file
  * Contains static 'Dryad' class.
  *
- * No need to extend DoiSerp class beause Dryad has API.
+ * No need to extend DoiSerp class because Dryad has API.
  */
 
 /**
@@ -16,7 +16,7 @@
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class Dryad {
+class Dryad extends DoiApi {
 
   // Unique key used to get Drupal variables and etc.
   const KEY = 'dryad';
@@ -31,8 +31,6 @@ class Dryad {
   //
   // @TODO Use this delay.
   const DEFAULT_DELAY = 2;
-  // Token to detect page without publication data.
-  const NOT_FOUND_TOKEN = '';
 
   /**
    * Gets DOI Publication information from remote server dryad.
@@ -129,64 +127,71 @@ dpm($response);
   }
 
   /**
-   * Gets Endopoint URL.
+   * Request DOI Publication data using API and store in DB.
    *
-   * @return string
-   *   Returns Endpoint URL.
-   *   No trailing slash.
+   * @param string $doi
+   *   Digital Object Identifier (DOI).
    */
-  public static function getEndpointURL() {
-    $host = static::HOST_NAME;
-    if (variable_get('tpps_doi_' . static::KEY . '_use_ip', FALSE)) {
-      $host = static::HOST_IP;
+  public static function loadPublicationData($doi) {
+    if (PublicationDOI::isExists($doi, static::KEY)) {
+      return;
     }
-    $path = variable_get(
-      'tpps_doi_' . static::KEY . '_endpoint_path',
-      static::ENDPOINT_PATH
-    );
-    return 'https://' . $host . '/' . $path;
+    $info = [];
+
+    $url = static::buildUrl($doi);
+    $header = [
+      'Content-Type: application/json',
+    ];
+    try {
+      $response = (new RestAPI([
+        'url' => $url,
+        'header' => $header,
+      ]))->get()->response;
+      //$response = json_decode($response, 1);
+    }
+    catch (Exception $e) {
+      // @TODO Minor. Code 429 (Too many requiests).
+      $message = $e->getMessage();
+      $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
+      watchdog('tpps', $message . '<pre>@backtrace</pre>',
+        ['@backtrace' => print_r($stack, 1)],
+        WATCHDOG_ERROR
+      );
+      // throw new Exception($message, $e->getCode());
+      drupal_set_message($e->getCode() . ' ' . $message);
+    }
+
+dpm(print_r($response, 1));
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Save in local DB.
+    //
+    // @TODO Add check: If you exceed the rate limits, you will receive a
+    // 429 HTTP response. In this case, wait a short while and try your
+    // request again at a lower rate or with fewer simultaneous requests.
+    if (!empty($response) && 0) {
+      $author_list = [];
+      foreach ($response['message']['author'] as $item) {
+        // Example of the $item:
+        //   given: "J L",
+        //   family: "Hamrick",
+        //   sequence: "additional",
+        //   affiliation: [ ]
+        // Possible values for 'sequence': "first", "additional".
+        $author_list[] = $item['given'] . ' ' . $item['family'];
+      }
+      $data = [
+        'doi' => $doi,
+        'source' => static::KEY,
+        'authors' => implode(', ', $author_list),
+        'date' => implode('/', $response['message']['published-print']['date-parts'][0]),
+        'title' => $response['message']['title'][0],
+        'journal' => $response['message']['container-title'][0],
+        // There is no abstract in response.
+        'abstract' => '',
+      ];
+      PublicationDOI::save($data);
+    }
   }
 
-  /**
-   * Builds URL to get SERP.
-   *
-   * @return string
-   *   Returns escaped URL.
-   */
-  public static function buildUrl($doi) {
-    return static::getEndpointURL() . '/' . urlencode('doi:' . $doi);
-  }
-
-  /**
-   * Saves publication data into DB table.
-   *
-   * @param array $data
-   *   See self::TABLE columns.
-   *
-   * @return bool
-   *   Returns TRUE in case of success and FALSE otherwise.
-   *
-   * @throws Exception
-   *   When record for given $data['doi'] already exists.
-   */
-  public static function save(array $data = []) {
-    return PublicationDOI::save($data);
-  }
-
-  /**
-   * Saves DOI publication data into database.
-   */
-  public static function load($doi) {
-    return PublicationDOI::load($doi, static::KEY);
-  }
-
-  /**
-   * Gets class name.
-   *
-   * @return string
-   *   Returns class name.
-   */
-  public static function getClassName() {
-    return static::class;
-  }
 }

@@ -42,12 +42,16 @@ files[] = src/CVTerm.class.inc
 files[] = src/Gemini.class.inc
 
 ; DOI
-files[] = src/doi/DoiSerp.class.inc
 files[] = src/doi/DOI.class.inc
 files[] = src/doi/PublicationDOI.class.inc
-files[] = src/doi/GoogleScholar.class.inc
-files[] = src/doi/PubMed.class.inc
-files[] = src/doi/Dryad.class.inc
+; DOI/serp
+files[] = src/doi/serp/DoiSerp.class.inc
+files[] = src/doi/serp/GoogleScholar.class.inc
+files[] = src/doi/serp/PubMed.class.inc
+; DOI/api
+files[] = src/doi/api/DoiApi.class.inc
+files[] = src/doi/api/CrossRef.class.inc
+files[] = src/doi/api/Dryad.class.inc
 
 ; Tpps. Elemental Entities.
 files[] = src/tpps/TppsConfiguration.class.inc

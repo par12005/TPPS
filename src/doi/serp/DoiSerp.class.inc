@@ -322,7 +322,7 @@ abstract class DoiSerp {
       throw new Exception("Can't create URL because of the empty DOI.");
     }
     $url = url(
-      $this->getEndpointURL(),
+      $this->getEndpointUrl(),
       ['query' => $this->getQuery()]
     );
     return $url;

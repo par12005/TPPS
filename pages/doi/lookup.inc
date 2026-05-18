@@ -113,7 +113,7 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
     $js_settings['doi_lookup'][$name] = [
       'scrape_allowed' => $provider->scrapeAllowed,
       'dump_container' => '#' . $name . '_dump_container',
-      'endpoint' => $provider->getEndpointURL(),
+      'endpoint' => $provider->getEndpointUrl(),
       'query' => $provider->getQuery(),
       'query_param' => constant($provider->getClassName() . '::QUERY_PARAM'),
       // Delay between requests of the same client.
