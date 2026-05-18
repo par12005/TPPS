@@ -49,32 +49,10 @@ class Dryad extends DoiApi {
   public static function getInfo($doi) {
     $info = [];
 
-// @TODO Use 'RestAPI' class.
     $url = static::buildUrl($doi);
     $use_rest_api = 1;
     if ($use_rest_api) {
-      $header = [
-        'Content-Type: application/json',
-      ];
-      try {
-        $response = (new RestAPI([
-          'url' => $url,
-          'header' => $header,
-        ]))->get()->response;
-        $response = json_decode($response, 1);
-        //$response = json_decode($response);
-      }
-      catch (Exception $e) {
-        // @TODO Minor. Code 429 (Too many requiests).
-        $message = $e->getMessage();
-        $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
-        watchdog('tpps', $message . '<pre>@backtrace</pre>',
-          ['@backtrace' => print_r($stack, 1)],
-          WATCHDOG_ERROR
-        );
-        // throw new Exception($message, $e->getCode());
-        drupal_set_message($e->getCode() . ' ' . $message);
-      }
+      $response = static::request($doi);
     }
     else {
       // Note: json_decode() could throw an exception on invalid data.
@@ -88,8 +66,7 @@ class Dryad extends DoiApi {
       }
     }
 
-dpm($response);
-
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     if (!empty($response)) {
       // Authors.
       foreach ($response->authors as $author) {
@@ -136,8 +113,51 @@ dpm($response);
     if (PublicationDOI::isExists($doi, static::KEY)) {
       return;
     }
-    $info = [];
 
+    $response = static::request($doi);
+    if (empty($response) || ($response['error'] ?? '') == "not-found") {
+      // No record.
+      return;
+    }
+    // dpm(print_r($response, 1));
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Save in local DB.
+    //
+    // @TODO Add check: If you exceed the rate limits, you will receive a
+    // 429 HTTP response. In this case, wait a short while and try your
+    // request again at a lower rate or with fewer simultaneous requests.
+    $author_list = [];
+    foreach ($response['authors'] as $item) {
+      // Example of the $item:
+      //   firstName: "Ryan",
+      //   lastName: "Schmid",
+      //   email: "ryan.schmid@ecdysis.bio",
+      //   affiliation: "Ecdysis Foundation",
+      //   affiliations: [{ name: "Ecdysis Foundation" }],
+      //   orcid: "0000-0002-7638-5619".
+      $author_list[] = $item['firstName'] . ' ' . $item['lastName'];
+    }
+    $data = [
+      'doi' => $doi,
+      'source' => static::KEY,
+      'authors' => implode(', ', $author_list),
+      'date' => str_replace('-', '/', ($response['publicationDate'] ?? '')),
+      'title' => $response['title'],
+      // Note: no record for Journal.
+      'journal' => '',
+      'abstract' => $response['abstract'],
+    ];
+    PublicationDOI::save($data);
+  }
+
+  /**
+   * Request DOI Publication data using API and store in DB.
+   *
+   * @param string $doi
+   *   Digital Object Identifier (DOI).
+   */
+  public static function request($doi) {
     $url = static::buildUrl($doi);
     $header = [
       'Content-Type: application/json',
@@ -147,7 +167,7 @@ dpm($response);
         'url' => $url,
         'header' => $header,
       ]))->get()->response;
-      //$response = json_decode($response, 1);
+      $response = json_decode($response, 1);
     }
     catch (Exception $e) {
       // @TODO Minor. Code 429 (Too many requiests).
@@ -160,38 +180,7 @@ dpm($response);
       // throw new Exception($message, $e->getCode());
       drupal_set_message($e->getCode() . ' ' . $message);
     }
-
-dpm(print_r($response, 1));
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Save in local DB.
-    //
-    // @TODO Add check: If you exceed the rate limits, you will receive a
-    // 429 HTTP response. In this case, wait a short while and try your
-    // request again at a lower rate or with fewer simultaneous requests.
-    if (!empty($response) && 0) {
-      $author_list = [];
-      foreach ($response['message']['author'] as $item) {
-        // Example of the $item:
-        //   given: "J L",
-        //   family: "Hamrick",
-        //   sequence: "additional",
-        //   affiliation: [ ]
-        // Possible values for 'sequence': "first", "additional".
-        $author_list[] = $item['given'] . ' ' . $item['family'];
-      }
-      $data = [
-        'doi' => $doi,
-        'source' => static::KEY,
-        'authors' => implode(', ', $author_list),
-        'date' => implode('/', $response['message']['published-print']['date-parts'][0]),
-        'title' => $response['message']['title'][0],
-        'journal' => $response['message']['container-title'][0],
-        // There is no abstract in response.
-        'abstract' => '',
-      ];
-      PublicationDOI::save($data);
-    }
+    return $response;
   }
 
 }
