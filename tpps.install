@@ -91,6 +91,7 @@ function tpps_get_variable_list() {
     'tpps_report_doi_scraped_all_title' => 'All Scraped DOI',
     'tpps_report_doi_scraped_google_scholar_title' => 'Google Scholar Scraped DOI',
     'tpps_report_doi_scraped_pubmed_title' => 'PubMed Scraped DOI',
+    'tpps_report_doi_crossref_title' => 'CrossRef API DOI',
     // DOI/Submission reports.
     'tpps_report_doi_submission_publication_title' => 'Pulication DOI',
     'tpps_report_doi_submission_dataset_title' => 'Dataset DOI',
@@ -2647,6 +2648,7 @@ function tpps_update_7134() {
   variable_set('tpps_report_doi_scraped_all_title', 'All Scraped DOI');
   variable_set('tpps_report_doi_scraped_google_scholar_title', 'Google Scholar Scraped DOI');
   variable_set('tpps_report_doi_scraped_pubmed_title', 'PubMed Scraped DOI');
+  variable_set('tpps_report_doi_crossref_title', 'CrossRef API DOI');
   // Rest API.
   variable_set('tpps_report_rest_api_request_list_title', 'Rest API Request List');
   variable_set('tpps_report_rest_api_request_single_title', 'Rest API Request');

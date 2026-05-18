@@ -502,6 +502,14 @@ class Report {
             'description' => t('Shows publication data scraped from PubMed web-site.'),
             'admin_panel' => TRUE,
           ],
+          'crossref' => [
+            'title' => variable_get(
+              'tpps_report_doi_crossref_title',
+              'CrossRef API DOI'
+            ),
+            'description' => t('Shows publication data obtained from CrossRef API.'),
+            'admin_panel' => TRUE,
+          ],
         ],
         'duplicates' => [
           'title' => variable_get('tpps_report_doi_duplicates_title', 'DOI Duplicates'),
