@@ -52,7 +52,7 @@ class Dryad extends DoiApi {
     $url = static::buildUrl($doi);
     $use_rest_api = 1;
     if ($use_rest_api) {
-      $response = static::request($doi);
+      $response = static::getMetadata($doi);
     }
     else {
       // Note: json_decode() could throw an exception on invalid data.
@@ -114,50 +114,52 @@ class Dryad extends DoiApi {
       return;
     }
 
-    $response = static::request($doi);
-    if (empty($response) || ($response['error'] ?? '') == "not-found") {
-      // No record.
-      return;
-    }
-    // dpm(print_r($response, 1));
+    $response = static::getMetadata($doi);
+    // Create an empty record to avoid the same requests to API.
+    $data = ['doi' => $doi, 'source' => static::KEY];
 
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Save in local DB.
-    //
-    // @TODO Add check: If you exceed the rate limits, you will receive a
-    // 429 HTTP response. In this case, wait a short while and try your
-    // request again at a lower rate or with fewer simultaneous requests.
-    $author_list = [];
-    foreach ($response['authors'] as $item) {
-      // Example of the $item:
-      //   firstName: "Ryan",
-      //   lastName: "Schmid",
-      //   email: "ryan.schmid@ecdysis.bio",
-      //   affiliation: "Ecdysis Foundation",
-      //   affiliations: [{ name: "Ecdysis Foundation" }],
-      //   orcid: "0000-0002-7638-5619".
-      $author_list[] = $item['firstName'] . ' ' . $item['lastName'];
+    if (
+      !empty($response)
+      && ($response['error'] ?? '') != "not-found"
+    ) {
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Save in local DB.
+      //
+      // @TODO Add check: If you exceed the rate limits, you will receive a
+      // 429 HTTP response. In this case, wait a short while and try your
+      // request again at a lower rate or with fewer simultaneous requests.
+      $author_list = [];
+      foreach ($response['authors'] as $item) {
+        // Example of the $item:
+        //   firstName: "Ryan",
+        //   lastName: "Schmid",
+        //   email: "ryan.schmid@ecdysis.bio",
+        //   affiliation: "Ecdysis Foundation",
+        //   affiliations: [{ name: "Ecdysis Foundation" }],
+        //   orcid: "0000-0002-7638-5619".
+        $author_list[] = $item['firstName'] . ' ' . $item['lastName'];
+      }
+      $data = [
+        'doi' => $doi,
+        'source' => static::KEY,
+        'authors' => implode(', ', $author_list),
+        'date' => str_replace('-', '/', ($response['publicationDate'] ?? '')),
+        'title' => $response['title'],
+        // Note: no record for Journal.
+        'journal' => '',
+        'abstract' => $response['abstract'],
+      ];
     }
-    $data = [
-      'doi' => $doi,
-      'source' => static::KEY,
-      'authors' => implode(', ', $author_list),
-      'date' => str_replace('-', '/', ($response['publicationDate'] ?? '')),
-      'title' => $response['title'],
-      // Note: no record for Journal.
-      'journal' => '',
-      'abstract' => $response['abstract'],
-    ];
     PublicationDOI::save($data);
   }
 
   /**
-   * Request DOI Publication data using API and store in DB.
+   * Request DOI Metadata.
    *
    * @param string $doi
    *   Digital Object Identifier (DOI).
    */
-  public static function request($doi) {
+  public static function getMetadata($doi) {
     $url = static::buildUrl($doi);
     $header = [
       'Content-Type: application/json',
