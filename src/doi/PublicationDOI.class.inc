@@ -88,7 +88,7 @@ class PublicationDOI extends DOI {
    *   Required. DOI (Digital Object Identifier).
    * @param string $source
    *   Required. Source of the publication data.
-   *   Possible values: see DoiSerp::KEY.
+   *   Possible values: see constants DoiSerp::KEY and DoiApi::KEY.
    *
    * @return array
    *   Returns record from DB table for given DOI if exists.
@@ -146,32 +146,32 @@ class PublicationDOI extends DOI {
           'description' => 'Authors (primary and secondary).',
           'type' => 'varchar',
           'size' => 'normal',
-          'not null' => TRUE,
+          'not null' => FALSE,
         ],
         'date' => [
           'description' => 'Publication Date.',
           'type' => 'varchar',
           'size' => 'normal',
-          'not null' => TRUE,
+          'not null' => FALSE,
         ],
         'title' => [
           'description' => 'Publication Title.',
           'type' => 'varchar',
           'size' => 'normal',
-          'not null' => TRUE,
+          'not null' => FALSE,
         ],
         'journal' => [
           'description' => 'Publication Journal.',
           'type' => 'varchar',
           'size' => 'normal',
-          'not null' => TRUE,
+          'not null' => FALSE,
         ],
         'abstract' => [
           'description' => 'Publication Abstract.',
           // varchar/normal: mysql: 64KB, postgresql: 1GB.
           'type' => 'varchar',
           'size' => 'normal',
-          'not null' => TRUE,
+          'not null' => FALSE,
         ],
       ],
       'unique keys' => [
@@ -704,6 +704,40 @@ class PublicationDOI extends DOI {
       }
     }
     return $output;
+  }
+
+  /**
+   * Get metadata from all supported APIs.
+   *
+   * Metadata will be stored in local DB.
+   *
+   * @param string $doi
+   *   Required. DOI (Digital Object Identifier).
+   * @param string $source
+   *   Optional. Source of the publication data.
+   *   Possible values: see const DoiApi::KEY.
+   */
+  public static function requestAPI($doi, $source = NULL) {
+    $method_name = 'loadPublicationData';
+    $api_class_list = [
+      'SemanticScholar',
+      'CrossRef',
+      'Dryad',
+    ];
+
+    if (!empty($source) && !empty($class_name = $api_class_list[$source])) {
+      if (class_exists($class_name) && method_exists($class_name, $method_name)) {
+        $class_name::$method_name($doi);
+      }
+    }
+    else {
+      // All APIs.
+      foreach ($api_class_list as $class_name) {
+        if (class_exists($class_name) && method_exists($class_name, $method_name)) {
+          $class_name::$method_name($doi);
+        }
+      }
+    }
   }
 
 }
