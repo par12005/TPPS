@@ -51,6 +51,38 @@ class PublicationDOI extends DOI {
   }
 
   /**
+   * Checks if the DB record for given DOI is empty.
+   *
+   * @param string $doi
+   *   DOI.
+   * @param string $source
+   *   Optional. Source of the publication data.
+   *   Possible values: see DoiSerp::KEY and DoiApi::KEY.
+   *   When empty then 'combined' version of the DOI Publication data
+   *   will be checked.
+   *
+   * @return bool
+   *   When $source is not empty checks if 'title' field is not empty because
+   *   other fields could be empty (for example 'abstract' or 'journal').
+   *
+   *   When $source is empty (combined version) then returns TRUE if any of
+   *   the fields is empty and FALSE when all fields are not empty.
+   */
+  public static function isEmpty($doi, $source = NULL) {
+    $data = static::load($doi, $source);
+    if (empty($source)) {
+      // Check 'combined' version.
+      // Return FALSE if all values of $combined are not empty.
+      return (empty($data) || count($data) !== count(array_filter($data)));
+    }
+    else {
+      // Note: We check only title because some data sources has no 'abstract'
+      // or no 'journal' fields.
+      return empty($data['title']);
+    }
+  }
+
+  /**
    * Saves publication data into DB table.
    *
    * @param array $data
@@ -96,6 +128,8 @@ class PublicationDOI extends DOI {
    *
    * @throws Exception
    *   When $source is invalid.
+   *
+   * @todo Use caching.
    */
   public static function load($doi, $source = NULL) {
     $output = [];
