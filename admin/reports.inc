@@ -60,10 +60,13 @@ function tpps_reports_settings_form(array $form, array &$form_state) {
   // 'tpps_report_doi_submission_dataset_title'.
   // 'tpps_report_doi_submission_all_title'.
   //
-  // DOI / Scraped.
-  // 'tpps_report_doi_scraped_all_title'.
-  // 'tpps_report_doi_scraped_pubmed_title'.
-  // 'tpps_report_doi_scraped_google_scholar_title'.
+  // DOI / Publication Data.
+  // 'tpps_report_doi_publication_data_all_title'.
+  // 'tpps_report_doi_publication_data_pubmed_title'.
+  // 'tpps_report_doi_publication_data_google_scholar_title'.
+  // 'tpps_report_doi_publication_data_semantic_scholar_title'.
+  // 'tpps_report_doi_publication_data_crossref_title'.
+  // 'tpps_report_doi_publication_data_dryad_title'.
   //
   // Zenodo:
   // 'tpps_report_zenodo_deposition_title'.

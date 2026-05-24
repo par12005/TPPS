@@ -1424,10 +1424,13 @@ function tpps_admin_panel_get_reports() {
     'doi_submission_all' => $panel_url . '/doi-submission-all',
     'doi_submission_publication' => $panel_url . '/doi-submission-publication',
     'doi_submission_dataset' => $panel_url . '/doi-submission-dataset',
-    // DOI / Scraped.
-    'doi_scraped_all' => $panel_url . '/doi-scraped-all',
-    'doi_scraped_google_scholar' => $panel_url . '/doi-scraped-google-scholar',
-    'doi_scraped_pubmed' => $panel_url . '/doi-scraped-pubmed',
+    // DOI / Publication Data.
+    'doi_publication_data_all' => $panel_url . '/doi-publication_data-all',
+    'doi_publication_data_google_scholar' => $panel_url . '/doi-publication_data-google-scholar',
+    'doi_publication_data_pubmed' => $panel_url . '/doi-publication_data-pubmed',
+    'doi_publication_data_crossref' => $panel_url . '/doi-publication_data-crossref',
+    'doi_publication_data_semantic_scholar' => $panel_url . '/doi-publication_data-semantic_scholar',
+    'doi_publication_data_dryad' => $panel_url . '/doi-publication_data-dryad',
     // Zenodo.
     'zenodo_submissions' => $panel_url . '/zenodo-submissions',
     'zenodo_depositions' => $panel_url . '/zenodo-depositions',

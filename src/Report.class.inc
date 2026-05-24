@@ -477,37 +477,53 @@ class Report {
             'admin_panel' => TRUE,
           ],
         ],
-        'scraped' => [
+        'publication_data' => [
           'all' => [
             'title' => variable_get(
-              'tpps_report_doi_scraped_all_title',
-              'All Scraped DOI'
+              'tpps_report_doi_publication_data_all_title',
+              'All DOI Publication Data'
             ),
-            'description' => t('Shows publication data scraped from all sources.'),
+            'description' => t('Shows publication data publication_data from all sources.'),
             'admin_panel' => TRUE,
           ],
           'google_scholar' => [
             'title' => variable_get(
-              'tpps_report_doi_scraped_google_scholar_title',
-              'Google Scholar Sraped DOI'
+              'tpps_report_doi_publication_data_google_scholar_title',
+              'Google Scholar DOI Publication Data'
             ),
-            'description' => t('Shows publication data scraped from Gooble Scholar web-site.'),
+            'description' => t('Shows publication data from Gooble Scholar web-site.'),
             'admin_panel' => TRUE,
           ],
           'pubmed' => [
             'title' => variable_get(
-              'tpps_report_doi_scraped_pubmed_title',
-              'PubMed Sraped DOI'
+              'tpps_report_doi_publication_data_pubmed_title',
+              'PubMed DOI Publication Data'
             ),
-            'description' => t('Shows publication data scraped from PubMed web-site.'),
+            'description' => t('Shows publication data from PubMed web-site.'),
             'admin_panel' => TRUE,
           ],
           'crossref' => [
             'title' => variable_get(
-              'tpps_report_doi_crossref_title',
-              'CrossRef API DOI'
+              'tpps_report_doi_publication_data_crossref_title',
+              'CrossRef DOI Publication Data'
             ),
-            'description' => t('Shows publication data obtained from CrossRef API.'),
+            'description' => t('Shows publication data from CrossRef API.'),
+            'admin_panel' => TRUE,
+          ],
+          'dryad' => [
+            'title' => variable_get(
+              'tpps_report_doi_publication_data_dryad_title',
+              'Dryad DOI Publication Data'
+            ),
+            'description' => t('Shows publication data from Dryad API.'),
+            'admin_panel' => TRUE,
+          ],
+          'semantic_scholar' => [
+            'title' => variable_get(
+              'tpps_report_doi_publication_data_semantic_scholar_title',
+              'Semantic Scholar DOI Publication Data'
+            ),
+            'description' => t('Shows publication data from Semantic Scholar API.'),
             'admin_panel' => TRUE,
           ],
         ],

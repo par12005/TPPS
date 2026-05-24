@@ -2,28 +2,29 @@
 
 /**
  * @file
- * Shows publication data scraped from all sources.
+ * Shows publication data obtained from Dryad API.
  */
 
 /**
- * Menu callback. Shows DOI publidation data scraped from PubMed.
+ * Menu callback. Shows DOI publidation data from Dryad.
  */
-function tpps_report_doi_scraped_all() {
-  return drupal_get_form('tpps_report_doi_all_form');
+function tpps_report_doi_publication_data_dryad() {
+  return drupal_get_form('tpps_report_doi_publication_data_dryad_form');
 }
 
 /**
- * Bulds form 'tpps_report_doi_scraped_all'.
+ * Builds form 'tpps_report_doi_publication_data_dryad'.
  *
  * Form shows DOI publication data in tables under fieldset.
  */
-function tpps_report_doi_all_form(array $form, array &$form_state) {
+function tpps_report_doi_publication_data_dryad_form(array $form, array &$form_state) {
   $report = [];
-
+  $source = Dryad::KEY;
   $result = db_select(PublicationDOI::TABLE, 't')
     ->fields('t', [])
+    ->condition('source', $source)
     ->execute()
-    ->fetchAll(PDO::FETCH_ASSOC);
+    ->fetchAllAssoc('doi', PDO::FETCH_ASSOC);
   if (!empty($result)) {
     // Build 2 level structure for report.
     foreach ($result as $item) {

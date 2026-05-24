@@ -2,22 +2,22 @@
 
 /**
  * @file
- * Shows publication data scraped from PubMed web-site.
+ * Shows publication data publication_data from PubMed web-site.
  */
 
 /**
- * Menu callback. Shows DOI publidation data scraped from PubMed.
+ * Menu callback. Shows DOI publidation data publication_data from PubMed.
  */
-function tpps_report_doi_scraped_pubmed() {
-  return drupal_get_form('tpps_report_doi_scraped_pubmed_form');
+function tpps_report_doi_publication_data_pubmed() {
+  return drupal_get_form('tpps_report_doi_publication_data_pubmed_form');
 }
 
 /**
- * Bulds form 'tpps_report_doi_scraped_google_scholar'.
+ * Bulds form 'tpps_report_doi_publication_data_google_scholar'.
  *
  * Form shows DOI publication data in tables under fieldset.
  */
-function tpps_report_doi_scraped_pubmed_form(array $form, array &$form_state) {
+function tpps_report_doi_publication_data_pubmed_form(array $form, array &$form_state) {
   $report = [];
   $source = PubMed::KEY;
   $result = db_select(PublicationDOI::TABLE, 't')
