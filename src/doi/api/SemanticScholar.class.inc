@@ -2,41 +2,39 @@
 
 /**
  * @file
- * Contains 'CrossRef' class.
+ * Contains 'SemanticScholar' class.
  */
 
 /**
- * Gets DOI Publication data from CrossRef service.
+ * Gets DOI Publication data from SemanticScholar service.
+ *
+ * API Documentation:
+ * https://api.semanticscholar.org/api-docs/datasets.
+ *
+ *
+ *
+ * https://api.semanticscholar.org/graph/v1/paper/DOI:10.1093/ageing/afaa119
  *
  * Usage:
  *   To get and save DOI Publication data:
- *   CrossRef::loadPublicationData($doi);
- *
- * No need to extend DoiSerp class because Dryad has API.
- * https://www.crossref.org/documentation/retrieve-metadata/rest-api/
+ *   SemanticScholar::loadPublicationData($doi);
  *
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class CrossRef extends DoiApi {
+class SemanticScholar extends DoiApi {
 
   // Unique key used to get Drupal variables and etc.
-  const KEY = 'crossref';
+  const KEY = 'semanticscholar';
   // Domain name (without schema because HTTPS will always be used).
-  const HOST_NAME = 'api.crossref.org';
+  const HOST_NAME = 'api.semanticscholar.org';
   // IPv4 address.
   const HOST_IP = '';
   // Endpoint path (without trailing slash).
-  const ENDPOINT_PATH = 'works';
+  const ENDPOINT_PATH = 'graph/v1/paper';
   // Default delay between requests, in seconds.
-  // @TODO Use this delay.
+  // @todo Use this delay.
   const DEFAULT_DELAY = 2;
-
-
-
-// @TODO $resonse == 'Resource not found.'
-
-
 
   /**
    * Builds URL to get SERP.
@@ -46,15 +44,34 @@ class CrossRef extends DoiApi {
    */
   public static function buildUrl($doi) {
     global $user;
-    // When 'mailto' parameter is set we could get higher rate limits.
-    // https://www.crossref.org/documentation/retrieve-metadata/rest-api/access-and-authentication/
+
+    // Fields in the API response.
+    $fields = [
+      'title',
+      'abstract',
+      'authors',
+      'venue',
+      'citationCount',
+      'journal',
+      'publicationDate',
+      //
+      // Common fields you can request:
+      // doi, title, abstract, url, venue, year
+      // authors (includes name, authorId),
+      // citations, references (each as a sub-graph of papers),
+      // citationCount, referenceCount, influentialCitationCount,
+      // isOpenAccess (with openAccessPdf URL),
+      // publicationTypes, publicationDate, journal.
+      // More fields:
+      // https://api.semanticscholar.org/api-docs/graph#tag/Paper-Data/operation/get_graph_get_paper
+    ];
     $params = [
       'query' => [
-        'mailto' => $user->mail ?? variable_get('site_mail', 'test.user@gmail.com'),
+        'fields' => implode(',', $fields),
       ],
       'https' => TRUE,
     ];
-    return url(static::getEndpointUrl() . '/' . $doi, $params);
+    return url(static::getEndpointUrl() . '/DOI:' . $doi, $params);
   }
 
   /**
@@ -72,33 +89,27 @@ class CrossRef extends DoiApi {
     // Create an empty record to avoid the same requests to API.
     $data = ['doi' => $doi, 'source' => static::KEY];
     if (
-      $response != 'Resource not found.'
+      ($response['error'] ?? '') != 'Paper with id DOI:' . $doi . ' not found'
       && !empty($response)
-      && ($response['status'] ?? '') == 'ok'
     ) {
       // Save in local DB.
-      // @TODO Add check: If you exceed the rate limits, you will receive a
-      // 429 HTTP response. In this case, wait a short while and try your
-      // request again at a lower rate or with fewer simultaneous requests.
       $author_list = [];
-      foreach ($response['message']['author'] as $item) {
+      foreach ($response['authors'] as $item) {
         // Example of the $item:
-        //   given: "J L",
-        //   family: "Hamrick",
-        //   sequence: "additional",
-        //   affiliation: [ ]
-        // Possible values for 'sequence': "first", "additional".
-        $author_list[] = ($item['given'] ?? '') . ' ' . ($item['family'] ?? '');
+        // authorId: "1820966245",
+        // name: "D. Attwood".
+        if (!empty($item['name'])) {
+          $author_list[] = $item['name'];
+        }
       }
       $data = [
         'doi' => $doi,
         'source' => static::KEY,
         'authors' => implode(', ', $author_list),
-        'date' => implode('/', ($response['message']['published-print']['date-parts'][0] ?? [])),
-        'title' => ($response['message']['title'][0] ?? ''),
-        'journal' => ($response['message']['container-title'][0] ?? ''),
-        // There is no abstract in response.
-        'abstract' => '',
+        'date' => $response['publicationDate'] ?? $response['year'] ?? '',
+        'title' => $response['title'] ?? '',
+        'journal' => $response['venue'] ?? $response['journal']['name'] ?? '',
+        'abstract' => $response['abstract'] ?? '',
       ];
     }
     PublicationDOI::save($data);
@@ -114,10 +125,6 @@ class CrossRef extends DoiApi {
     $url = static::buildUrl($doi);
     $header = [
       'Content-Type: application/json',
-      // When 'mailto' parameter and 'User-Agent' header both are specified
-      // we could get higher rate limits.
-      // https://www.crossref.org/documentation/retrieve-metadata/rest-api/access-and-authentication/
-      'User-Agent: Drupal',
     ];
     try {
       $response = (new RestAPI([
