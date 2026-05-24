@@ -25,6 +25,7 @@ function tpps_api_doi_info($doi1) {
   $source = arg(4);
 
   if (empty($doi2)) {
+    // DOI Prefix only.
     $list = db_select(PublicationDOI::TABLE, 't')
       ->fields('t', ['doi'])
       ->condition('doi', $doi1 . '/%', 'ILIKE')
@@ -35,14 +36,7 @@ function tpps_api_doi_info($doi1) {
     return $list;
   }
   else {
-    $doi = $doi1 . '/' . $doi2;
-    if (!empty($source) && in_array($source, ['pubmed', 'google_scholar'])) {
-      return PublicationDOI::load($doi, $source);
-    }
-    return [
-      'google_scholar' => PublicationDOI::load($doi, 'google_scholar'),
-      'pubmed' => PublicationDOI::load($doi, 'pubmed'),
-    ];
+    // Full DOI.
+    return PublicationDOI::load($doi1 . '/' . $doi2, $source);
   }
-
 }

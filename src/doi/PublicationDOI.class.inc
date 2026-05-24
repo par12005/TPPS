@@ -97,20 +97,65 @@ class PublicationDOI extends DOI {
    * @throws Exception
    *   When $source is invalid.
    */
-  public static function load($doi, $source) {
-    // Build query.
-    $data = db_select(static::TABLE, 't')
-      ->fields('t', [])
-      ->condition('doi', $doi)
-      ->condition('source', $source)
-      ->range(0, 1)
-      ->execute()
-      ->fetchAssoc();
-    // Output.
-    if (empty($data)) {
-      return [];
+  public static function load($doi, $source = NULL) {
+    $output = [];
+    $use_check_plain = FALSE;
+    if (empty($source)) {
+      // Build the combined single item. Longer string is better.
+      $data = db_select(static::TABLE, 't')
+        ->fields('t', [])
+        ->condition('doi', $doi)
+        ->execute()
+        ->fetchAllAssoc('source', PDO::FETCH_ASSOC);
+      $combined = [];
+      foreach ($data as $source => $item) {
+        foreach ($item as $key => $value) {
+          if ($key == 'source') {
+            continue;
+          }
+          if ($use_check_plain) {
+            $value = check_plain($value);
+          }
+          if (empty($combined[$key])) {
+            $combined[$key] = $value;
+          }
+          else {
+            // Assume that longer string is better (more data).
+            if (strlen($combined[$key]) < strlen($value)) {
+              $combined[$key] = $value;
+            }
+          }
+        }
+      }
+      $output = $combined;
     }
-    return $data;
+    elseif ($source == 'all') {
+      // All sources.
+      $output = db_select(static::TABLE, 't')
+        ->fields('t', [])
+        ->condition('doi', $doi)
+        ->execute()
+        ->fetchAllAssoc('source', PDO::FETCH_ASSOC);
+      if ($use_check_plain) {
+        foreach ($output as $source => $source_data) {
+          $output[$source] = array_map('check_plain', $source_data);
+        }
+      }
+    }
+    else {
+      // Single source.
+      $output = db_select(static::TABLE, 't')
+        ->fields('t', [])
+        ->condition('doi', $doi)
+        ->condition('source', $source)
+        ->range(0, 1)
+        ->execute()
+        ->fetchAssoc();
+      if ($use_check_plain) {
+        $output = array_map('check_plain', $output);
+      }
+    }
+    return $output;
   }
 
   /**

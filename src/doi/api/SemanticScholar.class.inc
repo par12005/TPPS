@@ -25,7 +25,7 @@
 class SemanticScholar extends DoiApi {
 
   // Unique key used to get Drupal variables and etc.
-  const KEY = 'semanticscholar';
+  const KEY = 'semantic_scholar';
   // Domain name (without schema because HTTPS will always be used).
   const HOST_NAME = 'api.semanticscholar.org';
   // IPv4 address.
