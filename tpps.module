@@ -452,6 +452,17 @@ function tpps_menu() {
   Report::addAllMenuItems($items);
   tpps_menu_add_submission_pages($items);
   tpps_menu_add_api($items);
+
+  $items['admin/reports/tpps/doi/publication_data/%/%'] = [
+    'title' => 'DOI Publication Data',
+    'description' => 'Single DOI Publication Data from all sources',
+    'page callback' => 'tpps_report_doi_publication_data_single',
+    'page arguments' => [5, 6],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'file' => 'reports/doi/publication_data/single.inc',
+  ];
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // /ajax/tpps/<command>.
   $items[TPPS_AJAX_URL . '/%'] = [
