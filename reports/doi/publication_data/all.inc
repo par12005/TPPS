@@ -33,6 +33,19 @@ function tpps_report_doi_publication_data_all_form(array $form, array &$form_sta
       unset($item['source']);
       $report[$doi][$source] = $item;
     }
+    // Add 'combined' column.
+    foreach ($result as $item) {
+      $data = PublicationDOI::load($item['doi']);
+      $column_title = 'combined';
+      if (empty($data) || count($data) !== count(array_filter($data))) {
+        $column_title .= ' [ not complete ]';
+      }
+      else {
+        $column_title .= ' [ complete ]';
+      }
+      unset($data['doi']);
+      $report[$item['doi']][$column_title] = $data;
+    }
   }
   Report::print2Level($form, $report);
   return $form;
