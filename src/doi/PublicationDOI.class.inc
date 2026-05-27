@@ -797,11 +797,12 @@ class PublicationDOI extends DOI {
    *   Possible values: see const DoiApi::KEY.
    */
   public static function requestAPI($doi, $source = NULL) {
-    $method_name = 'loadPublicationData';
+    $method_name = 'insert';
     $api_class_list = [
       'SemanticScholar',
       'CrossRef',
       'Dryad',
+      'PubMedCentral',
     ];
 
     if (!empty($source) && !empty($class_name = $api_class_list[$source])) {

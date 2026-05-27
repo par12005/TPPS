@@ -2,9 +2,14 @@
 
 /**
  * @file
- * Contains static 'Dryad' class.
+ * Contains static 'PubMedCentral' class.
  *
- * No need to extend DoiSerp class because Dryad has API.
+ * PMC OAI-PMH API
+ * The PubMed Central OAI-PMH API provides access to metadata of all items
+ * in PubMed Central (PMC), as well as to the full text of articles with
+ * licenses or usage rights that allow for reuse.
+ *
+ * Note: We also have /serp/PubMed.class.inc which parses SERP page.
  */
 
 /**
@@ -16,21 +21,38 @@
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class Dryad extends DoiApi {
+class PubMedCentral extends DoiApi {
 
   // Unique key used to get Drupal variables and etc.
-  const KEY = 'dryad';
+  const KEY = 'pubmed_central';
   // Domain name (without schema because HTTPS will always be used).
-  const HOST_NAME = 'datadryad.org';
+  const HOST_NAME = 'pmc.ncbi.nlm.nih.gov';
   // IPv4 address.
-  const HOST_IP = '34.218.162.251';
+  const HOST_IP = '2600:1901:0:c831::';
   // Endpoint path (without leading and trailing slash).
-  const ENDPOINT_PATH = 'api/v2/datasets';
+  const ENDPOINT_PATH = 'tools/idconv/api/v1/articles';
   // Default delay between requests, in seconds.
   //
   //
   // @TODO Use this delay.
   const DEFAULT_DELAY = 2;
+
+  /**
+   * Builds URL to get SERP.
+   *
+   * @return string
+   *   Returns escaped URL.
+   */
+  public static function buildUrl($doi) {
+    $params = [
+      'query' => [
+        'ids' => $doi,
+        'format' => 'json',
+      ],
+      'https' => TRUE,
+    ];
+    return url(static::getEndpointUrl() . '/', $params);
+  }
 
   /**
    * Gets DOI Publication information from remote server.
@@ -114,6 +136,33 @@ class Dryad extends DoiApi {
       return;
     }
 
+    // ########################################################################
+    // Step 1. Convert DOI → PMCID number.
+    $response = static::getInternalId($doi);
+    $pmcid = $response['records']['pmcid'] ?? '';
+    if (empty($pmcid)) {
+      $message = "@key: Can't find internal ID for @doi.";
+      $params = [
+        '@key' => static::KEY,
+        '@doi' => $doi,
+      ];
+      watchdog('tpps', $message, $params, WATCHDOG_ERROR);
+      return;
+    }
+    // PubMedCentralId exists!
+    // For 2nd step we need only numbers (not letters).
+    $pmcid = str_replace('PMC', '', $pmcid);
+    dpm($pmcid);
+
+    return;
+    // ########################################################################
+    // Step 2. Fetch metadata (use the numeric ID without "PMC").
+
+
+
+
+// @TODO Update:
+
     $response = static::getMetadata($doi);
     // Create an empty record to avoid the same requests to API.
     $data = ['doi' => $doi, 'source' => static::KEY];
@@ -173,6 +222,36 @@ class Dryad extends DoiApi {
     }
     catch (Exception $e) {
       // @TODO Minor. Code 429 (Too many requiests).
+      $message = $e->getMessage();
+      $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
+      watchdog('tpps', $message . '<pre>@backtrace</pre>',
+        ['@backtrace' => print_r($stack, 1)],
+        WATCHDOG_ERROR
+      );
+      // throw new Exception($message, $e->getCode());
+      drupal_set_message($e->getCode() . ' ' . $message);
+    }
+    return $response;
+  }
+
+  /**
+   * Request DOI Metadata.
+   *
+   * @param string $doi
+   *   Digital Object Identifier (DOI).
+   */
+  public static function getInternalId($doi) {
+    $url = static::buildUrl($doi);
+    $header = [
+      'Content-Type: application/json',
+    ];
+    try {
+      $response = (new RestAPI([
+        'url' => $url,
+        'header' => $header,
+      ]))->get()->response;
+    }
+    catch (Exception $e) {
       $message = $e->getMessage();
       $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
       watchdog('tpps', $message . '<pre>@backtrace</pre>',

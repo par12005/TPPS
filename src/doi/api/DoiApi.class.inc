@@ -23,7 +23,7 @@ abstract class DoiApi {
   const HOST_NAME = '';
   // IPv4 address.
   const HOST_IP = '';
-  // Endpoint path (without trailing slash).
+  // Endpoint path (without leading and trailing slash).
   const ENDPOINT_PATH = '';
   // Default delay between requests, in seconds.
   const DEFAULT_DELAY = 2;
@@ -52,7 +52,7 @@ abstract class DoiApi {
    * @param string $doi
    *   Digital Object Identifier (DOI).
    */
-  public static function loadPublicationData($doi) {}
+  public static function insert($doi) {}
 
   /**
    * Gets Endopoint URL.

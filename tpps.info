@@ -52,6 +52,7 @@ files[] = src/doi/serp/PubMed.class.inc
 files[] = src/doi/api/DoiApi.class.inc
 files[] = src/doi/api/CrossRef.class.inc
 files[] = src/doi/api/Dryad.class.inc
+files[] = src/doi/api/PubMedCentral.class.inc
 files[] = src/doi/api/SemanticScholar.class.inc
 
 ; Tpps. Elemental Entities.

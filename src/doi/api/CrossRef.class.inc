@@ -10,7 +10,7 @@
  *
  * Usage:
  *   To get and save DOI Publication data:
- *   CrossRef::loadPublicationData($doi);
+ *   CrossRef::insert($doi);
  *
  * No need to extend DoiSerp class because Dryad has API.
  * https://www.crossref.org/documentation/retrieve-metadata/rest-api/
@@ -26,7 +26,7 @@ class CrossRef extends DoiApi {
   const HOST_NAME = 'api.crossref.org';
   // IPv4 address.
   const HOST_IP = '';
-  // Endpoint path (without trailing slash).
+  // Endpoint path (without leading and trailing slash).
   const ENDPOINT_PATH = 'works';
   // Default delay between requests, in seconds.
   // @TODO Use this delay.
@@ -63,7 +63,7 @@ class CrossRef extends DoiApi {
    * @param string $doi
    *   Digital Object Identifier (DOI).
    */
-  public static function loadPublicationData($doi) {
+  public static function insert($doi) {
     if (PublicationDOI::isExists($doi, static::KEY)) {
       return;
     }

@@ -17,7 +17,7 @@
  *
  * Usage:
  *   To get and save DOI Publication data:
- *   SemanticScholar::loadPublicationData($doi);
+ *   SemanticScholar::insert($doi);
  *
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
@@ -30,7 +30,7 @@ class SemanticScholar extends DoiApi {
   const HOST_NAME = 'api.semanticscholar.org';
   // IPv4 address.
   const HOST_IP = '';
-  // Endpoint path (without trailing slash).
+  // Endpoint path (without leading and trailing slash).
   const ENDPOINT_PATH = 'graph/v1/paper';
   // Default delay between requests, in seconds.
   // @todo Use this delay.
@@ -80,7 +80,7 @@ class SemanticScholar extends DoiApi {
    * @param string $doi
    *   Digital Object Identifier (DOI).
    */
-  public static function loadPublicationData($doi) {
+  public static function insert($doi) {
     if (PublicationDOI::isExists($doi, static::KEY)) {
       return;
     }
