@@ -108,6 +108,9 @@ class PublicationDOI extends DOI {
       throw new Exception(t($message, $params));
     }
     else {
+      if (!empty($data['authors']) && is_array($data['authors'])) {
+        $data['authors'] = implode(', ', $data['authors']);
+      }
       db_insert(self::TABLE)->fields($data)->execute();
       return TRUE;
     }

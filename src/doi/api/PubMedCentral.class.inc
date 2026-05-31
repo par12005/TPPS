@@ -118,68 +118,34 @@ class PubMedCentral extends DoiApi {
     if (PublicationDOI::isExists($doi, static::KEY)) {
       return;
     }
-
-
-    // @TODO Get URL for XML.
-
-// @TODO Update:
-
+    // Note: $response contains XML string.
     $response = static::getMetadata($doi);
-    // Create an empty record to avoid the same requests to API.
-    $data = ['doi' => $doi, 'source' => static::KEY];
-
     if (
       !empty($response)
-      && ($response['error'] ?? '') != "not-found"
+      && strpos($response, 'Identifier does not exist.') === FALSE
     ) {
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Save in local DB.
-      //
-      // @TODO Add check: If you exceed the rate limits, you will receive a
-      // 429 HTTP response. In this case, wait a short while and try your
-      // request again at a lower rate or with fewer simultaneous requests.
-      $author_list = [];
-      foreach ($response['authors'] as $item) {
-        // Example of the $item:
-        //   firstName: "Ryan",
-        //   lastName: "Schmid",
-        //   email: "ryan.schmid@ecdysis.bio",
-        //   affiliation: "Ecdysis Foundation",
-        //   affiliations: [{ name: "Ecdysis Foundation" }],
-        //   orcid: "0000-0002-7638-5619".
-        $author_list[] = $item['firstName'] . ' ' . $item['lastName'];
-      }
-      $data = [
-        'doi' => $doi,
-        'source' => static::KEY,
-        'authors' => implode(', ', $author_list),
-        'date' => str_replace('-', '/', ($response['publicationDate'] ?? '')),
-        'title' => $response['title'],
-        // Note: no record for Journal.
-        'journal' => '',
-        'abstract' => $response['abstract'],
-      ];
+      $data = static::parseXmlResponse($response);
+      // Create an empty record to avoid the same requests to API.
+      $data['doi'] = $doi;
+      $data['source'] = static::KEY;
+      PublicationDOI::save($data);
     }
-    PublicationDOI::save($data);
   }
 
   /**
-   * Request DOI Metadata.
+   * Get response from remote API to get DOI Metadata.
    *
    * @param string $doi
    *   Digital Object Identifier (DOI).
+   *
+   * @return object
+   *   Returns Simple XML Element.
    */
   public static function getMetadata($doi) {
-    $url = static::buildtUrl($doi);
-
-
-// @TODO XML!
-
-
-    // XML.
     try {
-      $response = (new RestAPI(['url' => $url]))->get()->response;
-      //$response = json_decode($response, 1);
+      $url = static::buildUrl($doi);
+      $xml = (new RestAPI(['url' => $url]))->get()->response;
+      return $xml;
     }
     catch (Exception $e) {
       // @TODO Minor. Code 429 (Too many requiests).
@@ -191,7 +157,6 @@ class PubMedCentral extends DoiApi {
       );
       drupal_set_message($e->getCode() . ' ' . $message);
     }
-    return $response;
   }
 
   /**
@@ -205,8 +170,14 @@ class PubMedCentral extends DoiApi {
    *
    * @return string
    *   Returns URL.
+   *
+   * @throws Exception
+   *   1. If DOI is invalid and PubMedCentral Id can't be obtained.
+   *   2. If Id wasn't found in the response (empty).
    */
   public static function buildUrl($doi) {
+    global $user;
+    $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
 
     // ########################################################################
     // Step 1. Convert DOI → PMCID number.
@@ -214,50 +185,99 @@ class PubMedCentral extends DoiApi {
     if (variable_get('tpps_doi_' . static::KEY . '_use_ip', FALSE)) {
       $host = static::HOST_IP;
     }
-    // Request.
     $url = url('https://' . $host . '/tools/idconv/api/v1/articles/', [
-      'query' => ['ids' => $doi, 'format' => 'json'],
+      'query' => [
+        'ids' => $doi,
+        'format' => 'json',
+        'tool' => 'Drupal CMS',
+        'email' => $user->mail ?? variable_get('site_mail', 'test.user@gmail.com'),
+      ],
     ]);
-    try {
-      $response = (new RestAPI([
-        'url' => $url,
-        'header' => ['Content-Type: application/json'],
-      ]))->get()->response;
-    }
-    catch (Exception $e) {
-      $message = $e->getMessage();
-      $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
-      watchdog('tpps', '@message <pre>@backtrace</pre>',
-        ['@message' => $message, '@backtrace' => print_r($stack, 1)],
-        WATCHDOG_ERROR
-      );
-      drupal_set_message($e->getCode() . ' ' . $message);
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Request.
+    $response = (new RestAPI([
+      'url' => $url,
+      'header' => ['Content-Type: application/json'],
+    ]))->get()->response;
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Check errors.
+    // If DOI is invalid we can't get Id.
+    if (($response['records'][0]['status'] ?? '') == 'error') {
+      $message = t("@key: Can't get ID by DOI '@doi'. @error_message", [
+        '@doi' => $doi,
+        '@error_message' => ($response['records'][0]['errmsg'] ?? ''),
+        '@key' => static::KEY,
+      ]);
+      throw new Exception($message);
     }
 
-    // Parse response to get Id.
+    // Get PMC ID from response.
     $pmcid = $response['records'][0]['pmcid'] ?? '';
     if (empty($pmcid)) {
-      $message = "@key: Can't find internal ID for @doi.";
-      $params = ['@key' => static::KEY, '@doi' => $doi];
-      watchdog('tpps', $message, $params, WATCHDOG_ERROR);
-      return '';
+      $message = t("@key: Empty ID for @doi.",
+        ['@key' => static::KEY, '@doi' => $doi]
+      );
+      throw new Exception(t($message, $params));
     }
     // Id exists but for 2nd step we need only numbers (not letters).
     $id = str_replace('PMC', '', $pmcid);
+
     // ########################################################################
     // Step 2. Build Endpoint URL.
-    return url(
-      static::getEndpointUrl() . '/',
-      [
-        'https' => TRUE,
-        'absolute' => TRUE,
-        'query' => [
-          'verb' => 'GetRecord',
-          'identifier' => 'oai:pubmedcentral.nih.gov:' . $id,
-          'metadataPrefix' => 'oai_dc',
-        ],
-      ]
-    );
+    if ($id) {
+      return url(
+        static::getEndpointUrl() . '/',
+        [
+          'https' => TRUE,
+          'absolute' => TRUE,
+          'query' => [
+            'verb' => 'GetRecord',
+            'identifier' => 'oai:pubmedcentral.nih.gov:' . $id,
+            'metadataPrefix' => 'oai_dc',
+          ],
+        ]
+      );
+    }
+  }
+
+  /**
+   * Parse XML Response.
+   *
+   * @param string $xmlString
+   *   XML string to be parsed.
+   *
+   * @return array
+   *   Returns parsed DOI Publication data.
+   */
+  public static function parseXmlResponse($xmlString) {
+    $dom = new DOMDocument();
+    $dom->loadXML($xmlString);
+    $xpath = new DOMXPath($dom);
+
+    // Register namespaces.
+    $xpath->registerNamespace('oai', 'http://www.openarchives.org/OAI/2.0/');
+    $xpath->registerNamespace('dc', 'http://purl.org/dc/elements/1.1/');
+    $result = [
+      'title' => $xpath->evaluate('string(//dc:title)'),
+      'journal' => $xpath->evaluate('string(//dc:source)'),
+      'date' => str_replace('-', '/', $xpath->evaluate('string(//dc:date)')),
+      'abstract' => $xpath->evaluate('string(//dc:descripton)'),
+      'authors' => [],
+    ];
+    // Get all authors.
+    $authors = [];
+    $authorNodes = $xpath->query('//dc:creator');
+    foreach ($authorNodes as $author) {
+      if (strpos($author->nodeValue, ', ') !== FALSE) {
+        list($last_name, $first_name) = explode(', ', $author->nodeValue);
+        $authors[] = $first_name . ' ' . $last_name;
+      }
+      else {
+        $authors[] = $author->nodeValue;
+      }
+    }
+    $result['authors'] = implode(', ', $authors);
+    return $result;
   }
 
 }

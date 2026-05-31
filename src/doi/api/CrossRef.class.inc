@@ -109,6 +109,9 @@ class CrossRef extends DoiApi {
    *
    * @param string $doi
    *   Digital Object Identifier (DOI).
+   *
+   * @return array
+   *   Returns response data.
    */
   public static function getMetadata($doi) {
     $url = static::buildUrl($doi);
