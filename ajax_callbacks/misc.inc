@@ -165,30 +165,33 @@ function tpps_ajax_remember_fieldset_collapsed_state(array $data) {
  * @param array $payload
  *   POST payload. Required keys are: 'doi'.
  *   See tpps_ajax_callback().
+ *   Keys:
+ *     'doi' string.
+ *       DOI.
+ *     'source' string
+ *       Optional. Possible values are:
+ *       'all', or data provider (DoiSerp::KEY, DoiAPI::KEY)
  *
  * @return array
  *   Returns response.
  *   Key 'success' will have value TRUE in case of success and FALSE otherwise.
- *
- * @todo Minor. Remove $payload['source'] and return data for all sources
- * in single response. Problem is in processing response in JS at client side
- * without the loop.
  */
 function tpps_ajax_get_publication_data(array $payload) {
   $response['success'] = FALSE;
   if (empty($payload['doi'])) {
     $response['errors'][] = t('Empty DOI.');
   }
-  elseif (empty($payload['source'])) {
-    $response['errors'][] = t('Empty publication data source.');
-  }
   else {
     $response['doi'] = $payload['doi'];
     $response['source'] = $payload['source'];
-    $response['publication_data'] = PublicationDOI::load(
-      $payload['doi'],
-      $payload['source']
-    );
+    $data = PublicationDOI::load($payload['doi'], $payload['source']);
+    $response['is_complete'] = TppsArray::isComplete($data);
+
+
+// @TODO Make requests to all APIs.
+
+
+    $response['publication_data'] = $data;
     $response['success'] = TRUE;
   }
   return $response;

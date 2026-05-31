@@ -79,6 +79,10 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
     tpps_add_css_js('suggestion', $form);
   }
 
+  // Container to show complete combined publication data.
+  $form['publication_data'] = [
+    '#markup' => '<div class="dump_container" id="dump_container"></div>',
+  ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // JS Settings.
   $proxy = variable_get('tpps_doi_lookup_proxy');
@@ -90,6 +94,7 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
       // List of the SERP Provider KEYs.
       'ajax_get_publication_data_path' => '/ajax/tpps/get_publication_data',
       'publication_data' => [],
+      'dump_container' => '#dump_container',
     ],
   ];
   // Check if any SERP providers are enabled.

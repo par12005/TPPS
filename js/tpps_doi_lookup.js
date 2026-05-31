@@ -32,46 +32,42 @@
         enableThrobber();
 
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        // Load existing publication data from backend.
-        doi_lookup.serp_providers.forEach(function(provider_name) {
-          // Format: doi_lookup['publication_data'][$provider_name][$doi]
-          if (
-            $(doi_lookup['publication_data'][provider_name]).length
-            && $(doi_lookup['publication_data'][provider_name][doi]).length
-          ) {
-            console.log(provider_name + ': show already loaded data.');
-            showPublicationData(
-              provider_name,
-              doi_lookup['publication_data'][provider_name][doi]
-            );
-          }
-          else {
-            console.log(provider_name + ': data not loadeded yet.');
-            // No pre-loaded publication data found.
-            // Let's get SERP.
-            $(doi_lookup[provider_name].dump_container).html('').hide();
+        // Format: doi_lookup['publication_data'][$provider_name][$doi]
+        if ($(doi_lookup['publication_data'][doi]).length) {
+          console.log('Show already loaded data.');
+          showPublicationData(doi_lookup['publication_data'][doi]);
+        }
+        else {
+          console.log('Data not loadeded yet.');
+          // No publication data found.
+          $(doi_lookup.dump_container).html('').hide();
 
-            // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-            // Request publication data from PublicationDOI::TABLE.
-            console.log(provider_name + ': request data from backend.');
-            $.ajax({
-              url: doi_lookup.ajax_get_publication_data_path,
-              type: 'POST',
-              contentType: 'application/json',
-              dataType: 'json',
-              data: JSON.stringify({"doi": doi, "source": provider_name}),
-              success: function(response) {
-                if (response && response.publication_data && $(response.publication_data).length) {
-                  console.log(provider_name + ': show received data.');
-                  showPublicationData(response.source, response.publication_data);
-                }
-                else {
-                  console.log(provider_name + ': received no data.');
-                  // No saved publication data.
+          // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+          // Request publication data from PublicationDOI::TABLE.
+          console.log('Request data from backend.');
+          $.ajax({
+            url: doi_lookup.ajax_get_publication_data_path,
+            type: 'POST',
+            contentType: 'application/json',
+            dataType: 'json',
+            data: JSON.stringify({"doi": doi}),
+            success: function(response) {
+              if (
+                response
+                && response.publication_data
+                && response?.is_complete === true
+              ) {
+                console.log('Show received data.');
+                showPublicationData(response.publication_data);
+              }
+              else {
+                console.log("Received no data or it's incomplete.");
+
+                doi_lookup.serp_providers.forEach(function(provider_name) {
                   // Let's get SERP if scraping is allowed.
                   if (
                     $(doi_lookup[provider_name]).length
-                     && doi_lookup[provider_name].scrape_allowed
+                    && doi_lookup[provider_name].scrape_allowed
                   ) {
                     // Calculate delay.
                     let delay = 0;
@@ -86,7 +82,7 @@
                     setTimeout(function() {
                       doi_lookup[provider_name].last_request = $.now();
 
-                      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::
+                      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::
                       // GET-request via CORS-proxy to get SERP.
                       let proxy_url = buildUrl(provider_name, doi);
                       if (proxy_url) {
@@ -95,7 +91,7 @@
                         // + 'https://scholar.google.com/scholar?hl=en'
                         // + '&as_sdt=0%2C5&q=10.5061%2Fdryad.6s82f20&btnG=';
 
-                        // ::::::::::::::::::::::::::::::::::::::::::::::::::::
+                        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::
                         // Get SERP.
                         $.ajax({
                           method: 'GET',
@@ -118,23 +114,27 @@
                           console.log('Request via CORS Proxy completed.');
                         });
                       }
-                      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::
+                      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
                     }, delay);
                   }
-                }
-              },
-              error: function(xhr, status, error) {
-                console.error('DOI Lookup Error:', error);
-                console.error('Status:', xhr.status);
-                console.error('Response:', xhr.responseText);
-                console.error('ReadyState:', xhr.readyState);
+                });
               }
-            });
-          }
-        });
+            },
+            error: function(xhr, status, error) {
+              console.error('DOI Lookup Error:', error);
+              console.error('Status:', xhr.status);
+              console.error('Response:', xhr.responseText);
+              console.error('ReadyState:', xhr.readyState);
+            }
+          });
+        }
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       }
 
+
+
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Change-event for select-or-other field.
       $(doi_lookup.field).change(function() {
         if (
@@ -213,13 +213,15 @@
        * @param object data
        *   DOI Publication data
        */
-      function showPublicationData(provider_name, data) {
-        doi_lookup['publication_data'][provider_name]
-          = doi_lookup['publication_data'][provider_name] ?? {};
-        doi_lookup['publication_data'][provider_name][data.doi] = data;
+      function showPublicationData(data) {
+
+
+// @TODO Check if is_complete.
+
+        doi_lookup['publication_data'][data.doi] = data;
         // Show at page.
         var jsonString = JSON.stringify(data, null, 2);
-        $(doi_lookup[provider_name].dump_container).html(
+        $(doi_lookup.dump_container).html(
           '<pre style="margin: 5px; color: white !important; text-wrap:auto;">'
           + jsonString + '</pre>'
         ).show();
