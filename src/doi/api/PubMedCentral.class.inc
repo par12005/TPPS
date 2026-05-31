@@ -55,7 +55,7 @@ class PubMedCentral extends DoiApi {
     $url = static::buildUrl($doi);
     $use_rest_api = 1;
     if ($use_rest_api) {
-      $response = static::getMetadata($doi);
+      $response = static::request($doi);
     }
     else {
       // Note: json_decode() could throw an exception on invalid data.
@@ -117,7 +117,7 @@ class PubMedCentral extends DoiApi {
       return;
     }
     // Note: $response contains XML string.
-    $response = static::getMetadata($doi);
+    $response = static::request($doi);
     if (
       !empty($response)
       && strpos($response, 'Identifier does not exist.') === FALSE
@@ -139,7 +139,7 @@ class PubMedCentral extends DoiApi {
    * @return object
    *   Returns Simple XML Element.
    */
-  public static function getMetadata($doi) {
+  public static function request($doi) {
     try {
       $url = static::buildUrl($doi);
       $xml = (new RestAPI(['url' => $url]))->get()->response;

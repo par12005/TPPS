@@ -32,11 +32,7 @@ class CrossRef extends DoiApi {
   // @TODO Use this delay.
   const DEFAULT_DELAY = 2;
 
-
-
 // @TODO $resonse == 'Resource not found.'
-
-
 
   /**
    * Builds URL to get SERP.
@@ -68,7 +64,7 @@ class CrossRef extends DoiApi {
       return;
     }
 
-    $response = static::getMetadata($doi);
+    $response = static::request($doi);
     // Create an empty record to avoid the same requests to API.
     $data = ['doi' => $doi, 'source' => static::KEY];
     if (
@@ -113,7 +109,7 @@ class CrossRef extends DoiApi {
    * @return array
    *   Returns response data.
    */
-  public static function getMetadata($doi) {
+  public static function request($doi) {
     $url = static::buildUrl($doi);
     $header = [
       'Content-Type: application/json',
@@ -135,7 +131,6 @@ class CrossRef extends DoiApi {
         ['@message' => $message, '@backtrace' => print_r($stack, 1)],
         WATCHDOG_ERROR
       );
-      // throw new Exception($message, $e->getCode());
       drupal_set_message($e->getCode() . ' ' . $message);
     }
     return $response;

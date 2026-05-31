@@ -52,7 +52,7 @@ class Dryad extends DoiApi {
     $url = static::buildUrl($doi);
     $use_rest_api = 1;
     if ($use_rest_api) {
-      $response = static::getMetadata($doi);
+      $response = static::request($doi);
     }
     else {
       // Note: json_decode() could throw an exception on invalid data.
@@ -114,7 +114,7 @@ class Dryad extends DoiApi {
       return;
     }
 
-    $response = static::getMetadata($doi);
+    $response = static::request($doi);
     // Create an empty record to avoid the same requests to API.
     $data = ['doi' => $doi, 'source' => static::KEY];
 
@@ -159,7 +159,7 @@ class Dryad extends DoiApi {
    * @param string $doi
    *   Digital Object Identifier (DOI).
    */
-  public static function getMetadata($doi) {
+  public static function request($doi) {
     $url = static::buildUrl($doi);
     $header = [
       'Content-Type: application/json',
