@@ -122,8 +122,9 @@ class PublicationDOI extends DOI {
    * @param string $doi
    *   Required. DOI (Digital Object Identifier).
    * @param string $source
-   *   Required. Source of the publication data.
-   *   Possible values: see constants DoiSerp::KEY and DoiApi::KEY.
+   *   Optional. Source of the publication data.
+   *   Possible values:
+   *   'all', empty and constants DoiSerp::KEY and DoiApi::KEY.
    *
    * @return array
    *   Returns record from DB table for given DOI if exists.
@@ -138,7 +139,8 @@ class PublicationDOI extends DOI {
     $output = [];
     $use_check_plain = FALSE;
     if (empty($source)) {
-      // Build the combined single item. Longer string is better.
+      // Combined.
+      // Rule: longer string is better.
       $data = db_select(static::TABLE, 't')
         ->fields('t', [])
         ->condition('doi', $doi)

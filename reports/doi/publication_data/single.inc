@@ -56,13 +56,9 @@ function tpps_report_doi_publication_data_show_single(array $data) {
   // Add 'combined' column.
   foreach ($data as $item) {
     $data = PublicationDOI::load($item['doi']);
-    $column_title = 'combined';
-    if (empty($data) || count($data) !== count(array_filter($data))) {
-      $column_title .= ' [ not complete ]';
-    }
-    else {
-      $column_title .= ' [ complete ]';
-    }
+    $column_title = 'combined [ '
+      . (TppsArray::isComplete($data) ? '' : 'not') . ' complete ]';
+
     unset($data['doi']);
     $report[$item['doi']][$column_title] = $data;
   }

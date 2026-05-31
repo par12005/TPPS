@@ -778,4 +778,17 @@ class TppsArray {
     return $difference;
   }
 
+  /**
+   * Checks if array has NO elements with empty values.
+   *
+   * @param array $data
+   *   One dimention array to check.
+   *
+   * @return bool
+   *   Returns TRUE if each element has non-empty value and FALSE otherwise.
+   */
+  public static function isComplete(array $data) {
+    return (empty($data) || count($data) === count(array_filter($data)));
+  }
+
 }
