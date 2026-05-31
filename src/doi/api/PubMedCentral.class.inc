@@ -36,77 +36,6 @@ class PubMedCentral extends DoiApi {
   const DEFAULT_DELAY = 2;
 
   /**
-   * Gets DOI Publication information from remote server.
-   *
-   * Based on code from function tpps_doi_info($doi).
-   * URL example:
-   *   https://datadryad.org/api/v2/datasets/doi:10.5061/dryad.j1fd7
-   *
-   * @param string $doi
-   *   DOI.
-   *
-   * @return array
-   *   Returns response which will be returned back as JSON. Keys:
-   *   'error' bool TRUE means validation failed and FALSE that
-   */
-  public static function getInfo($doi) {
-    $info = [];
-
-    $url = static::buildUrl($doi);
-    $use_rest_api = 1;
-    if ($use_rest_api) {
-      $response = static::request($doi);
-    }
-    else {
-      // Note: json_decode() could throw an exception on invalid data.
-      try {
-        $content = file_get_contents($url);
-        $response = json_decode($content);
-      }
-      catch (Exception $e) {
-        return t('Caught exception: @message. Try again later.',
-          ['@message' => $e->getMessage()]);
-      }
-    }
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    if (!empty($response)) {
-      // Authors.
-      foreach ($response->authors as $author) {
-        $authors[] = trim($author->firstName . ' ' . $author->lastName);
-      }
-      $primary_author = $authors[0];
-      $secondary_authors = array_slice($authors, 1);
-      // Species.
-      $species = [];
-      foreach ($response->keywords as $keyword) {
-        if (preg_match('/^([A-Z][a-z]* [a-z]+)$/', $keyword, $matches)) {
-          $species[] = $matches[1];
-        }
-      }
-      $info = [
-        'title' => ((substr($response->title, 0, 11) == 'Data from: ')
-          ? substr($response->title, 11) : $response->title),
-        'primary' => $authors[0],
-        'secondary' => $secondary_authors,
-        'secondaryNumber' => count($secondary_authors),
-        // @TODO [VS] Probably not used. Check!
-        'secondaryCheck' => FALSE,
-        'year' => explode('-', $response->publicationDate)[0],
-        'abstract' => $response->abstract,
-        'species' => $species,
-        'speciesNumber' => count($species),
-      ];
-
-      if (variable_get('tpps_page_1_ajax_debug')) {
-        $info['response'] = $response;
-        $info['url'] = $url;
-      }
-    }
-    return $info;
-  }
-
-  /**
    * Request DOI Publication data using API and store in DB.
    *
    * @param string $doi
@@ -181,7 +110,7 @@ class PubMedCentral extends DoiApi {
 
     // ########################################################################
     // Step 1. Convert DOI → PMCID number.
-    $pmcid = static::getpmcid($doi);
+    $pmcid = static::getPmcId($doi);
     // No Id could be caused invalid DOI or missing record at remote API server.
     if (is_null($pmcid)) {
       // Create an empty record in DB to avoid multiple requests.
@@ -293,7 +222,7 @@ class PubMedCentral extends DoiApi {
    *   Returns NULL if id was not found.
    *   Returns FALSE in case of errors.
    */
-  public static function getpmcid($doi) {
+  public static function getPmcId($doi) {
     $response = (new RestAPI([
       'url' => static::buildSearchUrl($doi),
       'header' => ['Content-Type: application/json'],
