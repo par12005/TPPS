@@ -32,8 +32,6 @@ class PubMedCentral extends DoiApi {
   // Endpoint path (without leading and trailing slash).
   const ENDPOINT_PATH = 'api/oai/v1/mh';
   // Default delay between requests, in seconds.
-  //
-  //
   // @TODO Use this delay.
   const DEFAULT_DELAY = 2;
 
@@ -164,12 +162,14 @@ class PubMedCentral extends DoiApi {
    *
    * To build URL which gets XML we need to convert DOI into PMCID first
    * so this method makes extra request to API.
+   * If PMCID not found makes empty record in database to avoid the same requests.
    *
    * @param string $doi
    *   Digital Object Identifier (DOI).
    *
-   * @return string
+   * @return mixed
    *   Returns URL.
+   *   Returns NULL if PMC Id wasn't found and URL can't be generated.
    *
    * @throws Exception
    *   1. If DOI is invalid and PubMedCentral Id can't be obtained.
@@ -181,62 +181,40 @@ class PubMedCentral extends DoiApi {
 
     // ########################################################################
     // Step 1. Convert DOI → PMCID number.
-    $host = static::HOST_NAME;
-    if (variable_get('tpps_doi_' . static::KEY . '_use_ip', FALSE)) {
-      $host = static::HOST_IP;
+    $pmcid = static::getpmcid($doi);
+    // No Id could be caused invalid DOI or missing record at remote API server.
+    if (is_null($pmcid)) {
+      // Create an empty record in DB to avoid multiple requests.
+      if (!PublicationDOI::isExists($doi, static::KEY)) {
+        PublicationDOI::save(['doi' => $doi, 'source' => static::KEY]);
+      }
+      return NULL;
     }
-    $url = url('https://' . $host . '/tools/idconv/api/v1/articles/', [
-      'query' => [
-        'ids' => $doi,
-        'format' => 'json',
-        'tool' => 'Drupal CMS',
-        'email' => $user->mail ?? variable_get('site_mail', 'test.user@gmail.com'),
-      ],
-    ]);
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Request.
-    $response = (new RestAPI([
-      'url' => $url,
-      'header' => ['Content-Type: application/json'],
-    ]))->get()->response;
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Check errors.
-    // If DOI is invalid we can't get Id.
-    if (($response['records'][0]['status'] ?? '') == 'error') {
-      $message = t("@key: Can't get ID by DOI '@doi'. @error_message", [
-        '@doi' => $doi,
-        '@error_message' => ($response['records'][0]['errmsg'] ?? ''),
-        '@key' => static::KEY,
-      ]);
+    elseif ($pmcid === FALSE) {
+      $message = t("@key: PMC ID not found for DOI '@doi'.",
+        ['@doi' => $doi, '@key' => static::KEY]
+      );
       throw new Exception($message);
     }
-
-    // Get PMC ID from response.
-    $pmcid = $response['records'][0]['pmcid'] ?? '';
-    if (empty($pmcid)) {
-      $message = t("@key: Empty ID for @doi.",
+    elseif (empty($pmcid)) {
+      $message = t("@key: Empty PMC ID for @doi.",
         ['@key' => static::KEY, '@doi' => $doi]
       );
-      throw new Exception(t($message, $params));
+      throw new Exception($message);
     }
-    // Id exists but for 2nd step we need only numbers (not letters).
-    $id = str_replace('PMC', '', $pmcid);
-
     // ########################################################################
     // Step 2. Build Endpoint URL.
-    if ($id) {
-      return url(
-        static::getEndpointUrl() . '/',
-        [
-          'https' => TRUE,
-          'absolute' => TRUE,
-          'query' => [
-            'verb' => 'GetRecord',
-            'identifier' => 'oai:pubmedcentral.nih.gov:' . $id,
-            'metadataPrefix' => 'oai_dc',
-          ],
-        ]
-      );
+    // PMCID exists. For next step we need only numbers (not letters).
+    if (!empty($id = str_replace('PMC', '', $pmcid))) {
+      return url(static::getEndpointUrl() . '/', [
+        'https' => TRUE,
+        'absolute' => TRUE,
+        'query' => [
+          'verb' => 'GetRecord',
+          'identifier' => 'oai:pubmedcentral.nih.gov:' . $id,
+          'metadataPrefix' => 'oai_dc',
+        ],
+      ]);
     }
   }
 
@@ -278,6 +256,57 @@ class PubMedCentral extends DoiApi {
     }
     $result['authors'] = implode(', ', $authors);
     return $result;
+  }
+
+  /**
+   * Generates URL to convert DOI into PMC Id.
+   *
+   * @param string $doi
+   *   Digital Object Identifier (DOI).
+   *
+   * @return string
+   *   Returns URL.
+   */
+  public static function buildSearchUrl($doi) {
+    $host = static::HOST_NAME;
+    if (variable_get('tpps_doi_' . static::KEY . '_use_ip', FALSE)) {
+      $host = static::HOST_IP;
+    }
+    return url('https://' . $host . '/tools/idconv/api/v1/articles/', [
+      'query' => [
+        'ids' => $doi,
+        'format' => 'json',
+        'tool' => 'Drupal CMS',
+        'email' => $user->mail ?? variable_get('site_mail', 'test.user@gmail.com'),
+      ],
+    ]);
+  }
+
+  /**
+   * Gets PMC Id.
+   *
+   * @param string $doi
+   *   Digital Object Identifier (DOI).
+   *
+   * @return mixed
+   *   Returns PMC Id.
+   *   Returns NULL if id was not found.
+   *   Returns FALSE in case of errors.
+   */
+  public static function getpmcid($doi) {
+    $response = (new RestAPI([
+      'url' => static::buildSearchUrl($doi),
+      'header' => ['Content-Type: application/json'],
+    ]))->get()->response;
+
+    if (!empty($response['records'][0]['pmcid'])) {
+      return $response['records'][0]['pmcid'];
+    }
+    elseif (($response['records'][0]['status'] ?? '') == 'error') {
+      $error_message = ($response['records'][0]['errmsg'] ?? '');
+      return FALSE;
+    }
+    return NULL;
   }
 
 }
