@@ -502,6 +502,14 @@ class Report {
             'description' => t('Shows publication data from PubMed web-site.'),
             'admin_panel' => TRUE,
           ],
+          'pubmed_central' => [
+            'title' => variable_get(
+              'tpps_report_doi_publication_data_pubmed_central_title',
+              'PubMedCentral DOI Publication Data'
+            ),
+            'description' => t('Shows publication data from PubMedCentral API.'),
+            'admin_panel' => TRUE,
+          ],
           'crossref' => [
             'title' => variable_get(
               'tpps_report_doi_publication_data_crossref_title',

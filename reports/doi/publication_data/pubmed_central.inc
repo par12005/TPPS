@@ -2,14 +2,14 @@
 
 /**
  * @file
- * Shows publication data publication_data from PubMed web-site.
+ * Shows publication data publication_data from PubMedCentral API.
  */
 
 /**
- * Menu callback. Shows DOI publidation data from PubMed.
+ * Menu callback. Shows DOI publidation data from PubMedCentral.
  */
-function tpps_report_doi_publication_data_pubmed() {
-  return drupal_get_form('tpps_report_doi_publication_data_pubmed_form');
+function tpps_report_doi_publication_data_pubmed_central() {
+  return drupal_get_form('tpps_report_doi_publication_data_pubmed_central_form');
 }
 
 /**
@@ -17,9 +17,9 @@ function tpps_report_doi_publication_data_pubmed() {
  *
  * Form shows DOI publication data in tables under fieldset.
  */
-function tpps_report_doi_publication_data_pubmed_form(array $form, array &$form_state) {
+function tpps_report_doi_publication_data_pubmed_central_form(array $form, array &$form_state) {
   $report = [];
-  $source = PubMed::KEY;
+  $source = PubMedCentral::KEY;
   $result = db_select(PublicationDOI::TABLE, 't')
     ->fields('t', [])
     ->condition('source', $source)

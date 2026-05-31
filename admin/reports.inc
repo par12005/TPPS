@@ -63,6 +63,7 @@ function tpps_reports_settings_form(array $form, array &$form_state) {
   // DOI / Publication Data.
   // 'tpps_report_doi_publication_data_all_title'.
   // 'tpps_report_doi_publication_data_pubmed_title'.
+  // 'tpps_report_doi_publication_data_pubmed_central_title'.
   // 'tpps_report_doi_publication_data_google_scholar_title'.
   // 'tpps_report_doi_publication_data_semantic_scholar_title'.
   // 'tpps_report_doi_publication_data_crossref_title'.

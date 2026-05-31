@@ -91,6 +91,7 @@ function tpps_get_variable_list() {
     'tpps_report_doi_publication_data_all_title' => 'All DOI Publication Data',
     'tpps_report_doi_publication_data_google_scholar_title' => 'Google Scholar DOI Publication Data',
     'tpps_report_doi_publication_data_pubmed_title' => 'PubMed DOI Publication Data',
+    'tpps_report_doi_publication_data_pubmed_central_title' => 'PubMedCentral DOI Publication Data',
     'tpps_report_doi_crossref_title' => 'CrossRef DOI Publication Data',
     'tpps_report_doi_dryad_title' => 'Dryad DOI Publication Data',
     'tpps_report_doi_semantic_scholar_title' => 'Semantic Scholar DOI Publication Data',
@@ -2650,6 +2651,7 @@ function tpps_update_7134() {
   variable_set('tpps_report_doi_publication_data_all_title', 'All DOI Publication Data');
   variable_set('tpps_report_doi_publication_data_google_scholar_title', 'Google Scholar DOI Publication Data');
   variable_set('tpps_report_doi_publication_data_pubmed_title', 'PubMed DOI Publication Data');
+  variable_set('tpps_report_doi_publication_data_pubmed_central_title', 'PubMedCentral DOI Publication Data');
   variable_set('tpps_report_doi_publication_data_crossref_title', 'CrossRef DOI Publication Data');
   variable_set('tpps_report_doi_dryad_title', 'Dryad DOI Publication Data');
   // Rest API.
