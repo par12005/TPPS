@@ -30,29 +30,12 @@ class PubMedCentral extends DoiApi {
   // IPv4 address.
   const HOST_IP = '2600:1901:0:c831::';
   // Endpoint path (without leading and trailing slash).
-  const ENDPOINT_PATH = 'tools/idconv/api/v1/articles';
+  const ENDPOINT_PATH = 'api/oai/v1/mh';
   // Default delay between requests, in seconds.
   //
   //
   // @TODO Use this delay.
   const DEFAULT_DELAY = 2;
-
-  /**
-   * Builds URL to get SERP.
-   *
-   * @return string
-   *   Returns escaped URL.
-   */
-  public static function buildUrl($doi) {
-    $params = [
-      'query' => [
-        'ids' => $doi,
-        'format' => 'json',
-      ],
-      'https' => TRUE,
-    ];
-    return url(static::getEndpointUrl() . '/', $params);
-  }
 
   /**
    * Gets DOI Publication information from remote server.
@@ -136,30 +119,8 @@ class PubMedCentral extends DoiApi {
       return;
     }
 
-    // ########################################################################
-    // Step 1. Convert DOI → PMCID number.
-    $response = static::getInternalId($doi);
-    $pmcid = $response['records']['pmcid'] ?? '';
-    if (empty($pmcid)) {
-      $message = "@key: Can't find internal ID for @doi.";
-      $params = [
-        '@key' => static::KEY,
-        '@doi' => $doi,
-      ];
-      watchdog('tpps', $message, $params, WATCHDOG_ERROR);
-      return;
-    }
-    // PubMedCentralId exists!
-    // For 2nd step we need only numbers (not letters).
-    $pmcid = str_replace('PMC', '', $pmcid);
-    dpm($pmcid);
 
-    return;
-    // ########################################################################
-    // Step 2. Fetch metadata (use the numeric ID without "PMC").
-
-
-
+    // @TODO Get URL for XML.
 
 // @TODO Update:
 
@@ -209,59 +170,94 @@ class PubMedCentral extends DoiApi {
    *   Digital Object Identifier (DOI).
    */
   public static function getMetadata($doi) {
-    $url = static::buildUrl($doi);
-    $header = [
-      'Content-Type: application/json',
-    ];
+    $url = static::buildtUrl($doi);
+
+
+// @TODO XML!
+
+
+    // XML.
     try {
-      $response = (new RestAPI([
-        'url' => $url,
-        'header' => $header,
-      ]))->get()->response;
-      $response = json_decode($response, 1);
+      $response = (new RestAPI(['url' => $url]))->get()->response;
+      //$response = json_decode($response, 1);
     }
     catch (Exception $e) {
       // @TODO Minor. Code 429 (Too many requiests).
       $message = $e->getMessage();
       $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
-      watchdog('tpps', $message . '<pre>@backtrace</pre>',
-        ['@backtrace' => print_r($stack, 1)],
+      watchdog('tpps', '@message <pre>@backtrace</pre>',
+        ['@message' => $message, '@backtrace' => print_r($stack, 1)],
         WATCHDOG_ERROR
       );
-      // throw new Exception($message, $e->getCode());
       drupal_set_message($e->getCode() . ' ' . $message);
     }
     return $response;
   }
 
   /**
-   * Request DOI Metadata.
+   * Builds URL for API Endpoint.
+   *
+   * To build URL which gets XML we need to convert DOI into PMCID first
+   * so this method makes extra request to API.
    *
    * @param string $doi
    *   Digital Object Identifier (DOI).
+   *
+   * @return string
+   *   Returns URL.
    */
-  public static function getInternalId($doi) {
-    $url = static::buildUrl($doi);
-    $header = [
-      'Content-Type: application/json',
-    ];
+  public static function buildUrl($doi) {
+
+    // ########################################################################
+    // Step 1. Convert DOI → PMCID number.
+    $host = static::HOST_NAME;
+    if (variable_get('tpps_doi_' . static::KEY . '_use_ip', FALSE)) {
+      $host = static::HOST_IP;
+    }
+    // Request.
+    $url = url('https://' . $host . '/tools/idconv/api/v1/articles/', [
+      'query' => ['ids' => $doi, 'format' => 'json'],
+    ]);
     try {
       $response = (new RestAPI([
         'url' => $url,
-        'header' => $header,
+        'header' => ['Content-Type: application/json'],
       ]))->get()->response;
     }
     catch (Exception $e) {
       $message = $e->getMessage();
       $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
-      watchdog('tpps', $message . '<pre>@backtrace</pre>',
-        ['@backtrace' => print_r($stack, 1)],
+      watchdog('tpps', '@message <pre>@backtrace</pre>',
+        ['@message' => $message, '@backtrace' => print_r($stack, 1)],
         WATCHDOG_ERROR
       );
-      // throw new Exception($message, $e->getCode());
       drupal_set_message($e->getCode() . ' ' . $message);
     }
-    return $response;
+
+    // Parse response to get Id.
+    $pmcid = $response['records'][0]['pmcid'] ?? '';
+    if (empty($pmcid)) {
+      $message = "@key: Can't find internal ID for @doi.";
+      $params = ['@key' => static::KEY, '@doi' => $doi];
+      watchdog('tpps', $message, $params, WATCHDOG_ERROR);
+      return '';
+    }
+    // Id exists but for 2nd step we need only numbers (not letters).
+    $id = str_replace('PMC', '', $pmcid);
+    // ########################################################################
+    // Step 2. Build Endpoint URL.
+    return url(
+      static::getEndpointUrl() . '/',
+      [
+        'https' => TRUE,
+        'absolute' => TRUE,
+        'query' => [
+          'verb' => 'GetRecord',
+          'identifier' => 'oai:pubmedcentral.nih.gov:' . $id,
+          'metadataPrefix' => 'oai_dc',
+        ],
+      ]
+    );
   }
 
 }

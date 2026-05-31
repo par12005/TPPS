@@ -135,11 +135,10 @@ class SemanticScholar extends DoiApi {
     catch (Exception $e) {
       $message = $e->getMessage();
       $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
-      watchdog('tpps', $message . '<pre>@backtrace</pre>',
-        ['@backtrace' => print_r($stack, 1)],
+      watchdog('tpps', '@message <pre>@backtrace</pre>',
+        ['@message' => $message, '@backtrace' => print_r($stack, 1)],
         WATCHDOG_ERROR
       );
-      // throw new Exception($message, $e->getCode());
       drupal_set_message($e->getCode() . ' ' . $message);
     }
     return $response;

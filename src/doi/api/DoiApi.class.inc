@@ -55,7 +55,7 @@ abstract class DoiApi {
   public static function insert($doi) {}
 
   /**
-   * Gets Endopoint URL.
+   * Builds Endopoint URL.
    *
    * @return string
    *   Returns Endpoint URL.
@@ -74,7 +74,10 @@ abstract class DoiApi {
   }
 
   /**
-   * Builds URL to get SERP.
+   * Builds URL for API Endpoint.
+   *
+   * @param string $doi
+   *   Digital Object Identifier (DOI).
    *
    * @return string
    *   Returns escaped URL.
@@ -101,6 +104,9 @@ abstract class DoiApi {
 
   /**
    * Saves DOI publication data into database.
+   *
+   * @param string $doi
+   *   Digital Object Identifier (DOI).
    */
   public static function load($doi) {
     return PublicationDOI::load($doi, static::KEY);
