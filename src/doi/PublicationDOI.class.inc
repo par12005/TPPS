@@ -802,25 +802,28 @@ class PublicationDOI extends DOI {
    *   Possible values: see const DoiApi::KEY.
    */
   public static function requestAPI($doi, $source = NULL) {
+    $class_list = [];
     $method_name = 'insert';
     $api_class_list = [
-      'SemanticScholar',
-      'CrossRef',
-      'Dryad',
-      'PubMedCentral',
+      // $source => $class_name,
+      'semantic_scholar' => 'SemanticScholar',
+      'crossref' => 'CrossRef',
+      'dryad' => 'Dryad',
+      'pubmed_central' => 'PubMedCentral',
     ];
 
     if (!empty($source) && !empty($class_name = $api_class_list[$source])) {
+      $class_list[] = $class_name;
+    }
+    if (empty($class_list)) {
+      // All APIs.
+      $class_list = array_values($api_class_list);
+    }
+
+    foreach ($class_list as $class_name) {
       if (class_exists($class_name) && method_exists($class_name, $method_name)) {
         $class_name::$method_name($doi);
-      }
-    }
-    else {
-      // All APIs.
-      foreach ($api_class_list as $class_name) {
-        if (class_exists($class_name) && method_exists($class_name, $method_name)) {
-          $class_name::$method_name($doi);
-        }
+        //dpm("$class_name::$method_name $doi");
       }
     }
   }

@@ -46,16 +46,19 @@ class PubMedCentral extends DoiApi {
       return;
     }
     // Note: $response contains XML string.
-    $response = static::request($doi);
+    $xml = static::request($doi);
     if (
-      !empty($response)
-      && strpos($response, 'Identifier does not exist.') === FALSE
+      !empty($xml)
+      && strpos($xml, 'Identifier does not exist.') !== FALSE
     ) {
-      $data = static::parseXmlResponse($response);
+      $data = static::parseXmlResponse($xml);
       // Create an empty record to avoid the same requests to API.
       $data['doi'] = $doi;
       $data['source'] = static::KEY;
       PublicationDOI::save($data);
+    }
+    elseif (is_null($xml)) {
+      //PublicationDOI::save(['doi' => $doi, 'source' => static::KEY]);
     }
   }
 
@@ -66,23 +69,33 @@ class PubMedCentral extends DoiApi {
    *   Digital Object Identifier (DOI).
    *
    * @return object
+   *   Returns FALSE if DOI was invalid or ID not found.
+   *   Returns NULL if there is no data for given DOI.
    *   Returns Simple XML Element.
    */
   public static function request($doi) {
-    try {
-      $url = static::buildUrl($doi);
-      $xml = (new RestAPI(['url' => $url]))->get()->response;
-      return $xml;
+    $url = static::buildUrl($doi);
+    if (is_null($url)) {
+      return NULL;
     }
-    catch (Exception $e) {
-      // @TODO Minor. Code 429 (Too many requiests).
-      $message = $e->getMessage();
-      $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
-      watchdog('tpps', '@message <pre>@backtrace</pre>',
-        ['@message' => $message, '@backtrace' => print_r($stack, 1)],
-        WATCHDOG_ERROR
-      );
-      drupal_set_message($e->getCode() . ' ' . $message);
+    elseif ($url === FALSE) {
+      return FALSE;
+    }
+    else {
+      try {
+        $xml = (new RestAPI(['url' => $url]))->get()->response;
+        return $xml;
+      }
+      catch (Exception $e) {
+        // @TODO Minor. Code 429 (Too many requiests).
+        $message = $e->getMessage();
+        $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
+        watchdog('tpps', '@message <pre>@backtrace</pre>',
+          ['@message' => $message, '@backtrace' => print_r($stack, 1)],
+          WATCHDOG_ERROR
+        );
+        drupal_set_message($e->getCode() . ' ' . $message);
+      }
     }
   }
 
@@ -99,6 +112,7 @@ class PubMedCentral extends DoiApi {
    * @return mixed
    *   Returns URL.
    *   Returns NULL if PMC Id wasn't found and URL can't be generated.
+   *   Returns FALSE in case of errors.
    *
    * @throws Exception
    *   1. If DOI is invalid and PubMedCentral Id can't be obtained.
@@ -120,16 +134,18 @@ class PubMedCentral extends DoiApi {
       return NULL;
     }
     elseif ($pmcid === FALSE) {
-      $message = t("@key: PMC ID not found for DOI '@doi'.",
-        ['@doi' => $doi, '@key' => static::KEY]
+      watchdog('tpps', "@key: PMC ID not found for DOI '@doi'.",
+        ['@doi' => $doi, '@key' => static::KEY],
+        WATCHDOG_ERROR
       );
-      throw new Exception($message);
+      return FALSE;
     }
     elseif (empty($pmcid)) {
-      $message = t("@key: Empty PMC ID for @doi.",
-        ['@key' => static::KEY, '@doi' => $doi]
+      watchdog('tpps', "@key: Empty PMC ID for @doi.",
+        ['@key' => static::KEY, '@doi' => $doi],
+        WATCHDOG_ERROR
       );
-      throw new Exception($message);
+      return FALSE;
     }
     // ########################################################################
     // Step 2. Build Endpoint URL.
@@ -233,7 +249,13 @@ class PubMedCentral extends DoiApi {
     }
     elseif (($response['records'][0]['status'] ?? '') == 'error') {
       $error_message = ($response['records'][0]['errmsg'] ?? '');
-      return FALSE;
+      if ($error_message == 'Identifier not found in PMC') {
+        // Returning NULL we create an empty record in DB.
+        return NULL;
+      }
+      else {
+        return FALSE;
+      }
     }
     return NULL;
   }

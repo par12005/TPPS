@@ -182,15 +182,21 @@ function tpps_ajax_get_publication_data(array $payload) {
     $response['errors'][] = t('Empty DOI.');
   }
   else {
-    $response['doi'] = $payload['doi'];
-    $response['source'] = $payload['source'];
-    $data = PublicationDOI::load($payload['doi'], $payload['source']);
-    $response['is_complete'] = TppsArray::isComplete($data);
+    $response['doi'] = $doi = $payload['doi'];
+    $response['source'] = $souce = $payload['source'] ?? NULL;
+    $data = PublicationDOI::load($doi, $source);
+    if (!$response['is_complete'] = TppsArray::isComplete($data)) {
+      PublicationDOI::requestAPI($doi, $source);
+      $data = PublicationDOI::load($doi, $source);
+      $response['is_complete'] = TppsArray::isComplete($data);
+
+// @TODO Check which source wasn't yet processed and update only them.
 
 
-// @TODO Make requests to all APIs.
-
-
+      //$all = PublicationDOI::load($doi, 'all');
+      //$api_list = [];
+      //// @TODO Make requests to all APIs.
+    }
     $response['publication_data'] = $data;
     $response['success'] = TRUE;
   }
