@@ -184,7 +184,7 @@ class PubMedCentral extends DoiApi {
       'title' => $xpath->evaluate('string(//dc:title)'),
       'journal' => $xpath->evaluate('string(//dc:source)'),
       'date' => str_replace('-', '/', $xpath->evaluate('string(//dc:date)')),
-      'abstract' => $xpath->evaluate('string(//dc:descripton)'),
+      'abstract' => $xpath->evaluate('string(//dc:description)'),
       'authors' => [],
     ];
     // Get all authors.
