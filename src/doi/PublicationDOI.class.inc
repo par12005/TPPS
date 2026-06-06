@@ -802,15 +802,18 @@ class PublicationDOI extends DOI {
    *   Possible values: see const DoiApi::KEY.
    */
   public static function requestAPI($doi, $source = NULL) {
+    $data = PublicationDOI::load($doi, $source);
+    if (TppsArray::isComplete($data)) {
+      return $data;
+    }
+
+    // @TODO Check if all API was used.
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Data is incomplete. Let's get data from other sources.
     $class_list = [];
     $method_name = 'insert';
-    $api_class_list = [
-      // $source => $class_name,
-      'semantic_scholar' => 'SemanticScholar',
-      'crossref' => 'CrossRef',
-      'dryad' => 'Dryad',
-      'pubmed_central' => 'PubMedCentral',
-    ];
+    $api_class_list = static::getApiList();
 
     if (!empty($source) && !empty($class_name = $api_class_list[$source])) {
       $class_list[] = $class_name;
@@ -820,11 +823,50 @@ class PublicationDOI extends DOI {
       $class_list = array_values($api_class_list);
     }
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    $allowed_api = variable_get('tpps_doi_lookup_allowed_api_list');
     foreach ($class_list as $class_name) {
+      if (!in_array($class_name, $allowed_api_list)) {
+        continue;
+      }
       if (class_exists($class_name) && method_exists($class_name, $method_name)) {
         $class_name::$method_name($doi);
-        //dpm("$class_name::$method_name $doi");
       }
+    }
+  }
+
+  /**
+   * Gets list of the existing APIs which provide DOI publication data.
+   *
+   * @return array
+   *   Returns associative array where keys are API machine names
+   *   (class's KEY constant) and value is human readable title.
+   */
+  public static function getApiList() {
+    return [
+      // $source => $class_name,
+      'semantic_scholar' => 'SemanticScholar',
+      'crossref' => 'CrossRef',
+      'dryad' => 'Dryad',
+      'pubmed_central' => 'PubMedCentral',
+    ];
+  }
+
+  public static function getMissingApiList($data = NULL) {
+    if (is_null($data)) {
+      $data = PublicationDOI::load($doi);
+    }
+
+    return;
+    // Not yet implemented.
+
+    $all_api_list = array_keys(static::getApiList());
+    $allowed_api = variable_get('tpps_doi_lookup_allowed_api_list');
+    foreach ($data as $class_name => $value) {
+      if (!in_array($class_name, $allowed_api_list)) {
+        continue;
+      }
+
     }
   }
 
