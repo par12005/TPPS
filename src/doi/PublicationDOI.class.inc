@@ -138,63 +138,76 @@ class PublicationDOI extends DOI {
   public static function load($doi, $source = NULL) {
     $output = [];
     $use_check_plain = FALSE;
-    if (empty($source)) {
-      // Combined.
-      // Rule: longer string is better.
-      $data = db_select(static::TABLE, 't')
-        ->fields('t', [])
-        ->condition('doi', $doi)
-        ->execute()
-        ->fetchAllAssoc('source', PDO::FETCH_ASSOC);
-      $combined = [];
-      foreach ($data as $source => $item) {
-        foreach ($item as $key => $value) {
-          if ($key == 'source') {
-            continue;
-          }
-          if ($use_check_plain) {
-            $value = check_plain($value);
-          }
-          if (empty($combined[$key])) {
-            $combined[$key] = $value;
-          }
-          else {
-            // Assume that longer string is better (more data).
-            if (strlen($combined[$key]) < strlen($value)) {
+
+    $static_cache = &drupal_static(__METHOD__);
+    $cache_key = implode('', func_get_args());
+
+//dpm($static_cache);
+//dpm(__METHOD__, $key);
+
+    if (!isset($static_cache[$cache_key])) {
+
+dpm('build');
+
+      if (empty($source)) {
+        // Combined.
+        // Rule: longer string is better.
+        $data = db_select(static::TABLE, 't')
+          ->fields('t', [])
+          ->condition('doi', $doi)
+          ->execute()
+          ->fetchAllAssoc('source', PDO::FETCH_ASSOC);
+        $combined = [];
+        foreach ($data as $source => $item) {
+          foreach ($item as $key => $value) {
+            if ($key == 'source') {
+              continue;
+            }
+            if ($use_check_plain) {
+              $value = check_plain($value);
+            }
+            if (empty($combined[$key])) {
               $combined[$key] = $value;
+            }
+            else {
+              // Assume that longer string is better (more data).
+              if (strlen($combined[$key]) < strlen($value)) {
+                $combined[$key] = $value;
+              }
             }
           }
         }
+        $output = $combined;
       }
-      $output = $combined;
-    }
-    elseif ($source == 'all') {
-      // All sources.
-      $output = db_select(static::TABLE, 't')
-        ->fields('t', [])
-        ->condition('doi', $doi)
-        ->execute()
-        ->fetchAllAssoc('source', PDO::FETCH_ASSOC);
-      if ($use_check_plain) {
-        foreach ($output as $source => $source_data) {
-          $output[$source] = array_map('check_plain', $source_data);
+      elseif ($source == 'all') {
+        // All sources.
+        $output = db_select(static::TABLE, 't')
+          ->fields('t', [])
+          ->condition('doi', $doi)
+          ->execute()
+          ->fetchAllAssoc('source', PDO::FETCH_ASSOC);
+        if ($use_check_plain) {
+          foreach ($output as $source => $source_data) {
+            $output[$source] = array_map('check_plain', $source_data);
+          }
         }
       }
-    }
-    else {
-      // Single source.
-      $output = db_select(static::TABLE, 't')
-        ->fields('t', [])
-        ->condition('doi', $doi)
-        ->condition('source', $source)
-        ->range(0, 1)
-        ->execute()
-        ->fetchAssoc();
-      if ($use_check_plain) {
-        $output = array_map('check_plain', $output);
+      else {
+        // Single source.
+        $output = db_select(static::TABLE, 't')
+          ->fields('t', [])
+          ->condition('doi', $doi)
+          ->condition('source', $source)
+          ->range(0, 1)
+          ->execute()
+          ->fetchAssoc();
+        if ($use_check_plain) {
+          $output = array_map('check_plain', $output);
+        }
       }
+      $static_cache[$cache_key] = $output;
     }
-    return $output;
+    return $static_cache[$cache_key];
   }
 
   /**
