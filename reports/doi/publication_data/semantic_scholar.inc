@@ -19,7 +19,7 @@ function tpps_report_doi_publication_data_semantic_scholar() {
  */
 function tpps_report_doi_publication_data_semantic_scholar_form(array $form, array &$form_state) {
   $report = [];
-  $source = SemanticScholar::KEY;
+  $source = 'SemanticScholar';
   $result = db_select(PublicationDOI::TABLE, 't')
     ->fields('t', [])
     ->condition('source', $source)

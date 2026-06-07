@@ -19,7 +19,7 @@ function tpps_report_doi_publication_data_pubmed() {
  */
 function tpps_report_doi_publication_data_pubmed_form(array $form, array &$form_state) {
   $report = [];
-  $source = PubMed::KEY;
+  $source = 'PubMed';
   $result = db_select(PublicationDOI::TABLE, 't')
     ->fields('t', [])
     ->condition('source', $source)

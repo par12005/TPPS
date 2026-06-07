@@ -19,7 +19,7 @@ function tpps_report_doi_publication_data_crossref() {
  */
 function tpps_report_doi_publication_data_crossref_form(array $form, array &$form_state) {
   $report = [];
-  $source = CrossRef::KEY;
+  $source = 'CrossRef';
   $result = db_select(PublicationDOI::TABLE, 't')
     ->fields('t', [])
     ->condition('source', $source)

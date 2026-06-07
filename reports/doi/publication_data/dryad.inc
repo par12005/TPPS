@@ -19,7 +19,7 @@ function tpps_report_doi_publication_data_dryad() {
  */
 function tpps_report_doi_publication_data_dryad_form(array $form, array &$form_state) {
   $report = [];
-  $source = Dryad::KEY;
+  $source = 'Dryad';
   $result = db_select(PublicationDOI::TABLE, 't')
     ->fields('t', [])
     ->condition('source', $source)
