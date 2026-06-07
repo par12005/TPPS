@@ -50,7 +50,10 @@
             type: 'POST',
             contentType: 'application/json',
             dataType: 'json',
-            data: JSON.stringify({"doi": doi}),
+            data: JSON.stringify({
+              "doi": doi,
+              "callback": doi_lookup.ajax_callback,
+            }),
             success: function(response) {
               if (
                 response

@@ -818,7 +818,7 @@ class PublicationDOI extends DOI {
    */
   public static function requestAPI($doi, $source = NULL) {
     $data = PublicationDOI::load($doi, $source);
-    if (TppsArray::isComplete($data)) {
+    if (!empty($data) && TppsArray::isComplete($data)) {
       return $data;
     }
 
@@ -826,20 +826,22 @@ class PublicationDOI extends DOI {
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Data is incomplete. Let's get data from other sources.
+    $data = [];
     $class_list = [];
     $method_name = 'insert';
-    $api_class_list = static::getApiList();
+    $api_list = static::getApiList();
+    $serp_list = static::getSerpList();
 
     if (!empty($source) && !empty($class_name = $api_class_list[$source])) {
       $class_list[] = $class_name;
     }
     if (empty($class_list)) {
       // All APIs.
-      $class_list = array_values($api_class_list);
+      $class_list = array_values($api_list);
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    $allowed_api = variable_get('tpps_doi_lookup_allowed_api_list');
+    $allowed_api_list = variable_get('tpps_doi_lookup_allowed_api_list');
     foreach ($class_list as $class_name) {
       if (!in_array($class_name, $allowed_api_list)) {
         continue;
@@ -848,6 +850,7 @@ class PublicationDOI extends DOI {
         $class_name::$method_name($doi);
       }
     }
+    return PublicationDOI::load($doi, $source);
   }
 
   /**
@@ -866,7 +869,7 @@ class PublicationDOI extends DOI {
       'pubmed_central' => 'PubMedCentral',
     ];
   }
-  
+
   /**
    * Gets list of the supported SERP providers.
    *

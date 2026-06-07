@@ -43,10 +43,13 @@ module_load_include('inc', 'tpps', 'ajax_callbacks/study_details');
  *   - Other data which could be proccessed by JS code in browser.
  */
 function tpps_ajax_callback($callback = '', array $payload = NULL) {
-  $function = 'tpps_ajax_' . check_plain($callback);
+  $callback = check_plain($callback);
+  $function = 'tpps_ajax_' . $callback;
+
   // If we never succed we fail.
   $response['success'] = FALSE;
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Get payload.
   $content_type = $_SERVER['CONTENT_TYPE'] ?? NULL;
   if (!empty($content_type) && strpos($content_type, 'application/json') !== FALSE) {
@@ -62,8 +65,27 @@ function tpps_ajax_callback($callback = '', array $payload = NULL) {
   else {
     $payload = $payload ?? $_POST ?? [];
   }
-  if (function_exists($function)) {
-    $result = call_user_func($function, $payload);
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // @TODO Since URL is case insensitive and to avoid errors it's better to
+  // use payload to send callback.
+  if (!empty($payload['callback']) && $payload['callback'] != $callback) {
+    $callback = $payload['callback'];
+  }
+  $is_method = method_exists('TppsAjax', $callback);
+
+  // New callbacks.
+  if ($is_method || function_exists($function)) {
+    // Method of the 'TppsAjax' class.
+    if ($is_method) {
+      $result = call_user_func(['TppsAjax', $callback], $payload);
+    }
+    // New callback-function.
+    elseif (function_exists($function)) {
+      $result = call_user_func($function, $payload);
+    }
+
+    // Process result.
     if (empty($result)) {
       $response['errors'][] = t('Empty response from AJAX callback.');
     }
@@ -74,6 +96,8 @@ function tpps_ajax_callback($callback = '', array $payload = NULL) {
       $response['success'] = TRUE;
     }
   }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Outdated callbacks.
   elseif (function_exists($callback)) {
     // Note order of elements in $_POST probably will be the same as
     // in AJAX-request's 'data' element and callback could get more then
@@ -90,6 +114,8 @@ function tpps_ajax_callback($callback = '', array $payload = NULL) {
       $response['success'] = TRUE;
     }
   }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Unknown callback type.
   else {
     $response['errors'][] = t('Callback not found.');
   }

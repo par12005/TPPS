@@ -92,7 +92,8 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
       'field' => '.tpps_doi_lookup_doi',
       'proxy' => $proxy,
       // List of the SERP Provider KEYs.
-      'ajax_get_publication_data_path' => '/ajax/tpps/get_publication_data',
+      'ajax_get_publication_data_path' => '/ajax/tpps/getPublicationData',
+      'ajax_callback' => 'getPublicationData',
       'publication_data' => [],
       'dump_container' => '#dump_container',
     ],

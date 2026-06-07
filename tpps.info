@@ -60,6 +60,7 @@ files[] = src/tpps/TppsConfiguration.class.inc
 files[] = src/tpps/TppsArray.class.inc
 files[] = src/tpps/TppsForm.class.inc
 files[] = src/tpps/TppsFile.class.inc
+files[] = src/tpps/TppsAjax.class.inc
 
 ; Zenodo API.
 files[] = src/zenodo/Zenodo.class.inc
