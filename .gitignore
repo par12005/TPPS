@@ -14,3 +14,4 @@ cscope.out
 **.diff
 output-*.txt
 eslint.config.mjs
+**.todo.md
