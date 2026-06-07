@@ -65,6 +65,10 @@
               }
               else {
                 console.log("Received no data or it's incomplete.");
+                // This is a flag which used to remove throbber when all SERP
+                // providers are disabled at settings page and we shouldn't
+                // wait for the response to AJAX requests.
+                let wait_for_serp_provider = false;
 
                 doi_lookup.serp_providers.forEach(function(provider_class_name) {
                   // Let's get SERP if scraping is allowed.
@@ -72,6 +76,8 @@
                     $(doi_lookup[provider_class_name]).length
                     && doi_lookup[provider_class_name].scrape_allowed
                   ) {
+                    wait_for_serp_provider = true;
+
                     // Calculate delay.
                     let delay = 0;
                     let last_request = doi_lookup[provider_class_name].last_request;
@@ -122,6 +128,16 @@
                     }, delay);
                   }
                 });
+
+                // No AJAX-requests was started so nosense to wait for response.
+                if (! wait_for_serp_provider) {
+                  disableThrobber();
+                  $(field).removeClass('get-publication-data-processed');
+                  console.log('All SERP providers are disabled.');
+
+                  console.log('Show incomplete publication data from APIs.');
+                  showPublicationData(response.publication_data);
+                }
               }
             },
             error: function(xhr, status, error) {
@@ -268,6 +284,7 @@
           data: JSON.stringify({
             "doi": doi,
             "source": provider_class_name,
+            "callback": doi_lookup[provider_class_name].ajax_callback,
             "serp": btoa(unescape(encodeURIComponent(serpContent)))
             // Modern fix:
             //"serp": btoa(serpContent)
