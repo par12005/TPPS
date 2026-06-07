@@ -817,12 +817,17 @@ class PublicationDOI extends DOI {
    *   Possible values: see const DoiApi::KEY.
    */
   public static function requestAPI($doi, $source = NULL) {
+
+    $debug_mode = FALSE;
     $data = PublicationDOI::load($doi, $source);
     if (!empty($data) && TppsArray::isComplete($data)) {
+      if ($debug_mode ?? FALSE) {
+        $message = 'DOI: @doi. Publication data is complete';
+        $params = ['@doi' => $doi];
+        watchdog(__METHOD__, $message, $params);
+      }
       return $data;
     }
-
-    // @TODO Check if all API was used.
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Data is incomplete. Let's get data from other sources.
@@ -830,9 +835,8 @@ class PublicationDOI extends DOI {
     $class_list = [];
     $method_name = 'insert';
     $api_list = static::getApiList();
-    $serp_list = static::getSerpList();
 
-    if (!empty($source) && !empty($class_name = $api_class_list[$source])) {
+    if (!empty($source) && !empty($class_name = $api_list[$source])) {
       $class_list[] = $class_name;
     }
     if (empty($class_list)) {
@@ -842,6 +846,7 @@ class PublicationDOI extends DOI {
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $allowed_api_list = variable_get('tpps_doi_lookup_allowed_api_list');
+    // @TODO Minor. Think how to run requests in parallel.
     foreach ($class_list as $class_name) {
       if (!in_array($class_name, $allowed_api_list)) {
         continue;
@@ -850,6 +855,12 @@ class PublicationDOI extends DOI {
         $class_name::$method_name($doi);
       }
     }
+    if ($debug_mode ?? FALSE) {
+      $message = 'DOI: @doi. Checked APIs: @class_list';
+      $params = ['@doi' => $doi, '@class_list' => implode(', ', $class_list)];
+      watchdog(__METHOD__, $message, $params);
+    }
+
     return PublicationDOI::load($doi, $source);
   }
 

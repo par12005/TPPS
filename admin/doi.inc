@@ -67,7 +67,11 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
     '#type' => 'checkboxes',
     '#title' => t('Use API to get DOI publication data'),
     '#default_value' => variable_get('tpps_doi_lookup_allowed_api_list'),
-    '#options' => PublicationDOI::getApiList(),
+    // Note:: class name => class name.
+    '#options' => array_combine(
+      PublicationDOI::getApiList(),
+      PublicationDOI::getApiList()
+    ),
     '#description' => t("Some services doesn't have records for DOI, some "
       . "have not full data so more APIs is better but it will take more time. "
       . "<br />Note: API requests are still faster than parsing SERP. "
