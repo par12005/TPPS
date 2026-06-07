@@ -818,15 +818,19 @@ class PublicationDOI extends DOI {
    */
   public static function requestAPI($doi, $source = NULL) {
 
+    // When TRUE debug watchdog messages will be created.
     $debug_mode = FALSE;
-    $data = PublicationDOI::load($doi, $source);
-    if (!empty($data) && TppsArray::isComplete($data)) {
-      if ($debug_mode ?? FALSE) {
-        $message = 'DOI: @doi. Publication data is complete';
-        $params = ['@doi' => $doi];
-        watchdog(__METHOD__, $message, $params);
+
+    if (!variable_get('tpps_doi_lookup_force_api')) {
+      $data = PublicationDOI::load($doi, $source);
+      if (!empty($data) && TppsArray::isComplete($data)) {
+        if ($debug_mode ?? FALSE) {
+          $message = 'DOI: @doi. Publication data is complete';
+          $params = ['@doi' => $doi];
+          watchdog(__METHOD__, $message, $params);
+        }
+        return $data;
       }
-      return $data;
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -846,7 +850,12 @@ class PublicationDOI extends DOI {
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $allowed_api_list = variable_get('tpps_doi_lookup_allowed_api_list');
-    // @TODO Minor. Think how to run requests in parallel.
+    if ($debug_mode ?? FALSE) {
+      $message = 'DOI: @doi. API to be checked: @class_list';
+      $params = ['@doi' => $doi, '@class_list' => implode(', ', $class_list)];
+      watchdog(__METHOD__, $message, $params);
+    }
+    // @todo Minor. Run requests in parallel.
     foreach ($class_list as $class_name) {
       if (!in_array($class_name, $allowed_api_list)) {
         continue;
@@ -854,11 +863,6 @@ class PublicationDOI extends DOI {
       if (class_exists($class_name) && method_exists($class_name, $method_name)) {
         $class_name::$method_name($doi);
       }
-    }
-    if ($debug_mode ?? FALSE) {
-      $message = 'DOI: @doi. Checked APIs: @class_list';
-      $params = ['@doi' => $doi, '@class_list' => implode(', ', $class_list)];
-      watchdog(__METHOD__, $message, $params);
     }
 
     return PublicationDOI::load($doi, $source);

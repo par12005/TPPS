@@ -21,6 +21,7 @@ function tpps_get_variable_list() {
       PublicationDOI::getApiList(),
       PublicationDOI::getApiList()
     ),
+    'tpps_doi_lookup_force_api' => FALSE,
     // DOI Lookup / Google Scholar.
     'tpps_doi_google_scholar_scrape_allowed' => TRUE,
     'tpps_doi_google_scholar_debug_mode' => FALSE,
@@ -2619,6 +2620,7 @@ function tpps_update_7134() {
   variable_set('tpps_doi_lookup_allowed_api_list',
     array_combine(PublicationDOI::getApiList(), PublicationDOI::getApiList())
   );
+  variable_set('tpps_doi_lookup_force_api', FALSE);
   // DOI Lookup / Google Scholar.
   variable_set('tpps_doi_google_scholar_scrape_allowed', TRUE);
   variable_set('tpps_doi_google_scholar_debug_mode', FALSE);
