@@ -80,7 +80,7 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
   // Classes:
   // - /src/GoogleScholar.class.inc,
   // - /src/PubMed.class.inc.
-  // DB tables:
+  // DB tables to save SERP data:
   // - 'tpps_google_scholar',
   // - 'tpps_pubmed'.
   $serp_provider_list = ['GoogleScholar', 'PubMed'];

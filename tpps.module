@@ -2573,9 +2573,12 @@ function tpps_menu_add_api(array &$items = []) {
     // File Object with extra absolute path and URL for downloading.
     'title' => 'DOI Publication Info',
     'page callback' => 'tpps_api_doi_info',
-    // 2: First part of the DOI (before '/')
-    // 3: Second part of the DOI (after '/')
-    // 4: Data source: 'google_scholar', 'pubmed'
+    // 2: First part of the DOI (before '/').
+    //    For example: '10.1002' for the '10.1002/ajb2.1504'.
+    // 3: Second part of the DOI (after '/').
+    //    For example: 'ajb2.1504' for the '10.1002/ajb2.1504'
+    // 4: Data source (provider):
+    //    For example: 'google_scholar'/'GoogleScholar', 'pubmed'/'PubMed', etc.
     'page arguments' => [2],
     'access callback' => 'tpps_api_access',
     'file' => 'api/doi/info.inc',

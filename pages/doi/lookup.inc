@@ -104,26 +104,25 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   // List of enabled providers.
   $serp_providers = [];
   foreach ($serp_provider_class_list as $class_name) {
-    $name = constant($class_name . '::KEY');
     $provider = new $class_name($doi);
-    $serp_providers[$name] = $provider;
+    $serp_providers[$class_name] = $provider;
     // Publication data per provider.
-    if (!empty($publication_data = PublicationDOI::load($doi, $name))) {
-      $js_settings['doi_lookup']['publication_data'][$name][$doi]
+    if (!empty($publication_data = PublicationDOI::load($doi, $class_name))) {
+      $js_settings['doi_lookup']['publication_data'][$class_name][$doi]
         = $publication_data;
     }
     // List of existing SERP Providers.
-    $js_settings['doi_lookup']['serp_providers'][] = $name;
+    $js_settings['doi_lookup']['serp_providers'][] = $class_name;
     // Metadata of the providers allowed for scraping.
-    $js_settings['doi_lookup'][$name] = [
+    $js_settings['doi_lookup'][$class_name] = [
       'scrape_allowed' => $provider->scrapeAllowed,
-      'dump_container' => '#' . $name . '_dump_container',
+      'dump_container' => '#' . $class_name . '_dump_container',
       'endpoint' => $provider->getEndpointUrl(),
       'query' => $provider->getQuery(),
       'query_param' => constant($provider->getClassName() . '::QUERY_PARAM'),
       // Delay between requests of the same client.
       'delay' => $provider->delay,
-      'ajax_save_path' => '/ajax/tpps/save_' . $name . '_serp',
+      'ajax_save_path' => '/ajax/tpps/save_' . $class_name . '_serp',
       'not_found_token' => $provider->getNotFoundString(),
     ];
 
@@ -134,17 +133,17 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
       $fixed_provider_url = str_replace('%252F', '/', $provider->buildUrl());
       $url = $proxy . '/' . $fixed_provider_url;
     }
-    // 'google_scholar_serp',
-    // 'pubmed_serp'.
-    $form[$name . '_serp'] = [
+    // 'GoogleScholar_serp',
+    // 'PubMed_serp'.
+    $form[$class_name . '_serp'] = [
       '#type' => 'fieldset',
       '#title' => $provider->getClassName(),
       '#collapsed' => FALSE,
       '#collapsible' => TRUE,
-      // 'google_scholar_dump_container',
-      // 'pubmed_dump_container'.
+      // '#GoogleScholar_dump_container',
+      // '#PubMed_dump_container'.
       'data' => [
-        '#markup' => '<div class="dump_container" id="' . $name . '_dump_container"></div>',
+        '#markup' => '<div class="dump_container" id="' . $class_name . '_dump_container"></div>',
       ],
     ];
   }
@@ -159,7 +158,6 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   ];
   // Add JS-logic.
   tpps_add_css_js('doi_lookup', $form);
-
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   TppsForm::autofocus($form, ['tpps_doi_lookup_doi']);

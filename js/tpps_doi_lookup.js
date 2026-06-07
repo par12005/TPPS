@@ -32,7 +32,7 @@
         enableThrobber();
 
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        // Format: doi_lookup['publication_data'][$provider_name][$doi]
+        // Format: doi_lookup['publication_data'][$provider_class_name][$doi]
         if ($(doi_lookup['publication_data'][doi]).length) {
           console.log('Show already loaded data.');
           showPublicationData(doi_lookup['publication_data'][doi]);
@@ -63,28 +63,28 @@
               else {
                 console.log("Received no data or it's incomplete.");
 
-                doi_lookup.serp_providers.forEach(function(provider_name) {
+                doi_lookup.serp_providers.forEach(function(provider_class_name) {
                   // Let's get SERP if scraping is allowed.
                   if (
-                    $(doi_lookup[provider_name]).length
-                    && doi_lookup[provider_name].scrape_allowed
+                    $(doi_lookup[provider_class_name]).length
+                    && doi_lookup[provider_class_name].scrape_allowed
                   ) {
                     // Calculate delay.
                     let delay = 0;
-                    let last_request = doi_lookup[provider_name].last_request;
+                    let last_request = doi_lookup[provider_class_name].last_request;
                     if (last_request) {
-                      delay = (last_request + (doi_lookup[provider_name].delay * 1000)) - $.now();
+                      delay = (last_request + (doi_lookup[provider_class_name].delay * 1000)) - $.now();
                       if (delay < 0) {
                         delay = 0;
                       }
                     }
-                    console.log(provider_name + ': delay.');
+                    console.log(provider_class_name + ': delay.');
                     setTimeout(function() {
-                      doi_lookup[provider_name].last_request = $.now();
+                      doi_lookup[provider_class_name].last_request = $.now();
 
                       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::
                       // GET-request via CORS-proxy to get SERP.
-                      let proxy_url = buildUrl(provider_name, doi);
+                      let proxy_url = buildUrl(provider_class_name, doi);
                       if (proxy_url) {
                         // URL for debug:
                         // proxy_url = 'https://cors-anywhere-ldq5.onrender.com/'
@@ -102,8 +102,8 @@
                           //console.log('Success:', data);
                           // @TODO Check data.length.
                           // Send SERP to backend.
-                          saveSERP(provider_name, data);
-                          console.log(provider_name + ': SERP sent to backend.');
+                          saveSERP(provider_class_name, data);
+                          console.log(provider_class_name + ': SERP sent to backend.');
                         })
                         .fail(function(error) {
                           console.error('Error: ', error);
@@ -186,7 +186,7 @@
       /**
        * Build URL for Google Scholar iFrame.
        *
-       * @param string provider_name
+       * @param string provider_class_name
        *   Key of the SERP provider.
        * @param string $doi
        *   DOI
@@ -194,14 +194,14 @@
        * @return string
        *   Retuns URL with proxy (CORS anywhere).
        */
-      function buildUrl(provider_name, doi) {
+      function buildUrl(provider_class_name, doi) {
         let url = '';
-        let query = doi_lookup[provider_name].query;
-        let query_param = doi_lookup[provider_name].query_param;
+        let query = doi_lookup[provider_class_name].query;
+        let query_param = doi_lookup[provider_class_name].query_param;
         query[query_param] = doi;
         if (doi_lookup.proxy != '') {
           url = doi_lookup.proxy
-            + '/' + doi_lookup[provider_name].endpoint
+            + '/' + doi_lookup[provider_class_name].endpoint
             + '?' + $.param(query);
         }
         return url;
@@ -232,7 +232,7 @@
       /**
        * Sends SERP Content to backend to store in database.
        */
-      function saveSERP(provider_name, serpContent) {
+      function saveSERP(provider_class_name, serpContent) {
         let doi = $.trim($(doi_lookup.field).val());
         if (!doi) {
           console.log("DOI Lookup: Empty DOI. Can't send SERP to backend.");
@@ -249,8 +249,8 @@
 
         // Check if there is any publication data for this DOI present at SERP.
         if (
-          doi_lookup[provider_name].not_found_token != ''
-          && serpContent.includes(doi_lookup[provider_name].not_found_token)
+          doi_lookup[provider_class_name].not_found_token != ''
+          && serpContent.includes(doi_lookup[provider_class_name].not_found_token)
         ) {
           console.error('DOI Lookup. No publication data found.');
           return;
@@ -258,13 +258,13 @@
 
         // Send content to backend.
         $.ajax({
-          url: doi_lookup[provider_name].ajax_save_path,
+          url: doi_lookup[provider_class_name].ajax_save_path,
           type: 'POST',
           contentType: 'application/json',
           dataType: 'json',
           data: JSON.stringify({
             "doi": doi,
-            "source": provider_name,
+            "source": provider_class_name,
             "serp": btoa(unescape(encodeURIComponent(serpContent)))
             // Modern fix:
             //"serp": btoa(serpContent)

@@ -50,6 +50,10 @@
 class GoogleScholar extends DoiSerp {
 
   // Unique key used to get Drupal variables and etc.
+  // To get key by class name: $name = constant($class_name . '::KEY');
+  // WARNING:
+  // In DB table 'public.tpps_publication_doi.source' used class name
+  // (not class's KEY constant).
   const KEY = 'google_scholar';
   // Name of the DB table where SERP is stored.
   const TABLE = 'tpps_google_scholar';

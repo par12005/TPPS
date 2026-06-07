@@ -18,6 +18,10 @@
 abstract class DoiApi {
 
   // Unique key used to get Drupal variables and etc.
+  // To get key by class name: $name = constant($class_name . '::KEY');
+  // WARNING:
+  // In DB table 'public.tpps_publication_doi.source' used class name
+  // (not class's KEY constant).
   const KEY = '';
   // Domain name (without schema because HTTPS will always be used).
   const HOST_NAME = '';
@@ -109,7 +113,7 @@ abstract class DoiApi {
    *   Digital Object Identifier (DOI).
    */
   public static function load($doi) {
-    return PublicationDOI::load($doi, static::KEY);
+    return PublicationDOI::load($doi, static::class);
   }
 
   /**

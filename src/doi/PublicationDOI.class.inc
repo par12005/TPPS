@@ -5,6 +5,15 @@
  * Contains static 'PublicationDOI' class.
  */
 
+
+
+# @TODO Design and implement DOI Publication Data format.
+
+
+
+
+
+
 /**
  * Manages publication DOI information.
  *
@@ -132,8 +141,6 @@ class PublicationDOI extends DOI {
    *
    * @throws Exception
    *   When $source is invalid.
-   *
-   * @todo Use caching.
    */
   public static function load($doi, $source = NULL) {
     $output = [];
@@ -142,12 +149,7 @@ class PublicationDOI extends DOI {
     $static_cache = &drupal_static(__METHOD__);
     $cache_key = implode('', func_get_args());
 
-//dpm($static_cache);
-//dpm(__METHOD__, $key);
-
     if (!isset($static_cache[$cache_key])) {
-
-dpm('build');
 
       if (empty($source)) {
         // Combined.
@@ -234,7 +236,7 @@ dpm('build');
           'not null' => TRUE,
         ],
         'source' => [
-          'description' => 'Source of the data. See $serpProvider::KEY.',
+          'description' => 'Source of the data. Class name of the data provider.',
           'type' => 'varchar',
           'size' => 'normal',
           'not null' => TRUE,
@@ -864,16 +866,45 @@ dpm('build');
       'pubmed_central' => 'PubMedCentral',
     ];
   }
+  
+  /**
+   * Gets list of the supported SERP providers.
+   *
+   * @return array
+   *   Returns associative array where keys are API machine names
+   *   (class's KEY constant) and value is human readable title.
+   */
+  public static function getSERPList() {
+    return [
+      // $key => $class_name,
+      'google_scholar' => 'GoogleScholar',
+      'pubmed' => 'PubMed',
+    ];
+  }
 
-  public static function getMissingApiList($data = NULL) {
-    if (is_null($data)) {
-      $data = PublicationDOI::load($doi);
-    }
+  /**
+   * Builds list of APIs which wasn't yet requested.
+   *
+   * DOI could have no publication data from some data providers because they
+   * could be disabled on admin settings page.
+   *
+   * @param string $doi
+   *   DOI.
+   *
+   * @return array
+   *   Returns list of the class names of the API services.
+   *
+   * @TODO Update requestAPI() to request only API which data is missing.
+   * @TODO Ability to force: ignore allowed API list.
+   */
+  public static function getMissingApiList($doi) {
+    $data = PublicationDOI::load($doi, 'all');
+    dpm($data);
 
     return;
     // Not yet implemented.
 
-    $all_api_list = array_keys(static::getApiList());
+    $all_api_list = static::getApiList();
     $allowed_api = variable_get('tpps_doi_lookup_allowed_api_list');
     foreach ($data as $class_name => $value) {
       if (!in_array($class_name, $allowed_api_list)) {
@@ -881,6 +912,9 @@ dpm('build');
       }
 
     }
+
+    return $missing_list;
   }
+
 
 }

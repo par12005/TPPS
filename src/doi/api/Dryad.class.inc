@@ -19,6 +19,10 @@
 class Dryad extends DoiApi {
 
   // Unique key used to get Drupal variables and etc.
+  // To get key by class name: $name = constant($class_name . '::KEY');
+  // WARNING:
+  // In DB table 'public.tpps_publication_doi.source' used class name
+  // (not class's KEY constant).
   const KEY = 'dryad';
   // Domain name (without schema because HTTPS will always be used).
   const HOST_NAME = 'datadryad.org';
@@ -110,13 +114,13 @@ class Dryad extends DoiApi {
    *   Digital Object Identifier (DOI).
    */
   public static function insert($doi) {
-    if (PublicationDOI::isExists($doi, static::KEY)) {
+    if (PublicationDOI::isExists($doi, static::class)) {
       return;
     }
 
     $response = static::request($doi);
     // Create an empty record to avoid the same requests to API.
-    $data = ['doi' => $doi, 'source' => static::KEY];
+    $data = ['doi' => $doi, 'source' => static::class];
 
     if (
       !empty($response)
@@ -141,7 +145,7 @@ class Dryad extends DoiApi {
       }
       $data = [
         'doi' => $doi,
-        'source' => static::KEY,
+        'source' => static::class,
         'authors' => implode(', ', $author_list),
         'date' => str_replace('-', '/', ($response['publicationDate'] ?? '')),
         'title' => $response['title'],

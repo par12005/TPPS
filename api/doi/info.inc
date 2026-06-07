@@ -36,7 +36,10 @@ function tpps_api_doi_info($doi1) {
     return $list;
   }
   else {
-    // Full DOI.
+    // It's a full DOI.
+    $api_list = PublicationDOI::getApiList();
+    $serp_list = PublicationDOI::getSERPList();
+    $source = $api_list[$source] ?? $serp_list[$source] ?? $source;
     return PublicationDOI::load($doi1 . '/' . $doi2, $source);
   }
 }

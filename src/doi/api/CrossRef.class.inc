@@ -21,6 +21,10 @@
 class CrossRef extends DoiApi {
 
   // Unique key used to get Drupal variables and etc.
+  // To get key by class name: $name = constant($class_name . '::KEY');
+  // WARNING:
+  // In DB table 'public.tpps_publication_doi.source' used class name
+  // (not class's KEY constant).
   const KEY = 'crossref';
   // Domain name (without schema because HTTPS will always be used).
   const HOST_NAME = 'api.crossref.org';
@@ -60,13 +64,13 @@ class CrossRef extends DoiApi {
    *   Digital Object Identifier (DOI).
    */
   public static function insert($doi) {
-    if (PublicationDOI::isExists($doi, static::KEY)) {
+    if (PublicationDOI::isExists($doi, static::class)) {
       return;
     }
 
     $response = static::request($doi);
     // Create an empty record to avoid the same requests to API.
-    $data = ['doi' => $doi, 'source' => static::KEY];
+    $data = ['doi' => $doi, 'source' => static::class];
     if (
       $response != 'Resource not found.'
       && !empty($response)
@@ -88,7 +92,7 @@ class CrossRef extends DoiApi {
       }
       $data = [
         'doi' => $doi,
-        'source' => static::KEY,
+        'source' => static::class,
         'authors' => implode(', ', $author_list),
         'date' => implode('/', ($response['message']['published-print']['date-parts'][0] ?? [])),
         'title' => ($response['message']['title'][0] ?? ''),

@@ -25,6 +25,10 @@
 class SemanticScholar extends DoiApi {
 
   // Unique key used to get Drupal variables and etc.
+  // To get key by class name: $name = constant($class_name . '::KEY');
+  // WARNING:
+  // In DB table 'public.tpps_publication_doi.source' used class name
+  // (not class's KEY constant).
   const KEY = 'semantic_scholar';
   // Domain name (without schema because HTTPS will always be used).
   const HOST_NAME = 'api.semanticscholar.org';
@@ -81,13 +85,13 @@ class SemanticScholar extends DoiApi {
    *   Digital Object Identifier (DOI).
    */
   public static function insert($doi) {
-    if (PublicationDOI::isExists($doi, static::KEY)) {
+    if (PublicationDOI::isExists($doi, static::class)) {
       return;
     }
 
     $response = static::request($doi);
     // Create an empty record to avoid the same requests to API.
-    $data = ['doi' => $doi, 'source' => static::KEY];
+    $data = ['doi' => $doi, 'source' => static::class];
     if (
       ($response['error'] ?? '') != 'Paper with id DOI:' . $doi . ' not found'
       && !empty($response)
@@ -104,7 +108,7 @@ class SemanticScholar extends DoiApi {
       }
       $data = [
         'doi' => $doi,
-        'source' => static::KEY,
+        'source' => static::class,
         'authors' => implode(', ', $author_list),
         'date' => $response['publicationDate'] ?? $response['year'] ?? '',
         'title' => $response['title'] ?? '',

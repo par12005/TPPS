@@ -31,6 +31,10 @@
 abstract class DoiSerp {
 
   // Unique key used to get Drupal variables and etc.
+  // To get key by class name: $name = constant($class_name . '::KEY');
+  // WARNING:
+  // In DB table 'public.tpps_publication_doi.source' used class name
+  // (not class's KEY constant).
   const KEY = '';
   // Name of the DB table where SERP is stored.
   const TABLE = '';

@@ -24,6 +24,10 @@
 class PubMedCentral extends DoiApi {
 
   // Unique key used to get Drupal variables and etc.
+  // To get key by class name: $name = constant($class_name . '::KEY');
+  // WARNING:
+  // In DB table 'public.tpps_publication_doi.source' used class name
+  // (not class's KEY constant).
   const KEY = 'pubmed_central';
   // Domain name (without schema because HTTPS will always be used).
   const HOST_NAME = 'pmc.ncbi.nlm.nih.gov';
@@ -42,7 +46,7 @@ class PubMedCentral extends DoiApi {
    *   Digital Object Identifier (DOI).
    */
   public static function insert($doi) {
-    if (PublicationDOI::isExists($doi, static::KEY)) {
+    if (PublicationDOI::isExists($doi, static::class)) {
       return;
     }
     // Note: $response contains XML string.
@@ -54,11 +58,11 @@ class PubMedCentral extends DoiApi {
       $data = static::parseXmlResponse($xml);
       // Create an empty record to avoid the same requests to API.
       $data['doi'] = $doi;
-      $data['source'] = static::KEY;
+      $data['source'] = static::class;
       PublicationDOI::save($data);
     }
     elseif (is_null($xml)) {
-      //PublicationDOI::save(['doi' => $doi, 'source' => static::KEY]);
+      //PublicationDOI::save(['doi' => $doi, 'source' => static::class]);
     }
   }
 
@@ -128,21 +132,21 @@ class PubMedCentral extends DoiApi {
     // No Id could be caused invalid DOI or missing record at remote API server.
     if (is_null($pmcid)) {
       // Create an empty record in DB to avoid multiple requests.
-      if (!PublicationDOI::isExists($doi, static::KEY)) {
-        PublicationDOI::save(['doi' => $doi, 'source' => static::KEY]);
+      if (!PublicationDOI::isExists($doi, static::class)) {
+        PublicationDOI::save(['doi' => $doi, 'source' => static::class]);
       }
       return NULL;
     }
     elseif ($pmcid === FALSE) {
-      watchdog('tpps', "@key: PMC ID not found for DOI '@doi'.",
-        ['@doi' => $doi, '@key' => static::KEY],
+      watchdog('tpps', "@class_name: PMC ID not found for DOI '@doi'.",
+        ['@doi' => $doi, '@class_name' => static::class],
         WATCHDOG_ERROR
       );
       return FALSE;
     }
     elseif (empty($pmcid)) {
-      watchdog('tpps', "@key: Empty PMC ID for @doi.",
-        ['@key' => static::KEY, '@doi' => $doi],
+      watchdog('tpps', "@class_name: Empty PMC ID for @doi.",
+        ['@doi' => $doi, '@class_name' => static::class],
         WATCHDOG_ERROR
       );
       return FALSE;
