@@ -27,6 +27,34 @@ function tpps_report_rest_api_response_body() {
 
   $result = $query->execute()->fetchAssoc();
 
+
+
+  // @TODO Create a separate method/function.
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Remove leading/trailing quotes and whitespace
+  $body = trim($result['body'], "\n\r\t \"'");
+  // Decode JSON unicode escapes.
+  $body = preg_replace_callback('/\\\\u([0-9a-fA-F]{4})/',
+    function ($matches) {
+      return mb_convert_encoding(pack('H*', $matches[1]), 'UTF-8', 'UTF-16BE');
+    },
+    $body
+  );
+  // Replace other JSON escapes.
+  $body = str_replace(
+    ['\\/', '\\"', '\\n', '\\r', '\\t'], ['/', '"', "\n", "\r", "\t"],
+    $body
+  );
+
+
+
+
+
+dpm(var_export(
+  PubMedCentral::parseXmlResponse($body)
+, 1));
+
   // Request.
   $output .= theme('item_list', [
     'title' => t('Request'),
@@ -52,6 +80,7 @@ function tpps_report_rest_api_response_body() {
       'Response Id: ' . check_plain($result['id']),
     ]
   ]);
+
 
   $output .= theme('json', [
     'title' => t('Response Body'),

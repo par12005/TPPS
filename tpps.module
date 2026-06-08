@@ -3294,6 +3294,7 @@ function tpps_rest_api_response_loaded(array $context = []) {
  * Implements hook 'rest_api_request_started'.
  *
  * Called from class 'RestAPI'.
+ * Saves Request.
  *
  * @param array $context
  *   Request's context.
@@ -3334,7 +3335,8 @@ function tpps_rest_api_request_started(array $context = []) {
  * Implements hook 'rest_api_request_completed'.
  *
  * Called from class 'RestAPI'.
- * No need to check if response exists because response will be saved anyway.
+ * No need to check if response exists each new  response will be inserted as
+ * new record and existing records will not be updated.
  *
  * @param array $context
  *   Request's context.

@@ -325,6 +325,12 @@ class RestAPIResponse {
           'size' => 'normal',
           'not null' => TRUE,
         ],
+        'content_type' => [
+          'description' => 'Response content type.',
+          'type' => 'varchar',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ],
       ],
       'primary key' => [
         'id',

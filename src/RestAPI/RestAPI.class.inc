@@ -655,8 +655,8 @@ class RestAPI {
       curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
       // The maximum number of seconds for curl operation.
       // Note: disabled because valid requests failed because of timeout.
-      //curl_setopt($curl, CURLOPT_TIMEOUT, $this->getTimeout());
-      //curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, $this->getTimeout());
+      // curl_setopt($curl, CURLOPT_TIMEOUT, $this->getTimeout());
+      // curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, $this->getTimeout());
 
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // EXECUTE:
@@ -673,14 +673,20 @@ class RestAPI {
 
       // Prepare response.
       $this->response = empty($response) ? NULL : $response;
-      if (
-        !empty($response)
-        && $this->curlInfo['content_type'] == 'application/json'
-      ) {
-        // @todo Minor. Use try and catch block.
-        // PHP's json_decode() could throw an exception of invalid JSON.
-        $this->response = json_decode($this->response, TRUE);
+      if (!empty($response)) {
+        $content_type = $this->curlInfo['content_type'] ?? '';
+        if (strpos($content_type, 'application/json') !== FALSE) {
+          // @todo Minor. Use try and catch block.
+          // PHP's json_decode() could throw an exception of invalid JSON.
+          $this->response = json_decode($this->response, TRUE);
+        }
+        elseif (strpos($content_type, 'application/xml') !== FALSE) {
+          // Store raw XML because any processing or convertation into PHP-array
+          // will lead to data loss.
+          // Store JSON-escaped for safe storage in a database text field.
+        }
       }
+
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Allow other modules to react on request's finish.
       if (function_exists('module_invoke_all')) {
@@ -697,6 +703,7 @@ class RestAPI {
           'cache_request' => $this->cacheRequest,
           'cache_response' => $this->cacheResponse,
           'use_cached_response' => $this->useCachedResponse,
+          'content_type' => $this->curlInfo['content_type'],
         ];
         module_invoke_all('rest_api_request_completed', $context);
       }
