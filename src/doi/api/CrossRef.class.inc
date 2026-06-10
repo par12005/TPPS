@@ -127,6 +127,7 @@ class CrossRef extends DoiApi {
         'url' => $url,
         'header' => $header,
       ]))->get()->response;
+      return $response;
     }
     catch (Exception $e) {
       $message = $e->getMessage();
@@ -137,7 +138,6 @@ class CrossRef extends DoiApi {
       );
       drupal_set_message($e->getCode() . ' ' . $message);
     }
-    return $response;
   }
 
 }

@@ -74,54 +74,67 @@ function theme_http_code(array $variables) {
  *
  * @param array $variables
  *   Data for theming.
- *   'json' string
- *     Tequired. JSON string to be shown.
+ *   'body' string
+ *     Required. Response body.
  *   'title' string
  *     Optional. Name of the data which will be shown as a title..
+ *   'content_type' string
+ *     Optional. Content type of the body.
+ *     Posible values: 'json', 'xml' or empty.
  *
  * @return string
  *   Returns rendered HTML.
  */
-function theme_json(array $variables) {
+function theme_response_body(array $variables) {
   $output = '';
-  $json = $variables['json'] ?? NULL;
-  if (!empty($json)) {
-    if (!empty($variables['title'])) {
-      $output .= '<h3>' . $variables['title'] . '</h3>';
-    }
+  if (!empty($variables['title'])) {
+    $output .= '<h3>' . $variables['title'] . '</h3>';
+  }
+  if (!isset($variables['body'])) {
+    // error.
+  }
 
-    $data = json_decode($json, 1);
-    if (is_array($data)) {
-      $output .= TppsArray::print($data);
-    }
-    elseif (is_string($data)) {
-      if (
-        (strpos($data, '<html') !== FALSE)
-        && $data !== strip_tags($data)
-      ) {
-        // HTML.
-        $output .= "<iframe srcdoc='" . $data . "' " . '
-          style="width: 100%; height: 500px; border: 2px solid silver;">
-          </iframe>';
-      }
-      else {
-        // @TODO Responses from dryad server was twice encoded into JSON.
-        // Check why this happens.
-        $data2 = json_decode($data, 1);
-        if (is_array($data2)) {
-          $output .= TppsArray::print($data2);
-        }
-        else {
-          $output .= '<pre style="border: 2px solid red; padding: 20px">'
-            . var_export($data, 1) . '</pre>';
-        }
-      }
+  $content_type = $variables['content_type'] ?? '';
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  if (strpos($content_type, 'application/xml') !== FALSE) {
+    // XML.
+    $body = RestAPIResponse::restoreXml($variables['body']);
+    $output .= '<pre style="border: 2px solid silver; padding: 20px">'
+     . htmlspecialchars(trim($body)) . '</pre>';
+    return $output;
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  elseif (strpos($content_type, 'application/json') !== FALSE) {
+    if (strpos($variables['body'], '"{\"') !== FALSE) {
+      // Responses from dryad server was twice encoded into JSON by excident.
+      // This bug was already fixed.
+      $body = json_decode($variables['body'], 1);
     }
     else {
-      dpm(var_export($data, 1));
-      $output .= 'Unknown format';
+      $body = $variables['body'];
     }
+    // JSON.
+    if (is_array($body = json_decode($body, 1))) {
+      // Some errors could be just strings so we show only arrays.
+      return $output . TppsArray::print($body);
+    }
+  }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Other (neither JSON, nor XML).
+  // Note: decode to restore escaped tags.
+  $body = json_decode($variables['body'], 1);
+
+  if ((strpos($body, '<html') !== FALSE) && $body !== strip_tags($body)) {
+    // HTML.
+    $output .= "<iframe srcdoc='" . $body . "' " . '
+      style="width: 100%; height: 500px; border: 2px solid red;">
+      </iframe>';
+  }
+  else {
+    $output .= '<pre style="border: 2px solid green; padding: 20px">'
+      . check_plain(print_r($variables['body'], 1)) . '</pre>';
   }
   return $output;
 }

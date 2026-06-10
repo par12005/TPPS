@@ -22,10 +22,11 @@ function tpps_theme() {
       ],
       'file' => 'theme/misc.inc',
     ],
-    'json' => [
+    'response_body' => [
       'variables' => [
         'title' => NULL,
-        'json' => NULL,
+        'body' => NULL,
+        'content_type' => NULL,
       ],
       'file' => 'theme/misc.inc',
     ],

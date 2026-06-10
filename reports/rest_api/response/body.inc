@@ -9,6 +9,7 @@
  * Menu callback. Shows Rest API Response Body.
  */
 function tpps_report_rest_api_response_body() {
+  $output = '';
 
   $id = arg(6);
   if (empty($id)) {
@@ -17,44 +18,15 @@ function tpps_report_rest_api_response_body() {
     drupal_goto('admin/reports/tpps/rest_api/response/list');
   }
 
-  $output = '';
   // WARNING: Report::print() requires db_select() not db_query().
   $query = db_select(RestAPIResponse::TABLE, 't')
     ->fields('t', [])
     ->condition('id', $id);
   $query->join(RestAPIRequest::TABLE, 't2', 't2.request_id = t.request_id');
   $query->addField('t2', 'tag', 'tag');
-
   $result = $query->execute()->fetchAssoc();
 
-
-
-  // @TODO Create a separate method/function.
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Remove leading/trailing quotes and whitespace
-  $body = trim($result['body'], "\n\r\t \"'");
-  // Decode JSON unicode escapes.
-  $body = preg_replace_callback('/\\\\u([0-9a-fA-F]{4})/',
-    function ($matches) {
-      return mb_convert_encoding(pack('H*', $matches[1]), 'UTF-8', 'UTF-16BE');
-    },
-    $body
-  );
-  // Replace other JSON escapes.
-  $body = str_replace(
-    ['\\/', '\\"', '\\n', '\\r', '\\t'], ['/', '"', "\n", "\r", "\t"],
-    $body
-  );
-
-
-
-
-
-dpm(var_export(
-  PubMedCentral::parseXmlResponse($body)
-, 1));
-
   // Request.
   $output .= theme('item_list', [
     'title' => t('Request'),
@@ -78,13 +50,15 @@ dpm(var_export(
           . ' (' . $result['created'] . ')',
       ]),
       'Response Id: ' . check_plain($result['id']),
-    ]
+      'Content Type: ' . check_plain($result['content_type']),
+    ],
   ]);
 
-
-  $output .= theme('json', [
+  // Response Body dump.
+  $output .= theme('response_body', [
     'title' => t('Response Body'),
-    'json' => $result['body'] ?? '',
+    'body' => $result['body'] ?? '',
+    'content_type' => $result['content_type'] ?? '',
   ]);
   return $output;
 }

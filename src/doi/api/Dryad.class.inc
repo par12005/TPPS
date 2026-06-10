@@ -173,7 +173,6 @@ class Dryad extends DoiApi {
         'url' => $url,
         'header' => $header,
       ]))->get()->response;
-      $response = json_decode($response, 1);
     }
     catch (Exception $e) {
       // @TODO Minor. Code 429 (Too many requiests).

@@ -275,7 +275,7 @@ class Gemini {
       drupal_set_message($e->getCode() . ' ' . $message);
     }
 
-    $response = json_decode($response, 1);
+    //$response = json_decode($response, 1);
     if (empty($response['responseId'])) {
       throw new Exception('Wrong JSON in response.');
     }

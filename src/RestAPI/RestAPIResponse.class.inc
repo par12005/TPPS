@@ -349,4 +349,35 @@ class RestAPIResponse {
     ];
   }
 
+  /**
+   * Restores XML from JSON decoded string.
+   *
+   * XML response is stored as json string in db table's field
+   * 'public.tpps_rest_api_response.body'.
+   * To use it as XML it must be 'restored' first.
+   *
+   * @param string $json
+   *   String in JSON format with escaped tags.
+   *
+   * @return string
+   *   Returns XML-string.
+   */
+  public static function restoreXml($json) {
+    // Remove leading/trailing quotes and whitespace.
+    $data = trim($json, "\n\r\t \"'");
+    // Decode JSON unicode escapes.
+    $data = preg_replace_callback('/\\\\u([0-9a-fA-F]{4})/',
+      function ($matches) {
+        return mb_convert_encoding(pack('H*', $matches[1]), 'UTF-8', 'UTF-16BE');
+      },
+      $data
+    );
+    // Replace other JSON escapes.
+    $data = str_replace(
+      ['\\/', '\\"', '\\n', '\\r', '\\t'], ['/', '"', "\n", "\r", "\t"],
+      $data
+    );
+    return $data;
+  }
+
 }
