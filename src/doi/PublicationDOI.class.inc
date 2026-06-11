@@ -241,8 +241,8 @@ class PublicationDOI extends DOI {
           'size' => 'normal',
           'not null' => TRUE,
         ],
-        'authors' => [
-          'description' => 'Authors (primary and secondary).',
+        'journal' => [
+          'description' => 'Publication Journal.',
           'type' => 'varchar',
           'size' => 'normal',
           'not null' => FALSE,
@@ -259,8 +259,8 @@ class PublicationDOI extends DOI {
           'size' => 'normal',
           'not null' => FALSE,
         ],
-        'journal' => [
-          'description' => 'Publication Journal.',
+        'authors' => [
+          'description' => 'Authors (primary and secondary).',
           'type' => 'varchar',
           'size' => 'normal',
           'not null' => FALSE,
