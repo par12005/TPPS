@@ -123,8 +123,9 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
       'query_param' => constant($provider->getClassName() . '::QUERY_PARAM'),
       // Delay between requests of the same client.
       'delay' => $provider->delay,
-      'ajax_save_path' => '/ajax/tpps/save' . $class_name . 'Serp',
-      'ajax_callback' => 'save' . $class_name . 'Serp',
+      // Note: path doesn't mean anything. More important is 'ajax_callback'.
+      'ajax_save_path' => '/ajax/tpps/saveSerp',
+      'ajax_callback' => 'saveSerp',
       'not_found_token' => $provider->getNotFoundString(),
     ];
 

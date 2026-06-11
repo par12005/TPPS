@@ -51,77 +51,39 @@ class TppsAjax {
   }
 
   /**
-   * AJAX callback for 'Save Google Scholar SERP'.
+   * AJAX callback for 'Save DOI SERP'.
+   *
+   * Saves SERP source code into db table per SERP provider.
+   * Parses source code using Gemini AI and stores DOI Publication Data
+   * into db table 'public.tpps_publication_doi'.
    *
    * @param array $payload
    *   POST payload. Required keys are: 'serp'.
    *   See tpps_ajax_callback().
    *
    * @return array
-   *   Returns response.
-   *   Key 'success' will have value TRUE in case of success and FALSE otherwise.
+   *   Returns DOI Publication Data in item with key 'publication_data'.
+   *   Other keys and their values:
+   *   'doi' (string) - DOI
+   *   'success' (bool) - TRUE in case of success and FALSE otherwise.
+   *   'source' (string) - source of the DOI Publication data.
    */
-  public static function saveGoogleScholarSerp(array $payload) {
+  public static function saveSerp(array $payload) {
     if (empty($payload['doi'])) {
       $response['errors'][] = t('Empty DOI.');
     }
     elseif (empty($payload['serp'])) {
       $response['errors'][] = t('Empty SERP.');
     }
-    elseif (empty($payload['source'])) {
-      $response['errors'][] = t('Empty source.');
-    }
+    elseif (empty($payload['provider_class_name'])) {
+      $response['errors'][] = t('Empty SERP provider class name.');
     else {
       $doi = $payload['doi'];
-      $provider = new GoogleScholar();
+      $provider_class_name = $payload['provider_class_name'];
+      $provider = new $provider_class_name();
       // Skip loading serp from database even if it exists.
       $provider->doi = $doi;
       $provider->serp = base64_decode($payload['serp']);
-      if (
-        strpos($provider->serp, 'Not found because of proxy error') === FALSE
-        && strpos($provider->serp, '404 Not Found') === FALSE
-      ) {
-        $provider->save();
-        // Parse using Gemini AI.
-        $provider->parse();
-
-        $response['doi'] = $payload['doi'];
-        $response['source'] = $payload['source'];
-        $response['publication_data'] = PublicationDOI::load($doi, $payload['source']);
-      }
-      else {
-        $response['errors'][] = t('Proxy error.');
-      }
-    }
-    return $response;
-  }
-
-  /**
-   * AJAX callback for 'Save Google Scholar SERP'.
-   *
-   * @param array $payload
-   *   POST payload. Required keys are: 'serp'.
-   *   See tpps_ajax_callback().
-   *
-   * @return array
-   *   Returns response.
-   *   Key 'success' will have value TRUE in case of success and FALSE otherwise.
-   */
-  public static function savePubMedSerp(array $payload) {
-    if (empty($payload['doi'])) {
-      $response['errors'][] = t('Empty DOI.');
-    }
-    elseif (empty($payload['serp'])) {
-      $response['errors'][] = t('Empty SERP.');
-    }
-    elseif (empty($payload['source'])) {
-      $response['errors'][] = t('Empty source.');
-    }
-    else {
-      $doi = $payload['doi'];
-      $provider = new PubMed($doi);
-      $provider->serp = base64_decode($payload['serp']);
-
       if (
         strpos($provider->serp, 'Not found because of proxy error') === FALSE
         && strpos($provider->serp, '404 Not Found') === FALSE

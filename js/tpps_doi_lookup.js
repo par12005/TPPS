@@ -283,8 +283,8 @@
           dataType: 'json',
           data: JSON.stringify({
             "doi": doi,
-            "source": provider_class_name,
             "callback": doi_lookup[provider_class_name].ajax_callback,
+            "provider": provider_class_name,
             "serp": btoa(unescape(encodeURIComponent(serpContent)))
             // Modern fix:
             //"serp": btoa(serpContent)
