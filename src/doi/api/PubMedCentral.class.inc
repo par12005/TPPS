@@ -24,7 +24,7 @@
 class PubMedCentral extends DoiApi {
 
   // Unique key used to get Drupal variables and etc.
- // To get key by class name: $name = constant($class_name . '::KEY');
+  // To get key by class name: $name = constant($class_name . '::KEY');
   // WARNING:
   // In DB table 'public.tpps_publication_doi.source' used class name
   // (not class's KEY constant).
@@ -53,7 +53,7 @@ class PubMedCentral extends DoiApi {
     $xml = static::request($doi);
     if (
       !empty($xml)
-      && strpos($xml, 'Identifier does not exist.') !== FALSE
+      && strpos($xml, 'Identifier does not exist.') === FALSE
     ) {
       $data = static::parseXmlResponse($xml);
       // Create an empty record to avoid the same requests to API.
@@ -62,7 +62,10 @@ class PubMedCentral extends DoiApi {
       PublicationDOI::save($data);
     }
     elseif (is_null($xml)) {
-      //PublicationDOI::save(['doi' => $doi, 'source' => static::class]);
+      // PublicationDOI::save(['doi' => $doi, 'source' => static::class]);
+    }
+    else {
+      // Empty or error.
     }
   }
 
