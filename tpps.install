@@ -2651,7 +2651,7 @@ function tpps_update_7134() {
   // Rest API.
   variable_set('tpps_rest_api_cache_requests', TRUE);
   variable_set('tpps_rest_api_cache_responses', TRUE);
-  variable_set('tpps_rest_api_use_cached_responses', TRUE);
+  variable_set('tpps_rest_api_use_cached_response', TRUE);
   // DOI / Submission reports.
   variable_set('tpps_report_doi_submission_publication_title', 'Publication DOI');
   variable_set('tpps_report_doi_submission_dataset_title', 'Dataset DOI');

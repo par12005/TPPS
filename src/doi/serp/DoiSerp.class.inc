@@ -159,10 +159,6 @@ abstract class DoiSerp {
    *   When db table which stores Google Scholar SERP doen't exists.
    */
   public function __construct(string $doi = NULL) {
-
-
-//dpm(print_r(debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 5), TRUE));
-
     if (!empty(static::TABLE) && !db_table_exists(static::TABLE)) {
       throw new Exception('DB table "' . static::TABLE . '" not found.');
     }
@@ -359,7 +355,6 @@ abstract class DoiSerp {
     $use_gemini = TRUE;
     if ($use_gemini) {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
       $gemini = new Gemini();
       if (!empty($values['tpps_doi_lookup_system_instruction'])) {
         $gemini->systemInstruction = variable_get(
@@ -402,7 +397,7 @@ abstract class DoiSerp {
         $error_message = json_last_error_msg();
         throw new Exception("JSON decoding error: [{$error_code}] {$error_message}");
       }
-      $fields['source'] = static::KEY;
+      $fields['source'] = static::class;
     }
     else {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

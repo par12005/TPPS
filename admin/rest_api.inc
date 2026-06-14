@@ -53,7 +53,7 @@ function tpps_rest_api_settings_form(array $form, array &$form_state) {
   ];
   $form['cache']['tpps_rest_api_use_cached_response'] = [
     '#type' => 'checkbox',
-    '#title' => t('Use Cached Responses'),
+    '#title' => t('Use Cached Response'),
     '#default_value' => variable_get('tpps_rest_api_use_cached_response'),
     '#description' => t("Only latest valid response could be re-used."
       . "<br />Note: Each request could overwrite this setting. "

@@ -224,7 +224,7 @@ class RestAPI {
    *
    * When TRUE latest valid response will be used (if exists).
    * When FALSE then API will be request to get most up-to-date data.
-   * Global settings controlled by variable: 'tpps_rest_api_use_cached_responses'.
+   * Global settings controlled by variable: 'tpps_rest_api_use_cached_response'.
    * Each request could overwrite global setting.
    *
    * @var bool
@@ -397,7 +397,7 @@ class RestAPI {
 
     $this->cacheRequest = variable_get('tpps_rest_api_cache_requests', TRUE);
     $this->cacheResponse = variable_get('tpps_rest_api_cache_responses', TRUE);
-    $this->useCachedResponse = variable_get('tpps_rest_api_use_cached_responses', FALSE);
+    $this->useCachedResponse = variable_get('tpps_rest_api_use_cached_response', FALSE);
 
     if (!empty($context)) {
       if (is_array($context)) {

@@ -256,6 +256,7 @@ class Gemini {
       'Content-Type: application/json',
     ];
 
+    $response = '';
     try {
       $response = (new RestAPI([
         'url' => $this->url,
@@ -275,9 +276,29 @@ class Gemini {
       drupal_set_message($e->getCode() . ' ' . $message);
     }
 
-    //$response = json_decode($response, 1);
     if (empty($response['responseId'])) {
-      throw new Exception('Wrong JSON in response.');
+      if (
+        $response['error']['code'] == 429
+        && $response['error']['status'] == 'RESOURCE_EXHAUSTED'
+      ) {
+        // $response['error']['message']:
+        // You exceeded your current quota, please check your plan and
+        // billing details. For more information on this error, head to:
+        // https://ai.google.dev/gemini-api/docs/rate-limits.
+        // To monitor your current usage, head to: https://ai.dev/rate-limit.
+        // * Quota exceeded for metric:
+        // generativelanguage.googleapis.com/generate_content_free_tier_requests,
+        // limit: 20, model: gemini-2.5-flash-lite
+        // Please retry in 5.334713807s.
+        //
+        // @TODO Change model and try again.
+        $message = check_plain($response['error']['message']);
+        drupal_set_message($message);
+        watchdog('tpps', $message, [], WATCHDOG_ERROR);
+      }
+      else {
+        throw new Exception('Unknown response format.');
+      }
     }
     else {
       $this->response = $response;
