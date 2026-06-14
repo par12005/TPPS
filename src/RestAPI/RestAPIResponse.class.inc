@@ -29,12 +29,12 @@ class RestAPIResponse {
    *   Request's context.
    *   Keys: see RestAPI->doRequest().
    *   To check if any response exists:
-   *     RestAPIResponse::isExists($request_id).
+   *     RestAPIResponse::isExists($hash).
    *   To check if valid response exists:
    *     RestAPIResponse::isValidExists($request_id).
    *
-   * @return bool
-   *   Returns TRUE in case of success and FALSE otherwise.
+   * @return int
+   *   Returns 'response_id' (last insert id).
    *
    * @thrown Exception
    *   When $context['request_id'] is empty.
@@ -56,31 +56,68 @@ class RestAPIResponse {
     // created just now.
     $data['created'] = time();
     $data['duration'] = intval(round($data['duration']));
-    $data['body'] = json_encode($data['body'], TRUE);
-    // Note: No need to check if the same response exists because it could
-    // have time-based items (like request time) and this check will never
-    // give any result. Just store every response.
-    db_insert(static::TABLE)->fields($data)->execute();
-    return TRUE;
+    if (!is_string($data['body'])) {
+      $data['body'] = json_encode($data['body'], TRUE);
+    }
+    $data['hash'] = static::generateHash($context);
+
+    // Do not store the same responses multiple times.
+    // @TODO Minor. Check also 'code'.
+    if (empty($response_id = static::getResponseId($data['hash']))) {
+      $response_id = db_insert(static::TABLE)->fields($data)->execute();
+    }
+    return $response_id;
   }
 
   /**
-   * Checks if any response exists in DB.
+   * Checks if record already exists in DB.
    *
-   * WARNING: Invalid requests also logged and will be counted..
-   *
-   * @param string $request_id
-   *   Unique request identificator.
-   * @param int $created
-   *   Optional. Unix timestamp of the moment when response was requested.
-   *   When empty then latest response will be loaded.
+   * @param string $hash
+   *   Request's data md5 hash.
    *
    * @return bool
-   *   Returns TRUE if record for given $request_id found in DB.
+   *   Returns TRUE if record for given $hash found in DB.
    *   Returns FALSE otherwise.
    */
-  public static function isExists($request_id, $created = NULL) {
-    return (bool) static::load($request_id, $created);
+  public static function isExists($hash) {
+    return (bool) static::getRequestId($hash);
+  }
+
+  /**
+   * Gets response id by hash.
+   *
+   * @param string $hash
+   *   Request's data md5 hash.
+   *
+   * @return mixed
+   *   Returns integer 'response_id' if record for given $hash found.
+   *   Returns FALSE otherwise.
+   */
+  public static function getResponseId($hash) {
+    return db_select(static::TABLE, 't')
+      ->fields('t', ['response_id'])
+      ->condition('hash', $hash)
+      ->range(0, 1)
+      ->orderBy('created', 'DESC')
+      ->execute()
+      ->fetchField();
+  }
+
+  /**
+   * Generates Response's data md5 hash.
+   *
+   * @param array $context
+   *   Request's context.
+   *   Keys: see RestAPI->doRequest().
+   *   Used 'body' element.
+   *
+   * @return string
+   *   Returns hash's value.
+   */
+  public static function generateHash(array $context) {
+    return md5(json_encode([
+      'body' => ($context['body'] ?? ''),
+    ]));
   }
 
   /**
@@ -157,7 +194,7 @@ class RestAPIResponse {
       // tpps_rest_api_request_completed().
       $context = [
         'request_id' => $request_id,
-        'response_id' => $static_cache[$key]['id'],
+        'response_id' => $static_cache[$key]['response_id'],
       ];
       module_invoke_all('rest_api_response_loaded', $context);
     }
@@ -217,11 +254,11 @@ class RestAPIResponse {
     }
 
     if (function_exists('module_invoke_all')) {
-      // tpps_rest_api_request_completed().
       $context = [
         'request_id' => $request_id,
-        'response_id' => $static_cache[$key]['id'],
+        'response_id' => $static_cache[$key]['response_id'],
       ];
+      // tpps_rest_api_response_loaded().
       module_invoke_all('rest_api_response_loaded', $context);
     }
 
@@ -285,7 +322,7 @@ class RestAPIResponse {
     return [
       'description' => "Stores REST API responses.",
       'fields' => [
-        'id' => [
+        'response_id' => [
           'description' => 'The unique response identifier.',
           'type' => 'serial',
           'size' => 'normal',
@@ -296,7 +333,7 @@ class RestAPIResponse {
         // exactly the same request in log.
         'request_id' => [
           'description' => 'The unique request identifier.',
-          'type' => 'varchar',
+          'type' => 'int',
           'size' => 'normal',
           'not null' => TRUE,
         ],
@@ -331,15 +368,15 @@ class RestAPIResponse {
           'size' => 'normal',
           'not null' => TRUE,
         ],
+        'hash' => [
+          'description' => "md5 hash of the response body.",
+          'type' => 'varchar',
+          'size' => 'normal',
+          'not null' => FALSE,
+        ],
       ],
-      'primary key' => [
-        'id',
-      ],
-      'unique keys' => [
-        // It's possible that the same request will bring different API response.
-        // For example response is time-based.
-        'request_id_created' => ['request_id', 'created'],
-      ],
+      'primary key' => ['response_id'],
+      'unique keys' => ['request_id_created' => ['request_id', 'created']],
       'foreign keys' => [
         'request_id' => [
           'table' => 'tpps_rest_api_request',

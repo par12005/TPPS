@@ -77,6 +77,7 @@ class TppsAjax {
     }
     elseif (empty($payload['provider_class_name'])) {
       $response['errors'][] = t('Empty SERP provider class name.');
+    }
     else {
       $doi = $payload['doi'];
       $provider_class_name = $payload['provider_class_name'];

@@ -3301,20 +3301,21 @@ function tpps_rest_api_response_loaded(array $context = []) {
  *   Keys: see RestAPI->doRequest().
  */
 function tpps_rest_api_request_started(array $context = []) {
-  if (empty($context['request_id'])) {
-    $params = ['@function' => __FUNCTION__];
-    watchdog('tpps', '@function: empty "request_id".', $params, 'error');
-    return;
-  }
 
   if ($debug_mode ?? 0) {
     $params = ['@dump' => var_export($context, 1), '@function' => __FUNCTION__];
     watchdog('tpps_rest_api', '@function: <pre>@dump</pre>', $params);
   }
 
+  if (empty($context['hash'])) {
+    $params = ['@function' => __FUNCTION__];
+    watchdog('tpps', '@function: empty "hash".', $params, 'error');
+    return FALSE;
+  }
   if ($context['cache_request']) {
-    if (RestAPIRequest::save($context)) {
-      $message = '!aRest API Request !report_link was logged.';
+    $request_id = RestAPIRequest::save($context);
+    if (!empty($request_id)) {
+      $message = '!aRest API Request !report_link was saved.';
     }
     else {
       $message = '!aRest API Request !report_link already exists.';
@@ -3322,21 +3323,22 @@ function tpps_rest_api_request_started(array $context = []) {
     $params = [
       '!a' => '<a href=#></a>',
       '!report_link' => l(
-        t('#@request_id', ['@request_id' => $context['request_id']]),
+        t('#@request_id', ['@request_id' => $request_id]),
         'admin/reports/db/public.' . RestAPIRequest::TABLE,
-        ['query' => ['request_id' => $context['request_id']]]
+        ['query' => ['request_id' => $request_id]]
       ),
     ];
     watchdog('tpps_rest_api', $message, $params);
   }
+  return $request_id ?? FALSE;
 }
 
 /**
  * Implements hook 'rest_api_request_completed'.
  *
  * Called from class 'RestAPI'.
- * No need to check if response exists each new  response will be inserted as
- * new record and existing records will not be updated.
+ * No need to check if response exists because each response will be
+ * stored in database.
  *
  * @param array $context
  *   Request's context.
@@ -3351,29 +3353,39 @@ function tpps_rest_api_request_completed(array $context = []) {
   }
 
   if (empty($context['request_id'])) {
-    // @todo ? Watchdog record?
+    $params = ['@dump' => var_export($context, 1), '@function' => __FUNCTION__];
+    watchdog(
+      'tpps_rest_api',
+      '@function: Request Id is empty. <pre>@dump</pre>',
+      $params
+    );
     return;
   }
   if ($context['cache_response']) {
-    if (RestAPIResponse::save($context)) {
+    if ($response_id = RestAPIResponse::save($context)) {
       // Watchdog message.
-      $message = '!aResponse to Rest API request !report_link was logged.';
+      $message = '!aResponse !response_report_link to Rest API request !request_report_link was saved.';
       $params = [
         '!a' => '<a href=#></a>',
-        '!report_link' => l(
+        '!request_report_link' => l(
           t('#@request_id', ['@request_id' => $context['request_id']]),
           'admin/reports/db/public.' . RestAPIResponse::TABLE,
           ['query' => ['request_id' => $context['request_id']]]
+        ),
+        '!response_report_link' => l(
+          t('#@response_id', ['@response_id' => $response_id]),
+          'admin/reports/db/public.' . RestAPIResponse::TABLE,
+          ['query' => ['response_id' => $response_id]]
         ),
       ];
       watchdog('tpps_rest_api', $message, $params);
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Record very long requests.
+    // Record requests which processing takes a very long time.
     $max_execution_time = variable_get('tpps_rest_api_max_execution_time', 5000);
     $method = $request['method'] ?? NULL;
     if (($context['duration'] ?? 0) >= $max_execution_time) {
-      $message = '!aRequest !report_link was processed too long: @duration msec.';
+      $message = '!aProcessing request !report_link took too long: @duration msec.';
       $params = [
         '!a' => '<a href=#></a>',
         '@duration' => $context['duration'],

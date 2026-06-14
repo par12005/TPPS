@@ -837,7 +837,6 @@ class PublicationDOI extends DOI {
     // Data is incomplete. Let's get data from other sources.
     $data = [];
     $class_list = [];
-    $method_name = 'insert';
     $api_list = static::getApiList();
 
     if (!empty($source) && !empty($class_name = $api_list[$source])) {
@@ -856,6 +855,7 @@ class PublicationDOI extends DOI {
       watchdog(__METHOD__, $message, $params);
     }
     // @todo Minor. Run requests in parallel.
+    $method_name = 'insert';
     foreach ($class_list as $class_name) {
       if (!in_array($class_name, $allowed_api_list)) {
         continue;

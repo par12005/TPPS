@@ -17,19 +17,33 @@ class RestAPIRequest {
   const TABLE = 'tpps_rest_api_request';
 
   /**
-   * Checks if the request exists in DB.
+   * Checks if record already exists in DB.
    *
-   * @param string $request_id
-   *   Unique request identificator.
+   * @param string $hash
+   *   Request's data md5 hash.
    *
    * @return bool
-   *   Returns TRUE if record for given $request_id found in DB.
+   *   Returns TRUE if record for given $hash found in DB.
    *   Returns FALSE otherwise.
    */
-  public static function isExists($request_id) {
-    return (bool) db_select(static::TABLE, 't')
+  public static function isExists($hash) {
+    return (bool) static::getRequestId($hash);
+  }
+
+  /**
+   * Gets request id by hash.
+   *
+   * @param string $hash
+   *   Request's data md5 hash.
+   *
+   * @return mixed
+   *   Returns integer request id if record for given $hash found.
+   *   Returns FALSE otherwise.
+   */
+  public static function getRequestId($hash) {
+    return db_select(static::TABLE, 't')
       ->fields('t', ['request_id'])
-      ->condition('request_id', $request_id)
+      ->condition('hash', $hash)
       ->range(0, 1)
       ->orderBy('created', 'DESC')
       ->execute()
@@ -48,20 +62,20 @@ class RestAPIRequest {
    *   Keys: see RestAPI->doRequest().
    *   'tag' is optional.
    *
-   * @return bool
-   *   Returns TRUE when new record was created and FALSE when the same
-   *   request already exists in DB table.
+   * @return mixed
+   *   Returns last insert id (integer) when new record was created.
+   *   Returns NULL if record with the same hash already exists.
    *
    * @thrown Exception
    *   When $context['request_id'] is empty.
    */
   public static function save(array $context = []) {
-    $key = 'request_id';
-    if (empty($context['request_id'])) {
-      throw new Exception("Empty 'request_id'.");
+    if (empty($context['hash'])) {
+      throw new Exception("Empty 'hash'.");
     }
-    if (static::isExists($context['request_id'])) {
-      return FALSE;
+    if ($request_id = static::getRequestId($context['hash'])) {
+      watchdog('tpps_rest_api', 'Record exists: ' . $request_id);
+      return $request_id;
     }
     else {
       $data = $context;
@@ -69,11 +83,13 @@ class RestAPIRequest {
       $data['created'] = $data['created'] ?? time();
       // Convert arrays into JSON format.
       foreach (['payload', 'header'] as $name) {
+        if (is_string($data[$name])) {
+          continue;
+        }
         $data[$name] = json_encode($context[$name], TRUE);
       }
       $data['use_cached_response'] = (int) $data['use_cached_response'];
-      db_insert(static::TABLE)->fields($data)->execute();
-      return TRUE;
+      return db_insert(static::TABLE)->fields($data)->execute();
     }
   }
 
@@ -93,7 +109,8 @@ class RestAPIRequest {
    * @param string $request_id
    *   Unique request identificator.
    *
-   * @return array
+   * @return mixed
+   *   Returns FALSE if record wasn't found in DB.
    *   Returns associative array with keys:
    *     'request_id',
    *     'created',
@@ -103,13 +120,22 @@ class RestAPIRequest {
    *     'response',
    */
   public static function load($request_id) {
-    return db_select(static::TABLE, 't')
+    $data = db_select(static::TABLE, 't')
       ->fields('t', [])
       ->condition('request_id', $request_id)
       ->range(0, 1)
       ->orderBy('created', 'DESC')
       ->execute()
       ->fetchAssoc();
+
+    if (!empty($data['payload'])) {
+      $data['payload'] = json_decode($data['payload'], 1);
+    }
+    if (!empty($data['header'])) {
+      $data['header'] = json_decode($data['header'], 1);
+    }
+
+    return $data;
   }
 
   /**
@@ -128,29 +154,10 @@ class RestAPIRequest {
         // exactly the same request in log.
         'request_id' => [
           'description' => 'The unique request identifier.',
-          'type' => 'varchar',
+          'type' => 'serial',
           'size' => 'normal',
+          'unsigned' => TRUE,
           'not null' => TRUE,
-        ],
-        'tag' => [
-          'description' => 'Request description for humans.',
-          'type' => 'varchar',
-          'size' => 'normal',
-          'not null' => FALSE,
-        ],
-        'cache_response' => [
-          'type' => 'int',
-          'size' => 'tiny',
-          'not null' => TRUE,
-          'default' => 0,
-          'description' => 'Controls if response could be cached. 0 = FALSE, 1 = TRUE.',
-        ],
-        'use_cached_response' => [
-          'type' => 'int',
-          'size' => 'tiny',
-          'not null' => TRUE,
-          'default' => 0,
-          'description' => 'Controls if cached response could be used. 0 = FALSE, 1 = TRUE.',
         ],
         'created' => [
           'description' => 'The first time request was created. Format: UNIX timestamp.',
@@ -183,12 +190,35 @@ class RestAPIRequest {
           'size' => 'normal',
           'not null' => TRUE,
         ],
+        'hash' => [
+          'description' => "md5 hash of the request's data.",
+          'type' => 'varchar',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ],
+        'tag' => [
+          'description' => 'Request description for humans.',
+          'type' => 'varchar',
+          'size' => 'normal',
+          'not null' => FALSE,
+        ],
+        'cache_response' => [
+          'type' => 'int',
+          'size' => 'tiny',
+          'not null' => TRUE,
+          'default' => 0,
+          'description' => 'Controls if response could be cached. 0 = FALSE, 1 = TRUE.',
+        ],
+        'use_cached_response' => [
+          'type' => 'int',
+          'size' => 'tiny',
+          'not null' => TRUE,
+          'default' => 0,
+          'description' => 'Controls if cached response could be used. 0 = FALSE, 1 = TRUE.',
+        ],
       ],
-      'unique keys' => [
-        // It's possible that the same request will bring different API response.
-        // For example response is time-based.
-        'request_id_created' => ['request_id', 'created'],
-      ],
+      'unique keys' => ['hash' => ['hash']],
+      'primary key' => ['request_id'],
     ];
   }
 

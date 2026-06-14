@@ -173,6 +173,7 @@ class Dryad extends DoiApi {
         'url' => $url,
         'header' => $header,
       ]))->get()->response;
+      return $response;
     }
     catch (Exception $e) {
       // @TODO Minor. Code 429 (Too many requiests).
@@ -185,7 +186,6 @@ class Dryad extends DoiApi {
       // throw new Exception($message, $e->getCode());
       drupal_set_message($e->getCode() . ' ' . $message);
     }
-    return $response;
   }
 
 }
