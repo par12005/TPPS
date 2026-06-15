@@ -3312,7 +3312,7 @@ function tpps_rest_api_request_started(array $context = []) {
     watchdog('tpps', '@function: empty "hash".', $params, 'error');
     return FALSE;
   }
-  if ($context['cache_request']) {
+  if ($context['save_request']) {
     $request_id = RestAPIRequest::save($context);
     if (!empty($request_id)) {
       $message = '!aRest API Request !report_link was saved.';
@@ -3361,7 +3361,7 @@ function tpps_rest_api_request_completed(array $context = []) {
     );
     return;
   }
-  if ($context['cache_response']) {
+  if ($context['save_response']) {
     if ($response_id = RestAPIResponse::save($context)) {
       // Watchdog message.
       $message = '!aResponse !response_report_link to Rest API request !request_report_link was saved.';

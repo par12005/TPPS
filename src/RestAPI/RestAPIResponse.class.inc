@@ -45,9 +45,9 @@ class RestAPIResponse {
     }
 
     $data = $context;
-    unset($data['cache_request']);
-    unset($data['cache_response']);
-    unset($data['use_cached_response']);
+    unset($data['save_request']);
+    unset($data['save_response']);
+    unset($data['use_cached']);
     unset($data['request']);
 
     // Store Response data.

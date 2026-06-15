@@ -207,12 +207,12 @@ class RestAPI {
    * When TRUE request will be stored.
    * See class 'RestAPIRequest' which manages responses stored in DB.
    * When FALSE then responses won't be saved into DB.
-   * Global settings controlled by variable: 'tpps_rest_api_cache_requests'.
+   * Global settings controlled by variable: 'tpps_rest_api_save_requests'.
    * Each request could overwrite global setting.
    *
    * @var bool
    */
-  protected $cacheRequest;
+  protected $saveRequest;
 
   /**
    * Controls if response must be stored in DB.
@@ -220,24 +220,24 @@ class RestAPI {
    * When TRUE response will be stored.
    *   See class 'RestAPIResponse' which manages responses stored in DB.
    * When FALSE then responses won't be saved into DB.
-   * Global settings controlled by variable: 'tpps_rest_api_cache_responses'.
+   * Global settings controlled by variable: 'tpps_rest_api_save_responses'.
    * Each request could overwrite global setting.
    *
    * @var bool
    */
-  protected $cacheResponse;
+  protected $saveResponse;
 
   /**
-   * Allow to use cached response instead of actual API Request.
+   * Allow to use cached request/response instead of actual API Request.
    *
    * When TRUE latest valid response will be used (if exists).
    * When FALSE then API will be request to get most up-to-date data.
-   * Global settings controlled by variable: 'tpps_rest_api_use_cached_response'.
+   * Global settings controlled by variable: 'tpps_rest_api_use_cached'.
    * Each request could overwrite global setting.
    *
    * @var bool
    */
-  protected $useCachedResponse;
+  protected $useCached;
 
   /**
    * Creates request from $context data.
@@ -253,16 +253,16 @@ class RestAPI {
    *     Optional. Payload for POST and PUT requests.
    *   - 'header' array
    *     Optional. List of HTTP headers (as strings).
-   *   - 'cache_request' bool
+   *   - 'save_request' bool
    *     Optional. Default is TRUE.
    *     When TRUE then request will be stored in database.
-   *     Global setting controlled by variable: 'tpps_rest_api_cache_requests'.
-   *   - 'cache_response' bool
+   *     Global setting controlled by variable: 'tpps_rest_api_save_requests'.
+   *   - 'save_response' bool
    *     Optional. Default is TRUE.
    *     When TRUE then response will be stored in database.
-   *     Global setting controlled by variable: 'tpps_rest_api_cache_responses'.
+   *     Global setting controlled by variable: 'tpps_rest_api_save_responses'.
    *     When FALSE any response won't be stored in database.
-   *   - 'use_cached_response' bool
+   *   - 'use_cached' bool
    *     Optional. Default is FALSE.
    *     When TRUE latest cached and valid response will be used instead of
    *     actual REST API Request.
@@ -325,9 +325,9 @@ class RestAPI {
       // but they are not the same. Also it solves issue with updating existing
       // records in DB. Currently we do not update but only insert because it's
       // easier and faster.
-      'cache_response' => $this->cacheResponse,
-      'use_cached_response' => $this->useCachedResponse,
-      // No sense to use 'cacheRequest' because if it's FALSE there is no
+      'save_response' => $this->saveResponse,
+      'use_cached' => $this->useCached,
+      // No sense to use 'saveRequest' because if it's FALSE there is no
       // record in DB.
     ]));
 
@@ -403,9 +403,9 @@ class RestAPI {
    */
   public function __construct($context = NULL) {
 
-    $this->cacheRequest = variable_get('tpps_rest_api_cache_requests', TRUE);
-    $this->cacheResponse = variable_get('tpps_rest_api_cache_responses', TRUE);
-    $this->useCachedResponse = variable_get('tpps_rest_api_use_cached_response', FALSE);
+    $this->saveRequest = variable_get('tpps_rest_api_save_requests', TRUE);
+    $this->saveResponse = variable_get('tpps_rest_api_save_responses', TRUE);
+    $this->useCached = variable_get('tpps_rest_api_use_cached', FALSE);
 
     if (!empty($context)) {
       if (is_array($context)) {
@@ -591,10 +591,7 @@ class RestAPI {
     $this->method = strtoupper($this->method);
     $this->generateHash();
 
-    if (
-      $this->useCachedResponse
-      && RestAPIResponse::isValidExists($this->requestId)
-    ) {
+    if ($this->useCached && RestAPIResponse::isValidExists($this->requestId)) {
       // WARNING: Cached Response is missing 'curlInfo'.
       // Reuse stored response if possible.
       $response_data = RestAPIResponse::loadValid($this->requestId);
@@ -650,9 +647,9 @@ class RestAPI {
           'header' => $this->header ?? NULL,
           'tag' => $this->tag ?? NULL,
           // Caching settings.
-          'cache_request' => $this->cacheRequest,
-          'cache_response' => $this->cacheResponse,
-          'use_cached_response' => $this->useCachedResponse,
+          'save_request' => $this->saveRequest,
+          'save_response' => $this->saveResponse,
+          'use_cached' => $this->useCached,
         ];
 
         // tpps_rest_api_request_started().
@@ -720,9 +717,9 @@ class RestAPI {
           'duration' => $this->duration,
           'body' => $this->response,
           // Caching settings.
-          'cache_request' => $this->cacheRequest,
-          'cache_response' => $this->cacheResponse,
-          'use_cached_response' => $this->useCachedResponse,
+          'save_request' => $this->saveRequest,
+          'save_response' => $this->saveResponse,
+          'use_cached' => $this->useCached,
           'content_type' => $this->curlInfo['content_type'],
         ];
         // tpps_rest_api_request_completed().

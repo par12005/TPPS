@@ -21,43 +21,43 @@ function tpps_rest_api_settings_form(array $form, array &$form_state) {
     '#title' => t('Response caching'),
     '#collapsible' => TRUE,
   ];
-  $form['cache']['tpps_rest_api_cache_requests'] = [
+  $form['cache']['tpps_rest_api_save_requests'] = [
     '#type' => 'checkbox',
-    '#title' => t('Cache Requests'),
-    '#default_value' => variable_get('tpps_rest_api_cache_requests'),
+    '#title' => t('Save Requests'),
+    '#default_value' => variable_get('tpps_rest_api_save_requests'),
     '#description' => t("Default is checked. <br />When checked requests "
       . "will be stored in DB. "
       . "<br />When unchecked requests won't be saved in database."
-      . "<br />WARNING: <strong>When saving requests is disabled then responses "
-      . "also couldn't be saved in DB and couldn't be re-used</strong>."
+      . "<br />WARNING: <strong>To store also responses this option must "
+      . "be enabled</strong>."
       . "<br />Note: Each certain request could overwrite this setting. "
-      . "See 'cache_request' property of the RestAPI class."),
+      . "See 'save_request' property of the RestAPI class."),
   ];
-  $form['cache']['tpps_rest_api_cache_responses'] = [
+  $form['cache']['tpps_rest_api_save_responses'] = [
     '#type' => 'checkbox',
-    '#title' => t('Cache Responses'),
-    '#default_value' => variable_get('tpps_rest_api_cache_responses'),
+    '#title' => t('Save Responses'),
+    '#default_value' => variable_get('tpps_rest_api_save_responses'),
     '#description' => t("Default is checked. <br />When checked any (valid "
       . "and invalid) responses will be stored in DB and could be re-used. "
       . "<br />When unchecked responses won't be saved in database."
       . "<br />Note: Each certain request could overwrite this setting. "
-      . "See 'cache_response' property of the RestAPI class."),
+      . "See 'save_response' property of the RestAPI class."),
     '#states' => [
       'visible' => [
-        ':input[name="tpps_rest_api_cache_requests"]' => ['checked' => TRUE],
+        ':input[name="tpps_rest_api_save_requests"]' => ['checked' => TRUE],
       ],
       'unchecked' => [
-        ':input[name="tpps_rest_api_cache_requests"]' => ['checked' => FALSE],
+        ':input[name="tpps_rest_api_save_requests"]' => ['checked' => FALSE],
       ],
     ],
   ];
-  $form['cache']['tpps_rest_api_use_cached_response'] = [
+  $form['cache']['tpps_rest_api_use_cached'] = [
     '#type' => 'checkbox',
-    '#title' => t('Use Cached Response'),
-    '#default_value' => variable_get('tpps_rest_api_use_cached_response'),
+    '#title' => t('Use Cached Requests and Responses'),
+    '#default_value' => variable_get('tpps_rest_api_use_cached'),
     '#description' => t("Only latest valid response could be re-used."
       . "<br />Note: Each request could overwrite this setting. "
-      . "See 'useCachedResponse' property of the 'RestAPI' class."),
+      . "See 'useCached' property of the 'RestAPI' class."),
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

@@ -79,7 +79,7 @@ class RestAPIRequest {
     }
     else {
       $data = $context;
-      unset($data['cache_request']);
+      unset($data['save_request']);
       $data['created'] = $data['created'] ?? time();
       // Convert arrays into JSON format.
       foreach (['payload', 'header'] as $name) {
@@ -88,7 +88,7 @@ class RestAPIRequest {
         }
         $data[$name] = json_encode($context[$name], TRUE);
       }
-      $data['use_cached_response'] = (int) $data['use_cached_response'];
+      $data['use_cached'] = (int) $data['use_cached'];
       return db_insert(static::TABLE)->fields($data)->execute();
     }
   }
@@ -202,19 +202,19 @@ class RestAPIRequest {
           'size' => 'normal',
           'not null' => FALSE,
         ],
-        'cache_response' => [
+        'save_response' => [
           'type' => 'int',
           'size' => 'tiny',
           'not null' => TRUE,
           'default' => 0,
-          'description' => 'Controls if response could be cached. 0 = FALSE, 1 = TRUE.',
+          'description' => 'Controls if response could be saved. 0 = FALSE, 1 = TRUE.',
         ],
-        'use_cached_response' => [
+        'use_cached' => [
           'type' => 'int',
           'size' => 'tiny',
           'not null' => TRUE,
           'default' => 0,
-          'description' => 'Controls if cached response could be used. 0 = FALSE, 1 = TRUE.',
+          'description' => 'Controls if cached request/response could be used. 0 = FALSE, 1 = TRUE.',
         ],
       ],
       'unique keys' => ['hash' => ['hash']],
