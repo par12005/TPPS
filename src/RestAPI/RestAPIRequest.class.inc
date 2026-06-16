@@ -8,6 +8,8 @@
 /**
  * Manages Rest API Requests stored in database.
  *
+ * To avoid request caching make URL unique (add unique param like 'z=' . time()).
+ *
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
@@ -74,12 +76,18 @@ class RestAPIRequest {
       throw new Exception("Empty 'hash'.");
     }
     if ($request_id = static::getRequestId($context['hash'])) {
-      watchdog('tpps_rest_api', 'Record exists: ' . $request_id);
+      watchdog('tpps_rest_api', 'Record exists: @request_id.',
+        ['@request_id' => $request_id]
+      );
       return $request_id;
     }
     else {
       $data = $context;
       unset($data['save_request']);
+      unset($data['save_response']);
+      unset($data['use_cached']);
+      unset($data['request']);
+
       $data['created'] = $data['created'] ?? time();
       // Convert arrays into JSON format.
       foreach (['payload', 'header'] as $name) {
@@ -88,7 +96,6 @@ class RestAPIRequest {
         }
         $data[$name] = json_encode($context[$name], TRUE);
       }
-      $data['use_cached'] = (int) $data['use_cached'];
       return db_insert(static::TABLE)->fields($data)->execute();
     }
   }
@@ -201,20 +208,6 @@ class RestAPIRequest {
           'type' => 'varchar',
           'size' => 'normal',
           'not null' => FALSE,
-        ],
-        'save_response' => [
-          'type' => 'int',
-          'size' => 'tiny',
-          'not null' => TRUE,
-          'default' => 0,
-          'description' => 'Controls if response could be saved. 0 = FALSE, 1 = TRUE.',
-        ],
-        'use_cached' => [
-          'type' => 'int',
-          'size' => 'tiny',
-          'not null' => TRUE,
-          'default' => 0,
-          'description' => 'Controls if cached request/response could be used. 0 = FALSE, 1 = TRUE.',
         ],
       ],
       'unique keys' => ['hash' => ['hash']],

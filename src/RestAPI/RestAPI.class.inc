@@ -194,12 +194,16 @@ class RestAPI {
    */
   protected $response;
 
+
   /**
    * Result of the curl_getinfo().
    *
    * @var array
    */
   protected $curlInfo;
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Global settings.
 
   /**
    * Controls if request must be stored in DB.
@@ -313,22 +317,22 @@ class RestAPI {
    *   Returns $this to allow method chaining.
    */
   public function generateHash() {
+    //$header = $this->header ?? '';
+    //$header = is_string($header) ? $header : json_encode($header);
+
+    //$payload = $this->payload ?? '';
+    //$payload = is_string($payload) ? $payload : json_encode($payload);
+
     $new_hash = md5(json_encode([
       'method' => strtoupper($this->method),
       // WARNING:
       // Be sure to remove time-based data from the request's payload and URL
       // to avoid duplicate records in DB.
       'url' => $this->url,
+      //'payload' => $payload,
+      //'header' => $header,
       'payload' => $this->payload,
       'header' => $this->header,
-      // Using this extra data allows to have multiple almost the same requests
-      // but they are not the same. Also it solves issue with updating existing
-      // records in DB. Currently we do not update but only insert because it's
-      // easier and faster.
-      'save_response' => $this->saveResponse,
-      'use_cached' => $this->useCached,
-      // No sense to use 'saveRequest' because if it's FALSE there is no
-      // record in DB.
     ]));
 
     if (!empty($this->hash) && $this->hash != $new_hash) {
@@ -591,7 +595,14 @@ class RestAPI {
     $this->method = strtoupper($this->method);
     $this->generateHash();
 
+    // Restore 'Request Id' by 'Request Hash'.
+    if (empty($this->requestId)) {
+      $this->requestId = RestAPIRequest::getRequestId($this->hash);
+    }
+//dpm(print_r(get_object_vars($this), 1));
+
     if ($this->useCached && RestAPIResponse::isValidExists($this->requestId)) {
+dpm('cache');
       // WARNING: Cached Response is missing 'curlInfo'.
       // Reuse stored response if possible.
       $response_data = RestAPIResponse::loadValid($this->requestId);
@@ -613,6 +624,7 @@ class RestAPI {
       $this->message = HttpCode::getMessage($this->code);
     }
     else {
+dpm('request');
       $curl = curl_init();
       // Why not use CURLOPT_POS: https://stackoverflow.com/a/74812403
       curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $this->method);
@@ -709,18 +721,19 @@ class RestAPI {
       // Allow other modules to react on request's finish.
       if (function_exists('module_invoke_all')) {
         $context = [
+          // Request.
           'request' => $context,
           'request_id' => $this->requestId,
           'code' => $this->code,
           'created' => $this->created,
-          // 'message' => $message,
+          // Response.
           'duration' => $this->duration,
           'body' => $this->response,
-          // Caching settings.
+          'content_type' => $this->curlInfo['content_type'],
+          // Global caching settings.
           'save_request' => $this->saveRequest,
           'save_response' => $this->saveResponse,
           'use_cached' => $this->useCached,
-          'content_type' => $this->curlInfo['content_type'],
         ];
         // tpps_rest_api_request_completed().
         module_invoke_all('rest_api_request_completed', $context);
