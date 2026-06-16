@@ -74,7 +74,10 @@ class Dryad extends DoiApi {
     if (!empty($response)) {
       // Authors.
       foreach ($response->authors as $author) {
-        $authors[] = trim($author->firstName . ' ' . $author->lastName);
+        if (!is_object($author)) {
+          continue;
+        }
+        $authors[] = trim(($author->firstName ?? '') . ' ' . ($author->lastName ?? ''));
       }
       $primary_author = $authors[0];
       $secondary_authors = array_slice($authors, 1);
