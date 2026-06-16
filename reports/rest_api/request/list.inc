@@ -26,7 +26,7 @@ function tpps_report_rest_api_request_list() {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Get related responses.
-  $query->addExpression("string_agg(CAST(res.id AS VARCHAR), ',')", 'response_list');
+  $query->addExpression("string_agg(CAST(res.response_id AS VARCHAR), ',')", 'response_list');
   $query->leftJoin(RestAPIResponse::TABLE, 'res', 'res.request_id = t.request_id');
 
   // Group by ALL columns from the request table that you're selecting.
@@ -47,7 +47,7 @@ function tpps_report_rest_api_request_list() {
       ['data' => t('URL'), 'field' => 't.url'],
       ['data' => t('Header'), 'field' => 't.header'],
       ['data' => t('Payload'), 'field' => 't.payload'],
-      ['data' => t('Responses'), 'field' => 'response_list'],
+      ['data' => t('Response List'), 'field' => 'response_list'],
     ],
     'query' => $query,
   ]);

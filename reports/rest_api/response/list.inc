@@ -15,7 +15,7 @@ function tpps_report_rest_api_response_list() {
   // WARNING: Report::print() requires db_select() not db_query().
   $query = db_select(RestAPIResponse::TABLE, 't')
     ->fields('t', [
-      'id',
+      'response_id',
       'request_id',
       'created',
       'code',
@@ -32,13 +32,13 @@ function tpps_report_rest_api_response_list() {
     'table_attributes' => ['class' => ['view' , 'tpps_table']],
     'items_per_page' => variable_get('tpps_report_items_per_page', 15),
     'header' => [
-      ['data' => t('Id'), 'field' => 't.id', 'sort' => 'desc'],
+      ['data' => t('Response Id'), 'field' => 't.response_id', 'sort' => 'desc'],
       ['data' => t('Request Id'), 'field' => 't.request_id'],
       ['data' => t('Started'), 'field' => 't.created'],
       ['data' => t('HTTP Code'), 'field' => 't.code'],
       ['data' => t('Duration, msec'), 'field' => 't.duration'],
       ['data' => t('Body'), 'field' => 't.body'],
-      ['data' => t('Request'), 'field' => 't.tag'],
+      ['data' => t('Tag'), 'field' => 't.tag'],
     ],
     'query' => $query,
   ]);
@@ -69,7 +69,7 @@ function tpps_report_rest_api_response_list_formatter(string $name, $value, arra
   }
   $name = check_plain($name);
   switch ($name) {
-    case 'id':
+    case 'response_id':
       if (!empty($value)) {
         $url = 'admin/reports/tpps/rest_api/response/body/' . $formatted;
         $formatted = l($formatted, $url);
@@ -88,7 +88,7 @@ function tpps_report_rest_api_response_list_formatter(string $name, $value, arra
 
     case 'body':
       if (!empty($value)) {
-        $url = 'admin/reports/tpps/rest_api/response/body/' . $row['id'];
+        $url = 'admin/reports/tpps/rest_api/response/body/' . $row['response_id'];
         $formatted = substr($formatted, 0, 70)
           . '... ' . l(t('View more'), $url);
       }

@@ -21,7 +21,7 @@ function tpps_report_rest_api_response_body() {
   // WARNING: Report::print() requires db_select() not db_query().
   $query = db_select(RestAPIResponse::TABLE, 't')
     ->fields('t', [])
-    ->condition('id', $id);
+    ->condition('response_id', $id);
   $query->join(RestAPIRequest::TABLE, 't2', 't2.request_id = t.request_id');
   $query->addField('t2', 'tag', 'tag');
   $result = $query->execute()->fetchAssoc();
@@ -49,7 +49,7 @@ function tpps_report_rest_api_response_body() {
         '@value' => format_date($result['created'], 'custom', "Y/m/d H:i:s O")
           . ' (' . $result['created'] . ')',
       ]),
-      'Response Id: ' . check_plain($result['id']),
+      'Response Id: ' . check_plain($result['response_id']),
       'Content Type: ' . check_plain($result['content_type']),
     ],
   ]);
