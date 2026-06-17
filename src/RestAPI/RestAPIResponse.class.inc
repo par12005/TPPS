@@ -59,13 +59,53 @@ class RestAPIResponse {
     if (!is_string($data['body'])) {
       $data['body'] = json_encode($data['body'], TRUE);
     }
+    // Response Hash.
     $data['hash'] = static::generateHash($context);
 
-    // Do not store the same responses multiple times.
-    // @TODO Minor. Check also 'code'.
-    if (empty($response_id = static::getResponseId($data['hash']))) {
-      $response_id = db_insert(static::TABLE)->fields($data)->execute();
+    if (RestAPIResponse::isValidExists($data['request_id'])) {
+      // Record exists - let's load response.
+      $response_data = RestAPIResponse::loadValid($this->requestId);
+
+      // Do not store the same responses multiple times.
+      // @TODO Minor. Check also 'code'.
+      if ($response_data['hash'] == $data['hash']) {
+        // The same response.
+        if ($data['request_id'] != $response_data['request_id']) {
+          // Check value with existing request_id and update record in
+          // 'response' table if they are different. This could happen
+          // when requests was removed but responses are left.
+          db_update(static::TABLE)
+            ->fields(['request_id' => $data['request_id']])
+            ->condition('response_id', $response_data['response_id'])
+            ->execute();
+        }
+      }
+      else {
+        // New response.
+        unset($data['response_id']);
+        $response_id = db_insert(static::TABLE)->fields($data)->execute();
+      }
     }
+    else {
+      // Response wasn't found by 'request_id'. Let's search by 'response_hash'.
+      $response_id = static::getResponseId($data['hash']);
+      if (empty($response_id)) {
+        // No record - create new one.
+        unset($data['response_id']);
+        $response_id = db_insert(static::TABLE)->fields($data)->execute();
+      }
+      else {
+        // Record exist but 'request_id' differs.
+        // Check value with existing request_id and update record in
+        // 'response' table if they are different. This could happen
+        // when requests was removed but responses are left.
+        db_update(static::TABLE)
+          ->fields(['request_id' => $data['request_id']])
+          ->condition('response_id', $response_id)
+          ->execute();
+      }
+    }
+
     return $response_id;
   }
 
@@ -137,6 +177,8 @@ class RestAPIResponse {
    *   Returns FALSE otherwise.
    */
   public static function isValidExists($request_id) {
+    // Note: static::loadValid() uses static caching so calling it later
+    // is NOT expensive.
     return (bool) static::loadValid($request_id);
   }
 
@@ -231,7 +273,8 @@ class RestAPIResponse {
    */
   public static function loadValid($request_id, $reset = FALSE) {
     $static_cache = &drupal_static(__METHOD__);
-    $key = md5(json_encode(array_slice(func_get_args(), 0, -1)));
+
+    $key = $request_id;
     if ($reset || !isset($static_cache[$key])) {
       $result = db_select(static::TABLE, 't')
         ->fields('t', [])

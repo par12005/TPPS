@@ -86,7 +86,10 @@ class RestAPIRequest {
       unset($data['save_request']);
       unset($data['save_response']);
       unset($data['use_cached']);
+
       unset($data['request']);
+      unset($data['request_id']);
+      unset($data['response_id']);
 
       $data['created'] = $data['created'] ?? time();
       // Convert arrays into JSON format.

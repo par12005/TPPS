@@ -3301,36 +3301,37 @@ function tpps_rest_api_response_loaded(array $context = []) {
  *   Keys: see RestAPI->doRequest().
  */
 function tpps_rest_api_request_started(array $context = []) {
-
-  if (!empty($context['save_request'])) {
-    if ($debug_mode ?? 0) {
+  if (empty($request_id = $context['request_id'])) {
+    if (!empty($context['save_request'])) {
+      if ($debug_mode ?? 0) {
+        $params = [
+          '@dump' => var_export($context, 1),
+          '@function' => __FUNCTION__,
+        ];
+        watchdog('tpps_rest_api', '@function: <pre>@dump</pre>', $params);
+      }
+      if (empty($context['hash'])) {
+        $params = ['@function' => __FUNCTION__];
+        watchdog('tpps', '@function: empty "hash".', $params, 'error');
+        return FALSE;
+      }
+      $request_id = RestAPIRequest::save($context);
+      if (!empty($request_id)) {
+        $message = '!aRest API Request !report_link was saved.';
+      }
+      else {
+        $message = '!aRest API Request !report_link already exists.';
+      }
       $params = [
-        '@dump' => var_export($context, 1),
-        '@function' => __FUNCTION__,
+        '!a' => '<a href=#></a>',
+        '!report_link' => l(
+          t('#@request_id', ['@request_id' => $request_id]),
+          'admin/reports/db/public.' . RestAPIRequest::TABLE,
+          ['query' => ['request_id' => $request_id]]
+        ),
       ];
-      watchdog('tpps_rest_api', '@function: <pre>@dump</pre>', $params);
+      watchdog('tpps_rest_api', $message, $params);
     }
-    if (empty($context['hash'])) {
-      $params = ['@function' => __FUNCTION__];
-      watchdog('tpps', '@function: empty "hash".', $params, 'error');
-      return FALSE;
-    }
-    $request_id = RestAPIRequest::save($context);
-    if (!empty($request_id)) {
-      $message = '!aRest API Request !report_link was saved.';
-    }
-    else {
-      $message = '!aRest API Request !report_link already exists.';
-    }
-    $params = [
-      '!a' => '<a href=#></a>',
-      '!report_link' => l(
-        t('#@request_id', ['@request_id' => $request_id]),
-        'admin/reports/db/public.' . RestAPIRequest::TABLE,
-        ['query' => ['request_id' => $request_id]]
-      ),
-    ];
-    watchdog('tpps_rest_api', $message, $params);
   }
   return $request_id ?? FALSE;
 }
@@ -3348,26 +3349,21 @@ function tpps_rest_api_request_started(array $context = []) {
  *   To check if response exists: RestAPIResponse::isExists($request_id).
  */
 function tpps_rest_api_request_completed(array $context = []) {
-  if ($context['save_response']) {
+  if (variable_get('tpps_rest_api_save_responses')) {
+    $key = 'tpps_rest_api';
+    $params = [
+      '@dump' => var_export($context, 1),
+      '@function' => __FUNCTION__,
+    ];
     if ($debug_mode ?? 0) {
-      $params = [
-        '@dump' => var_export($context, 1),
-        '@function' => __FUNCTION__,
-      ];
-      watchdog('tpps_rest_api', '@function: <pre>@dump</pre>', $params);
+      watchdog($key, '@function: <pre>@dump</pre>', $params);
     }
     if (empty($context['request_id'])) {
-      $params = [
-        '@dump' => var_export($context, 1),
-        '@function' => __FUNCTION__,
-      ];
-      watchdog(
-        'tpps_rest_api',
-        '@function: Request Id is empty. <pre>@dump</pre>',
-        $params
-      );
+      $message = '@function: Request Id is empty. <pre>@dump</pre>';
+      watchdog($key, $message, $params);
       return;
     }
+
     if ($response_id = RestAPIResponse::save($context)) {
       // Watchdog message.
       $message = '!aResponse !response_report_link to Rest API request !request_report_link was saved.';
