@@ -284,7 +284,7 @@
           data: JSON.stringify({
             "doi": doi,
             "callback": doi_lookup[provider_class_name].ajax_callback,
-            "provider": provider_class_name,
+            "provider_class_name": provider_class_name,
             "serp": btoa(unescape(encodeURIComponent(serpContent)))
             // Modern fix:
             //"serp": btoa(serpContent)
@@ -295,7 +295,7 @@
               && $(response.publication_data).length
             ) {
               showPublicationData(
-                response.source,
+                response.provider_class_name,
                 response.publication_data
               );
             }

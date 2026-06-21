@@ -248,7 +248,6 @@ abstract class DoiSerp {
     if (empty($this->doi)) {
       throw new Exception(t('Study accession is empty.'));
     }
-    $this->isLoaded = TRUE;
     // Get data from DB.
     $result = db_select(static::TABLE, 't')
       ->fields('t')
@@ -258,6 +257,7 @@ abstract class DoiSerp {
       ->orderBy('created', 'DESC')
       ->execute()
       ->fetchAssoc();
+    $this->isLoaded = TRUE;
     // Set properties.
     if ($result) {
       $this->created = $result['created'] ?? 0;
@@ -357,6 +357,8 @@ abstract class DoiSerp {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       $gemini = new Gemini();
       if (!empty($values['tpps_doi_lookup_system_instruction'])) {
+
+        // @TODO Get already known data and send to Gemini.
         $gemini->systemInstruction = variable_get(
           'tpps_doi_lookup_system_instruction',
           '
@@ -398,6 +400,7 @@ abstract class DoiSerp {
         throw new Exception("JSON decoding error: [{$error_code}] {$error_message}");
       }
       $fields['source'] = static::class;
+      $fields['doi'] = $this->doi;
     }
     else {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -409,12 +412,29 @@ abstract class DoiSerp {
 
     // Store result (if possible).
     if (class_exists('PublicationDOI', $autoload = TRUE)) {
-      if (!PublicationDOI::save($fields)) {
-        watchdog('tpps_google_scholar',
-          "Parsed DOI publication data wasn't saved into database. <pre>@dump</pre>",
-          ['@dump' => print_r($fields, 1)],
-          'error'
-        );
+      if (PublicationDOI::isMissing($fields['doi'], $fields['source'])) {
+        $result = PublicationDOI::save($fields);
+        if ($result) {
+          // Successfully saved into db.
+        }
+        else {
+          watchdog('tpps_google_scholar',
+            "Parsed DOI publication data wasn't saved into database. <pre>@dump</pre>",
+            ['@dump' => print_r($fields, 1)],
+            'error'
+          );
+        }
+      }
+      else {
+        // Record exists.
+        $db_data = PublicationDOI::load($fields['doi'], $fields['source']);
+        if (PublicationDOI::isComplete($db_data)) {
+          // Publication Data is complete. No need to update it.
+        }
+        else {
+          // @todo Minor. Compare recently obtained data and data from DB.
+          PublicationDOI::replace($fields);
+        }
       }
     }
     else {

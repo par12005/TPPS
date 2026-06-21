@@ -46,9 +46,6 @@ class PublicationDOI extends DOI {
    *
    * @return bool
    *   Returns TRUE if record exists and FALSE otherwise.
-   *
-   * @throws Exception
-   *   When $source is invalid.
    */
   public static function isExists($doi, $source) {
     $query = db_select(self::TABLE, 't')
@@ -72,7 +69,7 @@ class PublicationDOI extends DOI {
    *   Returns TRUE if record is missing and FALSE otherwise.
    */
   public static function isMissing($doi, $source) {
-    return !$this->isExists($doi, $source);
+    return !PublicationDOI::isExists($doi, $source);
   }
 
   /**
