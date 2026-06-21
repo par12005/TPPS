@@ -91,7 +91,7 @@ class PubMedCentral extends DoiApi {
     else {
       try {
         $xml = (new RestAPI(['url' => $url]))->get()->response;
-        return $xml;
+        return trim(str_replace("\r\n", "\n", $xml));
       }
       catch (Exception $e) {
         // @TODO Minor. Code 429 (Too many requiests).
