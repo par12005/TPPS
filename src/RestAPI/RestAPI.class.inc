@@ -212,47 +212,6 @@ class RestAPI {
    */
   protected $curlInfo;
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Global settings.
-
-  /**
-   * Controls if request must be stored in DB.
-   *
-   * When TRUE request will be stored.
-   * See class 'RestAPIRequest' which manages responses stored in DB.
-   * When FALSE then responses won't be saved into DB.
-   * Global settings controlled by variable: 'tpps_rest_api_save_requests'.
-   * Each request could overwrite global setting.
-   *
-   * @var bool
-   */
-  protected $saveRequest;
-
-  /**
-   * Controls if response must be stored in DB.
-   *
-   * When TRUE response will be stored.
-   *   See class 'RestAPIResponse' which manages responses stored in DB.
-   * When FALSE then responses won't be saved into DB.
-   * Global settings controlled by variable: 'tpps_rest_api_save_responses'.
-   * Each request could overwrite global setting.
-   *
-   * @var bool
-   */
-  protected $saveResponse;
-
-  /**
-   * Allow to use cached request/response instead of actual API Request.
-   *
-   * When TRUE latest valid response will be used (if exists).
-   * When FALSE then API will be request to get most up-to-date data.
-   * Global settings controlled by variable: 'tpps_rest_api_use_cached'.
-   * Each request could overwrite global setting.
-   *
-   * @var bool
-   */
-  protected $useCached;
-
   /**
    * Creates request from $context data.
    *
@@ -267,19 +226,6 @@ class RestAPI {
    *     Optional. Payload for POST and PUT requests.
    *   - 'header' array
    *     Optional. List of HTTP headers (as strings).
-   *   - 'save_request' bool
-   *     Optional. Default is TRUE.
-   *     When TRUE then request will be stored in database.
-   *     Global setting controlled by variable: 'tpps_rest_api_save_requests'.
-   *   - 'save_response' bool
-   *     Optional. Default is TRUE.
-   *     When TRUE then response will be stored in database.
-   *     Global setting controlled by variable: 'tpps_rest_api_save_responses'.
-   *     When FALSE any response won't be stored in database.
-   *   - 'use_cached' bool
-   *     Optional. Default is FALSE.
-   *     When TRUE latest cached and valid response will be used instead of
-   *     actual REST API Request.
    *
    * @return object
    *   Returns $this to allow method chaining.
@@ -412,11 +358,6 @@ class RestAPI {
    *   Returns $this to allow method chaining.
    */
   public function __construct($context = NULL) {
-
-    $this->saveRequest = variable_get('tpps_rest_api_save_requests', TRUE);
-    $this->saveResponse = variable_get('tpps_rest_api_save_responses', TRUE);
-    $this->useCached = variable_get('tpps_rest_api_use_cached', FALSE);
-
     if (!empty($context)) {
       if (is_array($context)) {
         // Request's metadata.
@@ -616,7 +557,10 @@ class RestAPI {
       $this->requestId = RestAPIRequest::getRequestId($this->hash);
     }
 
-    if ($this->useCached && RestAPIResponse::isValidExists($this->requestId)) {
+    if (
+      variable_get('tpps_rest_api_use_cache', TRUE)
+      && RestAPIResponse::isValidExists($this->requestId)
+    ) {
       // WARNING: Cached Response is missing 'curlInfo'.
       // Reuse stored response if possible.
       $response_data = RestAPIResponse::loadValid($this->requestId);
@@ -685,10 +629,6 @@ class RestAPI {
           'payload' => $this->payload ?? NULL,
           'header' => $this->header ?? NULL,
           'tag' => $this->tag ?? NULL,
-          // Caching settings.
-          'save_request' => $this->saveRequest,
-          'save_response' => $this->saveResponse,
-          'use_cached' => $this->useCached,
         ];
 
         // tpps_rest_api_request_started().
@@ -756,9 +696,6 @@ class RestAPI {
           'content_type' => $this->curlInfo['content_type'],
           // Global caching settings.
           'response_id' => $this->responseId ?? NULL,
-          'save_request' => $this->saveRequest,
-          'save_response' => $this->saveResponse,
-          'use_cached' => $this->useCached,
         ];
         // tpps_rest_api_request_completed().
         module_invoke_all('rest_api_request_completed', $context);

@@ -3320,7 +3320,7 @@ function tpps_rest_api_response_loaded(array $context = []) {
  */
 function tpps_rest_api_request_started(array $context = []) {
   if (empty($request_id = $context['request_id'])) {
-    if (!empty($context['save_request'])) {
+    if (variable_get('tpps_rest_api_use_cache', TRUE)) {
       if ($debug_mode ?? 0) {
         $params = [
           '@dump' => var_export($context, 1),
@@ -3367,7 +3367,7 @@ function tpps_rest_api_request_started(array $context = []) {
  *   To check if response exists: RestAPIResponse::isExists($request_id).
  */
 function tpps_rest_api_request_completed(array $context = []) {
-  if (variable_get('tpps_rest_api_save_responses')) {
+  if (variable_get('tpps_rest_api_use_cache')) {
     $key = 'tpps_rest_api';
     $params = [
       '@dump' => var_export($context, 1),

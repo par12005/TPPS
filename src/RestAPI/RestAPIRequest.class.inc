@@ -86,10 +86,6 @@ class RestAPIRequest {
     }
     else {
       $data = $context;
-      unset($data['save_request']);
-      unset($data['save_response']);
-      unset($data['use_cached']);
-
       unset($data['request']);
       unset($data['request_id']);
       unset($data['response_id']);
