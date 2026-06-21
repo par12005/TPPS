@@ -60,6 +60,22 @@ class PublicationDOI extends DOI {
   }
 
   /**
+   * Checks if the record for given DOI is missing in DB table.
+   *
+   * @param string $doi
+   *   DOI.
+   * @param string $source
+   *   Required. Source of the publication data.
+   *   Possible values: see DoiSerp::KEY.
+   *
+   * @return bool
+   *   Returns TRUE if record is missing and FALSE otherwise.
+   */
+  public static function isMissing($doi, $source) {
+    return !$this->isExists($doi, $source);
+  }
+
+  /**
    * Checks if the DB record for given DOI is empty.
    *
    * @param string $doi
@@ -122,6 +138,42 @@ class PublicationDOI extends DOI {
       }
       db_insert(self::TABLE)->fields($data)->execute();
       return TRUE;
+    }
+  }
+
+  /**
+   * Removes record from DB.
+   *
+   * @param string $doi
+   *   DOI.
+   * @param string $source
+   *   Data provider class name.
+   */
+  public static function remove($doi, $source) {
+    db_delete(self::TABLE)
+      ->condition('doi', $doi)
+      ->condition('source', $source)
+      ->execute();
+  }
+
+  /**
+   * Replaces existing record in DB with new data.
+   *
+   * @param array $data
+   *   DOI publication data.
+   *
+   * @return bool
+   *   Returns TRUE if record was replaced and FALSE otherwise.
+   */
+  public static function replace(array $data) {
+    if (!empty($data['doi']) && !empty($data['source'])) {
+      // @todo Minor. Check if $fields is better then existing data in DB.
+      PublicationDOI::remove($data['doi'], $data['source']);
+      PublicationDOI::save($data);
+      return TRUE;
+    }
+    else {
+      return FALSE;
     }
   }
 
@@ -934,5 +986,17 @@ class PublicationDOI extends DOI {
     return $missing_list;
   }
 
+  /**
+   * Checks if given $data has no empty values.
+   *
+   * @param array $data
+   *   Array to be checked.
+   *
+   * @return bool
+   *   Returns TRUE if given array has no empty values and FALSE otherwise.
+   */
+  public static function isComplete(array $data) {
+    return (is_array($data) && TppsArray::isComplete($data));
+  }
 
 }

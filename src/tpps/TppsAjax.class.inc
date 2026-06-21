@@ -40,11 +40,9 @@ class TppsAjax {
     else {
       $response['doi'] = $doi = $payload['doi'];
       $response['source'] = $source = $payload['source'] ?? NULL;
-      $response['publication_data'] = PublicationDOI::requestAPI($doi, $source);
-      $response['is_complete'] = (
-        is_array($response['publication_data'])
-        && TppsArray::isComplete($response['publication_data'])
-      );
+      $publication_data = PublicationDOI::requestAPI($doi, $source);
+      $response['publication_data'] = $publication_data;
+      $response['is_complete'] = PublicationDOI::isComplete($publication_data);
       $response['success'] = TRUE;
     }
     return $response;
@@ -94,8 +92,8 @@ class TppsAjax {
         $provider->parse();
 
         $response['doi'] = $payload['doi'];
-        $response['source'] = $payload['source'];
-        $response['publication_data'] = PublicationDOI::load($doi, $payload['source']);
+        $response['provider_class_name'] = $payload['provider_class_name'];
+        $response['publication_data'] = PublicationDOI::load($doi, $payload['provider_class_name']);
       }
       else {
         $response['errors'][] = t('Proxy error.');
