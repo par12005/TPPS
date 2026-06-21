@@ -2705,5 +2705,17 @@ function tpps_update_7134() {
       }
     }
   }
+
+  // Let's manually create foreign key (fk) because Drupal7 doesn't support fk.
+  // So when request was removed related responses also will be removed to
+  // avoid orphan records.
+  $sql = '
+    ALTER TABLE tpps_rest_api_response
+    ADD CONSTRAINT fk_response_request
+    FOREIGN KEY (request_id)
+    REFERENCES tpps_rest_api_request (request_id)
+    ON DELETE CASCADE;';
+  db_query($sql);
+
   cache_clear_all();
 }

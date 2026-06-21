@@ -459,6 +459,12 @@ class RestAPIResponse {
           'size' => 'normal',
           'not null' => FALSE,
         ],
+        // @todo Minor. Add 'request_hash' to be able to find response by
+        // 'request_hash' when record was removed from 'tpps_rest_api_request'
+        // table but response was left. Otherwise orphan records in
+        // 'tpps_rest_api_response' table will be left. But it's a rare case.
+        // Currently this solved by using FK which removes related responses
+        // when request was removed.
       ],
       'primary key' => ['response_id'],
       'unique keys' => ['request_id_created' => ['request_id', 'created']],
