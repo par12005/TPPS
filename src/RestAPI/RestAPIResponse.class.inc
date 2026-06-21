@@ -36,8 +36,9 @@ class RestAPIResponse {
    *   To check if valid response exists:
    *     RestAPIResponse::isValidExists($request_id).
    *
-   * @return int
-   *   Returns 'response_id' (last insert id).
+   * @return mixed
+   *   Returns 'response_id' if response was inserted (last insert id).
+   *   Returns NULL if response was updated (not inserted).
    *
    * @thrown Exception
    *   When $context['request_id'] is empty.
@@ -71,7 +72,7 @@ class RestAPIResponse {
 
     if (RestAPIResponse::isValidExists($data['request_id'])) {
       // Record exists - let's load response.
-      $response_data = RestAPIResponse::loadValid($this->requestId);
+      $response_data = RestAPIResponse::loadValid($data['request_id']);
 
       // Do not store the same responses multiple times.
       // @TODO Minor. Check also 'code'.
@@ -85,21 +86,28 @@ class RestAPIResponse {
             ->fields(['request_id' => $data['request_id']])
             ->condition('response_id', $response_data['response_id'])
             ->execute();
+          return NULL;
         }
       }
       else {
         // New response.
         unset($data['response_id']);
-        $response_id = db_insert(static::TABLE)->fields($data)->execute();
+        return db_insert(static::TABLE)->fields($data)->execute();
       }
     }
     else {
+      // Load latest invalid response.
+      $response_data = RestAPIResponse::load($data['request_id']);
+      if ($response_data['code'] == $data['code']) {
+        // If we've got the same invalid response no need to update db record.
+        return NULL;
+      }
       // Response wasn't found by 'request_id'. Let's search by 'response_hash'.
       $response_id = static::getResponseId($data['hash']);
       if (empty($response_id)) {
         // No record - create new one.
         unset($data['response_id']);
-        $response_id = db_insert(static::TABLE)->fields($data)->execute();
+        return db_insert(static::TABLE)->fields($data)->execute();
       }
       else {
         // Record exist but 'request_id' differs.
@@ -110,10 +118,9 @@ class RestAPIResponse {
           ->fields(['request_id' => $data['request_id']])
           ->condition('response_id', $response_id)
           ->execute();
+        return NULL;
       }
     }
-
-    return $response_id;
   }
 
   /**
@@ -162,18 +169,17 @@ class RestAPIResponse {
    *   Returns hash's value.
    */
   public static function generateHash(array $context) {
-//dpm($context, 'before');
+//watchdog('hash', 'before: <pre>' . var_export($context, 1) . '</pre>');
     // Allow other modules to change $context before hash will be generated.
     // Used to remove time-based or dynamic data in response body to avoid
     // the same responses duplication.
     //
     // tpps_rest_api_response_hash_generation_alter().
     drupal_alter('rest_api_response_hash_generation', $context);
-    $context['body'] = trim($context['body']);
-dpm($context, 'after');
+//watchdog('hash', 'after: <pre>' . var_export($context, 1) . '</pre>');
 
     return md5(json_encode([
-      'body' => trim($context['body'] ?? ''),
+      'body' => ($context['body'] ?? ''),
     ]));
   }
 
@@ -333,18 +339,16 @@ dpm($context, 'after');
         $result['body'] = static::decodeBody($result);
         $result['message'] = HttpCode::getMessage($result['code']);
       }
+      if (function_exists('module_invoke_all')) {
+        $context = [
+          'request_id' => $request_id,
+          'response_id' => $result['response_id'],
+        ];
+        // tpps_rest_api_response_loaded().
+        module_invoke_all('rest_api_response_loaded', $context);
+      }
       $static_cache[$key] = $result;
     }
-
-    if (function_exists('module_invoke_all')) {
-      $context = [
-        'request_id' => $request_id,
-        'response_id' => $static_cache[$key]['response_id'],
-      ];
-      // tpps_rest_api_response_loaded().
-      module_invoke_all('rest_api_response_loaded', $context);
-    }
-
     return $static_cache[$key];
   }
 

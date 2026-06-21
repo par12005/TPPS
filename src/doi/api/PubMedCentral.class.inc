@@ -59,6 +59,7 @@ class PubMedCentral extends DoiApi {
       // Create an empty record to avoid the same requests to API.
       $data['doi'] = $doi;
       $data['source'] = static::class;
+      // @TODO Check response code.
       PublicationDOI::save($data);
     }
     elseif (is_null($xml)) {
@@ -90,7 +91,7 @@ class PubMedCentral extends DoiApi {
     }
     else {
       try {
-        $xml = (new RestAPI(['url' => $url]))->get()->response;
+        $xml = (new RestAPI(['url' => $url]))->get()->response();
         return trim(str_replace("\r\n", "\n", $xml));
       }
       catch (Exception $e) {
@@ -249,7 +250,7 @@ class PubMedCentral extends DoiApi {
     $response = (new RestAPI([
       'url' => static::buildSearchUrl($doi),
       'header' => ['Content-Type: application/json'],
-    ]))->get()->response;
+    ]))->get()->response();
 
     if (!empty($response['records'][0]['pmcid'])) {
       return $response['records'][0]['pmcid'];
@@ -281,9 +282,8 @@ class PubMedCentral extends DoiApi {
    *   Returns updated Response meta data.
    */
   public static function alterResponseHashGeneration(array $context) {
-//dpm(var_export($context, 1), __METHOD__);
-    // From DB.
     if (empty($context['body'])) {
+      // What to do?
     }
     else {
       if (strpos($context['content_type'], 'application/json') !== FALSE) {

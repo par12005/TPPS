@@ -262,7 +262,7 @@ class Gemini {
         'url' => $this->url,
         'payload' => $payload,
         'header' => $header,
-      ]))->post()->response;
+      ]))->post()->response();
     }
     catch (Exception $e) {
       // @TODO Minor. Code 429 (Too many requiests).

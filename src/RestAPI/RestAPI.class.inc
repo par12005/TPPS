@@ -9,7 +9,7 @@
  * because not all responses and not all methods could be cached.
  *
  *  How to create an instnace of the 'RestAPI' class?
- *    $data['body'] = (new RestAPI($data))->get()->response;
+ *    $data['body'] = (new RestAPI($data))->get()->response();
  *    or
  *    $api = new RestAPI($context);
  *    $api->doRequest();
@@ -196,13 +196,13 @@ class RestAPI {
   protected $duration;
 
   /**
-   * Remote server's response.
+   * Response's body.
    *
    * Stored in 'tpps_rest_api_response.body' column.
    *
    * @var mixed
    */
-  protected $response;
+  protected $body;
 
 
   /**
@@ -446,7 +446,7 @@ class RestAPI {
    */
   public function isCachedResponse() {
     return (bool) (
-      !empty($this->response)
+      !empty($this->body)
       && !empty($this->code)
       && empty($this->curlInfo)
     );
@@ -507,6 +507,13 @@ class RestAPI {
         return $this->$name;
       }
       else {
+
+//$message = '<pre>!stack</pre>';
+//$stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 10);
+//$params = ['!stack' => print_r($stack, 1)];
+
+//watchdog('tpps', $message, $params);
+
         throw new Exception("Inexistent property: $name");
       }
     }
@@ -719,13 +726,13 @@ class RestAPI {
       $this->duration = (microtime(1) - $execution_time_start) * 1000;
 
       // Prepare response.
-      $this->response = empty($response) ? NULL : $response;
+      $this->body = empty($response) ? NULL : $response;
       if (!empty($response)) {
         $content_type = $this->curlInfo['content_type'] ?? '';
         if (strpos($content_type, 'application/json') !== FALSE) {
           // @todo Minor. Use try and catch block.
           // PHP's json_decode() could throw an exception of invalid JSON.
-          $this->response = json_decode($this->response, TRUE);
+          $this->body = json_decode($this->body, TRUE);
         }
         elseif (strpos($content_type, 'application/xml') !== FALSE) {
           // Store raw XML because any processing or convertation into PHP-array
@@ -744,7 +751,7 @@ class RestAPI {
           'code' => $this->code,
           'created' => $this->created,
           // Response.
-          'body' => $this->response,
+          'body' => $this->body,
           'duration' => $this->duration,
           'content_type' => $this->curlInfo['content_type'],
           // Global caching settings.
@@ -759,7 +766,7 @@ class RestAPI {
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    if ($this->code == 0 && empty($this->response)) {
+    if ($this->code == 0 && empty($this->body)) {
       throw new Exception($this->message);
     }
     if ($this->code < 200  && $this->code > 204) {
@@ -772,7 +779,7 @@ class RestAPI {
         'method' => $this->method,
         'header' => $this->header,
         // Response.
-        'body' => $this->response,
+        'body' => $this->body,
         'code' => $this->code,
         'message' => $this->message,
         'curl_info' => $this->curlInfo,
@@ -828,6 +835,16 @@ class RestAPI {
       $transaction->rollback();
       watchdog_exception('tpps_rest_api', $e);
     }
+  }
+
+  /**
+   * Gets response's body.
+   *
+   * @return mixed
+   *   Returns response's body.
+   */
+  public function response() {
+    return $this->body;
   }
 
 }

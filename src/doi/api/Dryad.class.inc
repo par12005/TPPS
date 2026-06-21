@@ -122,9 +122,14 @@ class Dryad extends DoiApi {
     }
 
     $response = static::request($doi);
+    $response_code = $response['code'] ?? NULL;
+    if (!empty($response_code) || ($response_code < 200 && $response_code > 205)) {
+      // Do not insert unsuccess response.
+      return;
+    }
+
     // Create an empty record to avoid the same requests to API.
     $data = ['doi' => $doi, 'source' => static::class];
-
     if (
       !empty($response)
       && ($response['error'] ?? '') != "not-found"
@@ -175,7 +180,7 @@ class Dryad extends DoiApi {
       $response = (new RestAPI([
         'url' => $url,
         'header' => $header,
-      ]))->get()->response;
+      ]))->get()->response();
       return $response;
     }
     catch (Exception $e) {

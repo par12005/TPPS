@@ -81,7 +81,7 @@ class ZenodoDeposit extends Zenodo {
 
     $data['url'] = static::buildActionUrl($data);
     static::delay();
-    $data['response'] = (new RestAPI($data))->post()->response;
+    $data['response'] = (new RestAPI($data))->post()->response();
 
     if (function_exists('module_invoke_all')) {
       module_invoke_all(static::getHookName('published'), $data);
@@ -113,7 +113,7 @@ class ZenodoDeposit extends Zenodo {
 
     $data['url'] = static::buildActionUrl($data);
     static::delay();
-    $data['response'] = (new RestAPI($data))->post()->response;
+    $data['response'] = (new RestAPI($data))->post()->response();
 
     if (function_exists('module_invoke_all')) {
       module_invoke_all(static::getHookName('edited'), $data);
@@ -144,7 +144,7 @@ class ZenodoDeposit extends Zenodo {
 
     $data['url'] = static::buildActionUrl($data);
     static::delay();
-    $data['response'] = (new RestAPI($data))->post()->response;
+    $data['response'] = (new RestAPI($data))->post()->response();
     if (function_exists('module_invoke_all')) {
       // tpps_zenodo_deposit_discarded().
       module_invoke_all(static::getHookName('discarded'), $data);
@@ -196,7 +196,7 @@ class ZenodoDeposit extends Zenodo {
 
     $data['url'] = static::buildActionUrl($data);
     static::delay();
-    $data['response'] = (new RestAPI($data))->post()->response;
+    $data['response'] = (new RestAPI($data))->post()->response();
 
     if (function_exists('module_invoke_all')) {
       // tpps_zenodo_deposit_new_version_created().

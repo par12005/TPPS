@@ -3299,7 +3299,7 @@ function tpps_rest_api_response_loaded(array $context = []) {
   if (!empty($context['request_id']) && !empty($context['response_id'])) {
     watchdog(
       'tpps_rest_api',
-      "Loaded response '@id' for request '@request_id'.",
+      "Loaded existing response '@id' for request '@request_id'.",
       [
         '@id' => $context['response_id'],
         '@request_id' => $context['request_id'],
