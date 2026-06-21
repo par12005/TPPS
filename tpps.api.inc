@@ -686,3 +686,14 @@ function hook_submission_tag_unlinked($accession, $tag_id, $result) {
     '@tag_name' => SubmissionTag::getName($tag_id),
   ]));
 }
+
+/**
+ * Implements alter-hook 'rest_api_response_hash_generation'.
+ *
+ * @param array $context
+ *   Response meta data for hash generation.
+ *   See RestAPIResponse::generateHash().
+ */
+function hook_rest_api_response_hash_generation_alter(array &$context) {
+  unset($context['body']['response-date']);
+}

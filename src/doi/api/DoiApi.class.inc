@@ -126,4 +126,21 @@ abstract class DoiApi {
     return static::class;
   }
 
+  /**
+   * Removes dynamic and time-based data from the response's body.
+   *
+   * Without this step responses are treated as unique and a lot of duplicates
+   * will be created in DB table 'tpps_rest_api_response'.
+   *
+   * @param array $context
+   *   Response meta data for hash generation.
+   *   See RestAPIResponse::generateHash().
+   *
+   * @return array
+   *   Returns updated Response meta data.
+   */
+  public static function alterResponseHashGeneration(array $context) {
+    return $context;
+  }
+
 }

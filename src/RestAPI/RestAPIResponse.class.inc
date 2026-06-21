@@ -6,6 +6,9 @@
  *
  * Note: Request and Response uses the same name 'created' but values could be
  * totally different.
+ *
+ * Request has 'payload'.
+ * Response has 'body'.
  */
 
 /**
@@ -56,9 +59,13 @@ class RestAPIResponse {
     // created just now.
     $data['created'] = time();
     $data['duration'] = intval(round($data['duration']));
+
+    // Body.
     if (!is_string($data['body'])) {
       $data['body'] = json_encode($data['body'], TRUE);
     }
+    $data['body'] = trim($data['body']);
+
     // Response Hash.
     $data['hash'] = static::generateHash($context);
 
@@ -72,8 +79,8 @@ class RestAPIResponse {
         // The same response.
         if ($data['request_id'] != $response_data['request_id']) {
           // Check value with existing request_id and update record in
-          // 'response' table if they are different. This could happen
-          // when requests was removed but responses are left.
+          // db table RestAPIResponse::TABLE if they are different.
+          // This could happen when requests was removed but responses are left.
           db_update(static::TABLE)
             ->fields(['request_id' => $data['request_id']])
             ->condition('response_id', $response_data['response_id'])
@@ -97,8 +104,8 @@ class RestAPIResponse {
       else {
         // Record exist but 'request_id' differs.
         // Check value with existing request_id and update record in
-        // 'response' table if they are different. This could happen
-        // when requests was removed but responses are left.
+        // db table RestAPIResponse::TABLE if they are different.
+        // This could happen when requests was removed but responses are left.
         db_update(static::TABLE)
           ->fields(['request_id' => $data['request_id']])
           ->condition('response_id', $response_id)
@@ -155,8 +162,18 @@ class RestAPIResponse {
    *   Returns hash's value.
    */
   public static function generateHash(array $context) {
+//dpm($context, 'before');
+    // Allow other modules to change $context before hash will be generated.
+    // Used to remove time-based or dynamic data in response body to avoid
+    // the same responses duplication.
+    //
+    // tpps_rest_api_response_hash_generation_alter().
+    drupal_alter('rest_api_response_hash_generation', $context);
+    $context['body'] = trim($context['body']);
+dpm($context, 'after');
+
     return md5(json_encode([
-      'body' => ($context['body'] ?? ''),
+      'body' => trim($context['body'] ?? ''),
     ]));
   }
 
@@ -206,7 +223,7 @@ class RestAPIResponse {
    *     'code',
    *     'duration',
    *     'info',
-   *     'response',
+   *     'body',
    */
   public static function load($request_id, $created = NULL, $reset = FALSE) {
 
@@ -225,8 +242,7 @@ class RestAPIResponse {
       if (!empty($result)) {
         // Curl info doesn't store in DB so we just create empty variable.
         $result['info'] = [];
-        $result['response'] = json_decode($result['body'], TRUE);
-        unset($result['body']);
+        $result['body'] = static::decodeBody($result);
         $result['message'] = HttpCode::getMessage($result['code']);
       }
       $static_cache[$key] = $result;
@@ -241,6 +257,31 @@ class RestAPIResponse {
       module_invoke_all('rest_api_response_loaded', $context);
     }
     return $static_cache[$key];
+  }
+
+  /**
+   * Decodes response body.
+   *
+   * @param array $response
+   *   Response metadata from db table RestAPIResponse::TABLE.
+   *
+   * @return mixed
+   *   Returns response body.
+   */
+  public static function decodeBody(array $response) {
+    if (strpos($response['content_type'], 'application/json') !== FALSE) {
+      // JSON.
+      $response['body'] = json_decode($response['body'], TRUE);
+    }
+    elseif (strpos($response['content_type'], 'application/xml') !== FALSE) {
+      // XML.
+      // Stored as string. No need to decode.
+    }
+    else {
+      dpm('Unknown response content type.');
+      $response['body'] = json_decode($response['body'], TRUE);
+    }
+    return $response['body'];
   }
 
   /**
@@ -269,7 +310,7 @@ class RestAPIResponse {
    *     'code',
    *     'duration',
    *     'info',
-   *     'response',
+   *     'body',
    */
   public static function loadValid($request_id, $reset = FALSE) {
     $static_cache = &drupal_static(__METHOD__);
@@ -289,8 +330,7 @@ class RestAPIResponse {
       if (!empty($result)) {
         // Curl info doesn't store in DB so we just create empty variable.
         $result['info'] = [];
-        $result['response'] = json_decode($result['body'], TRUE);
-        unset($result['body']);
+        $result['body'] = static::decodeBody($result);
         $result['message'] = HttpCode::getMessage($result['code']);
       }
       $static_cache[$key] = $result;
@@ -326,7 +366,7 @@ class RestAPIResponse {
    *     'code',
    *     'duration',
    *     'info',
-   *     'response',
+   *     'body',
    */
   public static function loadAll($request_id) {
     $result = db_select(static::TABLE, 't')
@@ -339,9 +379,7 @@ class RestAPIResponse {
     foreach ($result as &$item) {
       // Curl info doesn't store in DB so we just create empty variable.
       $item['info'] = [];
-      // @todo Use original 'body' instead of new 'response'.
-      $item['response'] = json_decode($item['body'], TRUE);
-      unset($item['body']);
+      $item['body'] = static::decodeBody($item);
       $item['message'] = HttpCode::getMessage($item['code']);
     }
 

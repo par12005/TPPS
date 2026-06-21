@@ -267,4 +267,37 @@ class PubMedCentral extends DoiApi {
     return NULL;
   }
 
+  /**
+   * Removes dynamic and time-based data from the response's body.
+   *
+   * Without this step responses are treated as unique and a lot of duplicates
+   * will be created in DB table 'tpps_rest_api_response'.
+   *
+   * @param array $context
+   *   Response meta data for hash generation.
+   *   See RestAPIResponse::generateHash().
+   *
+   * @return array
+   *   Returns updated Response meta data.
+   */
+  public static function alterResponseHashGeneration(array $context) {
+//dpm(var_export($context, 1), __METHOD__);
+    // From DB.
+    if (empty($context['body'])) {
+    }
+    else {
+      if (strpos($context['content_type'], 'application/json') !== FALSE) {
+        unset($context['body']['response-date']);
+      }
+      elseif (strpos($context['content_type'], 'application/xml') !== FALSE) {
+        $context['body'] = preg_replace(
+          '/<responseDate>.*?<\/responseDate>/',
+          '',
+          $context['body']
+        );
+      }
+    }
+    return $context;
+  }
+
 }

@@ -3,6 +3,9 @@
 /**
  * @file
  * Contains 'RestAPIRequest' class.
+ *
+ * Request has 'payload'.
+ * Response has 'body'.
  */
 
 /**
@@ -127,7 +130,7 @@ class RestAPIRequest {
    *     'code',
    *     'duration',
    *     'info',
-   *     'response',
+   *     'body',
    */
   public static function load($request_id) {
     $data = db_select(static::TABLE, 't')

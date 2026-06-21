@@ -3269,16 +3269,34 @@ function tpps_zenodo_deposit_create_alter(array &$data = []) {
 }
 
 /**
+ * Implements alter-hook 'rest_api_response_hash_generation'.
+ *
+ * @param array $context
+ *   Response meta data for hash generation.
+ *   See RestAPIResponse::generateHash().
+ */
+function tpps_rest_api_response_hash_generation_alter(array &$context) {
+  $method = 'alterResponseHashGeneration';
+  $list = array_merge(
+    PublicationDOI::getApiList(),
+    PublicationDOI::getSERPList()
+  );
+  foreach ($list as $class_name) {
+    if (!method_exists($class_name, $method)) {
+      continue;
+    }
+    $context = call_user_func_array([$class_name, $method], [$context]);
+  }
+}
+
+/**
  * Implements hook 'rest_api_response_loaded'.
  *
  * @param array $context
  *   Keys: 'request_id' and 'response_id'.
  */
 function tpps_rest_api_response_loaded(array $context = []) {
-  if (
-    !empty($context['request_id'])
-    && !empty($context['response_id'])
-  ) {
+  if (!empty($context['request_id']) && !empty($context['response_id'])) {
     watchdog(
       'tpps_rest_api',
       "Loaded response '@id' for request '@request_id'.",

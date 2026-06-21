@@ -9,7 +9,7 @@
  * because not all responses and not all methods could be cached.
  *
  *  How to create an instnace of the 'RestAPI' class?
- *    $data['response'] = (new RestAPI($data))->get()->response;
+ *    $data['body'] = (new RestAPI($data))->get()->response;
  *    or
  *    $api = new RestAPI($context);
  *    $api->doRequest();
@@ -625,7 +625,7 @@ class RestAPI {
           case 'request_id':
             if ($this->requestId != $value) {
               // Check value with existing request_id and update record in
-              // 'response' table if they are different. This could happen
+              // RestAPIResponse::TABLE table if they are different. This could happen
               // when requests was removed but responses are left.
               db_update(static::TABLE)
                 ->fields(['request_id' => $context['request_id']])
@@ -637,8 +637,7 @@ class RestAPI {
 
           case 'duration':
           case 'code':
-          case 'response':
-            // Note: DB column 'body' represents 'response'.
+          case 'body':
             $this->$key = $value;
             break;
         }
@@ -767,11 +766,13 @@ class RestAPI {
       // Not OK.
       // Codes: https://developers.zenodo.org/?shell#http-status-codes
       $exception_data = [
+        // Request.
         'payload' => empty($this->payload) ? [] : json_decode($this->payload),
         'url' => $this->url,
         'method' => $this->method,
         'header' => $this->header,
-        'response' => $this->response,
+        // Response.
+        'body' => $this->response,
         'code' => $this->code,
         'message' => $this->message,
         'curl_info' => $this->curlInfo,
