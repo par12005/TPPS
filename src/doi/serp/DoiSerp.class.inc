@@ -262,6 +262,7 @@ abstract class DoiSerp {
     if ($result) {
       $this->created = $result['created'] ?? 0;
       $this->serp = $result['serp'] ?? '';
+      // @TODO Rename into 'hash'.
       $this->md5 = $result['md5'] ?? '';
       $this->isExists = !empty($this->serp);
     }

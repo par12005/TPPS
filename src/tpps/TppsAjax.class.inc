@@ -40,7 +40,7 @@ class TppsAjax {
     else {
       $response['doi'] = $doi = $payload['doi'];
       $response['source'] = $source = $payload['source'] ?? NULL;
-      $publication_data = PublicationDOI::requestAPI($doi, $source);
+      $publication_data = PublicationDOI::getCombined($doi);
       $response['publication_data'] = $publication_data;
       $response['is_complete'] = PublicationDOI::isComplete($publication_data);
       $response['success'] = TRUE;

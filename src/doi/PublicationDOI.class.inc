@@ -183,6 +183,8 @@ class PublicationDOI extends DOI {
    *   Optional. Source of the publication data.
    *   Possible values:
    *   'all', empty and constants DoiSerp::KEY and DoiApi::KEY.
+   * @param bool $reset
+   *   Default is FALSE. When TRUE static cache will be reset.
    *
    * @return array
    *   Returns record from DB table for given DOI if exists.
@@ -191,15 +193,14 @@ class PublicationDOI extends DOI {
    * @throws Exception
    *   When $source is invalid.
    */
-  public static function load($doi, $source = NULL) {
+  public static function load($doi, $source = NULL, $reset = FALSE) {
     $output = [];
     $use_check_plain = FALSE;
 
     $static_cache = &drupal_static(__METHOD__);
-    $cache_key = implode('', func_get_args());
+    $cache_key = $doi . $source;
 
-    if (!isset($static_cache[$cache_key])) {
-
+    if ($reset || !isset($static_cache[$cache_key])) {
       if (empty($source)) {
         // Combined.
         // Rule: longer string is better.
@@ -855,29 +856,23 @@ class PublicationDOI extends DOI {
   }
 
   /**
-   * Get metadata from all supported APIs.
+   * Gets combined publication data from all APIs and SERP providers.
    *
-   * Metadata will be stored in local DB.
+   * If data from API is missing it will be requested and stored in DB.
+   * If data from SERP provider is missing but RestAPI has saved data it will
+   * be reused to parse SERP.
    *
    * @param string $doi
    *   Required. DOI (Digital Object Identifier).
-   * @param string $source
-   *   Optional. Source of the publication data.
-   *   Possible values: see const DoiApi::KEY.
    */
-  public static function requestAPI($doi, $source = NULL) {
+  public static function getCombined($doi, $source = NULL) {
 
     // When TRUE debug watchdog messages will be created.
     $debug_mode = FALSE;
 
     if (!variable_get('tpps_doi_lookup_force_api')) {
-      $data = PublicationDOI::load($doi, $source);
-      if (!empty($data) && TppsArray::isComplete($data)) {
-        if ($debug_mode ?? FALSE) {
-          $message = 'DOI: @doi. Publication data is complete';
-          $params = ['@doi' => $doi];
-          watchdog(__METHOD__, $message, $params);
-        }
+      $data = PublicationDOI::load($doi);
+      if (PublicationDOI::isComplete($data)) {
         return $data;
       }
     }
@@ -885,16 +880,8 @@ class PublicationDOI extends DOI {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Data is incomplete. Let's get data from other sources.
     $data = [];
-    $class_list = [];
     $api_list = static::getApiList();
-
-    if (!empty($source) && !empty($class_name = $api_list[$source])) {
-      $class_list[] = $class_name;
-    }
-    if (empty($class_list)) {
-      // All APIs.
-      $class_list = array_values($api_list);
-    }
+    $class_list = array_values($api_list);
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $allowed_api_list = variable_get('tpps_doi_lookup_allowed_api_list');
@@ -914,7 +901,27 @@ class PublicationDOI extends DOI {
       }
     }
 
-    return PublicationDOI::load($doi, $source);
+    $data = PublicationDOI::load($doi, NULL, TRUE);
+    if (PublicationDOI::isComplete($data)) {
+      return $data;
+    }
+    else {
+      // Check if SERP providers has cached requests.
+      foreach (static::getSERPList() as $key => $class_name) {
+        if (!variable_get('tpps_doi_' . $key . '_scrape_allowed')) {
+          continue;
+        }
+
+        $provider = new $class_name();
+        $provider->doi = $doi;
+        $serp_data = $provider->parse();
+        if (PublicationDOI::isMissing($doi, $class_name)) {
+          PublicationDOI::save($serp_data);
+        }
+      }
+      // Load uncached combined data.
+      return PublicationDOI::load($doi, NULL, TRUE);
+    }
   }
 
   /**
