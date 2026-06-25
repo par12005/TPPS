@@ -10,6 +10,22 @@
  */
 function tpps_theme() {
   return [
+    // Rest API.
+    'request_report_link' => [
+      'variables' => [
+        'request_id' => NULL,
+        'title' => NULL,
+      ],
+      'file' => 'theme/misc.inc',
+    ],
+    'response_report_link' => [
+      'variables' => [
+        'response_id' => NULL,
+        'title' => NULL,
+      ],
+      'file' => 'theme/misc.inc',
+    ],
+    // Other.
     'http_code' => [
       'variables' => [
         'code' => NULL,

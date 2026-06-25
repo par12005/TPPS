@@ -138,3 +138,43 @@ function theme_response_body(array $variables) {
   }
   return $output;
 }
+
+/**
+ * Link to single request's report.
+ *
+ * @param array $variables
+ *   Data for theming.
+ *   'request_id' string
+ *     Request Id.
+ *
+ * @return string
+ *   Returns rendered HTML link to the single request report page.
+ */
+function theme_request_report_link(array $variables) {
+  if (empty($request_id = check_plain(trim($variables['request_id'])))) {
+    return '';
+  }
+  $url = 'admin/reports/tpps/rest_api/request/single/' . $request_id;
+  $title = $variables['title'] ?? $request_id;
+  return l($title, $url);
+}
+
+/**
+ * Link to response body report.
+ *
+ * @param array $variables
+ *   Data for theming.
+ *   'response_id' string
+ *     Response Id.
+ *
+ * @return string
+ *   Returns rendered HTML link to the response body report page.
+ */
+function theme_response_report_link(array $variables) {
+  if (empty($response_id = check_plain(trim($variables['response_id'])))) {
+    return '';
+  }
+  $url = 'admin/reports/tpps/rest_api/response/body/' . $response_id;
+  $title = $variables['title'] ?? $response_id;
+  return l($title, $url);
+}

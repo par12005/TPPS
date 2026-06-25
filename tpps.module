@@ -3297,19 +3297,19 @@ function tpps_rest_api_response_hash_generation_alter(array &$context) {
  */
 function tpps_rest_api_response_loaded(array $context = []) {
   if (!empty($context['request_id']) && !empty($context['response_id'])) {
-    watchdog(
-      'tpps_rest_api',
-      "!aLoaded existing response '@id' for request '!request_report_link'.",
-      [
-        '!a' => '<a href=#></a>',
-        '@id' => $context['response_id'],
-        '!request_report_link' => l(
-          t('#@request_id', ['@request_id' => $context['request_id']]),
-          'admin/reports/db/public.' . RestAPIRequest::TABLE,
-          ['query' => ['request_id' => $context['request_id']]]
-        ),
-      ]
-    );
+    $message = "!aLoaded existing response '!response_report_link' to the "
+      . "request '!request_report_link'.";
+    $params = [
+      '!a' => '<a href=#></a>',
+      '@id' => $context['response_id'],
+      '!request_report_link' => theme('request_report_link',
+        ['request_id' => $context['request_id']]
+      ),
+      '!response_report_link' => theme('response_report_link',
+        ['response_id' => $context['response_id']]
+      ),
+    ];
+    watchdog('tpps_rest_api', $message, $params);
   }
 }
 
@@ -3340,17 +3340,15 @@ function tpps_rest_api_request_started(array $context = []) {
       }
       $request_id = RestAPIRequest::save($context);
       if (!empty($request_id)) {
-        $message = '!aRest API Request !report_link was saved.';
+        $message = '!aRest API Request !request_report_link was saved.';
       }
       else {
-        $message = '!aRest API Request !report_link already exists.';
+        $message = '!aRest API Request !request_report_link already exists.';
       }
       $params = [
         '!a' => '<a href=#></a>',
-        '!report_link' => l(
-          t('#@request_id', ['@request_id' => $request_id]),
-          'admin/reports/db/public.' . RestAPIRequest::TABLE,
-          ['query' => ['request_id' => $request_id]]
+        '!request_report_link' => theme('request_report_link',
+          ['request_id' => $context['request_id']]
         ),
       ];
       watchdog('tpps_rest_api', $message, $params);
@@ -3389,18 +3387,15 @@ function tpps_rest_api_request_completed(array $context = []) {
 
     if ($response_id = RestAPIResponse::save($context)) {
       // Watchdog message.
-      $message = '!aResponse !response_report_link to Rest API request !request_report_link was saved.';
+      $message = '!aResponse !response_report_link to the request '
+        . '!request_report_link was saved.';
       $params = [
         '!a' => '<a href=#></a>',
-        '!request_report_link' => l(
-          t('#@request_id', ['@request_id' => $context['request_id']]),
-          'admin/reports/db/public.' . RestAPIResponse::TABLE,
-          ['query' => ['request_id' => $context['request_id']]]
+        '!request_report_link' => theme('request_report_link',
+          ['request_id' => $context['request_id']]
         ),
-        '!response_report_link' => l(
-          t('#@response_id', ['@response_id' => $response_id]),
-          'admin/reports/db/public.' . RestAPIResponse::TABLE,
-          ['query' => ['response_id' => $response_id]]
+        '!response_report_link' => theme('response_report_link',
+          ['response_id' => $context['response_id']]
         ),
       ];
       watchdog('tpps_rest_api', $message, $params);
@@ -3410,14 +3405,12 @@ function tpps_rest_api_request_completed(array $context = []) {
     $max_execution_time = variable_get('tpps_rest_api_max_execution_time', 5000);
     $method = $request['method'] ?? NULL;
     if (($context['duration'] ?? 0) >= $max_execution_time) {
-      $message = '!aProcessing request !report_link took too long: @duration msec.';
+      $message = '!aProcessing request !request_report_link took too long: @duration msec.';
       $params = [
         '!a' => '<a href=#></a>',
         '@duration' => $context['duration'],
-        '!report_link' => l(
-          t('#@request_id', ['@request_id' => $context['request_id']]),
-          'admin/reports/db/public.' . RestAPIResponse::TABLE,
-          ['query' => ['request_id' => $context['request_id']]]
+        '!request_report_link' => theme('request_report_link',
+          ['request_id' => $context['request_id']]
         ),
       ];
       watchdog('tpps_rest_api', $message, $params);
