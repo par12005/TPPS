@@ -3299,10 +3299,15 @@ function tpps_rest_api_response_loaded(array $context = []) {
   if (!empty($context['request_id']) && !empty($context['response_id'])) {
     watchdog(
       'tpps_rest_api',
-      "Loaded existing response '@id' for request '@request_id'.",
+      "!aLoaded existing response '@id' for request '!request_report_link'.",
       [
+        '!a' => '<a href=#></a>',
         '@id' => $context['response_id'],
-        '@request_id' => $context['request_id'],
+        '!request_report_link' => l(
+          t('#@request_id', ['@request_id' => $context['request_id']]),
+          'admin/reports/db/public.' . RestAPIRequest::TABLE,
+          ['query' => ['request_id' => $context['request_id']]]
+        ),
       ]
     );
   }
