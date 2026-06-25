@@ -25,8 +25,8 @@
  * How to add 'tag'?
  *   $response = (new RestAPI([
  *     'url' => $url,
- *     'tag' => tag,
- *   ])->get()->response();
+ *     'tag' => $tag,
+ *   ]))->get()->response();
  *   or
  *   $api = new RestAPI($context);
  *   $api->tag = $tag;
@@ -545,7 +545,11 @@ class RestAPI {
    */
   public function doRequest() {
     $this->validateRequest();
+    // Prepare request data before hash will be generated.
     $this->method = strtoupper($this->method);
+    if (!empty($this->query)) {
+      $this->url = url($this->url, ['query' => $this->query]);
+    }
 
     $this->generateHash();
 
@@ -609,12 +613,6 @@ class RestAPI {
           curl_setopt($curl, CURLOPT_POSTFIELDS, $this->payload);
         }
       }
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      $this->url = url($this->url, [
-        'https' => TRUE,
-        'external' => TRUE,
-        'query' => $this->query ?? [],
-      ]);
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Allow other modules to react on start of the request.
       if (function_exists('module_invoke_all')) {
