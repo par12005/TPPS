@@ -242,4 +242,25 @@ class TppsFile {
     }
   }
 
+  /**
+   * Downloads file using URL and creates Drupal managed file.
+   *
+   * @param string $url
+   *   URL to the file.
+   * @param string $destination
+   *   Stream Wrapper URI (not path to filesystem).
+   *   For example: 'public://<folder_name>' or 'private://<folder_name>'.
+   *   If no value is provided, a randomized name will be generated and the
+   *   file will be saved using Drupal's default files scheme, usually "public://".
+   *   See
+   *   https://api.drupal.org/api/drupal/includes%21file.inc/function/file_save_data/7.x.
+   *
+   * @return object
+   *   Returns 'Drupal Managed File' object.
+   */
+  public static function download($url, $destination = NULL) {
+    $file_data = file_get_contents($url);
+    return file_save_data($file_data, $destination, FILE_EXISTS_RENAME);
+  }
+
 }
