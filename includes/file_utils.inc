@@ -1461,30 +1461,6 @@ function tpps_flat_generator($location, array $options = array()) {
 }
 
 /**
- * Removes managed by Drupal file.
- *
- * @param int $fid
- *   Managed File Id.
- *
- * @return bool
- *   Returns TRUE for success,
- *   FALSE in the event of an error,
- *   or an array if the file is being used by any modules.
- */
-function tpps_file_remove($fid) {
-  if ($file = TppsFile::load($fid)) {
-    $result = file_delete($file, $force = TRUE);
-    if ($result) {
-      watchdog('tpps', 'Removed file: <pre>@file</pre>',
-        ['@file' => print_r($file, 1)]
-      );
-    }
-    return $result;
-  }
-  return FALSE;
-}
-
-/**
  * Gets list of column names in file (header).
  *
  * Note: We use the same function as a file iterator callback because it's

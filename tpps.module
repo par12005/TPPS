@@ -3900,3 +3900,16 @@ function tpps_submission_tag_unlinked($accession, $tag_id, $result = 'success') 
     '@tag_name' => SubmissionTag::getName($tag_id),
   ]));
 }
+
+/**
+ * Implements hook 'file_removed'.
+ *
+ * @param object $file
+ *   Drupal Managed File object.
+ */
+function tpps_file_removed($file) {
+  if ($file) {
+    $params = ['@file' => print_r($file, 1)];
+    watchdog('tpps', 'Removed file: <pre>@file</pre>', $params);
+  }
+}

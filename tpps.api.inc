@@ -697,3 +697,16 @@ function hook_submission_tag_unlinked($accession, $tag_id, $result) {
 function hook_rest_api_response_hash_generation_alter(array &$context) {
   unset($context['body']['response-date']);
 }
+
+/**
+ * Implements hook 'file_removed'.
+ *
+ * @param object $file
+ *   Drupal Managed File object.
+ */
+function hook_file_removed($file) {
+  if ($file) {
+    $params = ['@file' => print_r($file, 1)];
+    watchdog('tpps', 'Removed file: <pre>@file</pre>', $params);
+  }
+}

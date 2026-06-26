@@ -121,7 +121,7 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
       ) {
         // Remove files which was uploaded before settings on form was changed
         // and those files became useless but already uploaded to server.
-        if (tpps_file_remove($genotype[$snps_fieldset]['snps-assay'])) {
+        if (TppsFile::remove($genotype[$snps_fieldset]['snps-assay'])) {
           $genotype[$snps_fieldset]['snps-assay'] = 0;
         }
         AssayDesign::removeFile($i, $form_state);
@@ -131,7 +131,7 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
 
 
 // @TODO Check why fields are missing on Page4 submit.
-        //if (tpps_file_remove($genotype[$snps_fieldset]['vcf'])) {
+        //if (TppsFile::remove($genotype[$snps_fieldset]['vcf'])) {
         //  $genotype[$snps_fieldset]['vcf'] = 0;
         //}
       }
@@ -142,12 +142,12 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
       // $ssrs_fieldset = 'ssrs_cpssrs';
       //if (!empty($genotype['marker-type']['SSRs/cpSSRs'])) {
       //  if ($genotype['SSRs/cpSSRs'] == 'cpSSRs') {
-      //    if (tpps_file_remove($genotype[$ssrs_fieldset]['ssrs'])) {
+      //    if (TppsFile::remove($genotype[$ssrs_fieldset]['ssrs'])) {
       //      $genotype[$ssrs_fieldset]['ssrs'] = 0;
       //    }
       //  }
       //  if (($genotype['SSRs/cpSSRs'] ?? NULL) == 'SSRs') {
-      //    if (tpps_file_remove($genotype[$ssrs_fieldset]['ssrs_extra'])) {
+      //    if (TppsFile::remove($genotype[$ssrs_fieldset]['ssrs_extra'])) {
       //      $genotype[$ssrs_fieldset]['ssrs_extra'] = 0;
       //    }
       //  }

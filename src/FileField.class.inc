@@ -1277,7 +1277,7 @@ abstract class FileField {
    */
   public static function removeFile($organism_index, array &$form_state) {
     $fid = static::getFileId($organism_index, $form_state);
-    if (tpps_file_remove($fid)) {
+    if (TppsFile::remove($fid)) {
       $parents = static::getParents($organism_index, $form_state);
       TppsArray::set($form_state['values'], $parents, $value = 0);
     }

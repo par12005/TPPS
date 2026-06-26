@@ -71,6 +71,29 @@ class TppsFile {
   }
 
   /**
+   * Removes managed by Drupal file.
+   *
+   * @param int $fid
+   *   Managed File Id.
+   *
+   * @return bool
+   *   Returns TRUE for success,
+   *   FALSE in the event of an error,
+   *   or an array if the file is being used by any modules.
+   */
+  public static function remove($fid) {
+    if ($file = TppsFile::load($fid)) {
+      $result = file_delete($file, $force = TRUE);
+      // tpps_file_removed().
+      if (function_exists('module_invoke_all')) {
+        module_invoke_all('file_removed', $file);
+      }
+      return $result;
+    }
+    return FALSE;
+  }
+
+  /**
    * Gets length of the file.
    *
    * @param int $fid
