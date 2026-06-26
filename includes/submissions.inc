@@ -268,7 +268,7 @@ function tpps_submission_rename_files($accession) {
       if ($name === '#NO_RENAME') {
         continue;
       }
-      $old_file = tpps_file_load($fid);
+      $old_file = TppsFile::load($fid);
       if ($old_file->uri[0] != '/') {
         $old_path = file_create_url($old_file->uri);
         // Prepare new file_name.
@@ -285,7 +285,7 @@ function tpps_submission_rename_files($accession) {
             ->range(0, 1)->execute()->fetchField();
         }
         if (!empty($new_fid)) {
-          $file = tpps_file_load($new_fid);
+          $file = TppsFile::load($new_fid);
         }
         else {
           $file = tpps_rename_file($fid, "{$accession}_{$name}");
@@ -545,7 +545,7 @@ function tpps_submission_update_stats(array &$form_state) {
           $rows = tpps_file_len($fid) + !empty($phenotype['file-no-header']);
           $phenotype_file_name_cols = $phenotype['file-groups']['Phenotype Data']['0'];
           $form_state['stats']['phenotype_count'] += $rows * count($phenotype_file_name_cols);
-          if (tpps_file_load($phenotype['metadata'])) {
+          if (TppsFile::load($phenotype['metadata'])) {
             $form_state['stats']['unique_phenotypes'] +=
               tpps_file_len($phenotype['metadata'])
               + !empty($phenotype['metadata-no-header']);

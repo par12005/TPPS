@@ -1936,7 +1936,7 @@ abstract class FileField {
       $output = NULL;
 
       $fid = static::getFileId($organism_index, $form_state);
-      if (!empty($fid) && $file = tpps_file_load($fid)) {
+      if (!empty($fid) && ($file = TppsFile::load($fid))) {
         $output = tpps_get_location($file->uri);
       }
 

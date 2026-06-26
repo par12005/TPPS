@@ -62,7 +62,7 @@ function tpps_parse_file_helper($row, array &$options) {
  *   The number of lines or rows in the file.
  */
 function tpps_file_len($fid) {
-  $file = tpps_file_load($fid);
+  $file = TppsFile::load($fid);
   $location = tpps_get_location($file->uri);
   $extension = tpps_get_path_extension($location);
   $count = 0;
@@ -112,7 +112,7 @@ function tpps_file_len_helper($row, array &$options = array()) {
  *   The length of the longest line in the file.
  */
 function tpps_file_width($fid) {
-  $file = tpps_file_load($fid);
+  $file = TppsFile::load($fid);
   $location = tpps_get_location($file->uri);
   $extension = tpps_get_path_extension($location);
   switch ($extension) {
@@ -280,7 +280,7 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
     $options['preserve'] = FALSE;
   }
 
-  if ($file = tpps_file_load($fid)) {
+  if ($file = TppsFile::load($fid)) {
     $new_filename = tpps_file_build_new_name($new_name, $file->uri);
     if ($options['preserve']) {
       $file->status = FILE_STATUS_PERMANENT;
@@ -290,7 +290,7 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
               FROM {file_managed} f WHERE f.uri = :uri', array(':uri' => $new_filename));
       $record = $result->fetchObject();
       if (isset($record)) {
-        return tpps_file_load($record->fid);
+        return TppsFile::load($record->fid);
       }
       return file_copy($file, $new_filename, FILE_EXISTS_RENAME);
     }
@@ -301,7 +301,7 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
       ->range(0, 1)->execute()->fetchField();
     if (!empty($new_fid)) {
       // print_r("FID:" . $record->fid . "\n");
-      return tpps_file_load($new_fid);
+      return TppsFile::load($new_fid);
     }
     $file_object = file_move($file, $new_filename, FILE_EXISTS_RENAME);
     // print_r("FILE OBJECT:\n");
@@ -721,7 +721,7 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
       }
 
       $fid = TppsArray::get($form_state['values'], $parents);
-      if (empty($file = tpps_file_load($fid))) {
+      if (empty($file = TppsFile::load($fid))) {
         continue;
       }
 
@@ -1169,7 +1169,7 @@ function tpps_file_iterator($fid, $function, array &$options = []) {
     $options['job']->setItemsHandled(0);
   }
 
-  $file = tpps_file_load($fid);
+  $file = TppsFile::load($fid);
   $file_location = tpps_get_location($file->uri);
   // Do not process images of the plants.
   $extension = tpps_get_path_extension($file_location);
@@ -1244,7 +1244,7 @@ function tpps_file_iterator($fid, $function, array &$options = []) {
  *   The generator for the file.
  */
 function tpps_file_generator($fid, array $options = []) {
-  $file = tpps_file_load($fid);
+  $file = TppsFile::load($fid);
   $location = tpps_get_location($file->uri);
   $extension = tpps_get_path_extension($location);
   switch ($extension) {
@@ -1472,7 +1472,7 @@ function tpps_flat_generator($location, array $options = array()) {
  *   or an array if the file is being used by any modules.
  */
 function tpps_file_remove($fid) {
-  if ($file = tpps_file_load($fid)) {
+  if ($file = TppsFile::load($fid)) {
     $result = file_delete($file, $force = TRUE);
     if ($result) {
       watchdog('tpps', 'Removed file: <pre>@file</pre>',
@@ -1519,35 +1519,6 @@ function tpps_file_get_header($data, array &$options = []) {
     // Function was called as file iterator callback it $data is $row.
     $options['header'] = $data;
   }
-}
-
-/**
- * More safe way to load managed file object.
- *
- * Checks $fid and file size.
- *
- * Usage:
- *   $file = tpps_file_load($fid);
- *   if ($file && $file->status != $status) {}
- * Note: don't use in one condition.
- * Wrong:
- *   if ($file = tpps_file_load($fid) && $file->status != $status) {}
- *
- * @param int $fid
- *   File Id.
- *
- * @return mixed
- *   Returns FALSE in case of errors.
- *   Returns Managed File object.
- */
-function tpps_file_load($fid = NULL) {
-  if (!empty($fid) && is_numeric($fid) && $file = file_load($fid)) {
-    if ($file->filesize ?? FALSE) {
-      // Do not allows empty files with zero-size.
-      return $file;
-    }
-  }
-  return FALSE;
 }
 
 /**

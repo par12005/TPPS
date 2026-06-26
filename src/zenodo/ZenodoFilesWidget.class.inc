@@ -161,7 +161,7 @@ class ZenodoFilesWidget {
     $submission_file_list = $submission_cache[$accession]['file']['id_list'] ?? [];
     foreach ($submission_file_list as $fid => $filesize) {
       $create_url = 'tpps/submission/' . $accession . '/zenodo/files/' . $fid . '/create';
-      if (is_null($filesize) || empty($file = tpps_file_load($fid))) {
+      if (is_null($filesize) || empty($file = TppsFile::load($fid))) {
         $missing_files[] = $fid;
         continue;
       }

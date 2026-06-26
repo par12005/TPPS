@@ -409,7 +409,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     }
 
     // Merge names.
-    if (!empty($name_col) && tpps_file_load($meta_fid)) {
+    if (!empty($name_col) && TppsFile::load($meta_fid)) {
       $names = tpps_parse_file_column($meta_fid, $name_col);
       $phenotype_names = array_merge($phenotype_names, $names);
     }

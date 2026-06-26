@@ -48,7 +48,7 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
       );
     }
     else {
-      if (!($file = tpps_file_load($fid))) {
+      if (!($file = TppsFile::load($fid))) {
         form_set_error("tree-accession][species-$i][file",
           t('Plant Accession File: File is empty.')
         );

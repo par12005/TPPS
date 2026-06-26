@@ -393,7 +393,7 @@ function tpps_form_state_info(array &$new, array &$old) {
  *   The standardized file name prefix.
  */
 function tpps_preserve_valid_file(array &$form_state, $fid, $org_num = NULL, $prefix = NULL) {
-  if (!form_get_errors() && $file = tpps_file_load($fid)) {
+  if (!form_get_errors() && $file = TppsFile::load($fid)) {
     if (!empty($org_num) and !empty($prefix)) {
       $species = implode('_', explode(' ',
         $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']
@@ -836,7 +836,7 @@ function tpps_vcf_tree_validation($accession = NULL) {
 
     // Check the type of VCF file (uploaded or in the cluser)
     // Get file location.
-    if ($vcf_file = tpps_file_load(($genotype['SNPs']['vcf'] ?? NULL))) {
+    if ($vcf_file = TppsFile::load(($genotype['SNPs']['vcf']))) {
       // File was uploaded.
       $location = tpps_get_location($vcf_file->uri);
     }
@@ -953,7 +953,7 @@ function tpps_pre_validate($accession, $fid, $org_num, $job = NULL) {
   $job->logMessage("[INFO] TGDR Accession: $accession");
   $job->logMessage("[INFO] VCF File ID: $fid");
   $job->logMessage("[INFO] Organism Number: $org_num");
-  $vcf_file = tpps_file_load($fid);
+  $vcf_file = TppsFile::load($fid);
   if (!$vcf_file) {
     $job->logMessage("[ERROR] VCF File failed to load", array(), TRIPAL_ERROR);
     return;

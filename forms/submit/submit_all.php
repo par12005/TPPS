@@ -2069,7 +2069,7 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
       print_r($options['headers_assay']);
     echo "\n";
     }
-    $file_assay = tpps_file_load($snp_fid);
+    $file_assay = TppsFile::load($snp_fid);
     $location_assay = tpps_get_location($file_assay->uri);
     $options['path_assay'] = $location_assay;
     echo "Path Assay:\n";

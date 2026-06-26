@@ -173,7 +173,7 @@ class ZenodoFile extends Zenodo {
   public static function getChecksum(array $context) {
     // Drupal File Id.
     if (!empty($context['fid'])) {
-      $context['drupal_file'] = tpps_file_load($context['fid']);
+      $context['drupal_file'] = TppsFile::load($context['fid']);
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Drupal File Object.

@@ -57,7 +57,7 @@ function theme_submission_block(array $variables) {
       if (preg_match('/(Abstract|Organization)/', $item)) {
         continue;
       }
-      elseif (preg_match('/File/', $item) && $file = tpps_file_load($val)) {
+      elseif (preg_match('/File/', $item) && $file = TppsFile::load($val)) {
         // Create links to files.
         $file_url = check_plain(file_create_url($file->uri));
         // @TODO Use Drupal API: l().
@@ -69,7 +69,7 @@ function theme_submission_block(array $variables) {
       }
       elseif (
         preg_match('/species photo/', $item)
-        && $file = tpps_file_load($val)
+        && $file = TppsFile::load($val)
       ) {
         $file_url = check_plain(file_create_url($file->uri));
         $val_str = "<img src='$file_url' width='100%'>";
@@ -237,7 +237,7 @@ function theme_submission_page(array $variables) {
       // Files.
       if (
         preg_match('/File/', $key)
-        && ($file = tpps_file_load($val) === FALSE)
+        && ($file = TppsFile::load($val) === FALSE)
         // VCF files are gzipped value is not the File Id but a hyperlink to
         // file which could be downloaded and manually reviewed because
         // preview not work for gzipped files.
@@ -254,7 +254,7 @@ function theme_submission_page(array $variables) {
 
         $file_url = check_plain(file_create_url($file->uri));
         $val_str = "<a href='$file_url' target='blank'>$file_name</a>";
-        if ($revised_file = tpps_file_load($state['revised_files'][$val] ?? '')) {
+        if ($revised_file = TppsFile::load($state['revised_files'][$val] ?? '')) {
           $val = $state['revised_files'][$val];
           $file_url = check_plain(file_create_url($revised_file->uri));
           $file_name = $revised_file->filename;
@@ -918,7 +918,7 @@ function tpps_submission_flatten(array $state, array $options = []) {
           }
 
           if (($geno['files']['vcf'] ?? NULL) > 0) {
-            if ($file = tpps_file_load($geno['files']['vcf'])) {
+            if ($file = TppsFile::load($geno['files']['vcf'])) {
               $file_url = file_create_url($file->uri);
               $data["$org_name VCF File (uploaded)"] = l($file->filename,
                 $file_url, ['attributes' => ['target' => 'blank']]

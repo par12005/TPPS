@@ -172,7 +172,7 @@ function tpps_submission_zenodo_files_action($action, $deposit_id, $file_id, $ac
         // $file_id is the Drupal File Id.
       is_numeric($file_id)
       // File exists.
-      && !empty($file = tpps_file_load($file_id))
+      && !empty($file = TppsFile::load($file_id))
     ) {
       $data['drupal_file'] = $file;
       $data['deposit_id'] = $deposit_id;
@@ -241,7 +241,7 @@ function tpps_submission_zenodo_files_action($action, $deposit_id, $file_id, $ac
     // appropriate Drupal File.
     if (is_numeric($file_id)) {
       // Drupal File Id.
-      if (empty($file = tpps_file_load($file_id))) {
+      if (empty($file = TppsFile::load($file_id))) {
         $message = t('Drupal File #@file_id was not found.',
           ['@file_id' => $file_id]
         );
@@ -266,7 +266,7 @@ function tpps_submission_zenodo_files_action($action, $deposit_id, $file_id, $ac
           continue;
         }
         foreach ($submission_cache['file']['id_list'] as $fid => $filesize) {
-          if (empty($fid) || is_null($filesize) || empty($file = tpps_file_load($fid))) {
+          if (empty($fid) || is_null($filesize) || empty($file = TppsFile::load($fid))) {
             continue;
           }
           if (

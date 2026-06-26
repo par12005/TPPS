@@ -31,6 +31,46 @@ class TppsFile {
   }
 
   /**
+   * More safe way to load managed file object.
+   *
+   * Processing correctly cases (unlike file_load()):
+   * 1. $fid is NULL.
+   * 2. File size is zero.
+   *
+   * Usage example:
+   *   if (
+   *     // Note: Use parentheses to avoid notices or 'and' instead of the '&&'.
+   *     ($file = TppsFile::load($fid))
+   *     && $file->status != $status
+   *   ) { ... }
+   * No need to use static cache because file_load() uses it already.
+   *
+   * @param int $fid
+   *   File Id.
+   *
+   * @return mixed
+   *   Returns FALSE if:
+   *   1. $fid is empty or NULL.
+   *   2. $fid is not numiric.
+   *   3. No record in 'file_managed' table.
+   *   4. File has zero size.
+   *   Returns 'Managed File' object otherwise.
+   */
+  public static function load($fid = NULL) {
+    if (
+      !empty($fid)
+      && is_numeric($fid)
+      && ($file = file_load($fid))
+      && ($file->filesize ?? FALSE)
+    ) {
+      return $file;
+    }
+    else {
+      return FALSE;
+    }
+  }
+
+  /**
    * Gets length of the file.
    *
    * @param int $fid

@@ -149,7 +149,7 @@ function tpps_ajax_get_study_details_tab(array $data) {
   $files = array_filter($files);
   $params = ['attributes' => ['target' => '_blank']];
   foreach (array_keys($submission->getFileIdList()) as $fid) {
-    if ($file = tpps_file_load($fid)) {
+    if ($file = TppsFile::load($fid)) {
       $file_url = check_plain(file_create_url($file->uri));
       if (
         stripos($file_url, '/isg/') === FALSE
@@ -838,7 +838,7 @@ function _tpps_details_tab_build_table($query, $total, $submission) {
       $organism_key = 'organism-' . $i;
       if (
         empty($fid = SnpAssociation::getFileId($i, $shared_state))
-        || empty($file = tpps_file_load($fid))
+        || empty($file = TppsFile::load($fid))
       ) {
         continue;
       }

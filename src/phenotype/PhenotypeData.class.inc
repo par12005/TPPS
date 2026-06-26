@@ -419,7 +419,7 @@ class PhenotypeData extends FileField {
           // We need to remove this file if it exists.
           if (!empty($phenotype['metadata'])) {
             // Remove already uploaded file.
-            $file = tpps_file_load(($phenotype['metadata'] ?? ''));
+            $file = TppsFile::load(($phenotype['metadata'] ?? ''));
             file_delete($file);
             // Clear metadatafile field.
             unset($phenotype['metadata']);

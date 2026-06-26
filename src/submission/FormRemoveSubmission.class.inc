@@ -517,7 +517,7 @@ class FormRemoveSubmission {
           continue;
         }
         foreach ($organism_list as $field_name => $fid) {
-          if (empty($file = tpps_file_load($fid))) {
+          if (empty($file = TppsFile::load($fid))) {
             continue;
           }
           if (TppsFile::isFileRemoveable($file, $accession)) {

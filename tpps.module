@@ -1032,7 +1032,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
   // has no title.
   if (
     !($element['#simple_file'] ?? FALSE)
-    && $fid && ($file = tpps_file_load($fid))
+    && $fid && ($file = TppsFile::load($fid))
   ) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // "Null values denoted by" AKA "empty" field.
@@ -3639,7 +3639,7 @@ function tpps_form_tppsc_main_alter($form, $form_state) {
     $file_list = $submission->getFileIdList();
     if (!empty($file_list)) {
       foreach (array_keys($file_list) as $fid) {
-        $file = tpps_file_load($fid);
+        $file = TppsFile::load($fid);
         if ($file && TppsFile::isEmptyUsage($file, $submission->accession)) {
           TppsFile::addUsage($file, $submission->accession);
         }
@@ -3658,7 +3658,7 @@ function tpps_form_tppsc_main_alter($form, $form_state) {
   // File was removed from page using 'Remove' button.
   $parents = TppsArray::getPath($form_state['values']);
   $fid = TppsArray::get($form, array_merge($parents, ['#default_value']));
-  $file = tpps_file_load($fid);
+  $file = TppsFile::load($fid);
   if (
     !(empty($fid)) && !empty($file)
     && empty(TppsArray::get($form_state['input'], array_merge($parents, ['fid'])))

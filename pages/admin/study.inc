@@ -197,7 +197,7 @@ function tpps_manage_submission_form(array $form, array $form_state, $accession 
 
     foreach ($submission->sharedState['file_info'] as $files) {
       foreach ($files as $fid => $file_type) {
-        if ($file = tpps_file_load($fid)) {
+        if ($file = TppsFile::load($fid)) {
           $form["edit_file_{$fid}_check"] = [
             '#type' => 'checkbox',
             '#title' => t('I would like to upload a revised version of this file'),
@@ -836,7 +836,7 @@ function tpps_admin_panel_validate($form, &$form_state) {
             );
           }
           if (!empty($form_state['values']["edit_file_{$fid}_file"])) {
-            $file = tpps_file_load($fid);
+            $file = TppsFile::load($fid);
             if ($file && TppsFile::isEmptyUsage($file, $accession)) {
               TppsFile::addUsage($file, $accession);
             }
@@ -1081,7 +1081,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
 
       // Uploaded VCF.
       $vcf_fid = ($page4_values['organism-1']['genotype'][$snps_fieldset]['vcf'] ?? NULL);
-      $vcf_file = tpps_file_load($vcf_fid);
+      $vcf_file = TppsFile::load($vcf_fid);
       // Cluster (local) VCF.
       $local_vcf = ($page4_values['organism-1']['genotype'][$snps_fieldset]['local_vcf'] ?? NULL);
 

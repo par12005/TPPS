@@ -696,7 +696,7 @@ class TppsForm {
         = $parent_element[$field_name]['#value'];
     }
     $fid = $parent_element[$field_name]['#default_value'] ?? '';
-    if (!empty($fid) && empty($file = tpps_file_load($fid))) {
+    if (!empty($fid) && empty($file = TppsFile::load($fid))) {
       $message = t('@title: File #@fid was not found in file system. '
         . 'Please upload it again.',
         ['@title' => $title, '@fid' => $fid]

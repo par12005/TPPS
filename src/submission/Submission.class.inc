@@ -845,7 +845,7 @@ class Submission {
         if (empty($fid)) {
           continue;
         }
-        if ($file = tpps_file_load($fid)) {
+        if ($file = TppsFile::load($fid)) {
           if (!TppsFile::isFileRemoveable($file, $this->accession)) {
             // File used by other studies.
             if ($force) {
@@ -2457,8 +2457,7 @@ class Submission {
     }
     if (!empty($fid_list)) {
       foreach ($fid_list as $fid) {
-        $file = tpps_file_load($fid);
-        if ($file && $file->status != $status) {
+        if (($file = TppsFile::load($fid)) && $file->status != $status) {
           $file->status = $status;
           file_save($file);
           if (TppsFile::isEmptyUsage($file, $this->accession)) {
@@ -2574,7 +2573,7 @@ class Submission {
     // @todo Minor. Check if file already was uploaded.
     if ($action == 'create') {
       foreach ($fid_list as $fid) {
-        if ($file = tpps_file_load($fid)) {
+        if ($file = TppsFile::load($fid)) {
           $data = ['drupal_file' => $file, 'deposit_id' => $deposit_id];
           ZenodoFile::$action($data);
         }
@@ -2607,7 +2606,7 @@ class Submission {
 
         case 'update':
           foreach ($fid_list as $fid) {
-            if ($file = tpps_file_load($fid)) {
+            if ($file = TppsFile::load($fid)) {
               ZenodoFile::update([
                 'deposit_id' => $deposit_id,
                 'drupal_file' => $file,
@@ -3442,7 +3441,7 @@ class Submission {
     // extra item 'url' which is File's absolute URL.
     $files = [];
     foreach ($fid_list as $fid) {
-      if ($file = tpps_file_load($fid)) {
+      if ($file = TppsFile::load($fid)) {
         $file->url = file_create_url($file->uri);
         // To detect files manually uploaded to server use this check:
         // if ($file->uri[0] == '/') {}.

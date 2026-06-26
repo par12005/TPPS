@@ -438,7 +438,7 @@ class SubmissionCache {
 
         // Missing files goes to the 'missing' group and will have NO hyperlink
         // to 'File Info' API page.
-        if (empty($file = tpps_file_load($fid))) {
+        if (empty($file = TppsFile::load($fid))) {
           $data['file'][Report::MISSING_FILES][] = $fid;
           $data['file'][Report::FILE_ID_LIST][$fid] = NULL;
         }

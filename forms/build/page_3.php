@@ -205,7 +205,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     $form['tree-accession']["species-$i"]['coord-format']['#prefix'] =
       tpps_build_google_map_wrapper($fid);
 
-    if ($file = tpps_file_load($fid)) {
+    if ($file = TppsFile::load($fid)) {
       $no_header = tpps_get_ajax_value(
         $form_state,
         ['tree-accession', "species-$i", 'file', 'no_header'],

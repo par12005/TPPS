@@ -11,7 +11,7 @@
 function tpps_accession_coordinates() {
   $params = drupal_get_query_parameters($_POST);
   $fid = $params['fid'] ?? '';
-  if ($file = tpps_file_load($fid)) {
+  if ($file = TppsFile::load($fid)) {
     $coordinates = [];
     $columns = [
       'id_col' => $params['id_col'],

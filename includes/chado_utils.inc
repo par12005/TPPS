@@ -761,7 +761,7 @@ function tpps_get_taxon($org_name, $rank) {
  */
 function tpps_add_project_file(array &$state, &$fid) {
   if (!empty($fid)) {
-    if ($file = tpps_file_load($fid)) {
+    if ($file = TppsFile::load($fid)) {
       tpps_chado_insert_record('projectprop', array(
         'project_id' => $state['ids']['project_id'],
         'type_id' => tpps_load_cvterm('file_path')->cvterm_id,
@@ -782,7 +782,7 @@ function tpps_add_project_file(array &$state, &$fid) {
     $fid = $state['revised_files'][$fid];
     // @TODO Review and remove this code cause when $fid is empty this code
     // will never loads file object.
-    if ($file = tpps_file_load($fid)) {
+    if ($file = TppsFile::load($fid)) {
       tpps_chado_insert_record('projectprop', array(
         'project_id' => $state['ids']['project_id'],
         'type_id' => tpps_load_cvterm('file_path')->cvterm_id,

@@ -802,7 +802,7 @@ class AssayDesign extends FileField {
     $fid = TppsArray::get($form_state['input'],
       array_merge($parents, ['fid'])
     );
-    if (empty($file = tpps_file_load($fid)) || empty($file->filesize)) {
+    if (empty($file = TppsFile::load($fid)) || empty($file->filesize)) {
       $error_message = t(
         'Organism #@oidx / "<strong>@field_title</strong>": @message',
         [
