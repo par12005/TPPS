@@ -44,8 +44,8 @@ function tpps_report_rest_api_request_single() {
   $result = $query->execute()->fetchAssoc();
 
   // Special care about some data.
-  $header = $result['header'];
-  $payload = $result['payload'];
+  $header = json_decode($result['header'], TRUE);
+  $payload = json_decode($result['payload'], TRUE);
   $response_list = $result['response_list'] ?? NULL;
   unset($result['header']);
   unset($result['payload']);
@@ -67,10 +67,12 @@ function tpps_report_rest_api_request_single() {
       'title' => t('Response List'),
     ]);
   }
-  // Header.
-  $output .= theme('json', ['title' => t('Header'), 'json' => $header]);
-  // Payload.
-  $output .= theme('json', ['title' => t('Payload'), 'json' => $payload]);
 
+  if ($header) {
+    $output .= TppsArray::print($header, t('Header')) . '<hr />';
+  }
+  if ($payload) {
+    $output .= TppsArray::print($payload, t('Payload')) . '<hr />';
+  }
   return $output;
 }
