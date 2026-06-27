@@ -939,7 +939,9 @@ function tpps_schema() {
 
   $class_list = [
     'doi/DoiSerp',
-    'doi/GoogleScholar',
+    'doi/serp/PubMed',
+    'doi/serp/GoogleScholar',
+
     'doi/PublicationDOI',
     'submission/SubmissionCache',
     'RestAPI/RestAPIResponse',

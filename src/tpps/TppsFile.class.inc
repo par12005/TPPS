@@ -260,7 +260,35 @@ class TppsFile {
    */
   public static function download($url, $destination = NULL) {
     $file_data = file_get_contents($url);
-    return file_save_data($file_data, $destination, FILE_EXISTS_RENAME);
+    if (strpos($file_data, 'Not Found') === FALSE) {
+      // Prepare folder.
+      $folder = drupal_dirname($destination);
+      if (!file_prepare_directory($folder, FILE_CREATE_DIRECTORY)) {
+        $message = t('Could not create directory: @path',
+          ['@folder' => $folder]);
+        drupal_set_message($message, 'error');
+      }
+      return file_save_data($file_data, $destination, FILE_EXISTS_REPLACE);
+    }
+    else {
+      // Note: $file_data in this case is JSON response.
+      throw new Exception($url . ': [404] Not found');
+    }
+  }
+
+  /**
+   * Builds URL to the file.
+   *
+   * @param int $file_id
+   *   Drupal managed file id.
+   *
+   * @return string
+   *   Returns URL.
+   */
+  public static function getUrl($file_id) {
+    if (!empty($file = TppsFile::load($file_id))) {
+      return file_create_url($file->uri);
+    }
   }
 
 }
