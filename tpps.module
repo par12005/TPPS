@@ -3395,53 +3395,61 @@ function tpps_rest_api_request_started(array $context = []) {
  *   To check if response exists: RestAPIResponse::isExists($request_id).
  */
 function tpps_rest_api_response_received(array $context = []) {
-  if (variable_get('tpps_rest_api_use_cache')) {
-    $key = 'tpps_rest_api';
+  if (
+    // Global caching disabled.
+    !variable_get('tpps_rest_api_use_cache')
+    // Current request caching disabled.
+    || !($context['cache'] ?? TRUE)
+  ) {
+    return;
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $key = 'tpps_rest_api';
+  $params = [
+    '@dump' => var_export($context, 1),
+    '@function' => __FUNCTION__,
+  ];
+  if ($debug_mode ?? 0) {
+    watchdog($key, '@function: <pre>@dump</pre>', $params);
+  }
+  if (empty($context['request_id'])) {
+    $message = '@function: Request Id is empty. <pre>@dump</pre>';
+    watchdog($key, $message, $params);
+    return;
+  }
+
+
+  if (!empty($response_id = RestAPIResponse::save($context))) {
+    // NULL - updated, FALSE - caching disabled for current request.
+    // Watchdog message.
+    $message = '!aResponse !response_report_link to the request '
+      . '!request_report_link was saved.';
     $params = [
-      '@dump' => var_export($context, 1),
-      '@function' => __FUNCTION__,
+      '!a' => '<a href=#></a>',
+      '!request_report_link' => theme('request_report_link',
+        ['request_id' => $context['request_id']]
+      ),
+      '!response_report_link' => theme('response_report_link',
+        ['response_id' => $context['response_id']]
+      ),
     ];
-    if ($debug_mode ?? 0) {
-      watchdog($key, '@function: <pre>@dump</pre>', $params);
-    }
-    if (empty($context['request_id'])) {
-      $message = '@function: Request Id is empty. <pre>@dump</pre>';
-      watchdog($key, $message, $params);
-      return;
-    }
-
-
-    if (!empty($response_id = RestAPIResponse::save($context))) {
-      // NULL - updated, FALSE - caching disabled for current request.
-      // Watchdog message.
-      $message = '!aResponse !response_report_link to the request '
-        . '!request_report_link was saved.';
-      $params = [
-        '!a' => '<a href=#></a>',
-        '!request_report_link' => theme('request_report_link',
-          ['request_id' => $context['request_id']]
-        ),
-        '!response_report_link' => theme('response_report_link',
-          ['response_id' => $context['response_id']]
-        ),
-      ];
-      watchdog('tpps_rest_api', $message, $params);
-    }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Record requests which processing takes a very long time.
-    $max_execution_time = variable_get('tpps_rest_api_max_execution_time', 5000);
-    $method = $request['method'] ?? NULL;
-    if (($context['duration'] ?? 0) >= $max_execution_time) {
-      $message = '!aProcessing request !request_report_link took too long: @duration msec.';
-      $params = [
-        '!a' => '<a href=#></a>',
-        '@duration' => $context['duration'],
-        '!request_report_link' => theme('request_report_link',
-          ['request_id' => $context['request_id']]
-        ),
-      ];
-      watchdog('tpps_rest_api', $message, $params);
-    }
+    watchdog('tpps_rest_api', $message, $params);
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Record requests which processing takes a very long time.
+  $max_execution_time = variable_get('tpps_rest_api_max_execution_time', 5000);
+  $method = $request['method'] ?? NULL;
+  if (($context['duration'] ?? 0) >= $max_execution_time) {
+    $message = '!aProcessing request !request_report_link took too long: @duration msec.';
+    $params = [
+      '!a' => '<a href=#></a>',
+      '@duration' => $context['duration'],
+      '!request_report_link' => theme('request_report_link',
+        ['request_id' => $context['request_id']]
+      ),
+    ];
+    watchdog('tpps_rest_api', $message, $params);
   }
 }
 
