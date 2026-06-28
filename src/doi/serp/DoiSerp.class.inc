@@ -230,7 +230,7 @@ abstract class DoiSerp {
    */
   public function load() {
     if (empty($this->doi)) {
-      throw new Exception(t('Study accession is empty.'));
+      throw new Exception(t('DOI is empty.'));
     }
     // Get data from DB.
     $result = db_select(static::TABLE, 't')

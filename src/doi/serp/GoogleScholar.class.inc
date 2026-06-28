@@ -67,10 +67,6 @@ class GoogleScholar extends DoiSerp {
   const QUERY_PARAM = 'q';
   // Domain name (without schema because HTTPS will always be used).
   const HOST_NAME = 'scholar.google.com';
-  // Alternative IP address: 142.251.37.100.
-  // 216.58.207.4,
-  // 142.250.180.68.
-  const HOST_IP = '216.58.207.4';
   // Token to detect page without publication data.
   const NOT_FOUND_TOKEN = '- did not match any articles.';
 

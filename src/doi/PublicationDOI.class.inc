@@ -866,62 +866,47 @@ class PublicationDOI extends DOI {
    *   Required. DOI (Digital Object Identifier).
    */
   public static function getCombined($doi, $source = NULL) {
-
     // When TRUE debug watchdog messages will be created.
     $debug_mode = FALSE;
-
-    if (!variable_get('tpps_doi_lookup_force_api')) {
-      $data = PublicationDOI::load($doi);
-      if (PublicationDOI::isComplete($data)) {
-        return $data;
-      }
+    if (
+      !variable_get('tpps_doi_lookup_force_api')
+      && !empty($data = PublicationDOI::load($doi))
+      && PublicationDOI::isComplete($data)
+    ) {
+      return $data;
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Data is incomplete. Let's get data from other sources.
-    $data = [];
     $api_list = static::getApiList();
     $class_list = array_values($api_list);
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    $allowed_api_list = variable_get('tpps_doi_lookup_allowed_api_list');
-    if ($debug_mode ?? FALSE) {
-      $message = 'DOI: @doi. API to be checked: @class_list';
-      $params = ['@doi' => $doi, '@class_list' => implode(', ', $class_list)];
-      watchdog(__METHOD__, $message, $params);
-    }
-    // @todo Minor. Run requests in parallel.
-    $method_name = 'insert';
-    foreach ($class_list as $class_name) {
-      if (!in_array($class_name, $allowed_api_list)) {
-        continue;
+    $allowed_api_list = array_filter(array_values(
+      variable_get('tpps_doi_lookup_allowed_api_list')
+    ));
+    if (!empty($allowed_api_list)) {
+      $data = [];
+      if ($debug_mode ?? FALSE) {
+        $message = 'DOI: @doi. API to be checked: @class_list';
+        $params = ['@doi' => $doi, '@class_list' => implode(', ', $class_list)];
+        watchdog(__METHOD__, $message, $params);
       }
-      if (class_exists($class_name) && method_exists($class_name, $method_name)) {
-        $class_name::$method_name($doi);
-      }
-    }
-
-    $data = PublicationDOI::load($doi, NULL, TRUE);
-    if (PublicationDOI::isComplete($data)) {
-      return $data;
-    }
-    else {
-      // Check if SERP providers has cached requests.
-      foreach (static::getSERPList() as $key => $class_name) {
-        if (!variable_get('tpps_doi_' . $key . '_scrape_allowed')) {
-          continue;
-        }
-
-        $provider = new $class_name();
-        $provider->doi = $doi;
-        $serp_data = $provider->parse();
-        if (PublicationDOI::isMissing($doi, $class_name)) {
-          PublicationDOI::save($serp_data);
+      // @todo Minor. Run requests in parallel.
+      $method_name = 'insert';
+      foreach ($class_list as $class_name) {
+        if (
+          in_array($class_name, $allowed_api_list)
+          && class_exists($class_name)
+          && method_exists($class_name, $method_name)
+        ) {
+          $class_name::$method_name($doi);
         }
       }
-      // Load uncached combined data.
-      return PublicationDOI::load($doi, NULL, TRUE);
+      $data = PublicationDOI::load($doi, NULL, TRUE);
     }
+
+    return $data;
   }
 
   /**
@@ -930,6 +915,8 @@ class PublicationDOI extends DOI {
    * @return array
    *   Returns associative array where keys are API machine names
    *   (class's KEY constant) and value is human readable title.
+   *
+   * @TODO Use only class names.
    */
   public static function getApiList() {
     return [
@@ -947,12 +934,15 @@ class PublicationDOI extends DOI {
    * @return array
    *   Returns associative array where keys are API machine names
    *   (class's KEY constant) and value is human readable title.
+   *
+   * @TODO Use only class names.
    */
   public static function getSERPList() {
     return [
       // $key => $class_name,
-      'google_scholar' => 'GoogleScholar',
       'pubmed' => 'PubMed',
+      'google_scholar' => 'GoogleScholar',
+      //'dryad_serp' => 'DryadSerp',
     ];
   }
 
@@ -1000,7 +990,12 @@ class PublicationDOI extends DOI {
    *   Returns TRUE if given array has no empty values and FALSE otherwise.
    */
   public static function isComplete(array $data) {
-    return (is_array($data) && TppsArray::isComplete($data));
+    return (
+      !empty($data)
+      && is_array($data)
+      //&& count($data) >= 5
+      && TppsArray::isComplete($data)
+    );
   }
 
 }
