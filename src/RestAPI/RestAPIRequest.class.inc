@@ -13,6 +13,9 @@
  *
  * To avoid request caching make URL unique (add unique param like 'z=' . time()).
  *
+ * To get db table fields:
+ *   $fields = array_keys(RestAPIRequest::getSchema()['fields']);
+ *
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
@@ -85,18 +88,23 @@ class RestAPIRequest {
       return $request_id;
     }
     else {
-      $data = $context;
-      unset($data['request']);
-      unset($data['request_id']);
-      unset($data['response_id']);
-
-      $data['created'] = $data['created'] ?? time();
-      // Convert arrays into JSON format.
-      foreach (['payload', 'header'] as $name) {
-        if (is_string($data[$name])) {
+      $field_list = array_keys(RestAPIRequest::getSchema()['fields']);
+      foreach ($field_list as $field) {
+        if ($field == 'request_id') {
           continue;
         }
-        $data[$name] = json_encode($context[$name], TRUE);
+        elseif ($field == 'created') {
+          $data[$field] = $context[$field] ?? time();
+        }
+        elseif (
+          in_array($field, ['payload', 'header'])
+          && !is_string($context[$field])
+        ) {
+          $data[$field] = json_encode($context[$field], TRUE);
+        }
+        else {
+          $data[$field] = $context[$field] ?? NULL;
+        }
       }
       return db_insert(static::TABLE)->fields($data)->execute();
     }
