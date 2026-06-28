@@ -12,29 +12,14 @@
  * DOI Lookup Settings Form.
  */
 function tpps_doi_settings_form(array $form, array &$form_state) {
-  $form['info'] = [
-    '#markup' => theme('item_list', [
-      'title' => t('Useful links'),
-      'items' => [
-        l(t('Report "DOI Duplicates"'), 'admin/reports/tpps/doi/duplicates'),
-        l(t('Report "Missing DOI"'), 'admin/reports/tpps/doi/missing'),
-        l(t('Report "DOI Duplicates"'), 'admin/reports/tpps/doi/duplicates'),
-        l(t('Gemini: System instructions and other configurations'),
-          'https://ai.google.dev/gemini-api/docs/text-generation#system-instructions'
-        ),
-        l(t('Gemini: GenerationConfig'),
-          'https://ai.google.dev/api/generate-content#v1beta.GenerationConfig'
-        ),
-        l(t('Gemini: Response Schema'),
-          'https://ai.google.dev/api/caching#Schema'
-        ),
-        l(t('JSON text generation guide'),
-          'https://ai.google.dev/gemini-api/docs/structured-output?example=recipe'
-        ),
-      ],
-    ]),
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // CORS Proxy.
+  $form['cors_proxy'] = [
+    '#type' => 'fieldset',
+    '#title' => t('CORS Proxy'),
+    '#description' => t('CORS Proxy server settings.'),
   ];
-  $form['tpps_doi_lookup_proxy'] = [
+  $form['cors_proxy']['tpps_doi_lookup_proxy'] = [
     '#type' => 'textfield',
     '#title' => t('CORS Proxy Server URL'),
     '#default_value' => variable_get('tpps_doi_lookup_proxy'),
@@ -42,20 +27,25 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
       . 'which is a NodeJS proxy which adds CORS headers to the proxied '
       . 'request. So Google Scholar SERP could be shown at site in iframe.',
       ['@cors_anywhere_url' => 'https://github.com/Rob--W/cors-anywhere']
-
     )
     . theme('item_list',
       ['items' => ['https://tgwebdev.cam.uchc.edu/corsanywhere']]
     ),
   ];
-  $form['tpps_doi_lookup_show_report_links'] = [
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // UI.
+  $form['ui'] = [
+    '#type' => 'fieldset',
+    '#title' => t('User Interface settings'),
+  ];
+  $form['ui']['tpps_doi_lookup_show_report_links'] = [
     '#type' => 'checkbox',
     '#title' => t('Show DOI Report links'),
     '#default_value' => variable_get('tpps_doi_lookup_show_report_links'),
     '#description' => t('When enabled list of DOI-related reports at '
       . 'live and dev-sites will be shown under DOI input field.'),
   ];
-  $form['tpps_doi_lookup_show_suggestions'] = [
+  $form['ui']['tpps_doi_lookup_show_suggestions'] = [
     '#type' => 'checkbox',
     '#title' => t('Suggest DOI'),
     '#default_value' => variable_get('tpps_doi_lookup_show_suggestions'),
@@ -63,7 +53,15 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
       . 'input field. Click on this DOI will insert it into field and '
       . 'starts processing'),
   ];
-  $form['tpps_doi_lookup_allowed_api_list'] = [
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // API.
+  $form['api'] = [
+    '#type' => 'fieldset',
+    '#title' => t('API'),
+    '#description' => t('APIs which provide DOI Publication data.'),
+  ];
+  $form['api']['tpps_doi_lookup_allowed_api_list'] = [
     '#type' => 'checkboxes',
     '#title' => t('Use API to get DOI publication data'),
     '#default_value' => variable_get('tpps_doi_lookup_allowed_api_list'),
@@ -77,7 +75,7 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
       . "<br />Note: API requests are still faster than parsing SERP. "
     ),
   ];
-  $form['tpps_doi_lookup_force_api'] = [
+  $form['api']['tpps_doi_lookup_force_api'] = [
     '#type' => 'checkbox',
     '#title' => t('Force API requests'),
     '#default_value' => variable_get('tpps_doi_lookup_force_api'),
@@ -90,7 +88,12 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // SERP Provider's settings.
-  //
+  $form['serp'] = [
+    '#type' => 'fieldset',
+    '#title' => t('SERP Providers'),
+    '#description' => t('Online databases which shows DOI Publication data '
+    . ' at Search Engine Result Pages.'),
+  ];
   // Classes:
   // - /src/GoogleScholar.class.inc,
   // - /src/PubMed.class.inc.
@@ -102,7 +105,7 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
     $name = constant($class_name . '::KEY');
     $human_name = ucwords(str_replace('_', ' ', $name));
     $params = ['@serp_provider' => $human_name];
-    $form[$name] = [
+    $form['serp'][$name] = [
       '#type' => 'fieldset',
       '#title' => t('@serp_provider', $params),
       '#collapsible' => TRUE,
@@ -269,6 +272,33 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
       )
     ]),
     '#default_value' => variable_get('tpps_doi_gemini_generation_config', ''),
+  ];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $form['help'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Help'),
+  ];
+  $form['help']['info'] = [
+    '#markup' => theme('item_list', [
+      'title' => t('Useful links'),
+      'items' => [
+        l(t('Report "DOI Duplicates"'), 'admin/reports/tpps/doi/duplicates'),
+        l(t('Report "Missing DOI"'), 'admin/reports/tpps/doi/missing'),
+        l(t('Report "DOI Duplicates"'), 'admin/reports/tpps/doi/duplicates'),
+        l(t('Gemini: System instructions and other configurations'),
+          'https://ai.google.dev/gemini-api/docs/text-generation#system-instructions'
+        ),
+        l(t('Gemini: GenerationConfig'),
+          'https://ai.google.dev/api/generate-content#v1beta.GenerationConfig'
+        ),
+        l(t('Gemini: Response Schema'),
+          'https://ai.google.dev/api/caching#Schema'
+        ),
+        l(t('JSON text generation guide'),
+          'https://ai.google.dev/gemini-api/docs/structured-output?example=recipe'
+        ),
+      ],
+    ]),
   ];
 
   return system_settings_form($form);
