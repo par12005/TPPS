@@ -18,7 +18,6 @@
  *    'tpps_doi_' . static::KEY . '_serp_path',
  *    'tpps_doi_' . static::KEY . '_use_ip',
  *    'tpps_doi_' . static::KEY . '_delay',
- *    'tpps_doi_' . static::KEY . '_debug_mode'.
  * 4. Implement getQuery() method.
  * 5. Register class in *.install file.
  * 6. Add iframe to /tpps/doi/lookup page.
@@ -64,15 +63,6 @@ abstract class DoiSerp {
    * @var bool
    */
   protected $scrapeAllowed = TRUE;
-
-  /**
-   * Indicates if 'Debug Mode' is enabled/disabled.
-   *
-   * To change in run-time: $provider->debugMode = TRUE;
-   *
-   * @var bool
-   */
-  protected $debugMode = TRUE;
 
   /**
    * DOI (Digital Object Identifier).
@@ -174,10 +164,7 @@ abstract class DoiSerp {
       'tpps_doi_' . static::KEY . '_delay',
       static::DEFAULT_DELAY
     );
-    $this->debugMode = variable_get(
-      'tpps_doi_' . static::KEY . '_debug_mode',
-      FALSE
-    );
+
     return $this;
   }
 

@@ -24,7 +24,6 @@ function tpps_get_variable_list() {
     'tpps_doi_lookup_force_api' => FALSE,
     // DOI Lookup / Google Scholar.
     'tpps_doi_google_scholar_scrape_allowed' => TRUE,
-    'tpps_doi_google_scholar_debug_mode' => FALSE,
     'tpps_doi_google_scholar_use_ip' => FALSE,
     'tpps_doi_google_scholar_unique_url' => FALSE,
     'tpps_doi_google_scholar_delay' => GoogleScholar::DEFAULT_DELAY,
@@ -32,7 +31,6 @@ function tpps_get_variable_list() {
     'tpps_doi_google_scholar_not_found_token' => GoogleScholar::NOT_FOUND_TOKEN,
     // DOI Lookup / PubMed.
     'tpps_doi_pubmed_scrape_allowed' => TRUE,
-    'tpps_doi_pubmed_debug_mode' => FALSE,
     'tpps_doi_pubmed_use_ip' => FALSE,
     'tpps_doi_pubmed_unique_url' => FALSE,
     'tpps_doi_pubmed_delay' => PubMed::DEFAULT_DELAY,
@@ -2623,7 +2621,6 @@ function tpps_update_7134() {
   variable_set('tpps_doi_lookup_force_api', FALSE);
   // DOI Lookup / Google Scholar.
   variable_set('tpps_doi_google_scholar_scrape_allowed', TRUE);
-  variable_set('tpps_doi_google_scholar_debug_mode', FALSE);
   variable_set('tpps_doi_google_scholar_use_ip', FALSE);
   variable_set('tpps_doi_google_scholar_unique_url', FALSE);
   variable_set('tpps_doi_google_scholar_delay', GoogleScholar::DEFAULT_DELAY);
@@ -2631,7 +2628,6 @@ function tpps_update_7134() {
   variable_set('tpps_doi_google_scholar_not_found_token', GoogleScholar::NOT_FOUND_TOKEN);
   // DOI Lookup / PubMed.
   variable_set('tpps_doi_pubmed_scrape_allowed', TRUE);
-  variable_set('tpps_doi_pubmed_debug_mode', FALSE);
   variable_set('tpps_doi_pubmed_use_ip', FALSE);
   variable_set('tpps_doi_pubmed_unique_url', FALSE);
   variable_set('tpps_doi_pubmed_delay', PubMed::DEFAULT_DELAY);

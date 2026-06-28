@@ -131,12 +131,6 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
             ':input[name="tpps_doi_' . $name . '_scrape_allowed"]' => ['checked' => TRUE],
           ],
         ],
-        'tpps_doi_' . $name . '_debug_mode' => [
-          '#type' => 'checkbox',
-          '#title' => t('Debug Mode'),
-          '#default_value' => variable_get('tpps_doi_' . $name . '_debug_mode'),
-          '#description' => t('When enabled no actual requests will be performed.'),
-        ],
         // 'tpps_doi_google_scholar_use_ip',
         // 'tpps_doi_pubmed_use_ip',
         // 'tpps_doi_dryad_use_ip',
