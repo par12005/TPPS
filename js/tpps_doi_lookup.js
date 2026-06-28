@@ -294,10 +294,7 @@
               response && response.publication_data
               && $(response.publication_data).length
             ) {
-              showPublicationData(
-                response.provider_class_name,
-                response.publication_data
-              );
+              showPublicationData(response.publication_data);
             }
             else {
               console.log('DOI Lookup: Got empty data');
