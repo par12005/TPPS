@@ -140,6 +140,17 @@ class RestAPI {
    */
   protected $tag = NULL;
 
+  /**
+   * Controls if current request/response should be saved into DB.
+   *
+   * Optional. Default is TRUE (caching enabled).
+   * Note: caching could be globally disabled.
+   * See variable_get('tpps_rest_api_use_cache').
+   *
+   * @var bool
+   */
+  protected $cache = TRUE;
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Response.
 
@@ -486,6 +497,23 @@ class RestAPI {
   }
 
   /**
+   * Gets file's content using GET-request.
+   *
+   * @return string
+   *   Returns content of the $this->url file.
+   */
+  public function getContent() {
+    $this->method = 'GET';
+    // Never cache those requests.
+    // File's content is a binary data but not JSON, HTML, text, etc.
+    // No need to store file's content into DB because size could be huge
+    // and filesystem is better place to store data like this.
+    $this->cache = FALSE;
+    $this->doRequest();
+    return $this->body;
+  }
+
+  /**
    * Performs GET-request.
    *
    * Could be used to get lists or load entity.
@@ -552,7 +580,6 @@ class RestAPI {
     }
 
     $this->generateHash();
-
     $this->generateTag();
     $this->created = time();
 
@@ -562,7 +589,11 @@ class RestAPI {
     }
 
     if (
-      variable_get('tpps_rest_api_use_cache', TRUE)
+      // Current request caching.
+      $this->cache
+      // Globlal caching.
+      && variable_get('tpps_rest_api_use_cache', TRUE)
+      // Saved response exists.
       && RestAPIResponse::isValidExists($this->requestId)
     ) {
       // WARNING: Cached Response is missing 'curlInfo'.
@@ -627,6 +658,7 @@ class RestAPI {
           'payload' => $this->payload ?? NULL,
           'header' => $this->header ?? NULL,
           'tag' => $this->tag ?? NULL,
+          'cache' => $this->cache,
         ];
 
         // tpps_rest_api_request_started().
@@ -643,7 +675,8 @@ class RestAPI {
       // OPTIONS:
       // See http://www.php.net/manual/en/function.curl-setopt.php
       curl_setopt($curl, CURLOPT_URL, $this->url);
-      curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+      // Return response as string instead of outputting
+      curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
       curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
       // The maximum number of seconds for curl operation.
       // Note: disabled because valid requests failed because of timeout.
@@ -654,6 +687,7 @@ class RestAPI {
       // EXECUTE:
       $execution_time_start = microtime(1);
       $response = curl_exec($curl);
+
       $this->curlInfo = curl_getinfo($curl);
       curl_close($curl);
 
@@ -677,6 +711,7 @@ class RestAPI {
           // will lead to data loss.
           // Store JSON-escaped for safe storage in a database text field.
         }
+        // image/png.
       }
 
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -694,9 +729,10 @@ class RestAPI {
           'content_type' => $this->curlInfo['content_type'],
           // Global caching settings.
           'response_id' => $this->responseId ?? NULL,
+          'cache' => $this->cache,
         ];
-        // tpps_rest_api_request_completed().
-        module_invoke_all('rest_api_request_completed', $context);
+        // tpps_rest_api_response_received().
+        module_invoke_all('rest_api_response_received', $context);
       }
     }
 
@@ -718,6 +754,7 @@ class RestAPI {
         'code' => $this->code,
         'message' => $this->message,
         'curl_info' => $this->curlInfo,
+        'cache' => $this->cache,
         'backtrace' => debug_backtrace(
           !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS
         ),

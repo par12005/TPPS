@@ -39,34 +39,36 @@ class RestAPIResponse {
    * @return mixed
    *   Returns 'response_id' if response was inserted (last insert id).
    *   Returns NULL if response was updated (not inserted).
+   *   Returns FALSE if current request should be cached.
    *
    * @thrown Exception
    *   When $context['request_id'] is empty.
    */
   public static function save(array $context = []) {
+    if (!$context['cache'] || !variable_get('tpps_rest_api_use_cache', TRUE)) {
+      // Current request shouldn't be cached.
+      return FALSE;
+    }
     if (empty($context['request_id'])) {
       throw new Exception("Empty 'request_id'.");
     }
-
-    $data = $context;
-    unset($data['request']);
-
-    // Store Response data.
-    // Note: $context['created'] is a moment when request (not response) was
-    // created. Sometimes request would be created a long time ago but response
-    // created just now.
-    $data['created'] = time();
-    $data['duration'] = intval(round($data['duration']));
-
-    // Body.
-    if (!is_string($data['body'])) {
-      $data['body'] = json_encode($data['body'], TRUE);
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Prepare data to be stored in db table.
+    if (!is_string($body = $context['body'])) {
+      $body = json_encode($context['body'], TRUE);
     }
-    $data['body'] = trim($data['body']);
+    $data = [
+      'request_id' => $context['request_id'],
+      'code' => $context['code'],
+      'content_type' => $context['content_type'],
+      'created' => time(),
+      'duration' => intval(round($context['duration'])),
+      'body' => trim($body),
+      // Response Hash.
+      'hash' => static::generateHash($context),
+    ];
 
-    // Response Hash.
-    $data['hash'] = static::generateHash($context);
-
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     if (RestAPIResponse::isValidExists($data['request_id'])) {
       // Record exists - let's load response.
       $response_data = RestAPIResponse::loadValid($data['request_id']);
@@ -88,14 +90,13 @@ class RestAPIResponse {
       }
       else {
         // New response.
-        unset($data['response_id']);
         return db_insert(static::TABLE)->fields($data)->execute();
       }
     }
     else {
       // Load latest invalid response.
-      $response_data = RestAPIResponse::load($data['request_id']);
-      if ($response_data['code'] == $data['code']) {
+      $response_data = RestAPIResponse::load($context['request_id']);
+      if ($response_data['code'] == $context['code']) {
         // If we've got the same invalid response no need to update db record.
         return NULL;
       }
@@ -103,7 +104,6 @@ class RestAPIResponse {
       $response_id = static::getResponseId($data['hash']);
       if (empty($response_id)) {
         // No record - create new one.
-        unset($data['response_id']);
         return db_insert(static::TABLE)->fields($data)->execute();
       }
       else {

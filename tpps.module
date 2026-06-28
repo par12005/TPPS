@@ -3324,7 +3324,10 @@ function tpps_rest_api_response_loaded(array $context = []) {
  *   Keys: see RestAPI->doRequest().
  */
 function tpps_rest_api_request_started(array $context = []) {
-  if (empty($request_id = $context['request_id'])) {
+  if (
+    empty($request_id = $context['request_id'])
+    && $context['cache']
+  ) {
     if (variable_get('tpps_rest_api_use_cache', TRUE)) {
       if ($debug_mode ?? 0) {
         $params = [
@@ -3338,11 +3341,11 @@ function tpps_rest_api_request_started(array $context = []) {
         watchdog('tpps', '@function: empty "hash".', $params, 'error');
         return FALSE;
       }
+
       $request_id = RestAPIRequest::save($context);
-      if (!empty($request_id)) {
-        $message = '!aRest API Request !request_report_link was saved.';
-      }
-      else {
+
+      $message = '!aRest API Request !request_report_link was saved.';
+      if (empty($request_id)) {
         $message = '!aRest API Request !request_report_link already exists.';
       }
       $params = [
@@ -3358,7 +3361,7 @@ function tpps_rest_api_request_started(array $context = []) {
 }
 
 /**
- * Implements hook 'rest_api_request_completed'.
+ * Implements hook 'rest_api_response_received'.
  *
  * Called from class 'RestAPI'.
  * No need to check if response exists because each response will be
@@ -3369,7 +3372,7 @@ function tpps_rest_api_request_started(array $context = []) {
  *   Keys: see RestAPI->doRequest().
  *   To check if response exists: RestAPIResponse::isExists($request_id).
  */
-function tpps_rest_api_request_completed(array $context = []) {
+function tpps_rest_api_response_received(array $context = []) {
   if (variable_get('tpps_rest_api_use_cache')) {
     $key = 'tpps_rest_api';
     $params = [
@@ -3385,7 +3388,9 @@ function tpps_rest_api_request_completed(array $context = []) {
       return;
     }
 
-    if ($response_id = RestAPIResponse::save($context)) {
+
+    if (!empty($response_id = RestAPIResponse::save($context))) {
+      // NULL - updated, FALSE - caching disabled for current request.
       // Watchdog message.
       $message = '!aResponse !response_report_link to the request '
         . '!request_report_link was saved.';

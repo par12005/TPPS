@@ -469,7 +469,7 @@ function hook_zenodo_deposit_published(array $data, array $response) {
 }
 
 /**
- * Implements hook 'rest_api_request_complete'.
+ * Implements hook 'rest_api_response_received'.
  *
  * @param array $context
  *   Request's context.
@@ -480,7 +480,7 @@ function hook_zenodo_deposit_published(array $data, array $response) {
  *   'Request' - array. Keys are 'Method', 'URL', 'Payload', 'Headers'.
  *   'Response' - mixed. Remote server's response.
  */
-function hook_rest_api_request_complete(array $context = []) {
+function hook_rest_api_response_received(array $context = []) {
 }
 
 /**
