@@ -91,7 +91,10 @@ class PubMedCentral extends DoiApi {
     }
     else {
       try {
-        $xml = (new RestAPI(['url' => $url]))->get()->response();
+        $xml = (new RestAPI([
+          'url' => $url,
+          'tag' => implode(', ', [$doi, static::class]),
+        ]))->get()->response();
         return trim(str_replace("\r\n", "\n", $xml));
       }
       catch (Exception $e) {
@@ -250,6 +253,7 @@ class PubMedCentral extends DoiApi {
     $response = (new RestAPI([
       'url' => static::buildSearchUrl($doi),
       'header' => ['Content-Type: application/json'],
+      'tag' => implode(', ', [$doi, static::class, __FUNCTION__]),
     ]))->get()->response();
 
     if (!empty($response['records'][0]['pmcid'])) {

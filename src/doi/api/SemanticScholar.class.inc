@@ -140,6 +140,7 @@ class SemanticScholar extends DoiApi {
       $response = (new RestAPI([
         'url' => $url,
         'header' => $header,
+        'tag' => implode(', ', [$doi, static::class]),
       ]))->get()->response();
       return $response;
     }
