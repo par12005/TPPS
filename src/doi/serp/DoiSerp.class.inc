@@ -16,7 +16,6 @@
  *    and usually has KEY constant as suffix.
  * 3. Create Drupal variables:
  *    'tpps_doi_' . static::KEY . '_serp_path',
- *    'tpps_doi_' . static::KEY . '_use_ip',
  *    'tpps_doi_' . static::KEY . '_delay',
  * 4. Implement getQuery() method.
  * 5. Register class in *.install file.
@@ -47,8 +46,6 @@ abstract class DoiSerp {
   const QUERY_PARAM = '';
   // Domain name (without schema because HTTPS will always be used).
   const HOST_NAME = '';
-  // IPv4 address.
-  const HOST_IP = '';
   // Token to detect page without publication data.
   const NOT_FOUND_TOKEN = '';
 
@@ -503,9 +500,6 @@ abstract class DoiSerp {
    */
   public function getEndpointUrl() {
     $host = static::HOST_NAME;
-    if (variable_get('tpps_doi_' . static::KEY . '_use_ip', FALSE)) {
-      $host = static::HOST_IP;
-    }
     $path = variable_get('tpps_doi_' . static::KEY . '_serp_path', static::SERP_PATH);
     return 'https://' . $host . '/' . $path;
   }

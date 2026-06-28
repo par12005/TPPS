@@ -31,8 +31,6 @@ class PubMedCentral extends DoiApi {
   const KEY = 'pubmed_central';
   // Domain name (without schema because HTTPS will always be used).
   const HOST_NAME = 'pmc.ncbi.nlm.nih.gov';
-  // IPv4 address.
-  const HOST_IP = '2600:1901:0:c831::';
   // Endpoint path (without leading and trailing slash).
   const ENDPOINT_PATH = 'api/oai/v1/mh';
   // Default delay between requests, in seconds.
@@ -225,9 +223,6 @@ class PubMedCentral extends DoiApi {
    */
   public static function buildSearchUrl($doi) {
     $host = static::HOST_NAME;
-    if (variable_get('tpps_doi_' . static::KEY . '_use_ip', FALSE)) {
-      $host = static::HOST_IP;
-    }
     return url('https://' . $host . '/tools/idconv/api/v1/articles/', [
       'query' => [
         'ids' => $doi,

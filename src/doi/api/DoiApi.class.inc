@@ -25,8 +25,6 @@ abstract class DoiApi {
   const KEY = '';
   // Domain name (without schema because HTTPS will always be used).
   const HOST_NAME = '';
-  // IPv4 address.
-  const HOST_IP = '';
   // Endpoint path (without leading and trailing slash).
   const ENDPOINT_PATH = '';
   // Default delay between requests, in seconds.
@@ -67,9 +65,6 @@ abstract class DoiApi {
    */
   public static function getEndpointUrl() {
     $host = static::HOST_NAME;
-    if (variable_get('tpps_doi_' . static::KEY . '_use_ip', FALSE)) {
-      $host = static::HOST_IP;
-    }
     $path = variable_get(
       'tpps_doi_' . static::KEY . '_endpoint_path',
       static::ENDPOINT_PATH
