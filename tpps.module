@@ -646,6 +646,27 @@ function tpps_cronapi() {
   // Update admin/cron.inc.
   $filepath = drupal_get_path('module', 'tpps') . '/includes';
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Keep CORS Proxy server up-and-running.
+  $rule = variable_get(
+    'tpps_cron_cors_proxy_keep_alive_frequency',
+    // Every 6 hours at full hour.
+    '0 */6 * * *'
+  );
+  $items['tpps_cron_cors_proxy_keep_alive'] = [
+    'title' => t('Keep CORS Proxy server alive'),
+    'callback' => 'tpps_cron_cors_proxy_keep_alive',
+    'scheduler' => [
+      'name' => 'crontab',
+      'crontab' => [
+        'rules' => [$rule],
+      ],
+    ],
+    'file' => 'cron.inc',
+    'file path' => $filepath,
+  ];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // TPPS Jobs Slack Updates.
   $rule = variable_get(
     'tpps_latest_job_status_slack_updates_job_frequency',
@@ -665,6 +686,7 @@ function tpps_cronapi() {
     'file path' => $filepath,
   ];
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Refresh TPPS and CartograPlant views.
   $rule = variable_get(
     'tpps_refresh_views_job_frequency',

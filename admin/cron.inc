@@ -15,7 +15,16 @@ function tpps_cron_settings_form(array $form, array &$form_state) {
       . "<br />Please also note that if you change this value, you will need "
       . "to clear your site's cache in order for the change to take effect.",
       ['!link' => l(t('here'), 'http://man7.org/linux/man-pages/man5/crontab.5.html')]
-    ),
+    )
+    . theme('item_list', [
+      'title' => t('Rules Examples'),
+      'items' => [
+        t('*/15 * * * * - Every 15 minutes.'),
+        t('0 */12 * * * - Every 12h full hour.'),
+        t('0 0 * * SAT - Every Saturday at midnight.'),
+        t('0 */6 * * * - Every 6 hours at full hour.'),
+      ],
+    ]),
   ];
   $form['tpps_latest_job_status_slack_updates_job_frequency'] = [
     '#type' => 'textfield',
@@ -46,6 +55,15 @@ function tpps_cron_settings_form(array $form, array &$form_state) {
       '0 */6 * * *'
     ),
   ];
+  $form['tpps_cron_cors_proxy_keep_alive_frequency'] = [
+    '#type' => 'textfield',
+    '#title' => t('CORS Proxy Keep Alive Frequency'),
+    '#default_value' => variable_get(
+      'tpps_cron_cors_proxy_keep_alive_frequency',
+      '0 */6 * * *'
+    ),
+  ];
+
   // DEPRECATED 8/12/2024 in favour of chado.tpps_ref_assembly_view
   // $form['tpps_cron_rule_ref_genomes_recreate'] = [
   //   '#type' => 'textfield',

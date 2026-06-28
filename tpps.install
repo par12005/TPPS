@@ -13,8 +13,10 @@
  */
 function tpps_get_variable_list() {
   return [
-    // DOI Lookup.
-    'tpps_doi_lookup_proxy' => '',
+    // DOI Lookup / CORS Proxy.
+    'tpps_doi_lookup_cors_proxy_url' => '',
+    'tpps_doi_lookup_cors_proxy_keep_alive' => TRUE,
+    // DOI Lookup / UI.
     'tpps_doi_lookup_show_report_links' => FALSE,
     'tpps_doi_lookup_show_suggestions' => TRUE,
     'tpps_doi_lookup_allowed_api_list' => array_combine(
@@ -60,6 +62,7 @@ function tpps_get_variable_list() {
     'tpps_refresh_plusgeno_view_frequency' => '0 0 * * SAT',
     'tpps_delayed_submissions_job_frequency' => '0 */6 * * *',
     'tpps_cron_rule_ref_genomes_recreate' => '0 0 */3 * *',
+    'tpps_cron_cors_proxy_keep_alive_frequency' => '*/15 * * * *',
     // Reports.
     'tpps_report_items_per_page' => 20,
     'tpps_imported_studies_list' => '',
@@ -2605,11 +2608,10 @@ function tpps_update_7134() {
   // Gemini.
   variable_set('tpps_gemini_model', '');
   variable_set('tpps_gemini_api_key', '');
-  // DOI Lookup.
-  variable_set(
-    'tpps_doi_lookup_proxy',
-    'https://tgwebdev.cam.uchc.edu/corsanywhere'
-  );
+  // DOI Lookup / CORS Proxy.
+  variable_set('tpps_doi_lookup_cors_proxy_url', '');
+  variable_set('tpps_doi_lookup_cors_proxy_keep_alive', TRUE);
+  // DOI Lookup / UI.
   variable_set('tpps_doi_lookup_show_report_links', FALSE);
   variable_set('tpps_doi_lookup_show_suggestions', TRUE);
   variable_set('tpps_doi_lookup_allowed_api_list',
@@ -2661,7 +2663,9 @@ function tpps_update_7134() {
   variable_set('tpps_report_organism_species_title', 'Organism Species List');
   variable_set('tpps_report_organism_all_title', 'All Organism List');
 
+  // Misc.
   variable_set('tpps_validation_regex_doi', '/10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+/');
+  variable_set('tpps_cron_cors_proxy_keep_alive_frequency', '*/15 * * * *');
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Remove outdated variables.

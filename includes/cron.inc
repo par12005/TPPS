@@ -3,6 +3,8 @@
 /**
  * @file
  * Defines the callback functions for TPPS Ultimate Cron jobs.
+ *
+ * Debug: module_load_include('inc', 'tpps', 'includes/cron');
  */
 
 /**
@@ -168,4 +170,18 @@ function tpps_cron_delayed_submissions() {
     }
   }
   variable_set('tpps_delayed_submissions', $accession_list);
+}
+
+/**
+ * Makes fake-requests to the remote CORS Proxy server to have it up-and-running.
+ */
+function tpps_cron_cors_proxy_keep_alive() {
+  $url = variable_get('tpps_doi_lookup_cors_proxy_url');
+  if (!variable_get('tpps_doi_lookup_cors_proxy_keep_alive') || empty($url)) {
+    return;
+  }
+  $response = (new RestAPI(['url' => $url . '/iscorsneeded/']))->getContent();
+  if ($response != 'no') {
+    watchdog('tpps', 'CORS Proxy Server is down.', [], WATCHDOG_ERROR);
+  }
 }

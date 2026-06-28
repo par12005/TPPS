@@ -19,10 +19,20 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
     '#title' => t('CORS Proxy'),
     '#description' => t('CORS Proxy server settings.'),
   ];
-  $form['cors_proxy']['tpps_doi_lookup_proxy'] = [
+
+  // CORS Proxy server status.
+  // @todo Minor. Move to hook_requirements().
+  $url = variable_get('tpps_doi_lookup_cors_proxy_url');
+  $response = (new RestAPI(['url' => $url . '/iscorsneeded/']))->getContent();
+  $form['cors_proxy']['tpps_doi_lookup_cors_proxy_status'] = [
+    '#markup' => t('Status of the CORS Proxy server: <strong>@status</strong>',
+      ['@status' => ($response == 'no') ? t('Up') : t('Down')]
+    ),
+  ];
+  $form['cors_proxy']['tpps_doi_lookup_cors_proxy_url'] = [
     '#type' => 'textfield',
     '#title' => t('CORS Proxy Server URL'),
-    '#default_value' => variable_get('tpps_doi_lookup_proxy'),
+    '#default_value' => variable_get('tpps_doi_lookup_cors_proxy_url'),
     '#description' => t('We use <a href="@cors_anywhere_url">CORS Anywhere</a> '
       . 'which is a NodeJS proxy which adds CORS headers to the proxied '
       . 'request. So Google Scholar SERP could be shown at site in iframe.',
@@ -32,6 +42,25 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
       ['items' => ['https://tgwebdev.cam.uchc.edu/corsanywhere']]
     ),
   ];
+  $form['cors_proxy']['tpps_doi_lookup_cors_proxy_keep_alive'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Keep CORS Proxy server up-and-running'),
+    '#default_value' => variable_get('tpps_doi_lookup_cors_proxy_keep_alive'),
+    '#description' => t('Remote CORS Proxy server became inactive when '
+      . 'not used for a long time. To keep it up-and-running every 6 hours '
+      . 'it will be requested by cron.'
+      . '<br />To change/view cron rules see "!cron_settings_page_link".',
+      [
+        '!cron_settings_page_link' => l(
+          t('Cron Setting Page'),
+          'admin/config/tpps/cron'
+        ),
+      ]
+    ),
+  ];
+
+
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // UI.
   $form['ui'] = [

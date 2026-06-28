@@ -85,12 +85,12 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // JS Settings.
-  $proxy = variable_get('tpps_doi_lookup_proxy');
+  $proxy_url = variable_get('tpps_doi_lookup_cors_proxy_url');
   $js_settings = [
     'doi_lookup' => [
       // Selector for the textfield with DOI.
       'field' => '.tpps_doi_lookup_doi',
-      'proxy' => $proxy,
+      'proxy' => $proxy_url,
       // List of the SERP Provider KEYs.
       'ajax_get_publication_data_path' => '/ajax/tpps/getPublicationData',
       'ajax_callback' => 'getPublicationData',
@@ -134,7 +134,7 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
     if (!empty($doi) && empty($publication_data)) {
       // Note: PubMed replaces '/' in DOI with space.
       $fixed_provider_url = str_replace('%252F', '/', $provider->buildUrl());
-      $url = $proxy . '/' . $fixed_provider_url;
+      $url = $proxy_url . '/' . $fixed_provider_url;
     }
     // 'GoogleScholar_serp',
     // 'PubMed_serp'.

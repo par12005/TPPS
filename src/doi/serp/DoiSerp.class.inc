@@ -334,7 +334,7 @@ abstract class DoiSerp {
     }
     if (empty($this->serp)) {
       // @TODO Call $this->request().
-      throw new Exception("Empty SERP.");
+      throw new Exception("Empty SERP. Check CORS Proxy server.");
     }
 
     $use_gemini = TRUE;
