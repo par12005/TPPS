@@ -872,9 +872,10 @@ class PublicationDOI extends DOI {
   public static function getCombined($doi, $source = NULL) {
     // When TRUE debug watchdog messages will be created.
     $debug_mode = FALSE;
+    $data = PublicationDOI::load($doi);
     if (
-      !variable_get('tpps_doi_lookup_force_api')
-      && !empty($data = PublicationDOI::load($doi))
+      !empty($data)
+      && !variable_get('tpps_doi_lookup_force_api')
       && PublicationDOI::isComplete($data)
     ) {
       return $data;
@@ -890,7 +891,6 @@ class PublicationDOI extends DOI {
       variable_get('tpps_doi_lookup_allowed_api_list')
     ));
     if (!empty($allowed_api_list)) {
-      $data = [];
       if ($debug_mode ?? FALSE) {
         $message = 'DOI: @doi. API to be checked: @class_list';
         $params = ['@doi' => $doi, '@class_list' => implode(', ', $class_list)];
