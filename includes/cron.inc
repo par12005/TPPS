@@ -180,7 +180,12 @@ function tpps_cron_cors_proxy_keep_alive() {
   if (!variable_get('tpps_doi_lookup_cors_proxy_keep_alive') || empty($url)) {
     return;
   }
-  $response = (new RestAPI(['url' => $url . '/iscorsneeded/']))->getContent();
+  try {
+    $response = (new RestAPI(['url' => $url . '/iscorsneeded/']))->getContent();
+  }
+  catch (Exception $e) {
+    watchdog('tpps_cron', $e->getMessage());
+  }
   if ($response != 'no') {
     watchdog('tpps', 'CORS Proxy Server is down.', [], WATCHDOG_ERROR);
   }
