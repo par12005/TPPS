@@ -215,6 +215,10 @@ class PublicationDOI extends DOI {
             if ($key == 'source') {
               continue;
             }
+            // Get number of letters in new string.
+            $value_letters = preg_replace('/[^\p{L}]/u', '', $value);
+            $existing_letters = preg_replace('/[^\p{L}]/u', '', $combined[$key]);
+
             if ($use_check_plain) {
               $value = check_plain($value);
             }
@@ -223,7 +227,7 @@ class PublicationDOI extends DOI {
             }
             else {
               // Assume that longer string is better (more data).
-              if (strlen($combined[$key]) < strlen($value)) {
+              if (strlen($existing_letters) < strlen($value_letters)) {
                 $combined[$key] = $value;
               }
             }
@@ -963,7 +967,7 @@ class PublicationDOI extends DOI {
    */
   public static function getMissingApiList($doi) {
     $data = PublicationDOI::load($doi, 'all');
-    dpm($data);
+    //dpm($data);
 
     return;
     // Not yet implemented.
@@ -990,12 +994,7 @@ class PublicationDOI extends DOI {
    *   Returns TRUE if given array has no empty values and FALSE otherwise.
    */
   public static function isComplete(array $data) {
-    return (
-      !empty($data)
-      && is_array($data)
-      //&& count($data) >= 5
-      && TppsArray::isComplete($data)
-    );
+    return (!empty($data) && is_array($data) && TppsArray::isComplete($data));
   }
 
 }
