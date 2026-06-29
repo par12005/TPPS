@@ -104,16 +104,6 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
       . "<br />Note: API requests are still faster than parsing SERP. "
     ),
   ];
-  $form['api']['tpps_doi_lookup_force_api'] = [
-    '#type' => 'checkbox',
-    '#title' => t('Force API requests'),
-    '#default_value' => variable_get('tpps_doi_lookup_force_api'),
-    '#description' => t('Default: unchecked.'
-    . '<br /> When checked makes request to API to get missing data even if '
-    . 'DOI Publication data is complete from other sources. Since API requests '
-    . "usually processed very quickly it's safe enough to have it checked."
-    . 'Uncheck to avoid exceeding the API request limit.'),
-  ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // SERP Provider's settings.

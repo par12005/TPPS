@@ -873,11 +873,8 @@ class PublicationDOI extends DOI {
     // When TRUE debug watchdog messages will be created.
     $debug_mode = FALSE;
     $data = PublicationDOI::load($doi);
-    if (
-      !empty($data)
-      && !variable_get('tpps_doi_lookup_force_api')
-      && PublicationDOI::isComplete($data)
-    ) {
+    if (!empty($data) && PublicationDOI::isComplete($data)) {
+      // We already have all the data.
       return $data;
     }
 
