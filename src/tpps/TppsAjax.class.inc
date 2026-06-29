@@ -91,9 +91,9 @@ class TppsAjax {
         // Parse using Gemini AI.
         $provider->parse();
 
-        $response['doi'] = $payload['doi'];
+        $response['doi'] = $doi;
         $response['provider_class_name'] = $payload['provider_class_name'];
-        $response['publication_data'] = PublicationDOI::load($doi, $payload['provider_class_name']);
+        $response['publication_data'] = PublicationDOI::load($doi, NULL, TRUE);
       }
       else {
         $response['errors'][] = t('Proxy error.');

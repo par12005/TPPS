@@ -56,8 +56,6 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
     ),
   ];
 
-
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // UI.
   $form['ui'] = [

@@ -88,6 +88,7 @@
                       }
                     }
                     console.log(provider_class_name + ': delay.');
+
                     setTimeout(function() {
                       doi_lookup[provider_class_name].last_request = $.now();
 
@@ -118,13 +119,11 @@
                           console.error('Error: ', error);
                         })
                         .always(function() {
-                          disableThrobber();
                           $(field).removeClass('get-publication-data-processed');
                           console.log('Request via CORS Proxy completed.');
                         });
                       }
                       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
                     }, delay);
                   }
                 });
@@ -203,15 +202,15 @@
       }
 
       /**
-       * Build URL for Google Scholar iFrame.
+       * Build URL to Proxy server to get SERP.
        *
        * @param string provider_class_name
-       *   Key of the SERP provider.
+       *   SERP provider class name
        * @param string $doi
        *   DOI
        *
        * @return string
-       *   Retuns URL with proxy (CORS anywhere).
+       *   Retuns URL.
        */
       function buildUrl(provider_class_name, doi) {
         let url = '';
