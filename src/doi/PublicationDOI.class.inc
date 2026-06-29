@@ -215,17 +215,17 @@ class PublicationDOI extends DOI {
             if ($key == 'source') {
               continue;
             }
-            // Get number of letters in new string.
-            $value_letters = preg_replace('/[^\p{L}]/u', '', $value);
-            $existing_letters = preg_replace('/[^\p{L}]/u', '', $combined[$key]);
-
             if ($use_check_plain) {
               $value = check_plain($value);
             }
+
             if (empty($combined[$key])) {
               $combined[$key] = $value;
             }
             else {
+              // Get number of letters in new string.
+              $value_letters = preg_replace('/[^\p{L}]/u', '', $value);
+              $existing_letters = preg_replace('/[^\p{L}]/u', '', $combined[$key]);
               // Assume that longer string is better (more data).
               if (strlen($existing_letters) < strlen($value_letters)) {
                 $combined[$key] = $value;
