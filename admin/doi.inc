@@ -21,19 +21,9 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
   ];
 
   // CORS Proxy server status.
-  // @todo Minor. Move to hook_requirements().
-  try {
-    $response = NULL;
-    $url = variable_get('tpps_doi_lookup_cors_proxy_url');
-    $response = (new RestAPI(['url' => $url . '/iscorsneeded/']))->getContent();
-  }
-  catch (Exception $e) {
-    watchdog('tpps_cron', $e->getMessage());
-  }
-
   $form['cors_proxy']['tpps_doi_lookup_cors_proxy_status'] = [
     '#markup' => t('Status of the CORS Proxy server: <strong>@status</strong>',
-      ['@status' => ($response == 'no') ? t('Up') : t('Down')]
+      ['@status' => CorsProxy::isUp() ? t('Up') : t('Down')]
     ),
   ];
   $form['cors_proxy']['tpps_doi_lookup_cors_proxy_url'] = [

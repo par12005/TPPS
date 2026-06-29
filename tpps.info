@@ -40,6 +40,7 @@ files[] = src/Report.class.inc
 files[] = src/FormState.class.inc
 files[] = src/CVTerm.class.inc
 files[] = src/Gemini.class.inc
+files[] = src/CorsProxy.class.inc
 
 ; DOI
 files[] = src/doi/DOI.class.inc

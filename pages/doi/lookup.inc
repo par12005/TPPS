@@ -5,8 +5,6 @@
  * TPPS DOI Lookup Form.
  */
 
-// @TODO Check if 'source' column in DB table uses DoiSerp::KEY.
-
 /**
  * TPPS DOI Lookup Form.
  */
@@ -22,11 +20,11 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   if (variable_get('tpps_doi_lookup_show_report_links', FALSE)) {
     $description .= theme('item_list', [
       'items' => [
-        l('Proxy Server Status', 'corsanywhere'),
-        l('DOI Lookup Settings', 'admin/config/tpps/doi'),
-        l('DOI Duplicates report at live site',
-          'https://treegenesdb.org/admin/reports/tpps/doi/duplicates'),
-        l('All DOI report at live site',
+        t('CORS Proxy Server Status: <strong>@status</strong>',
+          ['@status' => CorsProxy::isUp() ? t('Up') : t('Down')]
+        ),
+        l(t('DOI Lookup Settings'), 'admin/config/tpps/doi'),
+        l(t('All DOI report at live site'),
           'https://tgwebdev.cam.uchc.edu/admin/reports/tpps/doi/submission/all'
         ),
       ],
@@ -136,19 +134,6 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
       $fixed_provider_url = str_replace('%252F', '/', $provider->buildUrl());
       $url = $proxy_url . '/' . $fixed_provider_url;
     }
-    // 'GoogleScholar_serp',
-    // 'PubMed_serp'.
-    $form[$class_name . '_serp'] = [
-      '#type' => 'fieldset',
-      '#title' => $provider->getClassName(),
-      '#collapsed' => FALSE,
-      '#collapsible' => TRUE,
-      // '#GoogleScholar_dump_container',
-      // '#PubMed_dump_container'.
-      'data' => [
-        '#markup' => '<div class="dump_container" id="' . $class_name . '_dump_container"></div>',
-      ],
-    ];
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Add JS settings.

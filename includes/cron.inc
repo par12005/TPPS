@@ -176,17 +176,10 @@ function tpps_cron_delayed_submissions() {
  * Makes fake-requests to the remote CORS Proxy server to have it up-and-running.
  */
 function tpps_cron_cors_proxy_keep_alive() {
-  $url = variable_get('tpps_doi_lookup_cors_proxy_url');
-  if (!variable_get('tpps_doi_lookup_cors_proxy_keep_alive') || empty($url)) {
+  if (!CorsProxy::keepAlive() || empty(CorsProxy::getUrl())) {
     return;
   }
-  try {
-    $response = (new RestAPI(['url' => $url . '/iscorsneeded/']))->getContent();
-  }
-  catch (Exception $e) {
-    watchdog('tpps_cron', $e->getMessage());
-  }
-  if ($response != 'no') {
+  if (!CorsProxy::isUp()) {
     watchdog('tpps', 'CORS Proxy Server is down.', [], WATCHDOG_ERROR);
   }
 }
