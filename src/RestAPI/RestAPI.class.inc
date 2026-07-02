@@ -231,13 +231,31 @@ class RestAPI {
    */
   protected $body;
 
-
   /**
    * Result of the curl_getinfo().
    *
    * @var array
    */
   protected $curlInfo;
+
+  /**
+   * List of the currently running requests.
+   *
+   * Used to block/allow multiple requests.
+   * Some APIs do not allow the same requests in parallel.
+   *
+   * @var array
+   */
+  protected static $lockList = [];
+
+  /**
+   * Semaphore which controls parallel running of the same requests.
+   *
+   * Disabled by default.
+   *
+   * @var bool
+   */
+  protected $parallel = FALSE;
 
   /**
    * Creates request from $context data.
@@ -268,6 +286,7 @@ class RestAPI {
     // Optional.
     $this->tag = $context['tag'] ?? $this->tag ?? NULL;
     $this->cache = $context['cache'] ?? $this->cache ?? NULL;
+    $this->parallel = $context['parallel'] ?? $this->parallel ?? NULL;
 
     // Note: md5-hash of the request's data can't be generated here because
     // some data could be added later.
@@ -580,6 +599,54 @@ class RestAPI {
   }
 
   /**
+   * Checks if requests could be run in parallel (miltithreading).
+   *
+   * Semaphore property: $this->parallel.
+   *
+   * @return bool
+   *   Returns TRUE if running in parallel is allowed and FALSE otherwise.
+   */
+  public function isParallelAllowed() {
+    return (bool) (
+      ($this->parallel ?? FALSE)
+      && in_array($this->hash, $this->$lockList)
+    );
+  }
+
+  /**
+   * Sets lock for current request.
+   *
+   * Adds current request hash to the $lockList to block running the same
+   * requests in parallel (if parallel requests are not allowed).
+   * Semaphore property: $this->parallel.
+   *
+   * @return object
+   *   Returns current object to allow mehtod chaining.
+   */
+  public function setLock() {
+    if (empty($this->hash)) {
+      $this->generateHash();
+    }
+    $this->$lockList[] = $this->hash;
+
+    return $this;
+  }
+
+  /**
+   * Removes lock for current request.
+   *
+   * Removes the request hash from the $lockList to allow the same requests.
+   * Semaphore property: $this->parallel.
+   *
+   * @return object
+   *   Returns current object to allow mehtod chaining.
+   */
+  public function removeLock() {
+    $this->lockList = array_diff($this->lockList, [$this->hash]);
+    return $this;
+  }
+
+  /**
    * Performs REST API calls.
    *
    * @return object
@@ -597,6 +664,11 @@ class RestAPI {
     }
 
     $this->generateHash();
+    if (!$this->isParallelAllowed()) {
+      watchdog('tpps_rest_api', 'Running in parallel is not allowed', [], WATCHDOG_ERROR);
+      return NULL;
+    }
+    $this->setLock();
     $this->generateTag();
     $this->created = time();
 
@@ -785,6 +857,7 @@ class RestAPI {
       throw new Exception('RestAPI HTTP-request: ' . $this->message, $this->code);
     }
 
+    $this->removeLock();
     return $this;
   }
 
