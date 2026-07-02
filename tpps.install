@@ -35,6 +35,13 @@ function tpps_get_variable_list() {
     'tpps_doi_pubmed_delay' => PubMed::DEFAULT_DELAY,
     'tpps_doi_pubmed_serp_path' => PubMed::SERP_PATH,
     'tpps_doi_pubmed_not_found_token' => PubMed::NOT_FOUND_TOKEN,
+    // DOI Lookup / DataDryad.
+    'tpps_doi_datadryad_scrape_allowed' => TRUE,
+    'tpps_doi_datadryad_unique_url' => FALSE,
+    'tpps_doi_datadryad_delay' => DataDryad::DEFAULT_DELAY,
+    'tpps_doi_datadryad_serp_path' => DataDryad::SERP_PATH,
+    'tpps_doi_datadryad_not_found_token' => DataDryad::NOT_FOUND_TOKEN,
+
     // DOI Lookup / Gemini.
     'tpps_doi_gemini_system_instruction' => '',
     'tpps_doi_gemini_generation_config' => '',
@@ -938,6 +945,7 @@ function tpps_schema() {
     'doi/DoiSerp',
     'doi/serp/PubMed',
     'doi/serp/GoogleScholar',
+    'doi/serp/DataDryad',
 
     'doi/PublicationDOI',
     'submission/SubmissionCache',
@@ -951,7 +959,9 @@ function tpps_schema() {
     }
   }
   $schema[GoogleScholar::TABLE] = GoogleScholar::getSchema();
+  $schema[DataDryad::TABLE] = DataDryad::getSchema();
   $schema[PubMed::TABLE] = PubMed::getSchema();
+
   $schema[PublicationDOI::TABLE] = PublicationDOI::getSchema();
   // Add custom cache table to have ability to clear only module's data.
   $schema[SubmissionCache::CACHE_BIN] = SubmissionCache::getSchema();
@@ -2616,23 +2626,34 @@ function tpps_update_7134() {
   variable_set('tpps_doi_lookup_allowed_api_list',
     array_combine(PublicationDOI::getApiList(), PublicationDOI::getApiList())
   );
-  // DOI Lookup / Google Scholar.
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // DOI Lookup / SERP / Google Scholar.
   variable_set('tpps_doi_google_scholar_scrape_allowed', TRUE);
   variable_set('tpps_doi_google_scholar_unique_url', FALSE);
   variable_set('tpps_doi_google_scholar_delay', GoogleScholar::DEFAULT_DELAY);
   variable_set('tpps_doi_google_scholar_serp_path', GoogleScholar::SERP_PATH);
   variable_set('tpps_doi_google_scholar_not_found_token', GoogleScholar::NOT_FOUND_TOKEN);
-  // DOI Lookup / PubMed.
+  // DOI Lookup / SERP / PubMed.
   variable_set('tpps_doi_pubmed_scrape_allowed', TRUE);
   variable_set('tpps_doi_pubmed_unique_url', FALSE);
   variable_set('tpps_doi_pubmed_delay', PubMed::DEFAULT_DELAY);
   variable_set('tpps_doi_pubmed_serp_path', PubMed::SERP_PATH);
   variable_set('tpps_doi_pubmed_not_found_token', PubMed::NOT_FOUND_TOKEN);
+  // DOI Lookup / SERP / DataDryad.
+  variable_set('tpps_doi_datadryad_scrape_allowed', FALSE);
+  variable_set('tpps_doi_datadryad_unique_url', FALSE);
+  variable_set('tpps_doi_datadryad_delay', DataDryad::DEFAULT_DELAY);
+  variable_set('tpps_doi_datadryad_serp_path', DataDryad::SERP_PATH);
+  variable_set('tpps_doi_datadryad_not_found_token', DataDryad::NOT_FOUND_TOKEN);
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+  // @TODO Review this variables:
   // DOI Lookup / Dryad.
   variable_set('tpps_doi_dryad_endpoint_path', Dryad::ENDPOINT_PATH);
   variable_set('tpps_doi_dryad_unique_url', FALSE);
   variable_set('tpps_doi_dryad_delay', Dryad::DEFAULT_DELAY);
   variable_set('tpps_doi_dryad_not_found_token', Dryad::NOT_FOUND_TOKEN);
+
 
   // DOI Lookup / Gemini.
   variable_set('tpps_doi_gemini_system_instruction', '');
@@ -2677,6 +2698,7 @@ function tpps_update_7134() {
   $table_list = [
     PublicationDOI::TABLE,
     GoogleScholar::TABLE,
+    DataDryad::TABLE,
     PubMed::TABLE,
     RestAPIRequest::TABLE,
     RestAPIResponse::TABLE,

@@ -2,42 +2,45 @@
 
 /**
  * @file
- * Contains 'PubMed' class.
+ * Contains 'DataDryad' class.
  *
- * GET-request but when DOI appears in textfield does GET-request:
- * https://pubmed.ncbi.nlm.nih.gov/suggestions/?term=10.3732%20apps.1300025
- * Note: '/' in DOI replaced with space!
+ * Class names:
+ * DataDryad - SERP,
+ * Dryad - API.
+ *
+ * datadryad.org uses Anubis (https://github.com/TecharoHQ/anubis) which
+ * sends some kind of cripto-task to browser (like block-chain and bitcoin).
  */
 
 /**
- * Gets publication info by DOI form PubMed web-site.
+ * Gets publication info by DOI form DataDryad web-site's SERP.
  *
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class PubMed extends DoiSerp {
+class DataDryad extends DoiSerp {
 
   // Unique key used to get Drupal variables and etc.
   // To get key by class name: $name = constant($class_name . '::KEY');
   // WARNING:
   // In DB table 'public.tpps_publication_doi.source' used class name
   // (not class's KEY constant).
-  const KEY = 'pubmed';
+  const KEY = 'datadryad';
   // Name of the DB table where SERP is stored.
-  const TABLE = 'tpps_pubmed';
+  const TABLE = 'tpps_datadryad';
   // Default value of the delay between requests.
   // Value 10-60 seconds is suggested over the internet to avoid IP address ban.
   const DEFAULT_DELAY = 5;
   // Path to the SERP page without leading slash '/'.
   // Used to build URL for iframe.
-  // Example: https://pubmed.ncbi.nlm.nih.gov/32638366/
-  const SERP_PATH = 'pubmed';
+  // Example: https://datadryad.org/search?q=10.1002%2Fece3.6829
+  const SERP_PATH = 'search';
   // Name of the GET-query parameter which holds DOI.
-  const QUERY_PARAM = 'term';
+  const QUERY_PARAM = 'q';
   // Domain name (without schema because HTTPS will always be used).
-  const HOST_NAME = 'pubmed.ncbi.nlm.nih.gov';
+  const HOST_NAME = 'datadryad.org';
   // Token to detect page without publication data.
-  const NOT_FOUND_TOKEN = 'The following terms were not found in PubMed';
+  const NOT_FOUND_TOKEN = 'Results 0 of 0';
 
   /**
    * Gets query (url params) to build URL to get SERP.

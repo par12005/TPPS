@@ -3348,7 +3348,7 @@ function tpps_rest_api_response_loaded(array $context = []) {
 function tpps_rest_api_request_started(array $context = []) {
   if (
     empty($request_id = $context['request_id'])
-    && $context['cache']
+    && !$context['cache']
   ) {
     if (variable_get('tpps_rest_api_use_cache', TRUE)) {
       if ($debug_mode ?? 0) {
@@ -3399,7 +3399,7 @@ function tpps_rest_api_response_received(array $context = []) {
     // Global caching disabled.
     !variable_get('tpps_rest_api_use_cache')
     // Current request caching disabled.
-    || !($context['cache'] ?? TRUE)
+    || !($context['cache'] ?? FALSE)
   ) {
     return;
   }

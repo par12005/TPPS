@@ -8,6 +8,19 @@
  * Do not use any caching in class. Caching must be done outside the class
  * because not all responses and not all methods could be cached.
  *
+ * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+ * 'query' vs 'payload'
+ *
+ * - Only GET doesn't use 'payload'.
+ *
+ * +---------+-----+------+-----+--------+
+ * |         | GET | POST | PUT | DELETE |
+ * +---------+-----+------+-----+--------+
+ * | query   | yes | yes  | yes | yes    |
+ * | payload | no  | yes  | yes | yes    |
+ * +---------+-----+------+-----+--------+
+ *
+ * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  *  How to create an instnace of the 'RestAPI' class?
  *    $data['body'] = (new RestAPI($data))->get()->response();
  *    or
@@ -22,6 +35,7 @@
  *      // ...
  *      ->get();
  *
+ * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * How to add 'tag'?
  *   $response = (new RestAPI([
  *     'url' => $url,
@@ -31,10 +45,12 @@
  *   $api = new RestAPI($context);
  *   $api->tag = $tag;
  *
+ * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * DB Tables:
  *   - public.tpps_rest_api_request
  *   - public.tpps_rest_api_response.
  *
+ * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * Logging:
  *   See 'RestAPIResponse' and 'RestAPIRequest' classes.
  *   Request is stored when doRequest() was called.
@@ -251,6 +267,7 @@ class RestAPI {
     $this->query = $context['query'] ?? $this->query ?? [];
     // Optional.
     $this->tag = $context['tag'] ?? $this->tag ?? NULL;
+    $this->cache = $context['cache'] ?? $this->cache ?? NULL;
 
     // Note: md5-hash of the request's data can't be generated here because
     // some data could be added later.
@@ -636,13 +653,15 @@ class RestAPI {
       curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $this->method);
       curl_setopt($curl, CURLOPT_HTTPHEADER, $this->header);
 
-      if (!empty($this->payload)) {
-        if (in_array($this->method, ['POST', 'DELETE', 'PUT'])) {
-          curl_setopt($curl, CURLOPT_SAFE_UPLOAD, TRUE);
-          // Different processing of array and string:
-          // https://stackoverflow.com/questions/5224790
-          curl_setopt($curl, CURLOPT_POSTFIELDS, $this->payload);
-        }
+      if (
+        !empty($this->payload)
+        // Not GET-method.
+        && in_array($this->method, ['POST', 'DELETE', 'PUT'])
+      ) {
+        curl_setopt($curl, CURLOPT_SAFE_UPLOAD, TRUE);
+        // Different processing of array and string:
+        // https://stackoverflow.com/questions/5224790
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $this->payload);
       }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Allow other modules to react on start of the request.

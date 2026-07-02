@@ -98,7 +98,11 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   ];
   // Check if any SERP providers are enabled.
   // List of existing providers.
-  $serp_provider_class_list = ['GoogleScholar', 'PubMed'];
+  $serp_provider_class_list = [
+    'PubMed',
+    'GoogleScholar',
+    //'DataDryad',
+  ];
 
   // List of enabled providers.
   $serp_providers = [];

@@ -109,12 +109,18 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
     . ' at Search Engine Result Pages.'),
   ];
   // Classes:
-  // - /src/GoogleScholar.class.inc,
-  // - /src/PubMed.class.inc.
+  // - /src/doi/serp/GoogleScholar.class.inc,
+  // - /src/doi/serp/PubMed.class.inc.
+  // - /src/doi/serp/DataDrayd.class.inc.
   // DB tables to save SERP data:
   // - 'tpps_google_scholar',
   // - 'tpps_pubmed'.
-  $serp_provider_list = ['GoogleScholar', 'PubMed'];
+  // - 'tpps_datadryad'.
+  $serp_provider_list = [
+    'PubMed',
+    'GoogleScholar',
+    //'DataDryad'
+  ];
   foreach ($serp_provider_list as $class_name) {
     $name = constant($class_name . '::KEY');
     $human_name = ucwords(str_replace('_', ' ', $name));
@@ -132,7 +138,7 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // 'tpps_doi_google_scholar_scrape_allowed',
       // 'tpps_doi_pubmed_scrape_allowed',
-      // 'tpps_doi_dryad_scrape_allowed',
+      // 'tpps_doi_datadryad_scrape_allowed',
       'tpps_doi_' . $name . '_scrape_allowed' => [
         '#type' => 'checkbox',
         '#title' => t('Allow scraping'),
@@ -150,7 +156,7 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
         ],
         // 'tpps_doi_google_scholar_unique_url',
         // 'tpps_doi_pubmed_unique_url',
-        // 'tpps_doi_dryad_unique_url',
+        // 'tpps_doi_datadryad_unique_url',
         'tpps_doi_' . $name . '_unique_url' => [
           '#type' => 'checkbox',
           '#title' => t('Make URL unique'),
@@ -161,7 +167,7 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
         ],
         // 'tpps_doi_google_scholar_serp_path',
         // 'tpps_doi_pubmed_serp_path',
-        // 'tpps_doi_dryad_serp_path',
+        // 'tpps_doi_datadryad_serp_path',
         'tpps_doi_' . $name . '_serp_path' => [
           '#type' => 'textfield',
           '#title' => t('Relative path to the @serp_provider SERP ', $params),
@@ -185,7 +191,7 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
         ],
         // 'tpps_doi_google_scholar_not_found_token',
         // 'tpps_doi_pubmed_not_found_token',
-        // 'tpps_doi_dryad_not_found_token',
+        // 'tpps_doi_datadryad_not_found_token',
         'tpps_doi_' . $name . '_not_found_token' => [
           '#type' => 'textfield',
           '#title' => t('Not found Token'),

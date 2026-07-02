@@ -943,7 +943,7 @@ class PublicationDOI extends DOI {
       // $key => $class_name,
       'pubmed' => 'PubMed',
       'google_scholar' => 'GoogleScholar',
-      //'dryad_serp' => 'DryadSerp',
+      //'datadryad' => 'DataDryad',
     ];
   }
 

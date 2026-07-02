@@ -45,11 +45,12 @@ files[] = src/CorsProxy.class.inc
 ; DOI
 files[] = src/doi/DOI.class.inc
 files[] = src/doi/PublicationDOI.class.inc
-; DOI/serp
+; DOI / SERP
 files[] = src/doi/serp/DoiSerp.class.inc
-files[] = src/doi/serp/GoogleScholar.class.inc
 files[] = src/doi/serp/PubMed.class.inc
-; DOI/api
+files[] = src/doi/serp/GoogleScholar.class.inc
+files[] = src/doi/serp/DataDryad.class.inc
+; DOI / API
 files[] = src/doi/api/DoiApi.class.inc
 files[] = src/doi/api/CrossRef.class.inc
 files[] = src/doi/api/Dryad.class.inc
