@@ -229,7 +229,7 @@ class RestAPI {
    *
    * @var mixed
    */
-  protected $body;
+  protected $body = [];
 
   /**
    * Result of the curl_getinfo().
@@ -237,16 +237,6 @@ class RestAPI {
    * @var array
    */
   protected $curlInfo;
-
-  /**
-   * List of the currently running requests.
-   *
-   * Used to block/allow multiple requests.
-   * Some APIs do not allow the same requests in parallel.
-   *
-   * @var array
-   */
-  protected static $lockList = [];
 
   /**
    * Semaphore which controls parallel running of the same requests.
@@ -495,13 +485,6 @@ class RestAPI {
         return $this->$name;
       }
       else {
-
-//$message = '<pre>!stack</pre>';
-//$stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 10);
-//$params = ['!stack' => print_r($stack, 1)];
-
-//watchdog('tpps', $message, $params);
-
         throw new Exception("Inexistent property: $name");
       }
     }
@@ -606,17 +589,35 @@ class RestAPI {
    * @return bool
    *   Returns TRUE if running in parallel is allowed and FALSE otherwise.
    */
-  public function isParallelAllowed() {
-    return (bool) (
-      ($this->parallel ?? FALSE)
-      && in_array($this->hash, $this->$lockList)
-    );
+  public function isRequestAllowed() {
+    $lockList = variable_get('tpps_rest_api_lock_list', []);
+    if (!empty($lockList)) {
+      // There are some requestes already running.
+      if (empty($this->hash)) {
+        $this->generateHash();
+      }
+      if (
+        !empty($lockList[$this->hash])
+        // Less then 2 seconds.
+        && (time() - $lockList[$this->hash] < 2)
+      ) {
+        // Current request already running in parallel.
+        return $this->parallel;
+      }
+      else {
+        return TRUE;
+      }
+    }
+    else {
+      // No parallel.
+      return TRUE;
+    }
   }
 
   /**
    * Sets lock for current request.
    *
-   * Adds current request hash to the $lockList to block running the same
+   * Adds current request hash to the 'lockList' to block running the same
    * requests in parallel (if parallel requests are not allowed).
    * Semaphore property: $this->parallel.
    *
@@ -627,7 +628,9 @@ class RestAPI {
     if (empty($this->hash)) {
       $this->generateHash();
     }
-    $this->$lockList[] = $this->hash;
+    $lockList = variable_get('tpps_rest_api_lock_list', []);
+    $lockList[$this->hash] = time();
+    variable_set('tpps_rest_api_lock_list', $lockList);
 
     return $this;
   }
@@ -635,14 +638,19 @@ class RestAPI {
   /**
    * Removes lock for current request.
    *
-   * Removes the request hash from the $lockList to allow the same requests.
-   * Semaphore property: $this->parallel.
+   * Removes the request hash from the 'lockList' to allow the same requests.
    *
    * @return object
    *   Returns current object to allow mehtod chaining.
    */
   public function removeLock() {
-    $this->lockList = array_diff($this->lockList, [$this->hash]);
+    if (empty($this->hash)) {
+      $this->generateHash();
+    }
+    $lockList = variable_get('tpps_rest_api_lock_list', []);
+    unset($lockList[$this->hash]);
+    variable_set('tpps_rest_api_lock_list', $lockList);
+
     return $this;
   }
 
@@ -664,12 +672,15 @@ class RestAPI {
     }
 
     $this->generateHash();
-    if (!$this->isParallelAllowed()) {
-      watchdog('tpps_rest_api', 'Running in parallel is not allowed', [], WATCHDOG_ERROR);
-      return NULL;
+    if (!$this->isRequestAllowed()) {
+      $message = 'Running the same requests in parallel is not allowed';
+      watchdog('tpps_rest_api', $message, [], WATCHDOG_ERROR);
+
+      return FALSE;
     }
-    $this->setLock();
+
     $this->generateTag();
+    $this->setLock();
     $this->created = time();
 
     // Restore 'Request Id' by 'Request Hash'.
