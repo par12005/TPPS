@@ -243,7 +243,26 @@ class TppsFile {
   }
 
   /**
+   * Changes owner of the file.
+   *
+   * @param object $file
+   *   Fully loaded Drupal managed file object.
+   * @param int $uid
+   *   New Drupal User account id.
+   */
+  public static function changeOwner($file, $uid) {
+    if ($file && is_object($file)) {
+      $file->uid = $uid;
+      file_save($file);
+    }
+  }
+
+  /**
    * Downloads file using URL and creates Drupal managed file.
+   *
+   * Note: File will belong to current user (global $user) and if called
+   * from cron or using webhook - it will be anonymous user with uid=0.
+   * Get correct user id and call TppsFile::changeOwner($file, $uid);
    *
    * @param string $url
    *   URL to the file.
