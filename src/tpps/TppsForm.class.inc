@@ -1431,6 +1431,9 @@ class TppsForm {
       return $is_exists;
     }
     foreach ($form as $name => $element) {
+      if (strpos('#', $name) === FALSE || is_object($element)) {
+        continue;
+      }
       if (
         ($element['#type'] ?? NULL) != 'fieldset'
         || ($element['#collapsible'] ?? NULL) != TRUE
