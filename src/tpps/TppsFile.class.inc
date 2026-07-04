@@ -287,7 +287,7 @@ class TppsFile {
           ['@folder' => $folder]);
         drupal_set_message($message, 'error');
       }
-      return file_save_data($file_data, $destination, FILE_EXISTS_REPLACE);
+      return file_save_data($file_data, $destination, FILE_EXISTS_RENAME);
     }
     else {
       // Note: $file_data in this case is JSON response.
