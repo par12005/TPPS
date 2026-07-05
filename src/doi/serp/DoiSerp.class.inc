@@ -317,6 +317,7 @@ abstract class DoiSerp {
    * Scraps SERP to get publication info.
    *
    * Publication data will be saved using PublicationDOI::save().
+   * Execution time: 7874 msec.
    *
    * @return array
    *   Returns parsed data.

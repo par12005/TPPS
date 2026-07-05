@@ -99,6 +99,10 @@ class GoogleScholar extends DoiSerp {
    *
    * Publication data will be saved using PublicationDOI::save().
    *
+   * Execution time:
+   * Custom parser: 0.30-0.40 msec.
+   * Gemini AI (parent::parse()): 7874 msec.
+   *
    * @return array
    *   Returns parsed data.
    *
@@ -110,11 +114,10 @@ class GoogleScholar extends DoiSerp {
 
     if (variable_get('tpps_doi_' . static::KEY . '_use_gemini')) {
       // Use Gemini AI to parse which implemented in parent class.
-      return parent::parse();
+      $fields = parent::parse();
     }
     else {
       $fields = [];
-      // Custom parser.
       if (empty($this->doi)) {
         throw new Exception("Can't create URL because of the empty DOI.");
       }
@@ -127,35 +130,21 @@ class GoogleScholar extends DoiSerp {
       }
       $source = static::class;
       $doi = $this->doi;
-
-      if (
-        PublicationDOI::isExists($doi, $source)
-
-
-// @TOdO Remove debug code:
-        && 0
-      ) {
+      if (PublicationDOI::isExists($doi, $source)) {
         // Record already exists.
         // @TODO Imlement ability to force parsing (especially for custom parsing (not AI).
         return PublicationDOI::load($doi, $source);
       }
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Custom parser.
-
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Reduce number of code to speed-up processing.
       $string = $this->serp;
       $pattern = '/<div\s+class\s*=\s*"gs_ri(.*?)<\/div>'
         . '<div\s+class\s*=\s*"gs_fl/s';
-      if (1) {
-        if (preg_match($pattern, $this->serp, $matches)) {
-          $string = $matches[1];
-        }
-        if ($debug_mode ?? FALSE) {
-          dpm($matches);
-          dpm(strlen($string) . ': ' . strlen($this->serp));
-        }
+      if (preg_match($pattern, $this->serp, $matches)) {
+        $string = $matches[1];
       }
 
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // WARNING:
       // Replace all non-breaking spaces, zero-width spaces, and other
       // whitespace with regular spaces.
@@ -163,82 +152,91 @@ class GoogleScholar extends DoiSerp {
 
       $needle = '<span class="gs_pdot">•</span>';
       if (strpos($string, $needle) !== FALSE) {
-        $string = str_replace($needle, '', $string);
+        $string = str_replace($needle, ' - ', $string);
       }
 
-//dpm(var_export($string, 1));
-
-      // Get authors, journal, date, abstract. No title.
-      // Need to add the s modifier for multiline matching.
-      $pattern =
-        // Title.
-        '/<h3 class="gs_rt"[^>]*><a[^>]*>(.*?)<\/a><\/h3>'
-        // Authors, journal, date.
-        . '<div\s+class="gs_a\s*(?:gs_fma_s)*">(.*?)<\/div>'
-        // Abstract.
-        . '<div class="gs_rs\s*(?:gs_fma_s)?">(.*?)$/s';
-
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Title.
+      $pattern = '/<h3 class="gs_rt"[^>]*><a[^>]*>(.*?)<\/a><\/h3>/s';
       if (preg_match($pattern, $string, $matches)) {
-
-//dpm(var_export($matches, 1));
-
         $fields['title'] = $matches[1];
+      }
 
-        // Abstract.
-        $needle = '</div><div class="gs_fma';
-        if (strpos($matches[3], $needle) === FALSE) {
-          $fields['abstract'] = $matches[3];
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Abstract.
+      // Full version.
+      $pattern = '/<div class="gsh_csp">(.*?)<\/div>'
+        . '<\/div><div class="gs_fma_fons">/s';
+      if (preg_match($pattern, $string, $matches)) {
+        $fields['abstract'] = $matches[1];
+      }
+      else {
+        // Short version.
+        $pattern = '/<div class="gs_rs\s*(?:gs_fma_s)?">(.*?)'
+          . '<\/div><div class="gs_fma\s*(?:gs_fma_p)?/s';
+        if (preg_match($pattern, $string, $matches)) {
+          $fields['abstract'] = $matches[1];
         }
-        else {
-          $fields['abstract'] = strstr($matches[3], $needle, TRUE);
+      }
+
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Authors, journal, date.
+      // Full version.
+      $pattern = '/<div class="gs_fmaa">(.*?)<\/div>'
+        . '<div class="gs_rs\s+gs_fma_s">/s';
+      if (preg_match($pattern, $string, $matches)) {
+        $a_string = $matches[1];
+        $a_string = str_replace('</div>', ' - ', $a_string);
+      }
+      else {
+        // Shortened version.
+        $pattern = '/<div class="gs_a gs_fma_s">(.*?)'
+          . '<\/div><div class="gs_a gs_fma_p">/s';
+        if (preg_match($pattern, $string, $matches)) {
+          $a_string = $matches[1];
+          $a_string = str_replace('…', '', $a_string);
         }
+      }
 
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        // Authors, journal and date.
-        $string = $matches[2];
-
-        $needle = '</div><div class="gs_a';
-        if (strpos($string, $needle) !== FALSE) {
-          $string = strstr($string, $needle, TRUE);
-        }
-
+      if (!empty($a_string)) {
         // Extract authors (text inside <a> tags)
         // Example: "M Lu, CA Loopstra, KV Krutovsky".
-        preg_match_all('/<a[^>]*>([^<]+)<\/a>/', $string, $authorMatches);
+        preg_match_all('/<a[^>]*>([^<]+)<\/a>/', $a_string, $authorMatches);
         $fields['authors'] = implode(', ', $authorMatches[1]);
 
         // Remove authors.
-        $string = str_replace($authorMatches[0], '', $string);
+        $a_string = str_replace($authorMatches[0], '', $a_string);
         // Clean up: remove extra commas and spaces.
-        $string = trim(preg_replace('/^(\s*,\s*)*[^-]*-\s*/', '', $string));
+        $a_string = trim(preg_replace('/^(\s*,\s*)*[^-]*-\s*/', '', $a_string));
 
         // Extract journal (between " - " and ", ")
         // Example: "Ecology and evolution".
-        preg_match('/^([^,]+), /', $string, $journalMatches);
+        preg_match('/^([^,]+), /', $a_string, $journalMatches);
         $fields['journal'] = $journalMatches[1] ?? '';
-        $string = str_replace($journalMatches[0], '', $string);
+        $a_string = str_replace($journalMatches[0], '', $a_string);
 
         // Extract date.
         // Example: "2019".
-        preg_match('/^(.*?) - /', $string, $dateMatches);
+        preg_match('/^(.*?) - /', $a_string, $dateMatches);
         $fields['date'] = $dateMatches[1] ?? '';
+
+        $fields['source'] = $source;
+        $fields['doi'] = $doi;
+        // Save.
+        if (!empty($fields['authors'])) {
+          // parent::parse() saves own results itself.
+          $this->saveParsed($fields);
+        }
       }
-
-dpm(var_export($fields, 1), 'fields');
-return;
-
-      $fields['source'] = $source;
-      $fields['doi'] = $doi;
-
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Store result (if possible).
-// @Todo Remove debug code:
-$fields = NULL;
-      if (!empty($fields)) {
-        $this->saveParsed($fields);
+      else {
+        // If authors can't be found at SERP then DOI wasn't found and
+        // Google Scholar suggests other articles which could have DOI as
+        // reference.
+        // Fallback: Gemini AI.
+        $fields = parent::parse();
       }
-      return $fields;
     }
+    return $fields;
   }
 
 }
