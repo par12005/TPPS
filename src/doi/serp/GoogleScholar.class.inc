@@ -94,4 +94,105 @@ class GoogleScholar extends DoiSerp {
     return $query;
   }
 
+  /**
+   * Scraps SERP to get publication info.
+   *
+   * Publication data will be saved using PublicationDOI::save().
+   *
+   * @return array
+   *   Returns parsed data.
+   *
+   * @throws Exception
+   *   When $doi is empty.
+   *   When data loaded from DB but $serp is empty.
+   */
+  public function parse() {
+
+    if (variable_get('tpps_doi_' . static::KEY . '_use_gemini')) {
+      // Use Gemini AI to parse which implemented in parent class.
+      return parent::parse();
+    }
+    else {
+      $fields = [];
+      // Custom parser.
+      if (empty($this->doi)) {
+        throw new Exception("Can't create URL because of the empty DOI.");
+      }
+      if (!$this->isLoaded) {
+        $this->load();
+      }
+      if (empty($this->serp)) {
+        // @TODO Call $this->request().
+        throw new Exception("Empty SERP. Check CORS Proxy server.");
+      }
+      $source = static::class;
+      $doi = $this->doi;
+
+      if (
+        PublicationDOI::isExists($doi, $source)
+
+
+// @TOdO Remove debug code:
+        && 0
+      ) {
+        // Record already exists.
+        // @TODO Imlement ability to force parsing (especially for custom parsing (not AI).
+        return PublicationDOI::load($doi, $source);
+      }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Custom parser.
+      // Replace all non-breaking spaces, zero-width spaces, and other
+      // whitespace with regular spaces.
+      $string = preg_replace('/[\s\x{00A0}\x{200B}\x{FEFF}]+/u', ' ', $this->serp);
+
+      // Get authors, journal, date, abstract. No title.
+      // Need to add the s modifier for multiline matching.
+      $pattern = '/<h3 class="gs_rt"[^>]*><a[^>]*>(.*?)<\/a><\/h3>'
+        . '<div class="gs_a">(.*?)<\/div><div class="gs_rs">(.*?)<\/div>'
+        . '<div class="gs_fl gs_flb">/s';
+
+      if (preg_match($pattern, $string, $matches)) {
+        $fields['title'] = $matches[1];
+        $fields['abstract'] = $matches[3];
+
+        // Authors, journal and date.
+        $string = $matches[2];
+        // Extract authors (text inside <a> tags)
+        // Example: "M Lu, CA Loopstra, KV Krutovsky".
+        preg_match_all('/<a[^>]*>([^<]+)<\/a>/', $string, $authorMatches);
+        $fields['authors'] = implode(', ', $authorMatches[1]);
+
+        // Remove authors.
+        $string = str_replace($authorMatches[0], '', $string);
+        // Clean up: remove extra commas and spaces.
+        $string = trim(preg_replace('/^(\s*,\s*)*-\s*/', '', $string));
+
+        // Extract journal (between " - " and ", ")
+        // Example: "Ecology and evolution".
+        preg_match('/^([^,]+), /', $string, $journalMatches);
+        $fields['journal'] = $journalMatches[1] ?? '';
+        $string = str_replace($journalMatches[0], '', $string);
+
+        // Extract date.
+        // Example: "2019".
+        preg_match('/^(.*?) - /', $string, $dateMatches);
+        $fields['date'] = $dateMatches[1] ?? '';
+      }
+
+dpm(var_export($fields, 1), 'fields'); return;
+
+      $fields['source'] = $source;
+      $fields['doi'] = $doi;
+
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Store result (if possible).
+// @Todo Remove debug code:
+$fields = NULL;
+      if (!empty($fields)) {
+        $this->saveParsed($fields);
+      }
+      return $fields;
+    }
+  }
+
 }

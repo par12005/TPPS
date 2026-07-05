@@ -336,95 +336,66 @@ abstract class DoiSerp {
       // @TODO Call $this->request().
       throw new Exception("Empty SERP. Check CORS Proxy server.");
     }
+    $source = static::class;
+    $doi = $this->doi;
 
-    $use_gemini = TRUE;
-    if ($use_gemini) {
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      $gemini = new Gemini();
-      if (!empty($values['tpps_doi_lookup_system_instruction'])) {
+    if (PublicationDOI::isExists($doi, $source)) {
+      // Record already exists.
+      // @TODO Imlement ability to force parsing (especially for custom parsing (not AI).
+      return PublicationDOI::load($doi, $source);
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Gemini AI Parser.
+    $gemini = new Gemini();
+    if (!empty($values['tpps_doi_lookup_system_instruction'])) {
 
-        // @TODO Get already known data and send to Gemini.
-        $gemini->systemInstruction = variable_get(
-          'tpps_doi_lookup_system_instruction',
-          '
-          Get DOI publication information from given source code of the page.
-          Journal must not have year.
-          Authors must be separated by commas (not semicolons).
-          Use string "NA" for empty values.
-          '
-        );
-      }
-      // Answer in JSON format.
-      $gemini->generationConfig = [
-        "responseMimeType" => "application/json",
-        "responseJsonSchema" => [
-          "type" => "object",
-          "properties" => [
-            "doi" => (object) ["type" => "string"],
-            "title" => (object) ["type" => "string"],
-            "journal" => (object) ["type" => "string"],
-            "date" => (object) ["type" => "string"],
-            "authors" => (object) ["type" => "string"],
-            "abstract" => (object) ["type" => "string"],
-          ],
-          "required" => ["title", "authors", "date", "abstract", "journal"],
+      // @TODO Get already known data and send to Gemini.
+      $gemini->systemInstruction = variable_get(
+        'tpps_doi_lookup_system_instruction',
+        '
+        Get DOI publication information from given source code of the page.
+        Journal must not have year.
+        Authors must be separated by commas (not semicolons).
+        Use string "NA" for empty values.
+        '
+      );
+    }
+    // Answer in JSON format.
+    $gemini->generationConfig = [
+      "responseMimeType" => "application/json",
+      "responseJsonSchema" => [
+        "type" => "object",
+        "properties" => [
+          "doi" => (object) ["type" => "string"],
+          "title" => (object) ["type" => "string"],
+          "journal" => (object) ["type" => "string"],
+          "date" => (object) ["type" => "string"],
+          "authors" => (object) ["type" => "string"],
+          "abstract" => (object) ["type" => "string"],
         ],
-      ];
+        "required" => ["title", "authors", "date", "abstract", "journal"],
+      ],
+    ];
 
-      // @TODO Try to allow internet search to get better results.
-      // Note:
-      // Disabled because requiests failed and doesn't actually required.
-      //$gemini->tools = [["google_search" => (object) []]];
+    // @TODO Try to allow internet search to get better results.
+    // Note:
+    // Disabled because requiests failed and doesn't actually required.
+    //$gemini->tools = [["google_search" => (object) []]];
 
-      $gemini->ask($this->serp);
-      $fields = json_decode($gemini->answer, 1);
-      if ($fields === NULL || $fields === FALSE) {
-        // An error occurred during decoding.
-        $error_code = json_last_error();
-        $error_message = json_last_error_msg();
-        throw new Exception("JSON decoding error: [{$error_code}] {$error_message}");
-      }
-      $fields['source'] = static::class;
-      $fields['doi'] = $this->doi;
+    $gemini->ask($this->serp);
+    $fields = json_decode($gemini->answer, 1);
+    if ($fields === NULL || $fields === FALSE) {
+      // An error occurred during decoding.
+      $error_code = json_last_error();
+      $error_message = json_last_error_msg();
+      throw new Exception("JSON decoding error: [{$error_code}] {$error_message}");
     }
-    else {
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Custom parser.
-      // @TODO Minor. Implement custom parser.
-      //
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    }
+    $fields['source'] = $source;
+    $fields['doi'] = $doi;
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Store result (if possible).
-    if (class_exists('PublicationDOI', $autoload = TRUE)) {
-      if (PublicationDOI::isMissing($fields['doi'], $fields['source'])) {
-        $result = PublicationDOI::save($fields);
-        if ($result) {
-          // Successfully saved into db.
-        }
-        else {
-          watchdog('tpps_google_scholar',
-            "Parsed DOI publication data wasn't saved into database. <pre>@dump</pre>",
-            ['@dump' => print_r($fields, 1)],
-            'error'
-          );
-        }
-      }
-      else {
-        // Record exists.
-        $db_data = PublicationDOI::load($fields['doi'], $fields['source']);
-        if (PublicationDOI::isComplete($db_data)) {
-          // Publication Data is complete. No need to update it.
-        }
-        else {
-          // @todo Minor. Compare recently obtained data and data from DB.
-          PublicationDOI::replace($fields);
-        }
-      }
-    }
-    else {
-      watchdog('tpps_google_scholar', "Class PublicationDOI not found", [], 'error');
-    }
+    $this->saveParsed($fields);
     return $fields;
   }
 
@@ -525,6 +496,46 @@ abstract class DoiSerp {
    */
   public function getNotFoundString() {
     return variable_get('tpps_doi_' . static::KEY . '_not_found_token', '');
+  }
+
+  /**
+   * Saves already parsed data into PublicationDOI::TABLE.
+   *
+   * @param array $fields
+   *   Parsed fields. See columns of the PublicationDOI::TABLE.
+   */
+  public function saveParsed(array $fields) {
+    // Store result (if possible).
+    if (!class_exists('PublicationDOI', $autoload = TRUE)) {
+      watchdog('tpps_google_scholar', "Class PublicationDOI not found", [], 'error');
+      return;
+    }
+
+    if (PublicationDOI::isMissing($fields['doi'], $fields['source'])) {
+      // NO record for doi-source found.
+      $result = PublicationDOI::save($fields);
+      if ($result) {
+        // Successfully saved into db.
+      }
+      else {
+        watchdog('tpps_google_scholar',
+          "Parsed DOI publication data wasn't saved into database. <pre>@dump</pre>",
+          ['@dump' => print_r($fields, 1)],
+          'error'
+        );
+      }
+    }
+    else {
+      // Record for doi-source exists.
+      $db_data = PublicationDOI::load($fields['doi'], $fields['source']);
+      if (PublicationDOI::isComplete($db_data)) {
+        // Publication Data is complete. No need to update it.
+      }
+      else {
+        // @todo Minor. Compare recently obtained data and data from DB.
+        PublicationDOI::replace($fields);
+      }
+    }
   }
 
 }
