@@ -10,6 +10,22 @@
  *
  * datadryad.org uses Anubis (https://github.com/TecharoHQ/anubis) which
  * sends some kind of cripto-task to browser (like block-chain and bitcoin).
+ *
+ * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+ * Usage:
+ *  // Save SERP.
+ *  $provider = new DataDryad();
+ *  $provider->doi = $doi;
+ *  $provider->serp = $content;
+ *  $provider->save();
+ *
+ *  // Load SERP.
+ *  $provider = new DataDryad($doi);
+ *  dpm($provider->serp);
+ *
+ *  // Parse SERP.
+ *  $provider = new DataDryad($doi);
+ *  dpm($provider->parse());
  */
 
 /**

@@ -7,6 +7,22 @@
  * GET-request but when DOI appears in textfield does GET-request:
  * https://pubmed.ncbi.nlm.nih.gov/suggestions/?term=10.3732%20apps.1300025
  * Note: '/' in DOI replaced with space!
+ *
+ * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+ * Usage:
+ *  // Save SERP.
+ *  $provider = new PubMed();
+ *  $provider->doi = $doi;
+ *  $provider->serp = $content;
+ *  $provider->save();
+ *
+ *  // Load SERP.
+ *  $provider = new PubMed($doi);
+ *  dpm($provider->serp);
+ *
+ *  // Parse SERP.
+ *  $provider = new PubMed($doi);
+ *  dpm($provider->parse());
  */
 
 /**

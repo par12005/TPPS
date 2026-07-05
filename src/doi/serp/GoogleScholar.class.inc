@@ -22,16 +22,21 @@
  * Request from client's browser looks more natural (has cookies and etc.).
  * Content from client's browser will be sent to backend and saved by this class.
  *
- *
+ * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * Usage:
  *  // Save SERP.
- *  $gs = new GoogleScholar();
- *  $gs->doi = $doi;
- *  $gs->serp = $content;
- *  $gs->save();
+ *  $provider = new GoogleScholar();
+ *  $provider->doi = $doi;
+ *  $provider->serp = $content;
+ *  $provider->save();
+ *
  *  // Load SERP.
- *  $gs = new GoogleScholar($doi);
- *  dpm($gs->serp);
+ *  $provider = new GoogleScholar($doi);
+ *  dpm($provider->serp);
+ *
+ *  // Parse SERP.
+ *  $provider = new GoogleScholar($doi);
+ *  dpm($provider->parse());
  *
  * :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * @todo Currently every call of save() will create new record in DB table.
