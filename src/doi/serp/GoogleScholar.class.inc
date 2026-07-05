@@ -161,6 +161,11 @@ class GoogleScholar extends DoiSerp {
       // whitespace with regular spaces.
       $string = preg_replace('/[\s\x{00A0}\x{200B}\x{FEFF}]+/u', ' ', $string);
 
+      $needle = '<span class="gs_pdot">•</span>';
+      if (strpos($string, $needle) !== FALSE) {
+        $string = str_replace($needle, '', $string);
+      }
+
 //dpm(var_export($string, 1));
 
       // Get authors, journal, date, abstract. No title.
