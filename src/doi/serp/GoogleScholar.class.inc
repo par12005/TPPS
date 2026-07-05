@@ -141,22 +141,62 @@ class GoogleScholar extends DoiSerp {
       }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Custom parser.
+
+      // Reduce number of code to speed-up processing.
+      $string = $this->serp;
+      $pattern = '/<div\s+class\s*=\s*"gs_ri(.*?)<\/div>'
+        . '<div\s+class\s*=\s*"gs_fl/s';
+      if (1) {
+        if (preg_match($pattern, $this->serp, $matches)) {
+          $string = $matches[1];
+        }
+        if ($debug_mode ?? FALSE) {
+          dpm($matches);
+          dpm(strlen($string) . ': ' . strlen($this->serp));
+        }
+      }
+
+      // WARNING:
       // Replace all non-breaking spaces, zero-width spaces, and other
       // whitespace with regular spaces.
-      $string = preg_replace('/[\s\x{00A0}\x{200B}\x{FEFF}]+/u', ' ', $this->serp);
+      $string = preg_replace('/[\s\x{00A0}\x{200B}\x{FEFF}]+/u', ' ', $string);
+
+//dpm(var_export($string, 1));
 
       // Get authors, journal, date, abstract. No title.
       // Need to add the s modifier for multiline matching.
-      $pattern = '/<h3 class="gs_rt"[^>]*><a[^>]*>(.*?)<\/a><\/h3>'
-        . '<div class="gs_a">(.*?)<\/div><div class="gs_rs">(.*?)<\/div>'
-        . '<div class="gs_fl gs_flb">/s';
+      $pattern =
+        // Title.
+        '/<h3 class="gs_rt"[^>]*><a[^>]*>(.*?)<\/a><\/h3>'
+        // Authors, journal, date.
+        . '<div\s+class="gs_a\s*(?:gs_fma_s)*">(.*?)<\/div>'
+        // Abstract.
+        . '<div class="gs_rs\s*(?:gs_fma_s)?">(.*?)$/s';
 
       if (preg_match($pattern, $string, $matches)) {
-        $fields['title'] = $matches[1];
-        $fields['abstract'] = $matches[3];
 
+//dpm(var_export($matches, 1));
+
+        $fields['title'] = $matches[1];
+
+        // Abstract.
+        $needle = '</div><div class="gs_fma';
+        if (strpos($matches[3], $needle) === FALSE) {
+          $fields['abstract'] = $matches[3];
+        }
+        else {
+          $fields['abstract'] = strstr($matches[3], $needle, TRUE);
+        }
+
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Authors, journal and date.
         $string = $matches[2];
+
+        $needle = '</div><div class="gs_a';
+        if (strpos($string, $needle) !== FALSE) {
+          $string = strstr($string, $needle, TRUE);
+        }
+
         // Extract authors (text inside <a> tags)
         // Example: "M Lu, CA Loopstra, KV Krutovsky".
         preg_match_all('/<a[^>]*>([^<]+)<\/a>/', $string, $authorMatches);
@@ -165,7 +205,7 @@ class GoogleScholar extends DoiSerp {
         // Remove authors.
         $string = str_replace($authorMatches[0], '', $string);
         // Clean up: remove extra commas and spaces.
-        $string = trim(preg_replace('/^(\s*,\s*)*-\s*/', '', $string));
+        $string = trim(preg_replace('/^(\s*,\s*)*[^-]*-\s*/', '', $string));
 
         // Extract journal (between " - " and ", ")
         // Example: "Ecology and evolution".
@@ -179,7 +219,8 @@ class GoogleScholar extends DoiSerp {
         $fields['date'] = $dateMatches[1] ?? '';
       }
 
-dpm(var_export($fields, 1), 'fields'); return;
+dpm(var_export($fields, 1), 'fields');
+return;
 
       $fields['source'] = $source;
       $fields['doi'] = $doi;
