@@ -154,6 +154,21 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
             ':input[name="tpps_doi_' . $name . '_scrape_allowed"]' => ['checked' => TRUE],
           ],
         ],
+        // 'tpps_doi_google_scholar_use_gemini',
+        // 'tpps_doi_pubmed_use_gemini',
+        // 'tpps_doi_datadryad_use_gemini',
+        'tpps_doi_' . $name . '_use_gemini' => [
+          '#type' => 'checkbox',
+          '#title' => t('Use Gemini AI'),
+          '#default_value' => variable_get('tpps_doi_' . $name . '_use_gemini'),
+          '#description' => t('Default is unchecked. <br />When checked then '
+            . 'source code of the SERP will be sent to Gemini AI to get DOI '
+            . 'Publication data. It takes some time, require some Gemini AI '
+            . 'configuration and could cost in future but it works pretty '
+            . 'good and stable.'
+            . '<br />When unchecked then custom parser (if exists) will be used.'
+          ),
+        ],
         // 'tpps_doi_google_scholar_unique_url',
         // 'tpps_doi_pubmed_unique_url',
         // 'tpps_doi_datadryad_unique_url',
