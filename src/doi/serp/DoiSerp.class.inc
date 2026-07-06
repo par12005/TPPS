@@ -258,6 +258,32 @@ abstract class DoiSerp {
   }
 
   /**
+   * Checks if record for current DOI doesn't exist.
+   *
+   * @return bool
+   *   Returns TRUE if record doesn't exist and FALSE otherwise.
+   */
+  public function isMissing() {
+    return !$this->isExists();
+  }
+
+  /**
+   * Checks if record for current DOI exists.
+   *
+   * @return bool
+   *   Returns TRUE if record exists and FALSE otherwise.
+   */
+  public function isExists() {
+    return (bool) db_select(static::TABLE, 't')
+      ->fields('t', ['doi'])
+      ->condition('doi', $this->doi)
+      ->condition('md5', $this->md5)
+      ->range(0, 1)
+      ->execute()
+      ->fetchField();
+  }
+
+  /**
    * Saves SERP into database.
    *
    * @return bool
@@ -271,20 +297,17 @@ abstract class DoiSerp {
     if (empty($this->doi)) {
       throw new Exception('Empty DOI.');
     }
-    if (empty($this->serp)) {
-      throw new Exception('Empty SERP.');
-    }
-    $this->md5 = md5($this->serp);
-    $this->created = REQUEST_TIME;
 
-    $is_exists = (bool) db_select(static::TABLE, 't')
-      ->fields('t', ['doi'])
-      ->condition('doi', $this->doi)
-      ->condition('md5', $this->md5)
-      ->range(0, 1)
-      ->execute()
-      ->fetchField();
-    if (!$is_exists) {
+    $this->created = REQUEST_TIME;
+    if (empty($this->serp)) {
+      $this->serp = NULL;
+      $this->md5 = NULL;
+    }
+    else {
+      $this->md5 = md5($this->serp);
+    }
+
+    if ($this->isMissing()) {
       db_insert(static::TABLE)->fields([
         'doi' => $this->doi,
         'created' => $this->created,
@@ -444,17 +467,19 @@ abstract class DoiSerp {
           'default' => 0,
           'description' => 'Unix timestamp of when the entry was created.',
         ],
+        // NULL or empty means that service was requested but DOI wasn't
+        // found. We store empty record to avoid the same useless requests.
         'serp' => [
           'description' => 'SERP (Search Engine Results Page).',
           'type' => 'text',
           'size' => 'medium',
-          'not null' => TRUE,
+          'not null' => FALSE,
         ],
         'md5' => [
           'description' => 'Hash of the serp string to check uniqueness.',
           'type' => 'varchar',
           'size' => 'normal',
-          'not null' => TRUE,
+          'not null' => FALSE,
         ],
       ],
       'unique keys' => [

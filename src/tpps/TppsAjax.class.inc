@@ -87,8 +87,9 @@ class TppsAjax {
         strpos($provider->serp, 'Not found because of proxy error') === FALSE
         && strpos($provider->serp, '404 Not Found') === FALSE
       ) {
+        // Save the SERP page source code.
         $provider->save();
-        // Parse using Gemini AI.
+        // Parsed data will be stored into PublicationDOI::TABLE.
         $provider->parse();
 
         $response['doi'] = $doi;
