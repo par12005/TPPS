@@ -53,7 +53,7 @@ class PubMed extends DoiSerp {
   // Domain name (without schema because HTTPS will always be used).
   const HOST_NAME = 'pubmed.ncbi.nlm.nih.gov';
   // Token to detect page without publication data.
-  const NOT_FOUND_TOKEN = 'The following terms were not found in PubMed';
+  const NOT_FOUND_TOKEN = 'The following terms were not found';
 
   /**
    * Gets query (url params) to build URL to get SERP.
@@ -77,7 +77,8 @@ class PubMed extends DoiSerp {
    * Publication data will be saved using PublicationDOI::save().
    *
    * Execution time:
-   * Custom parser: 0.30-0.40 msec.
+   * PubMed custom parser: 0.3-0.4 msec.
+   * Google Scholar custom parser: 0.30-0.40 msec.
    * Gemini AI (parent::parse()): 7874 msec.
    *
    * @return array
@@ -88,7 +89,6 @@ class PubMed extends DoiSerp {
    *   When data loaded from DB but $serp is empty.
    */
   public function parse() {
-
     if (variable_get('tpps_doi_' . static::KEY . '_use_gemini')) {
       // Use Gemini AI to parse which implemented in parent class.
       $fields = parent::parse();
@@ -109,8 +109,6 @@ class PubMed extends DoiSerp {
       $doi = $this->doi;
 
       if (
-        0 &&
-
         PublicationDOI::isExists($doi, $source)) {
         // Record already exists.
         // @TODO Imlement ability to force parsing (especially for custom parsing (not AI).
@@ -118,6 +116,23 @@ class PubMed extends DoiSerp {
       }
       else {
         $string = $this->serp;
+        // Reduce size of the HTMl-code to speed-up processing.
+        // Without this step execution time is 2.1 msec instead of 1.3 msec.
+        $pattern = '/(<meta name="citation_title".*'
+          . '<p class="disclaimer" id="disclaimer">)/s';
+        if (preg_match($pattern, $string, $matches)) {
+          $string = $matches[1];
+        }
+
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // WARNING:
+        // Replace all non-breaking spaces, zero-width spaces, and other
+        // whitespace with regular spaces.
+        // Takes about 1 msec.
+        if (0) {
+          $string = preg_replace('/[\s\x{00A0}\x{200B}\x{FEFF}]+/u', ' ', $string);
+        }
+
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Title.
         $pattern = '/<meta name="citation_title" content="(.*?)">/s';
@@ -126,20 +141,19 @@ class PubMed extends DoiSerp {
         }
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Abstract.
-        $pattern = '/<div class="abstract-content selected" id="eng-abstract">'
-          . '\s*<p>\s*(.*?)\s*<\/p>(?:.*?)'
-          . '<p class="disclaimer" id="disclaimer">/s';
+        $pattern = '/<div class="abstract-content selected"\s+id="eng-abstract">'
+          . '\s*<p>\s*(.*)<p class="disclaimer" id="disclaimer">/s';
         if (preg_match($pattern, $string, $matches)) {
-          $field['abstract'] = preg_replace(
-            '/\s*<\/p>\s*<\/div>\s*<p>\s*<strong class="sub-title">'
-            . '(?:.*?)$/s', '', $matches[1]
+          $fields['abstract'] = $matches[1];
+          // Do some cleanup.
+          // @TODO Minor. Combine into single regex.
+          $fields['abstract'] = preg_replace(
+            '/\s*<\/p>\s*<\/div>\s*.*$/s',
+            '', $fields['abstract']
           );
-          $field['abstract'] = preg_replace(
-            '/\s*<\/p>\s*<\/div>\s*<\/div>\s*$/s',
-            '', $field['abstract']
-          );
-
-          //$fields['abstract'] = $matches[1];
+          $fields['abstract'] = trim($fields['abstract']);
+          // Make sense to remove only this piece because it's big enough.
+          $string = str_replace($matches[0], '', $string);
         }
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Authors.
