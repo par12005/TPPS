@@ -270,8 +270,10 @@
           doi_lookup[provider_class_name].not_found_token != ''
           && serpContent.includes(doi_lookup[provider_class_name].not_found_token)
         ) {
-          console.error('DOI Lookup. No publication data found.');
-          return;
+          console.error('DOI Lookup. SERP has no DOI Publication Data.');
+// @TODO Check why content treated as empty.
+
+          //return;
         }
 
         // Send content to backend.

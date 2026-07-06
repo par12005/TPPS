@@ -297,15 +297,19 @@ abstract class DoiSerp {
     if (empty($this->doi)) {
       throw new Exception('Empty DOI.');
     }
-
-    $this->created = REQUEST_TIME;
     if (empty($this->serp)) {
+      throw new Exception('Empty SERP.');
+    }
+
+    if ($this->hasSerpData()) {
+      $this->md5 = md5($this->serp);
+    }
+    else {
+      // SERP was empty or found 'Not Found' token on page.
       $this->serp = NULL;
       $this->md5 = NULL;
     }
-    else {
-      $this->md5 = md5($this->serp);
-    }
+    $this->created = REQUEST_TIME;
 
     if ($this->isMissing()) {
       db_insert(static::TABLE)->fields([
@@ -562,6 +566,39 @@ abstract class DoiSerp {
         PublicationDOI::replace($fields);
       }
     }
+  }
+
+  /**
+   * Gets token to detect 'Not Found' page.
+   *
+   * Since class's constant NOT_FOUND_TOKEN could be overwritten by the site's
+   * setting (variable) you should use this method to get most recent data.
+   *
+   * @return string
+   *   Returns string which could be used to detect SERP without DOI
+   *   publication data.
+   */
+  public function getNotFoundToken() {
+    return variable_get(
+      'tpps_doi_' . static::KEY . '_not_found_token', static::NOT_FOUND_TOKEN
+    );
+  }
+
+  /**
+   * Checks if SERP has DOI Publication Data.
+   *
+   * @return bool
+   *   Returns TRUE if SERP has DOI Publication data.
+   *   Returns FALSE if SERP is empty or found 'Not Found' token.
+   */
+  public function hasSerpData() {
+    if (!$this->isLoaded) {
+      $this->load();
+    }
+    return (bool) (
+      !empty($this->serp)
+      && strpos($this->serp, $this->getNotFoundToken()) === FALSE
+    );
   }
 
 }
