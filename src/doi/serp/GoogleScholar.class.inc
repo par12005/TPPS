@@ -135,6 +135,7 @@ class GoogleScholar extends DoiSerp {
         // @TODO Imlement ability to force parsing (especially for custom parsing (not AI).
         return PublicationDOI::load($doi, $source);
       }
+
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Reduce number of code to speed-up processing.
       $string = $this->serp;

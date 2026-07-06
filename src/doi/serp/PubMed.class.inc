@@ -71,4 +71,113 @@ class PubMed extends DoiSerp {
     return $query;
   }
 
+  /**
+   * Scraps SERP to get publication info.
+   *
+   * Publication data will be saved using PublicationDOI::save().
+   *
+   * Execution time:
+   * Custom parser: 0.30-0.40 msec.
+   * Gemini AI (parent::parse()): 7874 msec.
+   *
+   * @return array
+   *   Returns parsed data.
+   *
+   * @throws Exception
+   *   When $doi is empty.
+   *   When data loaded from DB but $serp is empty.
+   */
+  public function parse() {
+
+    if (variable_get('tpps_doi_' . static::KEY . '_use_gemini')) {
+      // Use Gemini AI to parse which implemented in parent class.
+      $fields = parent::parse();
+    }
+    else {
+      $fields = [];
+      if (empty($this->doi)) {
+        throw new Exception("Can't create URL because of the empty DOI.");
+      }
+      if (!$this->isLoaded) {
+        $this->load();
+      }
+      if (empty($this->serp)) {
+        // @TODO Call $this->request().
+        throw new Exception("Empty SERP. Check CORS Proxy server.");
+      }
+      $source = static::class;
+      $doi = $this->doi;
+
+      if (
+        0 &&
+
+        PublicationDOI::isExists($doi, $source)) {
+        // Record already exists.
+        // @TODO Imlement ability to force parsing (especially for custom parsing (not AI).
+        return PublicationDOI::load($doi, $source);
+      }
+      else {
+        $string = $this->serp;
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // Title.
+        $pattern = '/<meta name="citation_title" content="(.*?)">/s';
+        if (preg_match($pattern, $string, $matches)) {
+          $fields['title'] = $matches[1];
+        }
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // Abstract.
+        $pattern = '/<div class="abstract-content selected" id="eng-abstract">'
+          . '\s*<p>\s*(.*?)\s*<\/p>(?:.*?)'
+          . '<p class="disclaimer" id="disclaimer">/s';
+        if (preg_match($pattern, $string, $matches)) {
+          $field['abstract'] = preg_replace(
+            '/\s*<\/p>\s*<\/div>\s*<p>\s*<strong class="sub-title">'
+            . '(?:.*?)$/s', '', $matches[1]
+          );
+          $field['abstract'] = preg_replace(
+            '/\s*<\/p>\s*<\/div>\s*<\/div>\s*$/s',
+            '', $field['abstract']
+          );
+
+          //$fields['abstract'] = $matches[1];
+        }
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // Authors.
+        $pattern = '/<meta name="citation_authors" content="(.*?);">/s';
+        if (preg_match($pattern, $string, $matches)) {
+          $fields['authors'] = str_replace(';', ', ', $matches[1]);
+          $fields['authors'] = str_replace('  ', ' ', $fields['authors']);
+        }
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // Date.
+        $pattern = '/<meta name="citation_date" content="(.*?)">/s';
+        if (preg_match($pattern, $string, $matches)) {
+          // Format: mm/dd/yyyy.
+          $fields['date'] = $matches[1];
+        }
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // Journal.
+        $pattern = '/<meta name="citation_journal_title" content="(.*?)">/s';
+        if (preg_match($pattern, $string, $matches)) {
+          $fields['journal'] = $matches[1];
+        }
+
+        // @TODO Check is complete?
+        if (empty($fields)) {
+          // If authors can't be found at SERP then DOI wasn't found and
+          // Google Scholar suggests other articles which could have DOI as
+          // reference.
+          // Fallback: Gemini AI.
+          $fields = parent::parse();
+        }
+        else {
+          $fields['source'] = $source;
+          $fields['doi'] = $doi;
+          $this->saveParsed($fields);
+        }
+      }
+    }
+    return $fields;
+  }
+
 }
