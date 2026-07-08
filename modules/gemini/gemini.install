@@ -1,0 +1,23 @@
+<?php
+
+/**
+ * @file
+ * Defines module schema and install/uninstall processes.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function gemini_install() {
+  variable_set('gemini_model', '');
+  variable_set('gemini_api_key', '');
+
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function gemini_uninstall() {
+  variable_del('gemini_model');
+  variable_del('gemini_api_key');
+}

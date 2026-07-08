@@ -54,9 +54,6 @@ function tpps_get_variable_list() {
     'tpps_doi_dryad_delay' => Dryad::DEFAULT_DELAY,
     'tpps_doi_dryad_not_found_token' => Dryad::NOT_FOUND_TOKEN,
 
-    // Gemini.
-    'tpps_gemini_model' => '',
-    'tpps_gemini_api_key' => '',
     // General.
     'tpps_watchdog_cleanup' => FALSE,
     'tpps_ncbi_api_delay' => 300,
@@ -2615,11 +2612,9 @@ function tpps_update_7133() {
  * Configure 'DOI Lookup', 'Google Scholar' and 'Gemini AI'.
  */
 function tpps_update_7134() {
+  module_enable(['gemini'], $enable_dependencies = TRUE);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Set new variables.
-  // Gemini.
-  variable_set('tpps_gemini_model', '');
-  variable_set('tpps_gemini_api_key', '');
   // DOI Lookup / CORS Proxy.
   variable_set('tpps_doi_lookup_cors_proxy_url', '');
   variable_set('tpps_doi_lookup_cors_proxy_keep_alive', TRUE);

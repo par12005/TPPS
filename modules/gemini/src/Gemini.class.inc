@@ -4,9 +4,9 @@
  * @file
  * Contains 'Gemini' class.
  *
- * Settings page: /admin/config/tpps/gemini
+ * Settings page: /admin/config/services/gemini
  * API: https://ai.google.dev/gemini-api/docs/live?example=mic-stream
- * To get/update API Key: https://aistudio.google.com/apikey
+ * To get/update API Key: https://aistudio.google.com/apikey.
  *
  * https://ai.google.dev/api?hl=ru#text-only-prompt
  *
@@ -14,9 +14,9 @@
  */
 
 /**
- * Asks Gemini AI.
+ * Interact with Gemini API.
  *
- * @package tpps
+ * @package AI
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
 class Gemini {
@@ -54,7 +54,7 @@ class Gemini {
   /**
    * Gemini model name.
    *
-   * Stored in variable 'tpps_gemini_model'.
+   * Stored in variable 'gemini_model'.
    *
    * @var string
    */
@@ -63,7 +63,7 @@ class Gemini {
   /**
    * Gemini API Key.
    *
-   * Stored in variable 'tpps_gemini_api_key'.
+   * Stored in variable 'gemini_api_key'.
    * To get visit: https://aistudio.google.com/apikey.
    *
    * @var string
@@ -95,7 +95,7 @@ class Gemini {
    * System instructions to guide the behavior of Gemini model.
    *
    * Optional. For more details see:
-   * https://ai.google.dev/gemini-api/docs/text-generation#system-instructions
+   * https://ai.google.dev/gemini-api/docs/text-generation#system-instructions.
    *
    * Usage example:
    * $gemini->systemInstruction = 'You're the cat.';
@@ -108,13 +108,15 @@ class Gemini {
    * Configuration options for model generation and outputs.
    *
    * Not all parameters are configurable for every model.
-   * https://ai.google.dev/api/generate-content#v1beta.GenerationConfig
+   * https://ai.google.dev/api/generate-content#v1beta.GenerationConfig.
    *
    * @var array
    */
   protected $generationConfig;
 
   /**
+   * Model's tools.
+   *
    * Tools and Agents extend the capabilities of Gemini models,
    * enabling them to take action in the world, access real-time information,
    * and perform complex computational tasks.
@@ -137,10 +139,10 @@ class Gemini {
    *   When Gemini model or API Key is empty.
    */
   public function __construct($question = NULL) {
-    if (empty($this->model = variable_get('tpps_gemini_model'))) {
+    if (empty($this->model = variable_get('gemini_model'))) {
       throw new Exception("Gemini model wasn't set.");
     }
-    if (empty($this->apiKey = variable_get('tpps_gemini_api_key'))) {
+    if (empty($this->apiKey = variable_get('gemini_api_key'))) {
       throw new Exception("Gemini API Key is empty.");
     }
     $this->question = $question ?? NULL;
@@ -164,7 +166,8 @@ class Gemini {
    */
   public function __set($name, $value) {
     // Allow to overwrite magic with custom setter.
-    $func = tpps_snake_to_camel_case('set_' . $name);
+    // Convert snake_case to camelCase.
+    $func = lcfirst(str_replace('_', '', ucwords('set_' . $name, '_')));
     if (method_exists($this, $func)) {
       $this->$func($value);
     }
@@ -193,7 +196,8 @@ class Gemini {
    */
   public function &__get($name) {
     // Allow to overwrite magic with custom getter.
-    $func = tpps_snake_to_camel_case('get_' . $name);
+    // Convert snake_case to camelCase.
+    $func = lcfirst(str_replace('_', '', ucwords('get_' . $name, '_')));
     if (method_exists($this, $func)) {
       return $this->$func();
     }

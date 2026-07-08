@@ -13,27 +13,27 @@
 /**
  * Gemini AI Settings Form.
  */
-function tpps_gemini_settings_form(array $form, array &$form_state) {
+function gemini_settings_form(array $form, array &$form_state) {
   $form['model'] = [
     '#type' => 'fieldset',
     '#title' => t('Model'),
   ];
-  $form['model']['tpps_gemini_model'] = [
+  $form['model']['gemini_model'] = [
     '#type' => 'select',
     '#title' => t('Model'),
-    '#default_value' => variable_get('tpps_gemini_model'),
-    '#options' => tpps_gemini_get_models(),
+    '#default_value' => variable_get('gemini_model'),
+    '#options' => gemini_get_models(),
     '#description' => t('Last update 01.03.2026')
       . '<br />'
       . l(t('Rate limits'), 'https://ai.google.dev/gemini-api/docs/rate-limits'),
   ];
-  $form['model']['tpps_gemini_model_info'] = [
+  $form['model']['gemini_model_info'] = [
     '#type' => 'fieldset',
     '#title' => t('Model version name patterns'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
     'info' => [
-      '#markup' => tpps_gemini_model_info(),
+      '#markup' => gemini_model_info(),
     ],
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -43,10 +43,10 @@ function tpps_gemini_settings_form(array $form, array &$form_state) {
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   ];
-  $form['api']['tpps_gemini_api_key'] = [
+  $form['api']['gemini_api_key'] = [
     '#type' => 'textfield',
     '#title' => t('Gemini API Key'),
-    '#default_value' => variable_get('tpps_gemini_api_key'),
+    '#default_value' => variable_get('gemini_api_key'),
     '#description' => t(
       'To get or update API Key visit !link.',
       ['!link' => l(t('API key'), 'https://aistudio.google.com/apikey')]
@@ -71,7 +71,7 @@ function tpps_gemini_settings_form(array $form, array &$form_state) {
  *
  * @TODO Minor. Move to 'Gemini' class.
  */
-function tpps_gemini_get_models() {
+function gemini_get_models() {
   return [
     'Gemini 3' => [
       'gemini-3.1-pro-preview' => t('3.1 Pro Preview [19.02.2026-No shutdown date]'),
@@ -103,7 +103,7 @@ function tpps_gemini_get_models() {
  * @return string
  *   Returns HTML string with model's info.
  */
-function tpps_gemini_model_info() {
+function gemini_model_info() {
   return t("
 Gemini models are available in either stable, preview, latest, or experimental versions.
 

@@ -8,6 +8,7 @@ dependencies[] = tripal
 dependencies[] = ultimate_cron
 dependencies[] = jquery_update
 dependencies[] = tripal_eutils
+dependencies[] = gemini
 
 ; Submission.
 files[] = src/submission/Submission.class.inc

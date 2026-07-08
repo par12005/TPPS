@@ -1,0 +1,33 @@
+<?php
+
+/**
+ * @file
+ * Manages Gemini AI.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function gemini_menu() {
+  $items['admin/config/tpps/gemini'] = [
+    'title' => 'Gemini',
+    'description' => 'Gemini Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['gemini_settings_form'],
+    'access arguments' => ['administer gemini'],
+    'file' => 'admin/gemini.inc',
+  ];
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function gemini_permission() {
+  return [
+    'administer gemini' => [
+      'title' => t('Administer Gemini AI'),
+      'description' => t('Configure Gemini AI.'),
+    ],
+  ];
+}
