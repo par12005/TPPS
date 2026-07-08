@@ -3,7 +3,7 @@
 vendor/
 .env
 docs/build/
-modules/
+contributed_modules/
 tags
 *.sw*
 .vimrc*
