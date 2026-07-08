@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains 'RestAPIResponse' class.
+ * Contains 'RestApiResponse' class.
  *
  * Note: Request and Response uses the same name 'created' but values could be
  * totally different.
@@ -14,27 +14,27 @@
 /**
  * Manages Rest API Responses stored in DB.
  *
- * @package tpps
+ * @package rest_api
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class RestAPIResponse {
+class RestApiResponse {
 
   // Name of the DB table which stores responses.
-  const TABLE = 'tpps_rest_api_response';
+  const TABLE = 'rest_api_response';
 
   /**
-   * Saves RestAPI Response.
+   * Saves RestApi Response.
    *
    * No need to check if the same response exists because it's body could have
    * some time-based items (like request time or cache protection).
    *
    * @param array $context
    *   Request's context.
-   *   Keys: see RestAPI->doRequest().
+   *   Keys: see RestApi->doRequest().
    *   To check if any response exists:
-   *     RestAPIResponse::isExists($hash).
+   *     RestApiResponse::isExists($hash).
    *   To check if valid response exists:
-   *     RestAPIResponse::isValidExists($request_id).
+   *     RestApiResponse::isValidExists($request_id).
    *
    * @return mixed
    *   Returns 'response_id' if response was inserted (last insert id).
@@ -45,7 +45,7 @@ class RestAPIResponse {
    *   When $context['request_id'] is empty.
    */
   public static function save(array $context = []) {
-    if (!$context['cache'] || !variable_get('tpps_rest_api_use_cache', TRUE)) {
+    if (!$context['cache'] || !variable_get('rest_api_use_cache', TRUE)) {
       // Current request shouldn't be cached.
       return FALSE;
     }
@@ -69,9 +69,9 @@ class RestAPIResponse {
     ];
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    if (RestAPIResponse::isValidExists($data['request_id'])) {
+    if (RestApiResponse::isValidExists($data['request_id'])) {
       // Record exists - let's load response.
-      $response_data = RestAPIResponse::loadValid($data['request_id']);
+      $response_data = RestApiResponse::loadValid($data['request_id']);
 
       // Do not store the same responses multiple times.
       // @TODO Minor. Check also 'code'.
@@ -79,7 +79,7 @@ class RestAPIResponse {
         // The same response.
         if ($data['request_id'] != $response_data['request_id']) {
           // Check value with existing request_id and update record in
-          // db table RestAPIResponse::TABLE if they are different.
+          // db table RestApiResponse::TABLE if they are different.
           // This could happen when requests was removed but responses are left.
           db_update(static::TABLE)
             ->fields(['request_id' => $data['request_id']])
@@ -95,7 +95,7 @@ class RestAPIResponse {
     }
     else {
       // Load latest invalid response.
-      $response_data = RestAPIResponse::load($context['request_id']);
+      $response_data = RestApiResponse::load($context['request_id']);
       if ($response_data['code'] == $context['code']) {
         // If we've got the same invalid response no need to update db record.
         return NULL;
@@ -109,7 +109,7 @@ class RestAPIResponse {
       else {
         // Record exist but 'request_id' differs.
         // Check value with existing request_id and update record in
-        // db table RestAPIResponse::TABLE if they are different.
+        // db table RestApiResponse::TABLE if they are different.
         // This could happen when requests was removed but responses are left.
         db_update(static::TABLE)
           ->fields(['request_id' => $data['request_id']])
@@ -159,25 +159,20 @@ class RestAPIResponse {
    *
    * @param array $context
    *   Request's context.
-   *   Keys: see RestAPI->doRequest().
+   *   Keys: see RestApi->doRequest().
    *   Used 'body' element.
    *
    * @return string
    *   Returns hash's value.
    */
   public static function generateHash(array $context) {
-//watchdog('hash', 'before: <pre>' . var_export($context, 1) . '</pre>');
     // Allow other modules to change $context before hash will be generated.
     // Used to remove time-based or dynamic data in response body to avoid
     // the same responses duplication.
     //
-    // tpps_rest_api_response_hash_generation_alter().
+    // rest_api_response_hash_generation_alter().
     drupal_alter('rest_api_response_hash_generation', $context);
-//watchdog('hash', 'after: <pre>' . var_export($context, 1) . '</pre>');
-
-    return md5(json_encode([
-      'body' => ($context['body'] ?? ''),
-    ]));
+    return md5(json_encode(['body' => ($context['body'] ?? '')]));
   }
 
   /**
@@ -209,7 +204,7 @@ class RestAPIResponse {
    * WARNING: Status code won't be checked and invalid responses will be loaded.
    *
    * Usage example:
-   * extract(RestAPIResponse::load($request_id));
+   * extract(RestApiResponse::load($request_id));
    *
    * @param string $request_id
    *   Unique request identificator.
@@ -252,7 +247,7 @@ class RestAPIResponse {
     }
 
     if (function_exists('module_invoke_all')) {
-      // tpps_rest_api_request_completed().
+      // rest_api_request_completed().
       $context = [
         'request_id' => $request_id,
         'response_id' => $static_cache[$key]['response_id'],
@@ -266,7 +261,7 @@ class RestAPIResponse {
    * Decodes response body.
    *
    * @param array $response
-   *   Response metadata from db table RestAPIResponse::TABLE.
+   *   Response metadata from db table RestApiResponse::TABLE.
    *
    * @return mixed
    *   Returns response body.
@@ -296,10 +291,10 @@ class RestAPIResponse {
    * 2. Not empty body.
    * 3. Latest response (no 'created' date).
    *
-   * To load invalid responses use RestAPIResponse::load() method.
+   * To load invalid responses use RestApiResponse::load() method.
    *
    * Usage example:
-   * extract(RestAPIResponse::loadValid($request_id));
+   * extract(RestApiResponse::loadValid($request_id));
    *
    * @param string $request_id
    *   Unique request identificator.
@@ -341,7 +336,7 @@ class RestAPIResponse {
           'request_id' => $request_id,
           'response_id' => $result['response_id'],
         ];
-        // tpps_rest_api_response_loaded().
+        // rest_api_response_loaded().
         module_invoke_all('rest_api_response_loaded', $context);
       }
       $static_cache[$key] = $result;
@@ -355,7 +350,7 @@ class RestAPIResponse {
    * WARNING: Status code won't be checked and invalid responses will be loaded.
    *
    * Usage example:
-   * extract(RestAPIResponse::load($request_id));
+   * extract(RestApiResponse::load($request_id));
    *
    * @param string $request_id
    *   Unique request identificator.
@@ -391,13 +386,13 @@ class RestAPIResponse {
   /**
    * Gets db table schema.
    *
-   * Table to log responses received by 'RestAPI' class.
+   * Table to log responses received by 'RestApi' class.
    *
    * @return array
    *   Returns array for hook_schema().
    */
   public static function getSchema() {
-    // Table to log responses obtained by 'RestAPI' class.
+    // Table to log responses obtained by 'RestApi' class.
     // Note: There is no need to store message text because it could be
     // obtained  by the HTTP Response Code.
     // HttpCode->getMessage($code);
@@ -417,6 +412,7 @@ class RestAPIResponse {
           'description' => 'The unique request identifier.',
           'type' => 'int',
           'size' => 'normal',
+          'unsigned' => TRUE,
           'not null' => TRUE,
         ],
         'created' => [
@@ -440,7 +436,7 @@ class RestAPIResponse {
         'body' => [
           'description' => 'Body of the API response. Format: JSON-string.',
           // varchar/normal: mysql: 64KB, postgresql: 1GB.
-          'type' => 'varchar',
+          'type' => 'text',
           'size' => 'normal',
           'not null' => TRUE,
         ],
@@ -449,17 +445,19 @@ class RestAPIResponse {
           'type' => 'varchar',
           'size' => 'normal',
           'not null' => TRUE,
+          'length' => 255,
         ],
         'hash' => [
           'description' => "md5 hash of the response body.",
           'type' => 'varchar',
           'size' => 'normal',
           'not null' => FALSE,
+          'length' => 32,
         ],
         // @todo Minor. Add 'request_hash' to be able to find response by
-        // 'request_hash' when record was removed from 'tpps_rest_api_request'
+        // 'request_hash' when record was removed from 'rest_api_request'
         // table but response was left. Otherwise orphan records in
-        // 'tpps_rest_api_response' table will be left. But it's a rare case.
+        // 'rest_api_response' table will be left. But it's a rare case.
         // Currently this solved by using FK which removes related responses
         // when request was removed.
       ],
@@ -467,7 +465,7 @@ class RestAPIResponse {
       'unique keys' => ['request_id_created' => ['request_id', 'created']],
       'foreign keys' => [
         'request_id' => [
-          'table' => 'tpps_rest_api_request',
+          'table' => 'rest_api_request',
           'columns' => ['request_id' => 'request_id'],
         ],
       ],
@@ -478,7 +476,7 @@ class RestAPIResponse {
    * Restores XML from JSON decoded string.
    *
    * XML response is stored as json string in db table's field
-   * 'public.tpps_rest_api_response.body'.
+   * 'public.rest_api_response.body'.
    * To use it as XML it must be 'restored' first.
    *
    * @param string $json

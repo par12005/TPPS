@@ -13,7 +13,7 @@ function tpps_report_rest_api_response_list() {
   $page_title = variable_get('tpps_report_' . $report_name . '_title', 'Rest API Response List');
 
   // WARNING: Report::print() requires db_select() not db_query().
-  $query = db_select(RestAPIResponse::TABLE, 't')
+  $query = db_select(RestApiResponse::TABLE, 't')
     ->fields('t', [
       'response_id',
       'request_id',
@@ -22,7 +22,7 @@ function tpps_report_rest_api_response_list() {
       'duration',
       'body',
     ]);
-  $query->join(RestAPIRequest::TABLE, 't2', 't2.request_id = t.request_id');
+  $query->join(RestApiRequest::TABLE, 't2', 't2.request_id = t.request_id');
   $query->addField('t2', 'tag');
 
   return '<h2>' . $page_title . '</h2>' . Report::print([

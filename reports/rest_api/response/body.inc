@@ -19,10 +19,10 @@ function tpps_report_rest_api_response_body() {
   }
 
   // WARNING: Report::print() requires db_select() not db_query().
-  $query = db_select(RestAPIResponse::TABLE, 't')
+  $query = db_select(RestApiResponse::TABLE, 't')
     ->fields('t', [])
     ->condition('response_id', $id);
-  $query->join(RestAPIRequest::TABLE, 't2', 't2.request_id = t.request_id');
+  $query->join(RestApiRequest::TABLE, 't2', 't2.request_id = t.request_id');
   $query->addField('t2', 'tag', 'tag');
   $result = $query->execute()->fetchAssoc();
 

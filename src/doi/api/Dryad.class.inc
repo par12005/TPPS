@@ -159,7 +159,7 @@ class Dryad extends DoiApi {
         'title' => $response['title'],
         // Note: no record for Journal.
         'journal' => '',
-        'abstract' => $response['abstract'],
+        'abstract' => trim($response['abstract']),
       ];
     }
     PublicationDOI::save($data);
@@ -177,7 +177,7 @@ class Dryad extends DoiApi {
       'Content-Type: application/json',
     ];
     try {
-      $response = (new RestAPI([
+      $response = (new RestApi([
         'url' => $url,
         'header' => $header,
         'tag' => implode(', ', [$doi, static::class]),

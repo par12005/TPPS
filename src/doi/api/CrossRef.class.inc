@@ -103,7 +103,7 @@ class CrossRef extends DoiApi {
         'title' => ($response['message']['title'][0] ?? ''),
         'journal' => ($response['message']['container-title'][0] ?? ''),
         // There is no abstract in response.
-        'abstract' => '',
+        'abstract' => trim($response['message']['abstract'] ?? ''),
       ];
     }
     PublicationDOI::save($data);
@@ -128,7 +128,7 @@ class CrossRef extends DoiApi {
       'User-Agent: Drupal',
     ];
     try {
-      $response = (new RestAPI([
+      $response = (new RestApi([
         'url' => $url,
         'header' => $header,
         'tag' => implode(', ', [$doi, static::class]),

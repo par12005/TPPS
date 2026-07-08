@@ -262,7 +262,7 @@ class Gemini {
 
     $response = '';
     try {
-      $response = (new RestAPI([
+      $response = (new RestApi([
         'url' => $this->url,
         'payload' => $payload,
         'header' => $header,
@@ -272,7 +272,7 @@ class Gemini {
       // @TODO Minor. Code 429 (Too many requiests).
       $message = $e->getMessage();
       $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
-      watchdog('tpps', $message . '<pre>@backtrace</pre>',
+      watchdog('gemini', $message . '<pre>@backtrace</pre>',
         ['@backtrace' => print_r($stack, 1)],
         WATCHDOG_ERROR
       );
@@ -298,7 +298,7 @@ class Gemini {
         // @TODO Change model and try again.
         $message = check_plain($response['error']['message']);
         drupal_set_message($message);
-        watchdog('tpps', $message, [], WATCHDOG_ERROR);
+        watchdog('gemini', $message, [], WATCHDOG_ERROR);
       }
       else {
         throw new Exception('Unknown response format.');

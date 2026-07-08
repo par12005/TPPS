@@ -21,13 +21,13 @@ function tpps_report_rest_api_request_list() {
     'header',
     'payload',
   ];
-  $query = db_select(RestAPIRequest::TABLE, 't')
+  $query = db_select(RestApiRequest::TABLE, 't')
     ->fields('t', $field_list);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Get related responses.
   $query->addExpression("string_agg(CAST(res.response_id AS VARCHAR), ',')", 'response_list');
-  $query->leftJoin(RestAPIResponse::TABLE, 'res', 'res.request_id = t.request_id');
+  $query->leftJoin(RestApiResponse::TABLE, 'res', 'res.request_id = t.request_id');
 
   // Group by ALL columns from the request table that you're selecting.
   foreach ($field_list as $field_name) {

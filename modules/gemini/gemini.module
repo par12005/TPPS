@@ -9,7 +9,7 @@
  * Implements hook_menu().
  */
 function gemini_menu() {
-  $items['admin/config/tpps/gemini'] = [
+  $items['admin/config/services/gemini'] = [
     'title' => 'Gemini',
     'description' => 'Gemini Settings',
     'page callback' => 'drupal_get_form',

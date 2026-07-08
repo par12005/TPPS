@@ -48,7 +48,7 @@ class CorsProxy {
   public static function isUp() {
     $response = NULL;
     try {
-      $response = (new RestAPI([
+      $response = (new RestApi([
         'url' => static::getUrl() . '/iscorsneeded/',
       ]))->getContent();
     }

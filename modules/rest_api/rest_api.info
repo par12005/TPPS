@@ -1,0 +1,11 @@
+name = REST API
+description = REST API
+core = 7.x
+package = Web Services
+version = 7.x-1.0
+configure = admin/config/services/rest_api
+
+files[] = src/RestApi.class.inc
+files[] = src/HttpCode.class.inc
+files[] = src/RestApiResponse.class.inc
+files[] = src/RestApiRequest.class.inc

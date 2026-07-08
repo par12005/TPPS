@@ -208,11 +208,6 @@ function tpps_get_variable_list() {
     'tpps_zenodo_access_token_sandbox' => '',
     'tpps_zenodo_host_greedy_search' => FALSE,
     'tpps_zenodo_api_request_delay' => 100,
-    // RestAPI Class Settings.
-    'tpps_rest_api_timeout' => 30,
-    'tpps_rest_api_max_execution_time' => 5000,
-    'tpps_rest_api_use_cache' => TRUE,
-
     // Misc Settings.
     'tpps_theme_fix_pager' => FALSE,
     'tpps_js_debug_mode' => ['quickDebugMode' => 'quickDebugMode'],
@@ -949,8 +944,6 @@ function tpps_schema() {
 
     'doi/PublicationDOI',
     'submission/SubmissionCache',
-    'RestAPI/RestAPIResponse',
-    'RestAPI/RestAPIRequest',
   ];
   foreach ($class_list as $path) {
     $class_file = dirname(__FILE__) . '/src/' . $path . '.class.inc';
@@ -966,9 +959,6 @@ function tpps_schema() {
   // Add custom cache table to have ability to clear only module's data.
   $schema[SubmissionCache::CACHE_BIN] = SubmissionCache::getSchema();
   $schema[TPPS_CACHE_BIN] = drupal_get_schema_unprocessed('system', 'cache');
-  // RestAPI.
-  $schema[RestAPIRequest::TABLE] = RestAPIRequest::getSchema();
-  $schema[RestAPIResponse::TABLE] = RestAPIResponse::getSchema();
 
   return $schema;
 }
@@ -2660,8 +2650,6 @@ function tpps_update_7134() {
   variable_set('tpps_doi_gemini_system_instruction', '');
   variable_set('tpps_doi_gemini_generation_config', '');
 
-  // Rest API.
-  variable_set('tpps_rest_api_use_cache', TRUE);
   // DOI / Submission reports.
   variable_set('tpps_report_doi_submission_publication_title', 'Publication DOI');
   variable_set('tpps_report_doi_submission_dataset_title', 'Dataset DOI');
@@ -2701,8 +2689,6 @@ function tpps_update_7134() {
     GoogleScholar::TABLE,
     DataDryad::TABLE,
     PubMed::TABLE,
-    RestAPIRequest::TABLE,
-    RestAPIResponse::TABLE,
   ];
   foreach ($table_list as $table_name) {
     if (!db_table_exists($table_name)) {
@@ -2718,17 +2704,6 @@ function tpps_update_7134() {
       }
     }
   }
-
-  // Let's manually create foreign key (fk) because Drupal7 doesn't support fk.
-  // So when request was removed related responses also will be removed to
-  // avoid orphan records.
-  $sql = '
-    ALTER TABLE tpps_rest_api_response
-    ADD CONSTRAINT fk_response_request
-    FOREIGN KEY (request_id)
-    REFERENCES tpps_rest_api_request (request_id)
-    ON DELETE CASCADE;';
-  db_query($sql);
 
   cache_clear_all();
 }

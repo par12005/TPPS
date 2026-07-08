@@ -1,0 +1,243 @@
+<?php
+
+/**
+ * @file
+ * Manages REST API.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function rest_api_menu() {
+  $items['admin/config/services/rest_api'] = [
+    'title' => 'REST API',
+    'description' => 'REST API Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['rest_api_settings_form'],
+    'access arguments' => ['administer rest_api'],
+    'file' => 'admin/rest_api.inc',
+  ];
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function rest_api_permission() {
+  return [
+    'administer rest_api' => [
+      'title' => t('Administer REST API'),
+      'description' => t('Configure REST API.'),
+    ],
+  ];
+}
+
+/**
+ * Implements hook_theme().
+ */
+function rest_api_theme() {
+  return [
+    // Rest API.
+    'request_report_link' => [
+      'variables' => [
+        'request_id' => NULL,
+        'title' => NULL,
+      ],
+      'file' => 'theme/misc.inc',
+    ],
+    'response_report_link' => [
+      'variables' => [
+        'response_id' => NULL,
+        'title' => NULL,
+      ],
+      'file' => 'theme/misc.inc',
+    ],
+    // Other.
+    'http_code' => [
+      'variables' => [
+        'code' => NULL,
+      ],
+      'file' => 'theme/misc.inc',
+    ],
+    'http_method' => [
+      'variables' => [
+        'method' => NULL,
+      ],
+      'file' => 'theme/misc.inc',
+    ],
+    'response_body' => [
+      'variables' => [
+        'title' => NULL,
+        'body' => NULL,
+        'content_type' => NULL,
+      ],
+      'file' => 'theme/misc.inc',
+    ],
+  ];
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+/**
+ * Implements alter-hook 'rest_api_exception'.
+ *
+ * Allows alter exception messages thrown in RestApi->doRequest().
+ *
+ * @param string $message
+ *   Original exceptin message which could be modified.
+ * @param array $context
+ *   Request meta-data.
+ */
+function rest_api_exception_alter(&$message, array $context) {
+  if (!empty($context['response']['status'])) {
+    if (!empty($context['response']['message'])) {
+      $message .= ' ' . $context['response']['message'];
+    }
+    if (!empty($context['response']['errors'])) {
+      foreach ($context['response']['errors'] as $error) {
+        $message .= ' ' . $error['field'] . ': ' . implode(' ', $error['messages']);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook 'rest_api_response_loaded'.
+ *
+ * @param array $context
+ *   Keys: 'request_id' and 'response_id'.
+ */
+function rest_api_rest_api_response_loaded(array $context = []) {
+  if (!empty($context['request_id']) && !empty($context['response_id'])) {
+    $message = "!aLoaded existing response '!response_report_link' to the "
+      . "request '!request_report_link'.";
+    $params = [
+      '!a' => '<a href=#></a>',
+      '@id' => $context['response_id'],
+      '!request_report_link' => theme('request_report_link',
+        ['request_id' => $context['request_id']]
+      ),
+      '!response_report_link' => theme('response_report_link',
+        ['response_id' => $context['response_id']]
+      ),
+    ];
+    watchdog('rest_api', $message, $params);
+  }
+}
+
+/**
+ * Implements hook 'rest_api_request_started'.
+ *
+ * Called from class 'RestApi'.
+ * Saves Request.
+ *
+ * @param array $context
+ *   Request's context.
+ *   Keys: see RestApi->doRequest().
+ */
+function rest_api_rest_api_request_started(array $context = []) {
+  if ($debug_mode ?? 0) {
+    $params = [
+      '@dump' => var_export($context, 1),
+      '@function' => __FUNCTION__,
+    ];
+    watchdog('rest_api', '@function: <pre>@dump</pre>', $params);
+  }
+  if (
+    empty($request_id = $context['request_id'])
+    && $context['cache']
+    && variable_get('rest_api_use_cache', TRUE)
+  ) {
+    if (empty($context['hash'])) {
+      $params = ['@function' => __FUNCTION__];
+      watchdog('rest_api', '@function: empty "hash".', $params, 'error');
+      return FALSE;
+    }
+
+    $request_id = RestApiRequest::save($context);
+
+    $message = '!aRest API Request !request_report_link was saved.';
+    if (empty($request_id)) {
+      $message = '!aRest API Request !request_report_link already exists.';
+    }
+    $params = [
+      '!a' => '<a href=#></a>',
+      '!request_report_link' => theme('request_report_link',
+        ['request_id' => $context['request_id']]
+      ),
+    ];
+    watchdog('rest_api', $message, $params);
+  }
+  return $request_id ?? FALSE;
+}
+
+/**
+ * Implements hook 'rest_api_response_received'.
+ *
+ * Called from class 'RestApi'.
+ * No need to check if response exists because each response will be
+ * stored in database.
+ *
+ * @param array $context
+ *   Request's context.
+ *   Keys: see RestApi->doRequest().
+ *   To check if response exists: RestApiResponse::isExists($request_id).
+ */
+function rest_api_rest_api_response_received(array $context = []) {
+  if (
+    // Global caching disabled.
+    !variable_get('rest_api_use_cache')
+    // Current request caching disabled.
+    || !($context['cache'] ?? FALSE)
+  ) {
+    return;
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $key = 'rest_api';
+  $params = [
+    '@dump' => var_export($context, 1),
+    '@function' => __FUNCTION__,
+  ];
+  if ($debug_mode ?? 0) {
+    watchdog($key, '@function: <pre>@dump</pre>', $params);
+  }
+  if (empty($context['request_id'])) {
+    $message = '@function: Request Id is empty. <pre>@dump</pre>';
+    watchdog($key, $message, $params);
+    return;
+  }
+
+
+  if (!empty($response_id = RestApiResponse::save($context))) {
+    // NULL - updated, FALSE - caching disabled for current request.
+    // Watchdog message.
+    $message = '!aResponse !response_report_link to the request '
+      . '!request_report_link was saved.';
+    $params = [
+      '!a' => '<a href=#></a>',
+      '!request_report_link' => theme('request_report_link',
+        ['request_id' => $context['request_id']]
+      ),
+      '!response_report_link' => theme('response_report_link',
+        ['response_id' => $context['response_id']]
+      ),
+    ];
+    watchdog('rest_api', $message, $params);
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Record requests which processing takes a very long time.
+  $max_execution_time = variable_get('rest_api_max_execution_time', 5000);
+  $method = $request['method'] ?? NULL;
+  if (($context['duration'] ?? 0) >= $max_execution_time) {
+    $message = '!aProcessing request !request_report_link took too long: @duration msec.';
+    $params = [
+      '!a' => '<a href=#></a>',
+      '@duration' => $context['duration'],
+      '!request_report_link' => theme('request_report_link',
+        ['request_id' => $context['request_id']]
+      ),
+    ];
+    watchdog('rest_api', $message, $params);
+  }
+}

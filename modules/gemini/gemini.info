@@ -3,7 +3,7 @@ description = Gemini AI
 core = 7.x
 package = AI
 version = 7.x-1.0
-configure = admin/config/content/services/gemini
+configure = admin/config/services/gemini
 dependencies[] = rest_api
 
 files[] = src/Gemini.class.inc

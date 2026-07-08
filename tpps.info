@@ -8,7 +8,8 @@ dependencies[] = tripal
 dependencies[] = ultimate_cron
 dependencies[] = jquery_update
 dependencies[] = tripal_eutils
-dependencies[] = gemini
+;dependencies[] = gemini
+; dependencies[] = rest_api
 
 ; Submission.
 files[] = src/submission/Submission.class.inc
@@ -30,17 +31,10 @@ files[] = src/PhenotypeSynonym.class.inc
 files[] = src/PhenotypeUnit.class.inc
 files[] = src/NextFlowManager.class.inc
 
-; RestAPI
-files[] = src/RestAPI/RestAPI.class.inc
-files[] = src/RestAPI/HttpCode.class.inc
-files[] = src/RestAPI/RestAPIResponse.class.inc
-files[] = src/RestAPI/RestAPIRequest.class.inc
-
 ; Misc
 files[] = src/Report.class.inc
 files[] = src/FormState.class.inc
 files[] = src/CVTerm.class.inc
-files[] = src/Gemini.class.inc
 files[] = src/CorsProxy.class.inc
 
 ; DOI

@@ -119,7 +119,7 @@ class SemanticScholar extends DoiApi {
         'date' => $response['publicationDate'] ?? $response['year'] ?? '',
         'title' => $response['title'] ?? '',
         'journal' => $response['venue'] ?? $response['journal']['name'] ?? '',
-        'abstract' => $response['abstract'] ?? '',
+        'abstract' => trim($response['abstract'] ?? ''),
       ];
     }
     PublicationDOI::save($data);
@@ -137,7 +137,7 @@ class SemanticScholar extends DoiApi {
       'Content-Type: application/json',
     ];
     try {
-      $response = (new RestAPI([
+      $response = (new RestApi([
         'url' => $url,
         'header' => $header,
         'tag' => implode(', ', [$doi, static::class]),

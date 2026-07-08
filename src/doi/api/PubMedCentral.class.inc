@@ -89,7 +89,7 @@ class PubMedCentral extends DoiApi {
     }
     else {
       try {
-        $xml = (new RestAPI([
+        $xml = (new RestApi([
           'url' => $url,
           'tag' => implode(', ', [$doi, static::class]),
         ]))->get()->response();
@@ -193,7 +193,7 @@ class PubMedCentral extends DoiApi {
       'title' => $xpath->evaluate('string(//dc:title)'),
       'journal' => $xpath->evaluate('string(//dc:source)'),
       'date' => str_replace('-', '/', $xpath->evaluate('string(//dc:date)')),
-      'abstract' => $xpath->evaluate('string(//dc:description)'),
+      'abstract' => trim($xpath->evaluate('string(//dc:description)')),
       'authors' => [],
     ];
     // Get all authors.
@@ -245,7 +245,7 @@ class PubMedCentral extends DoiApi {
    *   Returns FALSE in case of errors.
    */
   public static function getPmcId($doi) {
-    $response = (new RestAPI([
+    $response = (new RestApi([
       'url' => static::buildSearchUrl($doi),
       'header' => ['Content-Type: application/json'],
       'tag' => implode(', ', [$doi, static::class, __FUNCTION__]),
@@ -271,11 +271,11 @@ class PubMedCentral extends DoiApi {
    * Removes dynamic and time-based data from the response's body.
    *
    * Without this step responses are treated as unique and a lot of duplicates
-   * will be created in DB table 'tpps_rest_api_response'.
+   * will be created in DB table RestApiResponse::TABLE.
    *
    * @param array $context
    *   Response meta data for hash generation.
-   *   See RestAPIResponse::generateHash().
+   *   See RestApiResponse::generateHash().
    *
    * @return array
    *   Returns updated Response meta data.

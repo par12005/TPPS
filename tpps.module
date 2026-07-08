@@ -2213,7 +2213,6 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'ncbi' => NULL,
     'cache' => NULL,
     'submission' => NULL,
-    'rest_api' => 'RestAPI Class Settings',
     'watchdog_cleanup' => 'Manage cleaning of the watchdog spam-messages.',
   ];
   foreach ($list as $name => $description) {
@@ -3282,169 +3281,6 @@ function tpps_zenodo_deposit_create_alter(array &$data = []) {
 }
 
 /**
- * Implements alter-hook 'rest_api_response_hash_generation'.
- *
- * @param array $context
- *   Response meta data for hash generation.
- *   See RestAPIResponse::generateHash().
- */
-function tpps_rest_api_response_hash_generation_alter(array &$context) {
-  $method = 'alterResponseHashGeneration';
-  $list = array_merge(
-    PublicationDOI::getApiList(),
-    PublicationDOI::getSERPList()
-  );
-  foreach ($list as $class_name) {
-    if (!method_exists($class_name, $method)) {
-      continue;
-    }
-    $context = call_user_func_array([$class_name, $method], [$context]);
-  }
-}
-
-/**
- * Implements hook 'rest_api_response_loaded'.
- *
- * @param array $context
- *   Keys: 'request_id' and 'response_id'.
- */
-function tpps_rest_api_response_loaded(array $context = []) {
-  if (!empty($context['request_id']) && !empty($context['response_id'])) {
-    $message = "!aLoaded existing response '!response_report_link' to the "
-      . "request '!request_report_link'.";
-    $params = [
-      '!a' => '<a href=#></a>',
-      '@id' => $context['response_id'],
-      '!request_report_link' => theme('request_report_link',
-        ['request_id' => $context['request_id']]
-      ),
-      '!response_report_link' => theme('response_report_link',
-        ['response_id' => $context['response_id']]
-      ),
-    ];
-    watchdog('tpps_rest_api', $message, $params);
-  }
-}
-
-/**
- * Implements hook 'rest_api_request_started'.
- *
- * Called from class 'RestAPI'.
- * Saves Request.
- *
- * @param array $context
- *   Request's context.
- *   Keys: see RestAPI->doRequest().
- */
-function tpps_rest_api_request_started(array $context = []) {
-  if (
-    empty($request_id = $context['request_id'])
-    && !$context['cache']
-  ) {
-    if (variable_get('tpps_rest_api_use_cache', TRUE)) {
-      if ($debug_mode ?? 0) {
-        $params = [
-          '@dump' => var_export($context, 1),
-          '@function' => __FUNCTION__,
-        ];
-        watchdog('tpps_rest_api', '@function: <pre>@dump</pre>', $params);
-      }
-      if (empty($context['hash'])) {
-        $params = ['@function' => __FUNCTION__];
-        watchdog('tpps', '@function: empty "hash".', $params, 'error');
-        return FALSE;
-      }
-
-      $request_id = RestAPIRequest::save($context);
-
-      $message = '!aRest API Request !request_report_link was saved.';
-      if (empty($request_id)) {
-        $message = '!aRest API Request !request_report_link already exists.';
-      }
-      $params = [
-        '!a' => '<a href=#></a>',
-        '!request_report_link' => theme('request_report_link',
-          ['request_id' => $context['request_id']]
-        ),
-      ];
-      watchdog('tpps_rest_api', $message, $params);
-    }
-  }
-  return $request_id ?? FALSE;
-}
-
-/**
- * Implements hook 'rest_api_response_received'.
- *
- * Called from class 'RestAPI'.
- * No need to check if response exists because each response will be
- * stored in database.
- *
- * @param array $context
- *   Request's context.
- *   Keys: see RestAPI->doRequest().
- *   To check if response exists: RestAPIResponse::isExists($request_id).
- */
-function tpps_rest_api_response_received(array $context = []) {
-  if (
-    // Global caching disabled.
-    !variable_get('tpps_rest_api_use_cache')
-    // Current request caching disabled.
-    || !($context['cache'] ?? FALSE)
-  ) {
-    return;
-  }
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  $key = 'tpps_rest_api';
-  $params = [
-    '@dump' => var_export($context, 1),
-    '@function' => __FUNCTION__,
-  ];
-  if ($debug_mode ?? 0) {
-    watchdog($key, '@function: <pre>@dump</pre>', $params);
-  }
-  if (empty($context['request_id'])) {
-    $message = '@function: Request Id is empty. <pre>@dump</pre>';
-    watchdog($key, $message, $params);
-    return;
-  }
-
-
-  if (!empty($response_id = RestAPIResponse::save($context))) {
-    // NULL - updated, FALSE - caching disabled for current request.
-    // Watchdog message.
-    $message = '!aResponse !response_report_link to the request '
-      . '!request_report_link was saved.';
-    $params = [
-      '!a' => '<a href=#></a>',
-      '!request_report_link' => theme('request_report_link',
-        ['request_id' => $context['request_id']]
-      ),
-      '!response_report_link' => theme('response_report_link',
-        ['response_id' => $context['response_id']]
-      ),
-    ];
-    watchdog('tpps_rest_api', $message, $params);
-  }
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Record requests which processing takes a very long time.
-  $max_execution_time = variable_get('tpps_rest_api_max_execution_time', 5000);
-  $method = $request['method'] ?? NULL;
-  if (($context['duration'] ?? 0) >= $max_execution_time) {
-    $message = '!aProcessing request !request_report_link took too long: @duration msec.';
-    $params = [
-      '!a' => '<a href=#></a>',
-      '@duration' => $context['duration'],
-      '!request_report_link' => theme('request_report_link',
-        ['request_id' => $context['request_id']]
-      ),
-    ];
-    watchdog('tpps_rest_api', $message, $params);
-  }
-}
-
-/**
  * Implements hook 'zenodo_deposit_host_changed'.
  */
 function tpps_zenodo_deposit_host_changed($new_host) {
@@ -3514,28 +3350,6 @@ function tpps_zenodo_file_create_alter(array &$data) {
   // curl_setopt($curl, CURLOPT_INFILE, $fp);
 }
 
-/**
- * Implements alter-hook 'rest_api_exception'.
- *
- * Allows alter exception messages thrown in RestAPI->doRequest().
- *
- * @param string $message
- *   Original exceptin message which could be modified.
- * @param array $context
- *   Request meta-data.
- */
-function tpps_rest_api_exception_alter(&$message, array $context) {
-  if (!empty($context['response']['status'])) {
-    if (!empty($context['response']['message'])) {
-      $message .= ' ' . $context['response']['message'];
-    }
-    if (!empty($context['response']['errors'])) {
-      foreach ($context['response']['errors'] as $error) {
-        $message .= ' ' . $error['field'] . ': ' . implode(' ', $error['messages']);
-      }
-    }
-  }
-}
 
 /**
  * Implements 'zenodo_deposit_new_version_created'.
@@ -3937,5 +3751,26 @@ function tpps_file_removed($file) {
   if ($file) {
     $params = ['@file' => print_r($file, 1)];
     watchdog('tpps', 'Removed file: <pre>@file</pre>', $params);
+  }
+}
+
+/**
+ * Implements alter-hook 'rest_api_response_hash_generation'.
+ *
+ * @param array $context
+ *   Response meta data for hash generation.
+ *   See RestApiResponse::generateHash().
+ */
+function tpps_rest_api_response_hash_generation_alter(array &$context) {
+  $method = 'alterResponseHashGeneration';
+  $list = array_merge(
+    PublicationDOI::getApiList(),
+    PublicationDOI::getSERPList()
+  );
+  foreach ($list as $class_name) {
+    if (!method_exists($class_name, $method)) {
+      continue;
+    }
+    $context = call_user_func_array([$class_name, $method], [$context]);
   }
 }

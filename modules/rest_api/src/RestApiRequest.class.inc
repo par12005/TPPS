@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains 'RestAPIRequest' class.
+ * Contains 'RestApiRequest' class.
  *
  * Request has 'payload'.
  * Response has 'body'.
@@ -14,15 +14,15 @@
  * To avoid request caching make URL unique (add unique param like 'z=' . time()).
  *
  * To get db table fields:
- *   $fields = array_keys(RestAPIRequest::getSchema()['fields']);
+ *   $fields = array_keys(RestApiRequest::getSchema()['fields']);
  *
- * @package tpps
+ * @package rest_api
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class RestAPIRequest {
+class RestApiRequest {
 
   // Name of the DB table which stores requests.
-  const TABLE = 'tpps_rest_api_request';
+  const TABLE = 'rest_api_request';
 
   /**
    * Checks if record already exists in DB.
@@ -59,15 +59,15 @@ class RestAPIRequest {
   }
 
   /**
-   * Saves RestAPI Request.
+   * Saves RestApi Request.
    *
-   * Called from class 'RestAPI'.
-   * Class 'RestAPI' decides if response from DB will be used.
+   * Called from class 'RestApi'.
+   * Class 'RestApi' decides if response from DB will be used.
    * This method just saves any request.
    *
    * @param array $context
    *   Request's context.
-   *   Keys: see RestAPI->doRequest().
+   *   Keys: see RestApi->doRequest().
    *   'tag' is optional.
    *
    * @return mixed
@@ -78,17 +78,24 @@ class RestAPIRequest {
    *   When $context['request_id'] is empty.
    */
   public static function save(array $context = []) {
+    if ($debug_mode ?? 0) {
+      $params = [
+        '@dump' => var_export($context, 1),
+        '@function' => __METHOD__,
+      ];
+      watchdog('rest_api', '@function: <pre>@dump</pre>', $params);
+    }
     if (empty($context['hash'])) {
       throw new Exception("Empty 'hash'.");
     }
     if ($request_id = static::getRequestId($context['hash'])) {
-      watchdog('tpps_rest_api', 'Record exists: @request_id.',
+      watchdog('rest_api', 'Record exists: @request_id.',
         ['@request_id' => $request_id]
       );
       return $request_id;
     }
     else {
-      $field_list = array_keys(RestAPIRequest::getSchema()['fields']);
+      $field_list = array_keys(RestApiRequest::getSchema()['fields']);
       foreach ($field_list as $field) {
         if ($field == 'request_id') {
           continue;
@@ -118,10 +125,10 @@ class RestAPIRequest {
    * 2. Not empty body.
    * 3. Latest response (no 'created' date).
    *
-   * To load invalid responses use RestAPIResponse::load() method.
+   * To load invalid responses use RestApiResponse::load() method.
    *
    * Usage example:
-   * extract(RestAPIResponse::loadValid($request_id));
+   * extract(RestApiResponse::loadValid($request_id));
    *
    * @param string $request_id
    *   Unique request identificator.
@@ -158,7 +165,7 @@ class RestAPIRequest {
   /**
    * Gets db table schema.
    *
-   * Table to log requests made by 'RestAPI' class.
+   * Table to log requests made by 'RestApi' class.
    *
    * @return array
    *   Returns array for hook_schema().
@@ -188,22 +195,26 @@ class RestAPIRequest {
           'type' => 'varchar',
           'size' => 'normal',
           'not null' => TRUE,
+          // Enough for 'DELETE'.
+          'length' => 10,
         ],
         'url' => [
           'description' => 'API Endpoint.',
           'type' => 'varchar',
           'size' => 'normal',
           'not null' => TRUE,
+          // Common for URLs.
+          'length' => 2048,
         ],
         'payload' => [
           'description' => "POST request's payload. Format: JSON-string.",
-          'type' => 'varchar',
+          'type' => 'text',
           'size' => 'normal',
           'not null' => TRUE,
         ],
         'header' => [
           'description' => 'HTTP Headers. Format: JSON-string.',
-          'type' => 'varchar',
+          'type' => 'text',
           'size' => 'normal',
           'not null' => TRUE,
         ],
@@ -212,12 +223,15 @@ class RestAPIRequest {
           'type' => 'varchar',
           'size' => 'normal',
           'not null' => TRUE,
+          // MD5 hash is always 32 characters.
+          'length' => 32,
         ],
         'tag' => [
           'description' => 'Request description for humans.',
           'type' => 'varchar',
           'size' => 'normal',
           'not null' => FALSE,
+          'length' => 255,
         ],
       ],
       'unique keys' => ['hash' => ['hash']],

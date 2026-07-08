@@ -863,7 +863,7 @@ class PublicationDOI extends DOI {
    * Gets combined publication data from all APIs and SERP providers.
    *
    * If data from API is missing it will be requested and stored in DB.
-   * If data from SERP provider is missing but RestAPI has saved data it will
+   * If data from SERP provider is missing but RestApi has saved data it will
    * be reused to parse SERP.
    *
    * @param string $doi

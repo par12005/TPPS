@@ -11,7 +11,7 @@
 /**
  * Manages Http Codes.
  *
- * @package tpps
+ * @package rest_api
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
 class HttpCode {
