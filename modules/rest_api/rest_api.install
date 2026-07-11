@@ -19,8 +19,8 @@ function rest_api_schema() {
       require_once $class_file;
     }
   }
-  $schema[RestApiRequest::TABLE] = RestApiRequest::getSchema();
   $schema[RestApiResponse::TABLE] = RestApiResponse::getSchema();
+  $schema[RestApiRequest::TABLE] = RestApiRequest::getSchema();
   return $schema;
 }
 
