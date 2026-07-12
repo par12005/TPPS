@@ -23,9 +23,14 @@ function gemini_settings_form(array $form, array &$form_state) {
     '#title' => t('Model'),
     '#default_value' => variable_get('gemini_model'),
     '#options' => gemini_get_models(),
-    '#description' => t('Last update 01.03.2026')
-      . '<br />'
-      . l(t('Rate limits'), 'https://ai.google.dev/gemini-api/docs/rate-limits'),
+    '#description' => t('Last update: 12.07.2026') . theme('item_list', [
+      'items' => [
+        l(t('Rate limits'),
+          'https://ai.google.dev/gemini-api/docs/rate-limits'),
+        l(t('Model deprication dates'),
+          'https://ai.google.dev/gemini-api/docs/deprecations'),
+      ],
+    ]),
   ];
   $form['model']['gemini_model_info'] = [
     '#type' => 'fieldset',
@@ -72,27 +77,28 @@ function gemini_settings_form(array $form, array &$form_state) {
  * @TODO Minor. Move to 'Gemini' class.
  */
 function gemini_get_models() {
+  // 12.07.2026
+  // https://ai.google.dev/gemini-api/docs/deprecations
   return [
     'Gemini 3' => [
-      'gemini-3.1-pro-preview' => t('3.1 Pro Preview [19.02.2026-No shutdown date]'),
-      'gemini-3-pro-image-preview' => t('3 Pro Image Preview [20.11.2025-No shutdown date]'),
-      'gemini-3-flash-preview' => t('3 Flash Preview [17.12.2025-No shutdown date]'),
-      'gemini-3-pro-preview' => t('3 Pro Preview[18.11.2025-09.03.2026]'),
+      'gemini-3.5-flash' => t('[May 19, 2026 - No shutdown date announced] 3.5-flash'),
+      'gemini-3.1-flash-image' => t('[May 28, 2026 - No shutdown date announced] 3.1-flash-image'),
+      'gemini-3-pro-image' => t('[May 28, 2026 - No shutdown date announced] 3-pro-image'),
+      'gemini-3.1-flash-lite' => t('[May 7, 2026 - May 7, 2027] 3.1-flash-lite'),
     ],
-    'Gemini 2.5' => [
-      // Pro.
-      'gemini-2.5-pro' => t('2.5 Pro [17.06.2025-17.06.2026]'),
-      // Flash.
-      'gemini-2.5-flash' => t('2.5 Flash [17.06.2025-17.06.2026]'),
+    'Gemini 3 Preview' => [
+      'gemini-3.1-flash-image-preview' => t('[February 26, 2026 - June 25, 2026] 3.1-flash-image preview'),
+      'gemini-3.1-pro-preview' => t('[February 19, 2026 - No shutdown date announced] 3.1-pro-preview'),
+      'gemini-3-pro-image-preview' => t('[November 20, 2025 - June 25, 2026] 3-pro-image-preview'),
+      'gemini-3-flash-preview' => t('[December 17, 2025 - No shutdown date announced] 3-flash-preview'),
+    ],
+    'Gemini 2.5 Pro' => [
+      'gemini-2.5-pro' => t('[June 17, 2025 - October 16, 2026] 2.5 Pro'),
+    ],
+    'Gemini 2.5 Flash' => [
+      'gemini-2.5-flash' => t('2.5 Flash [17.06.2025-16.10.2026]'),
       'gemini-2.5-flash-image' => t('2.5 Flash Image [02.10.2025-02.10.2026]'),
-      'gemini-2.5-flash-lite' => t('2.5 Flash Lite [July 22.07.2025-22.07.2026]'),
-      'gemini-2.5-flash-lite-preview-09-25' => t('2.5 Flash Lite Preview 09-25 [25.09.2025 - No shutdown date]'),
-    ],
-    'Gemini 2' => [
-      'gemini-2.0-flash' => t('2.0 Flash [05.02.2025-01.06.2026]'),
-      'gemini-2.0-flash-001' => t('2.0 Flash 001 [05.02.2025-01.06.2026]'),
-      'gemini-2.0-flash-lite' => t('2.0 Flash Lite [25.02.2025-01.06.2026]'),
-      'gemini-2.0-flash-lite-001' => t('2.0 Flash Lite 001 [25.02.2025-01.06.2026]'),
+      'gemini-2.5-flash-lite' => t('2.5 Flash Lite [July 22.07.2025-16.10.2026]'),
     ],
   ];
 }
