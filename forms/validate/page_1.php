@@ -231,7 +231,7 @@ function tpps_validate_doi_field($type, array &$form_state, array &$form) {
   $human_name = check_plain(ucfirst($type));
   $form_values = &$form_state['values'];
 
-  $first_doi = DOI::searchFirst($doi);
+  $first_doi = Doi::searchFirst($doi);
   if ($first_doi) {
     if ($doi != $first_doi) {
       $form_state['values']['publication'][$type . '_doi'] = $first_doi;

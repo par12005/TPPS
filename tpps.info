@@ -38,7 +38,7 @@ files[] = src/CVTerm.class.inc
 files[] = src/CorsProxy.class.inc
 
 ; DOI
-files[] = src/doi/DOI.class.inc
+files[] = src/doi/Doi.class.inc
 files[] = src/doi/PublicationDoi.class.inc
 ; DOI / SERP
 files[] = src/doi/serp/DoiSerp.class.inc
