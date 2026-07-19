@@ -39,7 +39,7 @@ files[] = src/CorsProxy.class.inc
 
 ; DOI
 files[] = src/doi/DOI.class.inc
-files[] = src/doi/PublicationDOI.class.inc
+files[] = src/doi/PublicationDoi.class.inc
 ; DOI / SERP
 files[] = src/doi/serp/DoiSerp.class.inc
 files[] = src/doi/serp/PubMed.class.inc

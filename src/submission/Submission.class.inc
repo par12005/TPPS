@@ -2634,7 +2634,7 @@ class Submission {
    *   Returns value of the field or NULL.
    *   Example: "10.5281/zenodo.199793".
    */
-  public function getPublicationDOI() {
+  public function getPublicationDoi() {
     switch ($this->getFormVersion()) {
       case 2:
         return $this->get(['saved_values', TPPS_PAGE_1, 'publication_doi']);

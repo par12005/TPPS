@@ -74,7 +74,7 @@ class PubMed extends DoiSerp {
   /**
    * Scraps SERP to get publication info.
    *
-   * Publication data will be saved using PublicationDOI::save().
+   * Publication data will be saved using PublicationDoi::save().
    *
    * Execution time:
    * PubMed custom parser: 0.3-0.4 msec.
@@ -109,10 +109,10 @@ class PubMed extends DoiSerp {
       $doi = $this->doi;
 
       if (
-        PublicationDOI::isExists($doi, $source)) {
+        PublicationDoi::isExists($doi, $source)) {
         // Record already exists.
         // @TODO Imlement ability to force parsing (especially for custom parsing (not AI).
-        return PublicationDOI::load($doi, $source);
+        return PublicationDoi::load($doi, $source);
       }
       else {
         $string = $this->serp;

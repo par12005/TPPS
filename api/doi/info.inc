@@ -26,7 +26,7 @@ function tpps_api_doi_info($doi1) {
 
   if (empty($doi2)) {
     // DOI Prefix only.
-    $list = db_select(PublicationDOI::TABLE, 't')
+    $list = db_select(PublicationDoi::TABLE, 't')
       ->fields('t', ['doi'])
       ->condition('doi', $doi1 . '/%', 'ILIKE')
       ->groupBy('source')
@@ -37,9 +37,9 @@ function tpps_api_doi_info($doi1) {
   }
   else {
     // It's a full DOI.
-    $api_list = PublicationDOI::getApiList();
-    $serp_list = PublicationDOI::getSerpList();
+    $api_list = PublicationDoi::getApiList();
+    $serp_list = PublicationDoi::getSerpList();
     $source = $api_list[$source] ?? $serp_list[$source] ?? $source;
-    return PublicationDOI::load($doi1 . '/' . $doi2, $source);
+    return PublicationDoi::load($doi1 . '/' . $doi2, $source);
   }
 }

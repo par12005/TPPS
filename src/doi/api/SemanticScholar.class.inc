@@ -85,7 +85,7 @@ class SemanticScholar extends DoiApi {
    *   Digital Object Identifier (DOI).
    */
   public static function insert($doi) {
-    if (PublicationDOI::isExists($doi, static::class)) {
+    if (PublicationDoi::isExists($doi, static::class)) {
       return;
     }
 
@@ -122,7 +122,7 @@ class SemanticScholar extends DoiApi {
         'abstract' => trim($response['abstract'] ?? ''),
       ];
     }
-    PublicationDOI::save($data);
+    PublicationDoi::save($data);
   }
 
   /**

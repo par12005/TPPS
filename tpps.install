@@ -20,8 +20,8 @@ function tpps_get_variable_list() {
     'tpps_doi_lookup_show_report_links' => FALSE,
     'tpps_doi_lookup_show_suggestions' => TRUE,
     'tpps_doi_lookup_allowed_api_list' => array_combine(
-      PublicationDOI::getApiList(),
-      PublicationDOI::getApiList()
+      PublicationDoi::getApiList(),
+      PublicationDoi::getApiList()
     ),
     // DOI Lookup / Google Scholar.
     'tpps_doi_google_scholar_scrape_allowed' => TRUE,
@@ -942,7 +942,7 @@ function tpps_schema() {
     'doi/serp/GoogleScholar',
     'doi/serp/DataDryad',
 
-    'doi/PublicationDOI',
+    'doi/PublicationDoi',
     'submission/SubmissionCache',
   ];
   foreach ($class_list as $path) {
@@ -955,7 +955,7 @@ function tpps_schema() {
   $schema[DataDryad::TABLE] = DataDryad::getSchema();
   $schema[PubMed::TABLE] = PubMed::getSchema();
 
-  $schema[PublicationDOI::TABLE] = PublicationDOI::getSchema();
+  $schema[PublicationDoi::TABLE] = PublicationDoi::getSchema();
   // Add custom cache table to have ability to clear only module's data.
   $schema[SubmissionCache::CACHE_BIN] = SubmissionCache::getSchema();
   $schema[TPPS_CACHE_BIN] = drupal_get_schema_unprocessed('system', 'cache');
@@ -2612,7 +2612,7 @@ function tpps_update_7134() {
   variable_set('tpps_doi_lookup_show_report_links', FALSE);
   variable_set('tpps_doi_lookup_show_suggestions', TRUE);
   variable_set('tpps_doi_lookup_allowed_api_list',
-    array_combine(PublicationDOI::getApiList(), PublicationDOI::getApiList())
+    array_combine(PublicationDoi::getApiList(), PublicationDoi::getApiList())
   );
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // DOI Lookup / SERP / Google Scholar.
@@ -2685,7 +2685,7 @@ function tpps_update_7134() {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Create new db table.
   $table_list = [
-    PublicationDOI::TABLE,
+    PublicationDoi::TABLE,
     GoogleScholar::TABLE,
     DataDryad::TABLE,
     PubMed::TABLE,

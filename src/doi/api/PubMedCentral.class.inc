@@ -44,7 +44,7 @@ class PubMedCentral extends DoiApi {
    *   Digital Object Identifier (DOI).
    */
   public static function insert($doi) {
-    if (PublicationDOI::isExists($doi, static::class)) {
+    if (PublicationDoi::isExists($doi, static::class)) {
       return;
     }
     // Note: $response contains XML string.
@@ -58,10 +58,10 @@ class PubMedCentral extends DoiApi {
       $data['doi'] = $doi;
       $data['source'] = static::class;
       // @TODO Check response code.
-      PublicationDOI::save($data);
+      PublicationDoi::save($data);
     }
     elseif (is_null($xml)) {
-      // PublicationDOI::save(['doi' => $doi, 'source' => static::class]);
+      // PublicationDoi::save(['doi' => $doi, 'source' => static::class]);
     }
     else {
       // Empty or error.
@@ -137,8 +137,8 @@ class PubMedCentral extends DoiApi {
     // No Id could be caused invalid DOI or missing record at remote API server.
     if (is_null($pmcid)) {
       // Create an empty record in DB to avoid multiple requests.
-      if (!PublicationDOI::isExists($doi, static::class)) {
-        PublicationDOI::save(['doi' => $doi, 'source' => static::class]);
+      if (!PublicationDoi::isExists($doi, static::class)) {
+        PublicationDoi::save(['doi' => $doi, 'source' => static::class]);
       }
       return NULL;
     }

@@ -37,7 +37,7 @@ function tpps_report_doi_submission_all($reset = FALSE) {
       . theme('submission_pages', [
         'accession' => $accession,
       ]),
-      PublicationDOI::print($publication_doi),
+      PublicationDoi::print($publication_doi),
       theme('doi_link', ['doi' => $dataset_doi]),
     ];
   }

@@ -98,7 +98,7 @@ abstract class DoiApi {
    *   When record for given $data['doi'] already exists.
    */
   public static function save(array $data = []) {
-    return PublicationDOI::save($data);
+    return PublicationDoi::save($data);
   }
 
   /**
@@ -108,7 +108,7 @@ abstract class DoiApi {
    *   Digital Object Identifier (DOI).
    */
   public static function load($doi) {
-    return PublicationDOI::load($doi, static::class);
+    return PublicationDoi::load($doi, static::class);
   }
 
   /**

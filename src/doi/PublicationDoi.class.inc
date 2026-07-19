@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains static 'PublicationDOI' class.
+ * Contains static 'PublicationDoi' class.
  */
 
 /**
@@ -14,7 +14,7 @@
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class PublicationDOI extends DOI {
+class PublicationDoi extends DOI {
 
   // Name of the DB table where stored DOI publication information.
   const TABLE = 'tpps_publication_doi';
@@ -60,7 +60,7 @@ class PublicationDOI extends DOI {
    *   Returns TRUE if record is missing and FALSE otherwise.
    */
   public static function isMissing($doi, $source) {
-    return !PublicationDOI::isExists($doi, $source);
+    return !PublicationDoi::isExists($doi, $source);
   }
 
   /**
@@ -111,7 +111,7 @@ class PublicationDOI extends DOI {
     if (empty($data) || empty($data['doi']) || empty($data['source'])) {
       return FALSE;
     }
-    $is_record_exists = PublicationDOI::isExists($data['doi'], $data['source']);
+    $is_record_exists = PublicationDoi::isExists($data['doi'], $data['source']);
     if ($is_record_exists) {
       $message = 'Record already exists. DOI: @doi, Source: @source';
       $params = [
@@ -156,8 +156,8 @@ class PublicationDOI extends DOI {
   public static function replace(array $data) {
     if (!empty($data['doi']) && !empty($data['source'])) {
       // @todo Minor. Check if $fields is better then existing data in DB.
-      PublicationDOI::remove($data['doi'], $data['source']);
-      PublicationDOI::save($data);
+      PublicationDoi::remove($data['doi'], $data['source']);
+      PublicationDoi::save($data);
       return TRUE;
     }
     else {
@@ -830,8 +830,8 @@ class PublicationDOI extends DOI {
     ];
 
     // @todo Cache data.
-    $all_doi_list = PublicationDOI::getList();
-    $parsed_doi_list = db_select(PublicationDOI::TABLE, 't')
+    $all_doi_list = PublicationDoi::getList();
+    $parsed_doi_list = db_select(PublicationDoi::TABLE, 't')
       ->fields('t', ['doi'])
       ->groupBy('doi')
       ->execute()
@@ -863,8 +863,8 @@ class PublicationDOI extends DOI {
   public static function getCombined($doi, $source = NULL) {
     // When TRUE debug watchdog messages will be created.
     $debug_mode = FALSE;
-    $data = PublicationDOI::load($doi);
-    if (!empty($data) && PublicationDOI::isComplete($data)) {
+    $data = PublicationDoi::load($doi);
+    if (!empty($data) && PublicationDoi::isComplete($data)) {
       // We already have all the data.
       return $data;
     }
@@ -895,7 +895,7 @@ class PublicationDOI extends DOI {
           $class_name::$method_name($doi);
         }
       }
-      $data = PublicationDOI::load($doi, NULL, TRUE);
+      $data = PublicationDoi::load($doi, NULL, TRUE);
     }
 
     return $data;
@@ -952,7 +952,7 @@ class PublicationDOI extends DOI {
    * @TODO Ability to force: ignore allowed API list.
    */
   public static function getMissingApiList($doi) {
-    $data = PublicationDOI::load($doi, 'all');
+    $data = PublicationDoi::load($doi, 'all');
     //dpm($data);
 
     return;

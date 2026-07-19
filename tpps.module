@@ -3779,8 +3779,8 @@ function tpps_file_removed($file) {
 function tpps_rest_api_response_hash_generation_alter(array &$context) {
   $method = 'alterResponseHashGeneration';
   $list = array_merge(
-    PublicationDOI::getApiList(),
-    PublicationDOI::getSerpList()
+    PublicationDoi::getApiList(),
+    PublicationDoi::getSerpList()
   );
   foreach ($list as $class_name) {
     if (!method_exists($class_name, $method)) {

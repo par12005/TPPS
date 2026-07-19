@@ -41,14 +41,14 @@ class TppsAjax {
       $response['doi'] = $doi = $payload['doi'];
       $response['source'] = $source = $payload['source'] ?? NULL;
       try {
-        $publication_data = PublicationDOI::getCombined($doi);
+        $publication_data = PublicationDoi::getCombined($doi);
       }
       catch (Exception $e) {
         // In case of errors just load existing data.
-        $publication_data = PublicationDOI::load($doi);
+        $publication_data = PublicationDoi::load($doi);
       }
       $response['publication_data'] = $publication_data;
-      $response['is_complete'] = PublicationDOI::isComplete($publication_data);
+      $response['is_complete'] = PublicationDoi::isComplete($publication_data);
       $response['success'] = TRUE;
     }
     return $response;
@@ -95,12 +95,12 @@ class TppsAjax {
       ) {
         // Save the SERP page source code.
         $provider->save();
-        // Parsed data will be stored into PublicationDOI::TABLE.
+        // Parsed data will be stored into PublicationDoi::TABLE.
         $provider->parse();
 
         $response['doi'] = $doi;
         $response['provider_class_name'] = $payload['provider_class_name'];
-        $response['publication_data'] = PublicationDOI::load($doi, NULL, TRUE);
+        $response['publication_data'] = PublicationDoi::load($doi, NULL, TRUE);
       }
       else {
         $response['errors'][] = t('Proxy error.');

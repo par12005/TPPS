@@ -298,7 +298,7 @@ class SubmissionCache {
         'title' => TppsArray::get($page1_values,
           ['publication', 'title']
         ),
-        'publication_doi' => $submission->getPublicationDOI(),
+        'publication_doi' => $submission->getPublicationDoi(),
         'dataset_doi' => $submission->getDatasetDOI(),
       ],
       'submitter' => [

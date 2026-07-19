@@ -43,7 +43,7 @@
           $(doi_lookup.dump_container).html('').hide();
 
           // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-          // Request publication data from PublicationDOI::TABLE.
+          // Request publication data from PublicationDoi::TABLE.
           console.log('Request data from backend.');
           $.ajax({
             url: doi_lookup.ajax_get_publication_data_path,

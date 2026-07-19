@@ -30,25 +30,25 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
       ],
     ]);
   }
-  $options = PublicationDOI::buildOptions();
+  $options = PublicationDoi::buildOptions();
   $module_exists = module_exists('select_or_other');
   if (!$module_exists) {
     // Build list of suggestions.
     if (variable_get('tpps_doi_lookup_show_suggestions')) {
       $params = ['attributes' => ['class' => ['tpps-suggestion']]];
       // Build list of other DOIs.
-      foreach ($options[PublicationDOI::PD_KEY] as $value) {
+      foreach ($options[PublicationDoi::PD_KEY] as $value) {
         $suggestions[] = l($value, '', $params);
       }
-      foreach ($options[PublicationDOI::NOPD_KEY] as $value) {
+      foreach ($options[PublicationDoi::NOPD_KEY] as $value) {
         // Not yet processed.
         $other_doi_list[] = l($value, '', $params);
       }
       $description .= theme('item_list', [
-        'title' => t(PublicationDOI::PD_KEY),
+        'title' => t(PublicationDoi::PD_KEY),
         'items' => $suggestions,
       ]) . theme('item_list', [
-        'title' => t(PublicationDOI::NOPD_KEY),
+        'title' => t(PublicationDoi::NOPD_KEY),
         'items' => $other_doi_list,
       ]);
     }
@@ -110,7 +110,7 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
     $provider = new $class_name($doi);
     $serp_providers[$class_name] = $provider;
     // Publication data per provider.
-    if (!empty($publication_data = PublicationDOI::load($doi, $class_name))) {
+    if (!empty($publication_data = PublicationDoi::load($doi, $class_name))) {
       $js_settings['doi_lookup']['publication_data'][$class_name][$doi]
         = $publication_data;
     }

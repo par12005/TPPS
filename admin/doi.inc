@@ -91,8 +91,8 @@ function tpps_doi_settings_form(array $form, array &$form_state) {
     '#default_value' => variable_get('tpps_doi_lookup_allowed_api_list'),
     // Note:: class name => class name.
     '#options' => array_combine(
-      PublicationDOI::getApiList(),
-      PublicationDOI::getApiList()
+      PublicationDoi::getApiList(),
+      PublicationDoi::getApiList()
     ),
     '#description' => t("Some services doesn't have records for DOI, some "
       . "have not full data so more APIs is better but it will take more time. "

@@ -10,7 +10,7 @@
  * 2. This class DO NOT requests SERP directly because those requests will be
  * blocked by Google Scholar.
  * 3. Manages delay between requests.
- * 4. Manages parsing. Data will be stored in PublicationDOI::TABLE table.
+ * 4. Manages parsing. Data will be stored in PublicationDoi::TABLE table.
  *
  * Workaround.
  *
@@ -97,7 +97,7 @@ class GoogleScholar extends DoiSerp {
   /**
    * Scraps SERP to get publication info.
    *
-   * Publication data will be saved using PublicationDOI::save().
+   * Publication data will be saved using PublicationDoi::save().
    *
    * Execution time:
    * Custom parser: 0.30-0.40 msec.
@@ -130,10 +130,10 @@ class GoogleScholar extends DoiSerp {
       }
       $source = static::class;
       $doi = $this->doi;
-      if (PublicationDOI::isExists($doi, $source)) {
+      if (PublicationDoi::isExists($doi, $source)) {
         // Record already exists.
         // @TODO Imlement ability to force parsing (especially for custom parsing (not AI).
-        return PublicationDOI::load($doi, $source);
+        return PublicationDoi::load($doi, $source);
       }
 
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

@@ -21,7 +21,7 @@ function tpps_report_doi_publication_data_all() {
  */
 function tpps_report_doi_publication_data_all_form(array $form, array &$form_state) {
   $report = [];
-  $result = db_select(PublicationDOI::TABLE, 't')
+  $result = db_select(PublicationDoi::TABLE, 't')
     ->fields('t', [])
     ->execute()
     ->fetchAll(PDO::FETCH_ASSOC);

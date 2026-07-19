@@ -64,7 +64,7 @@ class CrossRef extends DoiApi {
    *   Digital Object Identifier (DOI).
    */
   public static function insert($doi) {
-    if (PublicationDOI::isExists($doi, static::class)) {
+    if (PublicationDoi::isExists($doi, static::class)) {
       return;
     }
 
@@ -106,7 +106,7 @@ class CrossRef extends DoiApi {
         'abstract' => trim($response['message']['abstract'] ?? ''),
       ];
     }
-    PublicationDOI::save($data);
+    PublicationDoi::save($data);
   }
 
   /**

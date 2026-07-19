@@ -343,7 +343,7 @@ abstract class DoiSerp {
   /**
    * Scraps SERP to get publication info.
    *
-   * Publication data will be saved using PublicationDOI::save().
+   * Publication data will be saved using PublicationDoi::save().
    * Execution time: 7874 msec.
    *
    * @return array
@@ -367,10 +367,10 @@ abstract class DoiSerp {
     $source = static::class;
     $doi = $this->doi;
 
-    if (PublicationDOI::isExists($doi, $source)) {
+    if (PublicationDoi::isExists($doi, $source)) {
       // Record already exists.
       // @TODO Imlement ability to force parsing (especially for custom parsing (not AI).
-      return PublicationDOI::load($doi, $source);
+      return PublicationDoi::load($doi, $source);
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Gemini AI Parser.
@@ -529,21 +529,21 @@ abstract class DoiSerp {
   }
 
   /**
-   * Saves already parsed data into PublicationDOI::TABLE.
+   * Saves already parsed data into PublicationDoi::TABLE.
    *
    * @param array $fields
-   *   Parsed fields. See columns of the PublicationDOI::TABLE.
+   *   Parsed fields. See columns of the PublicationDoi::TABLE.
    */
   public function saveParsed(array $fields) {
     // Store result (if possible).
-    if (!class_exists('PublicationDOI', $autoload = TRUE)) {
-      watchdog('tpps_google_scholar', "Class PublicationDOI not found", [], 'error');
+    if (!class_exists('PublicationDoi', $autoload = TRUE)) {
+      watchdog('tpps_google_scholar', "Class PublicationDoi not found", [], 'error');
       return;
     }
 
-    if (PublicationDOI::isMissing($fields['doi'], $fields['source'])) {
+    if (PublicationDoi::isMissing($fields['doi'], $fields['source'])) {
       // NO record for doi-source found.
-      $result = PublicationDOI::save($fields);
+      $result = PublicationDoi::save($fields);
       if ($result) {
         // Successfully saved into db.
       }
@@ -557,13 +557,13 @@ abstract class DoiSerp {
     }
     else {
       // Record for doi-source exists.
-      $db_data = PublicationDOI::load($fields['doi'], $fields['source']);
-      if (PublicationDOI::isComplete($db_data)) {
+      $db_data = PublicationDoi::load($fields['doi'], $fields['source']);
+      if (PublicationDoi::isComplete($db_data)) {
         // Publication Data is complete. No need to update it.
       }
       else {
         // @todo Minor. Compare recently obtained data and data from DB.
-        PublicationDOI::replace($fields);
+        PublicationDoi::replace($fields);
       }
     }
   }

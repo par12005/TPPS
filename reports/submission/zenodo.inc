@@ -44,7 +44,7 @@ function tpps_report_submission_zenodo($reset = FALSE) {
       'conceptrecid' => theme('zenodo_concept_record_link',
         ['conceptrecid' => $conceptrecid, 'host' => $host]
       ),
-      'publication_doi' => PublicationDOI::print(
+      'publication_doi' => PublicationDoi::print(
         $item['publication']['publication_doi'] ?? ''
       ),
       'dataset_doi' => $item['publication']['dataset_doi'] ?? '',
