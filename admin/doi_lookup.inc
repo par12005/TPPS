@@ -11,7 +11,7 @@
 /**
  * DOI Lookup Settings Form.
  */
-function tpps_doi_settings_form(array $form, array &$form_state) {
+function tpps_doi_lookup_settings_form(array $form, array &$form_state) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // CORS Proxy.
   $form['cors_proxy'] = [

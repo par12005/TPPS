@@ -2367,14 +2367,14 @@ function tpps_menu_add_settings_pages(array &$items = []) {
   ];
 
   // DOI Lookup.
-  $items['admin/config/tpps/doi'] = [
-    'title' => 'DOI',
-    'description' => 'DOI Settings',
+  $items['admin/config/tpps/doi_lookup'] = [
+    'title' => 'DOI Lookup',
+    'description' => 'DOI Lookup Settings',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_doi_settings_form'],
+    'page arguments' => ['tpps_doi_lookup_settings_form'],
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/doi.inc',
+    'file' => 'admin/doi_lookup.inc',
   ];
 }
 
