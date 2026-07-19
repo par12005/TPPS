@@ -34,7 +34,7 @@ files[] = src/NextFlowManager.class.inc
 ; Misc
 files[] = src/Report.class.inc
 files[] = src/FormState.class.inc
-files[] = src/CVTerm.class.inc
+files[] = src/CvTerm.class.inc
 files[] = src/CorsProxy.class.inc
 
 ; DOI

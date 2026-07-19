@@ -434,7 +434,7 @@ function tpps_ajax_get_phenotype_details_tab(array $data) {
     PhenotypeData::DATA_TYPE_YEAR
   )) {
     $query->join('chado.phenotypeprop', 'pp', 'p.phenotype_id = pp.phenotype_id');
-    $query->condition('pp.type_id', CVTerm::getId('year'));
+    $query->condition('pp.type_id', CvTerm::getId('year'));
     $query->addField('pp', 'value', 'year');
   }
 

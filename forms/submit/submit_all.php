@@ -1624,7 +1624,7 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
   tpps_submission_load($shared_state['accession'])
     ->addTag('Phenotype');
 
-  $year_cvterm_id = CVTerm::getId('year');
+  $year_cvterm_id = CvTerm::getId('year');
   if (empty($year_cvterm_id)) {
     tpps_log(t("CV Term Id for phenotype's 'Year' column in data file wasn't set."
       . "Create cvterm or manually set it's value at @url."),

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Class 'CVTerm' which manages CVTerms.
+ * Class 'CvTerm' which manages CVTerms.
  */
 
 /**
@@ -11,7 +11,7 @@
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class CVTerm {
+class CvTerm {
 
   /**
    * Gets CVTerm Id for given name.

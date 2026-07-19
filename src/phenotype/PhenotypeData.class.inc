@@ -8,7 +8,7 @@
  * (PhenotypeManual class) or using file (PhenotypeMeta class).
  *
  * Values of column 'year' will be stored in table 'chado.phenotypeprop'.
- * See CVTerm::getId('year') for more details.
+ * See CvTerm::getId('year') for more details.
  */
 
 /**
