@@ -489,7 +489,7 @@ function hook_zenodo_deposit_before_create(array $data) {
 /**
  * Implements 'submission_dataset_doi_updated'.
  *
- * Called from Submission::updateDatasetDOI().
+ * Called from Submission::updateDatasetDoi().
  *
  * @param array $data
  *   Context data related to the event. Keys are:

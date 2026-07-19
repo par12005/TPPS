@@ -3148,7 +3148,7 @@ function tpps_zenodo_deposit_deleted(array $data) {
     drupal_set_message($message);
     if ($deposition['id'] = $submission->getZenodoDepositId()) {
       // Unset exsisting Dataset DOI value.
-      $submission->updateDatasetDOI(NULL);
+      $submission->updateDatasetDoi(NULL);
       // WARNING: Be sure to save $submission.
       $submission->setZenodoConceptRecordId($conceptrecid, $save_on_change = FALSE);
       $submission->setZenodoDepositId($new_deposit_id, $save_on_change = FALSE);
@@ -3173,7 +3173,7 @@ function tpps_zenodo_deposit_before_create(array $data) {
     $message = t("Submission '@accession' wasn't found.", ['@accession' => $accession]);
     throw new Exception($message, 1001);
   }
-  $dataset_doi = $submission->getDatasetDOI();
+  $dataset_doi = $submission->getDatasetDoi();
   // Check if Dataset DOI is empty and it could be overwritten.
   if (empty($dataset_doi) || variable_get('tpps_zenodo_overwrite_dataset_doi')) {
     return;
@@ -3203,7 +3203,7 @@ function tpps_zenodo_deposit_created(array $data) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Store DOI.
   $dataset_doi = $data['response']['metadata']['prereserve_doi']['doi'] ?? NULL;
-  $submission->updateDatasetDOI($dataset_doi);
+  $submission->updateDatasetDoi($dataset_doi);
   // WARNING: Be sure to save $submission.
   $conceptrecid = $data['response']['conceptrecid'] ?? NULL;
   $submission->setZenodoConceptRecordId($conceptrecid, $save_on_change = FALSE);

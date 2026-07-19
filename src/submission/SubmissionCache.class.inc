@@ -299,7 +299,7 @@ class SubmissionCache {
           ['publication', 'title']
         ),
         'publication_doi' => $submission->getPublicationDoi(),
-        'dataset_doi' => $submission->getDatasetDOI(),
+        'dataset_doi' => $submission->getDatasetDoi(),
       ],
       'submitter' => [
         'uid' => $submission->getSubmitter(),

@@ -2657,7 +2657,7 @@ class Submission {
    *   Returns value of the field or NULL.
    *   Example: "10.5281/zenodo.199793".
    */
-  public function getDatasetDOI() {
+  public function getDatasetDoi() {
     switch ($this->getFormVersion()) {
       case 2:
         $parents = ['saved_values', TPPS_PAGE_1, 'publication', 'dataset_doi'];
@@ -2683,7 +2683,7 @@ class Submission {
    * @return object
    *   Returns curren object to allow chaining methods.
    */
-  public function setDatasetDOI($value, $save_on_change = TRUE) {
+  public function setDatasetDoi($value, $save_on_change = TRUE) {
     $was_updated = FALSE;
     switch ($this->getFormVersion()) {
       case 2:
@@ -2722,16 +2722,16 @@ class Submission {
    *
    * Note: Shared State and State has different parents for this field.
    * Note: Used variable by reference instead of methods
-   * getDatasetDOI()/setDatasetDOI() to speed-up processing.
+   * getDatasetDoi()/setDatasetDoi() to speed-up processing.
    *
    * @param string $dataset_doi
    *   New value of the Dataset DOI field.
    */
-  public function updateDatasetDOI($dataset_doi = NULL) {
+  public function updateDatasetDoi($dataset_doi = NULL) {
     $update_result = [];
 
     // DOI in State.
-    $state_dataset_doi = $this->getDatasetDOI();
+    $state_dataset_doi = $this->getDatasetDoi();
     if (
       // New one.
       (empty($state_dataset_doi) && !is_null($dataset_doi))
@@ -2741,7 +2741,7 @@ class Submission {
       || (!empty($state_dataset_doi) && is_null($dataset_doi))
     ) {
       $update_result['State'] = NULL;
-      $this->setDatasetDOI($dataset_doi);
+      $this->setDatasetDoi($dataset_doi);
     }
 
     if (function_exists('module_invoke_all')) {
