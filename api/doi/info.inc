@@ -38,7 +38,7 @@ function tpps_api_doi_info($doi1) {
   else {
     // It's a full DOI.
     $api_list = PublicationDOI::getApiList();
-    $serp_list = PublicationDOI::getSERPList();
+    $serp_list = PublicationDOI::getSerpList();
     $source = $api_list[$source] ?? $serp_list[$source] ?? $source;
     return PublicationDOI::load($doi1 . '/' . $doi2, $source);
   }

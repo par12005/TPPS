@@ -5,15 +5,6 @@
  * Contains static 'PublicationDOI' class.
  */
 
-
-
-# @TODO Design and implement DOI Publication Data format.
-
-
-
-
-
-
 /**
  * Manages publication DOI information.
  *
@@ -935,15 +926,13 @@ class PublicationDOI extends DOI {
    * @return array
    *   Returns associative array where keys are API machine names
    *   (class's KEY constant) and value is human readable title.
-   *
-   * @TODO Use only class names.
    */
-  public static function getSERPList() {
+  public static function getSerpList() {
     return [
       // $key => $class_name,
       'pubmed' => 'PubMed',
       'google_scholar' => 'GoogleScholar',
-      //'datadryad' => 'DataDryad',
+      // 'datadryad' => 'DataDryad',
     ];
   }
 

@@ -40,7 +40,13 @@ class TppsAjax {
     else {
       $response['doi'] = $doi = $payload['doi'];
       $response['source'] = $source = $payload['source'] ?? NULL;
-      $publication_data = PublicationDOI::getCombined($doi);
+      try {
+        $publication_data = PublicationDOI::getCombined($doi);
+      }
+      catch (Exception $e) {
+        // In case of errors just load existing data.
+        $publication_data = PublicationDOI::load($doi);
+      }
       $response['publication_data'] = $publication_data;
       $response['is_complete'] = PublicationDOI::isComplete($publication_data);
       $response['success'] = TRUE;

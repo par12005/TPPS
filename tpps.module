@@ -3544,14 +3544,16 @@ function tpps_submission_saved($submission) {
  *
  * This function is required because not all 'cid' must be cleared.
  *
+ * @param mixed $list
+ *   Optional.
+ *   List of cache items.
  * @param bool $force
  *   When TRUE then even reports which supports per row update will be created.
- *
- * @TODO Minor. Show message.
  */
 function tpps_cache_clear_all($list = NULL, $force = FALSE) {
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   if ($list == 'all' || (is_array($list) && empty($list))) {
+    watchdog('tpps', 'Cleared all TPPS caches');
     cache_clear_all('*', $cache_bin, TRUE);
   }
   else {
@@ -3560,6 +3562,7 @@ function tpps_cache_clear_all($list = NULL, $force = FALSE) {
       return;
     }
     foreach ($list as $cid) {
+      watchdog('tpps', 'Cleared "@cid" cache.', ['@cid' => $cid]);
       cache_clear_all($cid, $cache_bin);
     }
   }
@@ -3605,7 +3608,8 @@ function tpps_submission_purged($accession) {
  * Note: Downgrade doesn't mean update db records.
  *
  * @param mixed $context
- *   Necessary data. Required keys are: 'to_version', 'from_version', 'accession'.
+ *   Necessary data.
+ *   Required keys are: 'to_version', 'from_version', 'accession'.
  */
 function tpps_submission_version_downgraded($context) {
   if (!variable_get('tpps_submission_version_log_downgrade', FALSE)) {
@@ -3628,7 +3632,8 @@ function tpps_submission_version_downgraded($context) {
  * Note: Upgrade doesn't mean update db records.
  *
  * @param mixed $context
- *   Necessary data. Required keys are: 'to_version', 'from_version', 'accession'.
+ *   Necessary data.
+ *   Required keys are: 'to_version', 'from_version', 'accession'.
  */
 function tpps_submission_version_upgraded($context) {
   if (!variable_get('tpps_submission_version_log_upgrade', FALSE)) {
@@ -3705,12 +3710,16 @@ function tpps_forms() {
  *   Submission Tag Id.
  */
 function tpps_submission_tag_linked($accession, $tag_id) {
-  $message = 'Tag "@tag_name" (#@tag_id) has been added to Submission "@accession".';
-  drupal_set_message(t($message, [
+  $params = [
     '@accession' => $accession,
     '@tag_id' => $tag_id,
     '@tag_name' => SubmissionTag::getName($tag_id),
-  ]));
+  ];
+  $message = t(
+    'Tag "@tag_name" (#@tag_id) has been added to Submission "@accession".',
+    $params
+  );
+  drupal_set_message($message);
 }
 
 /**
@@ -3727,18 +3736,24 @@ function tpps_submission_tag_linked($accession, $tag_id) {
  *   this case require additional processing.
  */
 function tpps_submission_tag_unlinked($accession, $tag_id, $result = 'success') {
-  if ($result == 'success') {
-    $message = 'Tag "@tag_name" (#@tag_id) has been removed from Submission "@accession".';
-  }
-  elseif ($result == 'protected') {
-    $message = 'Tag "@tag_name" (#@tag_id) cannot be removed from Submission "@accession".';
-  }
-
-  drupal_set_message(t($message, [
+  $params = [
     '@accession' => $accession,
     '@tag_id' => $tag_id,
     '@tag_name' => SubmissionTag::getName($tag_id),
-  ]));
+  ];
+  if ($result == 'success') {
+    $message = t(
+      'Tag "@tag_name" (#@tag_id) has been removed from Submission "@accession".',
+      $params
+    );
+  }
+  elseif ($result == 'protected') {
+    $message = t(
+      'Tag "@tag_name" (#@tag_id) cannot be removed from Submission "@accession".',
+      $params
+    );
+  }
+  drupal_set_message($message);
 }
 
 /**
@@ -3765,7 +3780,7 @@ function tpps_rest_api_response_hash_generation_alter(array &$context) {
   $method = 'alterResponseHashGeneration';
   $list = array_merge(
     PublicationDOI::getApiList(),
-    PublicationDOI::getSERPList()
+    PublicationDOI::getSerpList()
   );
   foreach ($list as $class_name) {
     if (!method_exists($class_name, $method)) {
