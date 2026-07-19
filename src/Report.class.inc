@@ -233,6 +233,7 @@ class Report {
     foreach (static::getList() as $name => $item) {
       static::addSubMenuItem($items, [], $name, $item);
     }
+    return $items;
   }
 
   /**
@@ -280,6 +281,17 @@ class Report {
     ];
   }
 
+  /**
+   * Gets menu item path.
+   *
+   * @param string $name
+   *   Item name.
+   * @param array $parents
+   *   List of the menu parents.
+   *
+   * @return string
+   *   Returns path.
+   */
   public static function getMenuPath($name, array $parents = []) {
     if (isset($parents[0])) {
       // @TODO Minor. Convert other reports to use the same filename.

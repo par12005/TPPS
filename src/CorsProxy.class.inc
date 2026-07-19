@@ -50,6 +50,7 @@ class CorsProxy {
     try {
       $response = (new RestApi([
         'url' => static::getUrl() . '/iscorsneeded/',
+        'cache' => FALSE,
       ]))->getContent();
     }
     catch (Exception $e) {
