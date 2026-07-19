@@ -19,7 +19,8 @@ class PublicationDoi extends DOI {
   // Name of the DB table where stored DOI publication information.
   const TABLE = 'tpps_publication_doi';
 
-  // This key used in a list of DOI to separate DOI which was already parsed and has publication data.
+  // This key used in a list of DOI to separate DOI which was already
+  // parsed and has publication data.
   // Used in the dropdown menu and suggestions.
   const PD_KEY = 'Has publication data';
   // Key used to separate DOIs which has no publication data yes.
@@ -312,6 +313,13 @@ class PublicationDoi extends DOI {
         ],
         'abstract' => [
           'description' => 'Publication Abstract.',
+          // varchar/normal: mysql: 64KB, postgresql: 1GB.
+          'type' => 'varchar',
+          'size' => 'normal',
+          'not null' => FALSE,
+        ],
+        'species' => [
+          'description' => 'List of the species.',
           // varchar/normal: mysql: 64KB, postgresql: 1GB.
           'type' => 'varchar',
           'size' => 'normal',
