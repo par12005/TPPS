@@ -31,25 +31,78 @@ class TppsAjax {
    *   Returns response.
    *   Key 'success' will have value TRUE in case of success
    *   and FALSE otherwise.
+   *   Other keys:
+   *   'success' bool
+   *      TRUE if publication data was found and FALSE otherwise.
+   *   'publication_data' array
+   *       DOI Publication data. See PublicationDoi::TABLE.
+   *   'is_complete' bool
+   *      TRUE if there is no empty items in Publication data.
+   *   'doi' string
+   *      DOI.
+   *   'statuses' array
+   *      List of translated status messages.
+   *   'warnings' array
+   *      List of translated warning messages.
+   *   'errors' array
+   *      List of translated error messages.
    */
   public static function getPublicationData(array $payload) {
     $response['success'] = FALSE;
-    if (empty($payload['doi'])) {
+    if (empty($payload)) {
+      $response['errors'][] = t('Empty POST requrest.');
+    }
+    elseif (empty($payload['doi'])) {
       $response['errors'][] = t('Empty DOI.');
     }
     else {
-      $response['doi'] = $doi = $payload['doi'];
-      $response['source'] = $source = $payload['source'] ?? NULL;
-      try {
-        $publication_data = PublicationDoi::getCombined($doi);
+      $response['doi'] = $doi = Doi::searchFirst($payload['doi']);
+      $params = ['!doi_link' => Doi::print($doi)];
+      if (!Doi::isValid($doi)) {
+        $message = 'DOI !doi_link has invalid format. Example DOI: 10.NNNN/dryad.NNN';
+        $response['errors'][] = t($message, $params);
       }
-      catch (Exception $e) {
-        // In case of errors just load existing data.
-        $publication_data = PublicationDoi::load($doi);
+      else {
+        $response['statuses'][] = t('DOI !doi_link is valid.', $params);
+        // Check if DOI in use.
+        $doi_check_source = variable_get(
+          'tpps_page_1_doi_check_source',
+          'public.tpps_submissions'
+        );
+        if ($doi_check_source == 'public.tpps_submissions') {
+          if ($accession = Doi::getAccession($doi)) {
+            $response['warnings'][] = t(
+              'WARNING: DOI !doi_link is already used by @accession.',
+              array_merge($params, ['@accession' => $accession])
+            );
+          }
+          else {
+            $response['statuses'][] = t('DOI !doi_link is not in use.', $params);
+          }
+        }
+        else {
+          if (Doi::countDbxref($doi) == 0) {
+            $response['statuses'][] = t('DOI !doi_link is not in use.', $params);
+          }
+          else {
+            $response['warnings'][] = t(
+              'DOI !doi_link is used by another submission.',
+              $params
+            );
+          }
+        }
+        try {
+          $publication_data = PublicationDoi::getCombined($doi);
+        }
+        catch (Exception $e) {
+          // In case of errors just load existing data.
+          $publication_data = PublicationDoi::load($doi);
+        }
+        $response['publication_data'] = $publication_data;
+        $response['is_complete'] = PublicationDoi::isComplete($publication_data);
+        $response['success'] = TRUE;
       }
-      $response['publication_data'] = $publication_data;
-      $response['is_complete'] = PublicationDoi::isComplete($publication_data);
-      $response['success'] = TRUE;
+
     }
     return $response;
   }

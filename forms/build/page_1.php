@@ -146,14 +146,14 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   //
   //
   // Field was relocated (v.2). ['doi'] -> ['publication', 'publication_doi'];
+  $doi = tpps_get_ajax_value($form_state, ['publication', 'publication_doi'], '');
   $form['publication']['publication_doi'] = [
     '#type' => 'textfield',
     '#title' => t('Publication DOI:')
       . tpps_page_1_required_by_status($form_state),
-    '#default_value' => tpps_get_ajax_value(
-      $form_state, ['publication', 'publication_doi'], ''
-    ),
+    '#default_value' => $doi,
     '#description' => TppsForm::getDoiExamples(),
+    '#attributes' => ['class' => ['tpps_doi_lookup_doi']],
     '#prefix' => '<div id="doi-message"></div>',
     '#states' => [
       'visible' => [
@@ -163,6 +163,85 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       ],
     ],
   ];
+  // Container to show complete combined publication data.
+  if ($debug_mode ?? FALSE) {
+    $form['publication']['publication_data'] = [
+      '#markup' => '<div class="dump_container" id="dump_container"></div>',
+    ];
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // JS Settings.
+  $proxy_url = variable_get('tpps_doi_lookup_cors_proxy_url');
+  $js_settings = [
+    'doi_lookup' => [
+      // Selector for the textfield with DOI.
+      'field' => '.tpps_doi_lookup_doi',
+      'proxy' => $proxy_url,
+      // List of the SERP Provider KEYs.
+      'ajax_get_publication_data_path' => '/ajax/tpps/getPublicationData',
+      'ajax_callback' => 'getPublicationData',
+      'publication_data' => [],
+      'dump_container' => '#dump_container',
+    ],
+  ];
+  // Check if any SERP providers are enabled.
+  // List of existing providers.
+  $serp_provider_class_list = [
+    'PubMed',
+    'GoogleScholar',
+    //'DataDryad',
+  ];
+
+  // List of enabled providers.
+  $serp_providers = [];
+  foreach ($serp_provider_class_list as $class_name) {
+    $provider = new $class_name($doi);
+    $serp_providers[$class_name] = $provider;
+    // Publication data per provider.
+    if (!empty($publication_data = PublicationDoi::load($doi, $class_name))) {
+      $js_settings['doi_lookup']['publication_data'][$class_name][$doi]
+        = $publication_data;
+    }
+    // List of existing SERP Providers.
+    $js_settings['doi_lookup']['serp_providers'][] = $class_name;
+    // Metadata of the providers allowed for scraping.
+    $js_settings['doi_lookup'][$class_name] = [
+      'scrape_allowed' => $provider->scrapeAllowed,
+      'dump_container' => '#' . $class_name . '_dump_container',
+      'endpoint' => $provider->getEndpointUrl(),
+      'query' => $provider->getQuery(),
+      'query_param' => constant($provider->getClassName() . '::QUERY_PARAM'),
+      // Delay between requests of the same client.
+      'delay' => $provider->delay,
+      // Note: path doesn't mean anything. More important is 'ajax_callback'.
+      'ajax_save_path' => '/ajax/tpps/saveSerp',
+      'ajax_callback' => 'saveSerp',
+      'not_found_token' => $provider->getNotFoundString(),
+    ];
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    $url = '';
+    if (!empty($doi) && empty($publication_data)) {
+      // Note: PubMed replaces '/' in DOI with space.
+      $fixed_provider_url = str_replace('%252F', '/', $provider->buildUrl());
+      $url = $proxy_url . '/' . $fixed_provider_url;
+    }
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Add JS settings.
+  $form['#attached']['js'][] = [
+    'type' => 'setting',
+    'data' => ['tpps' => $js_settings],
+    'scope' => 'footer',
+    'group' => JS_THEME,
+    'weight' => 5,
+  ];
+  // Add JS-logic.
+  tpps_add_css_js('doi_lookup', $form);
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Field was relocated (v.2). [] -> ['publication'];
   $form['publication']['dataset_doi'] = [

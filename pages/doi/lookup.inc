@@ -63,6 +63,7 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
       '#description' => $description,
       '#options' => $options,
       '#attributes' => ['class' => ['tpps_doi_lookup_doi']],
+      '#prefix' => '<div id="doi-message"></div>',
     ];
   }
   else {
@@ -73,6 +74,7 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
       '#default_value' => $doi,
       '#description' => $description,
       '#attributes' => ['class' => ['tpps_doi_lookup_doi']],
+      '#prefix' => '<div id="doi-message"></div>',
     ];
     tpps_add_css_js('suggestion', $form);
   }

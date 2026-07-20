@@ -164,6 +164,12 @@ Drupal.tpps.ajaxCache = Drupal.tpps.ajaxCache || {};
         $element.before(content).fadeIn(500);
       }
     }
+    dog('Number of current messages for ' + selector + ': ', {
+      'Errors': $(selector).nextAll('.tpps-message.error').length,
+      'Warnings': $(selector).nextAll('.tpps-message.warning').length,
+      'Statuses': $(selector).nextAll('.tpps-message.status').length
+    }, featureName);
+
   }
 
   /**

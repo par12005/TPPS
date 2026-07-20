@@ -4,7 +4,7 @@
  * TPPS Page 1 form specific JS-code.
  */
 
-/* global Drupal, jQuery, dog */
+/* global Drupal, jQuery, dog, context, settings */
 (function($, Drupal) {
   var doiSelector = 'input[name="publication[publication_doi]"]';
   var doiMessageBox = '#doi-message';
@@ -43,67 +43,61 @@
    */
   Drupal.tpps.doiFill = function(data) {
     if (typeof (data) != 'undefined') {
-      if (!data.success) {
-        Drupal.tpps.resetForm();
-        return;
-      }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Fill text fields.
-      $('#edit-publication-primaryauthor')
-        .val(data.doi_info.primary ?? '')
-        .removeClass('error');
-      $('#edit-publication-abstract')
-        .val(data.doi_info.abstract ?? '')
-        .removeClass('error');
-      $('#edit-publication-title')
-        .val(data.doi_info.title ?? '')
-        .removeClass('error');
-      // @TODO Get Journal field value.
-      // $('#edit-publication-journal').val(data.doi_info.journal);
+      let primaryAuthor = $.trim(data.authors.split(',')[0]);
+      $('#edit-publication-primaryauthor').val(primaryAuthor ?? '').removeClass('error');
+
+      $('#edit-publication-abstract').val(data.abstract ?? '').removeClass('error');
+      $('#edit-publication-title').val(data.title ?? '').removeClass('error');
+      $('#edit-publication-journal').val(data.journal ?? '').removeClass('error');
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Fill select boxes.
       // Default value for year is '0' ('- Select -').
-      $('#edit-publication-year')
-        .val(data.doi_info.year ?? 0)
-        .removeClass('error');
+      let year = data.date.match(/^\d{4}/)[0];
+      $('#edit-publication-year').val(year ?? 0).removeClass('error');
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Secondary Authors.
-      if (data.doi_info.secondaryNumber > 0) {
+      let secondaryAuthors = data.authors.split(',')
+        .slice(1).map(item => item.trim());
+      if (secondaryAuthors.length > 0) {
         // @TODO Probably outdated. Check it.
-        $('input[name="publication[secondaryAuthors][check]"]')
-          .val(data.doi_info.secondaryCheck)
-          .removeClass('error');
+        //$('input[name="publication[secondaryAuthors][check]"]')
+        //  .val(data.doi_info.secondaryCheck)
+        //  .removeClass('error');
         $('input[name="publication[secondaryAuthors][number]"]').val(
-          parseInt(data.doi_info.secondaryNumber) - 1
+          parseInt(secondaryAuthors.length) - 1
         );
         $('input[id^="edit-publication-secondaryauthors-add"]').mousedown();
-        $.each(data.doi_info.secondary, function( key, value ) {
+        $.each(secondaryAuthors, function( key, value ) {
           Drupal.waitForElm('input[name="publication[secondaryAuthors]['
             + ( key + 1 ) + ']"]').then(
               (elm) => { $(elm).val(value); }
           );
         });
       }
+
+
+// @TODO Update.
+
       // Organisms.
-      if (data.doi_info.speciesNumber >= 1) {
+      let species = data.species.split(',').map(item => item.trim());
+      if (species.length > 0) {
         // @TODO Reuse empty fields.
         // @TODO Not overwrite 1st field if it's not empty.
         // 1st field is present at form and can't be removed.
         // So it must be populated manually.
-        if (typeof data.doi_info.species[0] == 'undefined') {
+        if (typeof species[0] == 'undefined') {
           $('input[name="organism[1][name]"]').val('');
         }
         else {
-          $('input[name="organism[1][name]"]')
-            .val(data.doi_info.species[0])
-            .removeClass('error');
+          $('input[name="organism[1][name]"]').val(species[0]).removeClass('error');
         }
         // Add necessary number of fields.
-        $('input[name="organism[number]"]')
-            .val( data.doi_info.speciesNumber - 1 );
+        $('input[name="organism[number]"]').val(species.length - 1 );
         $('input[id^="edit-organism-add"]').mousedown();
         // Populate new fields.
-        $.each(data.doi_info.species, function( key, value ) {
+        $.each(species, function( key, value ) {
           Drupal.waitForElm('input[name="organism[' + ( key + 1 ) + '][name]"]')
             .then((elm) => { $(elm).val(value); }
           );
@@ -333,9 +327,10 @@
       }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Attach event handlers only once.
+      var $label = '';
       $('form[id^=tppsc-main]').once('tpps-page-1-processed', function() {
         if ($('#edit-publication-status').val() == 'In Preparation or Submitted') {
-          var $label = $('input[name="publication[publication_doi]"]')
+          $label = $('input[name="publication[publication_doi]"]')
             .parent().find('label');
           $label.html($label.html().replace(' *', ''));
           Drupal.tpps.makePublicationFieldsOptional();
@@ -343,17 +338,17 @@
 
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Reset form if status != 'Published'.
-        $('#edit-publication-status').on('change', function(e) {
+        $('#edit-publication-status').on('change', function() {
           if ($(this).val() == 'In Preparation or Submitted') {
             // Remove '*' from 'Publication DOI' field because it's optional.
-            var $label = $('input[name="publication[publication_doi]"]')
+            $label = $('input[name="publication[publication_doi]"]')
               .parents('.form-item').find('label');
             $label.html($label.html().replace(' *', ''));
             Drupal.tpps.makePublicationFieldsOptional();
           }
           else if ($(this).val() == 'Published') {
             // 'Publication DOI' field became required.
-            var $label = $('input[name="publication[publication_doi]"]')
+            $label = $('input[name="publication[publication_doi]"]')
               .parents('.form-item').find('label');
             // To avoid duplication of asterisk for field which was hidden
             // but Drupal Form API States we force removement of existing
@@ -372,106 +367,9 @@
         // @TODO Minor. Create more common solution to reuse this code
         // for other fields.
         // Strip HTML tags from 'Dataset DOI' field value.
-        $('input[name="publication[dataset_doi"]').blur(function(e) {
+        $('input[name="publication[dataset_doi"]').blur(function() {
           $(this).val(Drupal.tpps.stripHtml($(this).val()));
         });
-
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        // 'Publication DOI' field change.
-        $(doiSelector).blur(function(e) {
-          e.preventDefault();
-          Drupal.tpps.fieldDisable(doiSelector);
-          // Clean-up HTML from field's value.
-          $(this).val(Drupal.tpps.stripHtml($(this).val()));
-          if (typeof(settings.tpps.ajaxUrl) !== 'undefined') {
-            var doi = $(this).val();
-            // Check if DOI value really was changed.
-            if (
-              typeof (Drupal.tpps.lastValue['doi']) != 'undefined'
-              && Drupal.tpps.lastValue['doi'] == doi
-            ) {
-              Drupal.tpps.fieldEnable(doiSelector);
-              return;
-            }
-            else {
-              // Store current DOI value to be able to compare with new one later.
-              Drupal.tpps.lastValue['doi'] = doi;
-            }
-            // Check if DOI value is empty.
-            if (typeof (doi) == 'undefined' || doi == '') {
-              $(doiMessageBox).empty();
-              var data = {"errors": [Drupal.t('Empty DOI.')]};
-              Drupal.tpps.showMessages(doiMessageBox, data);
-              Drupal.tpps.fieldEnable(doiSelector);
-              return;
-            }
-            // Check DOI format.
-            if (! Drupal.tpps.isValid('doi', doi)) {
-              $(doiMessageBox).empty();
-              var data = {
-                "errors": [
-                  Drupal.t('Invalid DOI format. Example DOI: 10.1111/dryad.111')
-                ]
-              };
-              Drupal.tpps.showMessages(doiMessageBox, data);
-              Drupal.tpps.fieldEnable(doiSelector);
-              return;
-            }
-
-            // Check if we have cached result first.
-            if (
-              'ajaxCache' in Drupal.tpps
-              && typeof (Drupal.tpps.ajaxCache[doi]) != 'undefined'
-            ) {
-              dog('AJAX-request response found in cache.', featureName);
-              Drupal.tpps.clearMessages(doiMessageBox);
-              var data = Drupal.tpps.ajaxCache[doi];
-              Drupal.tpps.showMessages(doiMessageBox, data);
-              Drupal.tpps.fieldEnable(doiSelector);
-              Drupal.tpps.doiFill(data);
-            }
-            else {
-              let url = Drupal.settings.basePath
-                + Drupal.settings.tpps.ajaxUrl + '/get_doi';
-              // Remove existing messages.
-              Drupal.tpps.clearMessages(doiMessageBox);
-              $.ajax({
-                method: 'post',
-                data: {'doi': doi},
-                url: url,
-                error: function (jqXHR, textStatus, errorThrown) {
-                  // User changed value of the field during AJAX-request.
-                  if (Drupal.tpps.wasValueChanged('doi', doi)) { return; }
-                  // Server/Network errors.
-                  var data = [{
-                    "errors": [Drupal.t("DOI value wasn't completed")]
-                  }];
-                  Drupal.tpps.showMessages(doiMessageBox, data);
-
-                  var errorMessage = jqXHR.status + " " + jqXHR.statusText
-                    + "\n\n" + jqXHR.responseText;
-                  console.log(errorMessage);
-                  Drupal.tpps.fieldEnable(doiSelector);
-                },
-                success: function(data) {
-                  // Store response to avoid multiple requests.
-                  Drupal.tpps.ajaxCache[doi] = data;
-                  // User changed value of the field during AJAX-request.
-                  if (Drupal.tpps.wasValueChanged('doi', doi)) { return; }
-                  if (typeof (data) == 'undefined') {
-                    var data = [{
-                      "errors": [Drupal.t('Received empty response.')]
-                    }];
-                  }
-                  Drupal.tpps.showMessages(doiMessageBox, data);
-                  Drupal.tpps.fieldEnable(doiSelector);
-                  Drupal.tpps.doiFill(data);
-                }
-              });
-            }
-          }
-        });
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       });
     }
   }

@@ -4,16 +4,25 @@
  * TPPS DOI Lookup.
  */
 
-/* global jQuery:readonly, Drupal:writable */
+/* global jQuery:readonly, Drupal:writable, dog */
 (function ($, Drupal) {
   Drupal.behaviors.doi_lookup = {
     attach: function (context, settings) {
       let doi_lookup = settings.tpps.doi_lookup;
+      var doiMessageBox = '#doi-message';
+      var featureName = 'DOI Lookup';
 
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Event: DOI entered.
       function getPublicationData(field) {
         $(field).addClass('get-publication-data-processed');
+          $(doiMessageBox).empty();
+
+//Drupal.tpps.showMessages(doiMessageBox, {
+//  "errors": [
+//    Drupal.t('Invalid DOI format. Example DOI: 10.1111/dryad.111')
+//  ]
+//});
 
         // Note: there is no need to check if it's new DOI (or was it really
         // changed) because we store server's responses and re-use them and
@@ -24,23 +33,50 @@
         let doi = $.trim($(field).val());
         // Convert full DOI format into short.
         doi = doi.replace("https://doi.org/", "");
-        if (!doi) {
-          // Empty DOI. Nothing to do and it's not an error.
+
+        if (typeof (doi) == 'undefined' || doi == '') {
+          // Empty DOI.
+          Drupal.tpps.showMessages(doiMessageBox, {
+            "errors": [Drupal.t('Empty DOI.')]
+          });
+          return;
+        }
+
+console.log('doi: ' + doi);
+
+
+        // Check DOI format.
+        if (! Drupal.tpps.isValid('doi', doi)) {
+          Drupal.tpps.showMessages(doiMessageBox, {
+            "errors": [
+              Drupal.t('Invalid DOI format. Example DOI: 10.1111/dryad.111')
+            ]
+          });
           return;
         }
         // Block DOI field while processing.
         enableThrobber();
 
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        // Format: doi_lookup['publication_data'][$provider_class_name][$doi]
+        // Format: doi_lookup['publication_data'][$doi]
         if ($(doi_lookup['publication_data'][doi]).length) {
+          dog('AJAX-request response found in cache.', featureName);
           console.log('Show already loaded data.');
+
           showPublicationData(doi_lookup['publication_data'][doi]);
+          Drupal.tpps.clearMessages(doiMessageBox);
+          disableThrobber();
+          // @TODO Merge doiFill() with showPublicationData().
+          if ($.isFunction(Drupal.tpps.doiFill)) {
+            Drupal.tpps.doiFill(doi_lookup['publication_data'][doi]);
+          }
         }
         else {
+          //Drupal.tpps.clearMessages(doiMessageBox);
           console.log('Data not loadeded yet.');
           // No publication data found.
           $(doi_lookup.dump_container).html('').hide();
+// >>>>>
 
           // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
           // Request publication data from PublicationDoi::TABLE.
@@ -62,9 +98,20 @@
               ) {
                 console.log('Show received data.');
                 showPublicationData(response.publication_data);
+
+                if ($.isFunction(Drupal.tpps.doiFill)) {
+                  Drupal.tpps.doiFill(response.publication_data);
+                }
+
               }
               else {
                 console.log("Received no data or it's incomplete.");
+                Drupal.tpps.showMessages(doiMessageBox, [{
+                  "errors": [Drupal.t(
+                    "Received no data or it's incomplete."
+                  )]
+                }]);
+
                 // This is a flag which used to remove throbber when all SERP
                 // providers are disabled at settings page and we shouldn't
                 // wait for the response to AJAX requests.
@@ -136,21 +183,25 @@
 
                   console.log('Show incomplete publication data from APIs.');
                   showPublicationData(response.publication_data);
+                  Drupal.tpps.doiFill(response.publication_data);
                 }
               }
             },
             error: function(xhr, status, error) {
+
+              Drupal.tpps.showMessages(doiMessageBox,[{
+                "errors": [Drupal.t("DOI value wasn't complete.")]
+              }]);
+
               console.error('DOI Lookup Error:', error);
               console.error('Status:', xhr.status);
               console.error('Response:', xhr.responseText);
               console.error('ReadyState:', xhr.readyState);
+              disableThrobber();
             }
           });
         }
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       }
-
-
 
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Change-event for select-or-other field.
@@ -164,6 +215,7 @@
       });
       // Blur-event for textfield.
       $(doi_lookup.field).blur(function() {
+        $(this).val(Drupal.tpps.stripHtml($(this).val()));
         if (
           !($(this).hasClass('get-publication-data-processed'))
           && $.trim($(this).val())
@@ -232,17 +284,19 @@
        *   DOI Publication data
        */
       function showPublicationData(data) {
-
-
-// @TODO Check if is_complete.
-
         doi_lookup['publication_data'][data.doi] = data;
-        // Show at page.
+
+        if ($.isFunction(Drupal.tpps.doiFill)) {
+          Drupal.tpps.doiFill(data);
+        }
+
+        // Show JSON data.
         var jsonString = JSON.stringify(data, null, 2);
         $(doi_lookup.dump_container).html(
           '<pre style="margin: 5px; color: white !important; text-wrap:auto;">'
           + jsonString + '</pre>'
         ).show();
+
         disableThrobber();
         $(doi_lookup.field).removeClass('get-publication-data-processed');
       }
@@ -271,9 +325,6 @@
           && serpContent.includes(doi_lookup[provider_class_name].not_found_token)
         ) {
           console.error('DOI Lookup. SERP has no DOI Publication Data.');
-// @TODO Check why content treated as empty.
-
-          //return;
         }
 
         // Send content to backend.
@@ -298,6 +349,9 @@
               showPublicationData(response.publication_data);
             }
             else {
+              if ($.isFunction(Drupal.tpps.resetForm)) {
+                Drupal.tpps.resetForm();
+              }
               console.log('DOI Lookup: Got empty data');
             }
           },

@@ -160,7 +160,7 @@ class GoogleScholar extends DoiSerp {
       // Title.
       $pattern = '/<h3 class="gs_rt"[^>]*><a[^>]*>(.*?)<\/a><\/h3>/s';
       if (preg_match($pattern, $string, $matches)) {
-        $fields['title'] = $matches[1];
+        $fields['title'] = str_replace('Data from: ', '', $matches[1]);
       }
 
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

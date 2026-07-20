@@ -16,78 +16,6 @@
  */
 
 /**
- * Checks if DOI is unique and not used by other studies.
- *
- * Note: There is no need to cache check results because both functions
- * called from this AJAX-callback cache their results and results format
- * are different so it's better to check them separately.
- *
- * @param array $data
- *   POST data.
- *
- * @return array
- *   Returns response which will be returned back as JSON. Keys:
- *   'error' bool TRUE means validation failed and FALSE that
- */
-function tpps_ajax_get_doi($data = NULL) {
-  if (empty($data)) {
-    // Empty request. Expected DOI value.
-    return ['errors' => [t('Empty POST requrest.')], 'success' => FALSE];
-  }
-  // Validate.
-  // Note: Could be used for 'Publication DOI' and 'Dataset DOI' so key is 'doi'.
-  $doi = $data['doi'] ?? NULL;
-  if (empty($doi)) {
-    return ['errors' => [t('Empty DOI.')], 'success' => FALSE];
-  }
-  $doi = Doi::searchFirst($doi);
-  $params = ['!doi_link' => Doi::print($doi)];
-  if (!Doi::isValid($doi)) {
-    $message = 'DOI !doi_link has invalid format. Example DOI: 10.NNNN/dryad.NNN';
-    $response['errors'][] = t($message, $params);
-  }
-  else {
-    $response['statuses'][] = t('DOI !doi_link is valid.', $params);
-    // Check if DOI in use.
-    $doi_check_source = variable_get(
-      'tpps_page_1_doi_check_source',
-      'public.tpps_submissions'
-    );
-    if ($doi_check_source == 'public.tpps_submissions') {
-      if ($accession = Doi::getAccession($doi)) {
-        $response['warnings'][]
-          = t('WARNING: DOI !doi_link is already used by @accession.',
-            array_merge($params, ['@accession' => $accession])
-          );
-      }
-      else {
-        $response['statuses'][] = t('DOI !doi_link is not in use.', $params);
-      }
-    }
-    else {
-      if (Doi::countDbxref($doi) == 0) {
-        $response['statuses'][] = t('DOI !doi_link is not in use.', $params);
-      }
-      else {
-        $response['warnings'][]
-          = t('DOI !doi_link is used by another submission.', $params);
-      }
-    }
-    // DOI is valid so we could try to get data.
-    $response['doi_info'] = Dryad::getInfo($doi);
-    if (!empty($response['doi_info'])) {
-      $response['success'] = TRUE;
-    }
-    else {
-      $response['success'] = FALSE;
-      $response['warnings'][]
-        = t('DOI !doi_link: no publication information found.', $params);
-    }
-  }
-  return $response;
-}
-
-/**
  * Get NCBI Taxonomy Id.
  *
  * Wrapper for the function tpps_ncbi_get_taxon_id().
@@ -158,4 +86,3 @@ function tpps_ajax_remember_fieldset_collapsed_state(array $data) {
   $_SESSION[TPPS_RFCS_KEY][$data['form_id']][$data['name']] = (int) $data['value'];
   return TRUE;
 }
-
