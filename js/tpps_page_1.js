@@ -256,8 +256,9 @@
       Drupal.tpps.fieldEnable(fieldSelector);
     }
     else {
-      let url = Drupal.settings.basePath + Drupal.settings.tpps.ajaxUrl
-        + '/get_ncbi_taxonomy_id';
+      //let url = Drupal.settings.basePath + Drupal.settings.tpps.ajaxUrl
+      //  + '/get_ncbi_taxonomy_id';
+      let url = Drupal.settings.basePath + Drupal.settings.tpps.ajaxUrl + '/getNcbiTaxonomyId';
       // Disable button 'Next' because organism fields won't pass validation.
       $('input.next-button').attr('disabled','disabled');
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -316,14 +317,14 @@
       // Clear value of last 'Secondary Author' field on 'Remove' button click.
       // Must be reattached to every new form part loaded via AJAX.
       // @TODO Probably tpps_dynamic_list() must be updated.
-      $('input[id^="edit-publication-secondaryauthors-add"]').on('click', function(e) {
+      $('input[id^="edit-publication-secondaryauthors-add"]', context)
+        .on('click', function() {
           let number = $('input[name="publication[secondaryAuthors][number]"]').val();
           let selector = 'input[id="edit-publication-secondaryauthors-' + (parseInt(number) + 1) + '"]';
           if (number >= 0) {
             Drupal.waitForElm(selector).then((elm) => { $(elm).val(''); });
           }
-        }
-      );
+        });
 
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Validate species names using NCBI Taxomony.
@@ -333,7 +334,10 @@
       dog('Total number of organisms on page: ' + organismNumber, featureName);
       // Loop species fields.
       for (let organismId = 1; organismId <= organismNumber; organismId++) {
-        let $field = $('input[name="organism[' + organismId + '][name]"]');
+        let $field = $('input[name="organism[' + organismId + '][name]"]', context);
+
+
+        $field.off('blur', Drupal.tpps.validateOrganismName);
         $field.on(
           'blur', {'organismId': organismId}, Drupal.tpps.validateOrganismName
         );

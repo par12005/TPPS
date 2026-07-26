@@ -4,6 +4,7 @@
  * Manages SNP Association file field on Page 4.
  */
 
+/* global Drupal, jQuery, dog, context, settings */
 (function ($) {
   Drupal.behaviors.tpps_page_4_snp_association = {
     attach: function (context, settings) {
@@ -32,7 +33,7 @@
         if ($snpAssociationColomnSelectList.length) {
           // SNP Association file was uploaded and table with
           // column data type selectors exists.
-          $yearOptions = $snpAssociationColomnSelectList.find('option[value="'
+          var $yearOptions = $snpAssociationColomnSelectList.find('option[value="'
             + Drupal.settings.tpps.snpAssociation.dataTypeYear + '"]');
 
           if (action  == 'disable') {
