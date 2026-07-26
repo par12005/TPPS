@@ -34,6 +34,7 @@
         // Convert full DOI format into short.
         doi = doi.replace("https://doi.org/", "");
 
+        // Validate value of the Publication DOI field.
         if (typeof (doi) == 'undefined' || doi == '') {
           // Empty DOI.
           Drupal.tpps.showMessages(doiMessageBox, {

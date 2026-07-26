@@ -27,6 +27,15 @@ function tpps_form_page_1_settings_form(array $form, array &$form_state) {
       . "number (TGDRxxx) which will be shown to user in warning message."
     ),
   ];
+  $form['tpps_page_1_doi_lookup_debug_mode'] = [
+    '#type' => 'checkbox',
+    '#title' => t('DOI Lookup Debug Mode'),
+    '#default_value' => variable_get('tpps_page_1_doi_lookup_debug_mode'),
+    '#description' => t(
+      'Default is unchecked.<br />'
+      . 'When checked raw DOI Publication data will be show at page in JSON format.'
+    ),
+  ];
   $form['tpps_page_1_ajax_debug'] = [
     '#type' => 'checkbox',
     '#title' => t('AJAX Debug Mode'),

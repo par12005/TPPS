@@ -149,8 +149,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $doi = tpps_get_ajax_value($form_state, ['publication', 'publication_doi'], '');
   $form['publication']['publication_doi'] = [
     '#type' => 'textfield',
-    '#title' => t('Publication DOI:')
-      . tpps_page_1_required_by_status($form_state),
+    '#title' => t('Publication DOI:') . tpps_page_1_required_by_status($form_state),
     '#default_value' => $doi,
     '#description' => TppsForm::getDoiExamples(),
     '#attributes' => ['class' => ['tpps_doi_lookup_doi']],
@@ -164,7 +163,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     ],
   ];
   // Container to show complete combined publication data.
-  if ($debug_mode ?? FALSE) {
+  if (variable_get('tpps_page_1_doi_lookup_debug_mode', FALSE)) {
     $form['publication']['publication_data'] = [
       '#markup' => '<div class="dump_container" id="dump_container"></div>',
     ];
