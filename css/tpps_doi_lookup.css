@@ -5,7 +5,7 @@
  * See /pages/doi/lookup.inc.
  * URL: /tpps/doi/lookup
  */
-
+.tppsc-form div.dump_container,
 body.page-tpps-doi-lookup div.dump_container {
   border: 1px solid white;
   display: none;

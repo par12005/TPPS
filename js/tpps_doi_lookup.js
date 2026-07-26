@@ -16,13 +16,12 @@
       // Event: DOI entered.
       function getPublicationData(field) {
         $(field).addClass('get-publication-data-processed');
-          $(doiMessageBox).empty();
-
-//Drupal.tpps.showMessages(doiMessageBox, {
-//  "errors": [
-//    Drupal.t('Invalid DOI format. Example DOI: 10.1111/dryad.111')
-//  ]
-//});
+        if ($.isFunction(Drupal.tpps.clearMessages(doiMessageBox))) {
+          Drupal.tpps.clearMessages(doiMessageBox);
+        }
+        if ($.isFunction(Drupal.tpps.resetForm)) {
+          Drupal.tpps.resetForm();
+        }
 
         // Note: there is no need to check if it's new DOI (or was it really
         // changed) because we store server's responses and re-use them and
@@ -43,11 +42,8 @@
           return;
         }
 
-console.log('doi: ' + doi);
-
-
         // Check DOI format.
-        if (! Drupal.tpps.isValid('doi', doi)) {
+        if (!Drupal.tpps.isValid('doi', doi)) {
           Drupal.tpps.showMessages(doiMessageBox, {
             "errors": [
               Drupal.t('Invalid DOI format. Example DOI: 10.1111/dryad.111')
@@ -74,11 +70,9 @@ console.log('doi: ' + doi);
         }
         else {
           //Drupal.tpps.clearMessages(doiMessageBox);
-          console.log('Data not loadeded yet.');
+          console.log("Data wasn't yet loadeded.");
           // No publication data found.
           $(doi_lookup.dump_container).html('').hide();
-// >>>>>
-
           // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
           // Request publication data from PublicationDoi::TABLE.
           console.log('Request data from backend.');
@@ -92,6 +86,7 @@ console.log('doi: ' + doi);
               "callback": doi_lookup.ajax_callback,
             }),
             success: function(response) {
+              Drupal.tpps.showMessages(doiMessageBox, response);
               if (
                 response
                 && response.publication_data
@@ -99,11 +94,9 @@ console.log('doi: ' + doi);
               ) {
                 console.log('Show received data.');
                 showPublicationData(response.publication_data);
-
                 if ($.isFunction(Drupal.tpps.doiFill)) {
                   Drupal.tpps.doiFill(response.publication_data);
                 }
-
               }
               else {
                 console.log("Received no data or it's incomplete.");
