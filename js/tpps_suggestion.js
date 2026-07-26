@@ -15,25 +15,30 @@
  * See
  * - tpps_add_css_js(),
  */
+
+/* global jQuery:readonly, Drupal:writable */
 (function ($, Drupal) {
   Drupal.behaviors.tpps_suggestion = {
-    attach: function (context, settings) {
+    attach: function (context) {
       // Allows to fill field using suggestions from description.
       // How to use:
       //   add 'tpps-suggestion' class to A tag in
       //   $form[$field_name]['#description'];
       // Example: <a href"#" class="tpps-suggestion">10.25338/B8864J</a>
-      $('.tpps-suggestion').not('.tpps-suggestion-processed').on('click', function(e) {
-        e.preventDefault();
-        let selectedText= $(this).text();
-        //console.log(selectedText);
-        $(this)
-          .parents('.form-item')
-          .find('input.form-text')
-          .val(selectedText)
-          .blur();
-        navigator.clipboard.writeText(selectedText);
-      }).addClass('tpps-suggestion-processed');
+      $('.tpps-suggestion', context)
+        .not('.tpps-suggestion-processed')
+        .on('click', function(e) {
+          e.preventDefault();
+          let selectedText= $(this).text();
+          //console.log(selectedText);
+          $(this)
+            .parents('.form-item')
+            .find('input.form-text')
+            .val(selectedText)
+            .blur();
+          navigator.clipboard.writeText(selectedText);
+        })
+        .addClass('tpps-suggestion-processed');
     }
   };
 })(jQuery, Drupal);

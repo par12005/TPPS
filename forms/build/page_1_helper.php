@@ -114,6 +114,7 @@ function tpps_form_organism(array &$form, array &$form_state) {
       ],
     ],
   ];
+  tpps_add_css_js('suggestion', $form);
 
   tpps_dynamic_list($form, $form_state, 'organism', $field, [
     'label' => 'Organism',
@@ -293,10 +294,8 @@ function tppsc_organism(array &$form, array &$form_state) {
         'data-placement' => array('left'),
         'title' => array('If your species is not in the autocomplete list, don\'t worry about it! We will create a new organism entry in the database for you.'),
       ),
-      // [VS]
       '#description' => 'Example: '
         . '<a href"#" class="tpps-suggestion">Arabidopsis thaliana</a>.',
-      // [/VS]
     );
     $org = tpps_get_ajax_value($form_state, array('organism', $i, 'name'));
     $form['organism'][$i]['name']['#attributes']['value'] = $org ?? NULL;

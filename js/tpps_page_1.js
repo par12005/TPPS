@@ -165,9 +165,16 @@
   /**
    * Validates organism name using NCBI database to get taxonomy id.
    */
-  Drupal.tpps.validateOrganismName = function(event) {
-    let organismId = event.data.organismId;
+  Drupal.tpps.validateOrganismName = function() {
     var featureName = 'Drupal.tpps.validateOrganismName';
+    // Format: organism[1][name]
+    let organismId = $(this).attr('name').split('[')[1].replace(']', '');
+
+    if ($(this).hasClass('validateOrganismName')) {
+      console.log('skipped' + organismId);
+      return;
+    }
+
     // WARNING:
     // Each time new field added or exising field removed HTML-id is changed
     // so HTML-id can't be used to find fields.
@@ -178,7 +185,7 @@
     // Show messages below or above field.
     let below = true;
 
-    dog('OrganismId: ' + event.data.organismId, featureName);
+    dog('OrganismId: ' + organismId, featureName);
     if ($field.length == 0) {
       dog('Organism field not found.', featureName);
       return;
@@ -188,13 +195,14 @@
     $field.val(Drupal.tpps.stripHtml($field.val().trim()));
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get fid from managed file field.
-    let organismName = $field.val().trim();
+    let organismName = $field.val();
     if (typeof organismName == 'undefined' || organismName.length == 0) {
       dog('Empty organism name.', featureName);
       Drupal.tpps.clearMessages(fieldSelector);
       return;
     }
     dog('Name of the organism: ' + organismName + '.', featureName);
+    $field.addClass('validateOrganismName');
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Check if value really was changed.
@@ -212,6 +220,7 @@
         var data = Drupal.tpps.ajaxCache[organismName];
         Drupal.tpps.showMessages(fieldSelector, data);
         Drupal.tpps.fieldEnable(fieldSelector);
+        $(this).removeClass('validateOrganismName');
         return;
       }
       else {
@@ -234,6 +243,7 @@
       Drupal.tpps.showMessages(fieldSelector, {
         'errors': [Drupal.t('Organism name is invalid.')]
       }, below);
+      $(fieldSelector).removeClass('validateOrganismName');
       return;
     }
     dog('Basic validation passed.', featureName);
@@ -249,6 +259,7 @@
       'ajaxCache' in Drupal.tpps
       && typeof (Drupal.tpps.ajaxCache[organismName]) != 'undefined'
     ) {
+      $(fieldSelector).removeClass('validateOrganismName');
       dog('AJAX-request response found in cache.', featureName);
       Drupal.tpps.clearMessages(fieldSelector);
       var data = Drupal.tpps.ajaxCache[organismName];
@@ -268,6 +279,7 @@
         data: {'organism': organismName},
         url: url,
         error: function (jqXHR, textStatus, errorThrown) {
+          $(fieldSelector).removeClass('validateOrganismName');
           // User changed value of the field during AJAX-request.
           if (Drupal.tpps.wasValueChanged(fieldId, organismName)) { return; }
           // Server/Network errors.
@@ -284,6 +296,10 @@
         },
 
         success: function(data) {
+          $(fieldSelector).removeClass('validateOrganismName');
+
+console.log(fieldSelector);
+
           // Store response to avoid multiple requests.
           Drupal.tpps.ajaxCache[organismName] = data;
           // User changed value of the field during AJAX-request.
@@ -335,16 +351,13 @@
       // Loop species fields.
       for (let organismId = 1; organismId <= organismNumber; organismId++) {
         let $field = $('input[name="organism[' + organismId + '][name]"]', context);
-
-
-        $field.off('blur', Drupal.tpps.validateOrganismName);
-        $field.on(
-          'blur', {'organismId': organismId}, Drupal.tpps.validateOrganismName
-        );
-        // Force validation of the non-empty fields on page load or after
-        // adding new organism field.
-        if ($field.val()) {
-          $field.trigger('blur');
+        if ($field.length !== 0) {
+          $field.on('blur', Drupal.tpps.validateOrganismName);
+          // Force validation of the non-empty fields on page load or after
+          // adding new organism field.
+          if ($field.val()) {
+            $field.trigger('blur');
+          }
         }
       }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -360,7 +373,7 @@
 
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Reset form if status != 'Published'.
-        $('#edit-publication-status').on('change', function() {
+        $('#edit-publication-status', context).on('change', function() {
           if ($(this).val() == 'In Preparation or Submitted') {
             // Remove '*' from 'Publication DOI' field because it's optional.
             $label = $('input[name="publication[publication_doi]"]')
@@ -378,6 +391,7 @@
             // API States and track field's visability.
             $label.html($label.html().replace(' *', '') + ' *');
             Drupal.tpps.makePublicationFieldsRequired();
+
           }
           else {
             // Nothing to do...

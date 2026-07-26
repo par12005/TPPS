@@ -91,9 +91,12 @@ class TppsAjax {
           'title' => t('View using NCBI Taxonomy Browser'),
         ],
       ];
-      $response['statuses'][] = t('Organism was found in NCBI database. '
+      $response['statuses'][] = t('Organism "@name" found in NCBI database. '
         . 'Taxonomy Id: !id',
-        ['!id' => l($response['id'], $url, $params)]
+        [
+          '@name' => $data['organism'],
+          '!id' => l($response['id'], $url, $params),
+        ]
       );
     }
     return $response;
