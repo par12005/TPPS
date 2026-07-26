@@ -24,14 +24,31 @@
     $('#edit-publication-journal').val('');
     // Secondary Authors.
     if ($('input[name="publication[secondaryAuthors][number]"]').val() != 0) {
-      $('input[name="publication[secondaryAuthors][number]"]').val(0);
-      $('input[id^="edit-publication-secondaryauthors-remove"]').mousedown();
+      // Set number of organisms to 0 and force removement of the extra fields.
+      $('input[name="publication[secondaryAuthors][number]"]')
+        .val(0)
+        // Remove empty extra secondary author's fields.
+        .parent()
+        .find('input[name="Remove Secondary Author"]')
+        .mousedown()
+        // Hide existing secondary author's fields while form reloads.
+        .parent()
+        .find('.form-type-textfield') // form-item-publication-secondaryAuthors-1
+        .hide();
     }
     // Organism.
     $('input[name="organism[1][name]"]').val('');
     if ($('input[name="organism[number]"]').val() != 1) {
-      $('input[name="organism[number]"]').val(1);
-      $('input[id^="edit-organism-remove"]').mousedown();
+      // Set number of organisms to 1 and force removement of the extra fields.
+      $('input[name="organism[number]"]')
+        .val(1)
+        .parent()
+        .find('input[name="Remove Organism"]')
+        .mousedown();
+    }
+    if ($.isFunction(Drupal.tpps.clearMessages)) {
+      Drupal.tpps.clearMessages('#doi-message');
+      Drupal.tpps.clearMessages('input[name="organism[1][name]"]');
     }
   }
 
@@ -168,12 +185,13 @@
     }
 
     // Clean-up HTML from field's value.
-    $field.val(Drupal.tpps.stripHtml($field.val()));
+    $field.val(Drupal.tpps.stripHtml($field.val().trim()));
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get fid from managed file field.
     let organismName = $field.val().trim();
     if (typeof organismName == 'undefined' || organismName.length == 0) {
       dog('Empty organism name.', featureName);
+      Drupal.tpps.clearMessages(fieldSelector);
       return;
     }
     dog('Name of the organism: ' + organismName + '.', featureName);
@@ -358,8 +376,9 @@
             Drupal.tpps.makePublicationFieldsRequired();
           }
           else {
-            Drupal.tpps.resetForm();
+            // Nothing to do...
           }
+          Drupal.tpps.resetForm();
           $(this).removeClass('error');
         });
 

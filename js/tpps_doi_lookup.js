@@ -16,7 +16,7 @@
       // Event: DOI entered.
       function getPublicationData(field) {
         $(field).addClass('get-publication-data-processed');
-        if ($.isFunction(Drupal.tpps.clearMessages(doiMessageBox))) {
+        if ($.isFunction(Drupal.tpps.clearMessages)) {
           Drupal.tpps.clearMessages(doiMessageBox);
         }
         if ($.isFunction(Drupal.tpps.resetForm)) {
