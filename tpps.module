@@ -77,9 +77,8 @@ define(
 );
 define('TPPS_GENOTYPING_FILE_TYPE_VCF', 'VCF');
 
-
 // Rememeber fieldset collapsed state.
-define('TPPS_RFCS_KEY', 'remember_fieldset_collapsed_state');
+define('TPPS_RFCS_KEY', 'rememberFieldsetCollapsedState');
 module_load_include('inc', 'tpps', 'includes/common');
 
 // WARNING:
@@ -1775,7 +1774,9 @@ if (!function_exists('array_key_first')) {
  * Implements hook_init().
  */
 function tpps_init() {
+  global $_SESSION;
   global $tpps;
+
   // Removed spam message:
   // Notice: Undefined variable: show_nafgs_menu in include() (line 147 of
   // /var/www/Drupal/sites/all/themes/sites/all/themes/dawn/tpl/page.tpl.php).

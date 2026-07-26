@@ -72,6 +72,7 @@ function tpps_form_main_settings_form(array $form, array &$form_state) {
  * Custom form submitter for 'tpps_page_1_settings_form' form.
  */
 function tpps_form_main_settings_form_submit(array $form, array &$form_state) {
+  global $_SESSION;
   // Clear cache on change only but not on each form submission.
   if (
     // CSS theme was changed.
@@ -87,8 +88,8 @@ function tpps_form_main_settings_form_submit(array $form, array &$form_state) {
   // When feature 'Remember Fieldset Collapsed State' enabled/disabled we must
   // to clear all previously stored fieldset's states to allow reset and avoid
   // unexpected behavoir when this feature will be enabled again.
-  $key = 'fieldset_collapsed_state';
-  if (($form_state['values'][$key] ?? NULL) != variable_get($key, 'default')) {
+  $key = 'tpps_remember_fieldset_collapsed_state';
+  if (($form_state['values'][$key] ?? NULL) != variable_get($key)) {
     unset($_SESSION[TPPS_RFCS_KEY]);
   }
 }

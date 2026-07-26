@@ -12,6 +12,7 @@ define('TPPS_NCBI_BATCH_UPDATE_BUTTON_NAME', 'ncbi_batch_update');
  * NCBI Taxonomy Id batch update form.
  */
 function tpps_ncbi_batch_settings_form(array $form, array &$form_state) {
+  global $_SESSION;
 
   // Show results of previous batch (if any).
   // @todo Show better report as a table.
@@ -118,6 +119,7 @@ function tpps_ncbi_batch_callback($organism_id, $organism_name, $total, array &$
  * @param mixed $operations
  */
 function tpps_ncbi_batch_finished_callback($success, $results, $operations) {
+  global $_SESSION;
   // The 'success' parameter means no fatal PHP errors were detected. All
   // other error management should be handled using 'results'.
   if ($success) {

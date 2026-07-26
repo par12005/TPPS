@@ -24,6 +24,33 @@
 class TppsAjax {
 
   /**
+   * AJAX callback for 'Remember Fieldset Collapsed State' feature.
+   *
+   * Stores state of given fieldset.
+   *
+   * @param array $data
+   *   POST data.
+   *
+   * @return bool
+   *   Returns TRUE in case of success and FALSE otherwise.
+   */
+  public static function rememberFieldsetCollapsedState(array $data) {
+    global $_SESSION;
+    if (
+      empty($data['name'])
+      && empty($data['form_id'])
+      && !isset($data['value'])
+    ) {
+      return FALSE;
+    }
+    $form_id = $data['form_id'];
+    $name = $data['name'];
+    $value = (int) $data['value'];
+    $_SESSION[TPPS_RFCS_KEY][$form_id][$name] = $value;
+    return TRUE;
+  }
+
+  /**
    * Gets NCBI Taxonomy Id.
    *
    * Wrapper for the function tpps_ncbi_get_taxon_id().

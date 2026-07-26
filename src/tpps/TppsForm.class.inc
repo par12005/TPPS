@@ -1421,6 +1421,7 @@ class TppsForm {
    *   Form Id.
    */
   public static function addFieldsetCollapsedState(array &$form, $form_id = NULL) {
+    global $_SESSION;
     $form_id = $form_id ?? $form['#form_id'] ?? NULL;
     $is_exists = FALSE;
     if (
@@ -1431,7 +1432,7 @@ class TppsForm {
       return $is_exists;
     }
     foreach ($form as $name => $element) {
-      if (strpos('#', $name) === FALSE || is_object($element)) {
+      if (strpos($name, '#') !== FALSE || is_object($element)) {
         continue;
       }
       if (
@@ -1450,7 +1451,10 @@ class TppsForm {
       );
       // Process child fieldsets.
       foreach (array_keys($element) as $sub_name) {
-        if (strpos('#', $sub_name) === FALSE) {
+        if (
+          strpos($sub_name, '#') !== FALSE
+          && !is_array($element[$sub_name])
+        ) {
           continue;
         }
         TppsForm::addFieldsetCollapsedState($element[$sub_name], $form_id);

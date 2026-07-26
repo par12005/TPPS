@@ -424,6 +424,7 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
  */
 function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   global $user;
+  global $_SESSION;
 
   $snps_fieldset = 'SNPs';
 

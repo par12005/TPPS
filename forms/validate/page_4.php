@@ -249,6 +249,7 @@ function tpps_validate_genotype(array &$genotype, $organism_index, array $form, 
  *   The state of the form being validated.
  */
 function tpps_validate_genotype_snps(array &$genotype, $organism_index, array $form, array &$form_state) {
+  global $_SESSION;
   if (($genotype['does_study_include_snp_data'] ?? NULL) == "no") {
     return;
   }

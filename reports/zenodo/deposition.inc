@@ -78,7 +78,7 @@ function tpps_report_zenodo_deposition() {
       $submission = new Submission($entity);
       $deposit_id = $submission->getZenodoDepositId();
     }
-    elseif (strpos('zenodo', $host) !== FALSE) {
+    elseif (strpos($host, 'zenodo') !== FALSE) {
       // This is Deposit Id.
       // Example: 10.5281/zenodo.15011388.
       $doi = $host . '/' . $entity;
