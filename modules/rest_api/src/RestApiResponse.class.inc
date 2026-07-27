@@ -271,7 +271,10 @@ class RestApiResponse {
       // JSON.
       $response['body'] = json_decode($response['body'], TRUE);
     }
-    elseif (strpos($response['content_type'], 'application/xml') !== FALSE) {
+    elseif (
+      strpos($response['content_type'], 'application/xml') !== FALSE
+      || strpos($response['content_type'], 'text/xml') !== FALSE
+    ) {
       // XML.
       // Stored as string. No need to decode.
     }

@@ -178,6 +178,7 @@ function tpps_species_autocomplete($string) {
 function tpps_ncbi_species_autocomplete($string) {
   $matches = [];
 
+  // @TODO Update to use NcbiTaxonomy::getId().
   try {
     $taxons = tpps_ncbi_get_taxon_id("$string*", TRUE);
   }

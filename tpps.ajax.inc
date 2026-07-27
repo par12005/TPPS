@@ -29,8 +29,6 @@ module_load_include('inc', 'tpps', 'ajax_callbacks/study_details');
  *   1. Part of function name (without 'tpps_ajax_' prefix).
  *   2. Name of the existing function. Non-empty response treated as success
  *      in this case.
- *   List of functions for search purpose:
- *   - tpps_ncbi_get_taxon_id().
  * @param array $payload
  *   Optional payload. Could be used for testing to emulate POST data.
  *

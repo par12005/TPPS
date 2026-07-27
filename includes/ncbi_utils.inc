@@ -23,6 +23,7 @@ function tpps_ncbi_get_taxonomy($organism, $rank) {
     return tpps_ncbi_get_subkingdom($organism);
   }
 
+  // @TODO Update to use NcbiTaxonomy::getId().
   try {
     $id = tpps_ncbi_get_taxon_id($organism);
   }
@@ -64,6 +65,7 @@ function tpps_ncbi_get_taxonomy($organism, $rank) {
  *   The name of the subkingdom or FALSE on failure.
  */
 function tpps_ncbi_get_subkingdom($organism) {
+  // @TODO Update to use NcbiTaxonomy::getId().
   try {
     $id = tpps_ncbi_get_taxon_id($organism);
   }
@@ -111,6 +113,7 @@ function tpps_ncbi_get_subkingdom($organism) {
  *   When all attempts to get data from NCBI failed.
  *
  * @todo Use live-site as a proxy to get data when requests to NCBI API fails.
+ * @TODO Update to use NcbiTaxonomy::getId().
  */
 function tpps_ncbi_get_taxon_id($organism, $list = FALSE, $level = 1) {
   $formatted_org = implode('+', explode(' ', $organism));

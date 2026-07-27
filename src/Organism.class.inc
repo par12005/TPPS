@@ -289,6 +289,8 @@ class Organism {
 
   /**
    * Get NCBI Taxonomy Id from the remote server.
+   *
+   * @TODO Update to use NcbiTaxonomy::getId().
    */
   public function requestNcbiTaxonomyId() {
     $this->load();

@@ -53,7 +53,7 @@ class TppsAjax {
   /**
    * Gets NCBI Taxonomy Id.
    *
-   * Wrapper for the function tpps_ncbi_get_taxon_id().
+   * Uses RestApi class and caching.
    *
    * @param array $data
    *   POST data with required 'organism' item which must contain organism name.
@@ -63,7 +63,7 @@ class TppsAjax {
    */
   public static function getNcbiTaxonomyId(array $data) {
     try {
-      $xml = tpps_ncbi_get_taxon_id($data['organism']);
+      $id = NcbiTaxonomy::getId($data['organism']);
     }
     catch (Exception $e) {
       $response['id'] = FALSE;
@@ -71,9 +71,8 @@ class TppsAjax {
       $response['errors'][] = t("Can't get data from NCBI database.");
       return $response;
     }
-    // Convert Simple XML Object into PHP's array.
-    $ncbi_response = json_decode(json_encode($xml), TRUE);
-    $response['id'] = check_plain($ncbi_response[0]) ?? FALSE;
+
+    $response['id'] = $id ?? FALSE;
     if (empty($response['id'])) {
       $response['success'] = FALSE;
       $response['warnings'][] = t('Organism is missing in NCBI database.');

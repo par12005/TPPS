@@ -811,6 +811,7 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
       // Lookup to see if this species exists on NCBI
       // @TODO Minor. Reuse:
       // $organism = new Organism($raw_name)->processTaxonomyId($submission, $use_log = TRUE);
+      // @TODO Update to use NcbiTaxonomy::getId().
       try {
         $taxons = tpps_ncbi_get_taxon_id($raw_name, TRUE);
       }

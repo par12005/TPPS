@@ -30,6 +30,7 @@ files[] = src/ChadoDb.class.inc
 files[] = src/PhenotypeSynonym.class.inc
 files[] = src/PhenotypeUnit.class.inc
 files[] = src/NextFlowManager.class.inc
+files[] = src/NcbiTaxonomy.class.inc
 
 ; Misc
 files[] = src/Report.class.inc
