@@ -185,10 +185,16 @@ class TppsAjax {
           $publication_data = PublicationDoi::load($doi);
         }
         $response['publication_data'] = $publication_data;
-        $response['is_complete'] = PublicationDoi::isComplete($publication_data);
+        // When 'is_complete' is FALSE then SERP providers will be used to
+        // get more data but SERP providers doesn't have 'species' data.
+        $is_complete = PublicationDoi::isComplete($publication_data);
+        if (!$is_complete) {
+          unset($publication_data['species']);
+          $is_complete = PublicationDoi::isComplete($publication_data);
+        }
+        $response['is_complete'] = $is_complete;
         $response['success'] = TRUE;
       }
-
     }
     return $response;
   }
