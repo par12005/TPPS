@@ -24,13 +24,16 @@ files[] = src/submission_tag/FormCreateSubmissionTag.class.inc
 files[] = src/submission_tag/FormEditSubmissionTag.class.inc
 files[] = src/submission_tag/FormRemoveSubmissionTag.class.inc
 
+; Organism.
+files[] = src/organism/Organism.class.inc
+files[] = src/organism/NcbiTaxonomy.class.inc
+files[] = src/organism/GbifSpeciesApi.class.inc
+
 ; Main
-files[] = src/Organism.class.inc
 files[] = src/ChadoDb.class.inc
 files[] = src/PhenotypeSynonym.class.inc
 files[] = src/PhenotypeUnit.class.inc
 files[] = src/NextFlowManager.class.inc
-files[] = src/NcbiTaxonomy.class.inc
 
 ; Misc
 files[] = src/Report.class.inc
