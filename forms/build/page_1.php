@@ -172,6 +172,10 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // JS Settings.
   $proxy_url = variable_get('tpps_doi_lookup_cors_proxy_url');
+  $publication_data = [];
+  if ($doi) {
+    $publication_data[$doi] = PublicationDoi::getCombined($doi);
+  }
   $js_settings = [
     'doi_lookup' => [
       // Selector for the textfield with DOI.
@@ -180,8 +184,9 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       // List of the SERP Provider KEYs.
       'ajax_get_publication_data_path' => '/ajax/tpps/getPublicationData',
       'ajax_callback' => 'getPublicationData',
-      'publication_data' => [],
       'dump_container' => '#dump_container',
+      'doi' => $doi,
+      'publication_data' => $publication_data,
     ],
   ];
   // Check if any SERP providers are enabled.

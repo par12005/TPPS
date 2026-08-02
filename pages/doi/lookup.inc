@@ -23,8 +23,9 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
         t('CORS Proxy Server Status: <strong>@status</strong>',
           ['@status' => CorsProxy::isUp() ? t('Up') : t('Down')]
         ),
-        l(t('DOI Lookup Settings'), 'admin/config/tpps/doi'),
-        l(t('All DOI report at live site'),
+        l(t('DOI Lookup Settings'), 'admin/config/tpps/doi_lookup'),
+        l(
+          t('All DOI report at live site'),
           'https://tgwebdev.cam.uchc.edu/admin/reports/tpps/doi/submission/all'
         ),
       ],
@@ -92,7 +93,6 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // JS Settings.
   $proxy_url = variable_get('tpps_doi_lookup_cors_proxy_url');
-
   $publication_data = [];
   if ($doi) {
     $publication_data[$doi] = PublicationDoi::getCombined($doi);
@@ -105,9 +105,9 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
       // List of the SERP Provider KEYs.
       'ajax_get_publication_data_path' => '/ajax/tpps/getPublicationData',
       'ajax_callback' => 'getPublicationData',
-      'publication_data' => $publication_data,
       'dump_container' => '#dump_container',
       'doi' => $doi,
+      'publication_data' => $publication_data,
     ],
   ];
   // Check if any SERP providers are enabled.
