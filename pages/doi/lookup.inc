@@ -23,9 +23,8 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
         t('CORS Proxy Server Status: <strong>@status</strong>',
           ['@status' => CorsProxy::isUp() ? t('Up') : t('Down')]
         ),
-        l(t('DOI Lookup Settings'), 'admin/config/tpps/doi_lookup'),
-        l(
-          t('All DOI report at live site'),
+        l(t('DOI Lookup Settings'), 'admin/config/tpps/doi'),
+        l(t('All DOI report at live site'),
           'https://tgwebdev.cam.uchc.edu/admin/reports/tpps/doi/submission/all'
         ),
       ],

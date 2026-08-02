@@ -73,7 +73,7 @@
       // Default value for year is '0' ('- Select -').
       let year = data.date.match(/^\d{4}/)[0];
       $('#edit-publication-year').val(year ?? 0).removeClass('error');
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Secondary Authors.
       let secondaryAuthors = data.authors.split(',')
         .slice(1).map(item => item.trim());
@@ -93,36 +93,29 @@
           );
         });
       }
-
-
-// @TODO Update.
-
-
-
-      if (data.species.length > 0) {
-        // Organisms.
-        let species = data.species.split(',').jmap(item => item.trim());
-        if (species.length > 0) {
-          // @TODO Reuse empty fields.
-          // @TODO Not overwrite 1st field if it's not empty.
-          // 1st field is present at form and can't be removed.
-          // So it must be populated manually.
-          if (typeof species[0] == 'undefined') {
-            $('input[name="organism[1][name]"]').val('');
-          }
-          else {
-            $('input[name="organism[1][name]"]').val(species[0]).removeClass('error');
-          }
-          // Add necessary number of fields.
-          $('input[name="organism[number]"]').val(species.length - 1 );
-          $('input[id^="edit-organism-add"]').mousedown();
-          // Populate new fields.
-          $.each(species, function( key, value ) {
-            Drupal.waitForElm('input[name="organism[' + ( key + 1 ) + '][name]"]')
-              .then((elm) => { $(elm).val(value); }
-            );
-          });
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Organisms.
+      let species = data.species?.split(',').jmap(item => item.trim());
+      if (species?.length > 0) {
+        // @TODO Reuse empty fields.
+        // @TODO Not overwrite 1st field if it's not empty.
+        // 1st field is present at form and can't be removed.
+        // So it must be populated manually.
+        if (typeof species[0] == 'undefined') {
+          $('input[name="organism[1][name]"]').val('');
         }
+        else {
+          $('input[name="organism[1][name]"]').val(species[0]).removeClass('error');
+        }
+        // Add necessary number of fields.
+        $('input[name="organism[number]"]').val(species.length - 1 );
+        $('input[id^="edit-organism-add"]').mousedown();
+        // Populate new fields.
+        $.each(species, function( key, value ) {
+          Drupal.waitForElm('input[name="organism[' + ( key + 1 ) + '][name]"]')
+            .then((elm) => { $(elm).val(value); }
+          );
+        });
       }
     }
   }
