@@ -121,13 +121,7 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   $serp_providers = [];
   foreach ($serp_provider_class_list as $class_name) {
     $provider = new $class_name($doi);
-    $serp_providers[$class_name] = $provider;
-    // Publication data per provider.
-    if (!empty($publication_data = PublicationDoi::load($doi, $class_name))) {
-      $js_settings['doi_lookup']['publication_data'][$class_name][$doi]
-        = $publication_data;
-    }
-    // List of existing SERP Providers.
+    // Build a list of the enabled SERP Provider class names.
     $js_settings['doi_lookup']['serp_providers'][] = $class_name;
     // Metadata of the providers allowed for scraping.
     $js_settings['doi_lookup'][$class_name] = [
