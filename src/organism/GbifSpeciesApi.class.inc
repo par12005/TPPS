@@ -26,14 +26,26 @@ class GbifSpeciesApi {
    *   Organism Name.
    */
   public static function getId($organism) {
+    $use_new_version = TRUE;
     try {
-      $response = (new RestApi([
-        'url' => 'https://api.gbif.org/v1/species/match',
-        'query' => ['name' => $organism],
-        'tag' => 'GBIF Taxonomy Id: ' . $organism,
-        'cache' => TRUE,
-      ]))->get()->response();
-      return $response['usageKey'] ?? NULL;
+      if ($use_new_version) {
+        $response = (new RestApi([
+          'url' => 'https://api.gbif.org/v2/species/match',
+          'query' => ['genericName' => $organism],
+          'tag' => 'GBIF v2 Taxonomy Id: ' . $organism,
+          'cache' => TRUE,
+        ]))->get()->response();
+        return $response['usage']['key'] ?? NULL;
+      }
+      else {
+        $response = (new RestApi([
+          'url' => 'https://api.gbif.org/v1/species/match',
+          'query' => ['name' => $organism],
+          'tag' => 'GBIF v1 Taxonomy Id: ' . $organism,
+          'cache' => TRUE,
+        ]))->get()->response();
+        return $response['usageKey'] ?? NULL;
+      }
     }
     catch (Exception $e) {
       $message = $e->getMessage();

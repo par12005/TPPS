@@ -423,7 +423,7 @@ class Organism {
   /**
    * Loads NCBI Taxonomy Id from DB.
    */
-  public function &getNcbiTaxonomyId() {
+  public function &getOrganismTaxonomyId() {
     if (empty($this->ncbiTaxonomyId)) {
       // Get from DB.
       $this->load();

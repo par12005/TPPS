@@ -266,7 +266,7 @@
     else {
       //let url = Drupal.settings.basePath + Drupal.settings.tpps.ajaxUrl
       //  + '/get_ncbi_taxonomy_id';
-      let url = Drupal.settings.basePath + Drupal.settings.tpps.ajaxUrl + '/getNcbiTaxonomyId';
+      let url = Drupal.settings.basePath + Drupal.settings.tpps.ajaxUrl + '/getOrganismTaxonomyId';
       // Disable button 'Next' because organism fields won't pass validation.
       $('input.next-button').attr('disabled','disabled');
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

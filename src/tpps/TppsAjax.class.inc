@@ -61,42 +61,62 @@ class TppsAjax {
    * @return array
    *   Returns array with data to be sent back to browser.
    */
-  public static function getNcbiTaxonomyId(array $data) {
+  public static function getOrganismTaxonomyId(array $data) {
     try {
-      $id = NcbiTaxonomy::getId($data['organism']);
+      $organism_name = $data['organism'] ?? NULL;
+      if (!empty($organism_name)) {
+        $source = 'ncbi';
+        $id = NcbiTaxonomy::getId($organism_name);
+        if (empty($id)) {
+          $response['warnings'][] = t("Organism wans't found in NCBI database.");
+          $id = GbifSpeciesApi::getId($organism_name);
+          $source = 'gbif';
+        }
+      }
     }
     catch (Exception $e) {
       $response['id'] = FALSE;
       $response['success'] = FALSE;
-      $response['errors'][] = t("Can't get data from NCBI database.");
+      $response['errors'][] = t("Can't get data from NCBI and GBIF databases.");
       return $response;
     }
 
     $response['id'] = $id ?? FALSE;
     if (empty($response['id'])) {
       $response['success'] = FALSE;
-      $response['warnings'][] = t('Organism is missing in NCBI database.');
+      $response['warnings'][] = t('Organism is missing in NCBI and GBIF databases.');
     }
     else {
       $response['success'] = TRUE;
-      // Build link to NCBI Taxonomy Browser page.
-      $url = 'https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi';
-      $params = [
-        'absolute' => TRUE,
-        'query' => ['id' => $response['id']],
-        'external' => TRUE,
-        'attributes' => [
-          'target' => '_blank',
-          'title' => t('View using NCBI Taxonomy Browser'),
-        ],
-      ];
-      $response['statuses'][] = t('Organism "@name" found in NCBI database. '
-        . 'Taxonomy Id: !id',
-        [
-          '@name' => $data['organism'],
-          '!id' => l($response['id'], $url, $params),
-        ]
-      );
+      $id = check_plain($id);
+      if ($source == 'ncbi') {
+        // Build link to NCBI Taxonomy Browser page.
+        $url = 'https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi';
+        $params = [
+          'query' => ['id' => $id],
+          'attributes' => [
+            'target' => '_blank',
+            'title' => t('View using NCBI Taxonomy Browser'),
+          ],
+        ];
+        $response['statuses'][] = t(
+          'Organism "@name" found in NCBI database. Taxonomy Id: !id',
+          ['@name' => $organism_name, '!id' => l($id, $url, $params)]
+        );
+      }
+      else {
+        $url = 'https://www.gbif.org/species/' . $id;
+        $params = [
+          'attributes' => [
+            'target' => '_blank',
+            'title' => t('View on GBIF site'),
+          ],
+        ];
+        $response['statuses'][] = t(
+          'Organism "@name" found in GBIF database. Taxonomy Id: !id',
+          ['@name' => $organism_name, '!id' => l($id, $url, $params)]
+        );
+      }
     }
     return $response;
   }
