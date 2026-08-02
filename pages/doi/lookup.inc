@@ -55,15 +55,20 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   }
 
   if ($module_exists) {
-    // Create main DOI field.
+    // Create dropdown.
     $form['tpps_doi_lookup_doi'] = [
       '#type' => 'select_or_other',
       '#title' => t('DOI'),
-      '#default_value' => $doi,
-      '#description' => $description,
+      '#default_value' => [$doi],
+      '#description' => 'To use DOI which is not in the list scroll down '
+        . 'and select "Other" option. <br />Then fill regular textfield '
+        . 'and switch focus to other field to start processing.'
+        . $description,
       '#options' => $options,
       '#attributes' => ['class' => ['tpps_doi_lookup_doi']],
       '#prefix' => '<div id="doi-message"></div>',
+      '#other_unknown_defaults' => 'other',
+      '#other_delimiter' => ',',
     ];
   }
   else {
@@ -72,7 +77,8 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
       '#type' => 'textfield',
       '#title' => t('DOI'),
       '#default_value' => $doi,
-      '#description' => $description,
+      '#description' => 'Move focus out from the field to start processing.'
+        . $description,
       '#attributes' => ['class' => ['tpps_doi_lookup_doi']],
       '#prefix' => '<div id="doi-message"></div>',
     ];
@@ -86,6 +92,11 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // JS Settings.
   $proxy_url = variable_get('tpps_doi_lookup_cors_proxy_url');
+
+  $publication_data = [];
+  if ($doi) {
+    $publication_data[$doi] = PublicationDoi::getCombined($doi);
+  }
   $js_settings = [
     'doi_lookup' => [
       // Selector for the textfield with DOI.
@@ -94,8 +105,9 @@ function tpps_doi_lookup_form(array $form, array &$form_state, $doi1 = '', $doi2
       // List of the SERP Provider KEYs.
       'ajax_get_publication_data_path' => '/ajax/tpps/getPublicationData',
       'ajax_callback' => 'getPublicationData',
-      'publication_data' => [],
+      'publication_data' => $publication_data,
       'dump_container' => '#dump_container',
+      'doi' => $doi,
     ],
   ];
   // Check if any SERP providers are enabled.
