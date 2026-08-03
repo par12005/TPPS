@@ -204,7 +204,7 @@ class Organism {
    */
   public function load() {
     if ($this->isLoaded()) {
-      // No not load multiple times. See $this->reload().
+      // Do not load multiple times. See $this->reload().
       return;
     }
     $query = db_select('chado.organism', 'co')
@@ -214,6 +214,7 @@ class Organism {
       // Load by name.
       if (!empty($this->name)) {
         $this->parseName();
+
         if (empty($this->genus) || empty($this->species)) {
           watchdog('tpps', 'Empty organism name.');
           return;

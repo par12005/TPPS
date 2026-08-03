@@ -95,6 +95,7 @@ function tpps_reports_settings_form(array $form, array &$form_state) {
   // GBIF API.
   // 'tpps_report_organism_gbif_all_title',
   // 'tpps_report_organism_gbif_missing_title'.
+  // 'tpps_report_organism_taxonomy_title'.
   module_load_install('tpps');
   foreach (tpps_get_variable_list() as $name => $report) {
     if (

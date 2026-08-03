@@ -1,0 +1,100 @@
+<?php
+
+/**
+ * @file
+ * Shows list of all the organisms in db table 'chado.organism'.
+ */
+
+/**
+ * Menu callback. Shows list of all organisms.
+ */
+function tpps_report_organism_taxonomy() {
+  $name = 'organism_taxonomy';
+  $page_title = variable_get('tpps_report_' . $name . '_title', "Organism's Taxonomy");
+
+  // WARNING: Report::print() requires db_select() not db_query().
+  $query = db_select('chado.organism', 'o')
+    ->fields('o', ['organism_id', 'genus', 'species', 'infraspecific_name']);
+  // NCBI.
+  $query->leftJoin(
+    'public.' . NcbiTaxonomy::TABLE,
+    'nt',
+    'nt.organism_id = o.organism_id'
+  );
+  $query->addField('nt', 'taxonomy_id', 'ncbi');
+  // GBIF.
+  $query->leftJoin(
+    'public.' . GbifSpeciesApi::TABLE,
+    'gsa',
+    'gsa.organism_id = o.organism_id'
+  );
+  $query->addField('gsa', 'taxonomy_id', 'gbif');
+
+  // Header.
+  $header = [
+    ['data' => t('Organism Id'), 'field' => 'o.organism_id'],
+    ['data' => t('Genus'), 'field' => 'o.genus'],
+    ['data' => t('Species'), 'field' => 'o.species'],
+    ['data' => t('Infraspecific Name'), 'field' => 'o.infraspecific_name'],
+    ['data' => t('NCBI'), 'field' => 'ncbi'],
+    ['data' => t('GBIF'), 'field' => 'gbif'],
+  ];
+
+  return '<h2>' . $page_title . '</h2>' . Report::print([
+    'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
+    'page_title' => $page_title,
+    'formatter' => 'tpps_report_' . $name . '_formatter',
+    'table_attributes' => ['class' => ['view' , 'tpps_table']],
+    'items_per_page' => 5000,
+    'header' => $header,
+    'query' => $query,
+  ]);
+}
+
+/**
+ * Values formatter for tpps_admin_organism_list_report().
+ *
+ * @param string $name
+ *   Required. Field name.
+ *   Machine table field name (column name) without table name and dot.
+ * @param mixed $value
+ *   Field value.
+ * @param array $row
+ *   Data of the whole table row with hidden fields.
+ *   This data could be used to format other fields. For example,
+ *   hidden field 'uid' or 'entity_id' could be used to build a link to
+ *   user profile page.
+ *
+ * @return mixed
+ *   Returns formatted value.
+ *   Empty value will not be formatted and returned as is.
+ */
+function tpps_report_organism_taxonomy_formatter(string $name, $value, array &$row) {
+  $formatted = check_plain($value);
+  if (empty($name) || empty($value)) {
+    return $formatted;
+  }
+  $name = check_plain($name);
+  switch ($name) {
+    case 'ncbi':
+      if (!empty($value)) {
+        $formatted = l($formatted, NcbiTaxonomy::getUrl($formatted));
+      }
+      break;
+
+    case 'gbif':
+      if (!empty($value)) {
+        $formatted = l($formatted, GbifSpeciesApi::getUrl($formatted));
+      }
+      break;
+
+    case 'organism_id':
+      if (!empty($value)) {
+        $formatted = l($formatted, 'admin/reports/db/chado.organism',
+          ['query' => ['chado.organism.organism_id' => $formatted]]
+        );
+      }
+      break;
+  }
+  return $formatted;
+}

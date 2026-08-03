@@ -26,6 +26,22 @@ class NcbiTaxonomy extends OrganismTaxonomy {
   const TABLE = 'tpps_ncbi_taxonomy';
 
   /**
+   * Generates URL to the species page.
+   *
+   * @param int $taxonomy_id
+   *   Taxonomy Id.
+   *
+   * @return string
+   *   Returns URL.
+   */
+  public static function getUrl($taxonomy_id) {
+    return url(
+      'https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi',
+      ['query' => ['id' => $taxonomy_id]]
+    );
+  }
+
+  /**
    * Request NCBI Taxonomy Term Id for given organism name.
    *
    * @param string $organism_name
@@ -47,6 +63,9 @@ class NcbiTaxonomy extends OrganismTaxonomy {
     // Get organism id.
     try {
       $organism_id = tpps_organism($organism_name)->id;
+      if (empty($organism_id)) {
+        return NULL;
+      }
     }
     catch (Exception $e) {
       $message = $e->getMessage();
@@ -64,7 +83,7 @@ class NcbiTaxonomy extends OrganismTaxonomy {
     $formatted_organism_name = implode('+', explode(' ', $organism_name));
     $query = [
       'db' => 'taxonomy',
-      'term' => "{$formatted_organis_name}[Scientific+Name]",
+      'term' => "{$formatted_organism_name}[Scientific+Name]",
       'api_key' => variable_get('tripal_eutils_ncbi_api_key'),
     ];
 
@@ -91,13 +110,11 @@ class NcbiTaxonomy extends OrganismTaxonomy {
     }
 
     // Save.
-    if ($taxonomy_id) {
-      static::save(
-        tpps_organism($organism_name)->id,
-        $organism_name,
-        $taxonomy_id
-      );
-    }
+    static::save(
+      $organism_id,
+      $organism_name,
+      $taxonomy_id
+    );
     return $taxonomy_id;
   }
 

@@ -31,21 +31,42 @@ class GbifSpeciesApi extends OrganismTaxonomy {
   const TABLE = 'tpps_gbif_taxonomy';
 
   /**
+   * Generates URL to the species page.
+   *
+   * @param int $taxonomy_id
+   *   Taxonomy Id.
+   *
+   * @return string
+   *   Returns URL.
+   */
+  public static function getUrl($taxonomy_id) {
+    return 'https://www.gbif.org/species/' . $taxonomy_id;
+  }
+
+  /**
    * Gets Taxonomy Id.
    *
    * @param string $organism_name
    *   Organism Name.
+   *
+   * @return mixed
+   *   Returns Taxonomy Id or NULL.
    */
   public static function getId($organism_name) {
     $organism_name = check_plain($organism_name);
     // Load.
     if (!empty($taxonomy_id = static::load($organism_name))) {
+//watchdog('tpps', $organism_name . ': ' . $taxonomy_id);
       return $taxonomy_id;
     }
 
     // Get organism id.
     try {
       $organism_id = tpps_organism($organism_name)->id;
+      if (empty($organism_id)) {
+//watchdog('tpps', 2);
+        return NULL;
+      }
     }
     catch (Exception $e) {
       $message = $e->getMessage();
@@ -95,13 +116,11 @@ class GbifSpeciesApi extends OrganismTaxonomy {
     }
 
     // Save.
-    if ($taxonomy_id) {
-      static::save(
-        tpps_organism($organism_name)->id,
-        $organism_name,
-        $taxonomy_id
-      );
-    }
+    static::save(
+      $organism_id,
+      $organism_name,
+      $taxonomy_id
+    );
     return $taxonomy_id;
   }
 

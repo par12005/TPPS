@@ -93,6 +93,7 @@ function tpps_get_variable_list() {
     'tpps_report_organism_species_title' => 'Organism Species List',
     'tpps_report_organism_new_title' => 'New Organisms',
     'tpps_report_organism_order_family_not_exist_title' => 'Order/Family not exist',
+    'tpps_report_organism_taxonomy_title' => "Organism's Taxonomy",
     // DOI reports.
     'tpps_report_doi_duplicates_title' => 'DOI Duplicates',
     'tpps_report_doi_missing_title' => 'Missing DOI',
@@ -2653,6 +2654,7 @@ function tpps_update_7134() {
   // GBIF Reports.
   variable_set('tpps_report_organism_gbif_all_title', 'All organisms and their GBIF Taxonomy Ids');
   variable_set('tpps_report_organism_gbif_missing_title', 'Organisms without GBIF Taxonomy Id');
+  variable_set('tpps_report_organism_taxonomy_title', "Organism's Taxonomy");
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Remove outdated variables.

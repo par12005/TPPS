@@ -91,9 +91,8 @@ class TppsAjax {
       $id = check_plain($id);
       if ($source == 'ncbi') {
         // Build link to NCBI Taxonomy Browser page.
-        $url = 'https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi';
+        $url = NcbiTaxonomy::getUrl($id);
         $params = [
-          'query' => ['id' => $id],
           'attributes' => [
             'target' => '_blank',
             'title' => t('View using NCBI Taxonomy Browser'),
@@ -105,7 +104,7 @@ class TppsAjax {
         );
       }
       else {
-        $url = 'https://www.gbif.org/species/' . $id;
+        $url = GbifSpeciesApi::getUrl($id);
         $params = [
           'attributes' => [
             'target' => '_blank',

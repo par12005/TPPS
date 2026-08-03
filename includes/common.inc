@@ -443,9 +443,10 @@ function tpps_parse_organism_name($organism_name) {
 function tpps_get_organisms_without_gbif_taxonomy_id($debug_mode = FALSE) {
   // Get all organisms.
   $table = 'chado.organism';
-  $query = db_select($table, 'o')->fields('o', ['organism_id']);
+  $query = db_select($table, 'o')
+    ->fields('o', ['organism_id']);
   $query->leftJoin(GbifSpeciesApi::TABLE, 'gsa', 'o.organism_id = gsa.organism_id');
-  $query->isNull('gsa.taxonomy_id');
+  $query->isNull('gsa.organism_name');
   $query->addExpression("CONCAT(o.genus, ' ', o.species)", 'organism_name');
   if ($debug_mode) {
     $query->range(0, 11);
@@ -463,9 +464,10 @@ function tpps_get_organisms_without_gbif_taxonomy_id($debug_mode = FALSE) {
 function tpps_get_organisms_without_ncbi_taxonomy_id($debug_mode = FALSE) {
   // Get all organisms.
   $table = 'chado.organism';
-  $query = db_select($table, 'o')->fields('o', ['organism_id']);
-  $query->leftJoin(NcbiTaxonomy::TABLE, 'nt', 'o.organism_id = nt.organism_id');
-  $query->isNull('nt.taxonomy_id');
+  $query = db_select($table, 'o')
+    ->fields('o', ['organism_id']);
+  $query->leftJoin(GbifSpeciesApi::TABLE, 'gsa', 'o.organism_id = gsa.organism_id');
+  $query->isNull('gsa.organism_name');
   $query->addExpression("CONCAT(o.genus, ' ', o.species)", 'organism_name');
   if ($debug_mode) {
     $query->range(0, 11);
