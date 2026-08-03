@@ -70,24 +70,31 @@ function tpps_reports_settings_form(array $form, array &$form_state) {
   // 'tpps_report_doi_publication_data_dryad_title'.
   //
   // Zenodo:
-  // 'tpps_report_zenodo_deposition_title'.
+  // 'tpps_report_zenodo_deposition_title',
   //
   // Submission:
-  // 'tpps_report_submission_imported_title'.
-  // 'tpps_report_submission_zenodo_title'.
-  // 'tpps_report_submission_version_title'.
+  // 'tpps_report_submission_imported_title',
+  // 'tpps_report_submission_zenodo_title',
+  // 'tpps_report_submission_version_title',
   //
   // Submission/File:
   // 'tpps_report_submission_file_all_title',
-  // 'tpps_report_submission_file_none_title'.
-  // 'tpps_report_submission_file_missing_title'.
-  // 'tpps_report_submission_file_type_title'.
+  // 'tpps_report_submission_file_none_title',
+  // 'tpps_report_submission_file_missing_title',
+  // 'tpps_report_submission_file_type_title',
   //
   //  Rest API.
-  // 'tpps_report_rest_api_request_list_title'.
-  // 'tpps_report_rest_api_request_body_title'.
-  // 'tpps_report_rest_api_response_list_title'.
-  // 'tpps_report_rest_api_response_body_title',.
+  // 'tpps_report_rest_api_request_list_title',
+  // 'tpps_report_rest_api_request_body_title',
+  // 'tpps_report_rest_api_response_list_title',
+  // 'tpps_report_rest_api_response_body_title',
+  //
+  // NCBI API.
+  // 'tpps_report_organism_ncbi_all_title',
+  // 'tpps_report_organism_ncbi_missing_title',
+  // GBIF API.
+  // 'tpps_report_organism_gbif_all_title',
+  // 'tpps_report_organism_gbif_missing_title'.
   module_load_install('tpps');
   foreach (tpps_get_variable_list() as $name => $report) {
     if (

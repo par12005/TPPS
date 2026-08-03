@@ -466,6 +466,20 @@ class Report {
             'admin_panel' => FALSE,
           ],
         ],
+        'gbif' => [
+          'all' => [
+            'title' => variable_get('tpps_report_organism_gbif_all_title',
+              'All Organisms and their GBIF Taxonomy Ids'),
+            'description' => t('List of all organisms and their GBIF Taxonomy Ids.'),
+            'admin_panel' => FALSE,
+          ],
+          'missing' => [
+            'title' => variable_get('tpps_report_organism_gbif_missing_title',
+              'Organisms without  GBIF Taxonomy Ids'),
+            'description' => t('List of organisms which are missing GBIF Taxonomy Ids.'),
+            'admin_panel' => FALSE,
+          ],
+        ],
       ],
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // DOI.

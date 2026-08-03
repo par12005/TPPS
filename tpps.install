@@ -122,6 +122,9 @@ function tpps_get_variable_list() {
     // NCBI API.
     'tpps_report_organism_ncbi_all_title' => 'All organisms and their NCBI Taxonomy Ids',
     'tpps_report_organism_ncbi_missing_title' => 'Organisms without NCBI Taxonomy Id',
+    // GBIF API.
+    'tpps_report_organism_gbif_all_title' => 'All organisms and their GBIF Taxonomy Ids',
+    'tpps_report_organism_gbif_missing_title' => 'Organisms without GBIF Taxonomy Id',
     // Rest API.
     'tpps_report_rest_api_request_list_title' => 'Rest API Request List',
     'tpps_report_rest_api_request_single_title' => 'Rest API Request',
@@ -2646,6 +2649,10 @@ function tpps_update_7134() {
   variable_set('tpps_validation_regex_doi', '/10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+/');
   variable_set('tpps_cron_cors_proxy_keep_alive_frequency', '*/15 * * * *');
   variable_set('tpps_page_1_doi_lookup_debug_mode', FALSE);
+
+  // GBIF Reports.
+  variable_set('tpps_report_organism_gbif_all_title', 'All organisms and their GBIF Taxonomy Ids');
+  variable_set('tpps_report_organism_gbif_missing_title', 'Organisms without GBIF Taxonomy Id');
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Remove outdated variables.
