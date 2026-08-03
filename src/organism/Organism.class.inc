@@ -11,6 +11,8 @@
  *   tpps_organism($id)->doesExists();
  * To add new organism:
  *   tpps_organism($name)->save();
+ * To get organism id by name:
+ *   tpps_organism($organism_name)->id;
  * To get NCBI Taxonomy Id:
  *   tpps_organism($id)->requestNcbiTaxonomyId()->ncbiTaxonomyId;
  * To get GBIF Taxonomy Id:
@@ -658,39 +660,6 @@ class Organism {
         return $index;
       }
     }
-  }
-
-  /**
-   * Load organism from database by organism name.
-   *
-   * It's safe to call this method because existing data won't be overwritten.
-   * Note: data from db table 'chado.organism' will be loaded.
-   */
-  public function getId() {
-    if ($this->isLoaded()) {
-      // No not load multiple times. See $this->reload().
-      return;
-    }
-    $query = db_select('chado.organism', 'co')
-      ->fields('co', ['organism_id'])
-      ->range(0, 1);
-    // Load by name.
-    if (empty($this->name)) {
-      $message = t("Can't load organism because there are no organism id and name.");
-      watchdog('tpps', $message, [], WATCHDOG_ERROR);
-      return;
-    }
-    $this->parseName();
-    if (empty($this->genus) || empty($this->species)) {
-      watchdog('tpps', 'Empty organism name.');
-      return;
-    }
-    $query->condition('genus', $this->genus);
-    $query->condition('species', $this->species);
-    if (!empty($this->infraspecificName)) {
-      $query->condition('infraspecific_name', $this->infraspecificName);
-    }
-    return $query->execute()->fetchField();
   }
 
 }

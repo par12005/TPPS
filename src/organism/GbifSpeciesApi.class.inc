@@ -43,7 +43,22 @@ class GbifSpeciesApi extends OrganismTaxonomy {
       return $taxonomy_id;
     }
 
+    // Get organism id.
+    try {
+      $organism_id = tpps_organism($organism_name)->id;
+    }
+    catch (Exception $e) {
+      $message = $e->getMessage();
+      $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
+      watchdog('tpps', '@message <pre>@backtrace</pre>',
+        ['@message' => $message, '@backtrace' => print_r($stack, 1)],
+        WATCHDOG_ERROR
+      );
+      return NULL;
+    }
+
     // Get.
+    $taxonomy_id = NULL;
     $use_new_version = TRUE;
     try {
       if ($use_new_version) {
@@ -53,7 +68,9 @@ class GbifSpeciesApi extends OrganismTaxonomy {
           'tag' => 'GBIF v2 Taxonomy Id: ' . $organism_name,
           'cache' => TRUE,
         ]))->get()->response();
-        $taxonomy_id = $response['usage']['key'] ?? NULL;
+        if ($response['usage']['rank'] == 'SPECIES') {
+          $taxonomy_id = $response['usage']['key'] ?? NULL;
+        }
       }
       else {
         $response = (new RestApi([
@@ -62,7 +79,9 @@ class GbifSpeciesApi extends OrganismTaxonomy {
           'tag' => 'GBIF v1 Taxonomy Id: ' . $organism_name,
           'cache' => TRUE,
         ]))->get()->response();
-        $taxonomy_id = $response['usageKey'] ?? NULL;
+        if ($response['rank'] == 'SPECIES') {
+          $taxonomy_id = $response['usageKey'] ?? NULL;
+        }
       }
     }
     catch (Exception $e) {
@@ -76,11 +95,13 @@ class GbifSpeciesApi extends OrganismTaxonomy {
     }
 
     // Save.
-    static::save(
-      tpps_organism($organism_name)->id,
-      $organism_name,
-      $taxonomy_id
-    );
+    if ($taxonomy_id) {
+      static::save(
+        tpps_organism($organism_name)->id,
+        $organism_name,
+        $taxonomy_id
+      );
+    }
     return $taxonomy_id;
   }
 

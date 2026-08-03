@@ -52,7 +52,7 @@ function tpps_gbif_batch_settings_form_submit(array $form, array &$form_state) {
   $list = tpps_get_organisms_without_gbif_taxonomy_id();
   $total = count($list);
   foreach ($list as $organism_id => $organism_name) {
-    if (empty($organism_name)) {
+    if (empty($organism_name) || empty($organism_id)) {
       watchdog('tpps', "Organism #id has empty name and GBIF Taxonomy Id "
         . "can't be found for this organism", ['@id' => $organism_id],
         WATCHDOG_ERROR

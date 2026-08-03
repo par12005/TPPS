@@ -44,7 +44,22 @@ class NcbiTaxonomy extends OrganismTaxonomy {
       return $taxonomy_id;
     }
 
+    // Get organism id.
+    try {
+      $organism_id = tpps_organism($organism_name)->id;
+    }
+    catch (Exception $e) {
+      $message = $e->getMessage();
+      $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
+      watchdog('tpps', '@message <pre>@backtrace</pre>',
+        ['@message' => $message, '@backtrace' => print_r($stack, 1)],
+        WATCHDOG_ERROR
+      );
+      return NULL;
+    }
+
     // Get.
+    $taxonomy_id = NULL;
     $url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
     $formatted_organism_name = implode('+', explode(' ', $organism_name));
     $query = [
@@ -76,11 +91,13 @@ class NcbiTaxonomy extends OrganismTaxonomy {
     }
 
     // Save.
-    static::save(
-      tpps_organism($organism_name)->id,
-      $organism_name,
-      $taxonomy_id
-    );
+    if ($taxonomy_id) {
+      static::save(
+        tpps_organism($organism_name)->id,
+        $organism_name,
+        $taxonomy_id
+      );
+    }
     return $taxonomy_id;
   }
 
