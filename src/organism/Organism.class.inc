@@ -13,6 +13,8 @@
  *   tpps_organism($name)->save();
  * To get NCBI Taxonomy Id:
  *   tpps_organism($id)->requestNcbiTaxonomyId()->ncbiTaxonomyId;
+ * To get GBIF Taxonomy Id:
+ *   tpps_organism($id)->requestGbifTaxonomyId()->gbifTaxonomyId;
  * To load organism from DB:
  *   tpps_organism($organism_id);
  *   tpps_organism($organism_name);
@@ -35,20 +37,25 @@ class Organism {
    * Name of the table where organism data is stored.
    */
   const TABLE_ORGANISM = 'chado.organism';
-  /**
-   * Name of the table which stores NCBI Taxonomy Ids per organism.
-   */
-  const TABLE_NCBI_TAXONOMY = 'tpps_ncbi_taxonomy';
 
   /**
    * NCBI Taxonomy Id.
    *
-   * Stored in tpps_ncbi_taxonomy_id table.
+   * Stored in NcbiTaxonomy::TABLE.id field.
    * See tpps_ncbi_get_taxon_id().
    *
    * @var int
    */
   protected $ncbiTaxonomyId;
+
+  /**
+   * GBIF Taxonomy Id.
+   *
+   * Stored in GbifSpeciesApi::TABLE.id field.
+   *
+   * @var int
+   */
+  protected $gbifTaxonomyId;
 
   /**
    * Organism Name.
@@ -288,9 +295,38 @@ class Organism {
   }
 
   /**
+   * Get GBIF Taxonomy Id from the remote server.
+   */
+  public function requestGbifTaxonomyId() {
+    $this->load();
+    if (empty($this->name)) {
+      $message = t("Can't get GBIF Taxonomy Id because there are no organism name.");
+      watchdog('tpps', $message, [], WATCHDOG_ERROR);
+      drupal_set_message($message);
+      return;
+    }
+
+    try {
+      $this->gbifTaxonomyId = GbifSpeciesApi::getId($this->name);
+    }
+    catch (Exception $e) {
+      watchdog('tpps', "Can't get data from GBIF database: @message",
+        ['@message' => $e->getMessage()],
+        WATCHDOG_ERROR
+      );
+      return FALSE;
+    }
+
+    if (empty($this->gbifTaxonomyId)) {
+      // We didn't get Taxonomy Id.
+      return FALSE;
+    }
+    // Provide chaining only in case of success.
+    return $this;
+  }
+
+  /**
    * Get NCBI Taxonomy Id from the remote server.
-   *
-   * @TODO Update to use NcbiTaxonomy::getId().
    */
   public function requestNcbiTaxonomyId() {
     $this->load();
@@ -300,24 +336,22 @@ class Organism {
       drupal_set_message($message);
       return;
     }
+
     try {
-      $xml = tpps_ncbi_get_taxon_id($this->name, FALSE);
+      $this->ncbiTaxonomyId = NcbiTaxonomy::getId($this->name);
     }
     catch (Exception $e) {
-      $message = t("Can't get data from NCBI database: @message",
-        ['@message' => $e->getMessage()]);
-      watchdog('tpps', $message, [], WATCHDOG_ERROR);
+      watchdog('tpps', "Can't get data from NCBI database: @message",
+        ['@message' => $e->getMessage()],
+        WATCHDOG_ERROR
+      );
       return FALSE;
     }
-    $response = json_decode(json_encode($xml), TRUE);
-    $this->ncbiTaxonomyId = check_plain($response[0]) ?? FALSE;
 
     if (empty($this->ncbiTaxonomyId)) {
       // We didn't get Taxonomy Id.
       return FALSE;
     }
-    // Save to DB table 'tpps_ncbi_taxonomy'.
-    $this->saveTaxonomy();
     // Provide chaining only in case of success.
     return $this;
   }
@@ -352,50 +386,6 @@ class Organism {
   }
 
   /**
-   * Saves NCBI Taxonomy Id to db.
-   *
-   * @return bool
-   *   Returns TRUE if record was inserted/updated and FALSE otherwise.
-   */
-  public function saveTaxonomy() {
-    $fields = [
-      'organism_id' => $this->id ?? NULL,
-      'organism_name' => $this->name ?? NULL,
-      'taxonomy_id' => $this->ncbiTaxonomyId ?? NULL,
-    ];
-    $fields = array_filter($fields);
-    if (
-      // Empty array.
-      !count($fields)
-      // No sence to insert this record.
-      || empty($fields['taxonomy_id'])
-      // We need at least one to create new record.
-      || (empty($fields['organism_id']) && empty($fields['organism_name']))
-    ) {
-      return FALSE;
-    }
-
-    if ($this->isRecordExists(self::TABLE_NCBI_TAXONOMY)) {
-      // Update.
-      $query = db_update(self::TABLE_NCBI_TAXONOMY);
-      if (!empty($this->id)) {
-        unset($fields['organism_id']);
-        $query->condition('organism_id', $this->id);
-      }
-      else {
-        unset($fields['organism_name']);
-        $query->condition('organism_name', $this->name);
-      }
-      $query->fields($fields)->execute();
-    }
-    else {
-      // Insert.
-      db_insert(self::TABLE_NCBI_TAXONOMY)->fields($fields)->execute();
-    }
-    return TRUE;
-  }
-
-  /**
    * Checks if organism exists in DB table 'chado.organism'.
    *
    * Function db_select() is slower than db_query().
@@ -418,32 +408,6 @@ class Organism {
     $sql = 'select organism_id from {' . $table
       . '} where organism_id = :id limit 1';
     return (bool) (db_query($sql, [':id' => $organism_id])->fetchField());
-  }
-
-  /**
-   * Loads NCBI Taxonomy Id from DB.
-   */
-  public function &getOrganismTaxonomyId() {
-    if (empty($this->ncbiTaxonomyId)) {
-      // Get from DB.
-      $this->load();
-      if (empty($this->id)) {
-        $message = t('No organism Id');
-        watchdog('tpps', $message, [], WATCHDOG_ERROR);
-        return;
-      }
-      $result = db_select(self::TABLE_NCBI_TAXONOMY, 't')
-        ->fields('t', ['taxonomy_id'])
-        ->condition('organism_id', $this->id)
-        ->range(0, 1)
-        ->execute()
-        ->fetchField();
-      $this->ncbiTaxonomyId = $result;
-      if (empty($this->ncbiTaxonomyId)) {
-        $this->requestNcbiTaxonomyId();
-      }
-    }
-    return $this->ncbiTaxonomyId;
   }
 
   /**
@@ -694,6 +658,39 @@ class Organism {
         return $index;
       }
     }
+  }
+
+  /**
+   * Load organism from database by organism name.
+   *
+   * It's safe to call this method because existing data won't be overwritten.
+   * Note: data from db table 'chado.organism' will be loaded.
+   */
+  public function getId() {
+    if ($this->isLoaded()) {
+      // No not load multiple times. See $this->reload().
+      return;
+    }
+    $query = db_select('chado.organism', 'co')
+      ->fields('co', ['organism_id'])
+      ->range(0, 1);
+    // Load by name.
+    if (empty($this->name)) {
+      $message = t("Can't load organism because there are no organism id and name.");
+      watchdog('tpps', $message, [], WATCHDOG_ERROR);
+      return;
+    }
+    $this->parseName();
+    if (empty($this->genus) || empty($this->species)) {
+      watchdog('tpps', 'Empty organism name.');
+      return;
+    }
+    $query->condition('genus', $this->genus);
+    $query->condition('species', $this->species);
+    if (!empty($this->infraspecificName)) {
+      $query->condition('infraspecific_name', $this->infraspecificName);
+    }
+    return $query->execute()->fetchField();
   }
 
 }

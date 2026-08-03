@@ -15,7 +15,7 @@ function tpps_report_organism_ncbi_all() {
   $table_alias = str_replace('.', '', $table);
   $query = db_select($table, $table_alias);
 
-  $table2 = 'public.' . Organism::TABLE_NCBI_TAXONOMY;
+  $table2 = 'public.' . NcbiTaxonomy::TABLE;
   $table2_alias = str_replace('.', '', $table2);
   $query->leftJoin(
     $table2,

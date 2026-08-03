@@ -23,8 +23,10 @@ function tpps_report_organism_new() {
   if ($debug_mode) {
     $query->addTag('debug');
   }
-  $query->leftJoin('tpps_ncbi_taxonomy', 'nt', 'o.organism_id = nt.organism_id');
+  $query->leftJoin(NcbiTaxonomy::TABLE, 'nt', 'o.organism_id = nt.organism_id');
   $query->isNull('nt.taxonomy_id');
+  $query->leftJoin(GbifSpeciesApi::TABLE, 'gsa', 'o.organism_id = gsa.organism_id');
+  $query->isNull('gsa.taxonomy_id');
   // Get project id.
   $query->join('chado.project_organism', 'cpo', 'cpo.organism_id = o.organism_id');
   // Get dbxref_if for projejct_id.
@@ -63,10 +65,16 @@ function tpps_report_organism_new() {
   // Output.
   $links = [
     l(t('NCBI Taxonomy Id Batch Update page'), 'admin/config/tpps/ncbi_batch'),
+    l(t('GBIF Taxonomy Id Batch Update page'), 'admin/config/tpps/gbif_batch'),
   ];
   if (!is_live_site()) {
     $links[] = l(
-      t('"tpps_ncbi_taxonomy" table'), 'admin/reports/db/tpps_ncbi_taxonomy'
+      t('"@table_name" table', ['@table_name' => NcbiTaxonomy::TABLE]),
+      'admin/reports/db/' . NcbiTaxonomy::TABLE
+    );
+    $links[] = l(
+      t('"@table_name" table', ['@table_name' => GbifSpeciesApi::TABLE]),
+      'admin/reports/db/' . GbifSpeciesApi::TABLE
     );
   }
   $header = [

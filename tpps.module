@@ -2207,6 +2207,15 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/ncbi_batch.inc',
   ];
+  $items['admin/config/tpps/gbif_batch'] = [
+    'title' => 'GBIF Taxonomy Id Batch Update',
+    'description' => 'Gets taxonomy id for existing organisms from GBIF using Batch API.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_gbif_batch_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/gbif_batch.inc',
+  ];
 
   $list = [
     'google_maps' => NULL,

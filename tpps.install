@@ -901,42 +901,6 @@ function tpps_schema() {
     ],
   ];
 
-  // Table to store relations between organism name and NCBI Taxonomy Id.
-  $schema['tpps_ncbi_taxonomy'] = [
-    'description' => 'NCBI Taxonomy Id for organisms.',
-    'fields' => [
-      'organism_id' => [
-        'description' => 'Organism Id.',
-        'type' => 'int',
-        'size' => 'big',
-        'not null' => FALSE,
-      ],
-      'organism_name' => [
-        'description' => 'Organism Name.',
-        'type' => 'varchar',
-        'size' => 'normal',
-        'not null' => FALSE,
-      ],
-      'taxonomy_id' => [
-        'description' => 'NCBI Taxomony Id.',
-        'type' => 'int',
-        'size' => 'big',
-        'not null' => FALSE,
-      ],
-    ],
-    'foreign keys' => [
-      'organism_id' => [
-        'table' => 'chado.organism',
-        'columns' => [
-          'organism_id' => 'organism_id',
-        ],
-      ],
-    ],
-    'unique keys' => [
-      'organism_id' => ['organism_id'],
-    ],
-  ];
-
   $class_list = [
     'doi/DoiSerp',
     'doi/serp/PubMed',
@@ -945,6 +909,9 @@ function tpps_schema() {
 
     'doi/PublicationDoi',
     'submission/SubmissionCache',
+
+    'organism/NcbiTaxonomy',
+    'organism/GbigSpeciesApi',
   ];
   foreach ($class_list as $path) {
     $class_file = dirname(__FILE__) . '/src/' . $path . '.class.inc';
@@ -960,6 +927,9 @@ function tpps_schema() {
   // Add custom cache table to have ability to clear only module's data.
   $schema[SubmissionCache::CACHE_BIN] = SubmissionCache::getSchema();
   $schema[TPPS_CACHE_BIN] = drupal_get_schema_unprocessed('system', 'cache');
+
+  $schema[NcbiTaxonomy::TABLE] = NcbiTaxonomy::getSchema();
+  $schema[GbifSpeciesApi::TABLE] = GbifSpeciesApi::getSchema();
 
   return $schema;
 }
@@ -2691,6 +2661,7 @@ function tpps_update_7134() {
     GoogleScholar::TABLE,
     DataDryad::TABLE,
     PubMed::TABLE,
+    GbifSpeciesApi::TABLE,
   ];
   foreach ($table_list as $table_name) {
     if (!db_table_exists($table_name)) {

@@ -14,7 +14,7 @@ function tpps_report_organism_ncbi_missing() {
   $table = 'chado.organism';
   $table_alias = str_replace('.', '', $table);
 
-  $table2 = 'public.' . Organism::TABLE_NCBI_TAXONOMY;
+  $table2 = 'public.' . NcbiTaxonomy::TABLE;
   $table2_alias = str_replace('.', '', $table2);
 
   $query = db_select($table, $table_alias);

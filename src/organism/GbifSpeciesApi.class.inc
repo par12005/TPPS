@@ -3,6 +3,12 @@
 /**
  * @file
  * Contains static 'GbifSpeciesApi' class.
+ *
+ * Parent class 'OrganismTaxonomy' provides methods:
+ * - getSchema(),
+ * - save(),
+ * - isExists().
+ * - load()
  */
 
 /**
@@ -17,34 +23,46 @@
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class GbifSpeciesApi {
+class GbifSpeciesApi extends OrganismTaxonomy {
 
   /**
-   * Request Taxonomy Id for given organism name.
+   * Name of the table which stores GBIF Taxonomy Ids per organism.
+   */
+  const TABLE = 'tpps_gbif_taxonomy';
+
+  /**
+   * Gets Taxonomy Id.
    *
-   * @param string $organism
+   * @param string $organism_name
    *   Organism Name.
    */
-  public static function getId($organism) {
+  public static function getId($organism_name) {
+    $organism_name = check_plain($organism_name);
+    // Load.
+    if (!empty($taxonomy_id = static::load($organism_name))) {
+      return $taxonomy_id;
+    }
+
+    // Get.
     $use_new_version = TRUE;
     try {
       if ($use_new_version) {
         $response = (new RestApi([
           'url' => 'https://api.gbif.org/v2/species/match',
-          'query' => ['genericName' => $organism],
-          'tag' => 'GBIF v2 Taxonomy Id: ' . $organism,
+          'query' => ['genericName' => $organism_name],
+          'tag' => 'GBIF v2 Taxonomy Id: ' . $organism_name,
           'cache' => TRUE,
         ]))->get()->response();
-        return $response['usage']['key'] ?? NULL;
+        $taxonomy_id = $response['usage']['key'] ?? NULL;
       }
       else {
         $response = (new RestApi([
           'url' => 'https://api.gbif.org/v1/species/match',
-          'query' => ['name' => $organism],
-          'tag' => 'GBIF v1 Taxonomy Id: ' . $organism,
+          'query' => ['name' => $organism_name],
+          'tag' => 'GBIF v1 Taxonomy Id: ' . $organism_name,
           'cache' => TRUE,
         ]))->get()->response();
-        return $response['usageKey'] ?? NULL;
+        $taxonomy_id = $response['usageKey'] ?? NULL;
       }
     }
     catch (Exception $e) {
@@ -56,6 +74,14 @@ class GbifSpeciesApi {
       );
       drupal_set_message($e->getCode() . ' ' . $message);
     }
+
+    // Save.
+    static::save(
+      tpps_organism($organism_name)->id,
+      $organism_name,
+      $taxonomy_id
+    );
+    return $taxonomy_id;
   }
 
 }
