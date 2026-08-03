@@ -2198,23 +2198,25 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     // WARNING: filename differs from the settings group name.
     'file' => 'admin/config.php',
   ];
-  $items['admin/config/tpps/ncbi_batch'] = [
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Batch.
+  $items['tpps/batch/ncbi'] = [
     'title' => 'NCBI Taxonomy Id Batch Update',
     'description' => 'Gets taxonomy id for existing organisms from NCBI using Batch API.',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_ncbi_batch_settings_form'],
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/ncbi_batch.inc',
+    'file' => 'batch/ncbi.inc',
   ];
-  $items['admin/config/tpps/gbif_batch'] = [
+  $items['tpps/batch/gbif'] = [
     'title' => 'GBIF Taxonomy Id Batch Update',
     'description' => 'Gets taxonomy id for existing organisms from GBIF using Batch API.',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_gbif_batch_settings_form'],
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/gbif_batch.inc',
+    'file' => 'batch/gbif.inc',
   ];
 
   $list = [
@@ -3798,4 +3800,17 @@ function tpps_rest_api_response_hash_generation_alter(array &$context) {
     }
     $context = call_user_func_array([$class_name, $method], [$context]);
   }
+}
+
+/**
+ * Implements hook_admin_paths().
+ *
+ * Enable admin theme for custom menu items.
+ */
+function tpps_admin_paths() {
+  $paths = [
+    'tpps/batch/ncbi' => TRUE,
+    'tpps/batch/gbif' => TRUE,
+  ];
+  return $paths;
 }

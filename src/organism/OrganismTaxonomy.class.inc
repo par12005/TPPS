@@ -94,23 +94,20 @@ abstract class OrganismTaxonomy {
    * @param string $organism_name
    *   Orgnaism name.
    * @param int $taxonomy_id
-   *   Taxonomy Id.
+   *   Optional. Taxonomy Id.
+   *   Insert NULL when organism wasn't found to avoid the same requests.
    *
    * @return bool
    *   Returns TRUE if record was inserted/updated and FALSE otherwise.
    */
-  public static function save($organism_id, $organism_name, $taxonomy_id) {
+  public static function save($organism_id, $organism_name, $taxonomy_id = NULL) {
     $fields = [
       'organism_id' => $organism_id,
       'organism_name' => $organism_name,
       'taxonomy_id' => $taxonomy_id,
     ];
     if (
-      // Empty array.
       !count($fields)
-      // No sence to insert this record.
-      || empty($fields['taxonomy_id'])
-      // We need at least one to create new record.
       || (empty($fields['organism_id']) && empty($fields['organism_name']))
     ) {
       return FALSE;
