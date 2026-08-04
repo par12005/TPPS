@@ -70,7 +70,7 @@ class GbifSpeciesApi extends OrganismTaxonomy {
           'tag' => 'GBIF v2 Taxonomy Id: ' . $organism_name,
           'cache' => FALSE,
         ]))->get()->response();
-        if ($response['usage']['rank'] == 'SPECIES') {
+        if (in_array($response['usage']['rank'], ['SPECIES', 'SUBSPECIES'])) {
           $taxonomy_id = $response['usage']['key'] ?? NULL;
         }
       }
