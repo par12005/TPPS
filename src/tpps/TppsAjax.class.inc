@@ -66,11 +66,26 @@ class TppsAjax {
       $organism_name = $data['organism'] ?? NULL;
       if (!empty($organism_name)) {
         $source = 'ncbi';
+        $organism_id = tpps_organism($organism_name)->id;
         $id = NcbiTaxonomy::getId($organism_name);
-        if (empty($id)) {
+        if (!empty($id)) {
+          NcbiTaxonomy::save(
+            $organism_id,
+            $organism_name,
+            $id
+          );
+        }
+        else {
+          $source = 'gbif';
           $response['warnings'][] = t("Organism wans't found in NCBI database.");
           $id = GbifSpeciesApi::getId($organism_name);
-          $source = 'gbif';
+          if (!empty($id)) {
+            GbifSpeciesApi::save(
+              $organism_id,
+              $organism_name,
+              $id
+            );
+          }
         }
       }
     }

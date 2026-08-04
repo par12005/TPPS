@@ -49,7 +49,7 @@ function tpps_ncbi_batch_settings_form_submit(array $form, array &$form_state) {
   }
   // Get list of organisms without Taxonomy Id.
   $operations = [];
-  $list = tpps_get_organisms_without_ncbi_taxonomy_id();
+  $list = tpps_get_organisms_without_taxonomy_id(NcbiTaxonomy::TABLE);
   $total = count($list);
   foreach ($list as $organism_id => $organism_name) {
     if (empty($organism_name)) {
@@ -95,7 +95,16 @@ function tpps_ncbi_batch_callback($organism_id, $organism_name, $total, array &$
     $context['sandbox']['total'] = $total;
   }
   // Get Taxonomy Id.
-  $taxonomy_id = NcbiTaxonomy::getId($organism_name);
+  if (empty($taxonomy_id = NcbiTaxonomy::getId($organism_name))) {
+    $taxonomy_id = NULL;
+  }
+  // Save.
+  NcbiTaxonomy::save(
+    $organism_id,
+    $organism_name,
+    $taxonomy_id
+  );
+
   $label = t(
     'NCBI Taxonomy Id for "@organism_name" (#@organism_id): <strong>@taxonomy_id</strong>',
     [

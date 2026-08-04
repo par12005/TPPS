@@ -56,26 +56,7 @@ class GbifSpeciesApi extends OrganismTaxonomy {
     $organism_name = check_plain($organism_name);
     // Load.
     if (!empty($taxonomy_id = static::load($organism_name))) {
-//watchdog('tpps', $organism_name . ': ' . $taxonomy_id);
       return $taxonomy_id;
-    }
-
-    // Get organism id.
-    try {
-      $organism_id = tpps_organism($organism_name)->id;
-      if (empty($organism_id)) {
-//watchdog('tpps', 2);
-        return NULL;
-      }
-    }
-    catch (Exception $e) {
-      $message = $e->getMessage();
-      $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
-      watchdog('tpps', '@message <pre>@backtrace</pre>',
-        ['@message' => $message, '@backtrace' => print_r($stack, 1)],
-        WATCHDOG_ERROR
-      );
-      return NULL;
     }
 
     // Get.
@@ -87,7 +68,7 @@ class GbifSpeciesApi extends OrganismTaxonomy {
           'url' => 'https://api.gbif.org/v2/species/match',
           'query' => ['genericName' => $organism_name],
           'tag' => 'GBIF v2 Taxonomy Id: ' . $organism_name,
-          'cache' => TRUE,
+          'cache' => FALSE,
         ]))->get()->response();
         if ($response['usage']['rank'] == 'SPECIES') {
           $taxonomy_id = $response['usage']['key'] ?? NULL;
@@ -98,7 +79,7 @@ class GbifSpeciesApi extends OrganismTaxonomy {
           'url' => 'https://api.gbif.org/v1/species/match',
           'query' => ['name' => $organism_name],
           'tag' => 'GBIF v1 Taxonomy Id: ' . $organism_name,
-          'cache' => TRUE,
+          'cache' => FALSE,
         ]))->get()->response();
         if ($response['rank'] == 'SPECIES') {
           $taxonomy_id = $response['usageKey'] ?? NULL;
@@ -115,12 +96,6 @@ class GbifSpeciesApi extends OrganismTaxonomy {
       drupal_set_message($e->getCode() . ' ' . $message);
     }
 
-    // Save.
-    static::save(
-      $organism_id,
-      $organism_name,
-      $taxonomy_id
-    );
     return $taxonomy_id;
   }
 

@@ -291,10 +291,9 @@ class Organism {
     if (empty($this->name)) {
       return;
     }
-    $name = tpps_parse_organism_name($this->name);
-    $this->genus = $name['genus'] ?? NULL;
-    $this->species = $name['species'] ?? NULL;
-    $this->infraspecificName = $name['infraspecific_name'] ?? NULL;
+    $parts = explode(" ", $this->name, 2);
+    $this->genus = $parts[0];
+    $this->species = $parts[1] ?? '';
   }
 
   /**

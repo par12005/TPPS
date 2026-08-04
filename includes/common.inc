@@ -419,56 +419,30 @@ function ftest_tpps_is_valid() {
 }
 
 /**
- * Extracts parts of organism name into associative array.
- *
- * @param string $organism_name
- *   Organism name to be parsed.
- *
- * @return array
- *   Returns array with keys: 'genus', 'species' and 'extra'.
- */
-function tpps_parse_organism_name($organism_name) {
-  $keys = ['genus', 'species', 'infraspecific_name'];
-  $list = explode(" ", $organism_name, 3);
-  return array_combine(array_slice($keys, 0, count($list)), $list);
-}
-
-/**
- * Gets list of organisms without GBIF Taxonomy Id.
- *
- * @return array
- *   Returns associative array where key is Organism's Id and value is
- *   Organism's name.
- */
-function tpps_get_organisms_without_gbif_taxonomy_id($debug_mode = FALSE) {
-  // Get all organisms.
-  $table = 'chado.organism';
-  $query = db_select($table, 'o')
-    ->fields('o', ['organism_id']);
-  $query->leftJoin(GbifSpeciesApi::TABLE, 'gsa', 'o.organism_id = gsa.organism_id');
-  $query->isNull('gsa.organism_name');
-  $query->addExpression("CONCAT(o.genus, ' ', o.species)", 'organism_name');
-  if ($debug_mode) {
-    $query->range(0, 11);
-  }
-  return $query->orderBy('organism_id')->execute()->fetchAllKeyed();
-}
-
-/**
  * Gets list of organisms without NCBI Taxonomy Id.
  *
+ * @param string $table2
+ *   Name of the table to be joined.
+ *   Possible values: GbifSpeciesApi::TABLE and NcbiTaxonomy::TABLE.
+ * @param bool $debug_mode
+ *   Optional. Default is FALSE.
+ *   When TRUE only first 10 items will be in resulting set of data.
+ *
  * @return array
  *   Returns associative array where key is Organism's Id and value is
  *   Organism's name.
  */
-function tpps_get_organisms_without_ncbi_taxonomy_id($debug_mode = FALSE) {
+function tpps_get_organisms_without_taxonomy_id($table2, $debug_mode = FALSE) {
   // Get all organisms.
   $table = 'chado.organism';
   $query = db_select($table, 'o')
     ->fields('o', ['organism_id']);
-  $query->leftJoin(GbifSpeciesApi::TABLE, 'gsa', 'o.organism_id = gsa.organism_id');
-  $query->isNull('gsa.organism_name');
-  $query->addExpression("CONCAT(o.genus, ' ', o.species)", 'organism_name');
+  $query->leftJoin($table2, 't2', 'o.organism_id = t2.organism_id');
+  $query->isNull('t2.organism_name');
+  $query->addExpression(
+    "CONCAT(o.genus, ' ', o.species, ' ', o.infraspecific_name)",
+    'organism_name'
+  );
   if ($debug_mode) {
     $query->range(0, 11);
   }

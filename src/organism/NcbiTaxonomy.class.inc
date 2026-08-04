@@ -60,23 +60,6 @@ class NcbiTaxonomy extends OrganismTaxonomy {
       return $taxonomy_id;
     }
 
-    // Get organism id.
-    try {
-      $organism_id = tpps_organism($organism_name)->id;
-      if (empty($organism_id)) {
-        return NULL;
-      }
-    }
-    catch (Exception $e) {
-      $message = $e->getMessage();
-      $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
-      watchdog('tpps', '@message <pre>@backtrace</pre>',
-        ['@message' => $message, '@backtrace' => print_r($stack, 1)],
-        WATCHDOG_ERROR
-      );
-      return NULL;
-    }
-
     // Get.
     $taxonomy_id = NULL;
     $url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
@@ -92,7 +75,7 @@ class NcbiTaxonomy extends OrganismTaxonomy {
         'url' => $url,
         'query' => $query,
         'tag' => 'NCBI Taxonomy: ' . $organism_name,
-        'cache' => TRUE,
+        'cache' => FALSE,
       ]))->get()->response();
       $xml = trim(str_replace("\r\n", "\n", $xml));
       preg_match('/<Id>(\d+)<\/Id>/', $xml, $matches);
@@ -109,12 +92,6 @@ class NcbiTaxonomy extends OrganismTaxonomy {
       drupal_set_message($e->getCode() . ' ' . $message);
     }
 
-    // Save.
-    static::save(
-      $organism_id,
-      $organism_name,
-      $taxonomy_id
-    );
     return $taxonomy_id;
   }
 
