@@ -31,6 +31,7 @@ function rest_api_install() {
   variable_set('rest_api_timeout', 30);
   variable_set('rest_api_max_execution_time', 5000);
   variable_set('rest_api_use_cache', TRUE);
+  variable_set('rest_api_use_log', TRUE);
 
   // Let's manually create foreign key (fk) because Drupal7 doesn't support fk.
   // So when request was removed related responses also will be removed to
@@ -51,4 +52,5 @@ function rest_api_uninstall() {
   variable_del('rest_api_timeout');
   variable_del('rest_api_max_execution_time');
   variable_del('rest_api_use_cache');
+  variable_del('rest_api_use_log');
 }

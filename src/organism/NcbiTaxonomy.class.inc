@@ -75,7 +75,7 @@ class NcbiTaxonomy extends OrganismTaxonomy {
         'url' => $url,
         'query' => $query,
         'tag' => 'NCBI Taxonomy: ' . $organism_name,
-        'cache' => FALSE,
+        'cache' => variable_get('tpps_organism_ncbi_use_cache', TRUE),
       ]))->get()->response();
       $xml = trim(str_replace("\r\n", "\n", $xml));
       preg_match('/<Id>(\d+)<\/Id>/', $xml, $matches);

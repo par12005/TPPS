@@ -145,9 +145,9 @@ function rest_api_rest_api_request_started(array $context = []) {
   }
   if (
     empty($request_id = $context['request_id'])
-    && $context['cache']
-    && variable_get('rest_api_use_cache', TRUE)
+    && ($context['log'] && variable_get('rest_api_use_log', TRUE))
   ) {
+    // Logging is allowed.
     if (empty($context['hash'])) {
       $params = ['@function' => __FUNCTION__];
       watchdog('rest_api', '@function: empty "hash".', $params, 'error');
@@ -167,8 +167,9 @@ function rest_api_rest_api_request_started(array $context = []) {
       ),
     ];
     watchdog('rest_api', $message, $params);
+    return $request_id;
   }
-  return $request_id ?? FALSE;
+  return FALSE;
 }
 
 /**
@@ -186,9 +187,9 @@ function rest_api_rest_api_request_started(array $context = []) {
 function rest_api_rest_api_response_received(array $context = []) {
   if (
     // Global caching disabled.
-    !variable_get('rest_api_use_cache')
+    !variable_get('rest_api_use_log', TRUE)
     // Current request caching disabled.
-    || !($context['cache'] ?? FALSE)
+    || !($context['log'] ?? TRUE)
   ) {
     return;
   }

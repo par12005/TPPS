@@ -50,6 +50,39 @@
  *
  *  @todo Change structure of the $header to array with key-value format
  *  instead of list of the strings.
+ *
+ * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+ * Caching & Logging:
+ *   WARNING:
+ *     GET-requests using getContent() method never cached to get actual data.
+ *
+ *   There are global setting (per site) and local (per request).
+ *   Defaults:
+ *   - Global: TRUE (enabled)
+ *   - Local: TRUE (enabled)
+ *   Global controlled by drupal variable:
+ *   - variable_get('rest_api_use_cache', TRUE);
+ *   - variable_get('rest_api_use_log', TRUE);
+ *   - Page: admin/config/services/rest_api;
+ *   - Property: $cache & $log.
+ *   Local controlled by request's metadata:
+ *      $response = (new RestApi([
+ *        'url' => 'https://api.gbif.org/v2/species/match',
+ *        'query' => ['genericName' => $organism_name],
+ *        'tag' => 'GBIF v2 Taxonomy Id: ' . $organism_name,
+ *        'cache' => FALSE,
+ *        'log' => FALSE,
+ *       ]))->get()->response();
+ *
+ *  Priority (Local && Global):
+ *  +----------------+------------------------+
+ *  |                |         Global         |
+ *  +----------------+----------------+-------+
+ *  | Local          | TRUE (default) | FALSE |
+ *  +----------------+----------------+-------+
+ *  | TRUE (default) | Yes            | No    |
+ *  | FALSE          | No             | No    |
+ *  +----------------+----------------+-------+
  */
 
 /**
@@ -149,15 +182,24 @@ class RestApi {
   protected $tag = NULL;
 
   /**
-   * Controls if current request/response should be saved into DB.
+   * Controls if stored response should be used intead of the real request.
    *
-   * Optional. Default is TRUE (caching enabled).
-   * Note: caching could be globally disabled.
-   * See variable_get('rest_api_use_cache').
+   * Optional. Default is TRUE (caching is enabled).
+   * Global setting: variable_get('rest_api_use_cache').
    *
    * @var bool
    */
   protected $cache = TRUE;
+
+  /**
+   * Controls if request/response should be saved into DB.
+   *
+   * Optional. Default is TRUE (logging is enabled).
+   * Global setting: variable_get('rest_api_use_log').
+   *
+   * @var bool
+   */
+  protected $log = TRUE;
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Response.
@@ -268,6 +310,7 @@ class RestApi {
     // Optional.
     $this->tag = $context['tag'] ?? $this->tag ?? NULL;
     $this->cache = $context['cache'] ?? $this->cache ?? NULL;
+    $this->log = $context['log'] ?? $this->log ?? NULL;
     $this->parallel = $context['parallel'] ?? $this->parallel ?? NULL;
 
     // Note: md5-hash of the request's data can't be generated here because
@@ -517,11 +560,13 @@ class RestApi {
    */
   public function getContent() {
     $this->method = 'GET';
-    // Never cache those requests.
+    // Do not log those responses.
+    // This means that cached responses couldn't be used.
     // File's content is a binary data but not JSON, HTML, text, etc.
     // No need to store file's content into DB because size could be huge
     // and filesystem is better place to store data like this.
     $this->cache = FALSE;
+    $this->log = FALSE;
     $this->doRequest();
     return $this->body;
   }
@@ -690,8 +735,8 @@ class RestApi {
       // Saved response exists.
       && RestApiResponse::isValidExists($this->requestId)
     ) {
+      // Cached response exist and will be used.
       // WARNING: Cached Response is missing 'curlInfo'.
-      // Reuse stored response if possible.
       $response_data = RestApiResponse::loadValid($this->requestId);
       foreach ($response_data as $key => $value) {
         switch ($key) {
@@ -725,6 +770,7 @@ class RestApi {
       $this->message = HttpCode::getMessage($this->code);
     }
     else {
+      // Real request.
       $curl = curl_init();
       // Why not use CURLOPT_POS: https://stackoverflow.com/a/74812403
       curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $this->method);
@@ -755,6 +801,7 @@ class RestApi {
           'header' => $this->header ?? NULL,
           'tag' => $this->tag ?? NULL,
           'cache' => $this->cache,
+          'log' => $this->log,
         ];
 
         // rest_api_request_started().
@@ -826,6 +873,7 @@ class RestApi {
           // Global caching settings.
           'response_id' => $this->responseId ?? NULL,
           'cache' => $this->cache,
+          'log' => $this->log,
         ];
         // rest_api_response_received().
         module_invoke_all('rest_api_response_received', $context);
@@ -851,6 +899,7 @@ class RestApi {
         'message' => $this->message,
         'curl_info' => $this->curlInfo,
         'cache' => $this->cache,
+        'log' => $this->log,
         'backtrace' => debug_backtrace(
           !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS
         ),

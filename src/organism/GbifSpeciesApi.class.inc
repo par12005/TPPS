@@ -68,7 +68,7 @@ class GbifSpeciesApi extends OrganismTaxonomy {
           'url' => 'https://api.gbif.org/v2/species/match',
           'query' => ['genericName' => $organism_name],
           'tag' => 'GBIF v2 Taxonomy Id: ' . $organism_name,
-          'cache' => FALSE,
+          'cache' => variable_get('tpps_organism_gbif_use_cache', TRUE),
         ]))->get()->response();
         if (in_array($response['usage']['rank'], ['SPECIES', 'SUBSPECIES'])) {
           $taxonomy_id = $response['usage']['key'] ?? NULL;
@@ -79,9 +79,9 @@ class GbifSpeciesApi extends OrganismTaxonomy {
           'url' => 'https://api.gbif.org/v1/species/match',
           'query' => ['name' => $organism_name],
           'tag' => 'GBIF v1 Taxonomy Id: ' . $organism_name,
-          'cache' => FALSE,
+          'cache' => variable_get('tpps_organism_gbif_use_cache', TRUE),
         ]))->get()->response();
-        if ($response['rank'] == 'SPECIES') {
+        if (in_array($response['rank'], ['SPECIES', 'SUBSPECIES'])) {
           $taxonomy_id = $response['usageKey'] ?? NULL;
         }
       }

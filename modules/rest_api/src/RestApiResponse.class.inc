@@ -26,7 +26,7 @@ class RestApiResponse {
    * Saves RestApi Response.
    *
    * No need to check if the same response exists because it's body could have
-   * some time-based items (like request time or cache protection).
+   * some time-based data (like time of the request or protection from caching).
    *
    * @param array $context
    *   Request's context.
@@ -39,14 +39,14 @@ class RestApiResponse {
    * @return mixed
    *   Returns 'response_id' if response was inserted (last insert id).
    *   Returns NULL if response was updated (not inserted).
-   *   Returns FALSE if current request should be cached.
+   *   Returns FALSE if logging is disabled.
    *
    * @thrown Exception
    *   When $context['request_id'] is empty.
    */
   public static function save(array $context = []) {
-    if (!$context['cache'] || !variable_get('rest_api_use_cache', TRUE)) {
-      // Current request shouldn't be cached.
+    if (!$context['log'] || !variable_get('rest_api_use_log', TRUE)) {
+      // Request shouldn't be logged.
       return FALSE;
     }
     if (empty($context['request_id'])) {

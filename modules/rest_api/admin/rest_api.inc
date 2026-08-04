@@ -18,8 +18,20 @@ function rest_api_settings_form(array $form, array &$form_state) {
     '#type' => 'checkbox',
     '#title' => t('Use cache'),
     '#default_value' => variable_get('rest_api_use_cache'),
-    '#description' => t("When checked then both request and response will be "
-     . "saved into DB and reused next time."),
+    '#description' => t("Default: checked."
+      . "<br />When checked then logged response (if any) will be used "
+      . "instead of real request. If there is no logged responses found "
+      . "then real request will be performed."
+    ),
+  ];
+  $form['cache']['rest_api_use_log'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Log requests and responses.'),
+    '#default_value' => variable_get('rest_api_use_log'),
+    '#description' => t("Default: checked."
+      . "<br />When checked then both request and response will be saved "
+      . "into DB. Logging is not caching."
+    ),
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
