@@ -42,6 +42,69 @@ class NcbiTaxonomy extends OrganismTaxonomy {
   }
 
   /**
+   * Builds direct URL to the API.
+   *
+   * Used in 'Organism's Taxonomy' report.
+   *
+   * @param string $organism_name
+   *   Full organism name.
+   *
+   * @return string
+   *   Returns URL.
+   */
+  public static function getApiUrl($organism_name) {
+    $url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
+    $formatted_organism_name = implode('+', explode(' ', $organism_name));
+    $query = [
+      'db' => 'taxonomy',
+      'term' => "{$formatted_organism_name}[Scientific+Name]",
+      'api_key' => variable_get('tripal_eutils_ncbi_api_key'),
+    ];
+    return url($url, ['query' => $query]);
+  }
+
+  /**
+   * Gets NCBI organism name by taxonomy id.
+   *
+   * @param int $taxonomy_id
+   *   NCBI Taxonomy Id.
+   *
+   * @return string
+   *   Returns NCBI Organism name.
+   */
+  public static function getName($taxonomy_id) {
+    $url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi';
+    $query = [
+      'db' => 'taxonomy',
+      'id' => $taxonomy_id,
+      'api_key' => variable_get('tripal_eutils_ncbi_api_key'),
+    ];
+
+    try {
+      $xml = (new RestApi([
+        'url' => $url,
+        'query' => $query,
+        'tag' => 'NCBI name by taxonomy id: ' . $taxonomy_id,
+        'cache' => variable_get('tpps_organism_ncbi_use_cache', TRUE),
+      ]))->get()->response();
+
+      $xml = trim(str_replace("\r\n", "\n", $xml));
+      preg_match('/<Item Name="ScientificName" Type="String">(.+)<\/Item>/', $xml, $matches);
+      $organism_name = $matches[1] ?? '';
+    }
+    catch (Exception $e) {
+      $message = $e->getMessage();
+      $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
+      watchdog('tpps', '@message <pre>@backtrace</pre>',
+        ['@message' => $message, '@backtrace' => print_r($stack, 1)],
+        WATCHDOG_ERROR
+      );
+      drupal_set_message($e->getCode() . ' ' . $message);
+    }
+    return $organism_name;
+  }
+
+  /**
    * Request NCBI Taxonomy Term Id for given organism name.
    *
    * @param string $organism_name
