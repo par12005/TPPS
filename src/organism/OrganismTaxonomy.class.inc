@@ -8,6 +8,9 @@
 /**
  * Holds common methods for 'NcbiTaxonomy' and 'GbifSpeciesApi' classes.
  *
+ * @todo Remove 'organism_name' column. Used in reports to build list of
+ * organism_ids withour taxonomy id.
+ *
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
@@ -54,6 +57,18 @@ abstract class OrganismTaxonomy {
           'size' => 'big',
           'not null' => FALSE,
         ],
+        'name' => [
+          'description' => 'Short organism name.',
+          'type' => 'varchar',
+          'size' => 'normal',
+          'not null' => FALSE,
+        ],
+        'full_name' => [
+          'description' => 'Full organism name.',
+          'type' => 'varchar',
+          'size' => 'normal',
+          'not null' => FALSE,
+        ],
       ],
       'foreign keys' => [
         'organism_id' => [
@@ -66,6 +81,7 @@ abstract class OrganismTaxonomy {
       'unique keys' => [
         'organism_id' => ['organism_id'],
       ],
+      // @todo Add indexes.
     ];
   }
 
@@ -96,15 +112,22 @@ abstract class OrganismTaxonomy {
    * @param int $taxonomy_id
    *   Optional. Taxonomy Id.
    *   Insert NULL when organism wasn't found to avoid the same requests.
+   * @param string $name
+   *   Short organism name. E.g., 'Acacia angusta'.
+   * @param string $full_name
+   *   Full organism name.
+   *   E.g., 'Acacia angusta Maiden & Blakely, 1927'.
    *
    * @return bool
    *   Returns TRUE if record was inserted/updated and FALSE otherwise.
    */
-  public static function save($organism_id, $organism_name, $taxonomy_id = NULL) {
+  public static function save($organism_id, $organism_name, $taxonomy_id = NULL, $name = NULL, $full_name = NULL) {
     $fields = [
       'organism_id' => $organism_id,
       'organism_name' => $organism_name,
       'taxonomy_id' => $taxonomy_id,
+      'name' => $name,
+      'full_name' => $full_name,
     ];
     if (
       !count($fields)
@@ -151,7 +174,12 @@ abstract class OrganismTaxonomy {
       $query->condition('organism_id', $organism_key);
     }
     else {
-      $query->condition('organism_name', $organism_key);
+      $query->condition(
+        db_or()
+          ->condition('organism_name', $organism_key)
+          ->condition('name', $organism_key)
+          ->condition('full_name', $organism_key)
+      );
     }
     return $query->execute()->fetchField();
   }

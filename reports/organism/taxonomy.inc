@@ -22,6 +22,8 @@ function tpps_report_organism_taxonomy() {
     'nt.organism_id = o.organism_id'
   );
   $query->addField('nt', 'taxonomy_id', 'ncbi');
+  $query->addField('nt', 'name', 'ncbi_name');
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // GBIF.
   $query->leftJoin(
     'public.' . GbifSpeciesApi::TABLE,
@@ -29,6 +31,8 @@ function tpps_report_organism_taxonomy() {
     'gsa.organism_id = o.organism_id'
   );
   $query->addField('gsa', 'taxonomy_id', 'gbif');
+  $query->addField('gsa', 'name', 'gbif_name');
+  //$query->addField('gsa', 'full_name', 'gbif_full_name');
 
   // Header.
   $header = [
@@ -37,7 +41,10 @@ function tpps_report_organism_taxonomy() {
     ['data' => t('Species'), 'field' => 'o.species'],
     ['data' => t('Infraspecific Name'), 'field' => 'o.infraspecific_name'],
     ['data' => t('NCBI'), 'field' => 'ncbi'],
+    ['data' => t('NCBI Name'), 'field' => 'ncbi_name'],
     ['data' => t('GBIF'), 'field' => 'gbif'],
+    ['data' => t('GBIF Name'), 'field' => 'gbif_name'],
+    //['data' => t('GBIF Full Name'), 'field' => 'gbif_full_name'],
   ];
 
   return '<h2>' . $page_title . '</h2>' . Report::print([
@@ -78,13 +85,44 @@ function tpps_report_organism_taxonomy_formatter(string $name, $value, array &$r
   switch ($name) {
     case 'ncbi':
       if (!empty($value)) {
-        $formatted = l($formatted, NcbiTaxonomy::getUrl($formatted));
+        //$formatted = l($formatted, NcbiTaxonomy::getUrl($formatted));
+        $organism_name = implode(' ', [
+          $row['genus'],
+          $row['species'],
+          $row['infraspecific_name'],
+        ]);
+        $url = NcbiTaxonomy::getApiUrl($organism_name);
+        $formatted = l($formatted, $url);
+        $formatted = '<strong>' . $formatted . '</strong>';
+      }
+      break;
+
+    case 'ncbi_name':
+    case 'ncbi_full_name':
+      if (!empty($value)) {
+        $formatted = l($formatted, NcbiTaxonomy::getUrl($row['ncbi']));
+        $formatted = '<em>' . $formatted . '</em>';
       }
       break;
 
     case 'gbif':
       if (!empty($value)) {
-        $formatted = l($formatted, GbifSpeciesApi::getUrl($formatted));
+        $organism_name = implode(' ', [
+          $row['genus'],
+          $row['species'],
+          $row['infraspecific_name'],
+        ]);
+        $url = GbifSpeciesApi::getApiUrl($organism_name);
+        $formatted = l($formatted, $url);
+        $formatted = '<strong>' . $formatted . '</strong>';
+      }
+      break;
+
+    case 'gbif_name':
+    case 'gbif_full_name':
+      if (!empty($value)) {
+        $formatted = l($formatted, GbifSpeciesApi::getUrl($row['gbif']));
+        $formatted = '<em>' . $formatted . '</em>';
       }
       break;
 

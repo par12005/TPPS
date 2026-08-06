@@ -193,6 +193,10 @@ function rest_api_rest_api_response_received(array $context = []) {
   ) {
     return;
   }
+  // No need to save response if request wasn't saved and we doesn't have request_id.
+  if (empty($context['request_id'])) {
+    return;
+  }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $key = 'rest_api';
@@ -203,12 +207,6 @@ function rest_api_rest_api_response_received(array $context = []) {
   if ($debug_mode ?? 0) {
     watchdog($key, '@function: <pre>@dump</pre>', $params);
   }
-  if (empty($context['request_id'])) {
-    $message = '@function: Request Id is empty. <pre>@dump</pre>';
-    watchdog($key, $message, $params);
-    return;
-  }
-
 
   if (!empty($response_id = RestApiResponse::save($context))) {
     // NULL - updated, FALSE - caching disabled for current request.

@@ -11,8 +11,12 @@
  *   tpps_organism($id)->doesExists();
  * To add new organism:
  *   tpps_organism($name)->save();
+ *
  * To get organism id by name:
  *   tpps_organism($organism_name)->id;
+ * To get organism name by id:
+ *   tpps_organism($organism_id)->name;
+ *
  * To get NCBI Taxonomy Id:
  *   tpps_organism($id)->requestNcbiTaxonomyId()->ncbiTaxonomyId;
  * To get GBIF Taxonomy Id:
@@ -275,13 +279,23 @@ class Organism {
    */
   public function generateName() {
     $name_parts = [$this->genus, $this->species, $this->infraspecificName];
-    $name = implode(' ', $name_parts);
+    $name = trim(implode(' ', $name_parts));
     // Check if $this->name and new name differs.
     if (!empty($this->name) && $this->name != $name) {
-      $message = t('Existing organism name and generated name differs');
-      watchdog('tpps', $message, [], WATCHDOG_WARNING);
+      watchdog('tpps', 'Existing organism name and generated name differs:'
+        . '<br />Existing name: "@existing_name" (@existing_name_len).'
+        . '<br />Generated name: "@existing_name" (@new_name_len).',
+        [
+          '@existing_name' => json_encode($this->name),
+          '@new_name' => json_encode($name),
+          '@existing_name_len' => strlen($this->name),
+          '@new_name_len' => strlen($name),
+        ],
+        WATCHDOG_WARNING
+      );
     }
     $this->name = $name;
+    return $this;
   }
 
   /**

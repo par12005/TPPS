@@ -440,7 +440,7 @@ function tpps_get_organisms_without_taxonomy_id($table2, $debug_mode = FALSE) {
   $query->leftJoin($table2, 't2', 'o.organism_id = t2.organism_id');
   $query->isNull('t2.organism_name');
   $query->addExpression(
-    "CONCAT(o.genus, ' ', o.species, ' ', o.infraspecific_name)",
+    "TRIM(CONCAT(o.genus, ' ', o.species, ' ', o.infraspecific_name))",
     'organism_name'
   );
   if ($debug_mode) {

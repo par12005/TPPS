@@ -53,8 +53,8 @@ function tpps_ncbi_batch_settings_form_submit(array $form, array &$form_state) {
   $total = count($list);
   foreach ($list as $organism_id => $organism_name) {
     if (empty($organism_name)) {
-      watchdog('tpps', "Organism #id has empty name and NCBI Taxonomy Id "
-        . "can't be found for this organism", ['@id' => $organism_id],
+      watchdog('tpps', "Organism #@id has empty name so NCBI Taxonomy Id "
+        . "can't be found for this organism.", ['@id' => $organism_id],
         WATCHDOG_ERROR
       );
       continue;
@@ -95,15 +95,9 @@ function tpps_ncbi_batch_callback($organism_id, $organism_name, $total, array &$
     $context['sandbox']['total'] = $total;
   }
   // Get Taxonomy Id.
-  if (empty($taxonomy_id = NcbiTaxonomy::getId($organism_name))) {
+  if (empty($taxonomy_id = NcbiTaxonomy::getId($organism_id))) {
     $taxonomy_id = NULL;
   }
-  // Save.
-  NcbiTaxonomy::save(
-    $organism_id,
-    $organism_name,
-    $taxonomy_id
-  );
 
   $label = t(
     'NCBI Taxonomy Id for "@organism_name" (#@organism_id): <strong>@taxonomy_id</strong>',
