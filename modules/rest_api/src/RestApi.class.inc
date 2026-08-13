@@ -741,7 +741,7 @@ class RestApi {
       foreach ($response_data as $key => $value) {
         switch ($key) {
           case 'created':
-            continue 1;
+            break;
 
           case 'response_id':
             $this->responseId = $value;
