@@ -291,12 +291,8 @@
           dog("Organism name wasn't validated.", data, featureName)
           Drupal.tpps.fieldEnable(fieldSelector);
         },
-
         success: function(data) {
           $(fieldSelector).removeClass('validateOrganismName');
-
-console.log(fieldSelector);
-
           // Store response to avoid multiple requests.
           Drupal.tpps.ajaxCache[organismName] = data;
           // User changed value of the field during AJAX-request.
