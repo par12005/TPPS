@@ -131,56 +131,22 @@ class Report {
   }
 
   /**
-   * Shows report as a table with pager.
+   * Prints sortable table.
    *
-   * WARNING:
-   * DON'T USE to just style regular tables with pager because it uses specific
-   * to reports settings. Use theme_table() instead.
+   * Supports sorting, formatter.
    *
    * @param array $report
-   *   Required keys:
+   *   Report's metadata. Required keys:
    *   - 'report_name' string.
    *     Machine report name (with underscores).
    *   - 'header' array.
    *     List of the table's header labels.
    *   - 'rows' array.
    *     Table data to be shown.
-   *   Optional keys:
-   *   - 'empty' - string.
-   *     Localized string which will be shown when 'rows' is empty.
+   *   - 'empty' string.
+   *     Optional. Localized string which will be shown when 'rows' is empty.
    *
-   * @return string
-   *   Returns rendered HTML table with pager.
-   */
-  public static function printTable(array $report) {
-    $rows = $report['rows'] ?? [];
-
-    $report_name = $report['report_name'] ?? NULL;
-    $per_page = variable_get('tpps_report_items_per_page', 20);
-    $current_page = pager_default_initialize(count($rows), $per_page);
-    $chunks = array_chunk($rows, $per_page, TRUE);
-    $pager = theme('pager', ['quantity', count($rows) ?? 0]);
-    tpps_add_css_js();
-    return $pager . theme('table', [
-      // @TODO Minor. $report_name now is not string but array of parents.
-      //'caption' => Report::getList()[$report_name]['description'],
-      'header' => $report['header'] ?? [],
-      'rows' => $chunks[$current_page] ?? [],
-      'empty' => $report['empty'] ?? NULL,
-      // To have vertical align to top of the cell.
-      'attributes' => ['class' => ['tpps_table']],
-      'sticky' => TRUE,
-    ]) . $pager;
-  }
-
-  /**
-   * Prints sortable table.
-   *
-   * Supports sorting, formatter.
-   *
-   * @param array $report
-   *   Report's metadata.
-   *   Example:
+   *   Example of the sortable table:
    *   $report['header'] = [
    *     ['data' => t('Name'), 'field' => 'name'],
    *     // Default sort for this column
@@ -193,10 +159,18 @@ class Report {
    *     // ... more data
    *   ];
    *
+   *   Regular (flat) table:
+   *   - $header is a list of strings,
+   *   - $rows is a list of values.
+   *   Sortable table:
+   *   - $header is an associative array with named keys,
+   *   - $rows - each item (row) is an associative array with the same named
+   *      keys as $header has.
+   *
    * @return string
    *   Returns rendered HTML sortable table with pager.
    */
-  public static function printSortableTable(array $report) {
+  public static function printTable(array $report) {
     // Sorting.
     $ts = tablesort_init($report['header']);
     if (isset($ts['sql'])) {
@@ -207,6 +181,7 @@ class Report {
         $report['rows'] = array_reverse($report['rows'], TRUE);
       }
     }
+
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Formatter - skip if null, false, or empty string
     $formatter = $report['formatter'] ?? 'Report::formatter';
@@ -223,8 +198,6 @@ class Report {
         ];
       }
     }
-    // The same as printTable() has:
-    // $rows = $report['rows'] ?? [];
     $report_name = $report['report_name'] ?? NULL;
     $per_page = variable_get('tpps_report_items_per_page', 20);
     $current_page = pager_default_initialize(count($rows), $per_page);

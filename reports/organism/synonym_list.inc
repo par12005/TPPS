@@ -64,7 +64,7 @@ function tpps_report_organism_synonym_list($reset = FALSE) {
       ['data' => t('Synonym List'), 'field' => 'synonym_list'],
     ];
 
-    $content = Report::printSortableTable([
+    $content = Report::printTable([
       'report_name' => $name,
       'header' => $header,
       'rows' => $rows,

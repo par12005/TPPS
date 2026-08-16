@@ -69,7 +69,7 @@ function tpps_report_file_missing($reset = FALSE) {
       ['data' => t('Absolute Path'), 'field' => 'absolute_path'],
       ['data' => t('Accession'), 'field' => 'accession'],
     ];
-    $content = Report::printSortableTable([
+    $content = Report::printTable([
       'report_name' => 'missing_files',
       'header' => $header,
       'rows' => $rows,
