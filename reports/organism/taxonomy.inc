@@ -14,7 +14,14 @@ function tpps_report_organism_taxonomy() {
 
   // WARNING: Report::print() requires db_select() not db_query().
   $query = db_select('chado.organism', 'o')
-    ->fields('o', ['organism_id', 'genus', 'species', 'infraspecific_name']);
+    ->fields('o', [
+      'organism_id',
+      'genus',
+      'species',
+      'infraspecific_name',
+      'type_id',
+    ]
+    );
   // NCBI.
   $query->leftJoin(
     'public.' . NcbiTaxonomy::TABLE,
@@ -40,6 +47,7 @@ function tpps_report_organism_taxonomy() {
     ['data' => t('Genus'), 'field' => 'o.genus'],
     ['data' => t('Species'), 'field' => 'o.species'],
     ['data' => t('Infraspecific Name'), 'field' => 'o.infraspecific_name'],
+    ['data' => t('Type Id'), 'field' => 'o.type_id'],
     ['data' => t('NCBI'), 'field' => 'ncbi'],
     ['data' => t('NCBI Name'), 'field' => 'ncbi_name'],
     ['data' => t('GBIF'), 'field' => 'gbif'],
