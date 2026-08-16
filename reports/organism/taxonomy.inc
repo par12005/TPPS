@@ -67,7 +67,7 @@ function tpps_report_organism_taxonomy() {
 }
 
 /**
- * Values formatter for tpps_admin_organism_list_report().
+ * Values formatter for tpps_report_organism_taxonomy().
  *
  * @param string $name
  *   Required. Field name.
