@@ -505,6 +505,13 @@ class Report {
           'description' => t('List of the all organisms.'),
           'admin_panel' => FALSE,
         ],
+        'synonym_list' => [
+          'title' => variable_get('tpps_report_organism_synonym_list_title',
+            "Organism Synonym List"
+          ),
+          'description' => t('List of the synonyms for each organism.'),
+          'admin_panel' => FALSE,
+        ],
         'genus' => [
           'title' => variable_get('tpps_report_organism_genus_title',
             'Organism Genus List'
