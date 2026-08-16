@@ -41,8 +41,20 @@ class Organism {
 
   /**
    * Name of the table where organism data is stored.
+   *
+   * @todo Rename to TABLE.
    */
   const TABLE_ORGANISM = 'chado.organism';
+  
+  /**
+   * CvTerm Id for 'Synonym'.
+   *
+   * See: chado.cvterm.name.
+   * 'Synonym. An alternative for a word. [http://edamontology.org]'.
+   * Emily: cvterm_id 50375 is preferable as it uses the EDAM ontology
+   * rather than local.
+   */
+  const SYNONYM_CVTERM_ID = 50375;
 
   /**
    * NCBI Taxonomy Id.

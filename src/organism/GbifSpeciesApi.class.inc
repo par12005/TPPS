@@ -4,11 +4,18 @@
  * @file
  * Contains static 'GbifSpeciesApi' class.
  *
+ * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * Parent class 'OrganismTaxonomy' provides methods:
  * - getSchema(),
  * - save(),
  * - isExists().
  * - load()
+ *
+ * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+ * Species synonyms
+ *
+ * Stored in table 'chado.organismprop'
+ * 'type_id' = 2780 which is cvterm 'synonym'.
  */
 
 /**
@@ -29,6 +36,18 @@ class GbifSpeciesApi extends OrganismTaxonomy {
    * Name of the table which stores GBIF Taxonomy Ids per organism.
    */
   const TABLE = 'tpps_gbif_taxonomy';
+
+  /**
+   * Name of the table which stores species synonyms provided by GBIFkkk.
+   */
+  const TABLE_SYNONYM = 'tpps_gbif_synonym';
+
+  /**
+   * CvTerm Id for 'synonym'.
+   *
+   * See: chado.cvterm.name = 'synonym'.
+   */
+  const SYNONYM_TYPE_ID = 2780;
 
   /**
    * Generates URL to the species page.
@@ -98,32 +117,27 @@ class GbifSpeciesApi extends OrganismTaxonomy {
         if ($use_new_version) {
           $response = (new RestApi([
             'url' => 'https://api.gbif.org/v2/species/match',
-            'query' => ['genericName' => $organism_name],
+            'query' => [
+              'genericName' => static::prepareOrganismName($organism_name),
+            ],
             'tag' => 'GBIF v2 Taxonomy Id: ' . $organism_name,
             'cache' => variable_get('tpps_organism_gbif_use_cache', TRUE),
           ]))->get()->response();
-          $rank = $response['usage']['rank'] ?? NULL;
-          if (!empty($rank) && in_array($rank, ['SPECIES', 'SUBSPECIES'])) {
-            $taxonomy_id = $response['usage']['key'] ?? NULL;
-            $full_name = $response['usage']['name'] ?? NULL;
-            $name = $response['usage']['canonicalName'] ?? NULL;
-          }
+          $taxonomy_id = $response['usage']['key'] ?? NULL;
+          $full_name = $response['usage']['name'] ?? NULL;
+          $name = $response['usage']['canonicalName'] ?? NULL;
         }
         else {
           $response = (new RestApi([
             'url' => 'https://api.gbif.org/v1/species/match',
-            'query' => ['name' => $organism_name],
+            'query' => ['name' => static::prepareOrganismName($organism_name)],
             'tag' => 'GBIF v1 Taxonomy Id: ' . $organism_name,
             'cache' => variable_get('tpps_organism_gbif_use_cache', TRUE),
           ]))->get()->response();
 
-          // @todo Test if it's correct field.
-          $rank = $response['rank'] ?? NULL;
-          if (!empty($rank) && in_array($rank, ['SPECIES', 'SUBSPECIES'])) {
-            $taxonomy_id = $response['usageKey'] ?? NULL;
-            $full_name = $response['name'] ?? NULL;
-            $name = $response['canonicalName'] ?? NULL;
-          }
+          $taxonomy_id = $response['usageKey'] ?? NULL;
+          $full_name = $response['scientificName'] ?? NULL;
+          $name = $response['canonicalName'] ?? NULL;
         }
       }
       catch (Exception $e) {
@@ -149,6 +163,38 @@ class GbifSpeciesApi extends OrganismTaxonomy {
     }
 
     return $taxonomy_id;
+  }
+
+  /**
+   * Changes organism name to improve search results.
+   *
+   * @param string $organism_name
+   *   Full organism name.
+   *
+   * @return string
+   *   Improved organism name.
+   */
+  public static function prepareOrganismName($organism_name) {
+    // Remove Duplicate Genus.
+    $words = explode(' ', $organism_name);
+    // Get the first word (genus)
+    $firstWord = $words[0];
+    $result = [];
+    foreach ($words as $index => $word) {
+      if ($index === 0) {
+        $result[] = $word;
+      }
+      elseif (strtolower($word) !== strtolower($firstWord)) {
+        $result[] = strtolower($word);
+      }
+    }
+    $organism_name = implode(' ', $result);
+    return $organism_name;
+  }
+
+
+  public static function getSynonymList($organism_name) {
+
   }
 
 }
