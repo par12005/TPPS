@@ -59,12 +59,10 @@ class Report {
       ->extend('TableSort')
       ->orderByHeader($header);
     $data = $report_query->execute()->fetchAll();
-    // Formatter.
-    if (!isset($meta['formatter'])) {
-      // When $meta['formatter'] was just wasn't set then use default.
-      // But it it was set to NULL, FALSE or empty string just skip formatting.
-      $formatter = 'Report::formatter';
-    }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Formatter - skip if null, false, or empty string
+    $formatter = $meta['formatter'] ?? 'Report::formatter';
     $is_formatter = (!empty($formatter) && function_exists($formatter));
 
     // Prepare rows for report.
@@ -79,6 +77,8 @@ class Report {
         ];
       }
     }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     if (!empty($css_path)) {
       drupal_add_css($css_path);
     }
@@ -176,6 +176,8 @@ class Report {
   /**
    * Prints sortable table.
    *
+   * Supports sorting, formatter.
+   *
    * @param array $report
    *   Report's metadata.
    *   Example:
@@ -208,10 +210,23 @@ class Report {
         $report['rows'] = array_reverse($report['rows'], TRUE);
       }
     }
-    // Format data.
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Formatter - skip if null, false, or empty string
+    $formatter = $meta['formatter'] ?? 'Report::formatter';
+    $is_formatter = (!empty($formatter) && function_exists($formatter));
+
+    // Prepare rows for report.
     $rows = [];
-    foreach ($report['rows'] as $item) {
-      $rows[] = ['data' => $item];
+    foreach ($report['rows'] as $row_id => $row) {
+      foreach ($row as $field_id => $field_value) {
+        $rows[$row_id][$field_id] = [
+          'data' => (!$is_formatter ? $field_value
+            : call_user_func($formatter, $field_id, $field_value, (array) $row)
+          ),
+          'style' => 'vertical-align:top;min-width:10px;',
+        ];
+      }
     }
 
     // $rows = $report['rows'] ?? [];

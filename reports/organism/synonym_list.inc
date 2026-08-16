@@ -27,7 +27,7 @@ function tpps_report_organism_synonym_list() {
   $query->orderBy('op.value');
   $result = $query->execute()->fetchAll();
 
-  // @todo Add caching.
+  // Group by organism_id to have a list of synonyms.
   $rows = [];
   $prev_oid = NULL;
   foreach ($result as $item) {
@@ -55,13 +55,12 @@ function tpps_report_organism_synonym_list() {
     ['data' => t('Genus'), 'field' => 'genus'],
     ['data' => t('Species'), 'field' => 'species'],
     ['data' => t('Infraspecific Name'), 'field' => 'infraspecific_name'],
-    ['data' => t('Synonyms'), 'field' => 'synonym_name'],
+    ['data' => t('Synonym List'), 'field' => 'synonym_name'],
   ];
 
   return Report::printSortableTable([
     'report_name' => $name,
     'header' => $header,
     'rows' => $rows,
-    'empty' => t('No data found.'),
   ]);
 }
