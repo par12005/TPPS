@@ -213,7 +213,7 @@ class Report {
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Formatter - skip if null, false, or empty string
-    $formatter = $meta['formatter'] ?? 'Report::formatter';
+    $formatter = $report['formatter'] ?? 'Report::formatter';
     $is_formatter = (!empty($formatter) && function_exists($formatter));
 
     // Prepare rows for report.
