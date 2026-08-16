@@ -197,25 +197,20 @@ class Report {
    *   Returns rendered HTML sortable table with pager.
    */
   public static function printSortableTable(array $report) {
-
     // Sorting.
     $ts = tablesort_init($report['header']);
     if (isset($ts['sql'])) {
       $sort_field = $ts['sql'];
-      uasort($report['rows'], function ($a, $b) use ($sort_field) {
-        return strcmp($a[$sort_field], $b[$sort_field]);
-      });
+      ksort($report['rows'], SORT_NATURAL);
       // Reverse the array if the sort direction is 'desc'.
       if (strtolower($ts['sort']) == 'desc') {
         $report['rows'] = array_reverse($report['rows'], TRUE);
       }
     }
-
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Formatter - skip if null, false, or empty string
     $formatter = $report['formatter'] ?? 'Report::formatter';
     $is_formatter = (!empty($formatter) && function_exists($formatter));
-
     // Prepare rows for report.
     $rows = [];
     foreach ($report['rows'] as $row_id => $row) {
@@ -228,9 +223,8 @@ class Report {
         ];
       }
     }
-
-    // $rows = $report['rows'] ?? [];
     // The same as printTable() has:
+    // $rows = $report['rows'] ?? [];
     $report_name = $report['report_name'] ?? NULL;
     $per_page = variable_get('tpps_report_items_per_page', 20);
     $current_page = pager_default_initialize(count($rows), $per_page);

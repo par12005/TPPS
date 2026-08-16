@@ -9,8 +9,8 @@
  * Menu callback. Shows list of files missing if filesystem.
  *
  * Files from 'file_managed' table which has no real file in filesystem.
- * Reset: 5681 msec.
- * Cached: 1 msec.
+ * Reset: 5555 msec.
+ * Cached: 2 msec.
  *
  * @param bool $reset
  *   Flag is cache must be resetted. Default if FALSE.
@@ -56,16 +56,22 @@ function tpps_report_file_missing($reset = FALSE) {
       if (!file_exists($path)) {
         // Build table's row.
         $rows[] = [
-          ++$i,
-          $item->fid,
-          $path,
-          $accession,
+          'number' => ++$i,
+          'file_id' => $item->fid,
+          'absolute_path' => $path,
+          'accession' => $accession,
         ];
       }
     }
+    $header = [
+      ['data' => '#', 'field' => 'number'],
+      ['data' => t('File Id'), 'field' => 'file_id'],
+      ['data' => t('Absolute Path'), 'field' => 'absolute_path'],
+      ['data' => t('Accession'), 'field' => 'accession'],
+    ];
     $content = Report::printSortableTable([
       'report_name' => 'missing_files',
-      'header' => ['#', t('File Id'), t('Absolute Path'), t('Accession')],
+      'header' => $header,
       'rows' => $rows,
     ]);
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
