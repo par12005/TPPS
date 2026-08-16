@@ -93,6 +93,13 @@
  */
 class RestApi {
 
+  /**
+   * List of supported HTTP-methods.
+   *
+   * Used to validate value of the $method property.
+   */
+  const METHOD_LIST = ['GET', 'POST', 'PUT', 'DELETE'];
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Request related properties.
 
@@ -298,10 +305,15 @@ class RestApi {
    *
    * @return object
    *   Returns $this to allow method chaining.
+   *
+   * @throws Exception
+   *   If $url property is not empty and has invalid URL.
    */
   public function createRequest(array $context) {
-    // Required.
+    // Required (but could be set later).
     $this->url = $context['url'] ?? $this->url ?? '';
+    $this->validateUrl();
+
     $this->method = strtoupper($context['method'] ?? $this->method ?? '');
     // Conditional.
     $this->payload = $context['payload'] ?? $this->payload ?? [];
@@ -399,21 +411,35 @@ class RestApi {
   }
 
   /**
-   * Checks if required properties was set.
+   * Validates required properties.
+   *
+   * To pass validation $url and $method properties must be set, not empty and
+   * has valid value.
+   *
+   * @return object
+   *   Returns $this to allow method chaining.
    *
    * @throws Exception
    *   When required properties wasn't set or empty.
-   *
-   * @todo Convert to private method if it's for internal usage only or
-   * return $this to support method chaining.
    */
   public function validateRequest() {
+    // Validate $url property.
     if (empty($this->url)) {
       throw new Exception("Required property 'url' is empty.");
     }
+    else {
+      // Note: only non-empty value of $url will be validated.
+      $this->validateUrl();
+    }
+    // Validate $method property.
     if (empty($this->method)) {
       throw new Exception("Required property 'method' is empty.");
     }
+    else {
+      // Note: only non-empty value of the $method property will be validated.
+      $this->validateMethod();
+    }
+    return $this;
   }
 
   /**
@@ -882,6 +908,9 @@ class RestApi {
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     if ($this->code == 0 && empty($this->body)) {
+      if ($debug_mode ?? FALSE) {
+        watchdog('rest_api', '<pre>' . var_export($this->curlInfo, 1) . '</pre>');
+      }
       throw new Exception($this->message);
     }
     if ($this->code < 200  && $this->code > 204) {
@@ -963,6 +992,51 @@ class RestApi {
    */
   public function response() {
     return $this->body;
+  }
+
+  /**
+   * Checks if property $url has valid value.
+   *
+   * Note: only non-empty value will be validated.
+   * This allows to validate $url property and avoid using function's argument
+   * directly. Property $url is required only in doRequest() so it should
+   * be treated as optional before doRequest() call.
+   *
+   * @throws Exception
+   *   If $url property is not empty and has invalid URL.
+   */
+  public function validateUrl() {
+    if (empty($this->url)) {
+      return;
+    }
+    if (!filter_var($this->url, FILTER_VALIDATE_URL)) {
+      $message = t('URL is invalid: "@url"', ['@url' => $this->url]);
+      throw new Exception($message);
+    }
+  }
+
+  /**
+   * Checks if property $method has valid value.
+   *
+   * Note: only non-empty value will be validated.
+   * This allows to validate $url property and avoid using function's argument
+   * directly. Property $url is required only in doRequest() so it should
+   * be treated as optional before doRequest() call.
+   *
+   * @throws Exception
+   *   If $url property is not empty and has invalid URL.
+   */
+  public function validateMethod() {
+    if (empty($this->method)) {
+      return;
+    }
+    if (!in_array(strtoupper($this->method), static::METHOD_LIST)) {
+      $message = t(
+        'Unsupported HTTP-method: "@method"',
+        ['@method' => $this->method]
+      );
+      throw new Exception($message);
+    }
   }
 
 }
