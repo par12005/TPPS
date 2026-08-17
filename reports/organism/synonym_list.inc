@@ -15,16 +15,12 @@
  *   Flag is cache must be resetted. Default if FALSE.
  */
 function tpps_report_organism_synonym_list($reset = FALSE) {
+  $name = 'organism_synonym_list';
   $cid = __FUNCTION__;
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   $cache = cache_get($cid, $cache_bin);
   $key = $cid;
-  if ($reset || empty($cache) || empty($cache->data[$key])) {
-    $name = 'organism_synonym_list';
-    $page_title = variable_get(
-      'tpps_report_' . $name . '_title',
-      'Organism Synonym List'
-    );
+  if ($reset || isset($_GET['reset']) || empty($cache) || empty($cache->data[$key])) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $synonym_cvterm_id = Organism::SYNONYM_CVTERM_ID;
     $query = db_select('chado.organismprop', 'op')
@@ -54,28 +50,30 @@ function tpps_report_organism_synonym_list($reset = FALSE) {
       }
       $prev_oid = $oid;
     }
-    // Header.
-    $header = [
-      ['data' => t('Id'), 'field' => 'organismprop_id'],
-      ['data' => t('Organism Id'), 'field' => 'organism_id'],
-      ['data' => t('Genus'), 'field' => 'genus'],
-      ['data' => t('Species'), 'field' => 'species'],
-      ['data' => t('Infraspecific Name'), 'field' => 'infraspecific_name'],
-      ['data' => t('Synonym List'), 'field' => 'synonym_list'],
-    ];
 
-    $content = Report::printTable([
-      'report_name' => $name,
-      'header' => $header,
-      'rows' => $rows,
-      'formatter' => 'tpps_report_' . $name . '_formatter',
-    ]);
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    $cache->data[$key] = $content;
+    $cache->data[$key] = $rows;
     cache_set($cid, $cache->data, $cache_bin);
   }
-  $content = $cache->data[$key] ?? '';
-  return $content;
+
+  // Output.
+  $header = [
+    ['data' => t('Id'), 'field' => 'organismprop_id'],
+    ['data' => t('Organism Id'), 'field' => 'organism_id'],
+    ['data' => t('Genus'), 'field' => 'genus'],
+    ['data' => t('Species'), 'field' => 'species'],
+    ['data' => t('Infraspecific Name'), 'field' => 'infraspecific_name'],
+    ['data' => t('Synonym List'), 'field' => 'synonym_list'],
+  ];
+  $rows = $cache->data[$key] ?? [];
+  // Note:
+  // Can't cache output of the Report::printTable() because it breaks sorting.
+  return Report::printTable([
+    'report_name' => $name,
+    'header' => $header,
+    'rows' => $rows,
+    'formatter' => 'tpps_report_' . $name . '_formatter',
+  ]);
 }
 
 /**

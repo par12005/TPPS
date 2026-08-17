@@ -16,14 +16,14 @@
  *   Flag is cache must be resetted. Default if FALSE.
  */
 function tpps_report_file_missing($reset = FALSE) {
+  $name = 'missing_files';
   $cid = __FUNCTION__;
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   $cache = cache_get($cid, $cache_bin);
-  $cache_key = $cid;
-  if ($reset || empty($cache) || empty($cache->data[$cache_key])) {
+  $key = $cid;
+  if ($reset || isset($_GET['reset']) || empty($cache) || empty($cache->data[$key])) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get new data.
-    $i = 0;
     $query = db_select('file_managed', 'fm')
       ->fields('fm', ['fid', 'uri']);
     $query->join('file_usage', 'fu', 'fm.fid = fu.fid');
@@ -56,28 +56,26 @@ function tpps_report_file_missing($reset = FALSE) {
       if (!file_exists($path)) {
         // Build table's row.
         $rows[] = [
-          'number' => ++$i,
           'file_id' => $item->fid,
           'absolute_path' => $path,
           'accession' => $accession,
         ];
       }
     }
-    $header = [
-      ['data' => '#', 'field' => 'number'],
-      ['data' => t('File Id'), 'field' => 'file_id'],
-      ['data' => t('Absolute Path'), 'field' => 'absolute_path'],
-      ['data' => t('Accession'), 'field' => 'accession'],
-    ];
-    $content = Report::printTable([
-      'report_name' => 'missing_files',
-      'header' => $header,
-      'rows' => $rows,
-    ]);
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    $cache->data[$cache_key] = $content;
+    $cache->data[$key] = $rows;
     cache_set($cid, $cache->data, $cache_bin);
   }
-  $content = $cache->data[$cache_key] ?? '';
-  return $content;
+  $rows = $cache->data[$key] ?? [];
+  $header = [
+    ['data' => t('File Id'), 'field' => 'file_id'],
+    ['data' => t('Absolute Path'), 'field' => 'absolute_path'],
+    ['data' => t('Accession'), 'field' => 'accession'],
+  ];
+  return Report::printTable([
+    'report_name' => $name,
+    'header' => $header,
+    'rows' => $rows,
+    'formatter' => 'tpps_report_' . $name . '_formatter',
+  ]);
 }

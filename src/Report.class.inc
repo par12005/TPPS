@@ -12,10 +12,8 @@
  * SQL-query (sorting):
  * - Report::print();
  * - Report::print2Level();
- * Array (no sorting):
+ * Array (no sorting and with sorting):
  * - Report::printTable();
- * Array with sorting:
- * - Report::printSortableTable();
  */
 
 /**
@@ -175,7 +173,9 @@ class Report {
     $ts = tablesort_init($report['header']);
     if (isset($ts['sql'])) {
       $sort_field = $ts['sql'];
-      ksort($report['rows'], SORT_NATURAL);
+      uasort($report['rows'], function($a, $b) use ($sort_field) {
+        return strnatcmp($a[$sort_field], $b[$sort_field]);
+      });
       // Reverse the array if the sort direction is 'desc'.
       if (strtolower($ts['sort']) == 'desc') {
         $report['rows'] = array_reverse($report['rows'], TRUE);
