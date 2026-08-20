@@ -208,8 +208,7 @@ class Report {
     tpps_add_css_js();
 
     $pager = $report['pager'] ?? NULL;
-    // @TODO Minor. Show 'both' pagers if 'pager' not set.
-    if ($pager == 'none' || $pager === FALSE || is_null($pager)) {
+    if ($pager == 'none' || $pager === FALSE) {
       // No pager at all.
       $pager_output = '';
     }
@@ -233,7 +232,7 @@ class Report {
     ]);
 
     // Pager position.
-    if (in_array($pager, ['both', 'full'])) {
+    if (in_array($pager, ['both', 'full']) || is_null($pager)) {
       return $pager_output . $content . $pager_output;
     }
     elseif (in_array($pager, ['below', 'bottom'])) {
@@ -242,7 +241,7 @@ class Report {
     elseif (in_array($pager, ['above', 'top'])) {
       return $pager_output . $content;
     }
-    elseif ($pager == 'none' || $pager === FALSE || is_null($pager)) {
+    elseif ($pager == 'none' || $pager === FALSE) {
       return $content;
     }
     else {
