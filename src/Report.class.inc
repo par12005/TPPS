@@ -143,6 +143,12 @@ class Report {
    *     Table data to be shown.
    *   - 'empty' string.
    *     Optional. Localized string which will be shown when 'rows' is empty.
+   *   - 'pager' mixed
+   *      Defines where pager will be shown. Possible values:
+   *       'both', 'full': at the top and bottom.
+   *       'below', 'bottom': at the bottom only.
+   *       'above', 'top': at the top only.
+   *       'none', FALSE, NULL: hidden.
    *
    *   Example of the sortable table:
    *   $report['header'] = [
@@ -202,7 +208,8 @@ class Report {
     tpps_add_css_js();
 
     $pager = $report['pager'] ?? NULL;
-    if ($pager === FALSE || $pager == 'none') {
+    // @TODO Minor. Show 'both' pagers if 'pager' not set.
+    if ($pager == 'none' || $pager === FALSE || is_null($pager)) {
       // No pager at all.
       $pager_output = '';
     }
@@ -214,7 +221,7 @@ class Report {
       $rows = $chunks[$current_page] ?? [];
     }
 
-    return $pager_output . theme('table', [
+    $content = theme('table', [
       // @TODO Minor. $report_name now is not string but array of parents.
       //'caption' => Report::getList()[$report_name]['description'],
       'header' => $report['header'] ?? [],
@@ -223,7 +230,24 @@ class Report {
       'attributes' => ['class' => ['tpps_table']],
       'empty' => $report['empty'] ?? NULL,
       'sticky' => TRUE,
-    ]) . $pager_output;
+    ]);
+
+    // Pager position.
+    if (in_array($pager, ['both', 'full'])) {
+      return $pager_output . $content . $pager_output;
+    }
+    elseif (in_array($pager, ['below', 'bottom'])) {
+      return $content . $pager_output;
+    }
+    elseif (in_array($pager, ['above', 'top'])) {
+      return $pager_output . $content;
+    }
+    elseif ($pager == 'none' || $pager === FALSE || is_null($pager)) {
+      return $content;
+    }
+    else {
+      return $content;
+    }
   }
 
   /**
