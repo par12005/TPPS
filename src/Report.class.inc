@@ -34,6 +34,58 @@ class Report {
   const FILE_ID_LIST = 'id_list';
 
   /**
+   * Clears report's cached data.
+   *
+   * @param string $name
+   *   Report's machine name or function's name (report's callback).
+   *   For example:
+   *   'tpps_report_organism_synonym_list' or 'organism_synonym_list'.
+   *   See methods: getCallbackName(), getList().
+   *
+   * @return mixed
+   *   Returns cached data or NULL if there is no cached data.
+   */
+  public static function getCache($name) {
+    $cid = $name;
+    if (strpos($name, 'tpps_report_') === FALSE) {
+      // $name contains report name (not function's name).
+      $cid = 'tpps_report_' . $name;
+    }
+    $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+    $cache = cache_get($cid, $cache_bin);
+    return $cache->data;
+  }
+
+  /**
+   * Clears report's cached data.
+   *
+   * @param string $name
+   *   Report's machine name or function's name (report's callback).
+   *   For example:
+   *   'tpps_report_organism_synonym_list' or 'organism_synonym_list'.
+   *   See methods: getCallbackName(), getList().
+   *
+   * @return bool
+   *   Returns TRUE if cache was actually cleared and FALSE otherwise.
+   */
+  public static function resetCache($name) {
+    $cid = $name;
+    if (strpos($name, 'tpps_report_') === FALSE) {
+      // $name contains report name (not function's name).
+      $cid = 'tpps_report_' . $name;
+    }
+    $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+    $cache = cache_get($cid, $cache_bin);
+    // Note: not all repoorts are using caching so we need to check.
+    if (!empty($cache) && !empty($cache->data)) {
+      $cache->data = NULL;
+      cache_set($cid, $cache->data, $cache_bin);
+      return TRUE;
+    }
+    return FALSE;
+  }
+
+  /**
    * Generates report based on given DB Query.
    *
    * @param array $meta
@@ -149,6 +201,11 @@ class Report {
    *       'below', 'bottom': at the bottom only.
    *       'above', 'top': at the top only.
    *       'none', FALSE, NULL: hidden.
+   *   - 'items_per_page' int
+   *     Opitonal. Default is 20.
+   *     Number of rows show at single page when pager is used.
+   *     Global setting for all reports could be overwritten by Drupal variable:
+   *     'tpps_report_items_per_page' at '/admin/config/tpps/reports' page.
    *
    *   Example of the sortable table:
    *   $report['header'] = [
@@ -213,9 +270,9 @@ class Report {
       $pager_output = '';
     }
     else {
-      $per_page = variable_get('tpps_report_items_per_page', 20);
-      $current_page = pager_default_initialize(count($rows), $per_page);
-      $chunks = array_chunk($rows, $per_page, TRUE);
+      $items_per_page = $report['items_per_page'] ?? variable_get('tpps_report_items_per_page', 20);
+      $current_page = pager_default_initialize(count($rows), $items_per_page);
+      $chunks = array_chunk($rows, $items_per_page, TRUE);
       $pager_output = theme('pager', ['quantity', count($rows) ?? 0]);
       $rows = $chunks[$current_page] ?? [];
     }
@@ -271,6 +328,8 @@ class Report {
    *
    * @param array $list
    *   Array with data.
+   * @param array $parents
+   *   List of parents.
    * @param bool $admin_panel
    *   Determines if only items for 'Admin Panel' must be returned.
    */
@@ -300,6 +359,7 @@ class Report {
     }
     return theme('item_list', ['items' => $items]);
   }
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Menu.
 

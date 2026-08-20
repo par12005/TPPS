@@ -49,10 +49,10 @@ function tpps_get_variable_list() {
     'tpps_doi_gemini_system_instruction' => '',
     'tpps_doi_gemini_generation_config' => '',
     // DOI Lookup / Dryad.
-    'tpps_doi_dryad_endpoint_path' => Dryad::ENDPOINT_PATH,
-    'tpps_doi_dryad_unique_url' => FALSE,
-    'tpps_doi_dryad_delay' => Dryad::DEFAULT_DELAY,
-    'tpps_doi_dryad_not_found_token' => Dryad::NOT_FOUND_TOKEN,
+    //'tpps_doi_dryad_endpoint_path' => Dryad::ENDPOINT_PATH,
+    //'tpps_doi_dryad_unique_url' => FALSE,
+    //'tpps_doi_dryad_delay' => Dryad::DEFAULT_DELAY,
+    //'tpps_doi_dryad_not_found_token' => Dryad::NOT_FOUND_TOKEN,
 
     // General.
     'tpps_watchdog_cleanup' => FALSE,
