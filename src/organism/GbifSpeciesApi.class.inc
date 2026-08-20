@@ -42,12 +42,6 @@ class GbifSpeciesApi extends OrganismTaxonomy {
    */
   const TABLE_SYNONYM = 'tpps_gbif_synonym';
 
-  /**
-   * CvTerm Id for 'synonym'.
-   *
-   * See: chado.cvterm.name = 'synonym'.
-   */
-  const SYNONYM_TYPE_ID = 2780;
 
   /**
    * Generates URL to the species page.
