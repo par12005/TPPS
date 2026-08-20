@@ -199,21 +199,31 @@ class Report {
       }
     }
     $report_name = $report['report_name'] ?? NULL;
-    $per_page = variable_get('tpps_report_items_per_page', 20);
-    $current_page = pager_default_initialize(count($rows), $per_page);
-    $chunks = array_chunk($rows, $per_page, TRUE);
-    $pager = theme('pager', ['quantity', count($rows) ?? 0]);
     tpps_add_css_js();
-    return $pager . theme('table', [
+
+    $pager = $report['pager'] ?? NULL;
+    if ($pager === FALSE || $pager == 'none') {
+      // No pager at all.
+      $pager_output = '';
+    }
+    else {
+      $per_page = variable_get('tpps_report_items_per_page', 20);
+      $current_page = pager_default_initialize(count($rows), $per_page);
+      $chunks = array_chunk($rows, $per_page, TRUE);
+      $pager_output = theme('pager', ['quantity', count($rows) ?? 0]);
+      $rows = $chunks[$current_page] ?? [];
+    }
+
+    return $pager_output . theme('table', [
       // @TODO Minor. $report_name now is not string but array of parents.
       //'caption' => Report::getList()[$report_name]['description'],
       'header' => $report['header'] ?? [],
-      'rows' => $chunks[$current_page] ?? [],
+      'rows' => $rows,
       // To have vertical align to top of the cell.
       'attributes' => ['class' => ['tpps_table']],
       'empty' => $report['empty'] ?? NULL,
       'sticky' => TRUE,
-    ]) . $pager;
+    ]) . $pager_output;
   }
 
   /**
