@@ -16,46 +16,39 @@
  */
 function tpps_report_organism_synonym_list($reset = FALSE) {
   $name = 'organism_synonym_list';
-  $cid = __FUNCTION__;
-  $cache_bin = TPPS_CACHE_BIN ?? 'cache';
-  $cache = cache_get($cid, $cache_bin);
-  $key = $cid;
-  if ($reset || isset($_GET['reset']) || empty($cache) || empty($cache->data[$key])) {
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    $synonym_cvterm_id = Organism::SYNONYM_CVTERM_ID;
-    $query = db_select('chado.organismprop', 'op')
-      ->fields('op', ['organismprop_id'])
-      ->condition('op.type_id', $synonym_cvterm_id);
-    $query->leftJoin('chado.organism', 'o', 'op.organism_id = o.organism_id');
-    $query->addField('o', 'organism_id');
-    $query->addField('o', 'genus');
-    $query->addField('o', 'species');
-    $query->addField('o', 'infraspecific_name');
-    $query->addField('op', 'value', 'synonym_list');
-    $query->orderBy('o.organism_id');
-    $query->orderBy('op.value');
-    $result = $query->execute()->fetchAll();
 
-    // Group by organism_id to have a list of synonyms.
-    $rows = [];
-    $prev_oid = NULL;
-    foreach ($result as $item) {
-      $oid = $item->organism_id;
-      if ($oid != $prev_oid) {
-        $rows[$oid] = (array) $item;
-        $rows[$oid]['synonym_list'] = [$item->synonym_list];
-      }
-      else {
-        $rows[$oid]['synonym_list'][] = $item->synonym_list;
-      }
-      $prev_oid = $oid;
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Get data for report.
+  // No sense to cache result because it takes about 10 msec to build.
+  $synonym_cvterm_id = Organism::SYNONYM_CVTERM_ID;
+  $query = db_select('chado.organismprop', 'op')
+    ->fields('op', ['organismprop_id'])
+    ->condition('op.type_id', $synonym_cvterm_id);
+  $query->leftJoin('chado.organism', 'o', 'op.organism_id = o.organism_id');
+  $query->addField('o', 'organism_id');
+  $query->addField('o', 'genus');
+  $query->addField('o', 'species');
+  $query->addField('o', 'infraspecific_name');
+  $query->addField('op', 'value', 'synonym_list');
+  $query->orderBy('o.organism_id');
+  $query->orderBy('op.value');
+  $result = $query->execute()->fetchAll();
+  // Group by organism_id to have a list of synonyms.
+  $rows = [];
+  $prev_oid = NULL;
+  foreach ($result as $item) {
+    $oid = $item->organism_id;
+    if ($oid != $prev_oid) {
+      $rows[$oid] = (array) $item;
+      $rows[$oid]['synonym_list'] = [$item->synonym_list];
     }
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    $cache->data[$key] = $rows;
-    cache_set($cid, $cache->data, $cache_bin);
+    else {
+      $rows[$oid]['synonym_list'][] = $item->synonym_list;
+    }
+    $prev_oid = $oid;
   }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output.
   $header = [
     ['data' => t('Id'), 'field' => 'organismprop_id'],
@@ -65,9 +58,6 @@ function tpps_report_organism_synonym_list($reset = FALSE) {
     ['data' => t('Infraspecific Name'), 'field' => 'infraspecific_name'],
     ['data' => t('Synonym List'), 'field' => 'synonym_list'],
   ];
-  $rows = $cache->data[$key] ?? [];
-  // Note:
-  // Can't cache output of the Report::printTable() because it breaks sorting.
   return Report::printTable([
     'report_name' => $name,
     'header' => $header,
