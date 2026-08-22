@@ -791,4 +791,37 @@ class TppsArray {
     return (empty($data) || count($data) === count(array_filter($data)));
   }
 
+  /**
+   * Gets key using insensitive search for the value in array.
+   *
+   * See
+   * https://www.php.net/manual/en/function.array-search.php.
+   *
+   * @param string $needle
+   *   String to be searched.
+   * @param array $haystack
+   *   Array to be searched in.
+   *
+   * @return mixed
+   *   Returns key if value was found and NULL otherwise.
+   */
+  public static function searchInsensitive(string $needle, array $haystack): bool {
+    return array_search(strtolower($needle), array_map('strtolower', $haystack));
+  }
+
+  /**
+   * Insensitive check if value exists in array.
+   *
+   * @param string $needle
+   *   String to be searched.
+   * @param array $haystack
+   *   Array to be searched in.
+   *
+   * @return bool
+   *   Returns TRUE if value was found and FALSE otherwise.
+   */
+  public static function isExistsInsensitive(string $needle, array $haystack): bool {
+    return !empty(static::searchInsensitive($needle, $haystack);
+  }
+
 }
