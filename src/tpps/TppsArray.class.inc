@@ -805,7 +805,7 @@ class TppsArray {
    * @return mixed
    *   Returns key if value was found and NULL otherwise.
    */
-  public static function searchInsensitive(string $needle, array $haystack): bool {
+  public static function searchInsensitive(string $needle, array $haystack) {
     return array_search(strtolower($needle), array_map('strtolower', $haystack));
   }
 

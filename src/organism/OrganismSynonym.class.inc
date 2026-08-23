@@ -3,6 +3,10 @@
 /**
  * @file
  * Contains 'OrganismSynonym' class.
+ *
+ * Rank.
+ * We assume that rank is the sequence of whole numbers starting from 0.
+ * Rank represents ordinal number of the synonym of the same organism_id.
  */
 
 /**
@@ -111,7 +115,7 @@ class OrganismSynonym {
    *   Organism Key (id or name).
    *
    * @return array
-   *   Returns list of the synonyms or empty array.
+   *   Returns list of the synonyms sorted by 'rank' column or empty array.
    *   Format: <oranismprop_id> => <synonym name>.
    *   Example: [18454 => 'Pinus halepensis subsp. brutia'].
    *
@@ -125,7 +129,7 @@ class OrganismSynonym {
       ->fields('t', ['organismprop_id', 'value'])
       ->condition('t.type_id', static::CVTERM_ID)
       ->condition('t.organism_id', $organism_id)
-      ->orderBy('t.organismprop_id')
+      ->orderBy('t.rank', 'ASC')
       ->execute()
       ->fetchAllKeyed();
     return $list ?? [];
@@ -162,7 +166,7 @@ class OrganismSynonym {
    *   Returns id of the created or existing record.
    */
   public static function insert($organism_key, $synonym_name) {
-    $synonym_list = load($organism_key);
+    $synonym_list = static::load($organism_key);
     if (
       // WARNING: Do NOT change the order of checks!
       !empty($synonym_list)
@@ -179,6 +183,99 @@ class OrganismSynonym {
       ])
       ->execute();
     return $id;
+  }
+
+  /**
+   * Removes organism's synonym.
+   *
+   * Ranks of the latest synonym will be updated to have sequence of
+   * non-negative integers starting from 0.
+   *
+   * @param mixed $organism_key
+   *   Organism Key (id or name).
+   * @param mixed $synonym_name
+   *   Optional. Default if NULL.
+   *   Organism Synonym Name.
+   *   When empty all organism's synonyms will be removed.
+   *
+   * @return bool
+   *   Returns TRUE if any synonym was removed and FALSE otherwise.
+   */
+  public static function delete($organism_key, $synonym_name = NULL) {
+    if (empty($organism_key)) {
+      watchdog('tpps',
+        // WARNING: Empty $organism_key lead to removement of the all synonyms.
+        'Empty organism_key is not allowed in OrganismSynonym::delete()'
+        // @todo Add stack.
+      );
+      return FALSE;
+    }
+    // Build main query to remove synonym.
+    $organism_id = static::getId($organism_key);
+    $query = db_delete(static::TABLE)
+      ->condition('organism_id', $organism_id)
+      ->condition('type_id', static::CVTERM_ID);
+
+    if (empty($synonym_name)) {
+      // All synonyms for given organism will be removed.
+      return !empty($query->execute());
+    }
+    else {
+      // Single synonym must be removed.
+      $synonym_list = static::load($organism_key);
+      $synonym_number = count($synonym_list);
+      if ($synonym_number < 1) {
+        // No synonyms found.
+        return FALSE;
+      }
+      else {
+        // Will be FALSE if $synonym_name wasn't found in $synonym_list.
+        $removing_synonym_rank = TppsArray::searchInsensitive(
+          $synonym_name,
+          array_values($synonym_list)
+        );
+        if ($removing_synonym_rank !== FALSE) {
+          $result = $query->condition('value', $synonym_name)->execute();
+          if (empty($result)) {
+            // Nothing was removed.
+            return FALSE;
+          }
+          // Update rank of existing synonyms.
+          if ($synonym_number == 1) {
+            // No need to update rank because single item will be removed.
+          }
+          else {
+            // Need to update rank.
+            // List is sorted by 'rank' column value and we assume that
+            // rank is the sequence of whole numbers starting from 0.
+            // So we could set 'rank' of the latest synonym to the value
+            // of the rank of removing synonym.
+            $max_rank = $synonym_number - 1;
+            db_update(static::TABLE)
+              ->fields(['rank' => $removing_synonym_rank])
+              ->condition('rank', $max_rank)
+              ->condition('organism_id', $organism_id)
+              ->condition('type_id', static::CVTERM_ID)
+              ->execute();
+          }
+        }
+        else {
+          // Synonym wasn't found in the list of existing synonyms.
+          $message = "Organism synonym '@synonym_name' can't be removed "
+            . "because doesn't exist."
+            . "<br />Organism Id: @organism_id."
+            . "<br />Organism Key: @organism_key.";
+          $params = [
+            '@organism_id' => $organism_id,
+            '@organism_key' => $organism_key,
+            '@synonym_name' => $synonym_name,
+          ];
+          watchdog('tpps', $message, $params, WATCHDOG_ERROR);
+          return FALSE;
+        }
+      }
+    }
+    return TRUE;
   }
 
 }
