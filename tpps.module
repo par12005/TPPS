@@ -2200,23 +2200,32 @@ function tpps_menu_add_settings_pages(array &$items = []) {
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Batch.
-  $items['tpps/batch/ncbi'] = [
+  $items['tpps/batch/ncbi/taxonomy_id'] = [
     'title' => 'NCBI Taxonomy Id Batch Update',
     'description' => 'Gets taxonomy id for existing organisms from NCBI using Batch API.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_ncbi_batch_settings_form'],
+    'page arguments' => ['tpps_batch_ncbi_taxonomy_id_form'],
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
-    'file' => 'batch/ncbi.inc',
+    'file' => 'batch/ncbi/taxonomy_id.inc',
   ];
-  $items['tpps/batch/gbif'] = [
+  $items['tpps/batch/gbif/taxonomy_id'] = [
     'title' => 'GBIF Taxonomy Id Batch Update',
     'description' => 'Gets taxonomy id for existing organisms from GBIF using Batch API.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_gbif_batch_settings_form'],
+    'page arguments' => ['tpps_batch_gbif_taxonomy_id_form'],
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
-    'file' => 'batch/gbif.inc',
+    'file' => 'batch/gbif/taxonomy_id.inc',
+  ];
+  $items['tpps/batch/gbif/synonym'] = [
+    'title' => 'GBIF Synonym Batch Update',
+    'description' => "Gets organism's synonyms for organism from GBIF using Batch API.",
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_batch_gbif_synonym_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'batch/gbif/synonym.inc',
   ];
 
   $list = [
@@ -3809,8 +3818,9 @@ function tpps_rest_api_response_hash_generation_alter(array &$context) {
  */
 function tpps_admin_paths() {
   $paths = [
-    'tpps/batch/ncbi' => TRUE,
-    'tpps/batch/gbif' => TRUE,
+    'tpps/batch/ncbi/taxonomy_id' => TRUE,
+    'tpps/batch/gbif/taxonomy_id' => TRUE,
+    'tpps/batch/gbif/synonym' => TRUE,
   ];
   return $paths;
 }
