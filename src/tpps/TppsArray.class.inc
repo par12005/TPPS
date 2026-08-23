@@ -821,7 +821,7 @@ class TppsArray {
    *   Returns TRUE if value was found and FALSE otherwise.
    */
   public static function isExistsInsensitive(string $needle, array $haystack): bool {
-    return !empty(static::searchInsensitive($needle, $haystack);
+    return !empty(static::searchInsensitive($needle, $haystack));
   }
 
 }
