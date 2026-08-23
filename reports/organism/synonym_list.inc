@@ -20,7 +20,7 @@ function tpps_report_organism_synonym_list($reset = FALSE) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Get data for report.
   // No sense to cache result because it takes about 10 msec to build.
-  $synonym_cvterm_id = Organism::SYNONYM_CVTERM_ID;
+  $synonym_cvterm_id = OrganismSynonym::CVTERM_ID;
   $query = db_select('chado.organismprop', 'op')
     ->fields('op', ['organismprop_id'])
     ->condition('op.type_id', $synonym_cvterm_id);

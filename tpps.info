@@ -26,6 +26,7 @@ files[] = src/submission_tag/FormRemoveSubmissionTag.class.inc
 
 ; Organism.
 files[] = src/organism/Organism.class.inc
+files[] = src/organism/OrganismSynonym.class.inc
 files[] = src/organism/OrganismTaxonomy.class.inc
 files[] = src/organism/NcbiTaxonomy.class.inc
 files[] = src/organism/GbifSpeciesApi.class.inc

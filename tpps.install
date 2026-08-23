@@ -2697,9 +2697,9 @@ function tpps_update_7134() {
   // Replace cvterm id for organism's infraspecific name.
   // Emily: cvterm_id 50375 is preferable as it uses the EDAM ontology
   // rather than local.
-  if (!empty(Organism::SYNONYM_CVTERM_ID)) {
+  if (!empty(OrganismSynonym::CVTERM_ID)) {
     db_update('chado.organismprop')
-      ->fields(['type_id' => Organism::SYNONYM_CVTERM_ID])
+      ->fields(['type_id' => OrganismSynonym::CVTERM_ID])
       ->condition('type_id', 2780)
       ->execute();
   }
