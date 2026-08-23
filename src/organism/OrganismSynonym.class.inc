@@ -42,11 +42,11 @@ class OrganismSynonym {
    *   When given $organism_key is nor number neither string.
    */
   public static function getId($organism_key) {
-    if (is_int($organsim_key)) {
+    if (is_int($organism_key)) {
       return (int) $organism_key;
     }
-    elseif (is_string($organsim_key)) {
-      $id = tpps_organism($organism_name)->id;
+    elseif (is_string($organism_key)) {
+      $id = tpps_organism($organism_key)->id;
       if (empty($id)) {
         $message = t("Organism Id can't be found for name: '@key'",
           ['@key' => $organism_key]);
@@ -55,16 +55,21 @@ class OrganismSynonym {
       return (int) $id;
     }
     else {
-      $message = t(
-        "Unsupported type of the organism key: <pre>@key_dump<pre>",
-        ['@key_dump' => var_export($organism_key, 1)]
-      );
-      throw new Exception($message);
+      $message = "Unsupported type of the organism key: @key_dump";
+      $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 10);
+      $params = [
+        '@key_dump' => var_export($organism_key, 1),
+        '!stack' => print_r($stack, 1),
+      ];
+      watchdog('tpps', $message . '<pre>!stack</pre>', $params);
+      throw new Exception(t($message, $params));
     }
   }
 
   /**
    * Gets data for 'Organism Synonym' report.
+   *
+   * No need to cache result because it takes about 10 msec to build.
    *
    * @param int $organism_key
    *   Organism Key (id or name).
@@ -77,7 +82,6 @@ class OrganismSynonym {
    *   When given $organism_key is nor number neither string.
    */
   public static function get($organism_key = NULL) {
-    $organism_id = static::getId($organism_key);
     $query = db_select(static::TABLE, 't')
       ->fields('t', ['organismprop_id'])
       ->condition('t.type_id', static::CVTERM_ID);
@@ -86,15 +90,18 @@ class OrganismSynonym {
     $query->addField('o', 'genus');
     $query->addField('o', 'species');
     $query->addField('o', 'infraspecific_name');
-    $query->addField('t', 'value', 'synonym_list');
-    $query->orderBy('o.organism_id');
+    $query->addField('t', 'value', 'synonym_name');
     $query->orderBy('t.value');
-    // Note: Organism name in $organism_key could be used in condition() but
-    // this probably won't improve result but makes code ugly.
-    if (!empty($organism_id)) {
+
+    // Specific organism.
+    if (!empty($organism_key)) {
+      $organism_id = static::getId($organism_key);
+      $query->orderBy('o.organism_id');
       $query->condition('t.organism_id', $organism_id);
     }
-    return $query->execute()->fetchAll();
+
+    return $query->execute()
+      ->fetchAllAssoc('organismprop_id', PDO::FETCH_ASSOC);
   }
 
   /**

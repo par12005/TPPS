@@ -17,34 +17,19 @@
 function tpps_report_organism_synonym_list($reset = FALSE) {
   $name = 'organism_synonym_list';
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Get data for report.
-  // No sense to cache result because it takes about 10 msec to build.
-  $synonym_cvterm_id = OrganismSynonym::CVTERM_ID;
-  $query = db_select('chado.organismprop', 'op')
-    ->fields('op', ['organismprop_id'])
-    ->condition('op.type_id', $synonym_cvterm_id);
-  $query->leftJoin('chado.organism', 'o', 'op.organism_id = o.organism_id');
-  $query->addField('o', 'organism_id');
-  $query->addField('o', 'genus');
-  $query->addField('o', 'species');
-  $query->addField('o', 'infraspecific_name');
-  $query->addField('op', 'value', 'synonym_list');
-  $query->orderBy('o.organism_id');
-  $query->orderBy('op.value');
-  $result = $query->execute()->fetchAll();
-  // Group by organism_id to have a list of synonyms.
   $rows = [];
   $prev_oid = NULL;
-  foreach ($result as $item) {
-    $oid = $item->organism_id;
+  foreach (OrganismSynonym::get() as $item) {
+    $oid = $item['organism_id'];
+    // Group by organism_id to have a list of synonyms.
     if ($oid != $prev_oid) {
       $rows[$oid] = (array) $item;
-      $rows[$oid]['synonym_list'] = [$item->synonym_list];
+      $rows[$oid]['synonym_list'] = [$item['synonym_name']];
     }
     else {
-      $rows[$oid]['synonym_list'][] = $item->synonym_list;
+      $rows[$oid]['synonym_list'][] = $item['synonym_name'];
     }
+    unset($rows[$oid]['synonym_name']);
     $prev_oid = $oid;
   }
 
