@@ -112,6 +112,8 @@ class OrganismSynonym {
    *
    * @return array
    *   Returns list of the synonyms or empty array.
+   *   Format: <oranismprop_id> => <synonym name>.
+   *   Example: [18454 => 'Pinus halepensis subsp. brutia'].
    *
    * @throws Exception
    *   When Organism Id couldn't be found by name.
@@ -125,7 +127,7 @@ class OrganismSynonym {
       ->condition('t.organism_id', $organism_id)
       ->orderBy('t.organismprop_id')
       ->execute()
-      ->fetchAllAssoc('t.organismprop_id', PDO::FETCH_ASSOC);
+      ->fetchAllKeyed();
     return $list ?? [];
   }
 
