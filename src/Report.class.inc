@@ -237,8 +237,15 @@ class Report {
     if (isset($ts['sql'])) {
       $sort_field = $ts['sql'];
       uasort($report['rows'], function($a, $b) use ($sort_field) {
-        return strnatcmp($a[$sort_field], $b[$sort_field]);
+        $valA = is_array($a[$sort_field])
+          ? implode(' ', $a[$sort_field])
+          : (string) $a[$sort_field];
+        $valB = is_array($b[$sort_field])
+          ? implode(' ', $b[$sort_field])
+          : (string) $b[$sort_field];
+        return strnatcmp($valA, $valB);
       });
+
       // Reverse the array if the sort direction is 'desc'.
       if (strtolower($ts['sort']) == 'desc') {
         $report['rows'] = array_reverse($report['rows'], TRUE);
