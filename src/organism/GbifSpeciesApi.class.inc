@@ -97,7 +97,7 @@ class GbifSpeciesApi extends OrganismTaxonomy {
       if (empty($organism_id = tpps_organism($organism_name)->id)) {
       }
     }
-    // Load.
+    // Load existing Taxonomy Id (if any).
     if (!empty($taxonomy_id = static::load($organism_id))) {
       return $taxonomy_id;
     }
@@ -106,33 +106,18 @@ class GbifSpeciesApi extends OrganismTaxonomy {
     $taxonomy_id = NULL;
     if (!empty($organism_name)) {
 
-      $use_new_version = TRUE;
       try {
-        if ($use_new_version) {
-          $response = (new RestApi([
-            'url' => 'https://api.gbif.org/v2/species/match',
-            'query' => [
-              'genericName' => static::prepareOrganismName($organism_name),
-            ],
-            'tag' => 'GBIF v2 Taxonomy Id: ' . $organism_name,
-            'cache' => variable_get('tpps_organism_gbif_use_cache', TRUE),
-          ]))->get()->response();
-          $taxonomy_id = $response['usage']['key'] ?? NULL;
-          $full_name = $response['usage']['name'] ?? NULL;
-          $name = $response['usage']['canonicalName'] ?? NULL;
-        }
-        else {
-          $response = (new RestApi([
-            'url' => 'https://api.gbif.org/v1/species/match',
-            'query' => ['name' => static::prepareOrganismName($organism_name)],
-            'tag' => 'GBIF v1 Taxonomy Id: ' . $organism_name,
-            'cache' => variable_get('tpps_organism_gbif_use_cache', TRUE),
-          ]))->get()->response();
-
-          $taxonomy_id = $response['usageKey'] ?? NULL;
-          $full_name = $response['scientificName'] ?? NULL;
-          $name = $response['canonicalName'] ?? NULL;
-        }
+        $response = (new RestApi([
+          'url' => 'https://api.gbif.org/v2/species/match',
+          'query' => [
+            'genericName' => static::prepareOrganismName($organism_name),
+          ],
+          'tag' => 'GBIF v2 Taxonomy Id: ' . $organism_name,
+          'cache' => variable_get('tpps_organism_gbif_use_cache', TRUE),
+        ]))->get()->response();
+        $taxonomy_id = $response['usage']['key'] ?? NULL;
+        $full_name = $response['usage']['name'] ?? NULL;
+        $name = $response['usage']['canonicalName'] ?? NULL;
       }
       catch (Exception $e) {
         $message = $e->getMessage();
@@ -186,9 +171,48 @@ class GbifSpeciesApi extends OrganismTaxonomy {
     return $organism_name;
   }
 
-
-  public static function getSynonymList($organism_name) {
-
+  /**
+   * Gets list of synonyms.
+   *
+   * @param mixed $organism_key
+   *   Organism Name or Organism Id.
+   *   AJAX-requests from browser uses name but Batch Update uses id.
+   *
+   * @return mixed
+   *   Returns list of synonyms or NULL.
+   */
+  public static function getSynonymList($taxonomy_id) {
+    if (empty($taxonomy_id)) {
+      return NULL;
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Get synonym_list.
+    $synonym_list = [];
+    try {
+      $url = 'https://api.gbif.org/v1/species/' . $taxonomy_id . '/synonyms';
+      $synonym_response = (new RestApi(['url' => $url]))->get()->response();
+      if (
+        isset($synonym_response['results'])
+        && !empty($synonym_response['results'])
+      ) {
+        foreach ($synonym_response['results'] as $synonym) {
+          $synonym_list[] = $synonym['scientificName'];
+        }
+        return $synonym_list;
+      }
+      else {
+        //echo "No synonyms found.\n";
+      }
+    }
+    catch (Exception $e) {
+      $message = $e->getMessage();
+      $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
+      watchdog('tpps', '@message <pre>@backtrace</pre>',
+        ['@message' => $message, '@backtrace' => print_r($stack, 1)],
+        WATCHDOG_ERROR
+      );
+      drupal_set_message($e->getCode() . ' ' . $message);
+    }
   }
 
 }

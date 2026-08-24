@@ -419,7 +419,7 @@ function ftest_tpps_is_valid() {
 }
 
 /**
- * Gets list of organisms without NCBI Taxonomy Id.
+ * Gets list of organisms without NCBI/GBIF Taxonomy Id.
  *
  * @param string $table2
  *   Name of the table to be joined.
@@ -433,6 +433,11 @@ function ftest_tpps_is_valid() {
  *   Organism's name.
  */
 function tpps_get_organisms_without_taxonomy_id($table2, $debug_mode = FALSE) {
+  if (!in_array($table2, [GbifSpeciesApi::TABLE, NcbiTaxonomy::TABLE])) {
+    watchdog('tpps', "Table @table can't be used to get Taxonomy Id",
+      ['@table' => $table2], WATCHDOG_ERROR);
+    return FALSE;
+  }
   // Get all organisms.
   $table = 'chado.organism';
   $query = db_select($table, 'o')

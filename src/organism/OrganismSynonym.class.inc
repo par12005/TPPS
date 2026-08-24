@@ -161,11 +161,13 @@ class OrganismSynonym {
    *   Organism Key (id or name).
    * @param string $synonym_name
    *   Organism Synonym.
+   * @param bool $debug_mode
+   *   Debug mode.
    *
    * @return int
    *   Returns id of the created or existing record.
    */
-  public static function insert($organism_key, $synonym_name) {
+  public static function insert($organism_key, $synonym_name, $debug_mode = FALSE) {
     $synonym_list = static::load($organism_key);
     if (
       // WARNING: Do NOT change the order of checks!
@@ -182,6 +184,17 @@ class OrganismSynonym {
         'rank' => count($synonym_list),
       ])
       ->execute();
+
+    if ($debug_mode ?? FALSE) {
+      watchdog('tpps', "Inserted synonym '@synonym_name' (#@id) for "
+        . "Organism Id '@organism_id'.",
+        [
+          '@id' => $id,
+          '@organism_id' => $organism_id,
+          '@synonym_name' => $synonym_name,
+        ], WATCHDOG_ERROR
+      );
+    }
     return $id;
   }
 
@@ -276,6 +289,41 @@ class OrganismSynonym {
       }
     }
     return TRUE;
+  }
+
+  /**
+   * Gets list of organism's Taxonomy Id.
+   *
+   * @param string $table2
+   *   Name of the table to be joined.
+   *   Possible values: GbifSpeciesApi::TABLE and NcbiTaxonomy::TABLE.
+   * @param bool $debug_mode
+   *   Optional. Default is FALSE.
+   *   When TRUE only first 10 items will be in resulting set of data.
+   *
+   * @return mixed
+   *   Returns list of the organisms and their Taxonomy Id.
+   *   Format: <organism_id> => <taxonomy_id>.
+   *   Returns NULL if $table2 has wrong value.
+   */
+  public static function getTaxonomyIdList($table2, $debug_mode = FALSE) {
+    if (!in_array($table2, [GbifSpeciesApi::TABLE, NcbiTaxonomy::TABLE])) {
+      watchdog('tpps', "Table @table can't be used to get Taxonomy Id",
+        ['@table' => $table2], WATCHDOG_ERROR);
+      return FALSE;
+    }
+    // Get all organisms.
+    $table = 'chado.organism';
+    $query = db_select($table, 'o')
+      ->fields('o', ['organism_id'])
+      ->orderBy('o.organism_id');
+    $query->leftJoin($table2, 't2', 'o.organism_id = t2.organism_id');
+    $query->isNotNull('t2.taxonomy_id');
+    $query->addField('t2', 'taxonomy_id');
+    if ($debug_mode) {
+      $query->range(0, 11);
+    }
+    return $query->execute()->fetchAllKeyed();
   }
 
 }

@@ -29,16 +29,16 @@ function tpps_batch_gbif_synonym_form(array $form, array &$form_state) {
     unset($_SESSION[$session_name]);
   }
 
-  $report_path = 'admin/reports/tpps/organism/gbif/all';
+  $report_path = 'admin/reports/tpps/organism/synonym_list';
   $form['report'] = [
-    '#markup' => '<p>' . l(t('List of the GBIF Taxonomy Ids.'), $report_path) . '</p>',
+    '#markup' => '<p>' . l(t("List of the Organism's Synonyms."), $report_path) . '</p>',
   ];
 
   // Button to start batch process.
   $form[TPPS_GBIF_BATCH_UPDATE_BUTTON_NAME] = [
     '#type' => 'submit',
     '#name' => TPPS_GBIF_BATCH_UPDATE_BUTTON_NAME,
-    '#value' => t('GBIF Taxonomy Id Batch Update'),
+    '#value' => t('GBIF Synonym Batch Update'),
   ];
   return $form;
 }
@@ -54,11 +54,15 @@ function tpps_batch_gbif_synonym_form_submit(array $form, array &$form_state) {
   }
   // Get list of organisms without Taxonomy Id.
   $operations = [];
-  $list = tpps_get_organisms_without_taxonomy_id(GbifSpeciesApi::TABLE);
+  // Get list of organism with taxonomy id.
+  //
+  //
+  // @TODO Get organism_name to have better status messages.
+  $list = OrganismSynonym::getTaxonomyIdList(GbifSpeciesApi::TABLE);
   if (!empty($total = count($list))) {
-    foreach ($list as $organism_id => $organism_name) {
-      if (empty($organism_name) || empty($organism_id)) {
-        watchdog('tpps', "Organism #@id has empty name so GBIF Taxonomy Id "
+    foreach ($list as $organism_id => $taxonomy_id) {
+      if (empty($organism_id) || empty($taxonomy_id)) {
+        watchdog('tpps', "Empty Taxonomy Id for Organism Id '#@id'so GBIF Synonym "
           . "can't be found for this organism.", ['@id' => $organism_id],
           WATCHDOG_ERROR
         );
@@ -66,11 +70,11 @@ function tpps_batch_gbif_synonym_form_submit(array $form, array &$form_state) {
       }
       $operations[] = [
         'tpps_batch_gbif_synonym_callback',
-        [$organism_id, $organism_name, $total],
+        [$organism_id, $taxonomy_id, $total],
       ];
     }
     $batch = [
-      'title' => t('GBIF Taxonomy ID Update'),
+      'title' => t('GBIF Synonym Update'),
       'operations' => $operations,
       'finished' => 'tpps_batch_gbif_synonym_finished_callback',
       'file' => drupal_get_path('module', 'tpps') . '/batch/gbif/synonym.inc',
@@ -90,35 +94,34 @@ function tpps_batch_gbif_synonym_form_submit(array $form, array &$form_state) {
  *
  * @param int $organism_id
  *   Orgaanism Id. See chado.orgnism.organism_id.
- * @param string $organism_name
- *   Full organism name. Space separated 'genus' and 'species'.
+ * @param int $taxonomy_id
+ *   Taxonomny Id.
  * @param int $total
  *   Total amount of organisms to be processed.
  * @param array $context
  *   Batch context.
  */
-function tpps_batch_gbif_synonym_callback($organism_id, $organism_name, $total, array &$context) {
+function tpps_batch_gbif_synonym_callback($organism_id, $taxonomy_id, $total, array &$context) {
   if (empty($context['sandbox'])) {
     $context['sandbox']['progress'] = 0;
     $context['sandbox']['current_item'] = '';
     $context['sandbox']['total'] = $total;
   }
+  $id_list = [];
   // Get Taxonomy Id.
-  if (empty($taxonomy_id = GbifSpeciesApi::getId($organism_id))) {
-    $taxonomy_id = NULL;
+  if (!empty($synonym_list = GbifSpeciesApi::getSynonymList($taxonomy_id))) {
+    foreach ($synonym_list as $synonym_name) {
+      $id_list[] = OrganismSynonym::insert($organism_id, $synonym_name, $debug_mode = 1);
+    }
   }
-  $label = t(
-    'GBIF Taxonomy Id for "@organism_name" (#@organism_id): <strong>@taxonomy_id</strong>',
-    [
-      '@organism_id'  => $organism_id,
-      '@organism_name' => $organism_name,
-      '@taxonomy_id' => $taxonomy_id ?? t('Not found'),
-    ]
-  );
+  $label = t('GBIF Synonym for Organism Id "@organism_id": <strong>@id_list</strong>.', [
+    '@organism_id'  => $organism_id,
+    '@id_list' => (empty($id_list) ? 'Not found' : implode(', ', $id_list)),
+  ]);
   $context['results'][] = $label;
   $context['sandbox']['progress']++;
   $context['sandbox']['count'] = $context['sandbox']['total'] - $context['sandbox']['progress'];
-  $context['sandbox']['current_item'] = $organism_name;
+  $context['sandbox']['current_item'] = $organism_id;
   $context['message'] = $label;
 }
 
