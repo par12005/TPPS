@@ -22,21 +22,23 @@ function tpps_report_organism_synonym_list($reset = FALSE) {
   foreach (OrganismSynonym::get() as $item) {
     $oid = $item['organism_id'];
     // Group by organism_id to have a list of synonyms.
+    $synonym_name = $item['synonym_name'] . ' (#' . $item['organismprop_id'] . ')';
     if ($oid != $prev_oid) {
       $rows[$oid] = (array) $item;
-      $rows[$oid]['synonym_list'] = [$item['synonym_name']];
+      $rows[$oid]['synonym_list'] = [$synonym_name];
     }
     else {
-      $rows[$oid]['synonym_list'][] = $item['synonym_name'];
+      $rows[$oid]['synonym_list'][] = $synonym_name;
     }
     unset($rows[$oid]['synonym_name']);
+    unset($rows[$oid]['organismprop_id']);
     $prev_oid = $oid;
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output.
   $header = [
-    ['data' => t('Id'), 'field' => 'organismprop_id'],
+    //['data' => t('Id'), 'field' => 'organismprop_id'],
     ['data' => t('Organism Id'), 'field' => 'organism_id'],
     ['data' => t('Genus'), 'field' => 'genus'],
     ['data' => t('Species'), 'field' => 'species'],
@@ -86,6 +88,23 @@ function tpps_report_organism_synonym_list_formatter(string $name, $value, array
       break;
 
     case 'synonym_list':
+      $token_list = [
+        $row['genus'],
+        $row['species'],
+        $row['infraspecific_name'],
+      ];
+
+      foreach ($formatted as $index => $item) {
+        foreach ($token_list as $token) {
+          $item = str_replace(
+            $token,
+            '<strong>' . $token . '</strong>',
+            $item
+          );
+        }
+        $formatted[$index] = $item;
+      }
+
       $formatted = theme('item_list', ['items' => $formatted, 'type' => 'ol']);
       break;
   }
