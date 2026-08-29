@@ -9,11 +9,9 @@
  * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * How to use?
  *
- * SQL-query (sorting):
+ * Array and SQL-query (sorting):
  * - Report::print();
  * - Report::print2Level();
- * Array (no sorting and with sorting):
- * - Report::printTable();
  */
 
 /**
@@ -94,7 +92,7 @@ class Report {
    * @return string
    *   Returns themed table with pagers.
    */
-  public static function print(array $meta) {
+  public static function printQuery(array $meta) {
     if (empty($meta['header']) || empty($meta['query'])) {
       drupal_set_message('No metadata to build report.');
       return '';
@@ -103,12 +101,24 @@ class Report {
     if (!empty($debug_mode)) {
       $query->addTag('debug');
     }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Pager and sorting.
-    $report_query = $query->extend('PagerDefault')
-      ->limit(($items_per_page ? $items_per_page : 25))
-      ->extend('TableSort')
-      ->orderByHeader($header);
-    $data = $report_query->execute()->fetchAll();
+    if ($pager == 'none' || $pager === FALSE) {
+      // No pager at all.
+      $ts = tablesort_init($header);
+      if (isset($ts['sql'])) {
+        $query->orderBy($ts['sql'], $ts['sort']);
+      }
+      $data = $query->execute()->fetchAll();
+    }
+    else {
+      $report_query = $query->extend('PagerDefault')
+        ->limit(($items_per_page ? $items_per_page : 25))
+        ->extend('TableSort')
+        ->orderByHeader($header);
+      $data = $report_query->execute()->fetchAll();
+    }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Formatter - skip if null, false, or empty string
@@ -135,15 +145,17 @@ class Report {
     if (!empty($page_title)) {
       drupal_set_title($page_title);
     }
-    return theme('pager') . theme('table',
-      [
-        'header' => $header,
-        'caption' => $page_title,
-        'empty' => $empty_message ?? t('No data found.'),
-        'attributes' => $table_attributes,
-        'rows' => $rows,
-      ]
-    ) . theme('pager');
+    $report = [
+      'header' => $header,
+      'caption' => $page_title,
+      'empty' => $empty_message ?? t('No data found.'),
+      //'attributes' => $table_attributes,
+      'rows' => $rows,
+      'pager' => $pager,
+      'query' => $query,
+      'items_per_page' => $items_per_page,
+    ];
+    return static::buildOutput($report);
   }
 
   /**
@@ -189,23 +201,36 @@ class Report {
    *   Report's metadata. Required keys:
    *   - 'report_name' string.
    *     Machine report name (with underscores).
-   *   - 'header' array.
+   *   - 'header' array
    *     List of the table's header labels.
-   *   - 'rows' array.
+   *   - 'rows' array
+   *     Optional. Required if 'query' item is empty.
    *     Table data to be shown.
-   *   - 'empty' string.
+   *
+   *   - 'query' object
+   *     Optional. Required if 'roww' item is empty.
+   *     Drupal DB Query object.
+   *     WARNING: Requires db_select() not db_query().
+   *
+   *   - 'empty' string
    *     Optional. Localized string which will be shown when 'rows' is empty.
+   *
    *   - 'pager' mixed
    *      Defines where pager will be shown. Possible values:
    *       'both', 'full': at the top and bottom.
    *       'below', 'bottom': at the bottom only.
    *       'above', 'top': at the top only.
    *       'none', FALSE, NULL: hidden.
+   *
    *   - 'items_per_page' int
-   *     Opitonal. Default is 20.
+   *     Opitonal. Default is 25.
    *     Number of rows show at single page when pager is used.
    *     Global setting for all reports could be overwritten by Drupal variable:
    *     'tpps_report_items_per_page' at '/admin/config/tpps/reports' page.
+   *   - 'css_path' string
+   *     Optional. Absolute path to the CSS file. See drupal_add_css().
+   *   - 'page_title' string
+   *     Page title.
    *
    *   Example of the sortable table:
    *   $report['header'] = [
@@ -231,32 +256,88 @@ class Report {
    * @return string
    *   Returns rendered HTML sortable table with pager.
    */
-  public static function printTable(array $report) {
-    // Sorting.
-    $ts = tablesort_init($report['header']);
-    if (isset($ts['sql'])) {
-      $sort_field = $ts['sql'];
-      uasort($report['rows'], function($a, $b) use ($sort_field) {
-        $valA = is_array($a[$sort_field])
-          ? implode(' ', $a[$sort_field])
-          : (string) $a[$sort_field];
-        $valB = is_array($b[$sort_field])
-          ? implode(' ', $b[$sort_field])
-          : (string) $b[$sort_field];
-        return strnatcmp($valA, $valB);
-      });
-
-      // Reverse the array if the sort direction is 'desc'.
-      if (strtolower($ts['sort']) == 'desc') {
-        $report['rows'] = array_reverse($report['rows'], TRUE);
-      }
+  public static function print(array $report) {
+    // Check required items.
+    if (
+      // Header is missing.
+      empty($report['header'])
+      // OR when either query OR rows is not empty.
+      || !(isset($report['query']) || isset($report['rows']))
+    ) {
+      drupal_set_message(t('Required data to build report is missing.'), 'error');
+      return '';
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Formatter - skip if null, false, or empty string
-    $formatter = $report['formatter'] ?? 'Report::formatter';
-    $is_formatter = (!empty($formatter) && function_exists($formatter));
-    // Prepare rows for report.
+    // Default values.
+    $debug_mode = check_plain($_GET['debug_mode'] ?? $report['debug_mode'] ?? FALSE);
+    $pager = check_plain($_GET['pager'] ?? $report['pager'] ?? 'none');
+    $report['items_per_page'] = check_plain($_GET['items_per_page']
+      ?? $report['items_per_page']
+      ?? variable_get('tpps_report_items_per_page', 20));
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Formatter.
+    if (
+      !empty($report['name'])
+      && ($formatter_function = 'tpps_report_' . $report['name'] . '_formatter')
+      && function_exists($formatter_function)
+    ) {
+      $formatter = check_plain($formatter_function);
+      $is_formatter = TRUE;
+    }
+    else {
+      $formatter = check_plain($report['formatter'] ?? 'Report::formatter');
+      $is_formatter = (!empty($formatter) && function_exists($formatter));
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Data in array.
+    if (empty($report['query'])) {
+      // Sorting.
+      $ts = tablesort_init($report['header']);
+      if (isset($ts['sql'])) {
+        $sort_field = $ts['sql'];
+        uasort($report['rows'], function($a, $b) use ($sort_field) {
+          $valA = is_array($a[$sort_field])
+            ? implode(' ', $a[$sort_field])
+            : (string) $a[$sort_field];
+          $valB = is_array($b[$sort_field])
+            ? implode(' ', $b[$sort_field])
+            : (string) $b[$sort_field];
+          return strnatcmp($valA, $valB);
+        });
+        // Reverse the array if the sort direction is 'desc'.
+        if (strtolower($ts['sort']) == 'desc') {
+          $report['rows'] = array_reverse($report['rows'], TRUE);
+        }
+      }
+
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Data in SQL-query.
+    else {
+      $query = $report['query'];
+      if (!empty($report['debug_mode'])) {
+        $query->addTag('debug');
+      }
+      // Pager and sorting.
+      if ($pager == 'none' || $pager === FALSE) {
+        // No pager at all.
+        $ts = tablesort_init($report['header']);
+        if (isset($ts['sql'])) {
+          $query->orderBy($ts['sql'], $ts['sort']);
+        }
+        $report['rows'] = $query->execute()->fetchAll();
+      }
+      else {
+        $report_query = $query->extend('PagerDefault')
+          ->limit($report['items_per_page'])
+          ->extend('TableSort')
+          ->orderByHeader($report['header']);
+        $report['rows'] = $report_query->execute()->fetchAll();
+      }
+    }
+
+    // Prepare rows for report. Formatter.
     $rows = [];
     foreach ($report['rows'] as $row_id => $row) {
       foreach ($row as $field_id => $field_value) {
@@ -268,49 +349,76 @@ class Report {
         ];
       }
     }
-    $report_name = $report['report_name'] ?? NULL;
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Add 'main' JS and CSS.
     tpps_add_css_js();
-
-    $pager = $report['pager'] ?? NULL;
+    // Cuostom CSS.
+    if (!empty($report['css_path'])) {
+      drupal_add_css($report['css_path']);
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Pager.
     if ($pager == 'none' || $pager === FALSE) {
-      // No pager at all.
-      $pager_output = '';
+      // No pager.
+      $rendered_pager = '';
     }
     else {
-      $items_per_page = $report['items_per_page'] ?? variable_get('tpps_report_items_per_page', 20);
-      $current_page = pager_default_initialize(count($rows), $items_per_page);
-      $chunks = array_chunk($rows, $items_per_page, TRUE);
-      $pager_output = theme('pager', ['quantity', count($rows) ?? 0]);
-      $rows = $chunks[$current_page] ?? [];
+      // Pager.
+      if (!empty($report['query'])) {
+        // SQL-query.
+        $rendered_pager = theme('pager');
+      }
+      else {
+        // Array.
+        $current_page = pager_default_initialize(
+          count($rows), $report['items_per_page']
+        );
+        $chunks = array_chunk($rows, $report['items_per_page'], TRUE);
+        $rendered_pager = theme('pager', ['quantity', count($rows) ?? 0]);
+        $rows = $chunks[$current_page] ?? [];
+      }
     }
-
-    $content = theme('table', [
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Page title.
+    if (!empty($report['page_title'])) {
+      // @TODO Remove if possible.
+      $content = '<h2>' . $report['page_title'] . '</h2>';
+      drupal_set_title($report['page_title']);
+    }
+    else {
+      $content = '';
+      $page_title = variable_get('tpps_report_' . ($report['name'] ?? '') . '_title');
+      drupal_set_title($page_title);
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Content.
+    $content .= theme('table', [
       // @TODO Minor. $report_name now is not string but array of parents.
-      //'caption' => Report::getList()[$report_name]['description'],
+      // 'caption' => Report::getList()[$report_name]['description'],
       'header' => $report['header'] ?? [],
       'rows' => $rows,
       // To have vertical align to top of the cell.
-      'attributes' => ['class' => ['tpps_table']],
-      'empty' => $report['empty'] ?? NULL,
+      'attributes' => ['class' => ['view', 'tpps_table']],
+      'empty' => $report['empty'] ?? t('No data found.'),
       'sticky' => TRUE,
     ]);
 
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Pager position.
     if (in_array($pager, ['both', 'full']) || is_null($pager)) {
-      return $pager_output . $content . $pager_output;
+      $content = $rendered_pager . $content . $rendered_pager;
     }
     elseif (in_array($pager, ['below', 'bottom'])) {
-      return $content . $pager_output;
+      $content = $content . $rendered_pager;
     }
     elseif (in_array($pager, ['above', 'top'])) {
-      return $pager_output . $content;
+      $content = $rendered_pager . $content;
     }
-    elseif ($pager == 'none' || $pager === FALSE) {
-      return $content;
+    if (!empty($report['submission_cache'])) {
+      $content .= SubmissionCache::showClearCacheWidget();
     }
-    else {
-      return $content;
-    }
+    return $content;
   }
 
   /**
@@ -990,110 +1098,69 @@ class Report {
     }
   }
 
-}
 
-// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-// Examples.
+  /**
+   * buildOutput
+   *
+   * @param array $report
+   *   pager
+   *   rows
+   *   header
+   *
+   *
+   * @return void
+   */
+  public static function buildOutput(array $report) {
+    $rows = $report['rows'] ?? [];
 
-/**
- * Builds data for single submission in 'submission_file' report.
- *
- * See Report::buildRow().
- *
- * @param array $context
- *   Data to build single row of the report. Keys are:
- *   'submission' - object. (optional when 'accession' is used).
- *      TPPS Submission.
- *   'reset' - bool. (optional).
- *     When TRUE cache will be updated. Default is FALSE.
- *   'accession' - string. (optional when 'submission' is used).
- *     Study accession. E.g., 'TGDRxxxx'.
- *
- * @return array
- *   Returns data to build single row in report 'Submisssion Files All'.
- */
-function ___tpps_report_submission_file_all_build_single_row(array $context) {
-  $debug_mode = FALSE;
-
-  $submission = $context['submission'] ?? NULL;
-  if (empty($submission) && !empty($context['accession'])) {
-    $submission = new Submission($context['accession']);
-  }
-  $reset = $context['reset'] ?? FALSE;
-
-  $data = [];
-  $accession = $submission->accession;
-  if (empty($file_list = $submission->getFileIdList())) {
-    // When submission has no files it shouldn't be shown in the report.
-    return NULL;
-  }
-  if ($debug_mode ?? FALSE) {
-    dpm(print_r($file_list, 1), $submission->accession);
-  }
-
-  // List of files per group.
-  $file_row = [];
-  // Rendered lists of files.
-  $final_file_row = [];
-
-  // @todo Minor. Check 'vcf' and 'local vcf' in $file->uri.
-  // Process local VCF files.
-  for ($n = 1; $n <= $submission->getOrganismNumber(); $n++) {
-    if ($submission->hasLocalVcf($n)) {
-      $organism_name = $submission->getOrganismName($n);
-      $organism_label = check_plain($n . '. ' . $organism_name);
-      $file_row[Report::OTHER_FILES][$organism_label]['local_vcf']
-        = $submission->getLocalVcf($n);
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Pager.
+    $pager = $report['pager'] ?? NULL;
+    if ($pager == 'none' || $pager === FALSE) {
+      // No pager.
+      $rendered_pager = '';
     }
-  }
-
-  foreach ($file_list as $fid => $parents) {
-    $step = $parents[0];
-    // 3: 'tree-accession';
-    // 4: 'phenotype', 'genotype', '...'
-    switch ($step) {
-      case TPPS_PAGE_3:
-        $group = $parents[1];
-        $organism_index = str_replace('species-', '', $parents[2]);
-        break;
-
-      case TPPS_PAGE_4:
-        $group = $parents[2];
-        $organism_index = str_replace('organism-', '', $parents[1]);
-        break;
-
-      default:
-        $group = Report::OTHER_FILES;
-        $organism_index = NULL;
-        break;
+    else {
+      // Pager.
+      if ($report['query']) {
+        // SQL-query.
+        $rendered_pager = theme('pager');
+      }
+      else {
+        // Array.
+        $current_page = pager_default_initialize(count($rows), $items_per_page);
+        $chunks = array_chunk($rows, $items_per_page, TRUE);
+        $rendered_pager = theme('pager', ['quantity', count($rows) ?? 0]);
+        $rows = $chunks[$current_page] ?? [];
+      }
     }
-    $organism_name = $submission->getOrganismName($organism_index);
-
-    // Missing files goes to the static::OTHER_FILES group..
-    if (
-      // !in_array($fid, $existing_fid_list) ||
-      empty($file = file_load($fid))
-    ) {
-      $file_row[Report::OTHER_FILES][] = $fid;
-      continue;
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Content.
+    $content = theme('table', [
+      // @TODO Minor. $report_name now is not string but array of parents.
+      // 'caption' => Report::getList()[$report_name]['description'],
+      'header' => $report['header'] ?? [],
+      'rows' => $rows,
+      // To have vertical align to top of the cell.
+      'attributes' => ['class' => ['tpps_table']],
+      'empty' => $report['empty'] ?? t('No data found.'),
+      'sticky' => TRUE,
+    ]);
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Pager position.
+    if (in_array($pager, ['both', 'full']) || is_null($pager)) {
+      $content = $rendered_pager . $content . $rendered_pager;
     }
-    $organism_label = check_plain($organism_index . '. ' . $organism_name);
-    $field_name = check_plain(end($parents));
-    $file_row[$group][$organism_label][$field_name] = $fid;
+    elseif (in_array($pager, ['below', 'bottom'])) {
+      $content = $content . $rendered_pager;
+    }
+    elseif (in_array($pager, ['above', 'top'])) {
+      $content = $rendered_pager . $content;
+    }
+    if (!empty($report['submission_cache'])) {
+      $content .= SubmissionCache::showClearCacheWidget();
+    }
+    return $content;
   }
-  $data = [
-    'uid' => $submission->uid,
-    'stage' => $submission->state['stage'],
-    'status' => $submission->getStatus(),
-    'file_row' => $file_row,
-  ];
-  $cid = Report::getCacheKey('all', ['submission', 'file']);
-  $cache_bin = TPPS_CACHE_BIN ?? 'cache';
-  $cache = cache_get($cid, $cache_bin);
-  if ($reset || !isset($cache->data[$accession])) {
-    // Update cache.
-    $cache->data[$accession] = $data;
-    cache_set($cid, $cache->data, $cache_bin);
-  }
-  return $data;
+
 }

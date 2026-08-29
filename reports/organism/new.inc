@@ -44,6 +44,7 @@ function tpps_report_organism_new() {
   }
   $result = $query->execute()->fetchAllAssoc('organism_id', PDO::FETCH_ASSOC);
 
+  $rows = [];
   foreach ($result as $item) {
     // @TODO Convert to theme-function.
     $actions = [
@@ -54,10 +55,14 @@ function tpps_report_organism_new() {
       l(t('View JSON'), 'api/submission/' . $item['accession'] . '/view/state'),
     ];
     $rows[] = [
-      $item['organism_id'],
-      tpps_entity_link($item['organism_id'], $item['organism_name'], 'Organism'),
-      theme('study_accession', ['accession' => $item['accession']]),
-      implode(' | ', $actions),
+      'organism_id' => $item['organism_id'],
+      'organism_name' => tpps_entity_link(
+        $item['organism_id'],
+        $item['organism_name'],
+        'Organism'
+      ),
+      'study' => theme('study_accession', ['accession' => $item['accession']]),
+      'links' => implode(' | ', $actions),
     ];
   }
 
@@ -78,10 +83,16 @@ function tpps_report_organism_new() {
     );
   }
   $header = [
-    t('Organism Id'), t('Organism Name'), t('Study'), t('Useful Links')
+    ['data' => t('Organism Id'), 'field' => 'organism_id'],
+    ['data' => t('Organism Name'), 'field' => 'organism_name'],
+    ['data' => t('Study'), 'field' => 'study'],
+    ['data' => t('Useful Links'), 'field' => 'links'],
   ];
-  return implode(' | ', $links) . '<br />' . Report::printTable([
+  $content = Report::print([
+    'name' => 'organism_new',
     'header' => $header,
     'rows' => $rows,
   ]);
+  return implode(' | ', $links) . '<br />' . $content;
+
 }

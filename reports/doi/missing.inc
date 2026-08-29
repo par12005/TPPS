@@ -9,45 +9,15 @@
  * Menu callback. Shows studies without DOI attached.
  */
 function tpps_report_doi_missing() {
-  $page_title = variable_get('tpps_report_doi_missing_title', 'Missing DOI');
-
-  // Original query from Emily.
-  //  select
-  //    p.project_id,
-  //    p.name,
-  //    p.description,
-  //    d.accession
-  //  from chado.project p
-  //  join chado.project_dbxref pd on p.project_id = pd.project_id
-  //  join chado.dbxref d on pd.dbxref_id = d.dbxref_id
-  //  where p.project_id in (
-  //    select project_id
-  //    from chado.project_dbxref
-  //    where dbxref_id in (
-  //      select dbxref_id from chado.dbxref where accession ilike 'tgdr%'
-  //    )
-  //  )
-  //  and p.project_id not in (
-  //    select project_id
-  //    from chado.project_dbxref
-  //    where dbxref_id in (
-  //      select dbxref_id from chado.dbxref where accession ilike '%\/%'
-  //    )
-  //  )
-  //  order by project_id;
-
   $sub_query_1 = db_select('chado.dbxref', 't1')
     ->fields('t1', ['dbxref_id'])
     ->condition('accession', 'TGDR%', 'LIKE');
-
   $sub_query_2 = db_select('chado.project_dbxref', 't2')
     ->fields('t2', ['project_id'])
     ->condition('dbxref_id', $sub_query_1, 'IN');
-
   $sub_query_3 = db_select('chado.dbxref', 't3')
     ->fields('t3', ['dbxref_id'])
     ->condition('accession', '%\/%', 'LIKE');
-
   $sub_query_4 = db_select('chado.project_dbxref', 't4')
     ->fields('t4', ['project_id'])
     ->condition('dbxref_id', $sub_query_3, 'IN');
@@ -62,19 +32,17 @@ function tpps_report_doi_missing() {
   $query->condition('p.project_id', $sub_query_2, 'IN');
   $query->condition('p.project_id', $sub_query_4, 'NOT IN');
 
-  return '<h2>' . $page_title . '</h2>' . Report::print([
-    'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
-    'formatter' => 'tpps_report_doi_missing_formatter',
-    'page_title' => $page_title,
-    'table_attributes' => ['class' => ['view' , 'tpps_table']],
-    'items_per_page' => variable_get('tpps_report_items_per_page', 15),
-    'header' => [
-      ['data' => t('Study'), 'field' => 'accession'],
-      ['data' => t('Project Id'), 'field' => 'project_id'],
-      ['data' => t('Name'), 'field' => 'name'],
-      ['data' => t('Description'), 'field' => 'chadoproject.description'],
-    ],
+  $header = [
+    ['data' => t('Study'), 'field' => 'accession'],
+    ['data' => t('Project Id'), 'field' => 'project_id'],
+    ['data' => t('Name'), 'field' => 'name'],
+    ['data' => t('Description'), 'field' => 'chadoproject.description'],
+  ];
+  return Report::print([
+    'name' => 'doi_missing',
+    'header' => $header,
     'query' => $query,
+    'pager' => 'none',
   ]);
 }
 

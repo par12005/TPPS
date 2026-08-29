@@ -2011,21 +2011,22 @@ function tpps_flush_caches() {
  *    same set of attached files.
  *
  * @param mixed $page_key
- *   'theme', 'main' or a page name.
- *   When integer it's TPPS Form Page Id.
+ *   Optional. Default is 'main'. Possible values:
+ *   'theme', 'main', page name (string) or TPPS Form Page Id (int).
+ *   Use constants (like TPPS_PAGE_1) to improve readability.
+ *   Example of the feature name 'TPPS Study Export Page': 'study_export'.
+ *   Note:
+ *   TPPS_MODULE_PATH . TPPS_CSS_PATH is sites/all/modules/TGDR/css/tpps.css.
  *
- *   What is $page_key?
- *   +--------------------+--------------+-----------+-----------+-------------------------------+
- *   |                    | $page_key     | CSS       | JS        | File                          |
- *   +--------------------+--------------+-----------+-----------+-------------------------------+
- *   | Theme              | 'theme'      | Yes       | No        | /css/theme/<name>.css         |
- *   | TPPS main CSS/JS   | 'main'       | Yes       | Yes       | /css/tpps.css                 |
- *   | Specific Page Id   | $page_number | If exists | If exists | /css/tpps_page_${page_id}.css |
- *   | Specific Page Name | $page_name   | If exists | If exists | /css/tpps_${page_name}.css    |
- *   +--------------------+--------------+-----------+-----------+-------------------------------+
+ *   +--------------+-----------+-----------+-------------------------------+
+ *   | $page_key    | CSS       | JS        | File                          |
+ *   +--------------+-----------+-----------+-------------------------------+
+ *   | 'theme'      | Yes       | No        | /css/theme/<name>.css         |
+ *   | 'main'       | Yes       | Yes       | /css/tpps.css                 |
+ *   | $page_number | If exists | If exists | /css/tpps_page_${page_id}.css |
+ *   | $page_name   | If exists | If exists | /css/tpps_${page_name}.css    |
+ *   +--------------+-----------+-----------+-------------------------------+
  *
- *   Constants like TPPS_PAGE_1 and etc could be used to improve code readablility.
- *   Custom Page Id like 'study_export' for 'TPPS Study Export Page'.
  * @param array $form
  *   Drupal Form API form array.
  *   When NULL then CSS/JS will be added as it's a regular page.

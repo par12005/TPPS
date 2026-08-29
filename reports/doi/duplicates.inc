@@ -46,14 +46,17 @@ function tpps_report_doi_duplicates($reset = FALSE) {
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output.
-  $name = 'doi_duplicates';
-  //$page_title = variable_get('tpps_report_' . $name . '_title', 'DOI Duplicates');
-  //drupal_set_title($page_title);
-  $header = ['#', t('Publication DOI'), t('Accession / Project Id / Status')];
-  return Report::printTable([
-    'report_name' => $name,
+  // @TODO Minor. Add sorting.
+  $header = [
+    '#',
+    t('Publication DOI'),
+    t('Accession / Project Id / Status'),
+  ];
+  return Report::print([
+    'name' => 'doi_duplicates',
     'header' => $header,
     'rows' => $rows,
-    'empty' => t('No data'),
-  ]) . SubmissionCache::showClearCacheWidget();
+    'pager' => 'both',
+    'submission_cache' => TRUE,
+  ]);
 }

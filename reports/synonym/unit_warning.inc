@@ -11,10 +11,6 @@
 function tpps_report_synonym_unit_warning() {
   $table = 'public.tpps_phenotype_unit_warning';
   $table_alias = str_replace('.', '', $table);
-  $page_title = variable_get(
-    'tpps_report_unit_warning_title',
-    'Unit Warning (list of phenotypes which unit differs from Synonym)'
-  );
 
   // Remove selected item.
   if (!empty($_GET['remove'])) {
@@ -36,16 +32,13 @@ function tpps_report_synonym_unit_warning() {
       'study_name',
     ]);
 
-  return '<h2>' . $page_title . '</h2>' . Report::print([
-    'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
-    'formatter' => 'tpps_report_synonym_unit_warning_formatter',
-    'page_title' => $page_title,
-    'table_attributes' => ['class' => ['view' , 'tpps_table']],
-    'items_per_page' => variable_get('tpps_report_items_per_page', 15),
-    'header' => [
-      ['data' => t('Study'), 'field' => $table_alias . '.study_name'],
-      ['data' => t('Actions'), 'field' => 'actions'],
-    ],
+  $header = [
+    ['data' => t('Study'), 'field' => $table_alias . '.study_name'],
+    ['data' => t('Actions'), 'field' => 'actions'],
+  ];
+  return Report::print([
+    'name' => 'unit_warning',
+    'header' => $header,
     'query' => $query,
   ]);
 }

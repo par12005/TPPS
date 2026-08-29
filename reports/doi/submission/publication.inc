@@ -41,16 +41,15 @@ function tpps_report_doi_submission_publication($reset = FALSE) {
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output.
-  $name = 'doi_submission_publication';
   $header = [
     '#',
     t('Accession / Project Id / Status'),
     t('Publication DOI'),
   ];
-  return Report::printTable([
-    'report_name' => $name,
+  return Report::print([
+    'name' => 'doi_submission_publication',
     'header' => $header,
     'rows' => $rows,
-    'empty' => t('No data'),
-  ]) . SubmissionCache::showClearCacheWidget();
+    'submission_cache' => TRUE,
+  ]);
 }

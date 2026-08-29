@@ -11,13 +11,8 @@
 function tpps_report_synonym_list() {
   $table = 'chado.phenotype_synonyms';
   $table_alias = str_replace('.', '', $table);
-  $page_title = variable_get(
-    'tpps_report_synonym_list_title', 'List of all phenotype synonyms'
-  );
-
   $query = db_select($table, $table_alias)
     ->fields($table_alias, []);
-
   $header = [
     ['data' => '#', 'field' => $table_alias . '.phenotype_synonyms_id'],
     ['data' => t('Synonym Name'), 'field' => $table_alias . '.synonym'],
@@ -44,11 +39,8 @@ function tpps_report_synonym_list() {
       'field' => $table_alias . '.phenotype_group',
     ],
   ];
-  return '<h2>' . $page_title . '</h2>' . Report::print([
-    'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
-    'page_title' => $page_title,
-    'table_attributes' => ['class' => ['view' , 'tpps_table']],
-    'items_per_page' => 100,
+  return Report::print([
+    'name' => 'synonym_list',
     'header' => $header,
     'query' => $query,
   ]);

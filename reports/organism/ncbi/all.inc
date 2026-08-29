@@ -9,7 +9,6 @@
  * Menu callback. Shows list of the all organisms and their NCBI Taxonomy Ids.
  */
 function tpps_report_organism_ncbi_all() {
-  $page_title = variable_get('tpps_report_organism_ncbi_all_title');
 
   $table = 'chado.organism';
   $table_alias = str_replace('.', '', $table);
@@ -44,12 +43,8 @@ function tpps_report_organism_ncbi_all() {
     ],
   ];
 
-  return '<h2>' . $page_title . '</h2>' . Report::print([
-    'debug_mode' => FALSE,
-    'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
-    'page_title' => $page_title,
-    'items_per_page' => variable_get('tpps_report_items_per_page', 15),
-    'table_attributes' => ['class' => ['view' , 'tpps_table']],
+  return Report::print([
+    'name' => 'organism_ncbi_all',
     'header' => $header,
     'query' => $query,
   ]);

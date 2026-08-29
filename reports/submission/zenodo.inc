@@ -57,20 +57,47 @@ function tpps_report_submission_zenodo($reset = FALSE) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output.
   $header = [
-    '#',
-    t('Accession'),
-    t('Project Id'),
-    t('Status'),
-    t('Zenodo Host'),
-    t('Zenodo Deposit Id'),
-    t('Zenodo Concept Record Id'),
-    t('Publication DOI'),
-    t('Dataset DOI'),
-    t('Deposition Files'),
+    // No sorting.
+    ['data' => '#'],
+    [
+      'data' => t('Accession'),
+      'field' => 'accession',
+    ],
+    [
+      'data' => t('Project Id'),
+      'field' => 'project_id',
+    ],
+    [
+      'data' => t('Status'),
+      'field' => 'status',
+    ],
+    [
+      'data' => t('Zenodo Host'),
+      'field' => 'host',
+    ],
+    [
+      'data' => t('Zenodo Deposit Id'),
+      'field' => 'deposit_id',
+    ],
+    [
+      'data' => t('Zenodo Concept Record Id'),
+      'field' => 'conceptrecid',
+    ],
+    [
+      'data' => t('Publication DOI'),
+      'field' => 'publication_doi',
+    ],
+    [
+      'data' => t('Dataset DOI'),
+      'field' => 'dataset_doi',
+    ],
+    // No sorting.
+    ['data' => t('Deposition Files')],
   ];
-  return Report::printTable([
+  return Report::print([
+    'name' => 'submission_zenodo',
     'header' => $header,
     'rows' => $rows,
-    'empty' => t('No data'),
-  ]) . SubmissionCache::showClearCacheWidget();
+    'submission_cache' => TRUE,
+  ]);
 }

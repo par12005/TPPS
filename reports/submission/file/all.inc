@@ -147,17 +147,19 @@ function tpps_report_submission_file($filter = NULL) {
       'is_single' => $is_single,
     ]);
   }
+  $header = array_merge(
+    ['#', t('Accession'), t('UID'), t('Stage'), t('Status')],
+    $file_column_list
+  );
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show report table.
-  return Report::printTable([
-    // 'report_name' => 'submissions_all_files',
-    'header' => array_merge(
-      ['#', t('Accession'), t('UID'), t('Stage'), t('Status')],
-      $file_column_list
-    ),
+  return Report::print([
+    'name' => 'submission_file_all',
+    'header' => $header,
     'rows' => $formatted_rows,
-    'empty' => t('No data'),
-  ]) . SubmissionCache::showClearCacheWidget();
+    'pager' => 'both',
+    'submission_cache' => TRUE,
+  ]);
 }
 
 /**

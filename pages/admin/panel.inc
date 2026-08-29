@@ -149,6 +149,7 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
         '#collapsible' => TRUE,
       ];
       TppsForm::addFieldsetCollapsedState($form, $form_state, $status_name);
+      // @TODO Minor. Use Report::print().
       $table = theme('table', [
         'header' => $header[$status_name],
         'rows' => $status_list,
@@ -167,6 +168,7 @@ function tpps_admin_panel_show_all(array &$form, array $form_state, $reset = FAL
     '#type' => 'fieldset',
     '#title' => "<img src='$base_url/misc/message-16-warning.png'> " . $title,
     '#collapsible' => TRUE,
+    // @TODO Minor. Use Report::print().
     'table' => [
       '#markup' => theme('table', [
         'caption' => $title,

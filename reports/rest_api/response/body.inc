@@ -18,7 +18,6 @@ function tpps_report_rest_api_response_body() {
     drupal_goto('admin/reports/tpps/rest_api/response/list');
   }
 
-  // WARNING: Report::print() requires db_select() not db_query().
   $query = db_select(RestApiResponse::TABLE, 't')
     ->fields('t', [])
     ->condition('response_id', $id);

@@ -47,10 +47,10 @@ function tpps_report_doi_submission_dataset($reset = FALSE) {
     t('Accession / Project Id / Status'),
     t('Dataset DOI'),
   ];
-  return Report::printTable([
-    'report_name' => $name,
+  return Report::print([
+    'name' => $name,
     'header' => $header,
     'rows' => $rows,
-    'empty' => t('No data'),
-  ]) . SubmissionCache::showClearCacheWidget();
+    'submission_cache' => TRUE,
+  ]);
 }

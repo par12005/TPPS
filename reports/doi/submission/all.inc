@@ -43,17 +43,16 @@ function tpps_report_doi_submission_all($reset = FALSE) {
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output.
-  $name = 'doi_submission_all';
   $header = [
     '#',
     t('Accession / Project Id / Status'),
     t('Publication DOI'),
     t('Dataset DOI'),
   ];
-  return Report::printTable([
-    'report_name' => $name,
+  return Report::print([
+    'name' => 'doi_submission_all',
     'header' => $header,
     'rows' => $rows,
-    'empty' => t('No data'),
-  ]) . SubmissionCache::showClearCacheWidget();
+    'submission_cache' => TRUE,
+  ]);
 }

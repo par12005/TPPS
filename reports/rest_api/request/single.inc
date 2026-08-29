@@ -18,7 +18,6 @@ function tpps_report_rest_api_request_single() {
   }
 
   $output = '';
-  // WARNING: Report::print() requires db_select() not db_query().
   $field_list = [
     'request_id',
     'created',

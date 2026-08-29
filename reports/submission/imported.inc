@@ -69,22 +69,21 @@ function tpps_report_submission_imported() {
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $rows[] = [
-      $original_accession_link ?? NULL,
-      l(theme('submission_accession_link', ['accession' => $local]),
+      'original_accession' => $original_accession_link ?? NULL,
+      'imported_accession' => l(
+        theme('submission_accession_link', ['accession' => $local]),
         'tpps/submission/' . $local . '/view', $params
       ),
-      implode(', ',
-        Submission::getPageList([
-          'accession' => $local,
-          'destination' => 'admin/reports/tpps/submission/imported',
-        ])
-      ),
-      $data[$local]['status'] ?? NULL,
-      $data[$local]['tripal_job']['status'] ?? '-',
-      $import_meta[SubmissionVersion::FORM_KEY] ?? NULL,
-      $import_meta['current_version'] ?? NULL,
-      $data[$local]['submitter']['uid'] ?? NULL,
-      $import_meta['full_date'] ?? NULL,
+      'pages' => implode(', ', Submission::getPageList([
+        'accession' => $local,
+        'destination' => 'admin/reports/tpps/submission/imported',
+      ])),
+      'submission_status' => $data[$local]['status'] ?? NULL,
+      'job_status' => $data[$local]['tripal_job']['status'] ?? '-',
+      'original_version' => $import_meta[SubmissionVersion::FORM_KEY] ?? NULL,
+      'submitted_version' => $import_meta['current_version'] ?? NULL,
+      'uid' => $data[$local]['submitter']['uid'] ?? NULL,
+      'import_date' => $import_meta['full_date'] ?? NULL,
     ];
   }
 
@@ -99,21 +98,49 @@ function tpps_report_submission_imported() {
     )
     . '</h3>';
   $version_tags = '<br /><strong>' . t('Version') . '</strong>';
-  $output .= theme('table', [
-    'header' => [
-      t('Original <br /><strong>Accession</strong>'),
-      t('Imported<br /><strong>Accession</strong>'),
-      t('Pages'),
-      t('Submission<br /><strong>Status</strong>'),
-      t('Tripal Job<br /><strong>Status</strong>'),
-      t('Original') . $version_tags,
-      t('Submitted') . $version_tags,
-      t('UID'),
-      t('Import Date'),
+
+  $header = [
+    [
+      'data' => t('Original <br /><strong>Accession</strong>'),
+      'field' => 'original_accession',
     ],
+    [
+      'data' => t('Imported<br /><strong>Accession</strong>'),
+      'field' => 'imported_accession',
+    ],
+    // Note: no sorting is allowed.
+    ['data' => t('Pages')],
+    [
+      'data' => t('Submission<br /><strong>Status</strong>'),
+      'field' => 'submission_status',
+    ],
+    [
+      'data' => t('Tripal Job<br /><strong>Status</strong>'),
+      'field' => 'job_status',
+    ],
+    [
+      'data' => t('Original') . $version_tags,
+      'field' => 'original_version',
+    ],
+    [
+      'data' => t('Submitted') . $version_tags,
+      'field' => 'submitted_version',
+    ],
+    [
+      'data' => t('UID'),
+      'field' => 'uid',
+    ],
+    [
+      'data' => t('Import Date'),
+      'field' => 'import_date',
+    ],
+  ];
+
+  return Report::print([
+    'name' => 'submission_imported',
+    'header' => $header,
     'rows' => $rows,
-    'empty' => t('No data'),
+    'pager' => 'both',
+    'submission_cache' => TRUE,
   ]);
-  tpps_add_css_js('main');
-  return $output . SubmissionCache::showClearCacheWidget();
 }

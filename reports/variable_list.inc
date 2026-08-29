@@ -9,28 +9,21 @@
  * Menu callback. Shows list of module's variables and their values.
  */
 function tpps_admin_variable_list_report() {
-  $report_name = 'variable_list';
-  $report = Report::getList()[$report_name];
-
   $table = 'public.variable';
   $table_alias = str_replace('.', '', $table);
-  $query = db_select($table, $table_alias)
-    ->fields($table_alias, ['name', 'value'])
+  $query = db_select($table, 't')
+    ->fields('t', ['name', 'value'])
     ->condition('name', 'tpps%', 'LIKE');
 
-  return '<h2>' . $report['title'] . '</h2>' . Report::print([
-    'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
-    'formatter' => is_live_site() ? ''
-    : 'tpps_admin_variable_list_report_formatter',
-    'page_title' => $report['title'],
-    'table_attributes' => ['class' => ['view' , 'tpps_table']],
-    'items_per_page' => 1000,
-    'header' => [
-      ['data' => t('Name'), 'field' => $table_alias . '.name'],
-      ['data' => t('Value'), 'field' => $table_alias . '.value'],
-      ['data' => t('Actions'), 'field' => 'actions'],
-    ],
+  $header = [
+    ['data' => t('Name'), 'field' => 'name'],
+    ['data' => t('Value'), 'field' => 'value'],
+  ];
+  return Report::print([
+    'name' => 'variable_list',
+    'header' => $header,
     'query' => $query,
+    'pager' => 'none',
   ]);
 }
 
@@ -52,7 +45,7 @@ function tpps_admin_variable_list_report() {
  *   Returns formatted value.
  *   Empty value will not be formatted and returned as is.
  */
-function tpps_admin_variable_list_report_formatter(string $name, $value, array &$row) {
+function tpps_report_variable_list_formatter(string $name, $value, array &$row) {
   $formatted = check_plain($value);
   if (empty($name) || empty($value)) {
     return $formatted;
@@ -61,7 +54,9 @@ function tpps_admin_variable_list_report_formatter(string $name, $value, array &
   switch ($name) {
     case 'name':
       if (!empty($value)) {
-        $formatted = l($formatted, 'admin/reports/db/public.variable',
+        $formatted = l(
+          $formatted,
+          'admin/reports/db/public.variable',
           ['query' => ['public.variable.name' => $formatted]]
         );
       }

@@ -11,7 +11,6 @@
 function tpps_report_synonym_missing() {
   $table = 'chado.phenotype';
   $table_alias = str_replace('.', '', $table);
-  $page_title = variable_get('tpps_report_synonym_missing_title');
 
   // Query to get Study name.
   $sub_query = db_select('chado.phenotype', 'cte')
@@ -58,25 +57,21 @@ function tpps_report_synonym_missing() {
     drupal_exit();
   }
   else {
-    return '<h2>' . $page_title . '</h2>' . Report::print([
-      'formatter' => 'tpps_report_synonym_missing_formatter',
-      'debug_mode' => FALSE,
-      'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
-      'page_title' => $page_title,
-      'items_per_page' => variable_get('tpps_report_items_per_page', 15),
-      'table_attributes' => ['class' => ['view' , 'tpps_table']],
-      'header' => [
-        [
-          'data' => t('Phenotype Name'),
-          'field' => $table_alias . '.name',
-        ],
-        // @todo [VS] Find a way to avoid this field from result.
-        // Probably other level of subqueries is required.
-        [
-          'data' => t('Synonym Id'),
-          'field' => 'phenotype_synonyms_id',
-        ],
+    $header = [
+      [
+        'data' => t('Phenotype Name'),
+        'field' => $table_alias . '.name',
       ],
+      // @todo [VS] Find a way to avoid this field from result.
+      // Probably other level of subqueries is required.
+      [
+        'data' => t('Synonym Id'),
+        'field' => 'phenotype_synonyms_id',
+      ],
+    ];
+    return Report::print([
+      'name' => 'synonym_missing',
+      'header' => $header,
       'query' => $base_query,
     ]);
   }

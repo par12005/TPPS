@@ -9,10 +9,6 @@
  * Menu callback. Shows list of all organisms.
  */
 function tpps_report_organism_taxonomy() {
-  $name = 'organism_taxonomy';
-  $page_title = variable_get('tpps_report_' . $name . '_title', "Organism's Taxonomy");
-
-  // WARNING: Report::print() requires db_select() not db_query().
   $query = db_select('chado.organism', 'o')
     ->fields('o', [
       'organism_id',
@@ -20,8 +16,7 @@ function tpps_report_organism_taxonomy() {
       'species',
       'infraspecific_name',
       'type_id',
-    ]
-    );
+    ]);
   // NCBI.
   $query->leftJoin(
     'public.' . NcbiTaxonomy::TABLE,
@@ -39,7 +34,6 @@ function tpps_report_organism_taxonomy() {
   );
   $query->addField('gsa', 'taxonomy_id', 'gbif');
   $query->addField('gsa', 'name', 'gbif_name');
-  //$query->addField('gsa', 'full_name', 'gbif_full_name');
 
   // Header.
   $header = [
@@ -52,17 +46,13 @@ function tpps_report_organism_taxonomy() {
     ['data' => t('NCBI Name'), 'field' => 'ncbi_name'],
     ['data' => t('GBIF'), 'field' => 'gbif'],
     ['data' => t('GBIF Name'), 'field' => 'gbif_name'],
-    //['data' => t('GBIF Full Name'), 'field' => 'gbif_full_name'],
   ];
 
-  return '<h2>' . $page_title . '</h2>' . Report::print([
-    'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
-    'page_title' => $page_title,
-    'formatter' => 'tpps_report_' . $name . '_formatter',
-    'table_attributes' => ['class' => ['view' , 'tpps_table']],
-    'items_per_page' => 5000,
+  return Report::print([
+    'name' => 'organism_taxonomy',
     'header' => $header,
     'query' => $query,
+    'pager' => 'none',
   ]);
 }
 

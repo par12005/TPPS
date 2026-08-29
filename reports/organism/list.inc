@@ -9,10 +9,7 @@
  * Menu callback. Shows list of organisms per study.
  */
 function tpps_report_organism_list() {
-  $name = 'organism_list';
-  $page_title = variable_get('tpps_report_' . $name . '_title', 'Organism List');
 
-  // WARNING: Report::print() requires db_select() not db_query().
   $query = db_select('public.tpps_submission', 'ts');
   $query->leftJoin('chado.project_dbxref', 'pdbxref', 'ts.dbxref_id = pdbxref.dbxref_id');
   $query->join('chado.project_organism', 'po', 'po.project_id = pdbxref.project_id');
@@ -23,18 +20,15 @@ function tpps_report_organism_list() {
   $query->addField('p', 'name');
   $query->condition('ts.status', '%Approved%', 'LIKE');
 
-  return '<h2>' . $page_title . '</h2>' . Report::print([
-    'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
-    'page_title' => $page_title,
-    'formatter' => 'tpps_report_' . $name . '_formatter',
-    'table_attributes' => ['class' => ['view' , 'tpps_table']],
-    'items_per_page' => variable_get('tpps_report_items_per_page', 15),
-    'header' => [
-      ['data' => t('Accession'), 'field' => 'ts.accession'],
-      ['data' => t('Project Id'), 'field' => 'pdbxref.project_id'],
-      ['data' => t('Organism Id'), 'field' => 'organism_id'],
-      ['data' => t('Project Name'), 'field' => 'p.name'],
-    ],
+  $header = [
+    ['data' => t('Accession'), 'field' => 'ts.accession'],
+    ['data' => t('Project Id'), 'field' => 'pdbxref.project_id'],
+    ['data' => t('Organism Id'), 'field' => 'organism_id'],
+    ['data' => t('Project Name'), 'field' => 'p.name'],
+  ];
+  return Report::print([
+    'name' => 'organism_list',
+    'header' => $header,
     'query' => $query,
   ]);
 }

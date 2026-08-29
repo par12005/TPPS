@@ -9,10 +9,6 @@
  * Menu callback. Shows list of the all Rest API Requests.
  */
 function tpps_report_rest_api_response_list() {
-  $report_name = 'rest_api_response_list';
-  $page_title = variable_get('tpps_report_' . $report_name . '_title', 'Rest API Response List');
-
-  // WARNING: Report::print() requires db_select() not db_query().
   $query = db_select(RestApiResponse::TABLE, 't')
     ->fields('t', [
       'response_id',
@@ -25,22 +21,20 @@ function tpps_report_rest_api_response_list() {
   $query->join(RestApiRequest::TABLE, 't2', 't2.request_id = t.request_id');
   $query->addField('t2', 'tag');
 
-  return '<h2>' . $page_title . '</h2>' . Report::print([
-    'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
-    'page_title' => $page_title,
-    'formatter' => 'tpps_report_' . $report_name . '_formatter',
-    'table_attributes' => ['class' => ['view' , 'tpps_table']],
-    'items_per_page' => variable_get('tpps_report_items_per_page', 15),
-    'header' => [
-      ['data' => t('Response Id'), 'field' => 't.response_id', 'sort' => 'desc'],
-      ['data' => t('Request Id'), 'field' => 't.request_id'],
-      ['data' => t('Started'), 'field' => 't.created'],
-      ['data' => t('HTTP Code'), 'field' => 't.code'],
-      ['data' => t('Duration, msec'), 'field' => 't.duration'],
-      ['data' => t('Body'), 'field' => 't.body'],
-      ['data' => t('Tag'), 'field' => 't.tag'],
-    ],
+  $header = [
+    ['data' => t('Response Id'), 'field' => 't.response_id', 'sort' => 'desc'],
+    ['data' => t('Request Id'), 'field' => 't.request_id'],
+    ['data' => t('Started'), 'field' => 't.created'],
+    ['data' => t('HTTP Code'), 'field' => 't.code'],
+    ['data' => t('Duration, msec'), 'field' => 't.duration'],
+    ['data' => t('Body'), 'field' => 't.body'],
+    ['data' => t('Tag'), 'field' => 't.tag'],
+  ];
+  return Report::print([
+    'name' => 'rest_api_response_list',
+    'header' => $header,
     'query' => $query,
+    'pager' => 'both',
   ]);
 }
 

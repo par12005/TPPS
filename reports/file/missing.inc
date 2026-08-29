@@ -16,7 +16,6 @@
  *   Flag is cache must be resetted. Default if FALSE.
  */
 function tpps_report_file_missing($reset = FALSE) {
-  $name = 'missing_files';
   $cid = __FUNCTION__;
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   $cache = cache_get($cid, $cache_bin);
@@ -72,10 +71,9 @@ function tpps_report_file_missing($reset = FALSE) {
     ['data' => t('Absolute Path'), 'field' => 'absolute_path'],
     ['data' => t('Accession'), 'field' => 'accession'],
   ];
-  return Report::printTable([
-    'report_name' => $name,
+  return Report::print([
+    'name' => 'missing_files',
     'header' => $header,
     'rows' => $rows,
-    'formatter' => 'tpps_report_' . $name . '_formatter',
   ]);
 }

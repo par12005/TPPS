@@ -9,9 +9,6 @@
  * Menu callback. Shows list of all organisms.
  */
 function tpps_report_organism_all() {
-  $name = 'organism_all';
-  $page_title = variable_get('tpps_report_' . $name . '_title', 'All Organism List');
-
   // WARNING: Report::print() requires db_select() not db_query().
   $query = db_select('chado.organism', 'o')->fields('o', ['organism_id']);
   $query->orderBy('organism_id');
@@ -57,16 +54,18 @@ function tpps_report_organism_all() {
       'field' => 'pts.accession',
     ];
   }
-  $header[] = ['data' => t('Organism Name'), 'field' => 'organism_name'];
+  $header = array_merge($header, [
+    [
+      'data' => t('Organism Name'),
+      'field' => 'organism_name',
+    ]
+  ]);
 
-  return '<h2>' . $page_title . '</h2>' . Report::print([
-    'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
-    'page_title' => $page_title,
-    'formatter' => 'tpps_report_' . $name . '_formatter',
-    'table_attributes' => ['class' => ['view' , 'tpps_table']],
-    'items_per_page' => variable_get('tpps_report_items_per_page', 15),
+  return Report::print([
+    'name' => 'organism_all',
     'header' => $header,
     'query' => $query,
+    'pager' => 'both',
   ]);
 }
 

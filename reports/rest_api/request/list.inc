@@ -9,10 +9,6 @@
  * Menu callback. Shows list of the all Rest API Requests.
  */
 function tpps_report_rest_api_request_list() {
-  $report_name = 'rest_api_request_list';
-  $page_title = variable_get('tpps_report_' . $report_name . '_title', 'Rest API Request List');
-
-  // WARNING: Report::print() requires db_select() not db_query().
   $field_list = [
     'request_id',
     'created',
@@ -34,22 +30,20 @@ function tpps_report_rest_api_request_list() {
     $query->groupBy('t.' . $field_name);
   }
 
-  return '<h2>' . $page_title . '</h2>' . Report::print([
-    'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
-    'page_title' => $page_title,
-    'formatter' => 'tpps_report_' . $report_name . '_formatter',
-    'table_attributes' => ['class' => ['view' , 'tpps_table']],
-    'items_per_page' => variable_get('tpps_report_items_per_page', 15),
-    'header' => [
-      ['data' => t('Request Id'), 'field' => 't.request_id'],
-      ['data' => t('Created'), 'field' => 't.created'],
-      ['data' => t('Method'), 'field' => 't.method'],
-      ['data' => t('URL'), 'field' => 't.url'],
-      ['data' => t('Header'), 'field' => 't.header'],
-      ['data' => t('Payload'), 'field' => 't.payload'],
-      ['data' => t('Response List'), 'field' => 'response_list'],
-    ],
+  $header = [
+    ['data' => t('Request Id'), 'field' => 't.request_id'],
+    ['data' => t('Created'), 'field' => 't.created'],
+    ['data' => t('Method'), 'field' => 't.method'],
+    ['data' => t('URL'), 'field' => 't.url'],
+    ['data' => t('Header'), 'field' => 't.header'],
+    ['data' => t('Payload'), 'field' => 't.payload'],
+    ['data' => t('Response List'), 'field' => 'response_list'],
+  ];
+  return Report::print([
+    'name' => 'rest_api_request_list',
+    'header' => $header,
     'query' => $query,
+    'pager' => 'both',
   ]);
 }
 

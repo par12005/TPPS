@@ -15,41 +15,49 @@
  *   Flag is cache must be resetted. Default if FALSE.
  */
 function tpps_report_organism_synonym_list($reset = FALSE) {
-  $name = 'organism_synonym_list';
-
-  $rows = [];
-  $prev_oid = NULL;
-  foreach (OrganismSynonym::get() as $item) {
-    $oid = $item['organism_id'];
-    // Group by organism_id to have a list of synonyms.
-    $synonym_name = $item['synonym_name'] . ' (#' . $item['organismprop_id'] . ')';
-    if ($oid != $prev_oid) {
-      $rows[$oid] = (array) $item;
-      $rows[$oid]['synonym_list'] = [$synonym_name];
+  $default_value = [];
+  $cid = __FUNCTION__;
+  $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+  $cache = cache_get($cid, $cache_bin);
+  $key = $cid;
+  $reset = isset($_GET['reset']) ? TRUE : $reset;
+  if ($reset || empty($cache) || empty($cache->data[$key])) {
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    $rows = $default_value;
+    $prev_oid = NULL;
+    foreach (OrganismSynonym::get() as $item) {
+      $oid = $item['organism_id'];
+      // Group by organism_id to have a list of synonyms.
+      $synonym_name = $item['synonym_name'] . ' (#' . $item['organismprop_id'] . ')';
+      if ($oid != $prev_oid) {
+        $rows[$oid] = (array) $item;
+        $rows[$oid]['synonym_list'] = [$synonym_name];
+      }
+      else {
+        $rows[$oid]['synonym_list'][] = $synonym_name;
+      }
+      unset($rows[$oid]['synonym_name']);
+      unset($rows[$oid]['organismprop_id']);
+      $prev_oid = $oid;
     }
-    else {
-      $rows[$oid]['synonym_list'][] = $synonym_name;
-    }
-    unset($rows[$oid]['synonym_name']);
-    unset($rows[$oid]['organismprop_id']);
-    $prev_oid = $oid;
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    $cache->data[$key] = $rows;
+    cache_set($cid, $cache->data, $cache_bin);
   }
-
+  $rows = $cache->data[$key] ?? $default_value;
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output.
   $header = [
-    //['data' => t('Id'), 'field' => 'organismprop_id'],
     ['data' => t('Organism Id'), 'field' => 'organism_id'],
     ['data' => t('Genus'), 'field' => 'genus'],
     ['data' => t('Species'), 'field' => 'species'],
     ['data' => t('Infraspecific Name'), 'field' => 'infraspecific_name'],
     ['data' => t('Synonym List'), 'field' => 'synonym_list'],
   ];
-  return Report::printTable([
-    'report_name' => $name,
+  return Report::print([
+    'name' => 'organism_synonym_list',
     'header' => $header,
     'rows' => $rows,
-    'formatter' => 'tpps_report_' . $name . '_formatter',
     'pager' => 'none',
   ]);
 }

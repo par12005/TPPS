@@ -79,11 +79,17 @@ function tpps_report_file_not_used($reset = FALSE) {
   }
   $rows = $cache->data[$cache_key] ?? [];
 
+  $header = [
+    '#',
+    t('File Id'),
+    t('Absolute Path'),
+    t('Accession')
+  ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output.
-  return Report::printTable([
-    'report_name' => 'missing_files',
-    'header' => ['#', t('File Id'), t('Absolute Path'), t('Accession')],
+  return Report::print([
+    'name' => 'missing_files',
+    'header' => $header,
     'rows' => $rows,
   ]);
 }
