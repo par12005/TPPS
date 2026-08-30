@@ -9,6 +9,7 @@
  * Menu callback. Shows list of the all Rest API Requests.
  */
 function tpps_report_rest_api_request_list() {
+  $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
   $field_list = [
     'request_id',
     'created',
@@ -44,7 +45,7 @@ function tpps_report_rest_api_request_list() {
     'header' => $header,
     'query' => $query,
     'pager' => 'both',
-  ]);
+  ], $reset);
 }
 
 /**

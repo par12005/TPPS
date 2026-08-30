@@ -9,6 +9,7 @@
  * Menu callback. Shows list of all organisms.
  */
 function tpps_report_organism_taxonomy() {
+  $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
   $query = db_select('chado.organism', 'o')
     ->fields('o', [
       'organism_id',
@@ -53,7 +54,7 @@ function tpps_report_organism_taxonomy() {
     'header' => $header,
     'query' => $query,
     'pager' => 'none',
-  ]);
+  ], $reset);
 }
 
 /**

@@ -18,6 +18,7 @@ function tpps_report_submission_file_all() {
  */
 function tpps_report_submission_file($filter = NULL) {
   $debug_mode = FALSE;
+  $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
 
   $data = SubmissionCache::getAll();
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -159,7 +160,7 @@ function tpps_report_submission_file($filter = NULL) {
     'rows' => $formatted_rows,
     'pager' => 'both',
     'submission_cache' => TRUE,
-  ]);
+  ], $reset);
 }
 
 /**

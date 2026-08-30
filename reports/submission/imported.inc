@@ -9,6 +9,7 @@
  * Menu callback. Shows list of imported studies.
  */
 function tpps_report_submission_imported() {
+  $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
   module_load_include('inc', 'tpps', 'includes/imported_studies_list');
   module_load_include('inc', 'tpps', 'includes/submissions');
   // Get list of all imported submissions.
@@ -18,7 +19,7 @@ function tpps_report_submission_imported() {
   $data = SubmissionCache::getAll();
 
   // Reset single item.
-  if (isset($_GET['reset'])) {
+  if ($reset) {
     // List of imported studies is always smaller then list of all submissions
     // so update only items from the imported studies list.
     foreach ($list as $local => $remote) {
@@ -142,5 +143,5 @@ function tpps_report_submission_imported() {
     'rows' => $rows,
     'pager' => 'both',
     'submission_cache' => TRUE,
-  ]);
+  ], $reset);
 }

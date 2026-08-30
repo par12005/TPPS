@@ -9,6 +9,7 @@
  * Menu callback. Shows list of organisms per study.
  */
 function tpps_report_organism_list() {
+  $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
 
   $query = db_select('public.tpps_submission', 'ts');
   $query->leftJoin('chado.project_dbxref', 'pdbxref', 'ts.dbxref_id = pdbxref.dbxref_id');
@@ -30,7 +31,7 @@ function tpps_report_organism_list() {
     'name' => 'organism_list',
     'header' => $header,
     'query' => $query,
-  ]);
+  ], $reset);
 }
 
 /**

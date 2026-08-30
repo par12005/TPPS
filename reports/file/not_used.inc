@@ -14,11 +14,11 @@
  *   Flag is cache must be resetted. Default if FALSE.
  */
 function tpps_report_file_not_used($reset = FALSE) {
-  $reset = $_GET['reset'] ?? FALSE;
   $cid = __FUNCTION__;
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   $cache = cache_get($cid, $cache_bin);
   $cache_key = $cid;
+  $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
   if ($reset || empty($cache) || empty($cache->data[$cache_key])) {
     // Get new data.
     $i = 0;
@@ -91,5 +91,5 @@ function tpps_report_file_not_used($reset = FALSE) {
     'name' => 'missing_files',
     'header' => $header,
     'rows' => $rows,
-  ]);
+  ], $reset);
 }

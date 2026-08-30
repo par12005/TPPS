@@ -9,6 +9,7 @@
  * Menu callback. Shows list of organisms per study.
  */
 function tpps_report_organism_genus() {
+  $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
   $query = db_select('chado.organism', 'o')
     ->fields('o', ['genus'])
     ->groupBy('o.genus');
@@ -32,5 +33,5 @@ function tpps_report_organism_genus() {
     'header' => $header,
     'rows' => $rows,
     'pager' => 'none',
-  ]);
+  ], $reset);
 }

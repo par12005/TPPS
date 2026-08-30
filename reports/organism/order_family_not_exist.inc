@@ -9,6 +9,7 @@
  * Menu callback. Report to find term (Order/Family) not present in DB.
  */
 function tpps_report_organism_order_family_not_exist() {
+  $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
   $table = 'chado.organism';
   $table_alias = str_replace('.', '', $table);
 
@@ -47,5 +48,5 @@ function tpps_report_organism_order_family_not_exist() {
     'name' => 'organism_order_family_not_exist',
     'header' => $header,
     'query' => $query,
-  ]);
+  ], $reset);
 }

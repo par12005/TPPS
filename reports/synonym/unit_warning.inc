@@ -9,6 +9,7 @@
  * Menu callback. Shows simple report of 'tpps_phenotype_unit_warning' table.
  */
 function tpps_report_synonym_unit_warning() {
+  $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
   $table = 'public.tpps_phenotype_unit_warning';
   $table_alias = str_replace('.', '', $table);
 
@@ -40,7 +41,7 @@ function tpps_report_synonym_unit_warning() {
     'name' => 'unit_warning',
     'header' => $header,
     'query' => $query,
-  ]);
+  ], $reset);
 }
 
 /**

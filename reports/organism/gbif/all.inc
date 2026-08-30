@@ -9,6 +9,7 @@
  * Menu callback. Shows list of the all organisms and their NCBI Taxonomy Ids.
  */
 function tpps_report_organism_gbif_all() {
+  $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
   $table = 'chado.organism';
   $table_alias = str_replace('.', '', $table);
   $query = db_select($table, $table_alias);
@@ -47,6 +48,6 @@ function tpps_report_organism_gbif_all() {
     'header' => $header,
     'query' => $query,
     'pager' => 'none',
-  ]);
+  ], $reset);
 
 }

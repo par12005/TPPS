@@ -9,6 +9,7 @@
  * Menu callback. Shows simple report of 'tpps_phenotype_unit_warning' table.
  */
 function tpps_report_synonym_list() {
+  $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
   $table = 'chado.phenotype_synonyms';
   $table_alias = str_replace('.', '', $table);
   $query = db_select($table, $table_alias)
@@ -43,5 +44,5 @@ function tpps_report_synonym_list() {
     'name' => 'synonym_list',
     'header' => $header,
     'query' => $query,
-  ]);
+  ], $reset);
 }

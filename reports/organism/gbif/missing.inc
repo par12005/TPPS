@@ -9,6 +9,7 @@
  * Menu callback.
  */
 function tpps_report_organism_gbif_missing() {
+  $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
   $table = 'chado.organism';
   $table_alias = str_replace('.', '', $table);
 
@@ -46,5 +47,5 @@ function tpps_report_organism_gbif_missing() {
     'name' => 'organism_gbif_missing',
     'header' => $header,
     'query' => $query,
-  ]);
+  ], $reset);
 }

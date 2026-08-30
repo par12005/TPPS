@@ -177,11 +177,13 @@ class Report {
    *   - $header is an associative array with named keys,
    *   - $rows - each item (row) is an associative array with the same named
    *      keys as $header has.
+   * @param bool $reset
+   *   When TRUE cache will be cleared. Default is FALSE.
    *
    * @return string
    *   Returns rendered HTML sortable table with pager.
    */
-  public static function print(array $report) {
+  public static function print(array $report, $reset = FALSE) {
     // Check required items.
     if (
       // Header is missing.
@@ -193,88 +195,151 @@ class Report {
       return '';
     }
 
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Default values.
+    // Defaults.
+    $report['ts'] = tablesort_init($report['header']);
     $debug_mode = check_plain($_GET['debug_mode'] ?? $report['debug_mode'] ?? FALSE);
-    $pager = check_plain($_GET['pager'] ?? $report['pager'] ?? 'none');
+    $pager = $report['pager'] = check_plain($_GET['pager'] ?? $report['pager'] ?? 'none');
     $report['items_per_page'] = check_plain($_GET['items_per_page']
       ?? $report['items_per_page']
       ?? variable_get('tpps_report_items_per_page', 20));
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Formatter.
-    if (
-      !empty($report['name'])
-      && ($formatter_function = 'tpps_report_' . $report['name'] . '_formatter')
-      && function_exists($formatter_function)
-    ) {
-      $formatter = check_plain($formatter_function);
-      $is_formatter = TRUE;
-    }
-    else {
-      $formatter = check_plain($report['formatter'] ?? 'Report::formatter');
-      $is_formatter = (!empty($formatter) && function_exists($formatter));
-    }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Data in array.
-    if (empty($report['query'])) {
-      // Sorting.
-      $ts = tablesort_init($report['header']);
-      if (isset($ts['sql'])) {
-        $sort_field = $ts['sql'];
-        uasort($report['rows'], function($a, $b) use ($sort_field) {
-          $valA = is_array($a[$sort_field])
-            ? implode(' ', $a[$sort_field])
-            : (string) $a[$sort_field];
-          $valB = is_array($b[$sort_field])
-            ? implode(' ', $b[$sort_field])
-            : (string) $b[$sort_field];
-          return strnatcmp($valA, $valB);
-        });
-        // Reverse the array if the sort direction is 'desc'.
-        if (strtolower($ts['sort']) == 'desc') {
-          $report['rows'] = array_reverse($report['rows'], TRUE);
-        }
-      }
 
-    }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Data in SQL-query.
-    else {
-      $query = $report['query'];
-      if (!empty($report['debug_mode'])) {
-        $query->addTag('debug');
-      }
-      // Pager and sorting.
-      if ($pager == 'none' || $pager === FALSE) {
-        // No pager at all.
-        $ts = tablesort_init($report['header']);
-        if (isset($ts['sql'])) {
-          $query->orderBy($ts['sql'], $ts['sort']);
-        }
-        $report['rows'] = $query->execute()->fetchAll();
+    $default_value = '';
+    $cid = __FUNCTION__;
+    // $cid = __METHOD__;
+    $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+    $cache = cache_get($cid, $cache_bin);
+
+    $key = md5(json_encode(array_slice(func_get_args(), 0, -1)));
+    if ($reset || empty($cache) || empty($cache->data[$key])) {
+      $content = $default_value;
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Default values.
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Formatter.
+      if (
+        !empty($report['name'])
+        && ($formatter_function = 'tpps_report_' . $report['name'] . '_formatter')
+        && function_exists($formatter_function)
+      ) {
+        $formatter = check_plain($formatter_function);
+        $is_formatter = TRUE;
       }
       else {
-        $report_query = $query->extend('PagerDefault')
-          ->limit($report['items_per_page'])
-          ->extend('TableSort')
-          ->orderByHeader($report['header']);
-        $report['rows'] = $report_query->execute()->fetchAll();
+        $formatter = check_plain($report['formatter'] ?? 'Report::formatter');
+        $is_formatter = (!empty($formatter) && function_exists($formatter));
       }
-    }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Data in array.
+      if (empty($report['query'])) {
+        // Sorting.
+        if (isset($report['ts']['sql'])) {
+          $sort_field = $report['ts']['sql'];
+          uasort($report['rows'], function($a, $b) use ($sort_field) {
+            $valA = is_array($a[$sort_field])
+              ? implode(' ', $a[$sort_field])
+              : (string) $a[$sort_field];
+            $valB = is_array($b[$sort_field])
+              ? implode(' ', $b[$sort_field])
+              : (string) $b[$sort_field];
+            return strnatcmp($valA, $valB);
+          });
+          // Reverse the array if the sort direction is 'desc'.
+          if (strtolower($report['ts']['sort']) == 'desc') {
+            $report['rows'] = array_reverse($report['rows'], TRUE);
+          }
+        }
 
-    // Prepare rows for report. Formatter.
-    $rows = [];
-    foreach ($report['rows'] as $row_id => $row) {
-      foreach ($row as $field_id => $field_value) {
-        $rows[$row_id][$field_id] = [
-          'data' => (!$is_formatter ? $field_value
-            : call_user_func($formatter, $field_id, $field_value, (array) $row)
-          ),
-          'style' => 'vertical-align:top;min-width:10px;',
-        ];
       }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Data in SQL-query.
+      else {
+        $query = $report['query'];
+        if (!empty($report['debug_mode'])) {
+          $query->addTag('debug');
+        }
+        // Pager and sorting.
+        if ($report['pager'] == 'none' || $report['pager'] === FALSE) {
+          // No pager at all.
+          if (isset($report['ts']['sql'])) {
+            $query->orderBy($report['ts']['sql'], $report['ts']['sort']);
+          }
+          $report['rows'] = $query->execute()->fetchAll();
+        }
+        else {
+          $report_query = $query->extend('PagerDefault')
+            ->limit($report['items_per_page'])
+            ->extend('TableSort')
+            ->orderByHeader($report['header']);
+          $report['rows'] = $report_query->execute()->fetchAll();
+        }
+      }
+
+      // Prepare rows for report. Formatter.
+      $rows = [];
+      foreach ($report['rows'] as $row_id => $row) {
+        foreach ($row as $field_id => $field_value) {
+          $rows[$row_id][$field_id] = [
+            'data' => (!$is_formatter ? $field_value
+              : call_user_func($formatter, $field_id, $field_value, (array) $row)
+            ),
+            'style' => 'vertical-align:top;min-width:10px;',
+          ];
+        }
+      }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Pager.
+      if ($report['pager'] == 'none' || $report['pager'] === FALSE) {
+        // No pager.
+        $rendered_pager = '';
+      }
+      else {
+        // Pager.
+        if (!empty($report['query'])) {
+          // SQL-query.
+          $rendered_pager = theme('pager');
+        }
+        else {
+          // Array.
+          $current_page = pager_default_initialize(
+            count($rows), $report['items_per_page']
+          );
+          $chunks = array_chunk($rows, $report['items_per_page'], TRUE);
+          $rendered_pager = theme('pager', ['quantity', count($rows) ?? 0]);
+          $rows = $chunks[$current_page] ?? [];
+        }
+      }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Content.
+      $content .= theme('table', [
+        'header' => $report['header'] ?? [],
+        'rows' => $rows,
+        // Note:
+        // CSS-class is required to have vertical align to top of the cell.
+        'attributes' => ['class' => ['view', 'tpps_table']],
+        'empty' => $report['empty'] ?? t('No data found.'),
+        'sticky' => TRUE,
+      ]);
+
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Pager position.
+      if (in_array($report['pager'], ['both', 'full']) || is_null($report['pager'])) {
+        $content = $rendered_pager . $content . $rendered_pager;
+      }
+      elseif (in_array($report['pager'], ['below', 'bottom'])) {
+        $content = $content . $rendered_pager;
+      }
+      elseif (in_array($report['pager'], ['above', 'top'])) {
+        $content = $rendered_pager . $content;
+      }
+      if (!empty($report['submission_cache'])) {
+        $content .= SubmissionCache::showClearCacheWidget();
+      }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      $cache->data[$key] = $content;
+      cache_set($cid, $cache->data, $cache_bin);
     }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    $content = $cache->data[$key] ?? $default_value;
+
     // Add 'main' JS and CSS.
     tpps_add_css_js();
     // Cuostom CSS.
@@ -282,66 +347,15 @@ class Report {
       drupal_add_css($report['css_path']);
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Pager.
-    if ($pager == 'none' || $pager === FALSE) {
-      // No pager.
-      $rendered_pager = '';
-    }
-    else {
-      // Pager.
-      if (!empty($report['query'])) {
-        // SQL-query.
-        $rendered_pager = theme('pager');
-      }
-      else {
-        // Array.
-        $current_page = pager_default_initialize(
-          count($rows), $report['items_per_page']
-        );
-        $chunks = array_chunk($rows, $report['items_per_page'], TRUE);
-        $rendered_pager = theme('pager', ['quantity', count($rows) ?? 0]);
-        $rows = $chunks[$current_page] ?? [];
-      }
-    }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Page title.
     if (!empty($report['page_title'])) {
       // @TODO Remove if possible.
-      $content = '<h2>' . $report['page_title'] . '</h2>';
+      $content = '<h2>' . $report['page_title'] . '</h2>' . $content;
       drupal_set_title($report['page_title']);
     }
     else {
-      $content = '';
       $page_title = variable_get('tpps_report_' . ($report['name'] ?? '') . '_title');
       drupal_set_title($page_title);
-    }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Content.
-    $content .= theme('table', [
-      // @TODO Minor. $report_name now is not string but array of parents.
-      // 'caption' => Report::getList()[$report_name]['description'],
-      'header' => $report['header'] ?? [],
-      'rows' => $rows,
-      // To have vertical align to top of the cell.
-      'attributes' => ['class' => ['view', 'tpps_table']],
-      'empty' => $report['empty'] ?? t('No data found.'),
-      'sticky' => TRUE,
-    ]);
-
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Pager position.
-    if (in_array($pager, ['both', 'full']) || is_null($pager)) {
-      $content = $rendered_pager . $content . $rendered_pager;
-    }
-    elseif (in_array($pager, ['below', 'bottom'])) {
-      $content = $content . $rendered_pager;
-    }
-    elseif (in_array($pager, ['above', 'top'])) {
-      $content = $rendered_pager . $content;
-    }
-    if (!empty($report['submission_cache'])) {
-      $content .= SubmissionCache::showClearCacheWidget();
     }
     return $content;
   }

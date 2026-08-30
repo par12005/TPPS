@@ -9,6 +9,7 @@
  * Menu callback. Shows studies without DOI attached.
  */
 function tpps_report_doi_missing() {
+  $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
   $sub_query_1 = db_select('chado.dbxref', 't1')
     ->fields('t1', ['dbxref_id'])
     ->condition('accession', 'TGDR%', 'LIKE');
@@ -43,7 +44,7 @@ function tpps_report_doi_missing() {
     'header' => $header,
     'query' => $query,
     'pager' => 'none',
-  ]);
+  ], $reset);
 }
 
 /**

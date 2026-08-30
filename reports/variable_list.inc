@@ -9,6 +9,7 @@
  * Menu callback. Shows list of module's variables and their values.
  */
 function tpps_admin_variable_list_report() {
+  $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
   $table = 'public.variable';
   $table_alias = str_replace('.', '', $table);
   $query = db_select($table, 't')
@@ -24,7 +25,7 @@ function tpps_admin_variable_list_report() {
     'header' => $header,
     'query' => $query,
     'pager' => 'none',
-  ]);
+  ], $reset);
 }
 
 /**

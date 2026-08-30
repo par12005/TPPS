@@ -9,6 +9,7 @@
  * Menu callback. Shows list of all organisms.
  */
 function tpps_report_organism_all() {
+  $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
   // WARNING: Report::print() requires db_select() not db_query().
   $query = db_select('chado.organism', 'o')->fields('o', ['organism_id']);
   $query->orderBy('organism_id');
@@ -66,7 +67,7 @@ function tpps_report_organism_all() {
     'header' => $header,
     'query' => $query,
     'pager' => 'both',
-  ]);
+  ], $reset);
 }
 
 /**

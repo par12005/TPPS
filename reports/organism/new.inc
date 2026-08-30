@@ -13,16 +13,10 @@ define('TPPS_CVTERM_TREEGENES_DATABASE', 95);
  * Menu callback. Shows studies without DOI attached.
  */
 function tpps_report_organism_new() {
-  $page_title = variable_get('tpps_report_organism_new_title', 'New Organisms');
+  $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
 
-  tpps_add_css_js('main');
-
-  $debug_mode = FALSE;
   $table = 'chado.organism';
   $query = db_select($table, 'o')->fields('o', ['organism_id']);
-  if ($debug_mode) {
-    $query->addTag('debug');
-  }
   $query->leftJoin(NcbiTaxonomy::TABLE, 'nt', 'o.organism_id = nt.organism_id');
   $query->isNull('nt.taxonomy_id');
   $query->leftJoin(GbifSpeciesApi::TABLE, 'gsa', 'o.organism_id = gsa.organism_id');
@@ -39,9 +33,6 @@ function tpps_report_organism_new() {
   // Get full organims name.
   $query->addExpression("CONCAT(o.genus, ' ', o.species)", 'organism_name');
   $query->orderBy('organism_id');
-  if ($debug_mode) {
-    $query->range(0, 5);
-  }
   $result = $query->execute()->fetchAllAssoc('organism_id', PDO::FETCH_ASSOC);
 
   $rows = [];
@@ -92,7 +83,7 @@ function tpps_report_organism_new() {
     'name' => 'organism_new',
     'header' => $header,
     'rows' => $rows,
-  ]);
+  ], $reset);
   return implode(' | ', $links) . '<br />' . $content;
 
 }

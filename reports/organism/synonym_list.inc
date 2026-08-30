@@ -59,7 +59,7 @@ function tpps_report_organism_synonym_list($reset = FALSE) {
     'header' => $header,
     'rows' => $rows,
     'pager' => 'none',
-  ]);
+  ], $reset);
 }
 
 /**

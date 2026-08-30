@@ -9,6 +9,7 @@
  * Menu callback. Shows list of organisms per study.
  */
 function tpps_report_doi_submission_publication($reset = FALSE) {
+  $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
   $rows = [];
   $i = 0;
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -51,5 +52,5 @@ function tpps_report_doi_submission_publication($reset = FALSE) {
     'header' => $header,
     'rows' => $rows,
     'submission_cache' => TRUE,
-  ]);
+  ], $reset);
 }

@@ -9,6 +9,7 @@
  * Menu callback. Shows list of all phenotypes without synonym.
  */
 function tpps_report_synonym_missing() {
+  $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
   $table = 'chado.phenotype';
   $table_alias = str_replace('.', '', $table);
 
@@ -73,7 +74,7 @@ function tpps_report_synonym_missing() {
       'name' => 'synonym_missing',
       'header' => $header,
       'query' => $base_query,
-    ]);
+    ], $reset);
   }
 }
 

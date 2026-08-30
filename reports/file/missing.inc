@@ -20,7 +20,8 @@ function tpps_report_file_missing($reset = FALSE) {
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   $cache = cache_get($cid, $cache_bin);
   $key = $cid;
-  if ($reset || isset($_GET['reset']) || empty($cache) || empty($cache->data[$key])) {
+  $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
+  if ($reset || empty($cache) || empty($cache->data[$key])) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get new data.
     $query = db_select('file_managed', 'fm')
@@ -75,5 +76,5 @@ function tpps_report_file_missing($reset = FALSE) {
     'name' => 'missing_files',
     'header' => $header,
     'rows' => $rows,
-  ]);
+  ], $reset);
 }
