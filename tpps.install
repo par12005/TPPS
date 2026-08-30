@@ -221,7 +221,8 @@ function tpps_get_variable_list() {
     'tpps_js_debug_mode' => ['quickDebugMode' => 'quickDebugMode'],
     // Misc: Validation Regexes.
     'tpps_validation_regex_doi' => '/^10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+$/',
-    'tpps_validation_regex_organism_name' => '/^[^\s]+\s[^\s]+(\s[^\s]+)*$/',
+    'tpps_validation_regex_organism_name' =>
+      '^[A-Za-z]+(?:\s+[A-Za-z]+)+(?:\s+(?:subsp\.|spp\.|subspecies|var\.|varieta|variety|f\.|forma|form)\s+[A-Za-z]+)*(?:\s+[A-Za-z]+(?:,\s+\d{4})?)?(?:\s*\([A-Za-z.]+\)\s+[A-Za-z.]+)?$',
     'tpps_validation_regex_single_space' => '/^[^\s]*\s[^\s]*$/',
     // NCBI API Setting.
     'tpps_ncbi_api_delay' => 300,
@@ -2663,6 +2664,10 @@ function tpps_update_7134() {
   variable_set('tpps_organism_gbif_use_cache', TRUE);
   variable_set('tpps_organism_ncbi_use_cache', TRUE);
 
+  variable_set(
+    'tpps_validation_regex_organism_name',
+    '^[A-Za-z]+(?:\s+[A-Za-z]+)+(?:\s+(?:subsp\.|spp\.|subspecies|var\.|varieta|variety|f\.|forma|form)\s+[A-Za-z]+)*(?:\s+[A-Za-z]+(?:,\s+\d{4})?)?(?:\s*\([A-Za-z.]+\)\s+[A-Za-z.]+)?$'
+  );
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Remove outdated variables.
   variable_del('tpps_rest_api_log_show_response');
