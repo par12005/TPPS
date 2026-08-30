@@ -86,23 +86,25 @@ class OrganismSynonym {
    *   When given $organism_key is nor number neither string.
    */
   public static function get($organism_key = NULL) {
-    $query = db_select(static::TABLE, 't')
-      ->fields('t', ['organismprop_id'])
-      ->condition('t.type_id', static::CVTERM_ID);
-    $query->leftJoin('chado.organism', 'o', 't.organism_id = o.organism_id');
+    $query = db_select('chado.organism', 'o');
+    // Join table in this order to show all organisms even if they
+    // doesn't have synonyms.
+    $query->leftJoin(static::TABLE, 't', 't.organism_id = o.organism_id');
+    $query->condition('t.type_id', static::CVTERM_ID);
+    $query->addField('t', 'organismprop_id');
     $query->addField('o', 'organism_id');
     $query->addField('o', 'genus');
     $query->addField('o', 'species');
     $query->addField('o', 'infraspecific_name');
     $query->addField('t', 'value', 'synonym_name');
-    $query->orderBy('t.value');
 
     // Specific organism.
     if (!empty($organism_key)) {
       $organism_id = static::getId($organism_key);
-      $query->orderBy('o.organism_id');
       $query->condition('t.organism_id', $organism_id);
     }
+    $query->orderBy('o.organism_id');
+    $query->orderBy('t.value');
 
     return $query->execute()
       ->fetchAllAssoc('organismprop_id', PDO::FETCH_ASSOC);

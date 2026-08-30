@@ -174,9 +174,8 @@ class GbifSpeciesApi extends OrganismTaxonomy {
   /**
    * Gets list of synonyms.
    *
-   * @param mixed $organism_key
-   *   Organism Name or Organism Id.
-   *   AJAX-requests from browser uses name but Batch Update uses id.
+   * @param int $taxonomy_id
+   *   GBIF Taxonomy Id.
    *
    * @return mixed
    *   Returns list of synonyms or NULL.

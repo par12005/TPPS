@@ -64,70 +64,39 @@ class NcbiTaxonomy extends OrganismTaxonomy {
   }
 
   /**
-   * Gets NCBI organism name by taxonomy id.
+   * Gets NCBI Taxonomy Term data.
    *
    * @param int $taxonomy_id
    *   NCBI Taxonomy Id.
    *
-   * @return mixed
-   *   Returns NCBI Organism short name (string).
-   *   Returns FALSE when $taxonomy_id is empty.
+   * @return string
+   *   Returns NCBI response in XML-format.
+   *
+   * @throws Exception
+   *   When API-request failed.
    */
-  public static function getName($taxonomy_id) {
+  public static function requestTerm($taxonomy_id) {
     if (empty($taxonomy_id)) {
       return FALSE;
     }
 
     // Use Endpoint with full data.
-    $full = TRUE;
     $query = [
       'db' => 'taxonomy',
       'id' => $taxonomy_id,
       'api_key' => variable_get('tripal_eutils_ncbi_api_key'),
+      'retmode' => 'xml',
     ];
-
-    if ($full) {
-      $url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi';
-      $query['retmode'] = 'xml';
-    }
-    else {
-      $url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi';
-    }
 
     try {
       $xml = (new RestApi([
-        'url' => $url,
+        'url' => 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi',
         'query' => $query,
-        'tag' => 'NCBI name by taxonomy id: ' . $taxonomy_id
-          . ($full ? ' (full)' : ''),
+        'tag' => 'NCBI name by taxonomy id: ' . $taxonomy_id,
         'cache' => variable_get('tpps_organism_ncbi_use_cache', TRUE),
       ]))->get()->response();
 
-      $xml = trim(str_replace("\r\n", "\n", $xml));
-      if ($full) {
-
-        // Get short name.
-        preg_match('/<ScientificName>(.+)<\/ScientificName>/', $xml, $matches);
-        $name = $matches[1] ?? '';
-        // Get full name.
-        preg_match('/<DispName>(.+)<\/DispName>/', $xml, $matches);
-        $full_name = $matches[1] ?? '';
-      }
-      else {
-        preg_match('/<Item Name="ScientificName" Type="String">(.+)<\/Item>/', $xml, $matches);
-        $name = $matches[1] ?? '';
-        $full_name = NULL;
-      }
-
-      if (!empty($name) || !empty($full_name)) {
-        db_update(static::TABLE)
-          ->fields([
-            'name' => $name,
-            'full_name' => $full_name,
-          ])
-          ->condition('taxonomy_id', $taxonomy_id)
-          ->execute();
-      }
+      return trim(str_replace("\r\n", "\n", $xml));
     }
     catch (Exception $e) {
       $message = $e->getMessage();
@@ -137,6 +106,43 @@ class NcbiTaxonomy extends OrganismTaxonomy {
         WATCHDOG_ERROR
       );
       drupal_set_message($e->getCode() . ' ' . $message);
+    }
+  }
+
+  /**
+   * Gets NCBI organism name by taxonomy id.
+   *
+   * @param int $taxonomy_id
+   *   NCBI Taxonomy Id.
+   *
+   * @return mixed
+   *   Returns NCBI Organism short name (string).
+   *   Returns FALSE when $taxonomy_id is empty.
+   *
+   * @throws Exception
+   *   When API-request failed.
+   */
+  public static function getName($taxonomy_id) {
+    if (empty($taxonomy_id)) {
+      return FALSE;
+    }
+    $xml = static::requestTerm($taxonomy_id);
+
+    // Get short name.
+    preg_match('/<ScientificName>(.+)<\/ScientificName>/', $xml, $matches);
+    $name = $matches[1] ?? '';
+    // Get full name.
+    preg_match('/<DispName>(.+)<\/DispName>/', $xml, $matches);
+    $full_name = $matches[1] ?? '';
+
+    if (!empty($name) || !empty($full_name)) {
+      db_update(static::TABLE)
+        ->fields([
+          'name' => $name,
+          'full_name' => $full_name,
+        ])
+        ->condition('taxonomy_id', $taxonomy_id)
+        ->execute();
     }
     return $name ?? NULL;
   }
@@ -230,6 +236,32 @@ class NcbiTaxonomy extends OrganismTaxonomy {
     }
     static::getName($taxonomy_id);
     return $taxonomy_id;
+  }
+
+  /**
+   * Gets list of synonyms.
+   *
+   * @param int $taxonomy_id
+   *   GBIF Taxonomy Id.
+   *
+   * @return mixed
+   *   Returns list of synonyms or NULL.
+   *
+   * @throws Exception
+   *   When API-request failed.
+   */
+  public static function getSynonymList($taxonomy_id) {
+    if (empty($taxonomy_id)) {
+      return FALSE;
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Get synonym_list.
+    $synonym_list = [];
+
+    $xml = static::requestTerm($taxonomy_id);
+    preg_match_all('/<(?:Synonym|DispName)>(.*?)<\/(?:Synonym|DispName)>/s', $xml, $matches);
+    $synonym_list = $matches[1];
+    return $synonym_list;
   }
 
 }

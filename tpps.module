@@ -2201,6 +2201,7 @@ function tpps_menu_add_settings_pages(array &$items = []) {
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Batch.
+  // Batch / NCBI.
   $items['tpps/batch/ncbi/taxonomy_id'] = [
     'title' => 'NCBI Taxonomy Id Batch Update',
     'description' => 'Gets taxonomy id for existing organisms from NCBI using Batch API.',
@@ -2210,6 +2211,16 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'batch/ncbi/taxonomy_id.inc',
   ];
+  $items['tpps/batch/ncbi/synonym'] = [
+    'title' => 'NCBI Synonym Batch Update',
+    'description' => "Gets organism's synonyms for organism from NCBI using Batch API.",
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_batch_ncbi_synonym_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'batch/ncbi/synonym.inc',
+  ];
+  // Batch / GBIF.
   $items['tpps/batch/gbif/taxonomy_id'] = [
     'title' => 'GBIF Taxonomy Id Batch Update',
     'description' => 'Gets taxonomy id for existing organisms from GBIF using Batch API.',
