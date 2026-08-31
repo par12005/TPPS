@@ -127,6 +127,7 @@ function tpps_get_variable_list() {
     // GBIF API.
     'tpps_report_organism_gbif_all_title' => 'All organisms and their GBIF Taxonomy Ids',
     'tpps_report_organism_gbif_missing_title' => 'Organisms without GBIF Taxonomy Id',
+    'tpps_report_organism_split_title' => 'Organism Name Split',
     'tpps_organism_gbif_use_cache' => TRUE,
     'tpps_organism_ncbi_use_cache' => TRUE,
     // Rest API.
@@ -2658,6 +2659,7 @@ function tpps_update_7134() {
   // GBIF Reports.
   variable_set('tpps_report_organism_gbif_all_title', 'All organisms and their GBIF Taxonomy Ids');
   variable_set('tpps_report_organism_gbif_missing_title', 'Organisms without GBIF Taxonomy Id');
+  variable_set('tpps_report_organism_split_title', 'Organism Name Split');
   variable_set('tpps_report_organism_taxonomy_title', "Organism's Taxonomy");
   variable_set('tpps_report_organism_synonym_list_title', "Organism Synonym List");
   // Invisible setting.

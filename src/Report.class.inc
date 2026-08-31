@@ -701,6 +701,11 @@ class Report {
             'admin_panel' => FALSE,
           ],
         ],
+        'split' => [
+          'title' => variable_get('tpps_report_organism_split_title', 'Organism Name Split'),
+          'description' => t('Shows how names are splitted.'),
+          'admin_panel' => FALSE,
+        ],
       ],
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // DOI.

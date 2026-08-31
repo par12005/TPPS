@@ -16,11 +16,14 @@
  */
 function tpps_report_organism_synonym_list($reset = FALSE) {
   $default_value = [];
+  // When TRUE organismprop_id will be appended to synonym's name.
+  $add_id_to_name = FALSE;
+
   $cid = __FUNCTION__;
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   $cache = cache_get($cid, $cache_bin);
   $key = $cid;
-  $reset = isset($_GET['reset']) ? TRUE : $reset;
+  $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
   if ($reset || empty($cache) || empty($cache->data[$key])) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $rows = $default_value;
@@ -28,7 +31,11 @@ function tpps_report_organism_synonym_list($reset = FALSE) {
     foreach (OrganismSynonym::get() as $item) {
       $oid = $item['organism_id'];
       // Group by organism_id to have a list of synonyms.
-      $synonym_name = $item['synonym_name'] . ' (#' . $item['organismprop_id'] . ')';
+      $synonym_name = $item['synonym_name'];
+      if ($add_id_to_name ?? TRUE) {
+        $synonym_name .= ' (#' . $item['organismprop_id'] . ')';
+      }
+
       if ($oid != $prev_oid) {
         $rows[$oid] = (array) $item;
         $rows[$oid]['synonym_list'] = [$synonym_name];

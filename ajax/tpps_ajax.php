@@ -163,21 +163,22 @@ function tpps_species_autocomplete($string) {
   if (empty($matches)) {
     $matches = tpps_ncbi_species_autocomplete($string);
   }
-  // Add synonyms.
-  $organism_id_list = db_select(OrganismSynonym::TABLE, 't')
-    ->fields('t', ['organism_id'])
-    ->condition('t.type_id', OrganismSynonym::CVTERM_ID)
-    ->condition('t.value', '%' . db_like($string) . '%', 'LIKE')
-    ->execute()
-    ->fetchCol('organism_id');
-
-  foreach ($organism_id_list as $organism_id) {
-    $name = tpps_organism($organism_id)->name;
-    $matches[$name] = $name;
-    $synonym_list = array_values(OrganismSynonym::load($organism_id));
-    $matches = array_merge($matches,
-      array_combine($synonym_list, $synonym_list)
-    );
+  if ($add_synonyms ?? FALSE) {
+    // Add synonyms.
+    $organism_id_list = db_select(OrganismSynonym::TABLE, 't')
+      ->fields('t', ['organism_id'])
+      ->condition('t.type_id', OrganismSynonym::CVTERM_ID)
+      ->condition('t.value', '%' . db_like($string) . '%', 'LIKE')
+      ->execute()
+      ->fetchCol('organism_id');
+    foreach ($organism_id_list as $organism_id) {
+      $name = tpps_organism($organism_id)->name;
+      $matches[$name] = $name;
+      $synonym_list = array_values(OrganismSynonym::load($organism_id));
+      $matches = array_merge($matches,
+        array_combine($synonym_list, $synonym_list)
+      );
+    }
   }
   drupal_json_output($matches);
 }
@@ -193,7 +194,6 @@ function tpps_species_autocomplete($string) {
  */
 function tpps_ncbi_species_autocomplete($string) {
   $matches = [];
-
   // @TODO Update to use NcbiTaxonomy::getId().
   try {
     $taxons = tpps_ncbi_get_taxon_id("$string*", TRUE);
