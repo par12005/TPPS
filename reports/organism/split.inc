@@ -158,14 +158,14 @@ function tpps_organism_parse_name($input) {
         \s*
       )?
       (?:                                 # 5. Authority outside parentheses
-        ([A-Z][A-Za-z0-9\.\x{00E0}-\x{00FC}\&\s]+?) # Authority (must start with uppercase)
+        ([A-Z][A-Za-z0-9\.\x{00E0}-\x{00FC}\x{0100}-\x{017F}\&\,\s]+?) # Authority (must start with uppercase)
       )?
       (?:                                 # 6. Year (optional)
         ,\s*
         (\d{4})
       )?
     )?
-    $/x';
+    $/xu';
 
   preg_match($pattern, $input, $matches);
 
