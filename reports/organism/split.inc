@@ -31,6 +31,9 @@ function tpps_report_organism_split() {
 
     foreach ($data as $synonym_name) {
       $parts = tpps_organism_parse_name($synonym_name);
+      if (0 && !empty($parts['genus'])) {
+        continue;
+      }
       $rows[$synonym_name] = array_merge(['synonym_name' => $synonym_name], $parts);
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -74,15 +77,30 @@ function tpps_report_organism_split() {
  *   Returns parts of the organism name.
  */
 function tpps_organism_parse_name($input) {
-  // Pattern to match the full structure.
+  $input = trim($input);
+
+  // Handle cases where there's no species (just genus).
+  if (preg_match('/^([A-Z][a-z]+)(?:\s+[A-Z][a-z]+)?$/', $input, $genusOnly)) {
+    return [
+      'genus' => $genusOnly[1],
+      'species' => NULL,
+      'infraspecific_rank' => NULL,
+      'infraspecific_name' => NULL,
+      'authority_in_parentheses' => NULL,
+      'authority' => NULL,
+      'year' => NULL,
+    ];
+  }
+
+  // Pattern to match the full structure - more permissive for authors.
   $pattern = '/^
-    ([A-Z][a-z]+)                         # 1. Genus (capitalized)
+    ([A-Z][a-z]+)                         # 1. Genus
     \s+
-    ([a-z-]+(?:\s*[a-z-]+)?)              # 2. Species (lowercase, may have hyphen)
+    ([a-z-]+(?:\s*[a-z-]+)?)              # 2. Species
     (?:
       \s+
       (?:                                 # 3. Infraspecific rank + name (optional)
-        (subsp|var|f|forma|subvar|subf|proles|nothosubsp|nothovar|spp|subspecies|var|varieta|variety|form)
+        (subsp|subspecies|var|variety|f|forma|subvar|subf|proles|nothosubsp|nothovar|spp)
         \.*
         \s+
         ([a-z-]+(?:\s*[a-z-]+)?)
@@ -90,14 +108,15 @@ function tpps_organism_parse_name($input) {
     )?
     (?:
       \s+
-      (?:                                 # 4. Authority (optional, in parentheses first)
+      (?:                                 # 4. Authority in parentheses (optional)
         \(
           ([^)]+)                         # Authority inside parentheses
         \)
         \s*
       )?
-      (?:                                 # 5. Authority (outside parentheses)
-        ([^,]+?)                          # Authority without year
+      (?:                                 # 5. Authority outside parentheses
+        ([^,]+?)                          # Authority without year (non-greedy)
+        (?:\s*,\s*[a-z. ]+)?              # Allow "nom. illeg." etc.
       )?
       (?:                                 # 6. Year (optional)
         ,\s*
@@ -105,34 +124,57 @@ function tpps_organism_parse_name($input) {
       )?
     )?
     $/x';
-  preg_match($pattern, trim($input), $matches);
+
+  preg_match($pattern, $input, $matches);
+
   $result = [
-    'genus' => $matches[1] ?? 'NULL',
-    'species' => $matches[2] ?? NULL,
-    'infraspecific_rank' => NULL,
-    'infraspecific_name' => NULL,
-    'authority_in_parentheses' => NULL,
-    'authority' => NULL,
-    'year' => NULL,
+    'genus' => $matches[1] ?? null,
+    'species' => $matches[2] ?? null,
+    'infraspecific_rank' => null,
+    'infraspecific_name' => null,
+    'authority_in_parentheses' => null,
+    'authority' => null,
+    'year' => null,
   ];
 
   // Extract infraspecific if present.
   if (isset($matches[3]) && isset($matches[4])) {
     $result['infraspecific_rank'] = $matches[3];
     $result['infraspecific_name'] = $matches[4];
+    // Authority positions shift when infraspecific is present.
+    $authIndex = 5;
+    $parenAuthIndex = 5;
+    $yearIndex = 7;
+  }
+  else {
+    $authIndex = 5;
+    $parenAuthIndex = 5;
+    $yearIndex = 6;
   }
 
-  // Extract authority and year.
-  if (isset($matches[5])) {
-    $result['authority_in_parentheses'] = trim($matches[5]);
+  // Extract parenthetical authority.
+  if (isset($matches[$parenAuthIndex]) && !empty($matches[$parenAuthIndex])) {
+    // Check if it's actually a parenthetical authority or a false match.
+    $potential = trim($matches[$parenAuthIndex]);
+    if (strpos($potential, '(') === FALSE && !preg_match('/^(subsp|var|f|forma)/', $potential)) {
+      $result['authority_in_parentheses'] = $potential;
+    }
   }
 
-  if (isset($matches[6])) {
-    $result['authority'] = trim($matches[6]);
+  // Extract authority
+  if (isset($matches[$authIndex]) && !empty($matches[$authIndex])) {
+    $potential = trim($matches[$authIndex]);
+    // Skip if it looks like an infraspecific rank
+    if (!preg_match('/^(subsp|var|f|forma|subspecies|variety)/', $potential)) {
+      // Remove trailing "nom. illeg." etc.
+      $potential = preg_replace('/\s*,\s*[a-z. ]+$/', '', $potential);
+      $result['authority'] = $potential;
+    }
   }
 
-  if (isset($matches[7])) {
-    $result['year'] = trim($matches[7]);
+  // Extract year.
+  if (isset($matches[$yearIndex])) {
+    $result['year'] = trim($matches[$yearIndex]);
   }
 
   return $result;
