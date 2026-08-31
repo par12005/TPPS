@@ -66,9 +66,9 @@ class TppsAjax {
       $organism_name = $data['organism'] ?? NULL;
       if (!empty($organism_name)) {
         $source = 'ncbi';
-        $organism_id = tpps_organism($organism_name)->id;
         $id = NcbiTaxonomy::getId($organism_name);
         if (!empty($id)) {
+          $organism_id = tpps_organism($organism_name)->id;
           NcbiTaxonomy::save(
             $organism_id,
             $organism_name,
@@ -77,23 +77,33 @@ class TppsAjax {
         }
         else {
           $source = 'gbif';
-          $response['warnings'][] = t("Organism wans't found in NCBI database.");
           $id = GbifSpeciesApi::getId($organism_name);
           if (!empty($id)) {
+            $organism_id = tpps_organism($organism_name)->id;
             GbifSpeciesApi::save(
               $organism_id,
               $organism_name,
               $id
             );
           }
+          else {
+          }
         }
       }
     }
     catch (Exception $e) {
-      $response['id'] = FALSE;
-      $response['success'] = FALSE;
-      $response['errors'][] = t("Can't get data from NCBI and GBIF databases.");
-      return $response;
+      // Check synonym.
+      $organism_id = OrganismSynonym::search($organism_name);
+      $id = NcbiTaxonomy::getId($organism_id);
+      if (empty($id)) {
+        $id = GbifSpeciesApi::getId($organism_id);
+        if (empty($id)) {
+          $response['id'] = FALSE;
+          $response['success'] = FALSE;
+          $response['errors'][] = t("Taxonomy Id not found in NCBI and GBIF databases and by synonym name.");
+          return $response;
+        }
+      }
     }
 
     $response['id'] = $id ?? FALSE;

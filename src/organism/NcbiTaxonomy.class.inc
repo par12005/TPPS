@@ -164,13 +164,13 @@ class NcbiTaxonomy extends OrganismTaxonomy {
     $organism_key = check_plain($organism_key);
     if (is_numeric($organism_key)) {
       $organism_id = $organism_key;
-      if (empty($organism_name = tpps_organism($organism_id)->name)) {
-      }
+      //if (empty($organism_name = tpps_organism($organism_id)->name)) {
+      //}
     }
     else {
       $organism_name = $organism_key;
-      if (empty($organism_id = tpps_organism($organism_name)->id)) {
-      }
+      //if (empty($organism_id = tpps_organism($organism_name)->id)) {
+      //}
     }
     // Load.
     if (!empty($taxonomy_id = static::load($organism_id))) {

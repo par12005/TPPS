@@ -53,7 +53,7 @@ function tpps_misc_settings_form(array $form, array &$form_state) {
       . '<br />Better: <br />'
       . '/^[^\s]+\s[^\s]+(\s[subsp.|spp.|subspecies|var.|varieta|variety|f.|forma|form]+\s[^\s]+)*$/'
       . '<br />Allows optional author and year: <br />'
-      . '^[A-Za-z]+(?:\s+[A-Za-z]+)+(?:\s+(?:subsp\.|spp\.|subspecies|var\.|varieta|variety|f\.|forma|form)\s+[A-Za-z]+)*(?:\s+[A-Za-z]+(?:,\s+\d{4})?)?(?:\s*\([A-Za-z.]+\)\s+[A-Za-z.]+)?$'
+      . '^[A-Za-z]+(?:\s+[A-Za-z]+)+(?:\s+(?:subsp\.|spp\.|subspecies|var\.|varieta|variety|f\.|forma|form)\s+[A-Za-z]+)*(?:\s+[A-Za-z.]+(?:\s+ex\s+[A-Za-z.]+)?(?:,\s+\d{4})?)?$'
     ),
   ];
   $form['validation_regex']['tpps_validation_regex_single_space'] = [

@@ -71,6 +71,25 @@ class OrganismSynonym {
   }
 
   /**
+   * Searches Organism Id by synonym's name.
+   *
+   * @param int $organism_name
+   *   Organism Name.
+   *
+   * @return mixed
+   *   Returns organism Id or NULL.
+   */
+  public static function search($organism_name) {
+    return db_select(static::TABLE, 't')
+      ->fields('t', ['organism_id'])
+      ->condition('t.type_id', static::CVTERM_ID)
+      ->condition('t.value', $organism_name)
+      ->range(0, 1)
+      ->execute()
+      ->fetchField();
+  }
+
+  /**
    * Gets data for 'Organism Synonym' report.
    *
    * No need to cache result because it takes about 10 msec to build.

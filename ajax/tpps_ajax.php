@@ -144,25 +144,41 @@ function tpps_species_autocomplete($string) {
     $parts[1] = ".";
   }
 
-  $results = chado_select_record('organism', array('genus', 'species'), array(
-    'genus' => array(
+  $results = chado_select_record('organism', ['genus', 'species'], [
+    'genus' => [
       'data' => $parts[0],
       'op' => '~*',
-    ),
-    'species' => array(
+    ],
+    'species' => [
       'data' => $parts[1],
       'op' => '~*',
-    ),
-  ));
+    ],
+  ]);
 
   foreach ($results as $row) {
-    $matches[$row->genus . " " . $row->species] = check_plain($row->genus . " " . $row->species);
+    $name = check_plain($row->genus . " " . $row->species);
+    $matches[$name] = $name;
   }
 
   if (empty($matches)) {
     $matches = tpps_ncbi_species_autocomplete($string);
   }
+  // Add synonyms.
+  $organism_id_list = db_select(OrganismSynonym::TABLE, 't')
+    ->fields('t', ['organism_id'])
+    ->condition('t.type_id', OrganismSynonym::CVTERM_ID)
+    ->condition('t.value', '%' . db_like($string) . '%', 'LIKE')
+    ->execute()
+    ->fetchCol('organism_id');
 
+  foreach ($organism_id_list as $organism_id) {
+    $name = tpps_organism($organism_id)->name;
+    $matches[$name] = $name;
+    $synonym_list = array_values(OrganismSynonym::load($organism_id));
+    $matches = array_merge($matches,
+      array_combine($synonym_list, $synonym_list)
+    );
+  }
   drupal_json_output($matches);
 }
 
