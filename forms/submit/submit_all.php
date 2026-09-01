@@ -2186,7 +2186,7 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
       tpps_file_iterator($snp_fid, 'FileField::processSpreadSheet', $options);
     }
     tpps_log('Done.', [], TRIPAL_INFO);
-    throw new Exception("DEBUG QUIT");
+    // throw new Exception("DEBUG QUIT");
 
     tpps_log('Inserting SNP genotype_spreadsheet data into database using insert_multi...', [], TRIPAL_INFO);
     tpps_chado_insert_multi($options['records'], $multi_insert_options);
