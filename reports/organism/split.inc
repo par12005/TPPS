@@ -22,15 +22,16 @@ function tpps_report_organism_split() {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $rows = $default_value;
     $data = db_select(OrganismSynonym::TABLE, 't')
-      ->fields('t', ['value'])
+      ->fields('t', ['organismprop_id', 'value'])
       ->condition('type_id', OrganismSynonym::CVTERM_ID)
       ->orderBy('t.value')
-      //->range(0, 100)
+      ->condition('organismprop_id', 74364)
+      ->range(0, 90)
       ->execute()
-      ->fetchCol();
+      ->fetchAllKeyed();
 
     $i = 1;
-    foreach ($data as $synonym_name) {
+    foreach ($data as $id => $synonym_name) {
       $parts = tpps_organism_parse_name($synonym_name);
       if (0) {
         if (!empty($parts['genus'])) {
@@ -39,8 +40,9 @@ function tpps_report_organism_split() {
       }
       $rows[$synonym_name] = array_merge(
         [
-          'number' => $i++,
-          'synonym_name' => $synonym_name
+          //'number' => $i++,
+          'id' => $id,
+          'synonym_name' => $synonym_name,
         ],
         $parts
       );
@@ -53,7 +55,7 @@ function tpps_report_organism_split() {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output.
   $header = [
-    ['data' => t('#'), 'field' => 'number'],
+    ['data' => t('Id'), 'field' => 'id'],
     ['data' => t('Synonym Name'), 'field' => 'synonym_name'],
     ['data' => t('Genus'), 'field' => 'genus'],
     ['data' => t('Species'), 'field' => 'species'],
