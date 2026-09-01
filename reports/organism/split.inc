@@ -3,6 +3,11 @@
 /**
  * @file
  * Shows list of synonyms for each organism.
+ *
+ * How to test?
+ * $input = 'Amygdalus gessleriana G.Kirchn., 1864';
+ * module_load_include('inc', 'tpps', 'reports/organism/split');
+ * dpm(var_export(tpps_organism_parse_name($input), 1), 'output');
  */
 
 /**
@@ -25,7 +30,7 @@ function tpps_report_organism_split() {
       ->fields('t', ['organismprop_id', 'value'])
       ->condition('type_id', OrganismSynonym::CVTERM_ID)
       ->orderBy('t.value')
-      //->condition('organismprop_id', 74364)
+      //->condition('organismprop_id', 75905)
       //->range(0, 90)
       ->execute()
       ->fetchAllKeyed();
@@ -36,7 +41,7 @@ function tpps_report_organism_split() {
         continue;
       }
       $parts = tpps_organism_parse_name($synonym_name);
-      if (0) {
+      if (1) {
         if (!empty($parts['genus'])) {
           continue;
         }
@@ -94,83 +99,113 @@ function tpps_report_organism_split() {
  */
 function tpps_organism_parse_name($input) {
   $input = trim($input);
+  $result = [
+    'genus' => NULL,
+    'species' => NULL,
+    'infraspecific_rank' => NULL,
+    'infraspecific_name' => NULL,
+    'authority_in_parentheses' => NULL,
+    'authority' => NULL,
+    'year' => NULL,
+  ];
 
   // Handle cases where there's no species (just genus).
-  if (preg_match('/^([A-Z][a-z]+)$/', $input, $genusOnly)) {
-    return [
-      'genus' => $genusOnly[1],
-      'species' => NULL,
-      'infraspecific_rank' => NULL,
-      'infraspecific_name' => NULL,
-      'authority_in_parentheses' => NULL,
-      'authority' => NULL,
-      'year' => NULL,
-    ];
+  if (preg_match('/^([A-Z][a-z]+)$/', $input, $matches)) {
+    $result['genus'] = $matches[1];
+    return $result;
   }
 
-  // Handle cases with just genus + authority with parentheses + optional outside authority.
-  if (preg_match(
-    '/^([A-Z][a-z]+)\s+\(([^)]+)\)\s*([A-Za-z0-9\.\x{00E0}-\x{00FC}\&\s]+?)(?:,\s*(\d{4}))?$/u',
-    $input, $matches
-  )) {
-    return [
-      'genus' => $matches[1],
-      'species' => NULL,
-      'infraspecific_rank' => NULL,
-      'infraspecific_name' => NULL,
-      'authority_in_parentheses' => trim($matches[2]),
-      'authority' => trim($matches[3] ?? NULL),
-      'year' => $matches[4] ?? NULL,
-    ];
+  // Get genus+species.
+  $pattern = '/^
+    ([A-Z][a-z]+)                     # 1. Genus
+    \s+
+    ([a-z-]+(?:\s*[a-z-]+)?)          # 2. Species (including ×)
+    $/xu';
+  if (preg_match($pattern, $input, $matches)) {
+    $result['genus'] = $matches[1] ?? NULL;
+    $result['species'] = $matches[2] ?? NULL;
+    return $result;
+  }
+
+  // Genus + authority with parentheses + optional outside authority.
+  $pattern = '/^
+    ([A-Z][a-z]+)                          # 1. Genus.
+    \s+\(([^)]+)\)\s*                      # 2. Authority in parentheses.
+    ([A-Za-z0-9\.\x{00E0}-\x{00FC}\&\s]+?) # 3. Authority
+    (?:,\s*(\d{4}))?                       # 4. Optional year.
+    $/xu';
+  if (preg_match($pattern, $input, $matches)) {
+    $result['genus'] = $matches[1];
+    $result['authority_in_parentheses'] = trim($matches[2]);
+    $result['authority'] = trim($matches[3] ?? NULL);
+    $result['year'] = $matches[4] ?? NULL;
+    return $result;
   }
 
   // Handle cases with just genus + authority + optional year.
   // Authority must start with uppercase letter to distinguish from species.
-  if (preg_match(
-    '/^([A-Z][a-z]+)\s+([A-Z][A-Za-z0-9\.\x{00E0}-\x{00FC}\x{0100}-\x{017F}\&\s]+?)(?:,\s*(\d{4}))?$/u',
-    $input, $matches
-  )) {
-    return [
-      'genus' => $matches[1],
-      'species' => NULL,
-      'infraspecific_rank' => NULL,
-      'infraspecific_name' => NULL,
-      'authority_in_parentheses' => NULL,
-      'authority' => trim($matches[2]),
-      'year' => $matches[3] ?? NULL,
-    ];
+  $pattern = '/^([A-Z][a-z]+)\s+([A-Z][A-Za-z0-9\.
+    \x{00E0}-\x{00FC}\x{0100}-\x{017F}\&\s]+?)(?:,\s*(\d{4}))?
+    $/xu';
+  if (preg_match($pattern, $input, $matches)) {
+    $result['genus'] = $matches[1];
+    $result['authority'] = trim($matches[2]);
+    $result['year'] = $matches[3] ?? NULL;
+    return $result;
   }
 
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Allow optional dot after rank
   $pattern = '/\s
-      (subsp|subspecies|var|variety|f|forma|subvar|subf|proles|nothosubsp|nothovar|spp)
-      \.*                                  # Allow optional dot after rank
-      \s/x';
+    (subsp|subspecies|var|variety|f|forma|subvar|subf|proles|nothosubsp|nothovar|spp)
+    \.*\s/x';
   preg_match($pattern, $input, $matches);
   $infraspecific_rank = $matches[1] ?? NULL;
   if (!empty($infraspecific_rank)) {
-    $result = [
-      'genus' => NULL,
-      'species' => NULL,
-      'infraspecific_rank' => $infraspecific_rank,
-      'infraspecific_name' => NULL,
-      'authority_in_parentheses' => NULL,
-      'authority' => NULL,
-      'year' => NULL,
-    ];
+    $result['infraspecific_rank'] = $infraspecific_rank;
     // Split by rank.
     $parts = explode($matches[0], $input, 2);
+  }
+  else {
+    // No infraspecific rank.
+    if (strpos($input, '(') !== FALSE) {
+      $parts = preg_split('/(?=[\(])/', $input, 2);
+      //$parts = explode('(', $input, 2);
+    }
+    // Check for uppercase word (split before first uppercase letter).
+    elseif (
+      // Find all uppercase letters with positions
+      preg_match_all('/[A-Z]/', $input, $matches, PREG_OFFSET_CAPTURE) >= 2
+    ) {
+      $second_uppercase_char_position = $matches[0][1][1];
+      $parts = [
+        substr($input, 0, $second_uppercase_char_position),
+        substr($input, $second_uppercase_char_position)
+      ];
+    }
+    else {
+      // @TODO Check if there only 2 words.
+      $parts = [$input];
+    }
+  }
 
+  if (1) {
     // Get genus+species.
     $pattern = '/^
-      ([A-Z][a-z]+)                         # 1. Genus
+      ([A-Z][a-z-]+)                         # 1. Genus
       \s+
       ([\×a-z-]+(?:\s*[\×a-z-]+)?)          # 2. Species (including ×)
-      $/xu';
-    preg_match($pattern, $parts[0], $matches);
-    $result['genus'] = $matches[1] ?? NULL;
-    $result['species'] = $matches[2] ?? NULL;
+      /xu';
+    if (preg_match($pattern, trim($parts[0]), $matches)) {
+
+      $result['genus'] = $matches[1] ?? NULL;
+      $result['species'] = $matches[2] ?? NULL;
+    }
+
+    if (empty($parts[1])) {
+      return $result;
+    }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get infraspecific name.
