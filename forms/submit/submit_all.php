@@ -2175,7 +2175,7 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
     echo "Tree Info:\n";
     print_r($options['tree_info']);
     $options['shared_state'] = $shared_state;
-    // Do not process the spreadsheet file if there is an assay design file since we'll convert to VCF and process the vcf
+    // Do not process the SNP assay spreadsheet file if there is an assay design file since we'll convert to VCF and process the vcf
     if (!empty($genotype['files']['assay-design'])) {
       // We will generate the vcf
       tpps_log('Bypassing processing SNP genotype_spreadsheet file data...', [], TRIPAL_INFO);
@@ -2186,7 +2186,7 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
       tpps_file_iterator($snp_fid, 'FileField::processSpreadSheet', $options);
     }
     tpps_log('Done.', [], TRIPAL_INFO);
-    // throw new Exception("DEBUG QUIT");
+    throw new Exception("DEBUG QUIT");
 
     tpps_log('Inserting SNP genotype_spreadsheet data into database using insert_multi...', [], TRIPAL_INFO);
     tpps_chado_insert_multi($options['records'], $multi_insert_options);
