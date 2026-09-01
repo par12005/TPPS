@@ -1518,6 +1518,7 @@ abstract class FileField {
         }
       }
 
+      // $headers[$key] is accessing the header value for the current column being processed in the genotype spreadsheet. In this context, it is used to retrieve the name of the variant (e.g., a specific SNP or SSR marker) that corresponds to the current column in the row of data being processed. This variant name is then used to construct unique identifiers for features and genotypes in the database, ensuring that each marker and its associated genotype data are correctly linked to the appropriate organism and study.
       $variant_name = $headers[$key];
       $marker_name = $variant_name . $marker;
       $genotype_name_without_call = "$marker-$variant_name-$species_code";

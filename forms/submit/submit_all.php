@@ -1990,7 +1990,7 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
   );
   $options['vcf_processing_completed'] = $vcf_processing_completed;
 
-  // 2/29/2024 Add reference genome more consitently for all scenarios
+  // 2/29/2024 Add reference genome more consistently for all scenarios
   if ($shared_state['file_rank'] == NULL) {
     $shared_state['file_rank'] = 0;
   }
@@ -2186,6 +2186,7 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
       tpps_file_iterator($snp_fid, 'FileField::processSpreadSheet', $options);
     }
     tpps_log('Done.', [], TRIPAL_INFO);
+    // throw new Exception("DEBUG QUIT");
 
     tpps_log('Inserting SNP genotype_spreadsheet data into database using insert_multi...', [], TRIPAL_INFO);
     tpps_chado_insert_multi($options['records'], $multi_insert_options);
@@ -4453,73 +4454,50 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = [])
       //   'type_id' => $type_cvterm,
       // );
       ob_start();
-      chado_insert_record('genotype', [
-        'name' => $genotype_name_without_call,
-        'uniquename' => $genotype_name,
-        'description' => $val,
-        'type_id' => $type_cvterm,
-      ]);
-      ob_end_clean();
-      // echo "name: $genotype_name_without_call, uniquename: $genotype_name, $val, $type_cvterm\n";
 
 
-      $genotype_id = tpps_submitall_get_genotype_id($genotype_name);
-      // 2.
-      $options = array_merge($options, [
-        'genotype_id' => $genotype_id,
-        'genotype_name' => $genotype_name,
-      ]);
-      SnpAssociation::process($organism_index, $options['shared_state'], $options);
+      // [RISH] 8/24/2026 - Code removed since we don't need to insert genotype into tables anymore
+      //                    since the code is now retrieved from feature, markers per plant or VCF (if exists)
+      // chado_insert_record('genotype', [
+      //   'name' => $genotype_name_without_call,
+      //   'uniquename' => $genotype_name,
+      //   'description' => $val,
+      //   'type_id' => $type_cvterm,
+      // ]);
+      // ob_end_clean();
+      // // echo "name: $genotype_name_without_call, uniquename: $genotype_name, $val, $type_cvterm\n";
 
-      // [RISH] 07/06/2023 - REMOVED SO WE CAN USE HYBRID COPY SYSTEM
-      // $records['genotype_call']["$stock_id-$genotype_name"] = array(
-      //   'project_id' => $project_id,
-      //   'stock_id' => $stock_id,
-      //   '#fk' => array(
-      //     'genotype' => $genotype_name,
-      //     'variant' => $variant_name,
-      //     'marker' => $marker_name,
-      //   ),
-      // );
 
-      // RISH - 12/18/2023 - Requested by Emily
-      ob_start();
-      chado_insert_record('feature_genotype', [
-        'feature_id' => $variant_name_id,
-        'genotype_id' => $genotype_id,
-        'chromosome_id' => NULL,
-        'rank' => 0,
-        'cgroup' => 0,
-        'cvterm_id' => $type_cvterm,
-      ]);
+      // $genotype_id = tpps_submitall_get_genotype_id($genotype_name);
+      // // 2.
+      // $options = array_merge($options, [
+      //   'genotype_id' => $genotype_id,
+      //   'genotype_name' => $genotype_name,
+      // ]);
+      // SnpAssociation::process($organism_index, $options['shared_state'], $options);
+
+
+      // // RISH - 12/18/2023 - Requested by Emily
+      // ob_start();
+      // chado_insert_record('feature_genotype', [
+      //   'feature_id' => $variant_name_id,
+      //   'genotype_id' => $genotype_id,
+      //   'chromosome_id' => NULL,
+      //   'rank' => 0,
+      //   'cgroup' => 0,
+      //   'cvterm_id' => $type_cvterm,
+      // ]);
       // echo "feature_id: $variant_name_id, genotype_id: $genotype_id\n";
       ob_end_clean();
 
       fwrite($options['fhandle'], "$tree_id,$variant_name\n");
 
 
-      // echo "Genotype_call key: $stock_id-$genotype_name\n";
-      // if (isset($records2['genotype_call']["$stock_id-$genotype_name"])) {
-      //   echo "This genotype_call key is already set (so uniqueness is maybe broken?\n";
-      // }
-      // $records2['genotype_call']["$stock_id-$genotype_name"] = array(
-      //   'project_id' => $project_id,
-      //   'stock_id' => $stock_id,
-      //   'genotype_id' => $genotype_id,
-      //   'variant_id' => $variant_name_id,
-      //   'marker_id' => $marker_name_id,
-      // );
 
       // $records['stock_genotype']["$stock_id-$genotype_name"] = array(
       //   'stock_id' => $stock_id,
-      //   '#fk' => array(
-      //     'genotype' => $genotype_name,
-      //   ),
+      //   'genotype_id' => $genotype_id
       // );
-      $records['stock_genotype']["$stock_id-$genotype_name"] = array(
-        'stock_id' => $stock_id,
-        'genotype_id' => $genotype_id
-      );
     // }
 
     if ($genotype_count >= $record_group) {
@@ -4564,6 +4542,14 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = [])
     ");
     echo "Insert successful\n";
   }
+
+  // This code is plants_per_marker which needs to be adjusted
+  // db_query("
+  // INSERT INTO chado.plants_per_marker
+  // (marker_id, study_accession, plant_ids)
+  // VALUES
+  // ('$variant_name', '$study_accession', ARRAY['" . implode(',', $plants_array). "']::varchar[])
+  // ");
 }
 
 function tpps_vcf_per_sample_column($file_location, $column_index) {
