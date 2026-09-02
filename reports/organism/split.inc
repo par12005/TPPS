@@ -56,32 +56,33 @@ function tpps_report_organism_split() {
 
   $cid = __FUNCTION__;
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+
   $cache = cache_get($cid, $cache_bin);
   $key = $cid;
   $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
-
-  if (!empty($_GET['id'])) {
-    $reset = TRUE;
-  }
-  if ($reset || empty($cache) || empty($cache->data[$key])) {
+  if (
+    $reset
+    || empty($cache)
+    || empty($cache->data[$key])
+    || (!empty($_GET['id']) && empty($cache->data[$key][$_GET['id']]))
+  ) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $rows = $default_value;
-    $query = db_select(OrganismSynonym::TABLE, 't')
+    $data = db_select(OrganismSynonym::TABLE, 't')
       ->fields('t', ['organismprop_id', 'value'])
       ->condition('type_id', OrganismSynonym::CVTERM_ID)
+      ->orderBy('t.value')
       //->range(0, 90)
-      ->orderBy('t.value');
-    if (!empty($_GET['id'])) {
-      $query->condition('organismprop_id', $_GET['id']);
-    }
-    $data = $query->execute()->fetchAllKeyed();
+      //->condition('organismprop_id', $_GET['id'])
+      ->execute()
+      ->fetchAllKeyed();
 
     foreach ($data as $id => $synonym_name) {
       if (strpos($synonym_name, '?') === 0) {
         continue;
       }
       $parts = tpps_organism_parse_name($synonym_name);
-      $rows[$synonym_name] = array_merge(
+      $rows[$id] = array_merge(
         [
           'id' => $id,
           'synonym_name' => $synonym_name,
@@ -94,6 +95,10 @@ function tpps_report_organism_split() {
     cache_set($cid, $cache->data, $cache_bin);
   }
   $rows = $cache->data[$key] ?? $default_value;
+  if (!empty($id = $_GET['id'] ?? NULL) && !empty($value = $rows[$id] ?? NULL)) {
+    $rows = [$id => $value];
+  }
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output.
   $header = [
@@ -143,6 +148,16 @@ function tpps_organism_parse_name($input) {
     'year' => NULL,
   ];
 
+  // Invalid names.
+  // First genus letter is '?' or in lowercase.
+  // Crosses which has ' x ' substring.
+  if (
+    preg_match('/^([a-z\?])/', $input, $matches)
+    ||  preg_match('/(\sx\s)/', $input, $matches)
+  ) {
+    return $result;
+  }
+
   // Handle cases where there's no species (just genus).
   if (preg_match('/^([A-Z][a-z]+)$/', $input, $matches)) {
     $result['genus'] = $matches[1];
@@ -152,7 +167,7 @@ function tpps_organism_parse_name($input) {
   // Get genus+species.
   $pattern = '/^
     ([A-Z][a-z]+)                     # 1. Genus
-    \s+([a-z-]+(?:\s*[a-z-]+)?)       # 2. Species (including ×)
+    \s+([a-z-]+(?:\s*[a-z-.]+)?)       # 2. Species (including ×)
     $/xu';
   if (preg_match($pattern, $input, $matches)) {
     $result['genus'] = $matches[1] ?? NULL;
@@ -161,38 +176,42 @@ function tpps_organism_parse_name($input) {
   }
 
   // Genus + authority with parentheses + optional outside authority.
-  $pattern = '/^
-    ([A-Z][a-z]+)                          # 1. Genus.
-    \s+\(([^)]+)\)\s*                      # 2. Authority in parentheses.
-    ([A-Za-z0-9\.\x{00E0}-\x{00FC}\&\s]+?) # 3. Authority
-    (?:,\s*(\d{4}))?                       # 4. Optional year.
-    $/xu';
-  if (preg_match($pattern, $input, $matches)) {
-    $result['genus'] = $matches[1];
-    $result['authority_in_parentheses'] = trim($matches[2]);
-    $result['authority'] = trim($matches[3] ?? NULL);
-    $result['year'] = $matches[4] ?? NULL;
-    return $result;
-  }
+  if (0) {
+    $pattern = '/^
+      ([A-Z][a-z]+)                          # 1. Genus.
+      \s+\(([^)]+)\)\s*                      # 2. Authority in parentheses.
+      ([A-Za-z0-9\.\x{00E0}-\x{00FC}\&\s]+?) # 3. Authority
+      (?:,\s*(\d{4}))?                       # 4. Optional year.
+      $/xu';
+    if (preg_match($pattern, $input, $matches)) {
+      $result['genus'] = $matches[1];
+      $result['authority_in_parentheses'] = trim($matches[2]);
+      $result['authority'] = trim($matches[3] ?? NULL);
+      $result['year'] = $matches[4] ?? NULL;
+      return $result;
+    }
 
-  // Handle cases with just genus + authority + optional year.
-  // Authority must start with uppercase letter to distinguish from species.
-  $pattern = '/^([A-Z][a-z]+)\s+([A-Z][A-Za-z0-9\.
-    \x{00E0}-\x{00FC}\x{0100}-\x{017F}\&\s]+?)(?:,\s*(\d{4}))?
-    $/xu';
-  if (preg_match($pattern, $input, $matches)) {
-    $result['genus'] = $matches[1];
-    $result['authority'] = trim($matches[2]);
-    $result['year'] = $matches[3] ?? NULL;
-    return $result;
+    // Handle cases with just genus + authority + optional year.
+    // Authority must start with uppercase letter to distinguish from species.
+    $pattern = '/^([A-Z][a-z]+)\s+([A-Z][A-Za-z0-9\.
+      \x{00E0}-\x{00FC}\x{0100}-\x{017F}\&\s]+?)(?:,\s*(\d{4}))?
+      $/xu';
+    if (preg_match($pattern, $input, $matches)) {
+      $result['genus'] = $matches[1];
+      $result['authority'] = trim($matches[2]);
+      $result['year'] = $matches[3] ?? NULL;
+      return $result;
+    }
   }
 
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Allow optional dot after rank
   $pattern = '/\s
-    (subsp|subspecies|var|variety|f|forma|subvar|subf|proles|nothosubsp|nothovar|spp)
-    \.*\s/x';
+    (
+      (?:subsp|subspecies|var|variety|f|forma|subvar|subf|proles|nothosubsp|nothovar|spp)
+      \.*
+    )\s/x';
   preg_match($pattern, $input, $matches);
   $infraspecific_rank = $matches[1] ?? NULL;
   if (!empty($infraspecific_rank)) {
@@ -235,6 +254,7 @@ function tpps_organism_parse_name($input) {
     return $result;
   }
 
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Get infraspecific name.
   // Marker: first char is lowercase.
@@ -260,13 +280,21 @@ function tpps_organism_parse_name($input) {
   // Authority in parentheses (optional).
   $pattern = '/\(([^)]+)\)/';
   preg_match($pattern, trim($parts[1]), $matches);
+
+
   if (!empty($matches[1])) {
     $result['authority_in_parentheses'] = $matches[1];
     $parts[1] = trim(str_replace($matches[0], '', $parts[1]));
   }
 
   if (!empty($parts[1])) {
-    $result['authority'] = trim($parts[1]);
+    // Parse cases like: Pinus malletii hort. ex Mottet
+    // 0: Pinus malletii hort. ex;
+    // 1: Mottet.
+    $extra = trim(str_replace(
+      $result['genus'] . ' ' . $result['species'], '', $parts[0])
+    );
+    $result['authority'] = (empty($extra) ? '' : $extra . ' ') . trim($parts[1]);
   }
 
   return $result;
