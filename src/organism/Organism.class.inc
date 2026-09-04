@@ -66,11 +66,20 @@ class Organism {
   protected $gbifTaxonomyId;
 
   /**
-   * Organism Name.
+   * Canonical full organism name.
    *
    * @var string
    */
   protected $name;
+
+  /**
+   * Parsed Organism Name.
+   *
+   * See getEmptyParsedName() method for keys.
+   *
+   * @var array
+   */
+  protected $parsedName = NULL;
 
   /**
    * Organism Id.
@@ -98,6 +107,16 @@ class Organism {
   protected $species;
 
   /**
+   * Organism infraspecific Rank.
+   *
+   * DB: chado.organism.type_id.
+   *
+   * @var string
+   * @todo Which cvterm should be used?
+   */
+  protected $infraspecificRank;
+
+  /**
    * Organism infraspecific name. Optional 3rd part of the full name.
    *
    * DB: chado.organism.infraspecific_name.
@@ -113,6 +132,7 @@ class Organism {
    *   Organism Name or Organism Id.
    */
   public function __construct($organism_key = NULL) {
+    $this->parsedName = Organism::getEmptyParsedName();
     if (!empty($organism_key)) {
       if (is_numeric($organism_key)) {
         $this->id = $organism_key;
@@ -120,7 +140,7 @@ class Organism {
       else {
         // Key is a full organism name.
         // @todo Minor. Validate organism name.
-        $this->name = $organism_key;
+        $this->setName($organism_key);
       }
       $this->load();
     }
@@ -187,6 +207,32 @@ class Organism {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   /**
+   * Custom setter for $name property.
+   *
+   * @param string $value
+   *   Organism name.
+   *
+   * @return object
+   *   Returns $this to allow method chaining.
+   */
+  public function setName($value) {
+    if (empty($value)) {
+      throw new Exception('Empty organism name.');
+    }
+    $this->name = $value;
+    $this->parsedName = Organism::parseName($value);
+    $this->genus = $this->parsedName['genus'] ?? NULL;
+    if (empty($this->genus)) {
+      throw new Exception('Invalid organism name.');
+    }
+    $this->species = $this->parsedName['species'] ?? NULL;
+    $this->infraspecificRank = $this->parsedName['infraspecific_rank'] ?? NULL;
+    $this->infraspecificName = $this->parsedName['infraspecific_name'] ?? NULL;
+
+    return $this;
+  }
+
+  /**
    * Reload organism from database by organism name.
    *
    * WARNING:
@@ -219,16 +265,19 @@ class Organism {
     if (empty($this->id)) {
       // Load by name.
       if (!empty($this->name)) {
-        $this->parseName();
-
-        if (empty($this->genus) || empty($this->species)) {
-          watchdog('tpps', 'Empty organism name.');
-          return;
+        if (!empty($this->genus)) {
+          $query->condition('genus', $this->genus);
         }
-        $query->condition('genus', $this->genus);
-        $query->condition('species', $this->species);
+        if (!empty($this->species)) {
+          $query->condition('species', $this->species);
+        }
         if (!empty($this->infraspecificName)) {
-          $query->condition('infraspecific_name', $this->infraspecificName);
+          // @TODO Major. Some names has only genus + authority.
+          // @TODO infraspecificRank must be not part of the name but
+          // stored in 'type_id' field and cvterm_id must be used.
+          $infraspecific_name = (empty($this->infraspecificRank)
+            ? '' : $this->infraspecificRank . ' ') . $this->infraspecificName;
+          $query->condition('infraspecific_name', $infraspecific_name);
         }
       }
       else {
@@ -280,8 +329,17 @@ class Organism {
    * Builds full organism name using name parts from DB table.
    */
   public function generateName() {
-    $name_parts = [$this->genus, $this->species, $this->infraspecificName];
+    // @todo Minor. Use $this->parsedName if not empty.
+    $name_parts = [
+      $this->genus,
+      $this->species,
+      $this->infraspecificRank,
+      $this->infraspecificName,
+    ];
     $name = trim(implode(' ', $name_parts));
+    // Replace multiple spaces with a single space.
+    $name = preg_replace('/\s+/', ' ', $name);
+
     // Check if $this->name and new name differs.
     if (!empty($this->name) && $this->name != $name) {
       watchdog('tpps', 'Existing organism name and generated name differs:'
@@ -296,20 +354,148 @@ class Organism {
         WATCHDOG_WARNING
       );
     }
-    $this->name = $name;
+    $this->setName($name);
     return $this;
   }
 
   /**
    * Extracts genus, species and extra parts from the organism name.
+   *
+   * @param string $name
+   *   Organism name.
+   *
+   * @return mixed
+   *   When called statically returns an accosiative array with result of the
+   *   parsing.
+   *   When called from object returns $this to allow chaining and result
+   *   will be stored in the class's properties.
+   *
+   * @throws Exception
+   *   When organism name is empty.
    */
-  public function parseName() {
-    if (empty($this->name)) {
-      return;
+  public static function parseName($name) {
+    $result = Organism::getEmptyParsedName();
+    $name = trim($name);
+    // Check if namei is valid.
+    // First genus letter is '?' or in lowercase.
+    // Crosses which has ' x ' substring.
+    if (
+      preg_match('/^([a-z\?])/', $name, $matches)
+      || preg_match('/(\sx\s)/', $name, $matches)
+    ) {
+      return $result;
     }
-    $parts = explode(" ", $this->name, 2);
-    $this->genus = $parts[0];
-    $this->species = $parts[1] ?? '';
+
+    // Handle cases where there's no species (just genus).
+    if (preg_match('/^([A-Z][a-z]+)$/', $name, $matches)) {
+      $result['genus'] = $matches[1];
+      return $result;
+    }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // 'Genus species' or
+    // 'Genus species 2nd-word'.
+    $pattern = '/^
+      ([A-Z][a-z]+)                  # 1. Genus
+      \s+
+      ([a-z-]+(?:\s*[a-z-.]+)?)      # 2. Species (1 or 2 words).
+      $/xu';
+    if (preg_match($pattern, $name, $matches)) {
+      $result['genus'] = $matches[1] ?? NULL;
+      $result['species'] = $matches[2] ?? NULL;
+      return $result;
+    }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Allow optional dot after rank
+    $pattern = '/\s
+      (
+        (?:subsp|subspecies|var|variety|f|forma|subvar|subf|proles|nothosubsp|nothovar|spp)
+        \.*
+      )\s/x';
+    preg_match($pattern, $name, $matches);
+    $infraspecific_rank = $matches[1] ?? NULL;
+    if (!empty($infraspecific_rank)) {
+      $result['infraspecific_rank'] = $infraspecific_rank;
+      // Split by rank.
+      $parts = explode($matches[0], $name, 2);
+    }
+    elseif (strpos($name, '(') !== FALSE) {
+      $parts = preg_split('/(?=[\(])/', $name, 2);
+    }
+    elseif (
+      // Find all uppercase letters with positions.
+      preg_match_all('/[A-Z]/', $name, $matches, PREG_OFFSET_CAPTURE) >= 2
+    ) {
+      $second_uppercase_char_position = $matches[0][1][1];
+      $parts = [
+        substr($name, 0, $second_uppercase_char_position),
+        substr($name, $second_uppercase_char_position)
+      ];
+    }
+    else {
+      // @TODO Check if there only 2 words.
+      $parts = [$name];
+    }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Get genus+species.
+    $pattern = '/^
+      ([A-Z][a-z-]+)                         # 1. Genus
+      \s+
+      ([\×a-z-]+(?:\s*[\×a-z-.]+)?)          # 2. Species (including ×)
+      /xu';
+    if (preg_match($pattern, trim($parts[0]), $matches)) {
+
+      $result['genus'] = $matches[1] ?? NULL;
+      $result['species'] = $matches[2] ?? NULL;
+    }
+
+    if (empty($parts[1])) {
+      return $result;
+    }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Get infraspecific name.
+    // Marker: first char is lowercase.
+    $pattern = '/^
+        ([\×a-z-]+(?:\s*[\×a-z-.]+)?)        # Infraspecific name (including ×)
+        # Not to the end of string.
+      /xu';
+    preg_match($pattern, trim($parts[1]), $matches);
+    if (!empty($matches[1])) {
+      $result['infraspecific_name'] = $matches[1];
+      $parts[1] = str_replace($result['infraspecific_name'], '', $parts[1]);
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Get Year.
+    $pattern = '/,*\s*(\d{4})$/';
+    preg_match($pattern, trim($parts[1]), $matches);
+    if (!empty($matches[1])) {
+      $result['year'] = $matches[1];
+      // Note: replace with leading comma and space.
+      $parts[1] = trim(str_replace($matches[0], '', $parts[1]));
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Authority in parentheses (optional).
+    $pattern = '/\(([^)]+)\)/';
+    preg_match($pattern, trim($parts[1]), $matches);
+
+    if (!empty($matches[1])) {
+      $result['authority_in_parentheses'] = $matches[1];
+      $parts[1] = trim(str_replace($matches[0], '', $parts[1]));
+    }
+
+    if (!empty($parts[1])) {
+      // Parse cases like: Pinus malletii hort. ex Mottet
+      // 0: Pinus malletii hort. ex;
+      // 1: Mottet.
+      $extra = trim(str_replace(
+        $result['genus'] . ' ' . $result['species'], '', $parts[0])
+      );
+      $result['authority'] = (empty($extra) ? '' : $extra . ' ') . trim($parts[1]);
+    }
+    return $result;
   }
 
   /**
@@ -657,7 +843,7 @@ class Organism {
    * Gets ordinal number of the organism on TPPS Form.
    *
    * @param object $submission
-   *  TPPS Submission.
+   *   TPPS Submission.
    *
    * @return mixed
    *   Returns integer index or FALSE in case of errors.
@@ -678,8 +864,27 @@ class Organism {
     }
   }
 
-}
+  /**
+   * Get initial state of the $parsedName property.
+   *
+   * Allows to reset property.
+   *
+   * @return array
+   *   Returns initial state of the $parsedName property filled with NULL.
+   */
+  private static function getEmptyParsedName() {
+    return [
+      'genus' => NULL,
+      'species' => NULL,
+      'infraspecific_rank' => NULL,
+      'infraspecific_name' => NULL,
+      'authority_in_parentheses' => NULL,
+      'authority' => NULL,
+      'year' => NULL,
+    ];
+  }
 
+}
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 // Useful functions (not methods).
