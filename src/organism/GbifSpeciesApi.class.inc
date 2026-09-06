@@ -85,7 +85,6 @@ class GbifSpeciesApi extends OrganismTaxonomy {
    *   Returns Taxonomy Id or NULL.
    */
   public static function getId($organism_key) {
-
     $organism_key = check_plain($organism_key);
     if (is_numeric($organism_key)) {
       $organism_id = $organism_key;
