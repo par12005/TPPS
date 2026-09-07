@@ -85,6 +85,8 @@ class GbifSpeciesApi extends OrganismTaxonomy {
    *   Returns Taxonomy Id or NULL.
    */
   public static function getId($organism_key) {
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Process organism key.
     $organism_key = check_plain($organism_key);
     if (is_numeric($organism_key)) {
       $organism_id = $organism_key;
@@ -96,39 +98,22 @@ class GbifSpeciesApi extends OrganismTaxonomy {
       if (empty($organism_id = tpps_organism($organism_name)->id)) {
       }
     }
-    // Load existing Taxonomy Id (if any).
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Get taxonomy id.
+    $taxonomy_id = NULL;
+    // Get from DB.
     if (!empty($taxonomy_id = static::load($organism_id))) {
       return $taxonomy_id;
     }
 
-    // Get taxonomy id.
-    $taxonomy_id = NULL;
+    // Request external API.
     if (!empty($organism_name)) {
-
-      try {
-        $response = (new RestApi([
-          'url' => 'https://api.gbif.org/v2/species/match',
-          'query' => [
-            'genericName' => static::prepareOrganismName($organism_name),
-          ],
-          'tag' => 'GBIF v2 Taxonomy Id: ' . $organism_name,
-          'cache' => variable_get('tpps_organism_gbif_use_cache', TRUE),
-        ]))->get()->response();
-        $taxonomy_id = $response['usage']['key'] ?? NULL;
-        $full_name = $response['usage']['name'] ?? NULL;
-        $name = $response['usage']['canonicalName'] ?? NULL;
-      }
-      catch (Exception $e) {
-        $message = $e->getMessage();
-        $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
-        watchdog('tpps', '@message <pre>@backtrace</pre>',
-          ['@message' => $message, '@backtrace' => print_r($stack, 1)],
-          WATCHDOG_ERROR
-        );
-        drupal_set_message($e->getCode() . ' ' . $message);
-      }
+      $response = static::getInfo($organism_name);
+      $taxonomy_id = $response['usage']['key'] ?? NULL;
+      $full_name = $response['usage']['name'] ?? NULL;
+      $name = $response['usage']['canonicalName'] ?? NULL;
     }
-
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Save relation.
     if (!empty($organism_id)) {
       static::save(
@@ -139,7 +124,6 @@ class GbifSpeciesApi extends OrganismTaxonomy {
         $full_name ?? NULL
       );
     }
-
     return $taxonomy_id;
   }
 
@@ -154,7 +138,7 @@ class GbifSpeciesApi extends OrganismTaxonomy {
    */
   public static function prepareOrganismName($organism_name) {
     // Remove Duplicate Genus.
-    $words = explode(' ', $organism_name);
+    $words = explode(' ', check_plain($organism_name));
     // Get the first word (genus)
     $firstWord = $words[0];
     $result = [];
@@ -211,6 +195,38 @@ class GbifSpeciesApi extends OrganismTaxonomy {
       );
       drupal_set_message($e->getCode() . ' ' . $message);
     }
+  }
+
+  /**
+   * Gets organism info.
+   *
+   * @param string $organism_name
+   *   Organism name (canonical or synonym).
+   *
+   * @return array
+   *   Returns API response.
+   */
+  public static function getInfo($organism_name) {
+    try {
+      $response = (new RestApi([
+        'url' => 'https://api.gbif.org/v2/species/match',
+        'query' => [
+          'genericName' => static::prepareOrganismName($organism_name),
+        ],
+        'tag' => 'GBIF v2 Taxonomy Id: ' . $organism_name,
+        'cache' => variable_get('tpps_organism_gbif_use_cache', TRUE),
+      ]))->get()->response();
+    }
+    catch (Exception $e) {
+      $message = $e->getMessage();
+      $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
+      watchdog('tpps', '@message <pre>@backtrace</pre>',
+        ['@message' => $message, '@backtrace' => print_r($stack, 1)],
+        WATCHDOG_ERROR
+      );
+      drupal_set_message($e->getCode() . ' ' . $message);
+    }
+    return $response;
   }
 
 }

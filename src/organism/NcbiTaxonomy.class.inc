@@ -161,6 +161,8 @@ class NcbiTaxonomy extends OrganismTaxonomy {
    *   When request to NCBI API fails.
    */
   public static function getId($organism_key) {
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Process organism key.
     $organism_key = check_plain($organism_key);
     if (is_numeric($organism_key)) {
       $organism_id = $organism_key;
@@ -172,60 +174,20 @@ class NcbiTaxonomy extends OrganismTaxonomy {
       if (empty($organism_id = tpps_organism($organism_name)->id)) {
       }
     }
-    // Load.
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Get taxonomy id.
+    $taxonomy_id = NULL;
+    // Get from DB.
     if (!empty($taxonomy_id = static::load($organism_id))) {
       return $taxonomy_id;
     }
+    // Request external API.
+    $xml = static::getInfo($organism_name);
+    preg_match('/<Id>(\d+)<\/Id>/', $xml, $matches);
+    $id = $matches[1] ?? '';
+    $taxonomy_id = (empty($id) ? NULL : (int) $id);
 
-    // Get.
-    $taxonomy_id = NULL;
-    $url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
-    $formatted_organism_name = implode('+', explode(' ', $organism_name));
-    $query = [
-      'db' => 'taxonomy',
-      'term' => $organism_name,
-      //'term' => "{$formatted_organism_name}[Scientific+Name]",
-      'api_key' => variable_get('tripal_eutils_ncbi_api_key'),
-    ];
-
-    try {
-      $xml = (new RestApi([
-        'url' => $url,
-        'query' => $query,
-        'tag' => 'NCBI Taxonomy: ' . $organism_name,
-        'cache' => variable_get('tpps_organism_ncbi_use_cache', TRUE),
-      ]))->get()->response();
-      if (!is_array($xml)) {
-        $xml = trim(str_replace("\r\n", "\n", $xml));
-        preg_match('/<Id>(\d+)<\/Id>/', $xml, $matches);
-        $id = $matches[1] ?? '';
-        $taxonomy_id = (empty($id) ? NULL : (int) $id);
-      }
-      else {
-
-        // array ( 'error' => 'API rate limit exceeded', 'api-key' => '', 'count' => '11', 'limit' => '10', )
-        if (!empty($xml['error'])) {
-          watchdog('tpps', 'NCBI error: @error_message',
-            ['@error_message' => $xml['error']], WATCHDOG_ERROR
-          );
-        }
-        else {
-          watchdog('tpps', 'NCBI response: <pre>@message</pre>',
-            ['@message' => var_export($xml, 1)], WATCHDOG_ERROR
-          );
-        }
-      }
-    }
-    catch (Exception $e) {
-      $message = $e->getMessage();
-      $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
-      watchdog('tpps', '@message <pre>@backtrace</pre>',
-        ['@message' => $message, '@backtrace' => print_r($stack, 1)],
-        WATCHDOG_ERROR
-      );
-      drupal_set_message($e->getCode() . ' ' . $message);
-    }
-
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Save relation.
     if (!empty($organism_id)) {
       static::save(
@@ -234,7 +196,6 @@ class NcbiTaxonomy extends OrganismTaxonomy {
         $taxonomy_id
       );
     }
-    static::getName($taxonomy_id);
     return $taxonomy_id;
   }
 
@@ -262,6 +223,78 @@ class NcbiTaxonomy extends OrganismTaxonomy {
     preg_match_all('/<(?:Synonym|DispName)>(.*?)<\/(?:Synonym|DispName)>/s', $xml, $matches);
     $synonym_list = $matches[1];
     return $synonym_list;
+  }
+
+  /**
+   * Gets organism info.
+   *
+   * @param string $organism_name
+   *   Organism name (canonical or synonym).
+   *
+   * @return array
+   *   Returns API response.
+   */
+  public static function getInfo($organism_name) {
+    $query = [
+      'db' => 'taxonomy',
+      'term' => check_plain($organism_name),
+      'api_key' => variable_get('tripal_eutils_ncbi_api_key'),
+    ];
+    try {
+      $xml = (new RestApi([
+        'url' => 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi',
+        'query' => $query,
+        'tag' => 'NCBI Taxonomy: ' . $organism_name,
+        'cache' => variable_get('tpps_organism_ncbi_use_cache', TRUE),
+      ]))->get()->response();
+      if (!is_array($xml)) {
+        $xml = trim(str_replace("\r\n", "\n", $xml));
+      }
+      else {
+
+        // array ( 'error' => 'API rate limit exceeded', 'api-key' => '', 'count' => '11', 'limit' => '10', )
+        if (!empty($xml['error'])) {
+          watchdog('tpps', 'NCBI error: @error_message',
+            ['@error_message' => $xml['error']], WATCHDOG_ERROR
+          );
+        }
+        else {
+          watchdog('tpps', 'NCBI response: <pre>@message</pre>',
+            ['@message' => var_export($xml, 1)], WATCHDOG_ERROR
+          );
+        }
+      }
+    }
+    catch (Exception $e) {
+      $message = $e->getMessage();
+      $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
+      watchdog('tpps', '@message <pre>@backtrace</pre>',
+        ['@message' => $message, '@backtrace' => print_r($stack, 1)],
+        WATCHDOG_ERROR
+      );
+      drupal_set_message($e->getCode() . ' ' . $message);
+    }
+    return $xml;
+  }
+
+  /**
+   * Prints pretty XML.
+   *
+   * How to use:
+   * dpm(NcbiTaxonomy::printXml($info));
+   *
+   * @param string $xml
+   *   XML-string without formatting and linebreaks.
+   *
+   * @return string
+   *   Human-readable XML.
+   */
+  public static function printXml($xml) {
+    $dom = new DOMDocument();
+    $dom->preserveWhiteSpace = FALSE;
+    $dom->formatOutput = TRUE;
+    $dom->loadXML($xml);
+    return $dom->saveXML();
   }
 
 }
