@@ -45,7 +45,7 @@ class OrganismSynonym {
    *   When Organism Id couldn't be found by name.
    *   When given $organism_key is nor number neither string.
    */
-  public static function getId($organism_key) {
+  public static function getOrganismId($organism_key) {
     if (is_int($organism_key)) {
       return (int) $organism_key;
     }
@@ -119,7 +119,7 @@ class OrganismSynonym {
 
     // Specific organism.
     if (!empty($organism_key)) {
-      $organism_id = static::getId($organism_key);
+      $organism_id = static::getOrganismId($organism_key);
       $query->condition('t.organism_id', $organism_id);
     }
     $query->orderBy('o.organism_id');
@@ -145,7 +145,7 @@ class OrganismSynonym {
    *   When given $organism_key is nor number neither string.
    */
   public static function load($organism_key) {
-    $organism_id = static::getId($organism_key);
+    $organism_id = static::getOrganismId($organism_key);
     $list = db_select(static::TABLE, 't')
       ->fields('t', ['organismprop_id', 'value'])
       ->condition('t.type_id', static::CVTERM_ID)
@@ -199,7 +199,7 @@ class OrganismSynonym {
     }
     $id = db_insert(static::TABLE)
       ->fields([
-        'organism_id' => static::getId($organism_key),
+        'organism_id' => static::getOrganismId($organism_key),
         'type_id' => static::CVTERM_ID,
         'value' => $synonym_name,
         'rank' => count($synonym_list),
@@ -245,7 +245,7 @@ class OrganismSynonym {
       return FALSE;
     }
     // Build main query to remove synonym.
-    $organism_id = static::getId($organism_key);
+    $organism_id = static::getOrganismId($organism_key);
     $query = db_delete(static::TABLE)
       ->condition('organism_id', $organism_id)
       ->condition('type_id', static::CVTERM_ID);
