@@ -68,14 +68,15 @@ function tpps_report_organism_split() {
   ) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $rows = $default_value;
-    $data = db_select(OrganismSynonym::TABLE, 't')
+    $query = db_select(OrganismSynonym::TABLE, 't')
       ->fields('t', ['organismprop_id', 'value'])
       ->condition('type_id', OrganismSynonym::CVTERM_ID)
-      ->orderBy('t.value')
-      //->range(0, 90)
-      //->condition('organismprop_id', $_GET['id'])
-      ->execute()
-      ->fetchAllKeyed();
+      ->orderBy('t.value');
+    if (!empty($_GET['id'])) {
+      $query->condition('organismprop_id', $_GET['id']);
+      $query->range(0, 1);
+    }
+    $data = $query->execute()->fetchAllKeyed();
 
     foreach ($data as $id => $synonym_name) {
       if (strpos($synonym_name, '?') === 0) {
@@ -91,12 +92,25 @@ function tpps_report_organism_split() {
       );
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    $cache->data[$key] = $rows;
+    if (!empty($_GET['id'])) {
+      // Update single row.
+      $cache->data[$key][$id] = $rows[$id];
+    }
+    else {
+      $cache->data[$key] = $rows;
+    }
     cache_set($cid, $cache->data, $cache_bin);
   }
-  $rows = $cache->data[$key] ?? $default_value;
-  if (!empty($id = $_GET['id'] ?? NULL) && !empty($value = $rows[$id] ?? NULL)) {
+
+  if (
+    !empty($id = $_GET['id'] ?? NULL)
+    && !empty($value = $rows[$id] ?? NULL)
+  ) {
+    // Single item.
     $rows = [$id => $value];
+  }
+  else {
+    $rows = $cache->data[$key] ?? $default_value;
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
