@@ -169,6 +169,19 @@ class Report {
    *       'above', 'top': at the top only.
    *       'none', FALSE, NULL: hidden.
    *
+   *   - 'filter' string
+   *      Defines where filter form will be shown. Possible values:
+   *       'both', 'full': at the top and bottom.
+   *       'below', 'bottom': at the bottom only.
+   *       'above', 'top': at the top only.
+   *       'none', FALSE, NULL: hidden.
+   *      Special chars which could be used in the filter's form field:
+   *       - '*': has NOT empty value.
+   *       - 'NULL': has empty value.
+   *       - '*value': ends with 'value'.
+   *       - 'value*': starts from 'value'.
+   *       - '*value*': contains 'value'.
+   *
    *   - 'items_per_page' int
    *     Opitonal. Default is 25.
    *     Number of rows show at single page when pager is used.
@@ -285,10 +298,18 @@ class Report {
         if (!empty($filter = static::getFilterFromUrl())) {
           $filtered_rows = [];
           foreach ($filter as $key => $value) {
-            // Escape special regex characters except '*'.
-            $escaped = preg_quote($value, '/');
-            // Replace escaped \* with .* (any chars).
-            $regex = str_replace('\*', '.*', $escaped);
+            if ($value == '*') {
+              $regex = '.+';
+            }
+            elseif ($value == 'NULL') {
+              $regex = '';
+            }
+            else {
+              // Escape special regex characters except '*'.
+              $escaped = preg_quote($value, '/');
+              // Replace escaped \* with .* (any chars).
+              $regex = str_replace('\*', '.*', $escaped);
+            }
             foreach ($report['rows'] as $id => $row) {
               if (preg_match('/^' . $regex . '$/', $row[$key]) !== 1) {
                 unset($report['rows'][$id]);
@@ -308,7 +329,13 @@ class Report {
         // Filter.
         if (!empty($filter = static::getFilterFromUrl())) {
           foreach ($filter as $key => $value) {
-            if (strpos($value, '*') !== FALSE) {
+            if ($value == '*') {
+              $query->isNotNull($key);
+            }
+            elseif ($value == 'NULL') {
+              $query->isNull($key);
+            }
+            elseif (strpos($value, '*') !== FALSE) {
               // Like.
               $value = str_replace('*', '%', db_like($value));
               $query->condition($key, $value, 'LIKE');
@@ -493,6 +520,10 @@ class Report {
    *
    * @return array
    *   Returns Drupal from array.
+   *
+   * @todo Minor. Add autocomplete for the fields.
+   * @todo Minor. Add frequency report to show how manu unique values
+   * each field has.
    */
   public static function buildFilterForm(array $form, array &$form_state, array $report) {
     $filter = static::getFilterFromUrl();
