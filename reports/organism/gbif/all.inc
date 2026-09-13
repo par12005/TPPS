@@ -47,7 +47,7 @@ function tpps_report_organism_gbif_all() {
     'name' => 'organism_gbif_all',
     'header' => $header,
     'query' => $query,
-    'pager' => 'none',
+    'pager' => 'both',
   ], $reset);
 
 }

@@ -12,6 +12,15 @@
  * Array and SQL-query (sorting):
  * - Report::print();
  * - Report::print2Level();
+ *
+ * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+ * To use filters implment hook_forms():
+ *
+ * function tpps_forms() {
+ *   $forms = [];
+ *   $forms = Report::registerFormCallback($forms);
+ *   return $forms;
+ * }
  */
 
 /**
@@ -30,6 +39,19 @@ class Report {
 
   const MISSING_FILES = 'missing';
   const FILE_ID_LIST = 'id_list';
+
+  // Name of the Drupal form element of the 'container' type.
+  // Used to separate from other form elements and speed-up processing.
+  // WARNING: 'filter' can't be used because breaks Drupal's form processing.
+  const FILTER_FORM_CONTAINER = 'report_filter';
+
+  // Form Id used for filtering.
+  const FILTER_FORM_ID = 'report_filter_form';
+
+  // List of URL parameter names which can't be used for filtering.
+  const RESERVED_PARAMS = [
+    'q', 'sort', 'order', 'reset', 'page', 'filter', 'pager'
+  ];
 
   /**
    * Clears report's cached data.
@@ -196,12 +218,20 @@ class Report {
     }
 
     // Defaults.
-    $report['ts'] = tablesort_init($report['header']);
-    $debug_mode = check_plain($_GET['debug_mode'] ?? $report['debug_mode'] ?? FALSE);
-    $pager = $report['pager'] = check_plain($_GET['pager'] ?? $report['pager'] ?? 'none');
-    $report['items_per_page'] = check_plain($_GET['items_per_page']
-      ?? $report['items_per_page']
-      ?? variable_get('tpps_report_items_per_page', 20));
+    $report['table_sort'] = tablesort_init($report['header']);
+    $debug_mode = check_plain(
+      $_GET['debug_mode'] ?? $report['debug_mode'] ?? FALSE
+    );
+    $pager = $report['pager'] = check_plain(
+      $_GET['pager'] ?? $report['pager'] ?? 'none'
+    );
+    $report['items_per_page'] = check_plain(
+      $_GET['items_per_page'] ?? $report['items_per_page']
+      ?? variable_get('tpps_report_items_per_page', 20)
+    );
+    $report['filter'] = check_plain(
+      $_GET['filter'] ?? $report['filter'] ?? 'none'
+    );
 
     $default_value = '';
     $cid = __FUNCTION__;
@@ -228,12 +258,14 @@ class Report {
         $formatter = check_plain($report['formatter'] ?? 'Report::formatter');
         $is_formatter = (!empty($formatter) && function_exists($formatter));
       }
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Data in array.
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Data.
       if (empty($report['query'])) {
+        // Data in an array.
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Sorting.
-        if (isset($report['ts']['sql'])) {
-          $sort_field = $report['ts']['sql'];
+        if (isset($report['table_sort']['sql'])) {
+          $sort_field = $report['table_sort']['sql'];
           uasort($report['rows'], function($a, $b) use ($sort_field) {
             $valA = is_array($a[$sort_field])
               ? implode(' ', $a[$sort_field])
@@ -244,24 +276,58 @@ class Report {
             return strnatcmp($valA, $valB);
           });
           // Reverse the array if the sort direction is 'desc'.
-          if (strtolower($report['ts']['sort']) == 'desc') {
+          if (strtolower($report['table_sort']['sort']) == 'desc') {
             $report['rows'] = array_reverse($report['rows'], TRUE);
           }
         }
-
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // Filter.
+        if (!empty($filter = static::getFilterFromUrl())) {
+          $filtered_rows = [];
+          foreach ($filter as $key => $value) {
+            // Escape special regex characters except '*'.
+            $escaped = preg_quote($value, '/');
+            // Replace escaped \* with .* (any chars).
+            $regex = str_replace('\*', '.*', $escaped);
+            foreach ($report['rows'] as $id => $row) {
+              if (preg_match('/^' . $regex . '$/', $row[$key]) !== 1) {
+                unset($report['rows'][$id]);
+              }
+            }
+          }
+        }
       }
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Data in SQL-query.
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       else {
+        // Data in SQL-query.
         $query = $report['query'];
         if (!empty($report['debug_mode'])) {
           $query->addTag('debug');
         }
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // Filter.
+        if (!empty($filter = static::getFilterFromUrl())) {
+          foreach ($filter as $key => $value) {
+            if (strpos($value, '*') !== FALSE) {
+              // Like.
+              $value = str_replace('*', '%', db_like($value));
+              $query->condition($key, $value, 'LIKE');
+            }
+            else {
+              // Equal.
+              $query->condition($key, $value);
+            }
+          }
+        }
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Pager and sorting.
         if ($report['pager'] == 'none' || $report['pager'] === FALSE) {
           // No pager at all.
-          if (isset($report['ts']['sql'])) {
-            $query->orderBy($report['ts']['sql'], $report['ts']['sort']);
+          if (isset($report['table_sort']['sql'])) {
+            $query->orderBy(
+              $report['table_sort']['sql'],
+              $report['table_sort']['sort']
+            );
           }
           $report['rows'] = $query->execute()->fetchAll();
         }
@@ -354,11 +420,177 @@ class Report {
       drupal_set_title($report['page_title']);
     }
     else {
-      $page_title = variable_get('tpps_report_' . ($report['name'] ?? '') . '_title');
+      $page_title_name = 'tpps_report_' . ($report['name'] ?? '') . '_title';
+      $page_title = variable_get($page_title_name);
       drupal_set_title($page_title);
     }
+
+    // Filter Form.
+    if (
+      !empty($report['filter'])
+      && $report['filter'] !== 'none'
+      && $report['filter'] !== FALSE
+    ) {
+      $filter_form = drupal_get_form(static::FILTER_FORM_ID, $report);
+      if (is_bool($report['filter'])) {
+        $report['filter'] = 'bottom';
+      }
+      switch ($report['filter']) {
+        case 'top':
+        case 'above':
+          $content = render($filter_form) . $content;
+          break;
+
+        case 'bottom':
+        case 'below':
+          $content .= render($filter_form);
+          break;
+      }
+    }
+
     return $content;
   }
+
+  /**
+   * Registers class methods as a form callback.
+   *
+   * See hook_forms().
+   *
+   * @param array $forms
+   *   Drupal form definitions.
+   *
+   * @return array
+   *   Returns updated array.
+   *   Note $forms are sent by reference and there is no need to return it.
+   */
+  public static function registerFormCallback(array &$forms = []) {
+    $form_id = static::FILTER_FORM_ID;
+    // Report Filter Form.
+    $forms[$form_id]['callback'] = 'Report::buildFilterForm';
+    // The base_form_id is required when the callback is not a function name.
+    $forms[$form_id]['base_form_id'] = $form_id;
+    return $forms;
+  }
+
+  /**
+   * Builds filter form.
+   *
+   * Form Id: 'report_filter_form'.
+   * Form will be shown only if $report['filter'] is not empty.
+   *
+   * @param array $form
+   *   Drupal form array.
+   * @param array $form_state
+   *   Drupal form state array.
+   * @param array $report
+   *   Possible keys are:
+   *   'name',
+   *   'header',
+   *   'query',
+   *   'pager',
+   *   'table_sort',
+   *   'items_per_page'.
+   *
+   * @return array
+   *   Returns Drupal from array.
+   */
+  public static function buildFilterForm(array $form, array &$form_state, array $report) {
+    $filter = static::getFilterFromUrl();
+    $is_required = FALSE;
+    $form[static::FILTER_FORM_CONTAINER] = [
+      '#type' => 'container',
+      '#tree' => TRUE,
+    ];
+    foreach ($report['header'] as $item) {
+      if (!is_array($item)) {
+        continue;
+      }
+      $is_required = TRUE;
+      $key = check_plain($item['field']);
+      $form[static::FILTER_FORM_CONTAINER][$key] = [
+        '#type' => 'textfield',
+        '#title' => $item['data'],
+        '#default_value' => $filter[$key] ?? '',
+      ];
+    }
+    $form['actions'] = [
+      '#type' => 'container',
+    ];
+    $form['actions']['submit'] = [
+      '#type' => 'submit',
+      '#name' => 'filter',
+      '#value' => t('Filter'),
+    ];
+    $form['actions']['reset'] = [
+      '#type' => 'submit',
+      '#name' => 'reset',
+      '#value' => t('Reset'),
+    ];
+    // @todo Add reset button.
+    $form['#submit'] = [
+      'Report::submitFilterForm',
+    ];
+    $form['#submit'][] = 'Report::submitFilterForm';
+    if ($is_required) {
+      return $form;
+    }
+  }
+
+  /**
+   * Gets filter from URL.
+   *
+   * @return array
+   *   Returns list of query parameters except used by Drupal or table sorting.
+   */
+  public static function getFilterFromUrl() {
+    $filter = [];
+    foreach ($_GET as $key => $value) {
+      if (in_array($key, static::RESERVED_PARAMS) || empty($value)) {
+        continue;
+      }
+      $key = str_replace('__', '.', urldecode($key));
+      // Replace '%' first because urldecode() treats it as unicode symbol.
+      // E.g., '%11' became a right arrow.
+      $filter[$key] = urldecode(str_replace('%', '*', $value));
+    }
+    return $filter;
+  }
+
+  /**
+   * Submitter for 'report_filter_form' fo form.
+   *
+   * @param array $form
+   *   Drupal form array.
+   * @param array $form_state
+   *   Drupal form state array.
+   */
+  public static function submitFilterForm(array $form, array &$form_state) {
+    $current_query = drupal_get_query_parameters();
+    $query = [];
+    switch ($form_state['triggering_element']['#name']) {
+      case 'filter':
+        $field_list = $form_state['values'][static::FILTER_FORM_CONTAINER];
+        foreach ($field_list as $key => $value) {
+          $key = str_replace('.', '__', $key);
+          $filter_query[$key] = $value;
+        }
+        $query = array_merge($current_query, $filter_query);
+        break;
+
+      default:
+      case 'reset':
+        foreach ($current_query as $key => $value) {
+          // @todo Minor. Just get those 2 items.
+          if (in_array($key, ['sort', 'order'])) {
+            $query[$key] = $value;
+          }
+        }
+        break;
+    }
+    drupal_goto(request_path(), ['query' => $query]);
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   /**
    * Menu callback. Shows list of TPPS Reports.

@@ -344,3 +344,7 @@ a.submission_accession_link {
   background-image: url('../images/tpps-throbber.svg');
   display: table-cell;
 }
+
+#report-filter-form {
+  margin: 20px 0 20px 0;
+}

@@ -135,6 +135,6 @@ function tpps_report_organism_split() {
     'name' => 'organism_split',
     'header' => $header,
     'rows' => $rows,
-    'pager' => 'none',
+    'pager' => 'both',
   ], $reset);
 }

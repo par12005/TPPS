@@ -3729,6 +3729,8 @@ function tpps_forms() {
   $forms['submission_tag_edit_form']['callback'] = 'FormEditSubmissionTag::build';
   $forms['submission_tag_remove_form']['callback'] = 'FormRemoveSubmissionTag::build';
   $forms['submission_remove_form']['callback'] = 'FormRemoveSubmission::build';
+
+  $forms = Report::registerFormCallback($forms);
   return $forms;
 }
 

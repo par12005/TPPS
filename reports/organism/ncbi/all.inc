@@ -48,5 +48,7 @@ function tpps_report_organism_ncbi_all() {
     'name' => 'organism_ncbi_all',
     'header' => $header,
     'query' => $query,
+    'pager' => 'both',
+    'filter' => 'below',
   ], $reset);
 }
