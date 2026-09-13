@@ -102,15 +102,13 @@ function tpps_report_organism_split() {
     cache_set($cid, $cache->data, $cache_bin);
   }
 
+  $rows = $cache->data[$key] ?? $default_value;
   if (
     !empty($id = $_GET['id'] ?? NULL)
     && !empty($value = $rows[$id] ?? NULL)
   ) {
     // Single item.
     $rows = [$id => $value];
-  }
-  else {
-    $rows = $cache->data[$key] ?? $default_value;
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
