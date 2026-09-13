@@ -30,6 +30,7 @@ files[] = src/organism/OrganismSynonym.class.inc
 files[] = src/organism/OrganismTaxonomy.class.inc
 files[] = src/organism/NcbiTaxonomy.class.inc
 files[] = src/organism/GbifSpeciesApi.class.inc
+files[] = src/organism/InfraspecificRank.class.inc
 
 ; Main
 files[] = src/ChadoDb.class.inc

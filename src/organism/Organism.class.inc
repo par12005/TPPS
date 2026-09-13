@@ -408,11 +408,11 @@ class Organism {
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Allow optional dot after rank
-    $pattern = '/\s
-      (
-        (?:subsp|subspecies|var|variety|f|forma|subvar|subf|proles|nothosubsp|nothovar|spp)
-        \.*
-      )\s/x';
+    $pattern = '/
+      \s(                                            # Required leading space.
+        (?:' . InfraspecificRank::getRegex() . ')    # Infraspecific Rank.
+      )\s                                            # Required trailing space.
+      /x';
     preg_match($pattern, $name, $matches);
     $infraspecific_rank = $matches[1] ?? NULL;
     if (!empty($infraspecific_rank)) {
@@ -884,24 +884,4 @@ class Organism {
     ];
   }
 
-}
-
-// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-// Useful functions (not methods).
-
-/**
- * FTest for organism class.
- */
-function ftest_organism() {
-  $organism = new Organism(2559);
-  //dpm($organism);
-  dpm($organism->name, 'name');
-  dpm($organism->id, 'id');
-  dpm($organism->genus, 'genus');
-
-  $id = 2544;
-  $o = tpps_organism($id);
-  dpm($o->id, 'id');
-  dpm($o->name, 'name');
-  dpm($o->requestNcbiTaxonomyId()->ncbiTaxonomyId, 'taxon id');
 }
