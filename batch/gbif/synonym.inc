@@ -31,7 +31,12 @@ function tpps_batch_gbif_synonym_form(array $form, array &$form_state) {
 
   $report_path = 'admin/reports/tpps/organism/synonym_list';
   $form['report'] = [
-    '#markup' => '<p>' . l(t("List of the Organism's Synonyms."), $report_path) . '</p>',
+    '#markup' => theme('item_list', [
+      'items' => [
+        l(t("View list of the existing Organism's Synonyms."), $report_path),
+        t('Note: New synonyms will be stored into "chado.organismprop" table.'),
+      ],
+    ]),
   ];
 
   // Button to start batch process.
