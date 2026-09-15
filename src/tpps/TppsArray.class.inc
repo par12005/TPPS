@@ -6,6 +6,16 @@
  *
  * 'Array' and 'List' are a reserved keyword and couldn't be used.
  *
+ * Methods to check results collected in the loop:
+ *   TppsArray::isAllEmpty($a);
+ *   TppsArray::isAllNotEmpty($a);
+ *   TppsArray::isAnyEmpty($a);
+ *   TppsArray::isAnyNotEmpty($a);
+ *
+ * WARNING:
+ * Any Empty != !(Any NOT Empty);
+ * !(Any Empty) != Any NOT Empty;
+ *
  * @todo Minor. Use namespace and rename class to 'Array' after migration
  * to D8+ because D7 doesn't support namespaced classes.
  */
@@ -822,6 +832,78 @@ class TppsArray {
    */
   public static function isExistsInsensitive(string $needle, array $haystack): bool {
     return !empty(static::searchInsensitive($needle, $haystack));
+  }
+
+  /**
+   * Checks if all values are empty (FALSE, NULL).
+   *
+   * Note:
+   *   All Empty === !(All NOT Empty);
+   *   !(All Empty) === All NOT Empty;
+   *
+   * @param array $array
+   *   Array to be tested.
+   *
+   * @return bool
+   *   Returns TRUE if $array is empty.
+   *   Returns TRUE if all values are empty and FALSE otherwise.
+   */
+  public static function isAllEmpty(array $array) {
+    return count(array_filter($array)) === 0;
+  }
+
+  /**
+   * Checks if all values are NOT empty (TRUE).
+   *
+   * Note:
+   *   All Empty === !(All NOT Empty);
+   *   !(All Empty) === All NOT Empty;
+   *
+   * @param array $array
+   *   Array to be tested.
+   *
+   * @return bool
+   *   Returns TRUE if $array is empty.
+   *   Returns TRUE if all values are NOT empty and FALSE otherwise.
+   */
+  public static function isAllNotEmpty(array $array) {
+    return count(array_filter($array)) == count($array);
+  }
+
+  /**
+   * Checks if any value is NOT empty (TRUE).
+   *
+   * WARNING:
+   *   Any Empty != !(Any NOT Empty);
+   *   !(Any Empty) != Any NOT Empty;
+   *
+   * @param array $array
+   *   Array to be tested.
+   *
+   * @return bool
+   *   Returns FALSE if $array is empty.
+   *   Returns TRUE if any value is NOT empty and FALSE otherwise.
+   */
+  public static function isAnyNotEmpty(array $array) {
+    return count(array_filter($array)) > 0;
+  }
+
+  /**
+   * Checks if any value is empty (FALSE, NULL).
+   *
+   * WARNING:
+   *   Any Empty != !(Any NOT Empty);
+   *   !(Any Empty) != Any NOT Empty;
+   *
+   * @param array $array
+   *   Array to be tested.
+   *
+   * @return bool
+   *   Returns FALSE if $array is empty.
+   *   Returns TRUE if any value is empty and FALSE otherwise.
+   */
+  public static function isAnyEmpty(array $array) {
+    return count(array_filter($array)) != count($array);
   }
 
 }
