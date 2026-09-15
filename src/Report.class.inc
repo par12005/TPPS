@@ -310,9 +310,26 @@ class Report {
               // Replace escaped \* with .* (any chars).
               $regex = str_replace('\*', '.*', $escaped);
             }
+
+            if ($debug_mode ?? FALSE) {
+              dpm(print_r($regex, 1));
+              //dpm(var_export(reset($report['rows']), 1));
+            }
+
             foreach ($report['rows'] as $id => $row) {
-              if (preg_match('/^' . $regex . '$/', $row[$key]) !== 1) {
-                unset($report['rows'][$id]);
+              $list = is_array($row[$key]) ? $row[$key] : [$row[$key]];
+
+              if ($debug_mode ?? FALSE) {
+                if ($key == 'synonym_list') {
+                  dpm(print_r($list, 1));
+                }
+              }
+
+              foreach ($list as $item) {
+                if (preg_match('/^' . $regex . '$/i', $item) !== 1) {
+                  unset($report['rows'][$id]);
+                  break;
+                }
               }
             }
           }
