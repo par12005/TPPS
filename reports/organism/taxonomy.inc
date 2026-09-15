@@ -43,10 +43,14 @@ function tpps_report_organism_taxonomy() {
     ['data' => t('Species'), 'field' => 'o.species'],
     ['data' => t('Infraspecific Name'), 'field' => 'o.infraspecific_name'],
     ['data' => t('Type Id'), 'field' => 'o.type_id'],
-    ['data' => t('NCBI'), 'field' => 'ncbi'],
-    ['data' => t('NCBI Name'), 'field' => 'ncbi_name'],
-    ['data' => t('GBIF'), 'field' => 'gbif'],
-    ['data' => t('GBIF Name'), 'field' => 'gbif_name'],
+    // Note:
+    // In PostgreSQL (and most SQL databases), column aliases defined in
+    // the SELECT list cannot be used in the WHERE clause — they can only
+    // be used in ORDER BY (and sometimes GROUP BY/HAVING depending on the DB).
+    ['data' => t('NCBI'), 'field' => 'nt.taxonomy_id'],
+    ['data' => t('NCBI Name'), 'field' => 'nt.name'],
+    ['data' => t('GBIF'), 'field' => 'gsa.taxonomy_id'],
+    ['data' => t('GBIF Name'), 'field' => 'gsa.name'],
   ];
 
   return Report::print([
