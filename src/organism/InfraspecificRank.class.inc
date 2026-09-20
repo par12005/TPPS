@@ -23,30 +23,25 @@ class InfraspecificRank {
   const CV_ID = 5;
 
   const LIST = [
-    'subspecies' => [
-      'cvterm_id' => 29,
-      'name' => 'subspecies',
-      'regex' => 'subsp.|ssp.',
-    ],
     'varietas' => [
       'cvterm_id' => 22,
       'name' => 'varietas',
       'regex' => 'variety|var.',
     ],
-    'subvariety' => [
-      'cvterm_id' => 57,
-      'name' => 'subvariety',
-      'regex' => 'subvarietas|subvar.',
+    'subspecies' => [
+      'cvterm_id' => 29,
+      'name' => 'subspecies',
+      'regex' => 'subsp.|ssp.',
     ],
     'forma' => [
       'cvterm_id' => 32,
       'name' => 'forma',
       'regex' => 'form|f.|fa.',
     ],
-    'subform' => [
-      'cvterm_id' => 65,
-      'name' => 'subform',
-      'regex' => 'subforma|subf.',
+    'subvariety' => [
+      'cvterm_id' => 57,
+      'name' => 'subvariety',
+      'regex' => 'subvarietas|subvar.',
     ],
     'subsubvariety' => [
       'cvterm_id' => 58,
@@ -58,6 +53,11 @@ class InfraspecificRank {
       'name' => 'subsubform',
       'regex' => 'sub-subform|subsubf.|ssubf.',
     ],
+    'subform' => [
+      'cvterm_id' => 65,
+      'name' => 'subform',
+      'regex' => 'subforma|subf.',
+    ],
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Ranks without CVTerm Id.
     'proles' => [
@@ -65,7 +65,7 @@ class InfraspecificRank {
       // proles: I don't know how much we will see this, from looking
       // online it looks like a very old term that roughly maps
       // onto "cultivar-group" or "race/subspecies".
-      'id' => NULL,
+      'cvterm_id' => NULL,
       'name' => 'proles',
       'regex' => '',
     ],
@@ -73,7 +73,7 @@ class InfraspecificRank {
       // Meghan Miles:
       // nothosubsp: I think we should handle this - these are hybrids
       // created by two different subspecies of the same species.
-      'id' => NULL,
+      'cvterm_id' => NULL,
       'name' => 'nothosubsp',
       'regex' => 'nothosubsp.',
     ],
@@ -82,39 +82,58 @@ class InfraspecificRank {
       // nothovar: a specific cultivar of a nothosubspecies (I think we
       // should handle this too, maybe - depends on difficult level,
       // although I see that this applies to a cultivar of willow).
-      'id' => NULL,
+      'cvterm_id' => NULL,
       'name' => 'nothovar',
       'regex' => 'nothovar.',
     ],
   ];
 
   /**
-   * Gets CV Term Id by name, synonym or abbriviation.
+   * Gets rank name by cvterm id.
+   *
+   * @param int $cvterm_id
+   *   Cvterm Id of the Infraspecific rank.
+   *
+   * @return mixed
+   *   Returns (string) rank name.
+   *   Returns NULL if rank name wasn't found.
+   */
+  public static function getName($cvterm_id) {
+    foreach (static::LIST as $item) {
+      if (!empty($item['cvterm_id']) && $item['cvterm_id'] == $cvterm_id) {
+        return $item['name'];
+      }
+    }
+    return NULL;
+  }
+
+  /**
+   * Gets CV Term Id by rank's name, synonym or abbriviation.
    *
    * Note:
    * outdated ranks doesn't have id. See getRegex().
    *
-   * @param string $name
+   * @param string $rank_name
    *   Infraspecific rank name or synonym or abbriviation.
    *   Leave empty to get list of all cvterm ids.
    *
    * @return mixed
-   *   If $name is not empty:
+   *   If $rank_name is not empty:
    *     Returns (integer) single CV Term Id or NULL if nothing was found.
-   *   If $name is empty:
+   *   If $rank_name is empty:
    *     Returns (array) list of all cv term ids of the defined ranks.
    */
-  public static function getCvtermId($name = NULL) {
-    if (!empty($name)) {
+  public static function getCvtermId($rank_name = NULL) {
+    if (!empty($rank_name)) {
       foreach (static::LIST as $item) {
         if (
-          !empty($item['id'])
+          !empty($item['cvterm_id'])
           && (
-            $item['name'] == $name
-            || strpos($item['regex'], $name) !== FALSE
+            $item['name'] == $rank_name
+            || strpos($item['regex'], $rank_name) !== FALSE
           )
         ) {
-          return $item['id'];
+          return $item['cvterm_id'];
         }
       }
       return NULL;
@@ -122,8 +141,8 @@ class InfraspecificRank {
     // Return list of the all ids.
     $list = [];
     foreach (static::LIST as $item) {
-      if (!empty($item['id'])) {
-        $list[$item['name']] = $item['id'];
+      if (!empty($item['cvterm_id'])) {
+        $list[$item['name']] = $item['cvterm_id'];
       }
     }
     return $list;

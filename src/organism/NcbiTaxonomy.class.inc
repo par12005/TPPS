@@ -110,41 +110,27 @@ class NcbiTaxonomy extends OrganismTaxonomy {
   }
 
   /**
-   * Gets NCBI organism name by taxonomy id.
+   * Gets organism primary name by taxonomy id from NCBI database.
    *
    * @param int $taxonomy_id
    *   NCBI Taxonomy Id.
    *
    * @return mixed
-   *   Returns NCBI Organism short name (string).
+   *   Returns (string) organism primary name.
    *   Returns FALSE when $taxonomy_id is empty.
+   *   Returns NULL if no data found by $taxonomy_id (taxon doesn't exist).
    *
    * @throws Exception
    *   When API-request failed.
    */
-  public static function getName($taxonomy_id) {
-    if (empty($taxonomy_id)) {
-      return FALSE;
-    }
+  public static function getPrimaryName($taxonomy_id) {
     $xml = static::requestTerm($taxonomy_id);
-
-    // Get short name.
-    preg_match('/<ScientificName>(.+)<\/ScientificName>/', $xml, $matches);
-    $name = $matches[1] ?? '';
-    // Get full name.
-    preg_match('/<DispName>(.+)<\/DispName>/', $xml, $matches);
-    $full_name = $matches[1] ?? '';
-
-    if (!empty($name) || !empty($full_name)) {
-      db_update(static::TABLE)
-        ->fields([
-          'name' => $name,
-          'full_name' => $full_name,
-        ])
-        ->condition('taxonomy_id', $taxonomy_id)
-        ->execute();
+    if (preg_match('/<Taxon>/', $xml)) {
+      // Exists. Not empty response.
+      preg_match('/<ScientificName>(.+)<\/ScientificName>/', $xml, $matches);
+      return $matches[1] ?? FALSE;
     }
-    return $name ?? NULL;
+    return NULL;
   }
 
   /**
@@ -161,42 +147,54 @@ class NcbiTaxonomy extends OrganismTaxonomy {
    *   When request to NCBI API fails.
    */
   public static function getId($organism_key) {
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Process organism key.
     $organism_key = check_plain($organism_key);
-    if (is_numeric($organism_key)) {
-      $organism_id = $organism_key;
-      if (empty($organism_name = tpps_organism($organism_id)->name)) {
+    try {
+      // Get taxonomy id from local DB.
+      $organism = new Organism($organism_key);
+      // Get previously saved taxonomy id from local DB.
+      if (!empty($taxonomy_id = static::load($organism->id))) {
+        return $taxonomy_id;
       }
     }
-    else {
-      $organism_name = $organism_key;
-      if (empty($organism_id = tpps_organism($organism_name)->id)) {
+    catch (Exception $e) {
+      // Get taxonomy id from remote DB.
+      if (is_numeric($organism_key)) {
+        // Organism id.
+        // Organism wasn't found in local DB.
+        // Taxonomy id can't be found because there is no organism name.
+        watchdog('tpps', $e->getMessage(), [], WATCHDOG_WARNING);
+        return NULL;
+      }
+      else {
+        // Organism name.
+        // Organism wasn't found in local DB but it's not a problem.
+        // Let's search it in NCBI database.
+        $xml = static::getInfo($organism_key);
+        if (preg_match('/<OutputMessage>No items found\.<\/OutputMessage>/', $xml)) {
+          return NULL;
+        }
+        else {
+          // Item was found.
+          preg_match('/<Id>(\d+)<\/Id>/', $xml, $matches);
+          $id = $matches[1] ?? '';
+          $taxonomy_id = (empty($id) ? NULL : (int) $id);
+          // Get organism primary name.
+          $organism_name = static::getPrimaryName($taxonomy_id);
+          if (!empty($organism_name)) {
+            $organism = new Organism();
+            $organism->setName($organism_name);
+            $organism->save();
+            // Save relation between taxonomy_id and organism name.
+            static::save(
+              $organism->id,
+              $taxonomy_id
+            );
+          }
+          return $taxonomy_id;
+        }
       }
     }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Get taxonomy id.
-    $taxonomy_id = NULL;
-    // Get from DB.
-    if (!empty($taxonomy_id = static::load($organism_id))) {
-      return $taxonomy_id;
-    }
-    // Request external API.
-    $xml = static::getInfo($organism_name);
-    preg_match('/<Id>(\d+)<\/Id>/', $xml, $matches);
-    $id = $matches[1] ?? '';
-    $taxonomy_id = (empty($id) ? NULL : (int) $id);
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Save relation.
-    if (!empty($organism_id)) {
-      static::save(
-        $organism_id,
-        $organism_name,
-        $taxonomy_id
-      );
-    }
-    return $taxonomy_id;
+    return NULL;
   }
 
   /**

@@ -9,42 +9,40 @@
  * Menu callback.
  */
 function tpps_report_organism_ncbi_missing() {
+  $report_name = 'organism_ncbi_missing';
+  $table = 'public.' . NcbiTaxonomy::TABLE;
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
-  $table = 'chado.organism';
-  $table_alias = str_replace('.', '', $table);
-
-  $table2 = 'public.' . NcbiTaxonomy::TABLE;
-  $table2_alias = str_replace('.', '', $table2);
-
-  $query = db_select($table, $table_alias);
+  $query = db_select('chado.organism', 't');
+  // Taxonomy Id.
+  $query->leftJoin($table, 't2', 't.organism_id = t2.organism_id');
+  // Infraspecific Rank.
   $query->leftJoin(
-    $table2,
-    $table2_alias,
-    $table_alias . '.organism_id = ' . $table2_alias . '.organism_id'
+    'chado.cvterm',
+    'cvt',
+    'cvt.cvterm_id = t.type_id AND cvt.cv_id = :cv_id',
+    [':cv_id' => InfraspecificRank::CV_ID]
   );
-  // Organism Id must be from $table (not $table2) to see empty values from
-  // $table2.
-  $query->fields($table_alias, ['organism_id', 'genus', 'species']);
-  $query->isNull($table2_alias . '.taxonomy_id');
+  $query->fields('t', [
+    'organism_id',
+    'genus',
+    'species',
+  ]);
+  // Infraspecific Rank.
+  $query->fields('cvt', ['name']);
+  $query->fields('t', ['infraspecific_name']);
+  $query->isNull('t2.taxonomy_id');
 
   $header = [
-    [
-      'data' => t('Organism Id'),
-      'field' => $table_alias . '.organism_id',
-    ],
-    [
-      'data' => t('Organism Genus'),
-      // WARNING: $table2 (not $table).
-      'field' => $table_alias . '.genus',
-    ],
-    [
-      'data' => t('Organism Species'),
-      // WARNING: $table2 (not $table).
-      'field' => $table_alias . '.species',
-    ],
+    ['data' => t('Organism Id'), 'field' => 't.organism_id'],
+    ['data' => t('Genus'), 'field' => 't.genus'],
+    ['data' => t('Species'), 'field' => 't.species'],
+    ['data' => t('Infraspecific Rank'), 'field' => 'cvt.name'],
+    ['data' => t('Infraspecific Name'), 'field' => 't.infraspecific_name'],
   ];
   return Report::print([
-    'name' => 'organism_ncbi_missing',
+    'name' => $report_name,
     'header' => $header,
     'query' => $query,
   ], $reset);

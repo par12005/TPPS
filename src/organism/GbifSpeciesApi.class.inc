@@ -98,6 +98,46 @@ class GbifSpeciesApi extends OrganismTaxonomy {
       if (empty($organism_id = tpps_organism($organism_name)->id)) {
       }
     }
+
+    $organism_key = check_plain($organism_key);
+    if (is_numeric($organism_key)) {
+      $organism_id = $organism_key;
+      try {
+        $organism_name = tpps_organism($organism_id)->name;
+      }
+      catch (Exception $e) {
+        // We got id but can't find organism name by id. Nothing to do.
+        $message = t("Can't get organism name by organism id '#@organism_id' "
+          . "because @reason",
+          [
+            '@organism_id' => $organism_id,
+            '@reason' => $e->getMessage(),
+          ]
+        );
+        throw new Exception($message);
+      }
+    }
+    else {
+      $organism_name = $organism_key;
+      try {
+        $organism_id = tpps_organism($organism_name)->id;
+      }
+      catch (Exception $e) {
+        // We got organism name but there is no organism with this name found.
+        $message = t("Can't get organism id by organism name '@organism_name' "
+          . "because @reason",
+          [
+            '@organism_name' => $organism_name,
+            '@reason' => $e->getMessage(),
+          ]
+        );
+        throw new Exception($message);
+      }
+    }
+    // At this point we have organism name and id.
+
+
+
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Get taxonomy id.
     $taxonomy_id = NULL;
@@ -118,9 +158,7 @@ class GbifSpeciesApi extends OrganismTaxonomy {
     if (!empty($organism_id)) {
       static::save(
         $organism_id,
-        $organism_name,
         $taxonomy_id,
-        $name ?? NULL,
         $full_name ?? NULL
       );
     }

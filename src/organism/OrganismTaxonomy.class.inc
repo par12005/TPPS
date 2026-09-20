@@ -45,22 +45,10 @@ abstract class OrganismTaxonomy {
           'size' => 'big',
           'not null' => FALSE,
         ],
-        'organism_name' => [
-          'description' => 'Organism Name.',
-          'type' => 'varchar',
-          'size' => 'normal',
-          'not null' => FALSE,
-        ],
         'taxonomy_id' => [
           'description' => 'Taxomony Id.',
           'type' => 'int',
           'size' => 'big',
-          'not null' => FALSE,
-        ],
-        'name' => [
-          'description' => 'Short organism name.',
-          'type' => 'varchar',
-          'size' => 'normal',
           'not null' => FALSE,
         ],
         'full_name' => [
@@ -105,15 +93,41 @@ abstract class OrganismTaxonomy {
   /**
    * Saves Taxonomy Id into db.
    *
+   * Existing record won't be updated. See ::update().
+   *
    * @param int $organism_id
    *   Organism Id.
-   * @param string $organism_name
-   *   Orgnaism name.
+   * @param int $taxonomy_id
+   *   Optional. Taxonomy Id.
+   *   Insert NULL when organism wasn't found to avoid the same API-requests.
+   * @param string $full_name
+   *   Full organism name.
+   *   E.g., 'Acacia angusta Maiden & Blakely, 1927'.
+   *
+   * @return bool
+   *   Returns TRUE if new record was inserted and FALSE otherwise.
+   */
+  public static function save($organism_id, $taxonomy_id = NULL, $full_name = NULL) {
+    if (empty($organism_id) || static::isExists($organism_id)) {
+      return FALSE;
+    }
+    $fields = [
+      'organism_id' => $organism_id,
+      'taxonomy_id' => $taxonomy_id,
+      'full_name' => $full_name,
+    ];
+    db_insert(static::TABLE)->fields($fields)->execute();
+    return TRUE;
+  }
+
+  /**
+   * Updates existing Taxonomy Id into db.
+   *
+   * @param int $organism_id
+   *   Organism Id.
    * @param int $taxonomy_id
    *   Optional. Taxonomy Id.
    *   Insert NULL when organism wasn't found to avoid the same requests.
-   * @param string $name
-   *   Short organism name. E.g., 'Acacia angusta'.
    * @param string $full_name
    *   Full organism name.
    *   E.g., 'Acacia angusta Maiden & Blakely, 1927'.
@@ -121,38 +135,17 @@ abstract class OrganismTaxonomy {
    * @return bool
    *   Returns TRUE if record was inserted/updated and FALSE otherwise.
    */
-  public static function save($organism_id, $organism_name, $taxonomy_id = NULL, $name = NULL, $full_name = NULL) {
-    $fields = [
-      'organism_id' => $organism_id,
-      'organism_name' => $organism_name,
-      'taxonomy_id' => $taxonomy_id,
-      'name' => $name,
-      'full_name' => $full_name,
-    ];
-    if (
-      !count($fields)
-      || (empty($fields['organism_id']) && empty($fields['organism_name']))
-    ) {
+  public static function update($organism_id, $taxonomy_id = NULL, $full_name = NULL) {
+    if (empty($organism_id) | !static::isExists($organism_id)) {
       return FALSE;
     }
-
-    if (static::isExists($organism_id)) {
-      // Update.
-      $query = db_update(static::TABLE);
-      if (!empty($organism_id)) {
-        unset($fields['organism_id']);
-        $query->condition('organism_id', $organism_id);
-      }
-      else {
-        unset($fields['organism_name']);
-        $query->condition('organism_name', $organism_name);
-      }
-      $query->fields($fields)->execute();
-    }
-    else {
-      // Insert.
-      db_insert(static::TABLE)->fields($fields)->execute();
-    }
+    db_update(static::TABLE)
+      ->condition('organism_id', $organism_id)
+      ->fields([
+        'taxonomy_id' => $taxonomy_id,
+        'full_name' => $full_name,
+      ])
+      ->execute();
     return TRUE;
   }
 
@@ -160,7 +153,7 @@ abstract class OrganismTaxonomy {
    * Loads Taxonomy Id from DB.
    *
    * @param mixed $organism_key
-   *   Organism id (int) or Organism name (string).
+   *   Organism id (int) or full organism name (string).
    *
    * @return int
    *   Returns Taxonomy Id.
@@ -174,12 +167,7 @@ abstract class OrganismTaxonomy {
       $query->condition('organism_id', $organism_key);
     }
     else {
-      $query->condition(
-        db_or()
-          ->condition('organism_name', $organism_key)
-          ->condition('name', $organism_key)
-          ->condition('full_name', $organism_key)
-      );
+      $query->condition('full_name', $organism_key);
     }
     return $query->execute()->fetchField();
   }

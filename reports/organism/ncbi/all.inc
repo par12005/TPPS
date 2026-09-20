@@ -9,46 +9,45 @@
  * Menu callback. Shows list of the all organisms and their NCBI Taxonomy Ids.
  */
 function tpps_report_organism_ncbi_all() {
+  $report_name = 'organism_ncbi_all';
+  $table = 'public.' . NcbiTaxonomy::TABLE;
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
-
-  $table = 'chado.organism';
-  $table_alias = str_replace('.', '', $table);
-  $query = db_select($table, $table_alias);
-
-  $table2 = 'public.' . NcbiTaxonomy::TABLE;
-  $table2_alias = str_replace('.', '', $table2);
+  $query = db_select('chado.organism', 't');
+  // Taxonomy Id.
+  $query->leftJoin($table, 't2', 't.organism_id = t2.organism_id');
+  // Infraspecific Rank.
   $query->leftJoin(
-    $table2,
-    $table2_alias,
-    $table_alias . '.organism_id = ' . $table2_alias . '.organism_id'
+    'chado.cvterm',
+    'cvt',
+    'cvt.cvterm_id = t.type_id AND cvt.cv_id = :cv_id',
+    [':cv_id' => InfraspecificRank::CV_ID]
   );
-  // Organism Id must be from $table (not $table2) to see empty values from
-  // $table2.
-  $query->fields($table_alias, ['organism_id']);
-  $query->fields($table2_alias, ['organism_name', 'taxonomy_id']);
+
+  $query->fields('t', [
+    'organism_id',
+    'genus',
+    'species',
+  ]);
+  // Infraspecific Rank.
+  $query->fields('cvt', ['name']);
+  $query->fields('t', ['infraspecific_name']);
+  $query->fields('t2', ['taxonomy_id']);
 
   $header = [
-    [
-      'data' => t('Organism Id'),
-      'field' => $table_alias . '.organism_id',
-    ],
-    [
-      'data' => t('Organism Name'),
-      // WARNING: $table2 (not $table).
-      'field' => $table2_alias . '.organism_name',
-    ],
-    [
-      'data' => t('Taxonomy Id'),
-      // WARNING: $table2 (not $table).
-      'field' => $table2_alias . '.taxonomy_id',
-    ],
+    ['data' => t('Organism Id'), 'field' => 't.organism_id'],
+    ['data' => t('Genus'), 'field' => 't.genus'],
+    ['data' => t('Species'), 'field' => 't.species'],
+    ['data' => t('Infraspecific Rank'), 'field' => 'cvt.name'],
+    ['data' => t('Infraspecific Name'), 'field' => 't.infraspecific_name'],
+    ['data' => t('Taxonomy Id'), 'field' => 't2.taxonomy_id'],
   ];
 
   return Report::print([
-    'name' => 'organism_ncbi_all',
+    'name' => $report_name,
     'header' => $header,
     'query' => $query,
     'pager' => 'both',
-    'filter' => 'below',
   ], $reset);
 }
