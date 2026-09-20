@@ -14,6 +14,13 @@
  * - Report::print2Level();
  *
  * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+ * Headers
+ * - Do not use custom aliases.
+ *   In PostgreSQL (and most SQL databases), column aliases defined in
+ *   the SELECT list cannot be used in the WHERE clause — they can only
+ *   be used in ORDER BY (and sometimes GROUP BY/HAVING depending on the DB).
+ *
+ * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * To use filters implment hook_forms():
  *
  * function tpps_forms() {
@@ -21,6 +28,11 @@
  *   $forms = Report::registerFormCallback($forms);
  *   return $forms;
  * }
+ *
+ * @todo Separate:
+ * 1. Settings page.
+ * 2. Menu items using Drupal-hooks.
+ * 3. Menu titles.
  */
 
 /**
@@ -48,9 +60,9 @@ class Report {
   // Form Id used for filtering.
   const FILTER_FORM_ID = 'report_filter_form';
 
-  // List of URL parameter names which can't be used for filtering.
+  // List of the URL parameter names which can't be used for filtering.
   const RESERVED_PARAMS = [
-    'q', 'sort', 'order', 'reset', 'page', 'filter', 'pager'
+    'q', 'sort', 'order', 'reset', 'page', 'filter', 'pager',
   ];
 
   /**
@@ -310,26 +322,15 @@ class Report {
               // Replace escaped \* with .* (any chars).
               $regex = str_replace('\*', '.*', $escaped);
             }
-
-            if ($debug_mode ?? FALSE) {
-              dpm(print_r($regex, 1));
-              //dpm(var_export(reset($report['rows']), 1));
-            }
-
             foreach ($report['rows'] as $id => $row) {
+              // Process correctly array values.
               $list = is_array($row[$key]) ? $row[$key] : [$row[$key]];
-
-              if ($debug_mode ?? FALSE) {
-                if ($key == 'synonym_list') {
-                  dpm(print_r($list, 1));
-                }
-              }
-
+              $loop_result = [];
               foreach ($list as $item) {
-                if (preg_match('/^' . $regex . '$/i', $item) !== 1) {
-                  unset($report['rows'][$id]);
-                  break;
-                }
+                $loop_result[] = preg_match('/^' . $regex . '$/i', $item);
+              }
+              if (!TppsArray::isAnyNotEmpty($loop_result)) {
+                unset($report['rows'][$id]);
               }
             }
           }
@@ -734,6 +735,10 @@ class Report {
    *   Current element name.
    * @param array $item
    *   Item. Could be a single item metadata or list of subelements.
+   *
+   * @todo Use hook_menu_alter() to add menu items form 'report' module.
+   * @todo Implement new hook: 'add_report' to allow other modules to  provide
+   * report's metadata (path, name, permissions, callback).
    */
   public static function addSubMenuItem(array &$items, array $parents, $name, array $item) {
     if (empty($item['title'])) {
