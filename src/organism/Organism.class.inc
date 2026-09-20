@@ -155,7 +155,6 @@ class Organism {
         // @todo Minor. Validate organism name.
         $this->setName($organism_key);
         $this->generateAbbreviation();
-
       }
       $this->load();
     }

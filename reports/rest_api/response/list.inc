@@ -21,6 +21,9 @@ function tpps_report_rest_api_response_list() {
     ]);
   $query->join(RestApiRequest::TABLE, 't2', 't2.request_id = t.request_id');
   $query->addField('t2', 'tag');
+  if ($debug_mode ?? FALSE) {
+    $query->addTag('debug');
+  }
 
   $header = [
     ['data' => t('Response Id'), 'field' => 't.response_id', 'sort' => 'desc'],
@@ -29,7 +32,7 @@ function tpps_report_rest_api_response_list() {
     ['data' => t('HTTP Code'), 'field' => 't.code'],
     ['data' => t('Duration, msec'), 'field' => 't.duration'],
     ['data' => t('Body'), 'field' => 't.body'],
-    ['data' => t('Tag'), 'field' => 't.tag'],
+    ['data' => t('Tag'), 'field' => 't2.tag'],
   ];
   return Report::print([
     'name' => 'rest_api_response_list',

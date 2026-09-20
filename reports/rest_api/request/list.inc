@@ -26,13 +26,17 @@ function tpps_report_rest_api_request_list() {
   $query->addExpression("string_agg(CAST(res.response_id AS VARCHAR), ',')", 'response_list');
   $query->leftJoin(RestApiResponse::TABLE, 'res', 'res.request_id = t.request_id');
 
+  if ($debug_mode ?? FALSE) {
+    $query->addTag('debug');
+  }
+
   // Group by ALL columns from the request table that you're selecting.
   foreach ($field_list as $field_name) {
     $query->groupBy('t.' . $field_name);
   }
 
   $header = [
-    ['data' => t('Request Id'), 'field' => 't.request_id'],
+    ['data' => t('Request Id'), 'field' => 't.request_id', 'sort' => 'desc'],
     ['data' => t('Created'), 'field' => 't.created'],
     ['data' => t('Method'), 'field' => 't.method'],
     ['data' => t('URL'), 'field' => 't.url'],
