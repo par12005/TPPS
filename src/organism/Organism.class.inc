@@ -126,10 +126,23 @@ class Organism {
   protected $infraspecificName;
 
   /**
+   * Organism name abbreviation.
+   *
+   * See method generateAbbreviation().
+   * Stored in 'chado.organism.abbreviation'.
+   *
+   * @var string
+   */
+  protected $abbreviation;
+
+  /**
    * Class constructor.
    *
    * @param mixed $organism_key
    *   Organism Name or Organism Id.
+   *
+   * @throws Exception
+   *   If $organism_key contains name (not id) which can't be parsed.
    */
   public function __construct($organism_key = NULL) {
     $this->parsedName = Organism::getEmptyParsedName();
@@ -141,6 +154,8 @@ class Organism {
         // Key is a full organism name.
         // @todo Minor. Validate organism name.
         $this->setName($organism_key);
+        $this->generateAbbreviation();
+
       }
       $this->load();
     }
@@ -209,18 +224,21 @@ class Organism {
   /**
    * Custom setter for $name property.
    *
-   * @param string $value
+   * @param string $name
    *   Organism name.
    *
    * @return object
-   *   Returns $this to allow method chaining.
+   *   Returns $this to allow method's chaining.
+   *
+   * @throws Exception
+   *   If $name is empty.
    */
-  public function setName($value) {
-    if (empty($value)) {
+  public function setName($name) {
+    if (empty($name)) {
       throw new Exception('Empty organism name.');
     }
-    $this->name = $value;
-    $this->parsedName = Organism::parseName($value);
+    $this->name = trim(preg_replace('/\s+/', ' ', $name));
+    $this->parsedName = Organism::parseName($this->name);
     $this->genus = $this->parsedName['genus'] ?? NULL;
     if (empty($this->genus)) {
       throw new Exception('Invalid organism name.');
@@ -259,36 +277,45 @@ class Organism {
       // Do not load multiple times. See $this->reload().
       return;
     }
+    if (empty($this->id) && empty($this->genus) && empty($this->species)) {
+      $message = t("Can't load organism because there are no organism id and name.");
+      watchdog('tpps', $message, [], WATCHDOG_ERROR);
+      return;
+    }
+
     $query = db_select('chado.organism', 'co')
       ->fields('co')
       ->range(0, 1);
-    if (empty($this->id)) {
-      // Load by name.
-      if (!empty($this->name)) {
-        if (!empty($this->genus)) {
-          $query->condition('genus', $this->genus);
-        }
-        if (!empty($this->species)) {
-          $query->condition('species', $this->species);
-        }
-        if (!empty($this->infraspecificName)) {
-          // @TODO Major. Some names has only genus + authority.
-          // @TODO infraspecificRank must be not part of the name but
-          // stored in 'type_id' field and cvterm_id must be used.
-          $infraspecific_name = (empty($this->infraspecificRank)
-            ? '' : $this->infraspecificRank . ' ') . $this->infraspecificName;
-          $query->condition('infraspecific_name', $infraspecific_name);
-        }
-      }
-      else {
-        $message = t("Can't load organism because there are no organism id and name.");
-        watchdog('tpps', $message, [], WATCHDOG_ERROR);
-        return;
-      }
+
+    if (!empty($this->id)) {
+      // Id.
+      $query->condition('organism_id', $this->id);
     }
     else {
-      // Load by id.
-      $query->condition('organism_id', $this->id);
+      // Name.
+      $query->condition('genus', $this->genus)
+        ->condition('species', $this->species);
+      // @TODO Major. Some names has only genus + authority.
+      if (!empty($this->infraspecificName)) {
+        if (!empty($this->infraspecificRank)) {
+          $rank_cvterm_id = InfraspecificRank::getCvtermId($this->infraspecificRank);
+          // InfraspecificRank could be not part of the $infraspecificName but
+          // stored in 'type_id' field and cvterm_id must be used.
+          $query->condition(
+            db_or()
+              ->condition('type_id', $rank_cvterm_id)
+              ->isNull('type_id')
+          );
+        }
+        $query->condition(
+          db_or()
+            ->condition('infraspecific_name', $this->infraspecificName)
+            ->condition('infraspecific_name', implode(' ', array_filter([
+              $this->infraspecificRank,
+              $this->infraspecificName,
+            ])))
+        );
+      }
     }
 
     $organism = $query->execute()->fetchAssoc();
@@ -302,11 +329,17 @@ class Organism {
       $this->genus = $organism['genus'] ?? NULL;
       $this->species = $organism['species'] ?? NULL;
       $this->infraspecificName = $organism['infraspecific_name'] ?? NULL;
+      $this->abbreviation = $organism['abbreviation'];
+      $this->generateAbbreviation();
     }
-    // There is also columns:
-    // abbreviation,
+
+    // Infraspecific Rank.
+    if (!empty($this->infraspecificName) && !empty($organism['type_id'])) {
+      $this->infraspecificRank = InfraspecificRank::getName($organism['type_id']);
+    }
+
+    // @todo Minor. There is also columns:
     // common_name,
-    // type_id,
     // comment.
     $this->generateName();
     return $this;
@@ -326,35 +359,74 @@ class Organism {
   }
 
   /**
+   * Generates organism name abbreviation.
+   *
+   * @return object
+   *   Returns $this to allow method's chaining.
+   */
+  public function generateAbbreviation() {
+    if (
+      empty($this->abbreviation)
+      && !empty($this->species)
+      && !empty($this->genus)
+    ) {
+      $this->abbreviation = trim(implode(' ', [
+        substr($this->genus, 0, 1) . ".",
+        $this->species,
+        $this->infraspecificRank,
+        $this->infraspecificName,
+      ]));
+    }
+    return $this;
+  }
+
+  /**
    * Builds full organism name using name parts from DB table.
    */
   public function generateName() {
-    // @todo Minor. Use $this->parsedName if not empty.
-    $name_parts = [
-      $this->genus,
-      $this->species,
-      $this->infraspecificRank,
-      $this->infraspecificName,
-    ];
-    $name = trim(implode(' ', $name_parts));
-    // Replace multiple spaces with a single space.
-    $name = preg_replace('/\s+/', ' ', $name);
+    if (!empty($this->genus) && !empty($this->species)) {
+      // @todo Minor. Use $this->parsedName if not empty.
+      $name_parts = [
+        $this->genus,
+        $this->species,
+      ];
+      if (!empty($this->infraspecificName)) {
+        if (!empty($this->infraspecificRank)) {
+          $name_parts[] = $this->infraspecificRank;
+        }
+        $name_parts[] = $this->infraspecificName;
+      }
+      $name_parts = array_filter($name_parts);
+      $name = trim(implode(' ', $name_parts));
 
-    // Check if $this->name and new name differs.
-    if (!empty($this->name) && $this->name != $name) {
-      watchdog('tpps', 'Existing organism name and generated name differs:'
-        . '<br />Existing name: "@existing_name" (@existing_name_len).'
-        . '<br />Generated name: "@existing_name" (@new_name_len).',
-        [
-          '@existing_name' => json_encode($this->name),
-          '@new_name' => json_encode($name),
-          '@existing_name_len' => strlen($this->name),
-          '@new_name_len' => strlen($name),
-        ],
-        WATCHDOG_WARNING
-      );
+      // Check if $this->name and new name differs.
+      if (empty($this->id)) {
+        $this->name = $name;
+      }
+      else {
+        if (empty($this->name)) {
+          $this->name = $name;
+        }
+        else {
+          // $id and $name are not empty.
+          if ($this->name != $name) {
+            // If $name is different it should be another organism with
+            // different $id.
+            watchdog('tpps', 'Existing organism name and generated name differs:'
+              . '<br />Existing name: "@existing_name" (@existing_name_len).'
+              . '<br />Generated name: "@existing_name" (@new_name_len).',
+              [
+                '@existing_name' => json_encode($this->name),
+                '@new_name' => json_encode($name),
+                '@existing_name_len' => strlen($this->name),
+                '@new_name_len' => strlen($name),
+              ],
+              WATCHDOG_ERROR
+            );
+          }
+        }
+      }
     }
-    $this->setName($name);
     return $this;
   }
 
@@ -562,30 +634,43 @@ class Organism {
 
   /**
    * Saves organism to db.
+   *
+   * If record exists it will be updated.
+   * If organism_id doesn't exist new record will be created.
+   *
+   * @throws Exception
+   *   If species or genus is empty.
    */
   public function save() {
+    if (empty($this->species) || empty($this->genus)) {
+      throw new Exception("Organism with empty genus or species can't be saved.");
+    }
+    // Get cvterm id for infraspecific rank.
+    if (!empty($this->infraspecificRank)) {
+      $rank_cvterm_id = InfraspecificRank::getCvtermId($this->infraspecificRank);
+    }
+    $this->generateAbbreviation();
     $fields = [
       'organism_id' => $this->id ?? NULL,
-      'abbreviation' => '',
-      'genus' => $this->genus ?? '',
-      'species' => $this->species ?? '',
-      'common_name' => '',
-      'infraspecific_name' => $this->infraspecificName ?? '',
-      'type_id' => '',
-      'comment' => '',
+      'abbreviation' => $this->abbreviation,
+      'genus' => $this->genus,
+      'species' => $this->species,
+      'common_name' => NULL,
+      'infraspecific_name' => $this->infraspecificName,
+      'type_id' => $rank_cvterm_id ?? NULL,
+      'comment' => NULL,
     ];
     if ($this->isRecordExists()) {
       // Update.
-      unset($fields['organism_id']);
       db_update(self::TABLE_ORGANISM)
         ->fields($fields)
         ->condition('organism_id', $this->id)
         ->execute();
-
     }
     else {
       // Insert.
-      db_insert(self::TABLE_ORGANISM)->fields($fields)->execute();
+      unset($fields['organism_id']);
+      $this->id = db_insert(self::TABLE_ORGANISM)->fields($fields)->execute();
     }
   }
 
