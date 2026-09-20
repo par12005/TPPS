@@ -478,6 +478,8 @@ class RestApiResponse {
   /**
    * Restores XML from JSON decoded string.
    *
+   * See NcbiTaxonomy::printXml().
+   *
    * XML response is stored as json string in db table's field
    * 'public.rest_api_response.body'.
    * To use it as XML it must be 'restored' first.

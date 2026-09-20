@@ -95,11 +95,13 @@ function theme_response_body(array $variables) {
   }
 
   $content_type = $variables['content_type'] ?? '';
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  if (strpos($content_type, 'application/xml') !== FALSE) {
+  if (
+    strpos($content_type, 'application/xml') !== FALSE
+    || strpos($content_type, 'text/xml') !== FALSE
+  ) {
     // XML.
-    $body = RestApiResponse::restoreXml($variables['body']);
+    $body = NcbiTaxonomy::printXml($variables['body']);
     $output .= '<pre style="border: 2px solid silver; padding: 20px">'
      . htmlspecialchars(trim($body)) . '</pre>';
     return $output;
@@ -154,7 +156,8 @@ function theme_request_report_link(array $variables) {
   if (empty($request_id = check_plain(trim($variables['request_id'])))) {
     return '';
   }
-  $url = 'admin/reports/rest_api/request/single/' . $request_id;
+  // @TODO Move reports from TGDR module to this module.
+  $url = 'admin/reports/tpps/rest_api/request/single/' . $request_id;
   $title = $variables['title'] ?? $request_id;
   return l($title, $url);
 }
@@ -174,7 +177,8 @@ function theme_response_report_link(array $variables) {
   if (empty($response_id = check_plain(trim($variables['response_id'])))) {
     return '';
   }
-  $url = 'admin/reports/rest_api/response/body/' . $response_id;
+  // @TODO Move reports from TGDR module to this module.
+  $url = 'admin/reports/tpps/rest_api/response/body/' . $response_id;
   $title = $variables['title'] ?? $response_id;
   return l($title, $url);
 }
