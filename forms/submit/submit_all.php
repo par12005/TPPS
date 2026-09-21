@@ -1718,7 +1718,7 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
         $fields = [
           'is_environmental_phenotype' => (empty($phenotypes_meta[$name]['env']) ? 0 : 1),
         ];
-        db_update('chado.phenotype_synonyms', 'ps')
+        db_update('chado.phenotype_synonyms')
           ->fields($fields)
           ->condition('phenotype_synonyms_id', $phenotypes_meta[$name]['synonym_id'])
           ->execute();
