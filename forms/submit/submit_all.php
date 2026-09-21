@@ -2176,23 +2176,28 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
     print_r($options['tree_info']);
     $options['shared_state'] = $shared_state;
     // Do not process the SNP assay spreadsheet file if there is an assay design file since we'll convert to VCF and process the vcf
-    if (!empty($genotype['files']['assay-design'])) {
-      // We will generate the vcf
-      tpps_log('Bypassing processing SNP genotype_spreadsheet file data...', [], TRIPAL_INFO);
-    }
-    else {
-      tpps_log('Continue processing SNP genotype_spreadsheet file data...', [], TRIPAL_INFO);
-      // 'SNPs Assay' file.
-      tpps_file_iterator($snp_fid, 'FileField::processSpreadSheet', $options);
-    }
-    tpps_log('Done.', [], TRIPAL_INFO);
-    // throw new Exception("DEBUG QUIT");
+    
+    // 9/3/2026 - DEPRECATED: Without an assay design file, do not process the SNP assay (according to Meghan 2026)
+    // Since the assay design file and snp assay needs to convert into VCF for proper ingestion
+    // The UI requires the SNP assay file if a design file is specified
+    
+    // if (!empty($genotype['files']['assay-design'])) {
+    //   // We will generate the vcf
+    //   tpps_log('Bypassing processing SNP genotype_spreadsheet file data...', [], TRIPAL_INFO);
+    // }
+    // else {
+    //   tpps_log('Continue processing SNP genotype_spreadsheet file data...', [], TRIPAL_INFO);
+    //   // 'SNPs Assay' file.
+    //   tpps_file_iterator($snp_fid, 'FileField::processSpreadSheet', $options);
+    // }
+    // tpps_log('Done.', [], TRIPAL_INFO);
+    // // throw new Exception("DEBUG QUIT");
 
-    tpps_log('Inserting SNP genotype_spreadsheet data into database using insert_multi...', [], TRIPAL_INFO);
-    tpps_chado_insert_multi($options['records'], $multi_insert_options);
-    tpps_log('Inserting SNP genotype_spreadsheet data into database using insert_hybrid...', [], TRIPAL_INFO);
-    tpps_chado_insert_hybrid($options['records2'], $multi_insert_options);
-    tpps_log('Done.', [], TRIPAL_INFO);
+    // tpps_log('Inserting SNP genotype_spreadsheet data into database using insert_multi...', [], TRIPAL_INFO);
+    // tpps_chado_insert_multi($options['records'], $multi_insert_options);
+    // tpps_log('Inserting SNP genotype_spreadsheet data into database using insert_hybrid...', [], TRIPAL_INFO);
+    // tpps_chado_insert_hybrid($options['records2'], $multi_insert_options);
+    // tpps_log('Done.', [], TRIPAL_INFO);
 
     // RECREATE INDEXES FROM GENOTYPE_CALL TABLE.
     // tpps_create_genotype_call_indexes();
