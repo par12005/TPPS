@@ -85,84 +85,53 @@ class GbifSpeciesApi extends OrganismTaxonomy {
    *   Returns Taxonomy Id or NULL.
    */
   public static function getId($organism_key) {
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Process organism key.
     $organism_key = check_plain($organism_key);
-    if (is_numeric($organism_key)) {
-      $organism_id = $organism_key;
-      if (empty($organism_name = tpps_organism($organism_id)->name)) {
+    try {
+      // Get taxonomy id from local DB.
+      $organism = new Organism($organism_key);
+      // Get previously saved taxonomy id from local DB.
+      if (!empty($taxonomy_id = static::load($organism->id))) {
+        return $taxonomy_id;
       }
     }
-    else {
-      $organism_name = $organism_key;
-      if (empty($organism_id = tpps_organism($organism_name)->id)) {
+    catch (Exception $e) {
+      // Get taxonomy id from remote DB.
+      if (is_numeric($organism_key)) {
+        // Organism id.
+        // Organism wasn't found in local DB.
+        // Taxonomy id can't be found because there is no organism name.
+        watchdog('tpps', $e->getMessage(), [], WATCHDOG_WARNING);
+        return NULL;
       }
-    }
+      else {
+        // Organism name.
+        // Organism wasn't found in local DB but it's not a problem.
+        // Let's search it in NCBI database.
+        $response = static::getInfo($organism_name);
+        if (($response['diagnostics']['matchType'] ?? NULL) == 'NONE') {
+          return NULL;
+        }
+        else {
+          // Item was found.
+          $taxonomy_id = $response['usage']['key'] ?? NULL;
+          $organism_name = $response['usage']['canonicalName'] ?? NULL;
 
-    $organism_key = check_plain($organism_key);
-    if (is_numeric($organism_key)) {
-      $organism_id = $organism_key;
-      try {
-        $organism_name = tpps_organism($organism_id)->name;
-      }
-      catch (Exception $e) {
-        // We got id but can't find organism name by id. Nothing to do.
-        $message = t("Can't get organism name by organism id '#@organism_id' "
-          . "because @reason",
-          [
-            '@organism_id' => $organism_id,
-            '@reason' => $e->getMessage(),
-          ]
-        );
-        throw new Exception($message);
+          // Get organism primary name.
+          if (!empty($organism_name)) {
+            $organism = new Organism();
+            $organism->setName($organism_name);
+            $organism->save();
+            // Save relation between taxonomy_id and organism name.
+            static::save(
+              $organism->id,
+              $taxonomy_id
+            );
+          }
+          return $taxonomy_id;
+        }
       }
     }
-    else {
-      $organism_name = $organism_key;
-      try {
-        $organism_id = tpps_organism($organism_name)->id;
-      }
-      catch (Exception $e) {
-        // We got organism name but there is no organism with this name found.
-        $message = t("Can't get organism id by organism name '@organism_name' "
-          . "because @reason",
-          [
-            '@organism_name' => $organism_name,
-            '@reason' => $e->getMessage(),
-          ]
-        );
-        throw new Exception($message);
-      }
-    }
-    // At this point we have organism name and id.
-
-
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Get taxonomy id.
-    $taxonomy_id = NULL;
-    // Get from DB.
-    if (!empty($taxonomy_id = static::load($organism_id))) {
-      return $taxonomy_id;
-    }
-
-    // Request external API.
-    if (!empty($organism_name)) {
-      $response = static::getInfo($organism_name);
-      $taxonomy_id = $response['usage']['key'] ?? NULL;
-      $full_name = $response['usage']['name'] ?? NULL;
-      $name = $response['usage']['canonicalName'] ?? NULL;
-    }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Save relation.
-    if (!empty($organism_id)) {
-      static::save(
-        $organism_id,
-        $taxonomy_id,
-        $full_name ?? NULL
-      );
-    }
-    return $taxonomy_id;
+    return NULL;
   }
 
   /**

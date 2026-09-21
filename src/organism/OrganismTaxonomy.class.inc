@@ -51,12 +51,6 @@ abstract class OrganismTaxonomy {
           'size' => 'big',
           'not null' => FALSE,
         ],
-        'full_name' => [
-          'description' => 'Full organism name.',
-          'type' => 'varchar',
-          'size' => 'normal',
-          'not null' => FALSE,
-        ],
       ],
       'foreign keys' => [
         'organism_id' => [
@@ -100,21 +94,17 @@ abstract class OrganismTaxonomy {
    * @param int $taxonomy_id
    *   Optional. Taxonomy Id.
    *   Insert NULL when organism wasn't found to avoid the same API-requests.
-   * @param string $full_name
-   *   Full organism name.
-   *   E.g., 'Acacia angusta Maiden & Blakely, 1927'.
    *
    * @return bool
    *   Returns TRUE if new record was inserted and FALSE otherwise.
    */
-  public static function save($organism_id, $taxonomy_id = NULL, $full_name = NULL) {
+  public static function save($organism_id, $taxonomy_id = NULL) {
     if (empty($organism_id) || static::isExists($organism_id)) {
       return FALSE;
     }
     $fields = [
       'organism_id' => $organism_id,
       'taxonomy_id' => $taxonomy_id,
-      'full_name' => $full_name,
     ];
     db_insert(static::TABLE)->fields($fields)->execute();
     return TRUE;
@@ -128,23 +118,17 @@ abstract class OrganismTaxonomy {
    * @param int $taxonomy_id
    *   Optional. Taxonomy Id.
    *   Insert NULL when organism wasn't found to avoid the same requests.
-   * @param string $full_name
-   *   Full organism name.
-   *   E.g., 'Acacia angusta Maiden & Blakely, 1927'.
    *
    * @return bool
    *   Returns TRUE if record was inserted/updated and FALSE otherwise.
    */
-  public static function update($organism_id, $taxonomy_id = NULL, $full_name = NULL) {
+  public static function update($organism_id, $taxonomy_id = NULL) {
     if (empty($organism_id) | !static::isExists($organism_id)) {
       return FALSE;
     }
     db_update(static::TABLE)
       ->condition('organism_id', $organism_id)
-      ->fields([
-        'taxonomy_id' => $taxonomy_id,
-        'full_name' => $full_name,
-      ])
+      ->fields(['taxonomy_id' => $taxonomy_id])
       ->execute();
     return TRUE;
   }
@@ -152,24 +136,19 @@ abstract class OrganismTaxonomy {
   /**
    * Loads Taxonomy Id from DB.
    *
-   * @param mixed $organism_key
-   *   Organism id (int) or full organism name (string).
+   * @param int $organism_id
+   *   Organism id.
    *
    * @return int
    *   Returns Taxonomy Id.
    */
-  public static function load($organism_key) {
-    $query = db_select(static::TABLE, 't')
+  public static function load($organism_id) {
+    return db_select(static::TABLE, 't')
       ->fields('t', ['taxonomy_id'])
-      ->range(0, 1);
-    if (is_numeric($organism_key)) {
-      // Organism id.
-      $query->condition('organism_id', $organism_key);
-    }
-    else {
-      $query->condition('full_name', $organism_key);
-    }
-    return $query->execute()->fetchField();
+      ->range(0, 1)
+      ->condition('organism_id', $organism_key)
+      ->execute()
+      ->fetchField();
   }
 
 }
