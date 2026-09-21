@@ -15,7 +15,7 @@ define('TPPS_NCBI_BATCH_UPDATE_BUTTON_NAME', 'ncbi_batch_update');
  *
  * Form 'tpps_batch_ncbi_taxonomy_id_form'.
  */
-function form_tpps_batch_ncbi_taxonomy_id_form(array $form, array &$form_state) {
+function tpps_batch_ncbi_taxonomy_id_form(array $form, array &$form_state) {
   global $_SESSION;
 
   $session_name = 'tpps_batch_ncbi_taxonomy_id';
