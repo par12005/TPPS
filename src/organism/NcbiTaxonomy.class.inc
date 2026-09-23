@@ -25,6 +25,12 @@ class NcbiTaxonomy extends OrganismTaxonomy {
    */
   const TABLE = 'tpps_ncbi_taxonomy';
 
+  // The API URL to search items.
+  const SEARCH_URL = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
+
+  // The API URL to fetch items.
+  const FETCH_URL = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi';
+
   /**
    * Generates URL to the species page.
    *
@@ -90,7 +96,7 @@ class NcbiTaxonomy extends OrganismTaxonomy {
 
     try {
       $xml = (new RestApi([
-        'url' => 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi',
+        'url' => static::FETCH_URL,
         'query' => $query,
         'tag' => 'NCBI name by taxonomy id: ' . $taxonomy_id,
         'cache' => variable_get('tpps_organism_ncbi_use_cache', TRUE),
@@ -240,7 +246,7 @@ class NcbiTaxonomy extends OrganismTaxonomy {
     ];
     try {
       $xml = (new RestApi([
-        'url' => 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi',
+        'url' => static::SEARCH_URL,
         'query' => $query,
         'tag' => 'NCBI Taxonomy: ' . $organism_name,
         'cache' => variable_get('tpps_organism_ncbi_use_cache', TRUE),
@@ -293,6 +299,67 @@ class NcbiTaxonomy extends OrganismTaxonomy {
     $dom->formatOutput = TRUE;
     $dom->loadXML($xml);
     return $dom->saveXML();
+  }
+
+  /**
+   * Checks if given BioProject Id is valid.
+   *
+   * @param string $bio_project_id
+   *   BioProject Id. E.g., 'PRJNA429695'.
+   *
+   * @return bool
+   *   Returns TRUE if BioProject Id was found and FALSE otherwise.
+   */
+  public static function isValidBioProjectId($bio_project_id) {
+    $debug_mode = TRUE;
+
+    $query = [
+      'retmax' => 0,
+      'usehistory' => 'y',
+      'db' => 'bioproject',
+      'term' => check_plain($bio_project_id),
+      'api_key' => variable_get('tripal_eutils_ncbi_api_key'),
+    ];
+    try {
+      $xml = (new RestApi([
+        'url' => static::SEARCH_URL,
+        'query' => $query,
+        'tag' => 'NCBI BioProject Id Validation: ' . $bio_project_id,
+        'cache' => variable_get('tpps_organism_ncbi_use_cache', TRUE),
+      ]))->post()->response();
+
+      if (!is_array($xml)) {
+        $xml = trim(str_replace("\r\n", "\n", $xml));
+      }
+      else {
+        if (!empty($xml['error'])) {
+          watchdog('tpps', 'NCBI error: @error_message',
+            ['@error_message' => $xml['error']], WATCHDOG_ERROR
+          );
+        }
+        else {
+          watchdog('tpps', 'NCBI response: <pre>@message</pre>',
+            ['@message' => var_export($xml, 1)], WATCHDOG_ERROR
+          );
+        }
+      }
+    }
+    catch (Exception $e) {
+      $message = $e->getMessage();
+      $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
+      watchdog('tpps', '@message <pre>@backtrace</pre>',
+        ['@message' => $message, '@backtrace' => print_r($stack, 1)],
+        WATCHDOG_ERROR
+      );
+      drupal_set_message($e->getCode() . ' ' . $message);
+    }
+
+    if ($debug_mode ?? FALSE) {
+      dpm(static::printXml($xml));
+    }
+    // Process response.
+    // The other pattern: '<OutputMessage>No items found.</OutputMessage>'.
+    return (bool) preg_match('/<Count>1<\/Count>/', $xml);
   }
 
 }
