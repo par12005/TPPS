@@ -159,7 +159,13 @@ class NcbiTaxonomy extends OrganismTaxonomy {
       $organism = new Organism($organism_key);
       // Get previously saved taxonomy id from local DB.
       if (!empty($taxonomy_id = static::load($organism->id))) {
-        return $taxonomy_id;
+        return [
+          'taxonomy_id' => (int) $taxonomy_id,
+          'primary_name' => $organism_key,
+        ];
+      }
+      else {
+        throw new Exception('Taxonomy Id not found in local DB.');
       }
     }
     catch (Exception $e) {
@@ -196,7 +202,10 @@ class NcbiTaxonomy extends OrganismTaxonomy {
               $taxonomy_id
             );
           }
-          return $taxonomy_id;
+          return [
+            'taxonomy_id' => (int) $taxonomy_id,
+            'primary_name' => $organism_name,
+          ];
         }
       }
     }
@@ -276,7 +285,7 @@ class NcbiTaxonomy extends OrganismTaxonomy {
         ['@message' => $message, '@backtrace' => print_r($stack, 1)],
         WATCHDOG_ERROR
       );
-      drupal_set_message($e->getCode() . ' ' . $message);
+      drupal_set_message($e->getCode() . ' ' . $message, 'error');
     }
     return $xml;
   }
@@ -309,6 +318,9 @@ class NcbiTaxonomy extends OrganismTaxonomy {
    *
    * @return bool
    *   Returns TRUE if BioProject Id was found and FALSE otherwise.
+   *
+   * @throws Exception
+   *   If curl request failed.
    */
   public static function isValidBioProjectId($bio_project_id) {
     $debug_mode = TRUE;
@@ -320,38 +332,27 @@ class NcbiTaxonomy extends OrganismTaxonomy {
       'term' => check_plain($bio_project_id),
       'api_key' => variable_get('tripal_eutils_ncbi_api_key'),
     ];
-    try {
-      $xml = (new RestApi([
-        'url' => static::SEARCH_URL,
-        'query' => $query,
-        'tag' => 'NCBI BioProject Id Validation: ' . $bio_project_id,
-        'cache' => variable_get('tpps_organism_ncbi_use_cache', TRUE),
-      ]))->post()->response();
+    $xml = (new RestApi([
+      'url' => static::SEARCH_URL,
+      'query' => $query,
+      'tag' => 'NCBI BioProject Id Validation: ' . $bio_project_id,
+      'cache' => variable_get('tpps_organism_ncbi_use_cache', TRUE),
+    ]))->post()->response();
 
-      if (!is_array($xml)) {
-        $xml = trim(str_replace("\r\n", "\n", $xml));
+    if (!is_array($xml)) {
+      $xml = trim(str_replace("\r\n", "\n", $xml));
+    }
+    else {
+      if (!empty($xml['error'])) {
+        watchdog('tpps', 'NCBI error: @error_message',
+          ['@error_message' => $xml['error']], WATCHDOG_ERROR
+        );
       }
       else {
-        if (!empty($xml['error'])) {
-          watchdog('tpps', 'NCBI error: @error_message',
-            ['@error_message' => $xml['error']], WATCHDOG_ERROR
-          );
-        }
-        else {
-          watchdog('tpps', 'NCBI response: <pre>@message</pre>',
-            ['@message' => var_export($xml, 1)], WATCHDOG_ERROR
-          );
-        }
+        watchdog('tpps', 'NCBI response: <pre>@message</pre>',
+          ['@message' => var_export($xml, 1)], WATCHDOG_ERROR
+        );
       }
-    }
-    catch (Exception $e) {
-      $message = $e->getMessage();
-      $stack = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 3);
-      watchdog('tpps', '@message <pre>@backtrace</pre>',
-        ['@message' => $message, '@backtrace' => print_r($stack, 1)],
-        WATCHDOG_ERROR
-      );
-      drupal_set_message($e->getCode() . ' ' . $message);
     }
 
     if ($debug_mode ?? FALSE) {
