@@ -33,6 +33,14 @@ function tpps_page_1_create_form(array &$form, array &$form_state) {
     // TPPS Form.
     $form = array_merge($form, tpps_page_1_create_regular_form($form, $form_state));
   }
+  $js_data = [
+    'tpps' => [
+      'ajaxUrl' => TPPS_AJAX_URL,
+      'cacheAjaxResponses' => variable_get('tpps_page_1_cache_ajax_responses', TRUE),
+      'useLiveProxy' => variable_get('tpps_page_1_use_live_proxy', FALSE),
+    ],
+  ];
+  $form['#attached']['js'][] = ['type' => 'setting', 'data' => $js_data];
   tpps_add_css_js(TPPS_PAGE_1, $form);
   tpps_add_css_js('suggestion', $form);
   return $form;
@@ -106,16 +114,6 @@ function tpps_page_1_create_regular_form(array $form, array &$form_state) {
  */
 function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $saved_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
-
-  $js_data = [
-    'tpps' => [
-      'ajaxUrl' => TPPS_AJAX_URL,
-      'cacheAjaxResponses' => variable_get('tpps_page_1_cache_ajax_responses', TRUE),
-      'useLiveProxy' => variable_get('tpps_page_1_use_live_proxy', FALSE),
-    ],
-  ];
-  $form['#attached']['js'][] = ['type' => 'setting', 'data' => $js_data];
-
   $org_number = tpps_get_ajax_value($form_state, ['organism', 'number']) ?? 1;
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
