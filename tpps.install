@@ -915,12 +915,9 @@ function tpps_schema() {
     'doi/serp/PubMed',
     'doi/serp/GoogleScholar',
     'doi/serp/DataDryad',
-
     'doi/PublicationDoi',
     'submission/SubmissionCache',
-
-    'organism/NcbiTaxonomy',
-    'organism/GbigSpeciesApi',
+    'organism/OrganismTaxonomy',
   ];
   foreach ($class_list as $path) {
     $class_file = dirname(__FILE__) . '/src/' . $path . '.class.inc';
@@ -937,8 +934,7 @@ function tpps_schema() {
   $schema[SubmissionCache::CACHE_BIN] = SubmissionCache::getSchema();
   $schema[TPPS_CACHE_BIN] = drupal_get_schema_unprocessed('system', 'cache');
 
-  $schema[NcbiTaxonomy::TABLE] = NcbiTaxonomy::getSchema();
-  $schema[GbifSpeciesApi::TABLE] = GbifSpeciesApi::getSchema();
+  $schema[OrganismTaxonomy::TABLE] = OrganismTaxonomy::getSchema();
 
   return $schema;
 }
@@ -2684,7 +2680,7 @@ function tpps_update_7134() {
     GoogleScholar::TABLE,
     DataDryad::TABLE,
     PubMed::TABLE,
-    GbifSpeciesApi::TABLE,
+    OrganismTaxonomy::TABLE,
   ];
   foreach ($table_list as $table_name) {
     if (!db_table_exists($table_name)) {

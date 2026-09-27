@@ -311,7 +311,9 @@
           Drupal.tpps.showMessages(fieldSelector, data);
           Drupal.tpps.fieldEnable(fieldSelector);
           // Make button 'Next' active again.
-          $('input.next-button').removeAttr('disabled');
+          if (data.success) {
+            $('input.next-button').removeAttr('disabled');
+          }
         }
       });
     }

@@ -54,19 +54,12 @@ function tpps_batch_ncbi_taxonomy_id_form_submit(array $form, array &$form_state
   }
   // Get list of organisms without Taxonomy Id.
   $operations = [];
-  $list = tpps_get_organisms_without_taxonomy_id(NcbiTaxonomy::TABLE);
+  $list = OrganismTaxonomy::getMissingOrganismIdList();
   if (!empty($total = count($list))) {
-    foreach ($list as $organism_id => $organism_name) {
-      if (empty($organism_name)) {
-        watchdog('tpps', "Organism #@id has empty name so NCBI Taxonomy Id "
-          . "can't be found for this organism.", ['@id' => $organism_id],
-          WATCHDOG_ERROR
-        );
-        continue;
-      }
+    foreach ($list as $organism_id) {
       $operations[] = [
         'tpps_batch_ncbi_taxonomy_id_callback',
-        [$organism_id, $organism_name, $total],
+        [$organism_id, $total]
       ];
     }
     $batch = [
@@ -89,54 +82,58 @@ function tpps_batch_ncbi_taxonomy_id_form_submit(array $form, array &$form_state
  *
  * @param int $organism_id
  *   Orgaanism Id. See chado.orgnism.organism_id.
- * @param string $organism_name
- *   Full organism name. Space separated 'genus' and 'species'.
  * @param int $total
  *   Total amount of organisms to be processed.
  * @param array $context
  *   Batch context.
  */
-function tpps_batch_ncbi_taxonomy_id_callback($organism_id, $organism_name, $total, array &$context) {
+function tpps_batch_ncbi_taxonomy_id_callback($organism_id, $total, array &$context) {
   if (empty($context['sandbox'])) {
     $context['sandbox']['progress'] = 0;
     $context['sandbox']['current_item'] = '';
     $context['sandbox']['total'] = $total;
   }
   // Get Taxonomy Id.
-  if (empty($taxonomy_id = NcbiTaxonomy::getId($organism_id))) {
-    $taxonomy_id = NULL;
+  $taxonomy_id = NULL;
+  if (!empty($taxonomy = NcbiTaxonomy::getId($organism_id))) {
+    $taxonomy_id = $taxonomy['taxonomy_id'];
   }
 
-  $label = t(
-    'NCBI Taxonomy Id for "@organism_name" (#@organism_id): <strong>@taxonomy_id</strong>',
-    [
-      '@organism_id'  => $organism_id,
-      '@organism_name' => $organism_name,
-      '@taxonomy_id' => $taxonomy_id ?? t('Not found'),
-    ]
-  );
-  $context['results'][] = $label;
+  $row = [
+    'organism_id'  => $organism_id,
+    'primary_name'  => $taxonomy['primary_name'] ?? '',
+    'taxonomy_id' => $taxonomy_id ?? t('Not found'),
+  ];
+  $context['results'][] = $row;
+  $context['message'] = implode(', ', $row);
   $context['sandbox']['progress']++;
   $context['sandbox']['count'] = $context['sandbox']['total'] - $context['sandbox']['progress'];
-  $context['sandbox']['current_item'] = $organism_name;
-  $context['message'] = $label;
+  $context['sandbox']['current_item'] = $organism_id;
 }
 
 /**
  * Batch callback. Shows summary of batch process or error message.
  *
- * @param mixed $success
- * @param mixed $results
+ * @param bool $success
+ *   TRUE when batch completed with success.
+ * @param array $results
+ *   List of output of each callback call.
  * @param mixed $operations
+ *   Operations.
  */
-function tpps_batch_ncbi_taxonomy_id_finished_callback($success, $results, $operations) {
+function tpps_batch_ncbi_taxonomy_id_finished_callback($success, array $results, $operations) {
   global $_SESSION;
   // The 'success' parameter means no fatal PHP errors were detected. All
   // other error management should be handled using 'results'.
   if ($success) {
     $message = format_plural(count($results), 'One item processed.', '@count items processed.');
     $session_name = 'tpps_batch_ncbi_taxonomy_id';
-    $_SESSION[$session_name] = theme('item_list', ['items' => $results]);
+    $_SESSION[$session_name] = theme('table', [
+      'header' => [t('Organism Id'), t('Primary Name'), t('Taxonomy Id')],
+      'rows' => $results,
+      'attributes' => ['class' => ['view', 'tpps_table']],
+      'sticky' => TRUE,
+    ]);
   }
   else {
     $message = t('Finished with an error.');

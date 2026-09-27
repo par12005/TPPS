@@ -10,47 +10,26 @@
  */
 function tpps_report_organism_taxonomy() {
   $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
-  $query = db_select('chado.organism', 'o')
-    ->fields('o', [
-      'organism_id',
-      'genus',
-      'species',
-      'infraspecific_name',
-      'type_id',
-    ]);
-  // NCBI.
-  $query->leftJoin(
-    'public.' . NcbiTaxonomy::TABLE,
-    'nt',
-    'nt.organism_id = o.organism_id'
-  );
-  $query->addField('nt', 'taxonomy_id', 'ncbi');
-  $query->addField('nt', 'name', 'ncbi_name');
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // GBIF.
-  $query->leftJoin(
-    'public.' . GbifSpeciesApi::TABLE,
-    'gsa',
-    'gsa.organism_id = o.organism_id'
-  );
-  $query->addField('gsa', 'taxonomy_id', 'gbif');
-  $query->addField('gsa', 'name', 'gbif_name');
+  $query = db_select('public.' . OrganismTaxonomy::TABLE, 'ot');
+  $query->leftJoin('chado.organism', 'o', 'ot.organism_id = o.organism_id');
+  $query->fields('o', [
+    'organism_id',
+    'genus',
+    'species',
+    'type_id',
+    'infraspecific_name',
+  ]);
+  $query->fields('ot', ['source', 'taxonomy_id']);
 
   // Header.
   $header = [
     ['data' => t('Organism Id'), 'field' => 'o.organism_id'],
     ['data' => t('Genus'), 'field' => 'o.genus'],
     ['data' => t('Species'), 'field' => 'o.species'],
-    ['data' => t('Infraspecific Name'), 'field' => 'o.infraspecific_name'],
     ['data' => t('Type Id'), 'field' => 'o.type_id'],
-    // Note:
-    // In PostgreSQL (and most SQL databases), column aliases defined in
-    // the SELECT list cannot be used in the WHERE clause — they can only
-    // be used in ORDER BY (and sometimes GROUP BY/HAVING depending on the DB).
-    ['data' => t('NCBI'), 'field' => 'nt.taxonomy_id'],
-    ['data' => t('NCBI Name'), 'field' => 'nt.name'],
-    ['data' => t('GBIF'), 'field' => 'gsa.taxonomy_id'],
-    ['data' => t('GBIF Name'), 'field' => 'gsa.name'],
+    ['data' => t('Infraspecific Name'), 'field' => 'o.infraspecific_name'],
+    ['data' => t('Source'), 'field' => 'ot.source'],
+    ['data' => t('Taxonomy Id'), 'field' => 'ot.taxonomy_id'],
   ];
 
   return Report::print([
@@ -86,7 +65,7 @@ function tpps_report_organism_taxonomy_formatter(string $name, $value, array &$r
   }
   $name = check_plain($name);
   switch ($name) {
-    case 'ncbi':
+    case 'name':
       if (!empty($value)) {
         //$formatted = l($formatted, NcbiTaxonomy::getUrl($formatted));
         $organism_name = implode(' ', [
@@ -104,27 +83,6 @@ function tpps_report_organism_taxonomy_formatter(string $name, $value, array &$r
     case 'ncbi_full_name':
       if (!empty($value)) {
         $formatted = l($formatted, NcbiTaxonomy::getUrl($row['ncbi']));
-        $formatted = '<em>' . $formatted . '</em>';
-      }
-      break;
-
-    case 'gbif':
-      if (!empty($value)) {
-        $organism_name = implode(' ', [
-          $row['genus'],
-          $row['species'],
-          $row['infraspecific_name'],
-        ]);
-        $url = GbifSpeciesApi::getApiUrl($organism_name);
-        $formatted = l($formatted, $url);
-        $formatted = '<strong>' . $formatted . '</strong>';
-      }
-      break;
-
-    case 'gbif_name':
-    case 'gbif_full_name':
-      if (!empty($value)) {
-        $formatted = l($formatted, GbifSpeciesApi::getUrl($row['gbif']));
         $formatted = '<em>' . $formatted . '</em>';
       }
       break;

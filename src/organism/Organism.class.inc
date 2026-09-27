@@ -2,6 +2,7 @@
 
 /**
  * @file
+
  * Contains 'Organism' class.
  *
  * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -238,9 +239,17 @@ class Organism {
     }
     $this->name = trim(preg_replace('/\s+/', ' ', $name));
     $this->parsedName = Organism::parseName($this->name);
+
+    if ($debug_mode ?? FALSE) {
+      dpm(var_export($this->parsedName, 1), 'Parsed Name');
+    }
     $this->genus = $this->parsedName['genus'] ?? NULL;
     if (empty($this->genus)) {
-      throw new Exception('Invalid organism name.');
+      $message = t('Invalid organism name (#@id): @name.', [
+        '@name' => $name,
+        '@id' => $this->id,
+      ]);
+      throw new Exception($message);
     }
     $this->species = $this->parsedName['species'] ?? NULL;
     $this->infraspecificRank = $this->parsedName['infraspecific_rank'] ?? NULL;
@@ -277,7 +286,7 @@ class Organism {
       return;
     }
     if (empty($this->id) && empty($this->genus) && empty($this->species)) {
-      $message = t("Can't load organism because there are no organism id and name.");
+      $message = t("Can't load organism because there is no organism id and name.");
       watchdog('tpps', $message, [], WATCHDOG_ERROR);
       return;
     }
@@ -335,6 +344,13 @@ class Organism {
     // Infraspecific Rank.
     if (!empty($this->infraspecificName) && !empty($organism['type_id'])) {
       $this->infraspecificRank = InfraspecificRank::getName($organism['type_id']);
+      $pattern = '/'
+        . InfraspecificRank::getRegex() . ' # Infraspecific Rank.
+        \s                                  # Required trailing space.
+        /x';
+      $this->infraspecificName = trim(
+        preg_replace($pattern, '', $this->infraspecificName)
+      );
     }
 
     // @todo Minor. There is also columns:
@@ -380,7 +396,9 @@ class Organism {
   }
 
   /**
-   * Builds full organism name using name parts from DB table.
+   * Builds full organism name using name parts stored in DB table.
+   *
+   * Result will be stored in $name property.
    */
   public function generateName() {
     if (!empty($this->genus) && !empty($this->species)) {
@@ -445,15 +463,25 @@ class Organism {
    *   When organism name is empty.
    */
   public static function parseName($name) {
+
+    // Allow to parse crossed ('Larix x marschlinsii') as:
+    // 'genus': Larix,
+    // 'species': 'x marschlinsii'.
+    $allow_crosses = TRUE;
+
     $result = Organism::getEmptyParsedName();
     $name = trim($name);
-    // Check if namei is valid.
+    // Check if name is valid.
     // First genus letter is '?' or in lowercase.
-    // Crosses which has ' x ' substring.
     if (
       preg_match('/^([a-z\?])/', $name, $matches)
-      || preg_match('/(\sx\s)/', $name, $matches)
+      // Reject 'x ' as first token. E.g., 'x Something'.
+      || preg_match('/^x\s+/', $name, $matches)
     ) {
+      return $result;
+    }
+    // Crosses which has ' x ' substring.
+    if (!$allow_crosses && preg_match('/(\s+x\s+)/', $name, $matches)) {
       return $result;
     }
 
@@ -469,7 +497,7 @@ class Organism {
     $pattern = '/^
       ([A-Z][a-z]+)                  # 1. Genus
       \s+
-      ([a-z-]+(?:\s*[a-z-.]+)?)      # 2. Species (1 or 2 words).
+      ([\×a-z-]+(?:\s*[\×a-z-.]+)?)  # 2. Species (1 or 2 words, incl. ×)
       $/xu';
     if (preg_match($pattern, $name, $matches)) {
       $result['genus'] = $matches[1] ?? NULL;
@@ -642,7 +670,11 @@ class Organism {
    */
   public function save() {
     if (empty($this->species) || empty($this->genus)) {
-      throw new Exception("Organism with empty genus or species can't be saved.");
+      $message = t(
+        "Organism '@name' with empty genus or species can't be saved.",
+        ['@name' => $this->name]
+      );
+      throw new Exception($message);
     }
     // Get cvterm id for infraspecific rank.
     if (!empty($this->infraspecificRank)) {
@@ -659,12 +691,16 @@ class Organism {
       'type_id' => $rank_cvterm_id ?? NULL,
       'comment' => NULL,
     ];
+
     if ($this->isRecordExists()) {
       // Update.
-      db_update(self::TABLE_ORGANISM)
-        ->fields($fields)
-        ->condition('organism_id', $this->id)
-        ->execute();
+      if (0) {
+        // @TODO Check if existing record should be updated first.
+        db_update(static::TABLE_ORGANISM)
+          ->fields($fields)
+          ->condition('organism_id', $this->id)
+          ->execute();
+      }
     }
     else {
       // Insert.
@@ -686,16 +722,52 @@ class Organism {
    * @TODO Add to Submission class the same code.
    */
   public function isRecordExists($table = '') {
-    $organism_id = $this->id ?? NULL;
-    if (empty($organism_id)) {
-      return FALSE;
-    }
     if (empty($table)) {
       $table = static::TABLE_ORGANISM;
     }
-    $sql = 'select organism_id from {' . $table
-      . '} where organism_id = :id limit 1';
-    return (bool) (db_query($sql, [':id' => $organism_id])->fetchField());
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    if (empty($this->id)) {
+      if (empty($this->genus) || empty($this->species)) {
+        // No required genus+species. Organism couldn't be found.
+        return FALSE;
+      }
+      // Check by name.
+      $query = db_select($table, 't')
+        ->fields('t', ['organism_id'])
+        ->condition('genus', $this->genus)
+        ->condition('species', $this->species)
+        ->range(0, 1);
+      // @TODO Major. Some names has only genus + authority.
+      if (!empty($this->infraspecificName)) {
+        if (!empty($this->infraspecificRank)) {
+          $rank_cvterm_id = InfraspecificRank::getCvtermId($this->infraspecificRank);
+          // InfraspecificRank could be not part of the $infraspecificName but
+          // stored in 'type_id' field and cvterm_id must be used.
+          $query->condition(
+            db_or()
+              ->condition('type_id', $rank_cvterm_id)
+              ->isNull('type_id')
+          );
+        }
+        $query->condition(
+          db_or()
+            ->condition('infraspecific_name', $this->infraspecificName)
+            ->condition('infraspecific_name', implode(' ', array_filter([
+              $this->infraspecificRank,
+              $this->infraspecificName,
+            ])))
+        );
+      }
+      $organism_id = $query->execute()->fetchField();
+      $this->id = $organism_id;
+    }
+    else {
+      $sql = 'select organism_id from {' . $table
+        . '} where organism_id = :id limit 1';
+      $organism_id = db_query($sql, [':id' => $this->id])->fetchField();
+      $this->load();
+    }
+    return (bool) $organism_id;
   }
 
   /**

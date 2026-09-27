@@ -23,40 +23,43 @@ class InfraspecificRank {
   const CV_ID = 5;
 
   const LIST = [
+    // Key is a canonical name of the rank which used in 'chado.cvterm' table.
     'varietas' => [
       'cvterm_id' => 22,
-      'name' => 'varietas',
-      'regex' => 'variety|var.',
+      // Name used to generate full organism name.
+      'name' => 'var.',
+      // Regex used to detect/replace rank in the organism name.
+      'regex' => 'varietas|variety|var.',
     ],
     'subspecies' => [
       'cvterm_id' => 29,
-      'name' => 'subspecies',
-      'regex' => 'subsp.|ssp.',
+      'name' => 'subsp.',
+      'regex' => 'subspecies|subsp.|ssp.',
     ],
     'forma' => [
       'cvterm_id' => 32,
-      'name' => 'forma',
-      'regex' => 'form|f.|fa.',
+      'name' => 'f.',
+      'regex' => 'forma|form|f.|fa.',
     ],
     'subvariety' => [
       'cvterm_id' => 57,
-      'name' => 'subvariety',
-      'regex' => 'subvarietas|subvar.',
+      'name' => 'subvar.',
+      'regex' => 'subvariety|subvarietas|subvar.',
     ],
     'subsubvariety' => [
       'cvterm_id' => 58,
-      'name' => 'subsubvariety',
-      'regex' => 'sub-subvariety|subsubvar.|ssubvar.',
+      'name' => 'subsubvar.',
+      'regex' => 'subsubvariety|sub-subvariety|subsubvar.|ssubvar.',
     ],
     'subsubform' => [
       'cvterm_id' => 62,
-      'name' => 'subsubform',
-      'regex' => 'sub-subform|subsubf.|ssubf.',
+      'name' => 'subsubf.',
+      'regex' => 'subsubform|sub-subform|subsubf.|ssubf.',
     ],
     'subform' => [
       'cvterm_id' => 65,
-      'name' => 'subform',
-      'regex' => 'subforma|subf.',
+      'name' => 'subf.',
+      'regex' => 'subform|subforma|subf.',
     ],
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Ranks without CVTerm Id.
@@ -67,7 +70,7 @@ class InfraspecificRank {
       // onto "cultivar-group" or "race/subspecies".
       'cvterm_id' => NULL,
       'name' => 'proles',
-      'regex' => '',
+      'regex' => 'proles',
     ],
     'nothosubsp' => [
       // Meghan Miles:
@@ -75,7 +78,7 @@ class InfraspecificRank {
       // created by two different subspecies of the same species.
       'cvterm_id' => NULL,
       'name' => 'nothosubsp',
-      'regex' => 'nothosubsp.',
+      'regex' => 'nothosubsp|nothosubsp.',
     ],
     'nothovar' => [
       // Meghan Miles:
@@ -84,9 +87,28 @@ class InfraspecificRank {
       // although I see that this applies to a cultivar of willow).
       'cvterm_id' => NULL,
       'name' => 'nothovar',
-      'regex' => 'nothovar.',
+      'regex' => 'nothovar|nothovar.',
     ],
   ];
+
+  /**
+   * Gets canonical (full) rank name by cvterm id.
+   *
+   * @param int $cvterm_id
+   *   Cvterm Id of the Infraspecific rank.
+   *
+   * @return mixed
+   *   Returns (string) rank name.
+   *   Returns NULL if rank name wasn't found.
+   */
+  public static function getCanonicalName($cvterm_id) {
+    foreach (static::LIST as $canonical_name => $item) {
+      if (!empty($item['cvterm_id']) && $item['cvterm_id'] == $cvterm_id) {
+        return $canonical_name;
+      }
+    }
+    return NULL;
+  }
 
   /**
    * Gets rank name by cvterm id.
@@ -124,28 +146,28 @@ class InfraspecificRank {
    *     Returns (array) list of all cv term ids of the defined ranks.
    */
   public static function getCvtermId($rank_name = NULL) {
-    if (!empty($rank_name)) {
+    if (empty($rank_name)) {
+      // Return list of the all cvterm id.
+      $list = [];
+      foreach (static::LIST as $canonical_name => $item) {
+        if (empty($item['cvterm_id'])) {
+          continue;
+        }
+        $list[$canonical_name] = $item['cvterm_id'];
+      }
+      return $list;
+    }
+    else {
       foreach (static::LIST as $item) {
-        if (
-          !empty($item['cvterm_id'])
-          && (
-            $item['name'] == $rank_name
-            || strpos($item['regex'], $rank_name) !== FALSE
-          )
-        ) {
+        if (empty($item['cvterm_id'])) {
+          continue;
+        }
+        if (strpos($item['regex'], $rank_name) !== FALSE) {
           return $item['cvterm_id'];
         }
       }
       return NULL;
     }
-    // Return list of the all ids.
-    $list = [];
-    foreach (static::LIST as $item) {
-      if (!empty($item['cvterm_id'])) {
-        $list[$item['name']] = $item['cvterm_id'];
-      }
-    }
-    return $list;
   }
 
   /**
@@ -156,14 +178,7 @@ class InfraspecificRank {
    *   Example: 'proles|subspecies ... sub-subform|subsubf.|ssubf.'.
    */
   public static function getRegex() {
-    foreach (static::LIST as $data) {
-      $regex[] = $data['name'];
-      if (!empty($data['regex'])) {
-        $regex[] = $data['regex'];
-      }
-    }
-    $regex = implode('|', $regex);
-    return $regex;
+    return implode('|', array_filter(array_column(static::LIST, 'regex')));
   }
 
 }

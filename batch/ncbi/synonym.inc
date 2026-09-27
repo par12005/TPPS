@@ -63,7 +63,7 @@ function tpps_batch_ncbi_synonym_form_submit(array $form, array &$form_state) {
   //
   //
   // @TODO Get organism_name to have better status messages.
-  $list = OrganismSynonym::getTaxonomyIdList(NcbiTaxonomy::TABLE);
+  $list = OrganismSynonym::getTaxonomyIdList(NcbiTaxonomy::KEY);
   if (!empty($total = count($list))) {
     foreach ($list as $organism_id => $taxonomy_id) {
       if (empty($organism_id) || empty($taxonomy_id)) {

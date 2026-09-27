@@ -9,6 +9,10 @@
  * 1. Create new method. E.g., 'getData'.
  * 2. Make POST-request from JS: /ajax/tpps/getData.
  *
+ * Usage of the 'success' field.
+ * TRUE means that there is no errors.
+ * FALSE means request failed. See 'errors' field for error messages.
+ *
  * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * @TODO Move constant into this class: define('TPPS_AJAX_URL', 'ajax/tpps');
  */
@@ -57,59 +61,106 @@ class TppsAjax {
    *
    * @param array $data
    *   POST data with required 'organism' item which must contain organism name.
+   *   Example: $data = ['organism' => 'Miscanthus sacchariflorus'].
    *
    * @return array
    *   Returns array with data to be sent back to browser.
    */
   public static function getOrganismTaxonomyId(array $data) {
-    try {
-      $organism_name = $data['organism'] ?? NULL;
-      $source = NULL;
-      if (!empty($organism_name)) {
-        $taxonomy_id = NcbiTaxonomy::getId($organism_name);
-        if (!empty($taxonomy_id)) {
-          $source = 'ncbi';
-          $organism_id = tpps_organism($organism_name)->id;
-          NcbiTaxonomy::save(
-            $organism_id,
-            $organism_name,
-            $taxonomy_id
-          );
-        }
-        else {
-          $taxonomy_id = GbifSpeciesApi::getId($organism_name);
-          if (!empty($taxonomy_id)) {
-            $source = 'gbif';
-            $organism_id = tpps_organism($organism_name)->id;
-            GbifSpeciesApi::save(
-              $organism_id,
-              $organism_name,
-              $taxonomy_id
-            );
-          }
-          else {
-          }
-        }
-      }
-    }
-    catch (Exception $e) {
-      $response['id'] = FALSE;
+    $debug_mode = 1;
+
+    $organism_name = $data['organism'] ?? NULL;
+    if (empty($organism_name)) {
       $response['success'] = FALSE;
-      $response['errors'][] = t('The Taxonomy ID could not be found in '
-        . 'either the NCBI or GBIF taxonomic repositories.');
+      $response['errors'][] = t('Empty organism name.');
       return $response;
     }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Check if it's a synonym.
+    // Note: Only GBIF provides this information.
+    $info = GbifSpeciesApi::getInfo($organism_name);
+    if ($debug_mode ?? FALSE) {
+      $info = NULL;
+    }
+    if (
+      !empty($info)
+      && !empty($taxonomy_id = $info['usage']['key'])
+      && ($info['diagnostics']['matchType'] ?? NULL) != 'NONE'
+    ) {
+      // Found GBIF Taxonomy Id.
+      if ($info['synonym'] !== TRUE) {
+        // Primary name.
+        $taxonomy_id = $info['usage']['key'];
+        $url = GbifSpeciesApi::getUrl($taxonomy_id);
+        $params = [
+          'attributes' => [
+            'target' => '_blank',
+            'title' => t('View on GBIF site'),
+          ],
+        ];
+        $response['id'] = $taxonomy_id;
+        $response['statuses'][] = t(
+          'Organism "@name" found in GBIF taxonomic repository. Taxonomy Id: !id',
+          [
+            '@name' => $organism_name,
+            '!id' => l($taxonomy_id, $url, $params),
+          ]
+        );
+        return $response;
+      }
+      else {
+        // Synonym name.
+        $primary_name = $info['acceptedUsage']['canonicalName'];
+        $response['synonym_taxonomy_id'] = $info['usage']['key'];
+        $response['primary_taxonomy_id'] = $info['acceptedUsage']['key'];
+        $response['info'] = $info;
+        $response['success'] = TRUE;
 
-    $response['id'] = $taxonomy_id ?? FALSE;
-    if (empty($response['id'])) {
-      $response['success'] = FALSE;
-      $response['errors'][] = t('The Taxonomy ID could not be found in '
-        . 'either the NCBI or GBIF taxonomic repositories.');
+// @todo Review $response['id'].
+// @todo Fix suggestions.
+// @todo Make ids hyperlinks.
+        $response['warnings'][] = t('Our records indicate that "<em>@synonym_name</em>" '
+          . '(#@synonym_taxonomy_id) is also known as "<strong><a href"#" '
+          . 'class="tpps-suggestion">@primary_name</a></strong>" '
+          . '(@primary_taxonomy_id). <br />Database records associated '
+          . 'with this study will use name "<strong><a href"#" '
+          . 'class="tpps-suggestion">@primary_name</a></strong>" (#@primary_taxonomy_id).',
+          [
+            '@synonym_name' => $organism_name,
+            '@primary_name' => $primary_name,
+            '@synonym_taxonomy_id' => $response['synonym_taxonomy_id'],
+            '@primary_taxonomy_id' => $response['primary_taxonomy_id'],
+          ]
+        );
+        return $response;
+      }
     }
     else {
-      $response['success'] = TRUE;
-      $taxonomy_id = check_plain($taxonomy_id);
-      if ($source == 'ncbi') {
+      // Not found at GBIF. Try NCBI.
+      try {
+        $result = NcbiTaxonomy::getId($organism_name);
+      }
+      catch (Exception $e) {
+        $response['id'] = FALSE;
+        $response['success'] = FALSE;
+        $response['errors'][] = t('The Taxonomy Id was not found in GBIF taxonomic repository.');
+        $response['errors'][] = $e->getMessage();
+        return $response;
+      }
+
+      $taxonomy_id = check_plain($result['taxonomy_id']);
+      $primary_name = check_plain($result['primary_name']);
+
+      if (empty($result['taxonomy_id'])) {
+        $response['success'] = FALSE;
+        $response['id'] = FALSE;
+        $response['errors'][] = t('The Taxonomy ID could not be found in '
+          . 'either the NCBI or GBIF taxonomic repositories.');
+      }
+      else {
+        $response['success'] = TRUE;
+        $response['id'] = $taxonomy_id;
+        $response['primary_name'] = $primary_name;
         // Build link to NCBI Taxonomy Browser page.
         $url = NcbiTaxonomy::getUrl($taxonomy_id);
         $params = [
@@ -120,30 +171,11 @@ class TppsAjax {
         ];
         $response['statuses'][] = t(
           'Organism "@name" found in NCBI taxonomic repository. Taxonomy Id: !id',
-          ['@name' => $organism_name, '!id' => l($taxonomy_id, $url, $params)]
+          ['@name' => $primary_name, '!id' => l($taxonomy_id, $url, $params)]
         );
-      }
-      elseif ($source == 'gbif') {
-        $url = GbifSpeciesApi::getUrl($taxonomy_id);
-        $params = [
-          'attributes' => [
-            'target' => '_blank',
-            'title' => t('View on GBIF site'),
-          ],
-        ];
-        $response['statuses'][] = t(
-          'Organism "@name" found in GBIF taxonomic repository. Taxonomy Id: !id',
-          ['@name' => $organism_name, '!id' => l($taxonomy_id, $url, $params)]
-        );
-      }
-      else {
-        $response['statuses'][] = t(
-          'Organism "@name" found. Taxonomy Id: @id',
-          ['@name' => $organism_name, '@id' => $taxonomy_id]
-        );
-
       }
     }
+
     return $response;
   }
 

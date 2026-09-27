@@ -10,13 +10,14 @@
  */
 function tpps_report_organism_ncbi_missing() {
   $report_name = 'organism_ncbi_missing';
-  $table = 'public.' . NcbiTaxonomy::TABLE;
+  $table = 'public.' . OrganismTaxonomy::TABLE;
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
   $query = db_select('chado.organism', 't');
   // Taxonomy Id.
-  $query->leftJoin($table, 't2', 't.organism_id = t2.organism_id');
+  $query->leftJoin($table, 'ot', 't.organism_id = ot.organism_id');
+  $query->condition('ot.source', NcbiTaxonomy::KEY);
   // Infraspecific Rank.
   $query->leftJoin(
     'chado.cvterm',
@@ -32,7 +33,7 @@ function tpps_report_organism_ncbi_missing() {
   // Infraspecific Rank.
   $query->fields('cvt', ['name']);
   $query->fields('t', ['infraspecific_name']);
-  $query->isNull('t2.taxonomy_id');
+  $query->isNull('ot.taxonomy_id');
 
   $header = [
     ['data' => t('Organism Id'), 'field' => 't.organism_id'],

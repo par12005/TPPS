@@ -315,9 +315,9 @@ class OrganismSynonym {
   /**
    * Gets list of organism's Taxonomy Id.
    *
-   * @param string $table2
-   *   Name of the table to be joined.
-   *   Possible values: GbifSpeciesApi::TABLE and NcbiTaxonomy::TABLE.
+   * @param string $source
+   *   Source of the Taxonomy Id.
+   *   See class OrganismTaxonomy.
    * @param bool $debug_mode
    *   Optional. Default is FALSE.
    *   When TRUE only first 10 items will be in resulting set of data.
@@ -327,20 +327,19 @@ class OrganismSynonym {
    *   Format: <organism_id> => <taxonomy_id>.
    *   Returns NULL if $table2 has wrong value.
    */
-  public static function getTaxonomyIdList($table2, $debug_mode = FALSE) {
-    if (!in_array($table2, [GbifSpeciesApi::TABLE, NcbiTaxonomy::TABLE])) {
-      watchdog('tpps', "Table @table can't be used to get Taxonomy Id",
-        ['@table' => $table2], WATCHDOG_ERROR);
-      return FALSE;
-    }
+  public static function getTaxonomyIdList($source, $debug_mode = FALSE) {
     // Get all organisms.
-    $table = 'chado.organism';
-    $query = db_select($table, 'o')
+    $query = db_select('chado.organism', 'o')
       ->fields('o', ['organism_id'])
       ->orderBy('o.organism_id');
-    $query->leftJoin($table2, 't2', 'o.organism_id = t2.organism_id');
-    $query->isNotNull('t2.taxonomy_id');
-    $query->addField('t2', 'taxonomy_id');
+    $query->leftJoin(
+      OrganismTaxonomy::TABLE, 'ot',
+      'o.organism_id = ot.organism_id'
+    );
+    $query->condition('ot.source', $source);
+    $query->isNotNull('ot.taxonomy_id');
+    $query->addField('ot', 'taxonomy_id');
+
     if ($debug_mode) {
       $query->range(0, 11);
     }

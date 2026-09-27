@@ -10,13 +10,14 @@
  */
 function tpps_report_organism_ncbi_all() {
   $report_name = 'organism_ncbi_all';
-  $table = 'public.' . NcbiTaxonomy::TABLE;
+  $table = 'public.' . OrganismTaxonomy::TABLE;
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
   $query = db_select('chado.organism', 't');
   // Taxonomy Id.
-  $query->leftJoin($table, 't2', 't.organism_id = t2.organism_id');
+  $query->leftJoin($table, 'ot', 't.organism_id = ot.organism_id');
+  $query->condition('ot.source', NcbiTaxonomy::KEY);
   // Infraspecific Rank.
   $query->leftJoin(
     'chado.cvterm',
@@ -33,7 +34,7 @@ function tpps_report_organism_ncbi_all() {
   // Infraspecific Rank.
   $query->fields('cvt', ['name']);
   $query->fields('t', ['infraspecific_name']);
-  $query->fields('t2', ['taxonomy_id']);
+  $query->fields('ot', ['taxonomy_id']);
 
   $header = [
     ['data' => t('Organism Id'), 'field' => 't.organism_id'],
@@ -41,7 +42,7 @@ function tpps_report_organism_ncbi_all() {
     ['data' => t('Species'), 'field' => 't.species'],
     ['data' => t('Infraspecific Rank'), 'field' => 'cvt.name'],
     ['data' => t('Infraspecific Name'), 'field' => 't.infraspecific_name'],
-    ['data' => t('Taxonomy Id'), 'field' => 't2.taxonomy_id'],
+    ['data' => t('Taxonomy Id'), 'field' => 'ot.taxonomy_id'],
   ];
 
   return Report::print([

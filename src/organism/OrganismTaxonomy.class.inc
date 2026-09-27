@@ -2,23 +2,22 @@
 
 /**
  * @file
- * Contains abstract class 'OrganismTaxonomy'.
+ * Contains class 'OrganismTaxonomy'.
  */
 
 /**
- * Holds common methods for 'NcbiTaxonomy' and 'GbifSpeciesApi' classes.
+ * Manages organism's taxonomy ids obtained from external taxonomy repositories.
  *
- * @todo Remove 'organism_name' column. Used in reports to build list of
- * organism_ids withour taxonomy id.
+ * Repositories: NCBI, GBIF.
  *
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-abstract class OrganismTaxonomy {
+class OrganismTaxonomy {
   /**
-   * Name of the table which stores Taxonomy Ids per organism.
+   * Name of the table which stores Taxonomy Ids.
    */
-  const TABLE = '';
+  const TABLE = 'tpps_organism_taxonomy';
 
   /**
    * Gets DB table schema.
@@ -37,13 +36,19 @@ abstract class OrganismTaxonomy {
    */
   public static function getSchema() {
     return [
-      'description' => 'Taxonomy Id for organisms.',
+      'description' => "Organism's Taxonomy Id.",
       'fields' => [
         'organism_id' => [
           'description' => 'Organism Id.',
           'type' => 'int',
           'size' => 'big',
           'not null' => FALSE,
+        ],
+        'source' => [
+          'description' => 'Source of the Taxonomy Id.',
+          'type' => 'varchar',
+          'size' => 'normal',
+          'not null' => TRUE,
         ],
         'taxonomy_id' => [
           'description' => 'Taxomony Id.',
@@ -61,7 +66,7 @@ abstract class OrganismTaxonomy {
         ],
       ],
       'unique keys' => [
-        'organism_id' => ['organism_id'],
+        'organism_id_source' => ['organism_id', 'source'],
       ],
       // @todo Add indexes.
     ];
@@ -75,13 +80,22 @@ abstract class OrganismTaxonomy {
    *
    * @param int $organism_id
    *   Organism Id.
+   * @param string $source
+   *   Source of the Taxonomy Id. E.g., 'ncbi', 'gbif'.
    *
    * @return bool
    *   Returns TRUE if record was found in DB table and FALSE otherwise.
    */
-  public static function isExists($organism_id) {
-    $sql = 'select organism_id from {' . static::TABLE . '} where organism_id = :id limit 1';
-    return (bool) (db_query($sql, [':id' => $organism_id])->fetchField());
+  public static function isExists($organism_id, $source) {
+    $sql = 'SELECT organism_id
+      FROM {' . static::TABLE . '}
+      WHERE organism_id = :organism_id AND source = :source
+      LIMIT 1';
+    $params = [
+      ':organism_id' => $organism_id,
+      ':source' => $source,
+    ];
+    return (bool) (db_query($sql, $params)->fetchField());
   }
 
   /**
@@ -91,6 +105,8 @@ abstract class OrganismTaxonomy {
    *
    * @param int $organism_id
    *   Organism Id.
+   * @param string $source
+   *   Source of the Taxonomy Id. E.g., 'ncbi', 'gbif'.
    * @param int $taxonomy_id
    *   Optional. Taxonomy Id.
    *   Insert NULL when organism wasn't found to avoid the same API-requests.
@@ -98,12 +114,16 @@ abstract class OrganismTaxonomy {
    * @return bool
    *   Returns TRUE if new record was inserted and FALSE otherwise.
    */
-  public static function save($organism_id, $taxonomy_id = NULL) {
-    if (empty($organism_id) || static::isExists($organism_id)) {
+  public static function save($organism_id, $source, $taxonomy_id = NULL) {
+    if (
+      empty($organism_id) || empty($source)
+      || static::isExists($organism_id, $source)
+    ) {
       return FALSE;
     }
     $fields = [
       'organism_id' => $organism_id,
+      'source' => $source,
       'taxonomy_id' => $taxonomy_id,
     ];
     db_insert(static::TABLE)->fields($fields)->execute();
@@ -111,10 +131,12 @@ abstract class OrganismTaxonomy {
   }
 
   /**
-   * Updates existing Taxonomy Id into db.
+   * Updates existing Taxonomy Id.
    *
    * @param int $organism_id
    *   Organism Id.
+   * @param string $source
+   *   Source of the Taxonomy Id. E.g., 'ncbi', 'gbif'.
    * @param int $taxonomy_id
    *   Optional. Taxonomy Id.
    *   Insert NULL when organism wasn't found to avoid the same requests.
@@ -122,12 +144,16 @@ abstract class OrganismTaxonomy {
    * @return bool
    *   Returns TRUE if record was inserted/updated and FALSE otherwise.
    */
-  public static function update($organism_id, $taxonomy_id = NULL) {
-    if (empty($organism_id) | !static::isExists($organism_id)) {
+  public static function update($organism_id, $source, $taxonomy_id = NULL) {
+    if (
+      empty($source) || empty($organism_id)
+      || !static::isExists($source, $organism_id)
+    ) {
       return FALSE;
     }
     db_update(static::TABLE)
       ->condition('organism_id', $organism_id)
+      ->condition('source', $source)
       ->fields(['taxonomy_id' => $taxonomy_id])
       ->execute();
     return TRUE;
@@ -138,17 +164,43 @@ abstract class OrganismTaxonomy {
    *
    * @param int $organism_id
    *   Organism id.
+   * @param string $source
+   *   Source of the Taxonomy Id. E.g., 'ncbi', 'gbif'.
    *
-   * @return int
-   *   Returns Taxonomy Id.
+   * @return array
+   *   Returns associative array where:
+   *   - key is $source and
+   *   - value is the taxonomy id from this source.
    */
-  public static function load($organism_id) {
-    return db_select(static::TABLE, 't')
-      ->fields('t', ['taxonomy_id'])
-      ->range(0, 1)
-      ->condition('organism_id', $organism_key)
-      ->execute()
-      ->fetchField();
+  public static function load($organism_id, $source = NULL) {
+    $query = db_select(static::TABLE, 't')
+      ->fields('t', ['source', 'taxonomy_id'])
+      ->condition('organism_id', $organism_id);
+    if (!empty($source)) {
+      $query->condition('source', $source);
+    }
+    return $query->execute()->fetchAllKeyed();
+  }
+
+  /**
+   * Gets list of organisms without NCBI/GBIF Taxonomy Id.
+   *
+   * @return array
+   *   Returns list of organism ids.
+   */
+  public static function getMissingOrganismIdList() {
+    $query = db_select('chado.organism', 'o')
+      ->fields('o', ['organism_id'])
+      ->orderBy('o.organism_id');
+    $query->leftJoin(
+      OrganismTaxonomy::TABLE, 'ot',
+      'o.organism_id = ot.organism_id'
+    );
+    $query->isNull('ot.source');
+    if ($debug_mode ?? FALSE) {
+      $query->range(0, 2);
+    }
+    return $query->execute()->fetchCol();
   }
 
 }

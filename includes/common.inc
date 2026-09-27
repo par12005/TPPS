@@ -419,42 +419,6 @@ function ftest_tpps_is_valid() {
 }
 
 /**
- * Gets list of organisms without NCBI/GBIF Taxonomy Id.
- *
- * @param string $table2
- *   Name of the table to be joined.
- *   Possible values: GbifSpeciesApi::TABLE and NcbiTaxonomy::TABLE.
- * @param bool $debug_mode
- *   Optional. Default is FALSE.
- *   When TRUE only first 10 items will be in resulting set of data.
- *
- * @return array
- *   Returns associative array where key is Organism's Id and value is
- *   Organism's name.
- */
-function tpps_get_organisms_without_taxonomy_id($table2, $debug_mode = FALSE) {
-  if (!in_array($table2, [GbifSpeciesApi::TABLE, NcbiTaxonomy::TABLE])) {
-    watchdog('tpps', "Table @table can't be used to get Taxonomy Id",
-      ['@table' => $table2], WATCHDOG_ERROR);
-    return FALSE;
-  }
-  // Get all organisms.
-  $table = 'chado.organism';
-  $query = db_select($table, 'o')
-    ->fields('o', ['organism_id']);
-  $query->leftJoin($table2, 't2', 'o.organism_id = t2.organism_id');
-  $query->isNull('t2.organism_name');
-  $query->addExpression(
-    "TRIM(CONCAT(o.genus, ' ', o.species, ' ', o.infraspecific_name))",
-    'organism_name'
-  );
-  if ($debug_mode) {
-    $query->range(0, 11);
-  }
-  return $query->orderBy('organism_id')->execute()->fetchAllKeyed();
-}
-
-/**
  * Creates array under alphabetical letters.
  *
  * Could be used as option's list for dropdown menu form elements.

@@ -3,11 +3,6 @@
 /**
  * @file
  * Contains static 'NcbiTaxonomy' class.
- *
- * Parent class 'OrganismTaxonomy' provides methods:
- * - getSchema(),
- * - save(),
- * - isExists().
  */
 
 /**
@@ -19,11 +14,11 @@
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
-class NcbiTaxonomy extends OrganismTaxonomy {
-  /**
-   * Name of the table which stores NCBI Taxonomy Ids per organism.
-   */
-  const TABLE = 'tpps_ncbi_taxonomy';
+class NcbiTaxonomy {
+
+  // Key used to label source of the data stored in database.
+  // See class 'OrganismTaxonomy'.
+  const KEY = 'ncbi';
 
   // The API URL to search items.
   const SEARCH_URL = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
@@ -158,13 +153,19 @@ class NcbiTaxonomy extends OrganismTaxonomy {
       // Get taxonomy id from local DB.
       $organism = new Organism($organism_key);
       // Get previously saved taxonomy id from local DB.
-      if (!empty($taxonomy_id = static::load($organism->id))) {
-        return [
+      $taxonomy = OrganismTaxonomy::load($organism->id, static::KEY);
+      $taxonomy_id = $taxonomy[static::KEY] ?? NULL;
+      if (!empty($taxonomy_id)) {
+        $output = [
+          'primary_name' => $organism->name,
           'taxonomy_id' => (int) $taxonomy_id,
-          'primary_name' => $organism_key,
         ];
+        return $output;
       }
       else {
+        $organism->load();
+        $organism_id = $organism->id;
+        $organism_key = $organism->name;
         throw new Exception('Taxonomy Id not found in local DB.');
       }
     }
@@ -180,8 +181,9 @@ class NcbiTaxonomy extends OrganismTaxonomy {
       else {
         // Organism name.
         // Organism wasn't found in local DB but it's not a problem.
+        $organism_name = $organism_key;
         // Let's search it in NCBI database.
-        $xml = static::getInfo($organism_key);
+        $xml = static::getInfo($organism_name);
         if (preg_match('/<OutputMessage>No items found\.<\/OutputMessage>/', $xml)) {
           return NULL;
         }
@@ -191,21 +193,24 @@ class NcbiTaxonomy extends OrganismTaxonomy {
           $id = $matches[1] ?? '';
           $taxonomy_id = (empty($id) ? NULL : (int) $id);
           // Get organism primary name.
-          $organism_name = static::getPrimaryName($taxonomy_id);
-          if (!empty($organism_name)) {
+          // WARNING: Primary name could be different from given organism name.
+          $primary_name = static::getPrimaryName($taxonomy_id);
+          if (!empty($primary_name)) {
             $organism = new Organism();
-            $organism->setName($organism_name);
+            $organism->setName($primary_name);
             $organism->save();
             // Save relation between taxonomy_id and organism name.
-            static::save(
+            OrganismTaxonomy::save(
               $organism->id,
+              static::KEY,
               $taxonomy_id
             );
           }
-          return [
+          $output = [
             'taxonomy_id' => (int) $taxonomy_id,
-            'primary_name' => $organism_name,
+            'primary_name' => $primary_name,
           ];
+          return $output;
         }
       }
     }
@@ -264,7 +269,6 @@ class NcbiTaxonomy extends OrganismTaxonomy {
         $xml = trim(str_replace("\r\n", "\n", $xml));
       }
       else {
-
         // array ( 'error' => 'API rate limit exceeded', 'api-key' => '', 'count' => '11', 'limit' => '10', )
         if (!empty($xml['error'])) {
           watchdog('tpps', 'NCBI error: @error_message',
@@ -277,6 +281,7 @@ class NcbiTaxonomy extends OrganismTaxonomy {
           );
         }
       }
+      return $xml;
     }
     catch (Exception $e) {
       $message = $e->getMessage();
@@ -287,7 +292,6 @@ class NcbiTaxonomy extends OrganismTaxonomy {
       );
       drupal_set_message($e->getCode() . ' ' . $message, 'error');
     }
-    return $xml;
   }
 
   /**
@@ -323,8 +327,6 @@ class NcbiTaxonomy extends OrganismTaxonomy {
    *   If curl request failed.
    */
   public static function isValidBioProjectId($bio_project_id) {
-    $debug_mode = TRUE;
-
     $query = [
       'retmax' => 0,
       'usehistory' => 'y',
