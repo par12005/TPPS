@@ -8,6 +8,8 @@
 /**
  * Shows TPPS Submission Cache in JSON format.
  *
+ * Callback for URL: /api/submission/< study accession >/cache.
+ *
  * @param string $accession
  *   TPPS Submission accession. E.g., 'TGDRxxxx'.
  */
