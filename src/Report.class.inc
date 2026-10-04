@@ -905,13 +905,6 @@ class Report {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Organism.
       'organism' => [
-        'all' => [
-          'title' => variable_get('tpps_report_organism_all_title',
-            'All Organism List'
-          ),
-          'description' => t('List of the all organisms.'),
-          'admin_panel' => FALSE,
-        ],
         'taxonomy' => [
           'title' => variable_get('tpps_report_organism_taxonomy_title',
             "All Organism's Taxonomy"
