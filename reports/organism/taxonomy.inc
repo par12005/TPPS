@@ -65,24 +65,15 @@ function tpps_report_organism_taxonomy_formatter(string $name, $value, array &$r
   }
   $name = check_plain($name);
   switch ($name) {
-    case 'name':
+    case 'type_id':
       if (!empty($value)) {
-        //$formatted = l($formatted, NcbiTaxonomy::getUrl($formatted));
-        $organism_name = implode(' ', [
-          $row['genus'],
-          $row['species'],
-          $row['infraspecific_name'],
-        ]);
-        $url = NcbiTaxonomy::getApiUrl($organism_name);
-        $formatted = l($formatted, $url);
-        $formatted = '<strong>' . $formatted . '</strong>';
+        $formatted = $formatted . ' {' . InfraspecificRank::getName($formatted) . '}';
       }
       break;
 
-    case 'ncbi_name':
-    case 'ncbi_full_name':
+    case 'taxonomy_id':
       if (!empty($value)) {
-        $formatted = l($formatted, NcbiTaxonomy::getUrl($row['ncbi']));
+        $formatted = l($formatted, NcbiTaxonomy::getUrl($row['taxonomy_id']));
         $formatted = '<em>' . $formatted . '</em>';
       }
       break;
