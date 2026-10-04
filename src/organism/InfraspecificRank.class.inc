@@ -41,6 +41,11 @@ class InfraspecificRank {
       'name' => 'f.',
       'regex' => 'forma|form|f.|fa.',
     ],
+    'cultivar' => [
+      'cvterm_id' => 40,
+      'name' => 'cv.',
+      'regex' => 'cultivar|cv.',
+    ],
     'subvariety' => [
       'cvterm_id' => 57,
       'name' => 'subvar.',
@@ -130,13 +135,13 @@ class InfraspecificRank {
   }
 
   /**
-   * Gets CV Term Id by rank's name, synonym or abbriviation.
+   * Gets CV Term Id by rank's name, synonym or abbreviation.
    *
    * Note:
    * outdated ranks doesn't have id. See getRegex().
    *
    * @param string $rank_name
-   *   Infraspecific rank name or synonym or abbriviation.
+   *   Infraspecific rank name or synonym or abbreviation.
    *   Leave empty to get list of all cvterm ids.
    *
    * @return mixed
