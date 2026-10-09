@@ -25,53 +25,57 @@ function tpps_report_organism_synonym_accepted($reset = FALSE) {
   // Get list.
   $list = variable_get($list_name, []);
 
-  // Mapping.
-  $fields = [
-    // DB field name => Class property name.
-    'organism_id' => 'id',
-    'genus' => 'genus',
-    'species' => 'species',
-    'infraspecific_name' => 'infraspecificName',
-    'type_id' => 'infraspecificRank',
-  ];
+  if (!empty($list)) {
+    dpm(var_export($list, 1));
 
-  // Get all (synonym and primary) organism names.
-  $organism_id_list = array_merge(array_keys($list), array_values($list));
-  $names = db_select('chado.organism', 'co')
-    ->condition('co.organism_id', $organism_id_list, 'IN')
-    ->fields('co', array_keys($fields))
-    ->execute()->fetchAllAssoc('organism_id', PDO::FETCH_ASSOC);
-
-  // Build table.
-  foreach ($list as $synonym_id => $primary_id) {
-    $id_list = [
-      'synonym' => $synonym_id,
-      'primary' => $primary_id,
+    // Mapping.
+    $fields = [
+      // DB field name => Class property name.
+      'organism_id' => 'id',
+      'genus' => 'genus',
+      'species' => 'species',
+      'infraspecific_name' => 'infraspecificName',
+      'type_id' => 'infraspecificRank',
     ];
-    foreach ($id_list as $type => $id) {
-      if (empty($names[$id])) {
-        continue;
-      }
-      $organism = new Organism();
-      foreach ($fields as $field_name => $property_name) {
-        if ($field_name == 'type_id') {
-          if (!empty($rank = $names[$id][$field_name])) {
-            $organism->{$property_name} = InfraspecificRank::getName($rank);
+
+    // Get all (synonym and primary) organism names.
+    $organism_id_list = array_merge(array_keys($list), array_values($list));
+    $names = db_select('chado.organism', 'co')
+      ->condition('co.organism_id', $organism_id_list, 'IN')
+      ->fields('co', array_keys($fields))
+      ->execute()->fetchAllAssoc('organism_id', PDO::FETCH_ASSOC);
+
+    // Build table.
+    foreach ($list as $synonym_id => $primary_id) {
+      $id_list = [
+        'synonym' => $synonym_id,
+        'primary' => $primary_id,
+      ];
+      foreach ($id_list as $type => $id) {
+        if (empty($names[$id])) {
+          continue;
+        }
+        $organism = new Organism();
+        foreach ($fields as $field_name => $property_name) {
+          if ($field_name == 'type_id') {
+            if (!empty($rank = $names[$id][$field_name])) {
+              $organism->{$property_name} = InfraspecificRank::getName($rank);
+            }
+            else {
+              // Just skip.
+            }
           }
           else {
-            // Just skip.
+            $organism->{$property_name} = ($names[$id][$field_name] ?? NULL);
           }
         }
-        else {
-          $organism->{$property_name} = ($names[$id][$field_name] ?? NULL);
-        }
-      }
 
-      $organism->generateName();
-      $row[$type . '_id'] = $id;
-      $row[$type . '_name'] = $organism->name;
+        $organism->generateName();
+        $row[$type . '_id'] = $id;
+        $row[$type . '_name'] = $organism->name;
+      }
+      $rows[] = $row;
     }
-    $rows[] = $row;
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output.
@@ -119,6 +123,9 @@ function tpps_report_organism_synonym_accepted_formatter(string $name, $value, a
       $formatted = l($formatted, 'admin/reports/db/chado.organism',
         ['query' => ['chado.organism.organism_id' => $formatted]]
       );
+      if ($value <= 2616 && $name == 'primary_id') {
+        $formatted = '[ <em title="Existing">' . $formatted . '</em> ]';
+      }
       break;
 
     case 'synonym_name':
