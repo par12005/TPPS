@@ -263,7 +263,7 @@ class Report {
     // $cid = __METHOD__;
     $cache_bin = TPPS_CACHE_BIN ?? 'cache';
     $cache = cache_get($cid, $cache_bin);
-    $key = md5(json_encode($report));
+    $key = $report['name'];
     if ($reset || empty($cache) || empty($cache->data[$key])) {
       $content = $default_value;
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
