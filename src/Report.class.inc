@@ -911,12 +911,22 @@ class Report {
           'description' => t('List of the all organisms.'),
           'admin_panel' => FALSE,
         ],
-        'synonym_list' => [
-          'title' => variable_get('tpps_report_organism_synonym_list_title',
-            "Organism Synonym List"
-          ),
-          'description' => t('List of the synonyms for each organism.'),
-          'admin_panel' => FALSE,
+        'synonym' => [
+          'list' => [
+            'title' => variable_get('tpps_report_organism_synonym_list_title',
+              "Organism Synonym List"
+            ),
+            'description' => t('List of the synonyms for each organism.'),
+            'admin_panel' => FALSE,
+          ],
+          'accepted' => [
+            'title' => variable_get('tpps_report_organism_synonym_accepted_title',
+              "List of the Accepted Organism Synonym Names"
+            ),
+            'description' => t('List of the synonym names stored as accepted '
+              . '(primary, canonical) organism name in "chado.organism" table.'),
+            'admin_panel' => FALSE,
+          ],
         ],
         'genus' => [
           'title' => variable_get('tpps_report_organism_genus_title',

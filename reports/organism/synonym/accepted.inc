@@ -14,54 +14,75 @@
  *   Flag is cache must be resetted. Default if FALSE.
  */
 function tpps_report_organism_synonym_accepted($reset = FALSE) {
-  $default_value = [];
-  // When TRUE organismprop_id will be appended to synonym's name.
-  $add_id_to_name = FALSE;
-
-  $cid = __FUNCTION__;
-  $cache_bin = TPPS_CACHE_BIN ?? 'cache';
-  $cache = cache_get($cid, $cache_bin);
-  $key = $cid;
   $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
-  if ($reset || empty($cache) || empty($cache->data[$key])) {
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    $rows = $default_value;
-    $prev_oid = NULL;
-    foreach (OrganismSynonym::get() as $item) {
-      $oid = $item['organism_id'];
-      // Group by organism_id to have a list of synonyms.
-      $synonym_name = $item['synonym_name'];
-      if ($add_id_to_name ?? TRUE) {
-        $synonym_name .= ' (#' . $item['organismprop_id'] . ')';
+  $list_name = 'var_list_organism_synonym_accepted_list';
+  $rows = [];
+
+  // Clear list.
+  if (isset($_GET['clear'])) {
+    variable_del($list_name);
+  }
+  // Get list.
+  $list = variable_get($list_name, []);
+
+  // Mapping.
+  $fields = [
+    // DB field name => Class property name.
+    'organism_id' => 'id',
+    'genus' => 'genus',
+    'species' => 'species',
+    'infraspecific_name' => 'infraspecificName',
+    'type_id' => 'infraspecificRank',
+  ];
+
+  // Get all (synonym and primary) organism names.
+  $organism_id_list = array_merge(array_keys($list), array_values($list));
+  $names = db_select('chado.organism', 'co')
+    ->condition('co.organism_id', $organism_id_list, 'IN')
+    ->fields('co', array_keys($fields))
+    ->execute()->fetchAllAssoc('organism_id', PDO::FETCH_ASSOC);
+
+  // Build table.
+  foreach ($list as $synonym_id => $primary_id) {
+    $id_list = [
+      'synonym' => $synonym_id,
+      'primary' => $primary_id,
+    ];
+    foreach ($id_list as $type => $id) {
+      if (empty($names[$id])) {
+        continue;
+      }
+      $organism = new Organism();
+      foreach ($fields as $field_name => $property_name) {
+        if ($field_name == 'type_id') {
+          if (!empty($rank = $names[$id][$field_name])) {
+            $organism->{$property_name} = InfraspecificRank::getName($rank);
+          }
+          else {
+            // Just skip.
+          }
+        }
+        else {
+          $organism->{$property_name} = ($names[$id][$field_name] ?? NULL);
+        }
       }
 
-      if ($oid != $prev_oid) {
-        $rows[$oid] = (array) $item;
-        $rows[$oid]['synonym_list'] = [$synonym_name];
-      }
-      else {
-        $rows[$oid]['synonym_list'][] = $synonym_name;
-      }
-      unset($rows[$oid]['synonym_name']);
-      unset($rows[$oid]['organismprop_id']);
-      $prev_oid = $oid;
+      $organism->generateName();
+      $row[$type . '_id'] = $id;
+      $row[$type . '_name'] = $organism->name;
     }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    $cache->data[$key] = $rows;
-    cache_set($cid, $cache->data, $cache_bin);
+    $rows[] = $row;
   }
-  $rows = $cache->data[$key] ?? $default_value;
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output.
   $header = [
-    ['data' => t('Organism Id'), 'field' => 'organism_id'],
-    ['data' => t('Genus'), 'field' => 'genus'],
-    ['data' => t('Species'), 'field' => 'species'],
-    ['data' => t('Infraspecific Name'), 'field' => 'infraspecific_name'],
-    ['data' => t('Synonym List'), 'field' => 'synonym_list'],
+    t('Synonym Id'),
+    t('Synonym Name'),
+    t('Primary Id'),
+    t('Primary Name'),
   ];
   return Report::print([
-    'name' => 'organism_synonym_list',
+    'name' => 'organism_synonym_accepted',
     'header' => $header,
     'rows' => $rows,
     'pager' => 'both',
@@ -69,7 +90,7 @@ function tpps_report_organism_synonym_accepted($reset = FALSE) {
 }
 
 /**
- * Values formatter for tpps_report_organism_synonym_list().
+ * Values formatter for tpps_report_organism_taxonomy().
  *
  * @param string $name
  *   Required. Field name.
@@ -87,40 +108,34 @@ function tpps_report_organism_synonym_accepted($reset = FALSE) {
  *   Empty value will not be formatted and returned as is.
  */
 function tpps_report_organism_synonym_accepted_formatter(string $name, $value, array &$row) {
-  $formatted = is_array($value) ? $value : check_plain($value);
+  $formatted = check_plain($value);
   if (empty($name) || empty($value)) {
     return $formatted;
   }
   $name = check_plain($name);
   switch ($name) {
-    case 'organism_id':
-      if (!empty($value)) {
-        $formatted = l($formatted, 'admin/reports/db/chado.organism',
-          ['query' => ['chado.organism.organism_id' => $formatted]]
-        );
-      }
+    case 'synonym_id':
+    case 'primary_id':
+      $formatted = l($formatted, 'admin/reports/db/chado.organism',
+        ['query' => ['chado.organism.organism_id' => $formatted]]
+      );
       break;
 
-    case 'synonym_list':
-      $token_list = [
-        $row['genus'],
-        $row['species'],
-        $row['infraspecific_name'],
-      ];
-
-      foreach ($formatted as $index => $item) {
-        foreach ($token_list as $token) {
-          $item = str_replace(
-            $token,
-            '<strong>' . $token . '</strong>',
-            $item
+    case 'synonym_name':
+    case 'primary_name':
+      if (!empty($value)) {
+        $xml = NcbiTaxonomy::getInfo($formatted);
+        preg_match('/<Id>(\d+)<\/Id>/', $xml, $matches);
+        if (!empty($taxonomy_id = $matches[1])) {
+          $formatted = l(
+            $formatted . ' (' . $taxonomy_id . ')',
+            NcbiTaxonomy::getUrl($taxonomy_id)
           );
+          $formatted = '<em>' . $formatted . '</em>';
         }
-        $formatted[$index] = $item;
       }
-
-      $formatted = theme('item_list', ['items' => $formatted, 'type' => 'ol']);
       break;
   }
+
   return $formatted;
 }

@@ -35,14 +35,10 @@ class VarList {
    *   The value to add.
    * @param mixed $key
    *   Optional. Key.
-   *
-   * @return bool
-   *   TRUE if the value was added, FALSE if it already existed.
    */
   public static function add($list_name, $value, $key = NULL) {
     $value = $value;
     $list = self::getList($list_name);
-
     if (is_null($key)) {
       if (!in_array($value, $list, TRUE)) {
         $list[] = $value;
@@ -51,9 +47,7 @@ class VarList {
     else {
       $list[$key] = $value;
     }
-
     self::saveList($list_name, $list);
-    return TRUE;
   }
 
   /**
@@ -70,7 +64,6 @@ class VarList {
    *   TRUE if the value was removed, FALSE if it wasn't found.
    */
   public static function remove($list_name, $value, $key = NULL) {
-    $value = (int) $value;
     $list = self::getList($list_name);
     if (is_null($key)) {
       $key = array_search($value, $list, TRUE);
@@ -98,17 +91,17 @@ class VarList {
    * @param mixed $key
    *   Optional. Key.
    *
-   * @return int|false
+   * @return int|FALSE
    *   The index of the value if found, FALSE otherwise.
    */
   public static function search($list_name, $value, $key = NULL) {
     $list = self::getList($list_name);
 
     if (is_null($key)) {
-      return array_search($value, $list, TRUE);
+      return array_search($value, $list);
     }
     else {
-      return (bool) (($list[$key] ?? NULL) == $value);
+      return ($list[$key] ?? NULL);
     }
   }
 
@@ -126,7 +119,7 @@ class VarList {
    *   TRUE if the value exists, FALSE otherwise.
    */
   public static function isExists($list_name, $value, $key = NULL) {
-    return self::search($list_name, $value, $key) !== FALSE;
+    return (bool) (self::search($list_name, $value, $key) !== FALSE);
   }
 
   /**
