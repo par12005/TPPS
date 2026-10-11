@@ -95,10 +95,8 @@ function tpps_reports_settings_form(array $form, array &$form_state) {
   // 'tpps_report_rest_api_response_body_title',
   //
   // NCBI API.
-  // 'tpps_report_organism_ncbi_all_title',
   // 'tpps_report_organism_ncbi_missing_title',
   // GBIF API.
-  // 'tpps_report_organism_gbif_all_title',
   // 'tpps_report_organism_gbif_missing_title'.
   // 'tpps_report_organism_taxonomy_title'.
   module_load_install('tpps');

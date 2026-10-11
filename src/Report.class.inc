@@ -908,7 +908,8 @@ class Report {
           'title' => variable_get('tpps_report_organism_taxonomy_title',
             "All Organism's Taxonomy"
           ),
-          'description' => t('List of the all organisms.'),
+          'description' => t("List of the all organisms, their taxonomy "
+            . "ids by source."),
           'admin_panel' => FALSE,
         ],
         'synonym' => [
@@ -961,12 +962,6 @@ class Report {
           'admin_panel' => TRUE,
         ],
         'ncbi' => [
-          'all' => [
-            'title' => variable_get('tpps_report_organism_ncbi_all_title',
-              'All Organisms and their NCBI Taxonomy Ids'),
-            'description' => t('List of all organisms and their NCBI Taxonomy Ids.'),
-            'admin_panel' => FALSE,
-          ],
           'missing' => [
             'title' => variable_get('tpps_report_organism_ncbi_missing_title',
               'Organisms without  NCBI Taxonomy Ids'),
@@ -975,12 +970,6 @@ class Report {
           ],
         ],
         'gbif' => [
-          'all' => [
-            'title' => variable_get('tpps_report_organism_gbif_all_title',
-              'All Organisms and their GBIF Taxonomy Ids'),
-            'description' => t('List of all organisms and their GBIF Taxonomy Ids.'),
-            'admin_panel' => FALSE,
-          ],
           'missing' => [
             'title' => variable_get('tpps_report_organism_gbif_missing_title',
               'Organisms without  GBIF Taxonomy Ids'),

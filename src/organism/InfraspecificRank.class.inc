@@ -178,10 +178,11 @@ class InfraspecificRank {
   /**
    * Builds regex to split organism name into parts.
    *
-   * @param mixed $key
+   * @param string|int $key
    *   Rank Key.
-   *   If integer - cvterm id.
-   *   If string - human readable rank name (could be abbreviation or canonical name).
+   *   If type is 'integer' it's cvterm id.
+   *   If type is 'string' - it's ahuman readable rank name which could
+   *   be abbreviation or canonical name.
    *
    * @return string|null
    *   Returns NULL when $key is not empty but rank wasn't found.

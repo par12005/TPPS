@@ -9,10 +9,14 @@
  * Menu callback. Shows list of all organisms.
  */
 function tpps_report_organism_taxonomy() {
+  $report_name = 'organism_taxonomy';
   $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
-  $query = db_select('public.' . OrganismTaxonomy::TABLE, 'ot');
-  $query->leftJoin('chado.organism', 'o', 'ot.organism_id = o.organism_id');
-  $query->fields('o', [
+  $query = db_select(Organism::TABLE, 'co');
+  $query->leftJoin(
+    'public.' . OrganismTaxonomy::TABLE, 'ot',
+    'ot.organism_id = co.organism_id'
+  );
+  $query->fields('co', [
     'organism_id',
     'genus',
     'species',
@@ -23,17 +27,17 @@ function tpps_report_organism_taxonomy() {
 
   // Header.
   $header = [
-    ['data' => t('Organism Id'), 'field' => 'o.organism_id'],
-    ['data' => t('Genus'), 'field' => 'o.genus'],
-    ['data' => t('Species'), 'field' => 'o.species'],
-    ['data' => t('Type Id'), 'field' => 'o.type_id'],
-    ['data' => t('Infraspecific Name'), 'field' => 'o.infraspecific_name'],
+    ['data' => t('Organism Id'), 'field' => 'co.organism_id'],
+    ['data' => t('Genus'), 'field' => 'co.genus'],
+    ['data' => t('Species'), 'field' => 'co.species'],
+    ['data' => t('Infraspecific Rank'), 'field' => 'co.type_id'],
+    ['data' => t('Infraspecific Name'), 'field' => 'co.infraspecific_name'],
     ['data' => t('Source'), 'field' => 'ot.source'],
     ['data' => t('Taxonomy Id'), 'field' => 'ot.taxonomy_id'],
   ];
 
   return Report::print([
-    'name' => 'organism_taxonomy',
+    'name' => $report_name,
     'header' => $header,
     'query' => $query,
     'pager' => 'none',
@@ -65,9 +69,32 @@ function tpps_report_organism_taxonomy_formatter(string $name, $value, array &$r
   }
   $name = check_plain($name);
   switch ($name) {
-    case 'type_id':
+    case 'organism_id':
       if (!empty($value)) {
-        $formatted = $formatted . ' {' . InfraspecificRank::getName($formatted) . '}';
+        $formatted = l($formatted, 'admin/reports/db/chado.organism',
+          ['query' => ['chado.organism.organism_id' => $formatted]]
+        );
+      }
+      break;
+
+    case 'type_id':
+      if (!empty($formatted)) {
+        $formatted = InfraspecificRank::getName($formatted);
+      }
+      break;
+
+    case 'infraspecific_name':
+      if (!empty($formatted)) {
+        if (!empty($row['type_id'])) {
+          // Get rank name.
+          $pattern = '/' . InfraspecificRank::getRegex($row['type_id']) . '\s/';
+          // Replace rank abbreviation in rank name.
+          $formatted = trim(preg_replace($pattern, '', $formatted));
+        }
+        else {
+          // Empty 'type_id' but 'name' could have rank.
+          // Let's just leave it for now.
+        }
       }
       break;
 
@@ -78,13 +105,6 @@ function tpps_report_organism_taxonomy_formatter(string $name, $value, array &$r
       }
       break;
 
-    case 'organism_id':
-      if (!empty($value)) {
-        $formatted = l($formatted, 'admin/reports/db/chado.organism',
-          ['query' => ['chado.organism.organism_id' => $formatted]]
-        );
-      }
-      break;
   }
   return $formatted;
 }
