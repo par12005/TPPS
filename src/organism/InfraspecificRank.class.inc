@@ -178,12 +178,39 @@ class InfraspecificRank {
   /**
    * Builds regex to split organism name into parts.
    *
-   * @return string
+   * @param mixed $key
+   *   Rank Key.
+   *   If integer - cvterm id.
+   *   If string - human readable rank name (could be abbreviation or canonical name).
+   *
+   * @return string|null
+   *   Returns NULL when $key is not empty but rank wasn't found.
    *   Returns list of the ranks where names already has dots if necessary.
    *   Example: 'proles|subspecies ... sub-subform|subsubf.|ssubf.'.
    */
-  public static function getRegex() {
-    return implode('|', array_filter(array_column(static::LIST, 'regex')));
+  public static function getRegex($key = NULL) {
+    if (is_null($key)) {
+      return implode('|', array_filter(array_column(static::LIST, 'regex')));
+    }
+    else {
+      if (!is_numeric($key)) {
+        // Key is the name. Get id.
+        $cvterm_id = static::getCvtermId($key);
+      }
+      else {
+        // Key is the rank id.
+        $cvterm_id = $key;
+      }
+      foreach (static::LIST as $canonical_name => $item) {
+        if (
+          !empty($item['cvterm_id'])
+          && $item['cvterm_id'] == $cvterm_id
+        ) {
+          return $item['regex'] ?? NULL;
+        }
+      }
+      return NULL;
+    }
   }
 
 }
