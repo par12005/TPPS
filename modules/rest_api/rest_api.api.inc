@@ -6,16 +6,34 @@
  */
 
 /**
+ * Implements hook 'rest_api_request_started'.
+ *
+ * @param array $context
+ *   Request's context.
+ *   Keys:
+ *   'request_id' - int|null. Existing request ID if known.
+ *   'hash' - string. MD5 hash of request metadata.
+ *   'method' - string. HTTP method in uppercase.
+ *   'url' - string. API Endpoint URL.
+ *   'payload' - mixed. Request payload.
+ *   'header' - array. Request headers.
+ *   'tag' - string|null. Human-readable request tag.
+ *   'cache' - bool. Whether caching is enabled for this request.
+ *   'log' - bool. Whether DB logging is enabled for this request.
+ */
+function hook_rest_api_request_started(array $context = []) {
+}
+
+/**
  * Implements hook 'rest_api_response_received'.
  *
  * @param array $context
  *   Request's context.
  *   Keys:
- *   'Code' - int. HTTP code.
- *   'Message' - string. HTTP code message.
- *   'Execution Time' - float. Request execution time in milliseconds.
- *   'Request' - array. Keys are 'Method', 'URL', 'Payload', 'Headers'.
- *   'Response' - mixed. Remote server's response.
+ *   'code' - int. HTTP code.
+ *   'duration' - float. Request execution time in milliseconds.
+ *   'request' - array. Request metadata.
+ *   'body' - mixed. Remote server's response.
  */
 function hook_rest_api_response_received(array $context = []) {
 }
@@ -36,17 +54,17 @@ function hook_rest_api_response_loaded(array $context = []) {
       "Loaded response '@id' for request '@request_id'.",
       [
         '@id' => $context['response_id'],
-        '@request_id' => $constext['request_id'],
+        '@request_id' => $context['request_id'],
       ]
     );
   }
 }
 
 /**
- * Implements alter-hook 'rest_api_exception'.
+ * Implements alter-hook 'rest_api_exception_alter'.
  *
- * Called from RestApi->doRequest() when API responded with HTTP code different
- * from 200..204.
+ * Called from RestApi->validateResponseStatus() when API responded with HTTP
+ * code outside 200..299.
  *
  * @param string $message
  *   Exception message which could be altered.
@@ -58,11 +76,11 @@ function hook_rest_api_response_loaded(array $context = []) {
  *    'code' - int. HTTP response code.
  *    'header' - array. List of request headers. Each element is a string.
  *    'response' - mixed. API server response.
- *    'curl_info' - array. Data provided by curl_info().
+ *    'curl_info' - array. Data provided by curl_getinfo().
  *    'backtrace' - array. Stack of the callers.
  *    'message' - string. Clone of the $message to always have original string.
  */
-function hook_rest_api_exception($message, array $exception_context) {
+function hook_rest_api_exception_alter(&$message, array $exception_context) {
 }
 
 /**
@@ -75,4 +93,3 @@ function hook_rest_api_exception($message, array $exception_context) {
 function hook_rest_api_response_hash_generation_alter(array &$context) {
   unset($context['body']['response-date']);
 }
-

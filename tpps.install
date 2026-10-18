@@ -13,6 +13,9 @@
  */
 function tpps_get_variable_list() {
   return [
+    // VarList.
+    'var_list_organism_synonym_ncbi_accepted_list' => [],
+    'var_list_organism_synonym_gbif_accepted_list' => [],
     // DOI Lookup / CORS Proxy.
     'tpps_doi_lookup_cors_proxy_url' => '',
     'tpps_doi_lookup_cors_proxy_keep_alive' => TRUE,
@@ -2618,7 +2621,6 @@ function tpps_update_7134() {
   variable_set('tpps_doi_dryad_endpoint_path', Dryad::ENDPOINT_PATH);
   variable_set('tpps_doi_dryad_unique_url', FALSE);
   variable_set('tpps_doi_dryad_delay', Dryad::DEFAULT_DELAY);
-  variable_set('tpps_doi_dryad_not_found_token', Dryad::NOT_FOUND_TOKEN);
 
 
   // DOI Lookup / Gemini.

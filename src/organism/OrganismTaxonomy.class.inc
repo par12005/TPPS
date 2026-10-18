@@ -20,6 +20,11 @@ class OrganismTaxonomy {
   const TABLE = 'tpps_organism_taxonomy';
 
   /**
+   * List of the supported sources.
+   */
+  const SOURCE_LIST = ['ncbi', 'gbif'];
+
+  /**
    * Gets DB table schema.
    *
    * Table to store relations between organism name and Taxonomy Id.
@@ -133,6 +138,21 @@ class OrganismTaxonomy {
   /**
    * Updates existing Taxonomy Id.
    *
+   * @param string|null $source
+   *   Source of the Taxonomy Id. See static::SOURCE_LIST.
+   *   If NULL then all records will be removed.
+   */
+  public static function remove($source = NULL) {
+    $query = db_delete(static::TABLE);
+    if (!empty($source) && in_array($source, static::SOURCE_LIST, TRUE)) {
+      $query->condition('source', $source);
+    }
+    $query->execute();
+  }
+
+  /**
+   * Updates existing Taxonomy Id.
+   *
    * @param int $organism_id
    *   Organism Id.
    * @param string $source
@@ -185,22 +205,83 @@ class OrganismTaxonomy {
   /**
    * Gets list of organisms without NCBI/GBIF Taxonomy Id.
    *
+   * @param string $source
+   *   Source of the Taxonomy Id.
+   *   Possible values are:
+   *   - 'ncbi' (NcbiTaxonomy::KEY),
+   *   - 'gbif' (GbifSpeciesApi::KEY).
+   * @param bool $debug_mode
+   *   Optional. Default is FALSE.
+   *   When TRUE only first 10 items will be in resulting set of data.
+   *
    * @return array
    *   Returns list of organism ids.
    */
-  public static function getMissingOrganismIdList() {
+  public static function getMissingOrganismIdList($source, $debug_mode = FALSE) {
     $query = db_select('chado.organism', 'o')
       ->fields('o', ['organism_id'])
       ->orderBy('o.organism_id');
     $query->leftJoin(
-      OrganismTaxonomy::TABLE, 'ot',
-      'o.organism_id = ot.organism_id'
+      static::TABLE, 'tot',
+      'o.organism_id = tot.organism_id AND tot.source = :source',
+      [':source' => $source]
     );
-    $query->isNull('ot.source');
+    $query->isNull('tot.organism_id');
+
+    // Check if organism name is not a synonym.
+    $query->leftJoin('chado.organismprop', 'op',
+      'o.organism_id = op.organism_id
+        AND op.type_id = :type_id
+        AND op.rank = 0',
+      [':type_id' => OrganismSynonym::CVTERM_ID]
+    );
+    $var_list_name = 'organism_synonym_' . $source . '_accepted_list';
+    $accepted_synonym_id_list = array_keys(VarList::getList($var_list_name));
+    if (!empty($accepted_synonym_id_list)) {
+      $query->condition('o.organism_id', $accepted_synonym_id_list, 'NOT IN');
+    }
+    // 'chado.organismprop.value' is not numeric.
+    $query->where("op.value IS NULL");
+
     if ($debug_mode ?? FALSE) {
-      $query->range(0, 2);
+      $query->range(0, 10);
     }
     return $query->execute()->fetchCol();
+  }
+
+  /**
+   * Gets list of organism id and related taxonomy id for single $source.
+   *
+   * @param string $source
+   *   Source of the Taxonomy Id.
+   *   Possible values are:
+   *   - 'ncbi' (NcbiTaxonomy::KEY),
+   *   - 'gbif' (GbifSpeciesApi::KEY).
+   * @param bool $debug_mode
+   *   Optional. Default is FALSE.
+   *   When TRUE only first 10 items will be in resulting set of data.
+   *
+   * @return array
+   *   Returns list of the organisms and their Taxonomy Id.
+   *   Format (associative array):
+   *   [
+   *     <organism_id> => <taxonomy_id>,
+   *   ]
+   */
+  public static function getIdList($source, $debug_mode = FALSE) {
+    // Get all organisms.
+    $query = db_select('chado.organism', 'o')
+      ->fields('o', ['organism_id'])
+      ->orderBy('o.organism_id');
+    $query->leftJoin(static::TABLE, 'tot', 'o.organism_id = tot.organism_id');
+    $query->condition('tot.source', $source);
+    $query->isNotNull('tot.taxonomy_id');
+    $query->addField('tot', 'taxonomy_id');
+
+    if ($debug_mode) {
+      $query->range(0, 11);
+    }
+    return $query->execute()->fetchAllKeyed();
   }
 
 }

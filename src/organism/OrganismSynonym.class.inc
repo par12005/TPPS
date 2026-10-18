@@ -7,6 +7,10 @@
  * Rank.
  * We assume that rank is the sequence of whole numbers starting from 0.
  * Rank represents ordinal number of the synonym of the same organism_id.
+ *
+ * Value.
+ * If string then treated as synonym name.
+ * If integer then treated as primary organism id.
  */
 
 /**
@@ -42,8 +46,8 @@ class OrganismSynonym {
    *   Returns Organism Id.
    *
    * @throws Exception
-   *   When Organism Id couldn't be found by name.
-   *   When given $organism_key is nor number neither string.
+   *   If Organism Id couldn't be found by name.
+   *   If given $organism_key is nor number neither string.
    */
   public static function getOrganismId($organism_key) {
     if (is_int($organism_key)) {
@@ -73,17 +77,17 @@ class OrganismSynonym {
   /**
    * Searches Organism Id by synonym's name.
    *
-   * @param int $organism_name
-   *   Organism Name.
+   * @param int $synonym_name
+   *   Organism's synonym name.
    *
    * @return mixed
    *   Returns organism Id or NULL.
    */
-  public static function search($organism_name) {
-    return db_select(static::TABLE, 't')
-      ->fields('t', ['organism_id'])
-      ->condition('t.type_id', static::CVTERM_ID)
-      ->condition('t.value', $organism_name)
+  public static function getId($synonym_name) {
+    return db_select(static::TABLE, 'cop')
+      ->fields('cop', ['organism_id'])
+      ->condition('cop.type_id', static::CVTERM_ID)
+      ->condition('cop.value', $synonym_name)
       ->range(0, 1)
       ->execute()
       ->fetchField();
@@ -101,29 +105,29 @@ class OrganismSynonym {
    *   Returns data for 'Organism Synonym' report.
    *
    * @throws Exception
-   *   When Organism Id couldn't be found by name.
-   *   When given $organism_key is nor number neither string.
+   *   If Organism Id couldn't be found by name.
+   *   If given $organism_key is nor number neither string.
    */
   public static function get($organism_key = NULL) {
-    $query = db_select('chado.organism', 'o');
+    $query = db_select('chado.organism', 'co');
     // Join table in this order to show all organisms even if they
     // doesn't have synonyms.
-    $query->leftJoin(static::TABLE, 't', 't.organism_id = o.organism_id');
-    $query->condition('t.type_id', static::CVTERM_ID);
-    $query->addField('t', 'organismprop_id');
-    $query->addField('o', 'organism_id');
-    $query->addField('o', 'genus');
-    $query->addField('o', 'species');
-    $query->addField('o', 'infraspecific_name');
-    $query->addField('t', 'value', 'synonym_name');
+    $query->leftJoin(static::TABLE, 'cop', 'cop.organism_id = co.organism_id');
+    $query->condition('cop.type_id', static::CVTERM_ID);
+    $query->addField('cop', 'organismprop_id');
+    $query->addField('co', 'organism_id');
+    $query->addField('co', 'genus');
+    $query->addField('co', 'species');
+    $query->addField('co', 'infraspecific_name');
+    $query->addField('cop', 'value', 'synonym_name');
 
     // Specific organism.
     if (!empty($organism_key)) {
       $organism_id = static::getOrganismId($organism_key);
-      $query->condition('t.organism_id', $organism_id);
+      $query->condition('cop.organism_id', $organism_id);
     }
-    $query->orderBy('o.organism_id');
-    $query->orderBy('t.value');
+    $query->orderBy('co.organism_id');
+    $query->orderBy('cop.value');
 
     return $query->execute()
       ->fetchAllAssoc('organismprop_id', PDO::FETCH_ASSOC);
@@ -137,20 +141,27 @@ class OrganismSynonym {
    *
    * @return array
    *   Returns list of the synonyms sorted by 'rank' column or empty array.
-   *   Format: <oranismprop_id> => <synonym name>.
-   *   Example: [18454 => 'Pinus halepensis subsp. brutia'].
+   *   Format: [
+   *     < oranismprop_id > => < synonym name >,
+   *     18454 => 'Pinus halepensis subsp. brutia',
+   *   ]
+   *   Note: if give $organism_key belong to the primary (or accepted) organism
+   *   name then values will be string with synonym organism names.
+   *   But if $organism_key is a synonym name (which was added to
+   *   'chado.organism' db table) then vlaue will be an organism id of the
+   *   primary (accepted, canonical) organism.
    *
    * @throws Exception
-   *   When Organism Id couldn't be found by name.
-   *   When given $organism_key is nor number neither string.
+   *   If Organism Id couldn't be found by name.
+   *   If given $organism_key is nor number neither string.
    */
   public static function load($organism_key) {
     $organism_id = static::getOrganismId($organism_key);
-    $list = db_select(static::TABLE, 't')
-      ->fields('t', ['organismprop_id', 'value'])
-      ->condition('t.type_id', static::CVTERM_ID)
-      ->condition('t.organism_id', $organism_id)
-      ->orderBy('t.rank', 'ASC')
+    $list = db_select(static::TABLE, 'cop')
+      ->fields('cop', ['organismprop_id', 'value'])
+      ->condition('cop.type_id', static::CVTERM_ID)
+      ->condition('cop.organism_id', $organism_id)
+      ->orderBy('cop.rank', 'ASC')
       ->execute()
       ->fetchAllKeyed();
     return $list ?? [];
@@ -161,8 +172,9 @@ class OrganismSynonym {
    *
    * @param mixed $organism_key
    *   Organism Key (id or name).
-   * @param string $synonym_name
-   *   Organism Synonym name.
+   * @param mixed $synonym_name
+   *   If string then treated as organism's synonym name.
+   *   If integer then treated as primary organism id.
    *
    * @return bool
    *   Returns TRUE if synonym name found and FALSE otherwise.
@@ -171,7 +183,7 @@ class OrganismSynonym {
     return (
       // WARNING: Do NOT change the order of checks!
       !empty($synonym_list = static::load($organism_key))
-      && $id = TppsArray::searchInsensitive($synonym_name, $synonym_list)
+      && TppsArray::searchInsensitive($synonym_name, $synonym_list)
     );
   }
 
@@ -181,7 +193,9 @@ class OrganismSynonym {
    * @param mixed $organism_key
    *   Organism Key (id or name).
    * @param string $synonym_name
-   *   Organism Synonym.
+   *   The organism's synonym name.
+   *   Note: 'chado.organismprop' table should be used only to store synonym
+   *   names but not primary names which must be stored into 'chado.organism'.
    * @param bool $debug_mode
    *   Debug mode.
    *
@@ -207,13 +221,13 @@ class OrganismSynonym {
       ->execute();
 
     if ($debug_mode ?? FALSE) {
-      watchdog('tpps', "Inserted synonym '@synonym_name' (#@id) for "
+      watchdog('tpps', "Inserted synonym-relation to '@synonym_name' (#@id) for "
         . "Organism Id '@organism_id'.",
         [
           '@id' => $id,
           '@organism_id' => $organism_id,
           '@synonym_name' => $synonym_name,
-        ], WATCHDOG_ERROR
+        ], WATCHDOG_INFO
       );
     }
     return $id;
@@ -229,8 +243,9 @@ class OrganismSynonym {
    *   Organism Key (id or name).
    * @param mixed $synonym_name
    *   Optional. Default if NULL.
-   *   Organism Synonym Name.
-   *   When empty all organism's synonyms will be removed.
+   *   If empty then all organism's synonyms will be removed.
+   *   If string then treated as organism's synonym name.
+   *   If integer then treated as primary organism id.
    *
    * @return bool
    *   Returns TRUE if any synonym was removed and FALSE otherwise.
@@ -310,40 +325,6 @@ class OrganismSynonym {
       }
     }
     return TRUE;
-  }
-
-  /**
-   * Gets list of organism's Taxonomy Id.
-   *
-   * @param string $source
-   *   Source of the Taxonomy Id.
-   *   See class OrganismTaxonomy.
-   * @param bool $debug_mode
-   *   Optional. Default is FALSE.
-   *   When TRUE only first 10 items will be in resulting set of data.
-   *
-   * @return mixed
-   *   Returns list of the organisms and their Taxonomy Id.
-   *   Format: <organism_id> => <taxonomy_id>.
-   *   Returns NULL if $table2 has wrong value.
-   */
-  public static function getTaxonomyIdList($source, $debug_mode = FALSE) {
-    // Get all organisms.
-    $query = db_select('chado.organism', 'o')
-      ->fields('o', ['organism_id'])
-      ->orderBy('o.organism_id');
-    $query->leftJoin(
-      OrganismTaxonomy::TABLE, 'ot',
-      'o.organism_id = ot.organism_id'
-    );
-    $query->condition('ot.source', $source);
-    $query->isNotNull('ot.taxonomy_id');
-    $query->addField('ot', 'taxonomy_id');
-
-    if ($debug_mode) {
-      $query->range(0, 11);
-    }
-    return $query->execute()->fetchAllKeyed();
   }
 
 }

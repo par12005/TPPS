@@ -54,7 +54,8 @@ function tpps_reports_settings_form(array $form, array &$form_state) {
   //
   // Organism/Synonym:
   // 'tpps_report_organism_synonym_list_title'.
-  // 'tpps_report_organism_synonym_accepted_title'.
+  // 'tpps_report_organism_synonym_ncbi_accepted_title'.
+  // 'tpps_report_organism_synonym_gbif_accepted_title'.
   //
   // DOI:
   // 'tpps_report_doi_duplicates_title'.

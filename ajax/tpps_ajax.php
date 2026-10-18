@@ -164,7 +164,7 @@ function tpps_species_autocomplete($string) {
     $matches = tpps_ncbi_species_autocomplete($string);
   }
   if ($add_synonyms ?? FALSE) {
-    // Add synonyms.
+    // Get list of synonyms and merge into suggestion's list.
     $organism_id_list = db_select(OrganismSynonym::TABLE, 't')
       ->fields('t', ['organism_id'])
       ->condition('t.type_id', OrganismSynonym::CVTERM_ID)

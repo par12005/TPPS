@@ -63,7 +63,7 @@ function tpps_batch_gbif_synonym_form_submit(array $form, array &$form_state) {
   //
   //
   // @TODO Get organism_name to have better status messages.
-  $list = OrganismSynonym::getTaxonomyIdList(GbifSpeciesApi::TABLE);
+  $list = OrganismTaxonomy::getIdList(GbifSpeciesApi::KEY);
   if (!empty($total = count($list))) {
     foreach ($list as $organism_id => $taxonomy_id) {
       if (empty($organism_id) || empty($taxonomy_id)) {

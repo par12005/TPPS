@@ -4,10 +4,6 @@
  * @file
  * Contains 'RestApi' class.
  *
- * WARNING:
- * Do not use any caching in class. Caching must be done outside the class
- * because not all responses and not all methods could be cached.
- *
  * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * 'query' vs 'payload'
  *
@@ -21,11 +17,11 @@
  * +---------+-----+------+-----+--------+
  *
  * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
- *  How to create an instnace of the 'RestApi' class?
- *    $data['body'] = (new RestApi($data))->get()->response();
- *    or
- *    $api = new RestApi($context);
- *    $api->doRequest();
+ * How to create an instance of the 'RestApi' class?
+ *   $data['body'] = (new RestApi($data))->get()->response();
+ *   or
+ *   $api = new RestApi($context);
+ *   $api->doRequest();
  *
  * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * How to add 'tag'?
@@ -38,55 +34,34 @@
  *   $api->tag = $tag;
  *
  * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+ * Connection Reuse & Bulk / Background Worker Optimization:
+ *   By default, RestApi reuses a persistent cURL handle and a shared cURL
+ *   session handle (curl_share_init) with TCP keep-alive enabled
+ *   (CURLOPT_TCP_KEEPALIVE, CURLOPT_TCP_KEEPIDLE, CURLOPT_TCP_KEEPINTVL) and
+ *   HTTP/2 over TLS where supported. This eliminates repeated DNS lookups,
+ *   TCP handshakes, and TLS handshakes (50-150ms per request) when sending
+ *   multiple messages to endpoints like https://api.telegram.org.
+ *
+ *   For concurrent bulk notifications, use RestApi::doMultiRequest($requests).
+ *
+ * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
  * DB Tables:
  *   - public.rest_api_request
- *   - public.rest_api_response.
+ *   - public.rest_api_response
  *
  * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
- * Logging:
+ * Logging & Caching:
  *   See 'RestApiResponse' and 'RestApiRequest' classes.
- *   Request is stored when doRequest() was called.
- *   Response is stored when request was received.
- *
- *  @todo Change structure of the $header to array with key-value format
- *  instead of list of the strings.
- *
- * ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
- * Caching & Logging:
- *   WARNING:
- *     GET-requests using getContent() method never cached to get actual data.
- *
- *   There are global setting (per site) and local (per request).
- *   Defaults:
- *   - Global: TRUE (enabled)
- *   - Local: TRUE (enabled)
- *   Global controlled by drupal variable:
- *   - variable_get('rest_api_use_cache', TRUE);
- *   - variable_get('rest_api_use_log', TRUE);
- *   - Page: admin/config/services/rest_api;
- *   - Property: $cache & $log.
- *   Local controlled by request's metadata:
- *      $response = (new RestApi([
- *        'url' => 'https://api.gbif.org/v2/species/match',
- *        'query' => ['genericName' => $organism_name],
- *        'tag' => 'GBIF v2 Taxonomy Id: ' . $organism_name,
- *        'cache' => FALSE,
- *        'log' => FALSE,
- *       ]))->get()->response();
- *
- *  Priority (Local && Global):
- *  +----------------+------------------------+
- *  |                |         Global         |
- *  +----------------+----------------+-------+
- *  | Local          | TRUE (default) | FALSE |
- *  +----------------+----------------+-------+
- *  | TRUE (default) | Yes            | No    |
- *  | FALSE          | No             | No    |
- *  +----------------+----------------+-------+
+ *   Request is stored when doRequest() is called.
+ *   Response is stored when response is received.
+ *   GET requests using getContent() method are never cached or logged.
+ *   By default, caching is enabled only for GET requests; POST, PUT, and
+ *   DELETE requests have $this->cache = FALSE unless 'cache' => TRUE is
+ *   explicitly passed in $context.
  */
 
 /**
- * Performs Rest API requiests using curl.
+ * Performs Rest API requests using cURL with persistent connection reuse.
  *
  * @package rest_api
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
@@ -94,11 +69,54 @@
 class RestApi {
 
   /**
-   * List of supported HTTP-methods.
+   * List of supported HTTP methods.
    *
    * Used to validate value of the $method property.
    */
   const METHOD_LIST = ['GET', 'POST', 'PUT', 'DELETE'];
+
+  /**
+   * Allowed URL schemes to prevent SSRF via file://, gopher://, dict://.
+   */
+  const ALLOWED_SCHEMES = ['http', 'https'];
+
+  /**
+   * In-process DNS resolution cache TTL in seconds.
+   */
+  const DNS_CACHE_TTL = 60;
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Persistent cURL connection pool properties.
+
+  /**
+   * Persistent cURL easy handle reused across sequential requests.
+   *
+   * @var resource|\CurlHandle|null
+   */
+  protected static $curlHandle = NULL;
+
+  /**
+   * Shared cURL handle (curl_share_init) for DNS, SSL sessions, and sockets.
+   *
+   * @var resource|\CurlShareHandle|null
+   */
+  protected static $curlShareHandle = NULL;
+
+  /**
+   * Tracks whether the shutdown cleanup callback has been registered.
+   *
+   * @var bool
+   */
+  protected static $shutdownRegistered = FALSE;
+
+  /**
+   * In-process cache of resolved DNS records keyed by bare host.
+   *
+   * Structure: ['example.com' => ['ips' => [...], 'expires' => 1234567890]].
+   *
+   * @var array
+   */
+  protected static $dnsCache = [];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Request related properties.
@@ -115,7 +133,7 @@ class RestApi {
   /**
    * Optional. Query part of the URL.
    *
-   * Used to build API Endpoint URL for GET requests.
+   * Used to build API Endpoint URL.
    *
    * @var array
    */
@@ -133,8 +151,6 @@ class RestApi {
   /**
    * HTTP Headers.
    *
-   * Required for POST-requests.
-   *
    * List of headers (stored as strings).
    * Stored in 'rest_api_request.header' column.
    *
@@ -143,9 +159,7 @@ class RestApi {
   protected $header = [];
 
   /**
-   * Optional. Paylod for POST, PUT requests.
-   *
-   * Also used by GET request to have 'query'.
+   * Optional. Payload for POST, PUT, DELETE requests.
    *
    * To send JSON use header: 'Content-Type: application/json'.
    * Stored in 'rest_api_request.payload' column.
@@ -159,23 +173,23 @@ class RestApi {
   // Extra request data.
 
   /**
-   * Sequental unique id generated by database.
+   * Sequential unique id generated by database.
    *
-   * Generated after saving into database. See 'save()' method.
+   * Generated after saving into database. See 'RestApiRequest::save()' method.
    * Stored in columns:
    * - 'rest_api_request.request_id',
    * - fk: 'rest_api_response.request_id'.
    *
-   * @var string
+   * @var int|string|null
    */
   protected $requestId = NULL;
 
   /**
-   * Unique md5 hash of the all request's data.
+   * Unique md5 hash of all the request's data.
    *
    * Stored in rest_api_request.hash column.
    *
-   * @var string
+   * @var string|null
    */
   protected $hash = NULL;
 
@@ -184,19 +198,26 @@ class RestApi {
    *
    * Stored in rest_api_request.tag column.
    *
-   * @var string
+   * @var string|null
    */
   protected $tag = NULL;
 
   /**
-   * Controls if stored response should be used intead of the real request.
+   * Controls if stored response should be used instead of the real request.
    *
-   * Optional. Default is TRUE (caching is enabled).
+   * Optional. Default is TRUE for GET and FALSE for POST/PUT/DELETE.
    * Global setting: variable_get('rest_api_use_cache').
    *
    * @var bool
    */
   protected $cache = TRUE;
+
+  /**
+   * Tracks whether $cache was explicitly set by caller.
+   *
+   * @var bool
+   */
+  protected $cacheExplicit = FALSE;
 
   /**
    * Controls if request/response should be saved into DB.
@@ -208,11 +229,51 @@ class RestApi {
    */
   protected $log = TRUE;
 
+  /**
+   * Controls if cURL connection reuse and TCP keep-alive are enabled.
+   *
+   * Optional. Default is TRUE.
+   * Global setting: variable_get('rest_api_keep_alive', TRUE).
+   *
+   * @var bool
+   */
+  protected $keepAlive = TRUE;
+
+  /**
+   * Controls whether private/reserved IP addresses are blocked (SSRF guard).
+   *
+   * When NULL, falls back to variable_get('rest_api_block_private_ips', TRUE).
+   *
+   * @var bool|null
+   */
+  protected $blockPrivateIps = NULL;
+
+  /**
+   * Resolved host:port:ip entry for CURLOPT_RESOLVE (DNS Rebinding guard).
+   *
+   * @var string|null
+   */
+  protected $resolvedEntry = NULL;
+
+  /**
+   * Optional per-request timeout in seconds.
+   *
+   * @var int|null
+   */
+  protected $timeout = NULL;
+
+  /**
+   * Optional per-request connection timeout in seconds.
+   *
+   * @var int|null
+   */
+  protected $connectTimeout = NULL;
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Response.
 
   /**
-   * HTPP Code of the response status.
+   * HTTP Code of the response status.
    *
    * See 'HttpCode' class.
    * Stored in 'rest_api_response.code' column.
@@ -222,9 +283,9 @@ class RestApi {
   protected $code;
 
   /**
-   * Human readable message of the the HTTP Code of the response.
+   * Human readable message of the HTTP Code of the response.
    *
-   * Message doesn't stored in DB but could always be obtained by $code:
+   * Message isn't stored in DB but could always be obtained by $code:
    * HttpCode::getMessage($code).
    *
    * @var string
@@ -241,25 +302,22 @@ class RestApi {
   protected $created;
 
   /**
-   * Sequental unique id generated by database.
+   * Sequential unique id generated by database.
    *
-   * Generated after saving into database. See 'save()' method.
+   * Generated after saving into database. See 'RestApiResponse::save()'.
    * Stored in column: 'rest_api_response.response_id'.
    *
-   * @var string
+   * @var int|string|null
    */
   protected $responseId = NULL;
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Response.
-
   /**
-   * Request processing time in msec.
+   * Request processing time in milliseconds.
    *
    * Time between sending request and getting response.
-   * Stored in 'rest_api_response.duration' column.
+   * Stored as rounded integer in 'rest_api_response.duration' column.
    *
-   * @var int
+   * @var float
    */
   protected $duration;
 
@@ -280,6 +338,20 @@ class RestApi {
   protected $curlInfo;
 
   /**
+   * Last cURL error number (curl_errno).
+   *
+   * @var int
+   */
+  protected $curlErrno = 0;
+
+  /**
+   * Last cURL error message (curl_error).
+   *
+   * @var string
+   */
+  protected $curlError = '';
+
+  /**
    * Semaphore which controls parallel running of the same requests.
    *
    * Disabled by default.
@@ -289,46 +361,208 @@ class RestApi {
   protected $parallel = FALSE;
 
   /**
+   * In-memory fallback lock list when Drupal lock API is unavailable.
+   *
+   * @var array
+   */
+  protected static $memoryLocks = [];
+
+  /**
+   * Checks whether private/reserved IP blocking is enabled for this request.
+   *
+   * @return bool
+   *   TRUE if private and reserved IP addresses should be blocked.
+   */
+  public function shouldBlockPrivateIps() {
+    if ($this->blockPrivateIps !== NULL) {
+      return (bool) $this->blockPrivateIps;
+    }
+    return (bool) variable_get('rest_api_block_private_ips', TRUE);
+  }
+
+  /**
+   * Checks whether an IPv4 or IPv6 address is a globally routable public IP.
+   *
+   * @param string $ip
+   *   IPv4 or IPv6 address literal.
+   *
+   * @return bool
+   *   TRUE if the IP is valid and neither private nor reserved.
+   */
+  public static function isPublicIp($ip) {
+    return (bool) filter_var(
+      $ip,
+      FILTER_VALIDATE_IP,
+      FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+    );
+  }
+
+  /**
+   * Clears the in-process DNS resolution cache.
+   */
+  public static function clearDnsCache() {
+    static::$dnsCache = [];
+  }
+
+  /**
    * Creates request from $context data.
    *
    * @param array $context
    *   Associative array. Keys are:
    *   - 'url' string
-   *      Required. API Endpoint URL.
+   *     Required. API Endpoint URL.
    *   - 'method' string
-   *     Required. HTTP Method.
-   *     One of 'GET', 'POST', 'PUT' or 'DELETE'.
-   *   - 'payload' array
-   *     Optional. Payload for POST and PUT requests.
+   *     Required. HTTP Method. One of 'GET', 'POST', 'PUT' or 'DELETE'.
+   *   - 'payload' array|string
+   *     Optional. Payload for POST, PUT, and DELETE requests.
    *   - 'header' array
-   *     Optional. List of HTTP headers (as strings).
+   *     Optional. List of HTTP headers (as strings or key => value pairs).
+   *   - 'keep_alive' bool
+   *     Optional. Whether to reuse persistent cURL connections. Default TRUE.
+   *   - 'block_private_ips' bool
+   *     Optional. Whether to block private/reserved IPs.
    *
-   * @return object
+   * @return $this
    *   Returns $this to allow method chaining.
    *
    * @throws Exception
    *   If $url property is not empty and has invalid URL.
    */
   public function createRequest(array $context) {
+    if (array_key_exists('block_private_ips', $context)) {
+      $this->blockPrivateIps = (bool) $context['block_private_ips'];
+    }
+    elseif (array_key_exists('blockPrivateIps', $context)) {
+      $this->blockPrivateIps = (bool) $context['blockPrivateIps'];
+    }
+
     // Required (but could be set later).
     $this->url = $context['url'] ?? $this->url ?? '';
     $this->validateUrl();
 
     $this->method = strtoupper($context['method'] ?? $this->method ?? '');
+    if (!empty($this->method)) {
+      $this->validateMethod();
+    }
+
     // Conditional.
     $this->payload = $context['payload'] ?? $this->payload ?? [];
-    $this->header = $context['header'] ?? $this->header ?? [];
+    $raw_headers = $context['header'] ?? $this->header ?? [];
+    $this->header = $this->normalizeHeaders((array) $raw_headers);
     $this->query = $context['query'] ?? $this->query ?? [];
+
     // Optional.
     $this->tag = $context['tag'] ?? $this->tag ?? NULL;
-    $this->cache = $context['cache'] ?? $this->cache ?? NULL;
-    $this->log = $context['log'] ?? $this->log ?? NULL;
-    $this->parallel = $context['parallel'] ?? $this->parallel ?? NULL;
+    if (array_key_exists('cache', $context)) {
+      $this->cache = (bool) $context['cache'];
+      $this->cacheExplicit = TRUE;
+    }
+    elseif (!$this->cacheExplicit) {
+      $this->cache = ($this->method === '' || $this->method === 'GET');
+    }
+    $this->log = $context['log'] ?? $this->log ?? TRUE;
+    $this->parallel = $context['parallel'] ?? $this->parallel ?? FALSE;
+    $this->keepAlive = $context['keep_alive']
+      ?? $context['keepAlive']
+      ?? $this->keepAlive
+      ?? TRUE;
+    $this->timeout = $context['timeout'] ?? $this->timeout ?? NULL;
+    $this->connectTimeout = $context['connect_timeout']
+      ?? $context['connectTimeout']
+      ?? $this->connectTimeout
+      ?? NULL;
 
-    // Note: md5-hash of the request's data can't be generated here because
-    // some data could be added later.
-    // The only right moment to generate hash is static::doRequest() method.
+    // Reset state identifiers because request parameters were updated.
+    $this->requestId = NULL;
+    $this->responseId = NULL;
+    $this->hash = NULL;
+
     return $this;
+  }
+
+  /**
+   * Normalizes headers and strips CR/LF characters to prevent header injection.
+   *
+   * @param array $headers
+   *   Input headers array.
+   *
+   * @return array
+   *   List of 'Header: Value' strings.
+   */
+  protected function normalizeHeaders(array $headers) {
+    $normalized = [];
+    foreach ($headers as $key => $value) {
+      if (is_string($key)) {
+        $clean_key = trim(str_replace(["\r", "\n"], '', $key));
+        $clean_value = trim(str_replace(["\r", "\n"], '', (string) $value));
+        if ($clean_key !== '') {
+          $normalized[] = $clean_key . ': ' . $clean_value;
+        }
+      }
+      elseif (is_string($value)) {
+        $clean_value = trim(str_replace(["\r", "\n"], '', $value));
+        if ($clean_value !== '') {
+          $normalized[] = $clean_value;
+        }
+      }
+    }
+    return $normalized;
+  }
+
+  /**
+   * Checks whether current headers already contain any Content-Type header.
+   *
+   * @return bool
+   *   TRUE if a Content-Type header is present.
+   */
+  protected function hasContentTypeHeader() {
+    foreach ($this->header as $line) {
+      if (stripos($line, 'content-type:') === 0) {
+        return TRUE;
+      }
+    }
+    return FALSE;
+  }
+
+  /**
+   * Checks whether current headers specify a JSON content type.
+   *
+   * @return bool
+   *   TRUE if Content-Type is application/json.
+   */
+  protected function hasJsonContentType() {
+    foreach ($this->header as $line) {
+      if (
+        stripos($line, 'content-type:') === 0
+        && stripos($line, 'application/json') !== FALSE
+      ) {
+        return TRUE;
+      }
+    }
+    return FALSE;
+  }
+
+  /**
+   * Encodes payload as JSON if Content-Type is JSON and payload is an array.
+   *
+   * Automatically adds 'Content-Type: application/json' when no Content-Type
+   * header was explicitly supplied by the caller.
+   */
+  protected function prepareJsonPayload() {
+    $this->header = $this->normalizeHeaders((array) $this->header);
+    if (!$this->hasContentTypeHeader()) {
+      $this->header[] = 'Content-Type: application/json';
+    }
+    if (
+      $this->hasJsonContentType()
+      && !is_string($this->payload)
+      && !empty($this->payload)
+    ) {
+      $this->payload = json_encode(
+        $this->payload,
+        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+      );
+    }
   }
 
   /**
@@ -336,10 +570,10 @@ class RestApi {
    *
    * WARNING: Existing property values will be overwritten with new data.
    *
-   * @param string $request_id
+   * @param int|string $request_id
    *   Unique Request Id.
    *
-   * @return object
+   * @return $this
    *   Returns $this to allow method chaining.
    */
   public function loadRequest($request_id) {
@@ -348,35 +582,32 @@ class RestApi {
       $this->requestId = $context['request_id'];
       $this->hash = $context['hash'];
     }
-    else {
-      // Nothing found in DB by $request_id.
-    }
     return $this;
   }
 
   /**
    * Generates md5 hash for request's data.
    *
-   * @return object
+   * If the hash changes on an existing instance, resets $requestId and
+   * $responseId instead of mutating historical database records.
+   *
+   * @return $this
    *   Returns $this to allow method chaining.
    */
   public function generateHash() {
     $new_hash = md5(json_encode([
-      'method' => strtoupper($this->method),
+      'method' => strtoupper((string) $this->method),
       // WARNING: Any time-based or dynamically generated data in request's
       // payload, header or URL will force new records in DB and make re-use
-      // of the previously cached data imposible.
+      // of previously cached data impossible.
       'url' => $this->url,
       'payload' => $this->payload,
       'header' => $this->header,
     ]));
 
-    if (!empty($this->hash) && $this->hash != $new_hash) {
-      // If request's data was loaded from DB and rules of the hash
-      // generation was changed and stored value of the hash differs
-      // from the just generated.
-      // Both DB tables (request and response) must be updated.
-      $this->updateHash($new_hash);
+    if (!empty($this->hash) && $this->hash !== $new_hash) {
+      $this->requestId = NULL;
+      $this->responseId = NULL;
     }
     $this->hash = $new_hash;
 
@@ -387,11 +618,10 @@ class RestApi {
    * Setter for $tag property.
    *
    * @param mixed $value
+   *   Optional value of the tag. When NULL and $this->tag is empty, tag is
+   *   generated automatically using request's method and URL path.
    *
-   *   Optional value of the tag.
-   *   When empty tag will be generated automatically using request's data.
-   *
-   * @return object
+   * @return $this
    *   Returns $this to allow method chaining.
    */
   public function generateTag($value = NULL) {
@@ -400,9 +630,7 @@ class RestApi {
     }
     elseif (empty($this->tag)) {
       // Respect existing value of the tag.
-      // Url without query.
-      $url = strtok($this->url, '?');
-      // Remove schema from url.
+      $url = strtok((string) $this->url, '?');
       $protocols = ['http://', 'https://'];
       $url = str_replace($protocols, '', $url);
       $this->tag = implode(' ', [$this->method, $url]);
@@ -413,33 +641,146 @@ class RestApi {
   /**
    * Validates required properties.
    *
-   * To pass validation $url and $method properties must be set, not empty and
-   * has valid value.
+   * To pass validation $url and $method properties must be set, non-empty, and
+   * have valid values.
    *
-   * @return object
+   * @return $this
    *   Returns $this to allow method chaining.
    *
    * @throws Exception
-   *   When required properties wasn't set or empty.
+   *   When required properties weren't set or are empty.
    */
   public function validateRequest() {
-    // Validate $url property.
     if (empty($this->url)) {
       throw new Exception("Required property 'url' is empty.");
     }
-    else {
-      // Note: only non-empty value of $url will be validated.
-      $this->validateUrl();
-    }
-    // Validate $method property.
+    $this->validateUrl();
+
     if (empty($this->method)) {
       throw new Exception("Required property 'method' is empty.");
     }
-    else {
-      // Note: only non-empty value of the $method property will be validated.
-      $this->validateMethod();
-    }
+    $this->validateMethod();
+
     return $this;
+  }
+
+  /**
+   * Resolves the URL host via DNS and validates that all IPs are public.
+   *
+   * Stores the verified single-IP 'host:port:ip' mapping in
+   * $this->resolvedEntry for CURLOPT_RESOLVE to prevent DNS Rebinding attacks
+   * while remaining compatible with all libcurl versions (including < 7.59.0).
+   *
+   * @throws Exception
+   *   If DNS resolution fails or resolves to a private/reserved IP address
+   *   when shouldBlockPrivateIps() is enabled.
+   */
+  public function validateAndResolveHost() {
+    $this->resolvedEntry = NULL;
+    $this->validateUrl();
+
+    $parts = @parse_url($this->url);
+    if (empty($parts['host'])) {
+      throw new Exception(t(
+        'URL is missing a valid host: "@url"',
+        ['@url' => $this->url]
+      ));
+    }
+
+    $scheme = strtolower($parts['scheme'] ?? 'http');
+    $default_port = ($scheme === 'https') ? 443 : 80;
+    $port = isset($parts['port']) ? (int) $parts['port'] : $default_port;
+    $host = strtolower(trim($parts['host'], '.'));
+    $bare_host = trim($host, '[]');
+    $block_private = $this->shouldBlockPrivateIps();
+
+    if (filter_var($bare_host, FILTER_VALIDATE_IP)) {
+      if ($block_private && !static::isPublicIp($bare_host)) {
+        throw new Exception(t(
+          'Requests to private or reserved IP addresses are blocked: "@ip"',
+          ['@ip' => $bare_host]
+        ));
+      }
+      $this->resolvedEntry = $bare_host . ':' . $port . ':' . $bare_host;
+      return;
+    }
+
+    $now = time();
+    if (
+      isset(static::$dnsCache[$bare_host])
+      && static::$dnsCache[$bare_host]['expires'] > $now
+    ) {
+      $ips = static::$dnsCache[$bare_host]['ips'];
+    }
+    else {
+      $ips = [];
+      $fallback_ips = @gethostbynamel($bare_host);
+      if (is_array($fallback_ips) && !empty($fallback_ips)) {
+        $ips = $fallback_ips;
+      }
+      if (function_exists('dns_get_record')) {
+        if (empty($ips)) {
+          $a_records = @dns_get_record($bare_host, DNS_A);
+          if (is_array($a_records)) {
+            foreach ($a_records as $record) {
+              if (!empty($record['ip'])) {
+                $ips[] = $record['ip'];
+              }
+            }
+          }
+        }
+        if ($block_private || empty($ips)) {
+          $aaaa_records = @dns_get_record($bare_host, DNS_AAAA);
+          if (is_array($aaaa_records)) {
+            foreach ($aaaa_records as $record) {
+              if (!empty($record['ipv6'])) {
+                $ips[] = $record['ipv6'];
+              }
+            }
+          }
+        }
+      }
+
+      if (!empty($ips)) {
+        $ips = array_values(array_unique($ips));
+        static::$dnsCache[$bare_host] = [
+          'ips' => $ips,
+          'expires' => $now + static::DNS_CACHE_TTL,
+        ];
+      }
+    }
+
+    if (empty($ips)) {
+      if ($block_private) {
+        throw new Exception(t(
+          'Unable to resolve hostname: "@host"',
+          ['@host' => $bare_host]
+        ));
+      }
+      return;
+    }
+
+    if ($block_private) {
+      foreach ($ips as $ip) {
+        if (!static::isPublicIp($ip)) {
+          throw new Exception(t(
+            'Host "@host" resolved to a disallowed private/reserved IP: "@ip"',
+            ['@host' => $bare_host, '@ip' => $ip]
+          ));
+        }
+      }
+    }
+
+    // Prefer an IPv4 address for single-IP CURLOPT_RESOLVE compatibility
+    // across all libcurl versions.
+    $verified_ip = reset($ips);
+    foreach ($ips as $ip) {
+      if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+        $verified_ip = $ip;
+        break;
+      }
+    }
+    $this->resolvedEntry = $bare_host . ':' . $port . ':' . $verified_ip;
   }
 
   /**
@@ -447,45 +788,34 @@ class RestApi {
    *
    * @param mixed $context
    *   Request's metadata.
-   *   When array then it must have class's property as a key and value
-   *     will be set to this class's property.
-   *   When string (or integer) then it's treated as a Request Id and metadata
-   *     will be loaded from DB if there is a record with this 'Request Id'.
-   *
-   * @return object
-   *   Returns $this to allow method chaining.
+   *   When array, keys matching class properties are initialized via
+   *   createRequest().
+   *   When string or integer, treated as a Request Id and metadata is loaded
+   *   from DB if a matching record exists.
    */
   public function __construct($context = NULL) {
     if (!empty($context)) {
       if (is_array($context)) {
-        // Request's metadata.
         $this->createRequest($context);
       }
       else {
-        // Request's Id.
-        $request_id = $context;
         // WARNING: Cached Response is missing 'curlInfo'.
         // See method isCachedResponse().
-        $this->loadRequest($request_id);
+        $this->loadRequest($context);
       }
     }
-    else {
-      // If $context is empty it's not an error because request's metadata
-      // could be set later.
-    }
-    return $this;
   }
 
   /**
    * Checks if Cached Response was loaded instead of the real request.
    *
    * @return bool
-   *   Returns TRUE if was used Response stored in database.
+   *   Returns TRUE if Response stored in database was used.
    *   Returns FALSE if data was obtained directly from external API.
    */
   public function isCachedResponse() {
     return (bool) (
-      !empty($this->body)
+      (!empty($this->body) || $this->code === 204)
       && !empty($this->code)
       && empty($this->curlInfo)
     );
@@ -494,38 +824,64 @@ class RestApi {
   /**
    * Magic setter.
    *
+   * Only allows setting existing properties without invoking arbitrary methods.
+   * Resets requestId, responseId, and hash when request parameters change.
+   *
    * @param string $name
    *   Class property name.
    * @param mixed $value
    *   Value to be set.
    *
-   * @return object
+   * @return $this
    *   Returns $this to allow method chaining.
    *
    * @throws Exception
    *   When requested non-existing property.
    */
   public function __set($name, $value) {
-    // Allow to overwrite magic with custom setter.
-    // Method naming rule: 'set<PropertyName>'.
-    // Convert snake_case to camelCase.
-    $func = lcfirst(str_replace('_', '', ucwords('get_' . $name, '_')));
-    if (method_exists($this, $func)) {
-      $this->$func($value);
+    $prop = property_exists($this, $name)
+      ? $name
+      : lcfirst(str_replace('_', '', ucwords($name, '_')));
+    if (!property_exists($this, $prop)) {
+      throw new Exception("Inexistent property: $name");
+    }
+
+    if ($prop === 'url') {
+      $this->url = $value;
+      $this->validateUrl();
+    }
+    elseif ($prop === 'method') {
+      $this->method = strtoupper((string) $value);
+      $this->validateMethod();
+      if (!$this->cacheExplicit) {
+        $this->cache = ($this->method === 'GET');
+      }
+    }
+    elseif ($prop === 'header') {
+      $this->header = $this->normalizeHeaders((array) $value);
+    }
+    elseif ($prop === 'cache') {
+      $this->cache = (bool) $value;
+      $this->cacheExplicit = TRUE;
     }
     else {
-      if (property_exists($this, $name)) {
-        $this->$name = $value;
-      }
-      else {
-        throw new Exception("Inexistent property: $name");
-      }
+      $this->$prop = $value;
     }
+
+    $state_props = ['url', 'method', 'header', 'payload', 'query'];
+    if (in_array($prop, $state_props, TRUE)) {
+      $this->requestId = NULL;
+      $this->responseId = NULL;
+      $this->hash = NULL;
+    }
+
     return $this;
   }
 
   /**
    * Magic getter.
+   *
+   * Only allows reading existing properties without invoking arbitrary methods.
    *
    * @param string $name
    *   Class property name.
@@ -536,21 +892,250 @@ class RestApi {
    * @throws Exception
    *   When requested non-existing property.
    */
-  public function &__get($name) {
-    // Allow to overwrite magic with custom getter.
-    // Convert snake_case to camelCase.
-    $func = lcfirst(str_replace('_', '', ucwords('get_' . $name, '_')));
-    if (method_exists($this, $func)) {
-      return $this->$func();
+  public function __get($name) {
+    $prop = property_exists($this, $name)
+      ? $name
+      : lcfirst(str_replace('_', '', ucwords($name, '_')));
+    if (property_exists($this, $prop)) {
+      return $this->$prop;
+    }
+    throw new Exception("Inexistent property: $name");
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Persistent cURL Handle & Share Management.
+
+  /**
+   * Initializes and returns the shared cURL handle (curl_share_init).
+   *
+   * Shares DNS cache, TLS session IDs, and active connections across cURL
+   * handles in the same PHP worker process.
+   *
+   * @return resource|\CurlShareHandle|null
+   *   Shared cURL handle, or NULL if curl_share_init is unavailable.
+   */
+  public static function getCurlShareHandle() {
+    if (
+      static::$curlShareHandle === NULL
+      && function_exists('curl_share_init')
+    ) {
+      static::$curlShareHandle = curl_share_init();
+      curl_share_setopt(
+        static::$curlShareHandle,
+        CURLSHOPT_SHARE,
+        CURL_LOCK_DATA_DNS
+      );
+      if (defined('CURL_LOCK_DATA_SSL_SESSION')) {
+        curl_share_setopt(
+          static::$curlShareHandle,
+          CURLSHOPT_SHARE,
+          CURL_LOCK_DATA_SSL_SESSION
+        );
+      }
+      if (defined('CURL_LOCK_DATA_CONNECT')) {
+        curl_share_setopt(
+          static::$curlShareHandle,
+          CURLSHOPT_SHARE,
+          CURL_LOCK_DATA_CONNECT
+        );
+      }
+      if (!static::$shutdownRegistered) {
+        register_shutdown_function([static::class, 'closeSharedConnections']);
+        static::$shutdownRegistered = TRUE;
+      }
+    }
+    return static::$curlShareHandle;
+  }
+
+  /**
+   * Returns a configured cURL handle with TCP Keep-Alive and connection reuse.
+   *
+   * @param bool $force_new
+   *   When TRUE (e.g. for curl_multi batching), creates a fresh easy handle
+   *   attached to the shared DNS/TLS/connection pool.
+   *
+   * @return resource|\CurlHandle
+   *   Configured cURL handle.
+   */
+  protected function acquireCurlHandle($force_new = FALSE) {
+    $use_keep_alive = $this->keepAlive
+      && variable_get('rest_api_keep_alive', TRUE);
+
+    if (!$force_new && $use_keep_alive) {
+      if (static::$curlHandle === NULL) {
+        static::$curlHandle = curl_init();
+      }
+      elseif (function_exists('curl_reset')) {
+        curl_reset(static::$curlHandle);
+      }
+      $curl = static::$curlHandle;
     }
     else {
-      if (property_exists($this, $name)) {
-        return $this->$name;
+      $curl = curl_init();
+    }
+
+    $this->configureCurlHandle($curl, $use_keep_alive);
+    return $curl;
+  }
+
+  /**
+   * Applies request, security, timeout, and connection-reuse options to cURL.
+   *
+   * @param resource|\CurlHandle $curl
+   *   The cURL easy handle to configure.
+   * @param bool $use_keep_alive
+   *   Whether connection reuse and TCP keep-alive are enabled.
+   */
+  protected function configureCurlHandle($curl, $use_keep_alive = TRUE) {
+    // Attach to shared DNS / TLS Session / Connection pool first so resolved
+    // entries populate the shared DNS cache.
+    if ($use_keep_alive && ($share = static::getCurlShareHandle())) {
+      curl_setopt($curl, CURLOPT_SHARE, $share);
+    }
+
+    // Validate host and pin resolved IP to prevent SSRF & DNS Rebinding.
+    $this->validateAndResolveHost();
+    if (!empty($this->resolvedEntry) && defined('CURLOPT_RESOLVE')) {
+      curl_setopt($curl, CURLOPT_RESOLVE, [$this->resolvedEntry]);
+    }
+
+    // Restrict allowed protocols, disable redirects, and enforce TLS checks.
+    if (
+      defined('CURLOPT_PROTOCOLS')
+      && defined('CURLPROTO_HTTP')
+      && defined('CURLPROTO_HTTPS')
+    ) {
+      curl_setopt($curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+    }
+    if (
+      defined('CURLOPT_REDIR_PROTOCOLS')
+      && defined('CURLPROTO_HTTP')
+      && defined('CURLPROTO_HTTPS')
+    ) {
+      curl_setopt(
+        $curl,
+        CURLOPT_REDIR_PROTOCOLS,
+        CURLPROTO_HTTP | CURLPROTO_HTTPS
+      );
+    }
+    curl_setopt($curl, CURLOPT_FOLLOWLOCATION, FALSE);
+    curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, TRUE);
+    curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 2);
+
+    // Configure TCP Keep-Alive to prevent intermediate NAT/firewalls from
+    // dropping idle worker connections.
+    if ($use_keep_alive) {
+      if (defined('CURLOPT_TCP_KEEPALIVE')) {
+        curl_setopt($curl, CURLOPT_TCP_KEEPALIVE, 1);
       }
-      else {
-        throw new Exception("Inexistent property: $name");
+      if (defined('CURLOPT_TCP_KEEPIDLE')) {
+        $keep_idle = (int) variable_get('rest_api_tcp_keepidle', 60);
+        curl_setopt($curl, CURLOPT_TCP_KEEPIDLE, $keep_idle);
+      }
+      if (defined('CURLOPT_TCP_KEEPINTVL')) {
+        $keep_intvl = (int) variable_get('rest_api_tcp_keepintvl', 30);
+        curl_setopt($curl, CURLOPT_TCP_KEEPINTVL, $keep_intvl);
+      }
+      curl_setopt($curl, CURLOPT_FORBID_REUSE, FALSE);
+      curl_setopt($curl, CURLOPT_FRESH_CONNECT, FALSE);
+
+      // Prefer HTTP/2 over TLS when supported by libcurl.
+      if (defined('CURL_HTTP_VERSION_2TLS')) {
+        curl_setopt($curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2TLS);
+      }
+      elseif (defined('CURL_HTTP_VERSION_1_1')) {
+        curl_setopt($curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
       }
     }
+    else {
+      curl_setopt($curl, CURLOPT_FORBID_REUSE, TRUE);
+      curl_setopt($curl, CURLOPT_FRESH_CONNECT, TRUE);
+    }
+
+    // Ensure Connection: keep-alive header is present when keep-alive is on.
+    $headers = $this->normalizeHeaders($this->header);
+    if ($use_keep_alive) {
+      $has_connection_header = FALSE;
+      $has_expect_header = FALSE;
+      foreach ($headers as $h) {
+        if (stripos($h, 'connection:') === 0) {
+          $has_connection_header = TRUE;
+        }
+        elseif (stripos($h, 'expect:') === 0) {
+          $has_expect_header = TRUE;
+        }
+      }
+      if (!$has_connection_header) {
+        $headers[] = 'Connection: keep-alive';
+      }
+      // Disable 'Expect: 100-continue' delay on POST/PUT/DELETE payloads.
+      if (
+        !$has_expect_header
+        && in_array($this->method, ['POST', 'PUT', 'DELETE'], TRUE)
+      ) {
+        $headers[] = 'Expect:';
+      }
+    }
+
+    curl_setopt($curl, CURLOPT_URL, $this->url);
+    curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
+    curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+
+    // Enable automatic response decompression (gzip, deflate, br).
+    curl_setopt($curl, CURLOPT_ENCODING, '');
+
+    // Set connect and overall execution timeouts to prevent hung workers.
+    $timeout = $this->getTimeout();
+    $connect_timeout = $this->getConnectTimeout();
+    if ($timeout > 0) {
+      curl_setopt($curl, CURLOPT_TIMEOUT, $timeout);
+    }
+    if ($connect_timeout > 0) {
+      curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, $connect_timeout);
+    }
+
+    if ($this->method === 'GET') {
+      curl_setopt($curl, CURLOPT_CUSTOMREQUEST, NULL);
+      curl_setopt($curl, CURLOPT_POSTFIELDS, NULL);
+      curl_setopt($curl, CURLOPT_HTTPGET, TRUE);
+    }
+    elseif (
+      !empty($this->payload)
+      && in_array($this->method, ['POST', 'DELETE', 'PUT'], TRUE)
+    ) {
+      curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $this->method);
+      if (defined('CURLOPT_SAFE_UPLOAD') && PHP_VERSION_ID < 70000) {
+        curl_setopt($curl, CURLOPT_SAFE_UPLOAD, TRUE);
+      }
+      curl_setopt($curl, CURLOPT_POSTFIELDS, $this->payload);
+    }
+    else {
+      curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $this->method);
+      curl_setopt($curl, CURLOPT_POSTFIELDS, NULL);
+    }
+  }
+
+  /**
+   * Explicitly closes the persistent cURL handle and shared session pool.
+   */
+  public static function closeSharedConnections() {
+    if (static::$curlHandle !== NULL) {
+      if (
+        is_resource(static::$curlHandle)
+        || (is_object(static::$curlHandle) && PHP_VERSION_ID < 80000)
+      ) {
+        @curl_close(static::$curlHandle);
+      }
+      static::$curlHandle = NULL;
+    }
+    if (static::$curlShareHandle !== NULL) {
+      if (function_exists('curl_share_close')) {
+        @curl_share_close(static::$curlShareHandle);
+      }
+      static::$curlShareHandle = NULL;
+    }
+    static::$dnsCache = [];
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -561,18 +1146,15 @@ class RestApi {
    *
    * Could be used to update/create entity.
    *
-   * @return object
-   *   Returns current object to allow mehtod chaining.
+   * @return $this
+   *   Returns current object to allow method chaining.
    */
   public function post() {
     $this->method = 'POST';
-    if (empty($this->header)) {
-      $this->header = ['Content-Type: application/json'];
+    if (!$this->cacheExplicit) {
+      $this->cache = FALSE;
     }
-    // @TODO Minor. Implement more complex check. Regexp?
-    if (in_array('Content-Type: application/json', $this->header)) {
-      $this->payload = json_encode($this->payload);
-    }
+    $this->prepareJsonPayload();
     $this->doRequest();
 
     return $this;
@@ -586,12 +1168,9 @@ class RestApi {
    */
   public function getContent() {
     $this->method = 'GET';
-    // Do not log those responses.
-    // This means that cached responses couldn't be used.
-    // File's content is a binary data but not JSON, HTML, text, etc.
-    // No need to store file's content into DB because size could be huge
-    // and filesystem is better place to store data like this.
+    // Do not log or cache binary file downloads to prevent DB bloat.
     $this->cache = FALSE;
+    $this->cacheExplicit = TRUE;
     $this->log = FALSE;
     $this->doRequest();
     return $this->body;
@@ -602,8 +1181,8 @@ class RestApi {
    *
    * Could be used to get lists or load entity.
    *
-   * @return object
-   *   Returns current object to allow mehtod chaining.
+   * @return $this
+   *   Returns current object to allow method chaining.
    */
   public function get() {
     $this->method = 'GET';
@@ -615,19 +1194,15 @@ class RestApi {
   /**
    * Performs PUT-request.
    *
-   * @return object
-   *   Returns current object to allow mehtod chaining.
+   * @return $this
+   *   Returns current object to allow method chaining.
    */
   public function put() {
-    if (empty($this->header)) {
-      $this->header = ['Content-Type: application/json'];
+    $this->method = 'PUT';
+    if (!$this->cacheExplicit) {
+      $this->cache = FALSE;
     }
-    // @TODO Minor. Implement more complex check. Regexp?
-    if (in_array('Content-Type: application/json', $this->header)) {
-      $this->payload = json_encode($this->payload);
-    }
-
-    $this->method = 'DELETE';
+    $this->prepareJsonPayload();
     $this->doRequest();
 
     return $this;
@@ -636,66 +1211,68 @@ class RestApi {
   /**
    * Performs DELETE-request.
    *
-   * @return object
-   *   Returns current object to allow mehtod chaining.
+   * @return $this
+   *   Returns current object to allow method chaining.
    */
   public function delete() {
     $this->method = 'DELETE';
+    if (!$this->cacheExplicit) {
+      $this->cache = FALSE;
+    }
+    $this->prepareJsonPayload();
     $this->doRequest();
 
     return $this;
   }
 
   /**
-   * Checks if requests could be run in parallel (miltithreading).
+   * Checks if requests could be run in parallel (multithreading).
    *
    * Semaphore property: $this->parallel.
+   * Uses Drupal's native lock subsystem when available to avoid database writes
+   * and variable cache invalidation on every request.
    *
    * @return bool
    *   Returns TRUE if running in parallel is allowed and FALSE otherwise.
    */
   public function isRequestAllowed() {
-    $lockList = variable_get('rest_api_lock_list', []);
-    if (!empty($lockList)) {
-      // There are some requestes already running.
-      if (empty($this->hash)) {
-        $this->generateHash();
-      }
-      if (
-        !empty($lockList[$this->hash])
-        // Less then 2 seconds.
-        && (time() - $lockList[$this->hash] < 2)
-      ) {
-        // Current request already running in parallel.
-        return $this->parallel;
-      }
-      else {
-        return TRUE;
-      }
-    }
-    else {
-      // No parallel.
+    if ($this->parallel) {
       return TRUE;
     }
+    if (empty($this->hash)) {
+      $this->generateHash();
+    }
+    if (function_exists('lock_may_be_available')) {
+      return (bool) lock_may_be_available('rest_api:' . $this->hash);
+    }
+    if (
+      !empty(static::$memoryLocks[$this->hash])
+      && (time() - static::$memoryLocks[$this->hash] < 2)
+    ) {
+      return FALSE;
+    }
+    return TRUE;
   }
 
   /**
    * Sets lock for current request.
    *
-   * Adds current request hash to the 'lockList' to block running the same
-   * requests in parallel (if parallel requests are not allowed).
-   * Semaphore property: $this->parallel.
+   * Uses Drupal's native lock_acquire() when available instead of
+   * variable_set() to prevent bootstrap variable cache invalidations.
    *
-   * @return object
-   *   Returns current object to allow mehtod chaining.
+   * @return $this
+   *   Returns current object to allow method chaining.
    */
   public function setLock() {
     if (empty($this->hash)) {
       $this->generateHash();
     }
-    $lockList = variable_get('rest_api_lock_list', []);
-    $lockList[$this->hash] = time();
-    variable_set('rest_api_lock_list', $lockList);
+    if (function_exists('lock_acquire')) {
+      lock_acquire('rest_api:' . $this->hash, 2.0);
+    }
+    else {
+      static::$memoryLocks[$this->hash] = time();
+    }
 
     return $this;
   }
@@ -703,49 +1280,61 @@ class RestApi {
   /**
    * Removes lock for current request.
    *
-   * Removes the request hash from the 'lockList' to allow the same requests.
-   *
-   * @return object
-   *   Returns current object to allow mehtod chaining.
+   * @return $this
+   *   Returns current object to allow method chaining.
    */
   public function removeLock() {
     if (empty($this->hash)) {
       $this->generateHash();
     }
-    $lockList = variable_get('rest_api_lock_list', []);
-    unset($lockList[$this->hash]);
-    variable_set('rest_api_lock_list', $lockList);
+    if (function_exists('lock_release')) {
+      lock_release('rest_api:' . $this->hash);
+    }
+    else {
+      unset(static::$memoryLocks[$this->hash]);
+    }
 
     return $this;
   }
 
   /**
-   * Performs REST API calls.
-   *
-   * @return object
-   *   Returns instance to allow method chaining.
-   *
-   * @throws Exception
-   *   When response code is not 200-204.
+   * Normalizes request method, payload, query URL, hash, and tag once.
    */
-  public function doRequest() {
+  protected function prepareRequestState() {
     $this->validateRequest();
-    // Prepare request data before hash will be generated.
     $this->method = strtoupper($this->method);
+    if ($this->method !== 'GET' && !$this->cacheExplicit) {
+      $this->cache = FALSE;
+    }
+    if (in_array($this->method, ['POST', 'PUT', 'DELETE'], TRUE)) {
+      $this->prepareJsonPayload();
+    }
     if (!empty($this->query)) {
-      $this->url = url($this->url, ['query' => $this->query]);
+      $this->url = url($this->url, [
+        'query' => $this->query,
+        'external' => TRUE,
+      ]);
+      // Clear query after appending so repeated calls do not duplicate params.
+      $this->query = [];
     }
 
     $this->generateHash();
-    if (!$this->isRequestAllowed()) {
-      $message = 'Running the same requests in parallel is not allowed';
-      watchdog('rest_api', $message, [], WATCHDOG_ERROR);
-
-      return FALSE;
-    }
-
     $this->generateTag();
-    $this->setLock();
+  }
+
+  /**
+   * Prepares request execution and fires 'rest_api_request_started'.
+   *
+   * @param bool $state_prepared
+   *   Whether prepareRequestState() has already been executed.
+   *
+   * @return array
+   *   The request context array passed to hooks.
+   */
+  protected function prepareRequestExecution($state_prepared = FALSE) {
+    if (!$state_prepared) {
+      $this->prepareRequestState();
+    }
     $this->created = time();
 
     // Restore 'Request Id' by 'Request Hash'.
@@ -753,177 +1342,125 @@ class RestApi {
       $this->requestId = RestApiRequest::getRequestId($this->hash);
     }
 
-    if (
-      // Current request caching.
-      $this->cache
-      // Globlal caching.
-      && variable_get('rest_api_use_cache', TRUE)
-      // Saved response exists.
-      && RestApiResponse::isValidExists($this->requestId)
-    ) {
-      // Cached response exist and will be used.
-      // WARNING: Cached Response is missing 'curlInfo'.
-      $response_data = RestApiResponse::loadValid($this->requestId);
-      foreach ($response_data as $key => $value) {
-        switch ($key) {
-          case 'created':
-            break;
+    $context = [
+      'request_id' => $this->requestId ?? NULL,
+      'response_id' => $this->responseId ?? NULL,
+      'hash' => $this->hash,
+      'created' => $this->created,
+      'method' => $this->method,
+      'url' => $this->url,
+      'payload' => $this->payload ?? NULL,
+      'header' => $this->header ?? NULL,
+      'tag' => $this->tag ?? NULL,
+      'cache' => $this->cache,
+      'log' => $this->log,
+    ];
 
-          case 'response_id':
-            $this->responseId = $value;
-            break;
-
-          case 'request_id':
-            if ($this->requestId != $value) {
-              // Check value with existing request_id and update record in
-              // RestApiResponse::TABLE table if they are different. This could happen
-              // when requests was removed but responses are left.
-              db_update(static::TABLE)
-                ->fields(['request_id' => $context['request_id']])
-                ->condition('response_id', $context['response_id'])
-                ->execute();
-              $this->requestId = $value;
-            }
-            break;
-
-          case 'duration':
-          case 'code':
-          case 'body':
-            $this->$key = $value;
-            break;
+    if (function_exists('module_implements')) {
+      $hook_name = 'rest_api_request_started';
+      foreach (module_implements($hook_name) as $module) {
+        $module_result = module_invoke($module, $hook_name, $context);
+        if ($module === 'rest_api') {
+          $this->requestId = $module_result;
+          $context['request_id'] = $this->requestId;
         }
-      }
-      $this->message = HttpCode::getMessage($this->code);
-    }
-    else {
-      // Real request.
-      $curl = curl_init();
-      // Why not use CURLOPT_POS: https://stackoverflow.com/a/74812403
-      curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $this->method);
-      curl_setopt($curl, CURLOPT_HTTPHEADER, $this->header);
-
-      if (
-        !empty($this->payload)
-        // Not GET-method.
-        && in_array($this->method, ['POST', 'DELETE', 'PUT'])
-      ) {
-        curl_setopt($curl, CURLOPT_SAFE_UPLOAD, TRUE);
-        // Different processing of array and string:
-        // https://stackoverflow.com/questions/5224790
-        curl_setopt($curl, CURLOPT_POSTFIELDS, $this->payload);
-      }
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Allow other modules to react on start of the request.
-      if (function_exists('module_invoke_all')) {
-        $context = [
-          'request_id' => $this->requestId ?? NULL,
-          'response_id' => $this->responseId ?? NULL,
-          // request_hash.
-          'hash' => $this->hash,
-          'created' => $this->created,
-          'method' => $this->method,
-          'url' => $this->url,
-          'payload' => $this->payload ?? NULL,
-          'header' => $this->header ?? NULL,
-          'tag' => $this->tag ?? NULL,
-          'cache' => $this->cache,
-          'log' => $this->log,
-        ];
-
-        // rest_api_request_started().
-        $hook_name = 'rest_api_request_started';
-        foreach (module_implements($hook_name) as $module) {
-          $module_result = module_invoke($module, $hook_name, $context);
-          if ($module == 'rest_api') {
-            // Note: Only 'rest_api' module will return request id.
-            $this->requestId = $module_result;
-          }
-        }
-      }
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // OPTIONS:
-      // See http://www.php.net/manual/en/function.curl-setopt.php
-      curl_setopt($curl, CURLOPT_URL, $this->url);
-      // Return response as string instead of outputting
-      curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
-      curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-      // The maximum number of seconds for curl operation.
-      // Note: disabled because valid requests failed because of timeout.
-      // curl_setopt($curl, CURLOPT_TIMEOUT, $this->getTimeout());
-      // curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, $this->getTimeout());
-
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // EXECUTE:
-      $execution_time_start = microtime(1);
-      $response = curl_exec($curl);
-
-      $this->curlInfo = curl_getinfo($curl);
-      curl_close($curl);
-
-      // Validate HTTP request code.
-      $this->code = $this->curlInfo['http_code'];
-      $this->message = HttpCode::getMessage($this->code);
-      // Execution time.
-      $this->duration = (microtime(1) - $execution_time_start) * 1000;
-
-      // Prepare response.
-      $this->body = empty($response) ? NULL : $response;
-      if (!empty($response)) {
-        $content_type = $this->curlInfo['content_type'] ?? '';
-        if (strpos($content_type, 'application/json') !== FALSE) {
-          // @todo Minor. Use try and catch block.
-          // PHP's json_decode() could throw an exception of invalid JSON.
-          $this->body = json_decode($this->body, TRUE);
-        }
-        elseif (strpos($content_type, 'application/xml') !== FALSE) {
-          // Store raw XML because any processing or convertation into PHP-array
-          // will lead to data loss.
-          // Store JSON-escaped for safe storage in a database text field.
-        }
-        // image/png.
-      }
-
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Allow other modules to react on request's finish.
-      if (function_exists('module_invoke_all')) {
-        $context = [
-          // Request.
-          'request' => $context,
-          'request_id' => $this->requestId,
-          'code' => $this->code,
-          'created' => $this->created,
-          // Response.
-          'body' => $this->body,
-          'duration' => $this->duration,
-          'content_type' => $this->curlInfo['content_type'],
-          // Global caching settings.
-          'response_id' => $this->responseId ?? NULL,
-          'cache' => $this->cache,
-          'log' => $this->log,
-        ];
-        // rest_api_response_received().
-        module_invoke_all('rest_api_response_received', $context);
       }
     }
 
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    return $context;
+  }
+
+  /**
+   * Processes raw cURL response, decodes body, fires hooks, validates status.
+   *
+   * @param string|bool $response
+   *   Raw response returned by curl_exec() or curl_multi_getcontent().
+   * @param array $request_context
+   *   Context generated by prepareRequestExecution().
+   *
+   * @throws Exception
+   *   When cURL fails or HTTP status is outside 200..299.
+   */
+  protected function processCurlResponse($response, array $request_context) {
+    $this->code = (int) ($this->curlInfo['http_code'] ?? 0);
+    $this->message = HttpCode::getMessage($this->code);
+    if ($this->curlErrno !== 0 && !empty($this->curlError)) {
+      $this->message .= ' (' . $this->curlError . ')';
+    }
+
+    // Prepare response body.
+    $this->body = ($response === FALSE || $response === '') ? NULL : $response;
+    if (!empty($response) && is_string($response)) {
+      $content_type = $this->curlInfo['content_type'] ?? '';
+      if (stripos($content_type, 'application/json') !== FALSE) {
+        $decoded = json_decode($this->body, TRUE);
+        if (json_last_error() === JSON_ERROR_NONE) {
+          $this->body = $decoded;
+        }
+      }
+    }
+
+    // Allow other modules to react on request's finish.
+    if (function_exists('module_invoke_all')) {
+      $context = [
+        'request' => $request_context,
+        'request_id' => $this->requestId,
+        'code' => $this->code,
+        'created' => $this->created,
+        'body' => $this->body,
+        'duration' => $this->duration,
+        'content_type' => $this->curlInfo['content_type'] ?? '',
+        'curl_info' => $this->curlInfo ?? [],
+        'response_id' => $this->responseId ?? NULL,
+        'cache' => $this->cache,
+        'log' => $this->log,
+      ];
+      module_invoke_all('rest_api_response_received', $context);
+    }
+
+    $this->validateResponseStatus();
+  }
+
+  /**
+   * Validates cURL error state and HTTP response status code (200..299).
+   *
+   * @throws Exception
+   *   When $this->curlErrno !== 0 or HTTP status code is outside 200..299.
+   */
+  protected function validateResponseStatus() {
+    if ($this->curlErrno !== 0) {
+      $error_detail = !empty($this->curlError)
+        ? $this->curlError
+        : $this->message;
+      throw new Exception(
+        'RestApi cURL error (' . $this->curlErrno . '): ' . $error_detail,
+        $this->curlErrno
+      );
+    }
     if ($this->code == 0 && empty($this->body)) {
-      if ($debug_mode ?? FALSE) {
-        watchdog('rest_api', '<pre>' . var_export($this->curlInfo, 1) . '</pre>');
-      }
       throw new Exception($this->message);
     }
-    if ($this->code < 200  && $this->code > 204) {
-      // Not OK.
-      // Codes: https://developers.zenodo.org/?shell#http-status-codes
-      $exception_data = [
-        // Request.
-        'payload' => empty($this->payload) ? [] : json_decode($this->payload),
+    if ($this->code < 200 || $this->code > 299) {
+      $decoded_payload = $this->payload;
+      if (is_string($this->payload) && !empty($this->payload)) {
+        $json = json_decode($this->payload, TRUE);
+        if (json_last_error() === JSON_ERROR_NONE) {
+          $decoded_payload = $json;
+        }
+      }
+      $sanitized = RestApiRequest::sanitizeContext([
         'url' => $this->url,
-        'method' => $this->method,
         'header' => $this->header,
+      ]);
+      $exception_data = [
+        // Request (with redacted secrets in URL and headers).
+        'payload' => empty($decoded_payload) ? [] : $decoded_payload,
+        'url' => $sanitized['url'] ?? $this->url,
+        'method' => $this->method,
+        'header' => $sanitized['header'] ?? $this->header,
         // Response.
         'body' => $this->body,
+        'response' => $this->body,
         'code' => $this->code,
         'message' => $this->message,
         'curl_info' => $this->curlInfo,
@@ -934,54 +1471,237 @@ class RestApi {
         ),
       ];
       if (function_exists('drupal_alter')) {
-        // rest_api_exception_alter().
+        // Invokes hook_rest_api_exception_alter().
         drupal_alter('rest_api_exception', $this->message, $exception_data);
       }
-      throw new Exception('RestApi HTTP-request: ' . $this->message, $this->code);
+      throw new Exception(
+        'RestApi HTTP-request: ' . $this->message,
+        $this->code
+      );
+    }
+  }
+
+  /**
+   * Performs REST API calls.
+   *
+   * Reuses persistent cURL connections across sequential requests when
+   * $this->keepAlive is enabled.
+   *
+   * @return $this|bool
+   *   Returns instance to allow method chaining, or FALSE if blocked by lock.
+   *
+   * @throws Exception
+   *   When cURL fails or response code is outside 200..299.
+   */
+  public function doRequest() {
+    $this->prepareRequestState();
+
+    if (!$this->isRequestAllowed()) {
+      $message = 'Running the same requests in parallel is not allowed';
+      watchdog('rest_api', $message, [], WATCHDOG_ERROR);
+
+      return FALSE;
     }
 
-    $this->removeLock();
+    $this->setLock();
+    try {
+      $request_context = $this->prepareRequestExecution(TRUE);
+
+      if (
+        $this->cache
+        && variable_get('rest_api_use_cache', TRUE)
+        && !empty($this->requestId)
+        && ($response_data = RestApiResponse::loadValid($this->requestId))
+      ) {
+        // Cached response exists and will be used.
+        // WARNING: Cached Response is missing 'curlInfo'.
+        foreach ($response_data as $key => $value) {
+          switch ($key) {
+            case 'created':
+            case 'request_id':
+              break;
+
+            case 'response_id':
+              $this->responseId = $value;
+              break;
+
+            case 'duration':
+            case 'code':
+            case 'body':
+              $this->$key = $value;
+              break;
+          }
+        }
+        $this->curlErrno = 0;
+        $this->curlError = '';
+        $this->message = HttpCode::getMessage($this->code);
+        $this->validateResponseStatus();
+      }
+      else {
+        // Real HTTP request using persistent cURL handle with connection reuse.
+        $use_keep_alive = $this->keepAlive
+          && variable_get('rest_api_keep_alive', TRUE);
+        $curl = $this->acquireCurlHandle(FALSE);
+
+        $execution_time_start = microtime(TRUE);
+        $response = curl_exec($curl);
+        $this->duration = (microtime(TRUE) - $execution_time_start) * 1000;
+
+        $this->curlErrno = curl_errno($curl);
+        $this->curlError = curl_error($curl);
+        $this->curlInfo = curl_getinfo($curl);
+
+        // Only close the handle if connection reuse is explicitly disabled.
+        if (!$use_keep_alive) {
+          curl_close($curl);
+        }
+
+        $this->processCurlResponse($response, $request_context);
+      }
+    }
+    finally {
+      $this->removeLock();
+    }
+
     return $this;
   }
 
   /**
-   * Gets timeout value.
+   * Executes multiple RestApi requests concurrently using curl_multi.
    *
-   * The maximum number of seconds to allow cURL functions to execute.
-   * To set in milliseconds use: CURLOPT_TIMEOUT_MS.
-   * https://curl.se/libcurl/c/CURLOPT_TIMEOUT.html.
+   * @param RestApi[]|array[] $requests
+   *   List of RestApi instances or request context arrays.
+   * @param int $concurrency
+   *   Maximum number of simultaneous connections. Default 10.
    *
-   * @return int
-   *   Returns value of the timeout in milliseconds.
-   *
-   * @todo Minor. ?Convert into private method?
+   * @return RestApi[]
+   *   List of completed RestApi instances in the same order as $requests.
    */
-  public function getTimeout() {
-    return variable_get('rest_api_timeout', 30);
+  public static function doMultiRequest(array $requests, $concurrency = 10) {
+    if (empty($requests)) {
+      return [];
+    }
+
+    $instances = [];
+    foreach ($requests as $idx => $item) {
+      if ($item instanceof static) {
+        $instances[$idx] = $item;
+      }
+      elseif (is_array($item)) {
+        $instances[$idx] = new static($item);
+      }
+      else {
+        throw new Exception('Invalid request item at index ' . $idx);
+      }
+    }
+
+    $max_conns = max(1, (int) $concurrency);
+    $mh = curl_multi_init();
+    if (defined('CURLMOPT_PIPELINING') && defined('CURLPIPE_MULTIPLEX')) {
+      @curl_multi_setopt($mh, CURLMOPT_PIPELINING, CURLPIPE_MULTIPLEX);
+    }
+    if (defined('CURLMOPT_MAX_HOST_CONNECTIONS')) {
+      @curl_multi_setopt($mh, CURLMOPT_MAX_HOST_CONNECTIONS, $max_conns);
+    }
+    if (defined('CURLMOPT_MAX_TOTAL_CONNECTIONS')) {
+      @curl_multi_setopt($mh, CURLMOPT_MAX_TOTAL_CONNECTIONS, $max_conns);
+    }
+
+    $handles = [];
+    $contexts = [];
+    $use_global_cache = (bool) variable_get('rest_api_use_cache', TRUE);
+
+    foreach ($instances as $idx => $api) {
+      if (empty($api->method)) {
+        $api->method = 'GET';
+        if (!$api->cacheExplicit) {
+          $api->cache = TRUE;
+        }
+      }
+      $api->prepareRequestState();
+      $contexts[$idx] = $api->prepareRequestExecution(TRUE);
+
+      if (
+        $api->cache
+        && $use_global_cache
+        && !empty($api->requestId)
+        && ($response_data = RestApiResponse::loadValid($api->requestId))
+      ) {
+        $api->responseId = $response_data['response_id'] ?? NULL;
+        $api->duration = $response_data['duration'] ?? 0;
+        $api->code = $response_data['code'] ?? 200;
+        $api->body = $response_data['body'] ?? NULL;
+        $api->curlErrno = 0;
+        $api->curlError = '';
+        $api->message = HttpCode::getMessage($api->code);
+        continue;
+      }
+
+      $ch = $api->acquireCurlHandle(TRUE);
+      $handles[$idx] = $ch;
+      curl_multi_add_handle($mh, $ch);
+    }
+
+    if (!empty($handles)) {
+      $active = NULL;
+      do {
+        $status = curl_multi_exec($mh, $active);
+        if ($active) {
+          // Wait for network activity (up to 1.0s) to avoid CPU busy-looping.
+          if (curl_multi_select($mh, 1.0) === -1) {
+            usleep(1000);
+          }
+        }
+      } while ($active && $status == CURLM_OK);
+
+      foreach ($handles as $idx => $ch) {
+        $api = $instances[$idx];
+        $api->curlErrno = curl_errno($ch);
+        $api->curlError = curl_error($ch);
+        $api->curlInfo = curl_getinfo($ch);
+        $api->duration = ($api->curlInfo['total_time'] ?? 0) * 1000;
+        $raw_response = curl_multi_getcontent($ch);
+
+        curl_multi_remove_handle($mh, $ch);
+        curl_close($ch);
+
+        try {
+          $api->processCurlResponse($raw_response, $contexts[$idx]);
+        }
+        catch (Exception $e) {
+          watchdog_exception('rest_api', $e);
+        }
+      }
+    }
+
+    curl_multi_close($mh);
+    return $instances;
   }
 
   /**
-   * Replaces hash in RestApiRequest::TABLE.
+   * Gets timeout value in seconds.
    *
-   * @param string $new_hash
-   *   New md5 has. See method 'generateHash()'.
+   * @return int
+   *   Returns value of the timeout in seconds.
    */
-  public function replaceRequestId($new_hash) {
-    if (empty($hash = $this->hash) || $this->hash == $new_hash) {
-      return;
+  public function getTimeout() {
+    if ($this->timeout !== NULL) {
+      return (int) $this->timeout;
     }
+    return (int) variable_get('rest_api_timeout', 30);
+  }
 
-    $transaction = db_transaction();
-    try {
-      db_update(RestApiRequest::TABLE)
-        ->fields(['hash' => $new_hash])
-        ->condition('hash', $hash)
-        ->execute();
+  /**
+   * Gets connection timeout value in seconds.
+   *
+   * @return int
+   *   Returns value of the connection timeout in seconds.
+   */
+  public function getConnectTimeout() {
+    if ($this->connectTimeout !== NULL) {
+      return (int) $this->connectTimeout;
     }
-    catch (Exception $e) {
-      $transaction->rollback();
-      watchdog_exception('rest_api', $e);
-    }
+    return (int) variable_get('rest_api_connect_timeout', 10);
   }
 
   /**
@@ -995,15 +1715,12 @@ class RestApi {
   }
 
   /**
-   * Checks if property $url has valid value.
+   * Validates $url scheme, syntax, and SSRF hostname/IP constraints.
    *
    * Note: only non-empty value will be validated.
-   * This allows to validate $url property and avoid using function's argument
-   * directly. Property $url is required only in doRequest() so it should
-   * be treated as optional before doRequest() call.
    *
    * @throws Exception
-   *   If $url property is not empty and has invalid URL.
+   *   If $url property is not empty and has an invalid or disallowed URL.
    */
   public function validateUrl() {
     if (empty($this->url)) {
@@ -1013,24 +1730,63 @@ class RestApi {
       $message = t('URL is invalid: "@url"', ['@url' => $this->url]);
       throw new Exception($message);
     }
+
+    $parts = @parse_url($this->url);
+    $scheme = strtolower($parts['scheme'] ?? '');
+    if (!in_array($scheme, static::ALLOWED_SCHEMES, TRUE)) {
+      $message = t(
+        'URL scheme "@scheme" is not allowed. Only HTTP and HTTPS are allowed.',
+        ['@scheme' => $scheme]
+      );
+      throw new Exception($message);
+    }
+
+    if (empty($parts['host'])) {
+      $message = t('URL is missing a host: "@url"', ['@url' => $this->url]);
+      throw new Exception($message);
+    }
+
+    if ($this->shouldBlockPrivateIps()) {
+      $host = strtolower(trim($parts['host'], '.'));
+      $bare_host = trim($host, '[]');
+
+      if (
+        $bare_host === 'localhost'
+        || preg_match('/\.(localhost|local|internal)$/i', $bare_host)
+      ) {
+        $message = t(
+          'Requests to internal host "@host" are blocked.',
+          ['@host' => $bare_host]
+        );
+        throw new Exception($message);
+      }
+
+      if (
+        filter_var($bare_host, FILTER_VALIDATE_IP)
+        && !static::isPublicIp($bare_host)
+      ) {
+        $message = t(
+          'Requests to private or reserved IP "@ip" are blocked.',
+          ['@ip' => $bare_host]
+        );
+        throw new Exception($message);
+      }
+    }
   }
 
   /**
    * Checks if property $method has valid value.
    *
    * Note: only non-empty value will be validated.
-   * This allows to validate $url property and avoid using function's argument
-   * directly. Property $url is required only in doRequest() so it should
-   * be treated as optional before doRequest() call.
    *
    * @throws Exception
-   *   If $url property is not empty and has invalid URL.
+   *   If $method property is not empty and has invalid HTTP method.
    */
   public function validateMethod() {
     if (empty($this->method)) {
       return;
     }
-    if (!in_array(strtoupper($this->method), static::METHOD_LIST)) {
+    if (!in_array(strtoupper($this->method), static::METHOD_LIST, TRUE)) {
       $message = t(
         'Unsupported HTTP-method: "@method"',
         ['@method' => $this->method]

@@ -98,6 +98,19 @@ class TppsConfiguration {
   }
 
   /**
+   * Magic isset.
+   *
+   * @param string $name
+   *   Class property name.
+   *
+   * @return bool
+   *   TRUE if the magic property exists (and is not null).
+   */
+  public function __isset($name) {
+    return property_exists($this, $name) && isset($this->$name);
+  }
+
+  /**
    * Mapping of the variables and constants.
    *
    * @param string $name

@@ -129,7 +129,8 @@ class NcbiTaxonomy {
     if (preg_match('/<Taxon>/', $xml)) {
       // Exists. Not empty response.
       preg_match('/<ScientificName>(.+)<\/ScientificName>/', $xml, $matches);
-      return $matches[1] ?? FALSE;
+      $name = $matches[1] ?? FALSE;
+      return trim($name);
     }
     return NULL;
   }
@@ -141,14 +142,17 @@ class NcbiTaxonomy {
    *   Organism Name or Organism Id.
    *   AJAX-requests from browser uses name but Batch Update uses id.
    *
-   * @return int
-   *   Returns NCBI Taxonomy Id.
+   * @return array
+   *   Returns associative arrayn with keys:
+   *   - 'primary_name': (string) Primary (accepted, canonical) organism name.
+   *   - 'taxonomy_id': (int) Taxonomy id.
    *
    * @throws Exception
    *   When request to NCBI API fails.
    */
   public static function getId($organism_key) {
     $organism_key = check_plain($organism_key);
+
     try {
       // Get taxonomy id from local DB.
       $organism = new Organism($organism_key);
@@ -156,13 +160,18 @@ class NcbiTaxonomy {
       $taxonomy = OrganismTaxonomy::load($organism->id, static::KEY);
       $taxonomy_id = $taxonomy[static::KEY] ?? NULL;
       if (!empty($taxonomy_id)) {
+        if ($debug_mode ?? FALSE) {
+          throw new Exception('Debug.');
+        }
         $output = [
           'primary_name' => $organism->name,
+          'primary_id' => $organism->id,
           'taxonomy_id' => (int) $taxonomy_id,
         ];
         return $output;
       }
       else {
+        // @todo check if load() is necessary here.
         $organism->load();
         $organism_id = $organism->id;
         $organism_key = $organism->name;
@@ -185,6 +194,8 @@ class NcbiTaxonomy {
         // Let's search it in NCBI database.
         $xml = static::getInfo($organism_name);
         if (preg_match('/<OutputMessage>No items found\.<\/OutputMessage>/', $xml)) {
+          // Taxonomy Id not found.
+          OrganismTaxonomy::save($organism->id, static::KEY, NULL);
           return NULL;
         }
         else {
@@ -195,20 +206,51 @@ class NcbiTaxonomy {
           // Get organism primary name.
           // WARNING: Primary name could be different from given organism name.
           $primary_name = static::getPrimaryName($taxonomy_id);
+
           if (!empty($primary_name)) {
-            $organism = new Organism();
-            $organism->setName($primary_name);
-            $organism->save();
+            if ($organism_name == $primary_name) {
+              $primary_id = $organism->id;
+              VarList::remove(
+                'organism_synonym_ncbi_accepted_list',
+                $primary_id
+              );
+            }
+            else {
+              // Primary name and organism name (synonym) are different.
+              $primary_organism = new Organism();
+              $primary_organism->setName($primary_name)->findId();
+              if (empty($primary_organism->id)) {
+                if (
+                  !empty($primary_organism->species)
+                  && !empty($primary_organism->genus)
+                ) {
+                  // No need to store if only $id property was set because
+                  // it was already found in DB by findId() method.
+                  $primary_organism->save();
+                }
+              }
+              $primary_id = $primary_organism->id ?? NULL;
+              if (!empty($primary_id)) {
+                VarList::add(
+                  'organism_synonym_ncbi_accepted_list',
+                  // Value => Key,
+                  // Synonym Id -> Primary Id.
+                  $primary_id,
+                  $organism->id
+                );
+              }
+            }
             // Save relation between taxonomy_id and organism name.
             OrganismTaxonomy::save(
-              $organism->id,
+              $primary_id,
               static::KEY,
               $taxonomy_id
             );
           }
           $output = [
-            'taxonomy_id' => (int) $taxonomy_id,
+            'taxonomy_id' => $taxonomy_id,
             'primary_name' => $primary_name,
+            'primary_id' => $primary_id,
           ];
           return $output;
         }
@@ -253,12 +295,12 @@ class NcbiTaxonomy {
    *   Returns API response.
    */
   public static function getInfo($organism_name) {
-    $query = [
-      'db' => 'taxonomy',
-      'term' => check_plain($organism_name),
-      'api_key' => variable_get('tripal_eutils_ncbi_api_key'),
-    ];
     try {
+      $query = [
+        'db' => 'taxonomy',
+        'term' => check_plain($organism_name),
+        'api_key' => variable_get('tripal_eutils_ncbi_api_key'),
+      ];
       $xml = (new RestApi([
         'url' => static::SEARCH_URL,
         'query' => $query,
@@ -267,21 +309,26 @@ class NcbiTaxonomy {
       ]))->get()->response();
       if (!is_array($xml)) {
         $xml = trim(str_replace("\r\n", "\n", $xml));
+        return $xml;
       }
       else {
-        // array ( 'error' => 'API rate limit exceeded', 'api-key' => '', 'count' => '11', 'limit' => '10', )
+        // Example: [
+        //   'error' => 'API rate limit exceeded',
+        //   'api-key' => '',
+        //   'count' => '11',
+        //   'limit' => '10',
+        // ].
         if (!empty($xml['error'])) {
-          watchdog('tpps', 'NCBI error: @error_message',
-            ['@error_message' => $xml['error']], WATCHDOG_ERROR
-          );
+          $message = 'NCBI error: @error_message';
+          $params = ['@error_message' => $xml['error']];
         }
         else {
-          watchdog('tpps', 'NCBI response: <pre>@message</pre>',
-            ['@message' => var_export($xml, 1)], WATCHDOG_ERROR
-          );
+          $message = 'NCBI response: <pre>@message</pre>';
+          $params = ['@message' => var_export($xml, 1)];
         }
+        // watchdog('tpps', $message, $params, WATCHDOG_ERROR);
+        throw new Exception(t($message, $params));
       }
-      return $xml;
     }
     catch (Exception $e) {
       $message = $e->getMessage();

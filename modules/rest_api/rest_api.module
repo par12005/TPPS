@@ -76,167 +76,248 @@ function rest_api_theme() {
   ];
 }
 
+/**
+ * Implements hook_cron().
+ */
+function rest_api_cron() {
+  $retention_days = (int) variable_get('rest_api_log_retention_days', 30);
+  if ($retention_days <= 0) {
+    return;
+  }
+
+  $cutoff = REQUEST_TIME - ($retention_days * 86400);
+
+  // Purge expired responses first in deterministic primary-key order.
+  $expired_response_ids = db_select(RestApiResponse::TABLE, 'r')
+    ->fields('r', ['response_id'])
+    ->condition('created', $cutoff, '<')
+    ->orderBy('response_id', 'ASC')
+    ->range(0, 1000)
+    ->execute()
+    ->fetchCol();
+  if (!empty($expired_response_ids)) {
+    db_delete(RestApiResponse::TABLE)
+      ->condition('response_id', $expired_response_ids, 'IN')
+      ->execute();
+  }
+
+  // Purge old requests only when they have no remaining responses in
+  // {rest_api_response} so active recurring endpoints are not deleted.
+  $query = db_select(RestApiRequest::TABLE, 'req');
+  $query->leftJoin(
+    RestApiResponse::TABLE,
+    'r',
+    'req.request_id = r.request_id'
+  );
+  $expired_request_ids = $query
+    ->fields('req', ['request_id'])
+    ->condition('req.created', $cutoff, '<')
+    ->isNull('r.response_id')
+    ->orderBy('req.request_id', 'ASC')
+    ->range(0, 1000)
+    ->execute()
+    ->fetchCol();
+  if (!empty($expired_request_ids)) {
+    db_delete(RestApiRequest::TABLE)
+      ->condition('request_id', $expired_request_ids, 'IN')
+      ->execute();
+  }
+}
+
+/**
+ * Builds a watchdog report link if the target report path exists.
+ *
+ * @param string $path_prefix
+ *   Report route prefix.
+ * @param int|string|null $id
+ *   Record ID to link to.
+ *
+ * @return string|null
+ *   Rendered HTML link if path is valid, or NULL otherwise.
+ */
+function _rest_api_watchdog_report_link($path_prefix, $id) {
+  if (empty($id)) {
+    return NULL;
+  }
+  $path = $path_prefix . $id;
+  if (function_exists('drupal_valid_path') && drupal_valid_path($path)) {
+    return l((string) $id, $path);
+  }
+  return NULL;
+}
+
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 /**
- * Implements alter-hook 'rest_api_exception'.
- *
- * Allows alter exception messages thrown in RestApi->doRequest().
- *
- * @param string $message
- *   Original exceptin message which could be modified.
- * @param array $context
- *   Request meta-data.
+ * Implements hook_rest_api_exception_alter().
  */
-function rest_api_exception_alter(&$message, array $context) {
-  if (!empty($context['response']['status'])) {
-    if (!empty($context['response']['message'])) {
-      $message .= ' ' . $context['response']['message'];
+function rest_api_rest_api_exception_alter(&$message, array $context) {
+  $response = $context['response'] ?? $context['body'] ?? NULL;
+  if (is_array($response)) {
+    if (!empty($response['description'])) {
+      // Telegram Bot API error format:
+      // {'ok': false, 'error_code': 400, 'description': '...'}.
+      $message .= ' ' . $response['description'];
     }
-    if (!empty($context['response']['errors'])) {
-      foreach ($context['response']['errors'] as $error) {
-        $message .= ' ' . $error['field'] . ': ' . implode(' ', $error['messages']);
+    if (!empty($response['status'])) {
+      if (!empty($response['message'])) {
+        $message .= ' ' . $response['message'];
+      }
+      if (!empty($response['errors']) && is_array($response['errors'])) {
+        foreach ($response['errors'] as $error) {
+          if (!empty($error['field']) && !empty($error['messages'])) {
+            $err_msgs = implode(' ', (array) $error['messages']);
+            $message .= ' ' . $error['field'] . ': ' . $err_msgs;
+          }
+        }
       }
     }
   }
 }
 
 /**
- * Implements hook 'rest_api_response_loaded'.
- *
- * @param array $context
- *   Keys: 'request_id' and 'response_id'.
+ * Implements hook_rest_api_response_loaded().
  */
 function rest_api_rest_api_response_loaded(array $context = []) {
+  if (!variable_get('rest_api_debug_mode', FALSE)) {
+    return;
+  }
   if (!empty($context['request_id']) && !empty($context['response_id'])) {
-    $message = "!aLoaded existing response '!response_report_link' to the "
-      . "request '!request_report_link'.";
+    $msg = "Loaded existing response '@response_id' to request '@request_id'.";
     $params = [
-      '!a' => '<a href=#></a>',
-      '@id' => $context['response_id'],
-      '!request_report_link' => theme('request_report_link',
-        ['request_id' => $context['request_id']]
-      ),
-      '!response_report_link' => theme('response_report_link',
-        ['response_id' => $context['response_id']]
-      ),
+      '@response_id' => $context['response_id'],
+      '@request_id' => $context['request_id'],
     ];
-    watchdog('rest_api', $message, $params);
+    watchdog(
+      'rest_api',
+      $msg,
+      $params,
+      WATCHDOG_INFO,
+      _rest_api_watchdog_report_link(
+        'admin/reports/tpps/rest_api/response/body/',
+        $context['response_id']
+      )
+    );
   }
 }
 
 /**
- * Implements hook 'rest_api_request_started'.
- *
- * Called from class 'RestApi'.
- * Saves Request.
- *
- * @param array $context
- *   Request's context.
- *   Keys: see RestApi->doRequest().
+ * Implements hook_rest_api_request_started().
  */
 function rest_api_rest_api_request_started(array $context = []) {
-  if ($debug_mode ?? 0) {
+  $debug_mode = (bool) variable_get('rest_api_debug_mode', FALSE);
+  $sanitized_context = RestApiRequest::sanitizeContext($context);
+  if ($debug_mode) {
     $params = [
-      '@dump' => var_export($context, 1),
+      '@dump' => var_export($sanitized_context, TRUE),
       '@function' => __FUNCTION__,
     ];
-    watchdog('rest_api', '@function: <pre>@dump</pre>', $params);
+    watchdog(
+      'rest_api',
+      '@function: <pre>@dump</pre>',
+      $params,
+      WATCHDOG_DEBUG
+    );
   }
-  if (
-    empty($request_id = $context['request_id'])
-    && ($context['log'] && variable_get('rest_api_use_log', TRUE))
-  ) {
-    // Logging is allowed.
+
+  if (!empty($context['request_id'])) {
+    return $context['request_id'];
+  }
+
+  if (!empty($context['log']) && variable_get('rest_api_use_log', TRUE)) {
     if (empty($context['hash'])) {
       $params = ['@function' => __FUNCTION__];
-      watchdog('rest_api', '@function: empty "hash".', $params, 'error');
+      watchdog(
+        'rest_api',
+        '@function: empty "hash".',
+        $params,
+        WATCHDOG_ERROR
+      );
       return FALSE;
     }
 
-    $request_id = RestApiRequest::save($context);
-
-    $message = '!aRest API Request !request_report_link was saved.';
-    if (empty($request_id)) {
-      $message = '!aRest API Request !request_report_link already exists.';
+    $request_id = RestApiRequest::save($sanitized_context);
+    if ($debug_mode) {
+      $report_id = $request_id ?: ($context['request_id'] ?? '');
+      $message = !empty($request_id)
+        ? "Rest API Request '@request_id' was saved."
+        : "Rest API Request '@request_id' already exists.";
+      $params = [
+        '@request_id' => $report_id,
+      ];
+      watchdog(
+        'rest_api',
+        $message,
+        $params,
+        WATCHDOG_INFO,
+        _rest_api_watchdog_report_link(
+          'admin/reports/tpps/rest_api/request/single/',
+          $report_id
+        )
+      );
     }
-    $params = [
-      '!a' => '<a href=#></a>',
-      '!request_report_link' => theme('request_report_link',
-        ['request_id' => $context['request_id']]
-      ),
-    ];
-    watchdog('rest_api', $message, $params);
+
     return $request_id;
   }
-  return FALSE;
+
+  // Logging is not allowed.
+  return NULL;
 }
 
 /**
- * Implements hook 'rest_api_response_received'.
- *
- * Called from class 'RestApi'.
- * No need to check if response exists because each response will be
- * stored in database.
- *
- * @param array $context
- *   Request's context.
- *   Keys: see RestApi->doRequest().
- *   To check if response exists: RestApiResponse::isExists($request_id).
+ * Implements hook_rest_api_response_received().
  */
 function rest_api_rest_api_response_received(array $context = []) {
+  // Record requests whose processing takes a very long time even if DB logging
+  // is disabled.
+  $max_execution_time = variable_get('rest_api_max_execution_time', 5000);
+  if (($context['duration'] ?? 0) >= $max_execution_time) {
+    $request_id = $context['request_id'] ?? '';
+    $message = "Processing request '@request_id' took too long: "
+      . "@duration msec.";
+    $params = [
+      '@request_id' => $request_id ?: 'N/A',
+      '@duration' => round($context['duration'], 2),
+    ];
+    watchdog(
+      'rest_api',
+      $message,
+      $params,
+      WATCHDOG_WARNING,
+      _rest_api_watchdog_report_link(
+        'admin/reports/tpps/rest_api/request/single/',
+        $request_id
+      )
+    );
+  }
+
   if (
-    // Global caching disabled.
     !variable_get('rest_api_use_log', TRUE)
-    // Current request caching disabled.
     || !($context['log'] ?? TRUE)
   ) {
     return;
   }
-  // No need to save response if request wasn't saved and we doesn't have request_id.
+  // No need to save response if request wasn't saved and has no request_id.
   if (empty($context['request_id'])) {
     return;
   }
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  $key = 'rest_api';
-  $params = [
-    '@dump' => var_export($context, 1),
-    '@function' => __FUNCTION__,
-  ];
-  if ($debug_mode ?? 0) {
-    watchdog($key, '@function: <pre>@dump</pre>', $params);
-  }
-
-  if (!empty($response_id = RestApiResponse::save($context))) {
-    // NULL - updated, FALSE - caching disabled for current request.
-    // Watchdog message.
-    $message = '!aResponse !response_report_link to the request '
-      . '!request_report_link was saved.';
+  $response_id = RestApiResponse::save($context);
+  if (!empty($response_id) && variable_get('rest_api_debug_mode', FALSE)) {
+    $message = "Response '@response_id' to request '@request_id' was saved.";
     $params = [
-      '!a' => '<a href=#></a>',
-      '!request_report_link' => theme('request_report_link',
-        ['request_id' => $context['request_id']]
-      ),
-      '!response_report_link' => theme('response_report_link',
-        ['response_id' => $context['response_id']]
-      ),
+      '@response_id' => $response_id,
+      '@request_id' => $context['request_id'],
     ];
-    watchdog('rest_api', $message, $params);
-  }
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Record requests which processing takes a very long time.
-  $max_execution_time = variable_get('rest_api_max_execution_time', 5000);
-  $method = $request['method'] ?? NULL;
-  if (($context['duration'] ?? 0) >= $max_execution_time) {
-    $message = '!aProcessing request !request_report_link took too long: @duration msec.';
-    $params = [
-      '!a' => '<a href=#></a>',
-      '@duration' => $context['duration'],
-      '!request_report_link' => theme('request_report_link',
-        ['request_id' => $context['request_id']]
-      ),
-    ];
-    watchdog('rest_api', $message, $params);
+    watchdog(
+      'rest_api',
+      $message,
+      $params,
+      WATCHDOG_INFO,
+      _rest_api_watchdog_report_link(
+        'admin/reports/tpps/rest_api/response/body/',
+        $response_id
+      )
+    );
   }
 }

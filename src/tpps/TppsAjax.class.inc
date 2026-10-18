@@ -75,6 +75,41 @@ class TppsAjax {
       $response['errors'][] = t('Empty organism name.');
       return $response;
     }
+
+    // Not found at GBIF. Try NCBI.
+    try {
+      $result = NcbiTaxonomy::getId($organism_name);
+    }
+    catch (Exception $e) {
+      $response['id'] = FALSE;
+      $response['success'] = FALSE;
+      $response['errors'][] = t('The Taxonomy Id was not found in GBIF taxonomic repository.');
+      $response['errors'][] = $e->getMessage();
+      return $response;
+    }
+
+    $taxonomy_id = check_plain($result['taxonomy_id']);
+    $primary_name = check_plain($result['primary_name']);
+
+    if (!empty($result['taxonomy_id'])) {
+      $response['success'] = TRUE;
+      $response['id'] = $taxonomy_id;
+      $response['primary_name'] = $primary_name;
+      $response['source'] = 'ncbi';
+      // Build link to NCBI Taxonomy Browser page.
+      $url = NcbiTaxonomy::getUrl($taxonomy_id);
+      $params = [
+        'attributes' => [
+          'target' => '_blank',
+          'title' => t('View using NCBI Taxonomy Browser'),
+        ],
+      ];
+      $response['statuses'][] = t(
+        'Organism "@name" found in NCBI taxonomic repository. Taxonomy Id: !id',
+        ['@name' => $primary_name, '!id' => l($taxonomy_id, $url, $params)]
+      );
+      return $response;
+    }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Check if it's a synonym.
     // Note: Only GBIF provides this information.
@@ -136,44 +171,10 @@ class TppsAjax {
       }
     }
     else {
-      // Not found at GBIF. Try NCBI.
-      try {
-        $result = NcbiTaxonomy::getId($organism_name);
-      }
-      catch (Exception $e) {
-        $response['id'] = FALSE;
-        $response['success'] = FALSE;
-        $response['errors'][] = t('The Taxonomy Id was not found in GBIF taxonomic repository.');
-        $response['errors'][] = $e->getMessage();
-        return $response;
-      }
-
-      $taxonomy_id = check_plain($result['taxonomy_id']);
-      $primary_name = check_plain($result['primary_name']);
-
-      if (empty($result['taxonomy_id'])) {
-        $response['success'] = FALSE;
-        $response['id'] = FALSE;
-        $response['errors'][] = t('The Taxonomy ID could not be found in '
-          . 'either the NCBI or GBIF taxonomic repositories.');
-      }
-      else {
-        $response['success'] = TRUE;
-        $response['id'] = $taxonomy_id;
-        $response['primary_name'] = $primary_name;
-        // Build link to NCBI Taxonomy Browser page.
-        $url = NcbiTaxonomy::getUrl($taxonomy_id);
-        $params = [
-          'attributes' => [
-            'target' => '_blank',
-            'title' => t('View using NCBI Taxonomy Browser'),
-          ],
-        ];
-        $response['statuses'][] = t(
-          'Organism "@name" found in NCBI taxonomic repository. Taxonomy Id: !id',
-          ['@name' => $primary_name, '!id' => l($taxonomy_id, $url, $params)]
-        );
-      }
+      $response['success'] = FALSE;
+      $response['id'] = FALSE;
+      $response['errors'][] = t('The Taxonomy ID could not be found in '
+        . 'either the NCBI or GBIF taxonomic repositories.');
     }
 
     return $response;

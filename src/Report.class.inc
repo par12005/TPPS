@@ -920,13 +920,27 @@ class Report {
             'description' => t('List of the synonyms for each organism.'),
             'admin_panel' => FALSE,
           ],
-          'accepted' => [
-            'title' => variable_get('tpps_report_organism_synonym_accepted_title',
-              "List of the Accepted Organism Synonym Names"
-            ),
-            'description' => t('List of the synonym names stored as accepted '
-              . '(primary, canonical) organism name in "chado.organism" table.'),
-            'admin_panel' => FALSE,
+          'ncbi' => [
+            'accepted' => [
+              'title' => variable_get('tpps_report_organism_synonym_ncbi_accepted_title',
+                "List of the NCBI Accepted Organism Synonym Names"
+              ),
+              'description' => t('List of the organism names treated as '
+                . 'synonyms by NCBI but stored as accepted '
+                . '(primary, canonical) organism name in "chado.organism" table.'),
+              'admin_panel' => FALSE,
+            ],
+          ],
+          'gbif' => [
+            'accepted' => [
+              'title' => variable_get('tpps_report_organism_synonym_gbif_accepted_title',
+                "List of the GBIF Accepted Organism Synonym Names"
+              ),
+              'description' => t('List of the organism names treated as '
+                . 'synonyms by GBIF but stored as accepted '
+                . '(primary, canonical) organism name in "chado.organism" table.'),
+              'admin_panel' => FALSE,
+            ],
           ],
         ],
         'genus' => [

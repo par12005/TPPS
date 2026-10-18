@@ -7,8 +7,14 @@
  * Admnin theme was enabled for this page in tpps_admin_paths().
  */
 
-// Name of the submit button.
+// Name of the update button.
+// Only organisms without taxonomy ids will be processed.
 define('TPPS_GBIF_BATCH_UPDATE_BUTTON_NAME', 'gbif_batch_update');
+
+// Name of the reset button.
+// All existing taxonomy ids will be removed, list of the accepted synonym
+// cleared and taxonomy ids requested again.
+define('TPPS_GBIF_BATCH_RESET_BUTTON_NAME', 'gbif_batch_reset');
 
 /**
  * Menu callback for 'batch/gbif/taxonomy_id'.
@@ -18,7 +24,10 @@ define('TPPS_GBIF_BATCH_UPDATE_BUTTON_NAME', 'gbif_batch_update');
 function tpps_batch_gbif_taxonomy_id_form(array $form, array &$form_state) {
   global $_SESSION;
 
-  $session_name = 'tpps_batch_gbif_taxonomy_id';
+  $source = GbifSpeciesApi::KEY;
+  $source_title = strtoupper($source);
+
+  $session_name = 'tpps_batch_' . $source . '_taxonomy_id';
   // Show results of previous batch (if any).
   // @todo Show better report as a table.
   if (!empty($_SESSION[$session_name])) {
@@ -29,16 +38,26 @@ function tpps_batch_gbif_taxonomy_id_form(array $form, array &$form_state) {
     unset($_SESSION[$session_name]);
   }
 
-  $report_path = 'admin/reports/tpps/organism/gbif/all';
+  $report_path = 'admin/reports/tpps/organism/' . $source . '/all';
   $form['report'] = [
-    '#markup' => '<p>' . l(t('List of the GBIF Taxonomy Ids.'), $report_path) . '</p>',
+    '#markup' => '<p>' . l(
+      t('List of the @source Taxonomy Ids.', ['@source' => $source_title]),
+      $report_path
+    ) . '</p>',
   ];
 
   // Button to start batch process.
+  // Update only organisms which are missing taxonomy ids.
   $form[TPPS_GBIF_BATCH_UPDATE_BUTTON_NAME] = [
     '#type' => 'submit',
     '#name' => TPPS_GBIF_BATCH_UPDATE_BUTTON_NAME,
-    '#value' => t('GBIF Taxonomy Id Batch Update'),
+    '#value' => t('@source Taxonomy Id Batch Update', ['@source' => $source_title]),
+  ];
+  // Reset all organism taxonomy ids.
+  $form[TPPS_GBIF_BATCH_RESET_BUTTON_NAME] = [
+    '#type' => 'submit',
+    '#name' => TPPS_GBIF_BATCH_RESET_BUTTON_NAME,
+    '#value' => t('@source Taxonomy Id Batch Reset', ['@source' => $source_title]),
   ];
   return $form;
 }
@@ -47,34 +66,44 @@ function tpps_batch_gbif_taxonomy_id_form(array $form, array &$form_state) {
  * Form submitter for 'tpps_batch_gbif_taxonomy_id_form'.
  */
 function tpps_batch_gbif_taxonomy_id_form_submit(array $form, array &$form_state) {
-  // Process 'Clear TPPS Cache' button.
+  $source = GbifSpeciesApi::KEY;
+
+  $source_title = strtoupper($source);
   $button_name = $form_state['triggering_element']['#name'];
-  if ($button_name != TPPS_GBIF_BATCH_UPDATE_BUTTON_NAME) {
-    return;
+  $module_path = drupal_get_path('module', 'tpps');
+
+  switch ($button_name) {
+    case TPPS_GBIF_BATCH_RESET_BUTTON_NAME:
+      VarList::clearList('organism_synonym_' . $source . '_accepted_list');
+      OrganismTaxonomy::remove($source);
+
+    case TPPS_GBIF_BATCH_UPDATE_BUTTON_NAME:
+      // Get list of organisms without Taxonomy Id.
+      $operations = [];
+      $list = OrganismTaxonomy::getMissingOrganismIdList($source);
+      if (!empty($total = count($list))) {
+        foreach ($list as $organism_id) {
+          $operations[] = [
+            'tpps_batch_' . $source . '_taxonomy_id_callback',
+            [$organism_id, $total],
+          ];
+        }
+        $batch = [
+          'title' => $source_title . ' Taxonomy ID Update',
+          'operations' => $operations,
+          'finished' => 'tpps_batch_' . $source . '_taxonomy_id_finished_callback',
+          'file' => $module_path . '/batch/' . $source . '/taxonomy_id.inc',
+        ];
+        batch_set($batch);
+      }
+      else {
+        $message = 'No organisms without ' . $source_title . ' Taxonomy Id found.';
+        drupal_set_message($message);
+      }
+      // There is no need to explicitly call batch_process() because this is
+      // *_submit() function.
+      break;
   }
-  // Get list of organisms without Taxonomy Id.
-  $operations = [];
-  $list = OrganismTaxonomy::getMissingOrganismIdList();
-  if (!empty($total = count($list))) {
-    foreach ($list as $organism_id) {
-      $operations[] = [
-        'tpps_batch_gbif_taxonomy_id_callback',
-        [$organism_id, $total],
-      ];
-    }
-    $batch = [
-      'title' => t('GBIF Taxonomy ID Update'),
-      'operations' => $operations,
-      'finished' => 'tpps_batch_gbif_taxonomy_id_finished_callback',
-      'file' => drupal_get_path('module', 'tpps') . '/batch/gbif/taxonomy_id.inc',
-    ];
-    batch_set($batch);
-  }
-  else {
-    drupal_set_message('No organisms without GBIF Taxonomy Id found.');
-  }
-  // There is no need to explicitly call batch_process() because this is
-  // *_submit() function.
 }
 
 /**
@@ -93,19 +122,49 @@ function tpps_batch_gbif_taxonomy_id_callback($organism_id, $total, array &$cont
     $context['sandbox']['current_item'] = '';
     $context['sandbox']['total'] = $total;
   }
+
   // Get Taxonomy Id.
-  $taxonomy_id = NULL;
+  $taxonomy_id = t('<span style="color:red;">Not found</span');
+  $primary_id = NULL;
   if (!empty($taxonomy = GbifSpeciesApi::getId($organism_id))) {
     $taxonomy_id = $taxonomy['taxonomy_id'];
+    $primary_id = $taxonomy['primary_id'];
   }
+  // Build report.
+  try {
+    $organism_name = tpps_organism($organism_id)->name;
+  }
+  catch (Exception $e) {
+    $organism_name = '';
+  }
+  $primary_name = $taxonomy['primary_name'] ?? '';
+  if ($primary_name == $organism_name) {
+    $primary_name = '<strong style="color: green">' . $primary_name . '</strong>';
+  }
+  if ($taxonomy['primary_id'] == $organism_id) {
+    $primary_name = '<em style="color: green;">' . $primary_name . '</em>';
+    $primary_id = '<em style="color: green;">' . $primary_id . '</em>';
+  }
+  else {
+    if (is_numeric($taxonomy['primary_id'])) {
+      $organism_name = '<span style="color: blue;">' . $organism_name . '</span>';
+    }
+    else {
+      $organism_name = '<span style="color: red;">' . $organism_name . '</span>';
+    }
+    $primary_name = '<span style="color: red;">' . $primary_name . '</span>';
+    $primary_id = '<span style="color: red;">' . $primary_id . '</span>';
+  }
+
   $row = [
     'organism_id'  => $organism_id,
-    'primary_name'  => $taxonomy['primary_name'] ?? '',
-    'taxonomy_id' => $taxonomy_id ?? t('Not found'),
+    'organism_name'  => $organism_name,
+    'taxonomy_id' => $taxonomy_id,
+    'primary_name'  => $primary_name,
+    'primary_id'  => $primary_id,
   ];
   $context['results'][] = $row;
   $context['message'] = implode(', ', $row);
-
   $context['sandbox']['progress']++;
   $context['sandbox']['count'] = $context['sandbox']['total'] - $context['sandbox']['progress'];
   $context['sandbox']['current_item'] = $organism_id;
@@ -123,14 +182,27 @@ function tpps_batch_gbif_taxonomy_id_callback($organism_id, $total, array &$cont
  */
 function tpps_batch_gbif_taxonomy_id_finished_callback($success, array $results, $operations) {
   global $_SESSION;
-  // The 'success' parameter means no fatal PHP errors were detected. All
-  // other error management should be handled using 'results'.
+  $source = GbifSpeciesApi::KEY;
+  $session_name = 'tpps_batch_' . $source . '_taxonomy_id';
   if ($success) {
+    // Add index to each row.
+    foreach ($results as $key => $row) {
+      if (is_numeric($row['taxonomy_id'])) {
+        $row['taxonomy_id'] = '<strong>' . $row['taxonomy_id'] . '</strong>';
+      }
+      $rows[] = array_merge(['#' => $key + 1], $row);
+    }
     $message = format_plural(count($results), 'One item processed.', '@count items processed.');
-    $session_name = 'tpps_batch_gbif_taxonomy_id';
     $_SESSION[$session_name] = theme('table', [
-      'header' => [t('Organism Id'), t('Primary Name'), t('Taxonomy Id')],
-      'rows' => $results,
+      'header' => [
+        '#',
+        t('Organism Id'),
+        t('Organism Name'),
+        t('Taxonomy Id'),
+        t('Primary Name'),
+        t('Primary Id'),
+      ],
+      'rows' => $rows,
       'attributes' => ['class' => ['view', 'tpps_table']],
       'sticky' => TRUE,
     ]);

@@ -28,29 +28,137 @@ function rest_api_schema() {
  * Implements hook_install().
  */
 function rest_api_install() {
+  variable_set('rest_api_block_private_ips', TRUE);
   variable_set('rest_api_timeout', 30);
+  variable_set('rest_api_connect_timeout', 10);
   variable_set('rest_api_max_execution_time', 5000);
   variable_set('rest_api_use_cache', TRUE);
+  variable_set('rest_api_cache_ttl', 0);
   variable_set('rest_api_use_log', TRUE);
+  variable_set('rest_api_log_retention_days', 30);
+  variable_set('rest_api_debug_mode', FALSE);
+  variable_set('rest_api_keep_alive', TRUE);
+  variable_set('rest_api_tcp_keepidle', 60);
+  variable_set('rest_api_tcp_keepintvl', 30);
 
-  // Let's manually create foreign key (fk) because Drupal7 doesn't support fk.
-  // So when request was removed related responses also will be removed to
+  // Create foreign key (fk) because Drupal 7 doesn't create fk automatically.
+  // When a request is removed, related responses will also be removed to
   // avoid orphan records.
   $sql = '
-    ALTER TABLE rest_api_response
+    ALTER TABLE {rest_api_response}
     ADD CONSTRAINT fk_response_request
     FOREIGN KEY (request_id)
-    REFERENCES rest_api_request (request_id)
+    REFERENCES {rest_api_request} (request_id)
     ON DELETE CASCADE;';
-  db_query($sql);
+  try {
+    db_query($sql);
+  }
+  catch (Exception $e) {
+    watchdog_exception('rest_api', $e);
+  }
+}
+
+/**
+ * Add connection keep-alive settings and database indexes for faster lookups.
+ */
+function rest_api_update_7101() {
+  $connect_timeout = variable_get('rest_api_connect_timeout', 10);
+  variable_set('rest_api_connect_timeout', $connect_timeout);
+  $keep_alive = variable_get('rest_api_keep_alive', TRUE);
+  variable_set('rest_api_keep_alive', $keep_alive);
+  $keep_idle = variable_get('rest_api_tcp_keepidle', 60);
+  variable_set('rest_api_tcp_keepidle', $keep_idle);
+  $keep_intvl = variable_get('rest_api_tcp_keepintvl', 30);
+  variable_set('rest_api_tcp_keepintvl', $keep_intvl);
+  variable_del('rest_api_lock_list');
+
+  if (!db_index_exists('rest_api_response', 'hash')) {
+    db_add_index('rest_api_response', 'hash', ['hash']);
+  }
+  if (!db_index_exists('rest_api_response', 'request_id_code')) {
+    db_add_index(
+      'rest_api_response',
+      'request_id_code',
+      ['request_id', 'code']
+    );
+  }
+  if (!db_index_exists('rest_api_request', 'created')) {
+    db_add_index('rest_api_request', 'created', ['created']);
+  }
+}
+
+/**
+ * Fix duration column type, replace unique key with index, and add settings.
+ */
+function rest_api_update_7102() {
+  db_change_field('rest_api_response', 'duration', 'duration', [
+    'description' => 'Request processing time, msec.',
+    'type' => 'int',
+    'size' => 'normal',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+    'default' => 0,
+  ]);
+
+  if (db_index_exists('rest_api_response', 'request_id_created')) {
+    db_drop_unique_key('rest_api_response', 'request_id_created');
+  }
+  else {
+    @db_drop_unique_key('rest_api_response', 'request_id_created');
+  }
+  if (!db_index_exists('rest_api_response', 'request_id_created')) {
+    db_add_index(
+      'rest_api_response',
+      'request_id_created',
+      ['request_id', 'created']
+    );
+  }
+
+  if (db_index_exists('rest_api_response', 'request_id_code')) {
+    db_drop_index('rest_api_response', 'request_id_code');
+  }
+  db_add_index(
+    'rest_api_response',
+    'request_id_code',
+    ['request_id', 'code', 'created']
+  );
+
+  $block_private = variable_get('rest_api_block_private_ips', TRUE);
+  variable_set('rest_api_block_private_ips', $block_private);
+  variable_set('rest_api_cache_ttl', variable_get('rest_api_cache_ttl', 0));
+  $retention = variable_get('rest_api_log_retention_days', 30);
+  variable_set('rest_api_log_retention_days', $retention);
+  $debug_mode = variable_get('rest_api_debug_mode', FALSE);
+  variable_set('rest_api_debug_mode', $debug_mode);
+}
+
+/**
+ * Upgrade rest_api_response.body column to LONGTEXT to avoid 64KB truncation.
+ */
+function rest_api_update_7103() {
+  db_change_field('rest_api_response', 'body', 'body', [
+    'description' => 'Body of the API response (LONGTEXT up to 4GB).',
+    'type' => 'text',
+    'size' => 'big',
+    'not null' => TRUE,
+  ]);
 }
 
 /**
  * Implements hook_uninstall().
  */
 function rest_api_uninstall() {
+  variable_del('rest_api_block_private_ips');
   variable_del('rest_api_timeout');
+  variable_del('rest_api_connect_timeout');
   variable_del('rest_api_max_execution_time');
   variable_del('rest_api_use_cache');
+  variable_del('rest_api_cache_ttl');
   variable_del('rest_api_use_log');
+  variable_del('rest_api_log_retention_days');
+  variable_del('rest_api_debug_mode');
+  variable_del('rest_api_keep_alive');
+  variable_del('rest_api_tcp_keepidle');
+  variable_del('rest_api_tcp_keepintvl');
+  variable_del('rest_api_lock_list');
 }

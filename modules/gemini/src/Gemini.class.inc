@@ -194,22 +194,26 @@ class Gemini {
    * @throws Exception
    *   When requested non-existing property.
    */
-  public function &__get($name) {
-    // Allow to overwrite magic with custom getter.
-    // Convert snake_case to camelCase.
-    $func = lcfirst(str_replace('_', '', ucwords('get_' . $name, '_')));
-    if (method_exists($this, $func)) {
-      return $this->$func();
+  public function __get($name) {
+    if (property_exists($this, $name)) {
+      return $this->$name;
     }
     else {
-      if (property_exists($this, $name)) {
-        return $this->$name;
-      }
-      else {
-        throw new Exception("Inexistent property: $name");
-      }
+      throw new Exception("Inexistent property: $name");
     }
-    return $this;
+  }
+
+  /**
+   * Magic isset.
+   *
+   * @param string $name
+   *   Class property name.
+   *
+   * @return bool
+   *   TRUE if the magic property exists (and is not null).
+   */
+  public function __isset($name) {
+    return property_exists($this, $name) && isset($this->$name);
   }
 
   /**

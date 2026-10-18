@@ -8,14 +8,14 @@
 /**
  * Menu callback. Shows list of the accepted organism synonym names.
  *
- * URL: /admin/reports/tpps/organism/synonym/accepted.
+ * URL: /admin/reports/tpps/organism/synonym/gbif/accepted.
  *
  * @param bool $reset
  *   Flag is cache must be resetted. Default if FALSE.
  */
-function tpps_report_organism_synonym_accepted($reset = FALSE) {
+function tpps_report_organism_synonym_gbif_accepted($reset = FALSE) {
   $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
-  $list_name = 'var_list_organism_synonym_accepted_list';
+  $list_name = 'var_list_organism_synonym_gbif_accepted_list';
   $rows = [];
 
   // Clear list.
@@ -26,8 +26,6 @@ function tpps_report_organism_synonym_accepted($reset = FALSE) {
   $list = variable_get($list_name, []);
 
   if (!empty($list)) {
-    dpm(var_export($list, 1));
-
     // Mapping.
     $fields = [
       // DB field name => Class property name.
@@ -86,7 +84,7 @@ function tpps_report_organism_synonym_accepted($reset = FALSE) {
     t('Primary Name'),
   ];
   return Report::print([
-    'name' => 'organism_synonym_accepted',
+    'name' => 'organism_synonym_gbif_accepted',
     'header' => $header,
     'rows' => $rows,
     'pager' => 'both',
@@ -111,7 +109,7 @@ function tpps_report_organism_synonym_accepted($reset = FALSE) {
  *   Returns formatted value.
  *   Empty value will not be formatted and returned as is.
  */
-function tpps_report_organism_synonym_accepted_formatter(string $name, $value, array &$row) {
+function tpps_report_organism_synonym_gbif_accepted_formatter(string $name, $value, array &$row) {
   $formatted = check_plain($value);
   if (empty($name) || empty($value)) {
     return $formatted;
@@ -132,13 +130,18 @@ function tpps_report_organism_synonym_accepted_formatter(string $name, $value, a
     case 'primary_name':
       if (!empty($value)) {
         $xml = NcbiTaxonomy::getInfo($formatted);
-        preg_match('/<Id>(\d+)<\/Id>/', $xml, $matches);
-        if (!empty($taxonomy_id = $matches[1])) {
-          $formatted = l(
-            $formatted . ' (' . $taxonomy_id . ')',
-            NcbiTaxonomy::getUrl($taxonomy_id)
-          );
-          $formatted = '<em>' . $formatted . '</em>';
+        if (is_array($xml)) {
+          dpm(var_export($xml, 1));
+        }
+        else {
+          preg_match('/<Id>(\d+)<\/Id>/', $xml, $matches);
+          if (!empty($taxonomy_id = ($matches[1] ?? NULL))) {
+            $formatted = l(
+              $formatted . ' (' . $taxonomy_id . ')',
+              NcbiTaxonomy::getUrl($taxonomy_id)
+            );
+            $formatted = '<em>' . $formatted . '</em>';
+          }
         }
       }
       break;

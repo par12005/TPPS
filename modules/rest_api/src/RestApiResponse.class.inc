@@ -4,8 +4,8 @@
  * @file
  * Contains 'RestApiResponse' class.
  *
- * Note: Request and Response uses the same name 'created' but values could be
- * totally different.
+ * Note: Request and Response use the same column name 'created' but values
+ * represent when each record was captured.
  *
  * Request has 'payload'.
  * Response has 'body'.
@@ -19,137 +19,121 @@
  */
 class RestApiResponse {
 
-  // Name of the DB table which stores responses.
+  /**
+   * Name of the database table that stores responses.
+   */
   const TABLE = 'rest_api_response';
 
   /**
    * Saves RestApi Response.
    *
-   * No need to check if the same response exists because it's body could have
-   * some time-based data (like time of the request or protection from caching).
+   * Checks only the latest response metadata (response_id, hash, code) for the
+   * current $data['request_id'] without loading or decoding the body blob: if
+   * its hash and HTTP status code match the new response, updates its 'created'
+   * and 'duration' fields and resets the response static caches; otherwise
+   * inserts a new row.
    *
    * @param array $context
    *   Request's context.
    *   Keys: see RestApi->doRequest().
-   *   To check if any response exists:
-   *     RestApiResponse::isExists($hash).
-   *   To check if valid response exists:
-   *     RestApiResponse::isValidExists($request_id).
    *
-   * @return mixed
+   * @return int|string|null|bool
    *   Returns 'response_id' if response was inserted (last insert id).
-   *   Returns NULL if response was updated (not inserted).
+   *   Returns NULL if existing response was updated (not inserted).
    *   Returns FALSE if logging is disabled.
    *
-   * @thrown Exception
+   * @throws Exception
    *   When $context['request_id'] is empty.
    */
   public static function save(array $context = []) {
-    if (!$context['log'] || !variable_get('rest_api_use_log', TRUE)) {
+    if (empty($context['log']) || !variable_get('rest_api_use_log', TRUE)) {
       // Request shouldn't be logged.
       return FALSE;
     }
     if (empty($context['request_id'])) {
       throw new Exception("Empty 'request_id'.");
     }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
     // Prepare data to be stored in db table.
-    if (!is_string($body = $context['body'])) {
-      $body = json_encode($context['body'], TRUE);
+    $body = $context['body'] ?? '';
+    if (!is_string($body)) {
+      $json_flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+      $body = json_encode($body, $json_flags);
     }
     $data = [
       'request_id' => $context['request_id'],
-      'code' => $context['code'],
-      'content_type' => $context['content_type'],
+      'code' => (int) $context['code'],
+      'content_type' => $context['content_type'] ?? '',
       'created' => time(),
-      'duration' => intval(round($context['duration'])),
-      'body' => trim($body),
-      // Response Hash.
+      'duration' => max(0, intval(round($context['duration'] ?? 0))),
+      'body' => trim((string) $body),
       'hash' => static::generateHash($context),
     ];
 
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    if (RestApiResponse::isValidExists($data['request_id'])) {
-      // Record exists - let's load response.
-      $response_data = RestApiResponse::loadValid($data['request_id']);
+    // Query only lightweight metadata columns for the latest response on this
+    // request_id to avoid fetching/decoding large body blobs or firing hooks.
+    $latest_response = db_select(static::TABLE, 't')
+      ->fields('t', ['response_id', 'hash', 'code'])
+      ->condition('request_id', $data['request_id'])
+      ->orderBy('created', 'DESC')
+      ->range(0, 1)
+      ->execute()
+      ->fetchAssoc();
 
-      // Do not store the same responses multiple times.
-      // @TODO Minor. Check also 'code'.
-      if ($response_data['hash'] == $data['hash']) {
-        // The same response.
-        if ($data['request_id'] != $response_data['request_id']) {
-          // Check value with existing request_id and update record in
-          // db table RestApiResponse::TABLE if they are different.
-          // This could happen when requests was removed but responses are left.
-          db_update(static::TABLE)
-            ->fields(['request_id' => $data['request_id']])
-            ->condition('response_id', $response_data['response_id'])
-            ->execute();
-          return NULL;
-        }
-      }
-      else {
-        // New response.
-        return db_insert(static::TABLE)->fields($data)->execute();
-      }
+    if (
+      !empty($latest_response)
+      && ($latest_response['hash'] ?? NULL) === $data['hash']
+      && (int) ($latest_response['code'] ?? 0) === $data['code']
+    ) {
+      db_update(static::TABLE)
+        ->fields([
+          'created' => $data['created'],
+          'duration' => $data['duration'],
+        ])
+        ->condition('response_id', $latest_response['response_id'])
+        ->execute();
+      drupal_static_reset('RestApiResponse::load');
+      drupal_static_reset('RestApiResponse::loadValid');
+      return NULL;
     }
-    else {
-      // Load latest invalid response.
-      $response_data = RestApiResponse::load($context['request_id']);
-      if ($response_data['code'] == $context['code']) {
-        // If we've got the same invalid response no need to update db record.
-        return NULL;
-      }
-      // Response wasn't found by 'request_id'. Let's search by 'response_hash'.
-      $response_id = static::getResponseId($data['hash']);
-      if (empty($response_id)) {
-        // No record - create new one.
-        return db_insert(static::TABLE)->fields($data)->execute();
-      }
-      else {
-        // Record exist but 'request_id' differs.
-        // Check value with existing request_id and update record in
-        // db table RestApiResponse::TABLE if they are different.
-        // This could happen when requests was removed but responses are left.
-        db_update(static::TABLE)
-          ->fields(['request_id' => $data['request_id']])
-          ->condition('response_id', $response_id)
-          ->execute();
-        return NULL;
-      }
-    }
+
+    $response_id = db_insert(static::TABLE)->fields($data)->execute();
+    drupal_static_reset('RestApiResponse::load');
+    drupal_static_reset('RestApiResponse::loadValid');
+    return $response_id;
   }
 
   /**
    * Checks if record already exists in DB.
    *
    * @param string $hash
-   *   Request's data md5 hash.
+   *   Response's data md5 hash.
    *
    * @return bool
-   *   Returns TRUE if record for given $hash found in DB.
-   *   Returns FALSE otherwise.
+   *   Returns TRUE if record for given $hash is found in DB, FALSE otherwise.
    */
   public static function isExists($hash) {
-    return (bool) static::getRequestId($hash);
+    return (bool) static::getResponseId($hash);
   }
 
   /**
-   * Gets response id by hash.
+   * Gets response ID by hash.
    *
    * @param string $hash
-   *   Request's data md5 hash.
+   *   Response's data md5 hash.
    *
-   * @return mixed
-   *   Returns integer 'response_id' if record for given $hash found.
-   *   Returns FALSE otherwise.
+   * @return int|string|bool
+   *   Returns 'response_id' if record for given $hash is found, FALSE
+   *   otherwise.
    */
   public static function getResponseId($hash) {
+    if (empty($hash)) {
+      return FALSE;
+    }
     return db_select(static::TABLE, 't')
       ->fields('t', ['response_id'])
       ->condition('hash', $hash)
       ->range(0, 1)
-      ->orderBy('created', 'DESC')
       ->execute()
       ->fetchField();
   }
@@ -160,17 +144,16 @@ class RestApiResponse {
    * @param array $context
    *   Request's context.
    *   Keys: see RestApi->doRequest().
-   *   Used 'body' element.
+   *   Uses 'body' element.
    *
    * @return string
-   *   Returns hash's value.
+   *   Returns MD5 hash string.
    */
   public static function generateHash(array $context) {
-    // Allow other modules to change $context before hash will be generated.
-    // Used to remove time-based or dynamic data in response body to avoid
-    // the same responses duplication.
-    //
-    // rest_api_response_hash_generation_alter().
+    // Allow other modules to change $context before hash is generated.
+    // Used to strip time-based or dynamic data in response body to avoid
+    // duplicating identical responses.
+    // Invokes hook_rest_api_response_hash_generation_alter().
     drupal_alter('rest_api_response_hash_generation', $context);
     return md5(json_encode(['body' => ($context['body'] ?? '')]));
   }
@@ -178,22 +161,21 @@ class RestApiResponse {
   /**
    * Checks if valid response exists in DB.
    *
-   * Valid request:
-   * 1. Code 2xx
-   * 2. Non-empty body of the response.
+   * Valid response:
+   * 1. Code 200..299.
+   * 2. Non-empty body (or HTTP 204 No Content).
+   * 3. Within cache TTL (rest_api_cache_ttl) if TTL > 0.
    *
-   * Use method isExists() to get any response.
-   *
-   * @param string $request_id
-   *   Unique request identificator.
+   * @param int|string $request_id
+   *   Unique request identifier.
    *
    * @return bool
-   *   Returns TRUE if record for given $request_id found in DB.
-   *   Returns FALSE otherwise.
+   *   Returns TRUE if valid record for $request_id is found, FALSE otherwise.
    */
   public static function isValidExists($request_id) {
-    // Note: static::loadValid() uses static caching so calling it later
-    // is NOT expensive.
+    if (empty($request_id)) {
+      return FALSE;
+    }
     return (bool) static::loadValid($request_id);
   }
 
@@ -203,30 +185,23 @@ class RestApiResponse {
    * Uses static caching.
    * WARNING: Status code won't be checked and invalid responses will be loaded.
    *
-   * Usage example:
-   * extract(RestApiResponse::load($request_id));
-   *
-   * @param string $request_id
-   *   Unique request identificator.
-   * @param int $created
-   *   Optional. Unix timestamp of the moment when response was requested.
-   *   When empty then latest response will be loaded.
+   * @param int|string $request_id
+   *   Unique request identifier.
+   * @param int|null $created
+   *   Optional Unix timestamp when response was captured. When NULL, the
+   *   latest response is loaded.
    * @param bool $reset
    *   TRUE to reset static cache. Default is FALSE.
    *
-   * @return array
-   *   Returns associative array with keys:
-   *     'request_id',
-   *     'created',
-   *     'code',
-   *     'duration',
-   *     'info',
-   *     'body',
+   * @return array|bool
+   *   Associative array of response data, or FALSE if not found.
    */
   public static function load($request_id, $created = NULL, $reset = FALSE) {
-
+    if (empty($request_id)) {
+      return FALSE;
+    }
     $static_cache = &drupal_static(__METHOD__);
-    $key = md5(json_encode(array_slice(func_get_args(), 0, -1)));
+    $key = md5(json_encode([$request_id, $created]));
     if ($reset || !isset($static_cache[$key])) {
       $query = db_select(static::TABLE, 't')
         ->fields('t', [])
@@ -238,7 +213,7 @@ class RestApiResponse {
       }
       $result = $query->execute()->fetchAssoc();
       if (!empty($result)) {
-        // Curl info doesn't store in DB so we just create empty variable.
+        // cURL info isn't stored in DB so initialize an empty array.
         $result['info'] = [];
         $result['body'] = static::decodeBody($result);
         $result['message'] = HttpCode::getMessage($result['code']);
@@ -246,8 +221,10 @@ class RestApiResponse {
       $static_cache[$key] = $result;
     }
 
-    if (function_exists('module_invoke_all')) {
-      // rest_api_request_completed().
+    if (
+      function_exists('module_invoke_all')
+      && !empty($static_cache[$key]['response_id'])
+    ) {
       $context = [
         'request_id' => $request_id,
         'response_id' => $static_cache[$key]['response_id'],
@@ -264,23 +241,28 @@ class RestApiResponse {
    *   Response metadata from db table RestApiResponse::TABLE.
    *
    * @return mixed
-   *   Returns response body.
+   *   Decoded response body (array for JSON, string for XML/text).
    */
   public static function decodeBody(array $response) {
-    if (strpos($response['content_type'], 'application/json') !== FALSE) {
+    $content_type = $response['content_type'] ?? '';
+    if (stripos($content_type, 'application/json') !== FALSE) {
       // JSON.
-      $response['body'] = json_decode($response['body'], TRUE);
+      $decoded = json_decode($response['body'] ?? '', TRUE);
+      if (json_last_error() === JSON_ERROR_NONE) {
+        $response['body'] = $decoded;
+      }
     }
     elseif (
-      strpos($response['content_type'], 'application/xml') !== FALSE
-      || strpos($response['content_type'], 'text/xml') !== FALSE
+      stripos($content_type, 'application/xml') !== FALSE
+      || stripos($content_type, 'text/xml') !== FALSE
     ) {
-      // XML.
-      // Stored as string. No need to decode.
+      // XML is stored as string; no need to decode.
     }
     else {
-      dpm('Unknown response content type.');
-      $response['body'] = json_decode($response['body'], TRUE);
+      $decoded = json_decode($response['body'] ?? '', TRUE);
+      if (json_last_error() === JSON_ERROR_NONE) {
+        $response['body'] = $decoded;
+      }
     }
     return $response['body'];
   }
@@ -289,58 +271,66 @@ class RestApiResponse {
    * Loads only valid Rest API response from database.
    *
    * Uses static caching.
-   * Valid response:
-   * 1. code 2xx
-   * 2. Not empty body.
-   * 3. Latest response (no 'created' date).
+   * Valid response conditions:
+   * 1. Code 200..299.
+   * 2. Non-empty body (or code 204 No Content).
+   * 3. Not expired according to variable 'rest_api_cache_ttl' (when > 0).
    *
-   * To load invalid responses use RestApiResponse::load() method.
-   *
-   * Usage example:
-   * extract(RestApiResponse::loadValid($request_id));
-   *
-   * @param string $request_id
-   *   Unique request identificator.
+   * @param int|string $request_id
+   *   Unique request identifier.
    * @param bool $reset
    *   TRUE to reset static cache. Default is FALSE.
    *
-   * @return array
-   *   Returns associative array with keys:
-   *     'request_id',
-   *     'created',
-   *     'code',
-   *     'duration',
-   *     'info',
-   *     'body',
+   * @return array|bool
+   *   Associative array of valid response data, or FALSE if not found.
    */
   public static function loadValid($request_id, $reset = FALSE) {
+    if (empty($request_id)) {
+      return FALSE;
+    }
     $static_cache = &drupal_static(__METHOD__);
 
     $key = $request_id;
     if ($reset || !isset($static_cache[$key])) {
-      $result = db_select(static::TABLE, 't')
+      $query = db_select(static::TABLE, 't')
         ->fields('t', [])
         ->condition('request_id', $request_id)
         ->condition('code', 200, '>=')
-        ->condition('code', 299, '<=')
-        ->condition('body', '', '!=')
+        ->condition('code', 299, '<=');
+
+      $cache_ttl = (int) variable_get('rest_api_cache_ttl', 0);
+      if ($cache_ttl > 0) {
+        $query->condition('created', time() - $cache_ttl, '>=');
+      }
+
+      $result = $query
         ->range(0, 1)
         ->orderBy('created', 'DESC')
         ->execute()
         ->fetchAssoc();
+
       if (!empty($result)) {
-        // Curl info doesn't store in DB so we just create empty variable.
-        $result['info'] = [];
-        $result['body'] = static::decodeBody($result);
-        $result['message'] = HttpCode::getMessage($result['code']);
-      }
-      if (function_exists('module_invoke_all')) {
-        $context = [
-          'request_id' => $request_id,
-          'response_id' => $result['response_id'],
-        ];
-        // rest_api_response_loaded().
-        module_invoke_all('rest_api_response_loaded', $context);
+        $raw_body = trim((string) ($result['body'] ?? ''));
+        if ((int) $result['code'] !== 204 && $raw_body === '') {
+          $result = FALSE;
+        }
+        else {
+          // cURL info isn't stored in DB so initialize an empty array.
+          $result['info'] = [];
+          $result['body'] = static::decodeBody($result);
+          $result['message'] = HttpCode::getMessage($result['code']);
+
+          if (
+            function_exists('module_invoke_all')
+            && !empty($result['response_id'])
+          ) {
+            $context = [
+              'request_id' => $request_id,
+              'response_id' => $result['response_id'],
+            ];
+            module_invoke_all('rest_api_response_loaded', $context);
+          }
+        }
       }
       $static_cache[$key] = $result;
     }
@@ -348,59 +338,44 @@ class RestApiResponse {
   }
 
   /**
-   * Loads Rest API response from database.
+   * Loads all Rest API responses for a request from database.
    *
    * WARNING: Status code won't be checked and invalid responses will be loaded.
    *
-   * Usage example:
-   * extract(RestApiResponse::load($request_id));
-   *
-   * @param string $request_id
-   *   Unique request identificator.
+   * @param int|string $request_id
+   *   Unique request identifier.
    *
    * @return array
-   *   Returns associative array with keys:
-   *     'request_id',
-   *     'created',
-   *     'code',
-   *     'duration',
-   *     'info',
-   *     'body',
+   *   Associative array of responses keyed by 'created'.
    */
   public static function loadAll($request_id) {
     $result = db_select(static::TABLE, 't')
       ->fields('t', [])
       ->condition('request_id', $request_id)
-      // ->orderBy('created', 'DESC')
+      ->orderBy('created', 'DESC')
       ->execute()
       ->fetchAllAssoc('created', PDO::FETCH_ASSOC);
 
     foreach ($result as &$item) {
-      // Curl info doesn't store in DB so we just create empty variable.
       $item['info'] = [];
       $item['body'] = static::decodeBody($item);
       $item['message'] = HttpCode::getMessage($item['code']);
     }
 
-    // @todo ?Should I add the hook to have watchdog record?
     return $result;
   }
 
   /**
-   * Gets db table schema.
+   * Gets database table schema.
    *
    * Table to log responses received by 'RestApi' class.
    *
    * @return array
-   *   Returns array for hook_schema().
+   *   Schema definition array for hook_schema().
    */
   public static function getSchema() {
-    // Table to log responses obtained by 'RestApi' class.
-    // Note: There is no need to store message text because it could be
-    // obtained  by the HTTP Response Code.
-    // HttpCode->getMessage($code);
     return [
-      'description' => "Stores REST API responses.",
+      'description' => 'Stores REST API responses.',
       'fields' => [
         'response_id' => [
           'description' => 'The unique response identifier.',
@@ -409,8 +384,6 @@ class RestApiResponse {
           'unsigned' => TRUE,
           'not null' => TRUE,
         ],
-        // Request Id is an md5 hash of all request's data to be able to find
-        // exactly the same request in log.
         'request_id' => [
           'description' => 'The unique request identifier.',
           'type' => 'int',
@@ -419,13 +392,13 @@ class RestApiResponse {
           'not null' => TRUE,
         ],
         'created' => [
-          'description' => 'The moment when getting response was started. Format: UNIX timestamp.',
+          'description' => 'Timestamp when response was captured (UNIX time).',
           'type' => 'int',
           'size' => 'normal',
           'not null' => TRUE,
         ],
         'code' => [
-          'description' => "HTTP Response Code.",
+          'description' => 'HTTP Response Code.',
           'type' => 'int',
           'size' => 'normal',
           'not null' => TRUE,
@@ -433,14 +406,15 @@ class RestApiResponse {
         'duration' => [
           'description' => 'Request processing time, msec.',
           'type' => 'int',
-          'size' => 'small',
+          'size' => 'normal',
+          'unsigned' => TRUE,
           'not null' => TRUE,
+          'default' => 0,
         ],
         'body' => [
-          'description' => 'Body of the API response. Format: JSON-string.',
-          // varchar/normal: mysql: 64KB, postgresql: 1GB.
+          'description' => 'Body of the API response (LONGTEXT up to 4GB).',
           'type' => 'text',
-          'size' => 'normal',
+          'size' => 'big',
           'not null' => TRUE,
         ],
         'content_type' => [
@@ -451,21 +425,19 @@ class RestApiResponse {
           'length' => 255,
         ],
         'hash' => [
-          'description' => "md5 hash of the response body.",
+          'description' => 'MD5 hash of the response body.',
           'type' => 'varchar',
           'size' => 'normal',
           'not null' => FALSE,
           'length' => 32,
         ],
-        // @todo Minor. Add 'request_hash' to be able to find response by
-        // 'request_hash' when record was removed from 'rest_api_request'
-        // table but response was left. Otherwise orphan records in
-        // 'rest_api_response' table will be left. But it's a rare case.
-        // Currently this solved by using FK which removes related responses
-        // when request was removed.
       ],
       'primary key' => ['response_id'],
-      'unique keys' => ['request_id_created' => ['request_id', 'created']],
+      'indexes' => [
+        'hash' => ['hash'],
+        'request_id_created' => ['request_id', 'created'],
+        'request_id_code' => ['request_id', 'code', 'created'],
+      ],
       'foreign keys' => [
         'request_id' => [
           'table' => 'rest_api_request',
@@ -478,31 +450,28 @@ class RestApiResponse {
   /**
    * Restores XML from JSON decoded string.
    *
-   * See NcbiTaxonomy::printXml().
-   *
-   * XML response is stored as json string in db table's field
-   * 'public.rest_api_response.body'.
-   * To use it as XML it must be 'restored' first.
-   *
    * @param string $json
    *   String in JSON format with escaped tags.
    *
    * @return string
-   *   Returns XML-string.
+   *   Restored XML string.
    */
   public static function restoreXml($json) {
     // Remove leading/trailing quotes and whitespace.
     $data = trim($json, "\n\r\t \"'");
     // Decode JSON unicode escapes.
-    $data = preg_replace_callback('/\\\\u([0-9a-fA-F]{4})/',
+    $data = preg_replace_callback(
+      '/\\\\u([0-9a-fA-F]{4})/',
       function ($matches) {
-        return mb_convert_encoding(pack('H*', $matches[1]), 'UTF-8', 'UTF-16BE');
+        $packed = pack('H*', $matches[1]);
+        return mb_convert_encoding($packed, 'UTF-8', 'UTF-16BE');
       },
       $data
     );
     // Replace other JSON escapes.
     $data = str_replace(
-      ['\\/', '\\"', '\\n', '\\r', '\\t'], ['/', '"', "\n", "\r", "\t"],
+      ['\\/', '\\"', '\\n', '\\r', '\\t'],
+      ['/', '"', "\n", "\r", "\t"],
       $data
     );
     return $data;

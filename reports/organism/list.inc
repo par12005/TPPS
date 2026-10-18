@@ -7,6 +7,8 @@
 
 /**
  * Menu callback. Shows list of organisms per study.
+ *
+ * URL: /admin/reports/tpps/organism/list.
  */
 function tpps_report_organism_list() {
   $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
@@ -15,11 +17,13 @@ function tpps_report_organism_list() {
   $query->leftJoin('chado.project_dbxref', 'pdbxref', 'ts.dbxref_id = pdbxref.dbxref_id');
   $query->join('chado.project_organism', 'po', 'po.project_id = pdbxref.project_id');
   $query->leftJoin('chado.project', 'p', 'p.project_id = po.project_id');
+  $query->condition('ts.status', '%Approved%', 'LIKE');
+
+  // Fields.
   $query->addField('ts', 'accession');
   $query->addField('pdbxref', 'project_id');
   $query->addField('po', 'organism_id');
   $query->addField('p', 'name');
-  $query->condition('ts.status', '%Approved%', 'LIKE');
 
   $header = [
     ['data' => t('Accession'), 'field' => 'ts.accession'],
