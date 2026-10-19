@@ -132,7 +132,7 @@ function tpps_front_create_form(array &$form, array $form_state) {
         . 'style="max-height:100%;max-width:100%;" src="/' . TPPS_IMAGES_PATH
         . 'TPPS-1_1118px.jpg"></figure>'
       . '<div id="landing-buttons">'
-      . '<a href="https://tpps.readthedocs.io/en/latest/" target="blank" '
+      . '<a href="https://cartograplant-tpps.readthedocs.io/en/latest/" target="blank" '
         . 'class="landing-button"><button type="button" class="btn '
         . 'btn-primary">TPPS Documentation</button></a>'
         . '<a href="' . $base_url . '/tpps/details" target="blank" '
