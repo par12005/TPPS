@@ -134,13 +134,13 @@ function tpps_front_create_form(array &$form, array $form_state) {
       . '<div id="landing-buttons">'
       . '<a href="https://cartograplant-tpps.readthedocs.io/en/latest/" target="blank" '
         . 'class="landing-button"><button type="button" class="btn '
-        . 'btn-primary">TPPS Documentation</button></a>'
+        . 'btn-secondary">TPPS Documentation</button></a>'
         . '<a href="' . $base_url . '/tpps/details" target="blank" '
           . 'class="landing-button"><button type="button" '
-          . 'class="btn btn-primary">TPPS Studies</button></a>';
+          . 'class="btn btn-secondary">TPPS Studies</button></a>';
 
     if (module_exists('cartogratree')) {
-      $prefix_text .= "<a href=\"$base_url/ct\" target=\"blank\" class=\"landing-button\"><button type=\"button\" class=\"btn btn-primary\">CartograPlant</button></a>";
+      $prefix_text .= "<a href=\"$base_url/ct\" target=\"blank\" class=\"landing-button\"><button type=\"button\" class=\"btn btn-secondary\">CartograPlant</button></a>";
     }
 
     $prefix_text .= "</div></div>";
