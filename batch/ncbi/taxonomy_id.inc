@@ -11,10 +11,10 @@
 // Only organisms without taxonomy ids will be processed.
 define('TPPS_NCBI_BATCH_UPDATE_BUTTON_NAME', 'ncbi_batch_update');
 
-// Name of the reset button.
+// Name of the button 'Recreate'.
 // All existing taxonomy ids will be removed, list of the accepted synonym
 // cleared and taxonomy ids requested again.
-define('TPPS_NCBI_BATCH_RESET_BUTTON_NAME', 'ncbi_batch_reset');
+define('TPPS_NCBI_BATCH_RECREATE_BUTTON_NAME', 'ncbi_batch_recreate');
 
 /**
  * Menu callback for 'batch/ncbi/taxonomy_id'.
@@ -54,9 +54,9 @@ function tpps_batch_ncbi_taxonomy_id_form(array $form, array &$form_state) {
     '#value' => t('@source Taxonomy Id Batch Update', ['@source' => $source_title]),
   ];
   // Reset all organism taxonomy ids.
-  $form[TPPS_NCBI_BATCH_RESET_BUTTON_NAME] = [
+  $form[TPPS_NCBI_BATCH_RECREATE_BUTTON_NAME] = [
     '#type' => 'submit',
-    '#name' => TPPS_NCBI_BATCH_RESET_BUTTON_NAME,
+    '#name' => TPPS_NCBI_BATCH_RECREATE_BUTTON_NAME,
     '#value' => t('@source Taxonomy Id Batch Reset', ['@source' => $source_title]),
   ];
   return $form;
@@ -73,14 +73,15 @@ function tpps_batch_ncbi_taxonomy_id_form_submit(array $form, array &$form_state
   $module_path = drupal_get_path('module', 'tpps');
 
   switch ($button_name) {
-    case TPPS_NCBI_BATCH_RESET_BUTTON_NAME:
+    case TPPS_NCBI_BATCH_RECREATE_BUTTON_NAME:
       OrganismTaxonomy::clearAcceptedSynonymList($source);
       OrganismTaxonomy::remove($source);
 
     case TPPS_NCBI_BATCH_UPDATE_BUTTON_NAME:
       // Get list of organisms without Taxonomy Id.
       $operations = [];
-      $list = OrganismTaxonomy::getMissingOrganismIdList($source);
+      $debug_mode = FALSE;
+      $list = OrganismTaxonomy::getMissingOrganismIdList($source, $debug_mode);
       if (!empty($total = count($list))) {
         foreach ($list as $organism_id) {
           $operations[] = [
