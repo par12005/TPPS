@@ -14,6 +14,9 @@
  * V1: https://api.gbif.org/v1/species/match?name=Arabidopsis+thaliana
  * V2: https://api.gbif.org/v2/species/match?genericName=Arabidopsis+thaliana
  *
+ * @todo Implement method which fills list of the accepted synonyms. Currently
+ * only Batch Taxonomy Id Update does this.
+ *
  * @package tpps
  * @author Vlad Savitsky <vlad.savitsky@gmail.com>
  */
@@ -22,6 +25,16 @@ class GbifSpeciesApi {
   // Key used to label source of the data stored in database.
   // See class 'OrganismTaxonomy'.
   const KEY = 'gbif';
+
+  /**
+   * Name of the list of the accapted synonym names in 'chado.organism' table.
+   *
+   * Class 'StateList' is using to manage this list.
+   * This list is used for reports:
+   * - /admin/reports/tpps/organism/synonym/ncbi/accepted.
+   * - /admin/reports/tpps/organism/synonym/gbif/accepted.
+   */
+  const ACCEPTED_SYNONYM_LIST = 'organism_synonym_' . self::KEY . '_accepted_list';
 
   /**
    * Generates URL to the species page.
@@ -186,8 +199,8 @@ class GbifSpeciesApi {
           if (!empty($primary_name)) {
             if ($organism_name == $primary_name) {
               $primary_id = $organism->id;
-              VarList::remove(
-                'organism_synonym_ncbi_accepted_list',
+              StateList::remove(
+                static::ACCEPTED_SYNONYM_LIST,
                 $primary_id
               );
             }
@@ -207,8 +220,8 @@ class GbifSpeciesApi {
               }
               $primary_id = $primary_organism->id ?? NULL;
               if (!empty($primary_id)) {
-                VarList::add(
-                  'organism_synonym_ncbi_accepted_list',
+                StateList::add(
+                  static::ACCEPTED_SYNONYM_LIST,
                   // Value => Key,
                   // Synonym Id -> Primary Id.
                   $primary_id,
@@ -335,6 +348,36 @@ class GbifSpeciesApi {
       );
       drupal_set_message($e->getCode() . ' ' . $message);
     }
+  }
+
+  /**
+   * Gets list of the accepted synonym names stored in 'chado.organism' table.
+   *
+   * @return array|false
+   *   Returns list of organism ids.
+   *   Returns FALSE if class 'StateList' not found.
+   */
+  public static function getAcceptedSynynymList() {
+    if (class_exists('StateList')) {
+      return StateList::getList(static::ACCEPTED_SYNONYM_LIST);
+    }
+    return FALSE;
+  }
+
+  /**
+   * Clears list of the accepted synonyms.
+   *
+   * To generate this run Batch Taxonomy Id update.
+   *
+   * @return bool
+   *   Returns TRUE if list was really cleared and FALSE otherwise.
+   */
+  public static function clearAcceptedSynynymList() {
+    if (class_exists('StateList')) {
+      StateList::clearList(static::ACCEPTED_SYNONYM_LIST);
+      return TRUE;
+    }
+    return FALSE;
   }
 
 }

@@ -74,7 +74,7 @@ function tpps_batch_ncbi_taxonomy_id_form_submit(array $form, array &$form_state
 
   switch ($button_name) {
     case TPPS_NCBI_BATCH_RESET_BUTTON_NAME:
-      VarList::clearList('organism_synonym_' . $source . '_accepted_list');
+      OrganismTaxonomy::clearAcceptedSynonymList($source);
       OrganismTaxonomy::remove($source);
 
     case TPPS_NCBI_BATCH_UPDATE_BUTTON_NAME:

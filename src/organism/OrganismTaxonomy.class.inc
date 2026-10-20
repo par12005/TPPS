@@ -21,8 +21,13 @@ class OrganismTaxonomy {
 
   /**
    * List of the supported sources.
+   *
+   * Key is a short name of source and value is a class name.
    */
-  const SOURCE_LIST = ['ncbi', 'gbif'];
+  const SOURCE_LIST = [
+    'ncbi' => 'NcbiTaxonomy',
+    'gbif' => 'GbifSpeciesApi',
+  ];
 
   /**
    * Gets DB table schema.
@@ -144,7 +149,7 @@ class OrganismTaxonomy {
    */
   public static function remove($source = NULL) {
     $query = db_delete(static::TABLE);
-    if (!empty($source) && in_array($source, static::SOURCE_LIST, TRUE)) {
+    if (static::isSourceExist($source)) {
       $query->condition('source', $source);
     }
     $query->execute();
@@ -235,10 +240,14 @@ class OrganismTaxonomy {
         AND op.rank = 0',
       [':type_id' => OrganismSynonym::CVTERM_ID]
     );
-    $var_list_name = 'organism_synonym_' . $source . '_accepted_list';
-    $accepted_synonym_id_list = array_keys(VarList::getList($var_list_name));
-    if (!empty($accepted_synonym_id_list)) {
-      $query->condition('o.organism_id', $accepted_synonym_id_list, 'NOT IN');
+    if (!empty($source_class = static::getSourceClassName($source))) {
+      // Get list of the synonym organism ids (not primary id).
+      $accepted_synonym_id_list = array_keys(
+        $source_class::getAcceptedSynynymList()
+      );
+      if (!empty($accepted_synonym_id_list)) {
+        $query->condition('o.organism_id', $accepted_synonym_id_list, 'NOT IN');
+      }
     }
     // 'chado.organismprop.value' is not numeric.
     $query->where("op.value IS NULL");
@@ -247,6 +256,48 @@ class OrganismTaxonomy {
       $query->range(0, 10);
     }
     return $query->execute()->fetchCol();
+  }
+
+  /**
+   * Gets name of the class by short source name.
+   *
+   * @param string $source
+   *   Source of the data. Possible values: 'ncbi', 'gbif'.
+   *
+   * @return string|null
+   *   Returns name of the class or NULL if match wasn't found.
+   */
+  public static function getSourceClassName($source) {
+    return static::SOURCE_LIST[$source] ?? NULL;
+  }
+
+  /**
+   * Checks if source is exists and supported.
+   *
+   * @param string $source
+   *   Short name of the source. See static::SOURCE_LIST.
+   *
+   * @return bool
+   *   Returns TRUE if exists and FALSE otherwise.
+   */
+  public static function isSourceExist($source) {
+    return (bool) (!empty($source) && isset(static::SOURCE_LIST[$source]));
+  }
+
+  /**
+   * Clears accepted synonym list for given source.
+   *
+   * @param string $source
+   *   Short name of the source.
+   *
+   * @return bool
+   *   Returns TRUE if list was really cleared and FALSE otherwise.
+   */
+  public static function clearAcceptedSynonymList($source) {
+    if (!empty($class_name = static::getSourceClassName($source))) {
+      return $class_name::clearAcceptedSynynymList();
+    }
+    return FALSE;
   }
 
   /**

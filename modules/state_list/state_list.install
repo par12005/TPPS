@@ -1,0 +1,53 @@
+<?php
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the 'state_list' module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function state_list_schema() {
+  $schema['state_list'] = [
+    'description' => 'Stores persistent key-value and scalar lists managed by StateList.',
+    'fields' => [
+      'name' => [
+        'description' => 'The unique machine name of the list.',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ],
+      'value' => [
+        'description' => 'The serialized array of list items.',
+        'type' => 'blob',
+        'not null' => TRUE,
+        'size' => 'big',
+      ],
+      'updated' => [
+        'description' => 'The Unix timestamp when the list was last saved.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+    ],
+    'primary key' => ['name'],
+  ];
+
+  // Dedicated cache bin when StateList::STORAGE_CACHE is selected.
+  $schema['cache_state_list'] = drupal_get_schema_unprocessed('system', 'cache');
+  $schema['cache_state_list']['description'] = 'Dedicated cache table for '
+    . 'StateList when configured to use STORAGE_CACHE.';
+
+  return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function state_list_uninstall() {
+  variable_del('state_list_storage_backend');
+  variable_del('state_list_cache_bin');
+}

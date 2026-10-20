@@ -1,0 +1,38 @@
+<?php
+
+/**
+ * @file
+ * Primary module file for the State List (state_list) module.
+ */
+
+/**
+ * Implements hook_boot().
+ *
+ * Initializes the configured persistent storage backend early in the request
+ * lifecycle.
+ */
+function state_list_boot() {
+  $backend = variable_get('state_list_storage_backend', StateList::STORAGE_TABLE);
+  $cache_bin = variable_get('state_list_cache_bin', 'cache_state_list');
+  StateList::setStorageBackend($backend, $cache_bin);
+}
+
+/**
+ * Implements hook_menu().
+ */
+function state_list_menu() {
+  $items = [];
+
+  $items['admin/config/system/state-list'] = [
+    'title' => 'State List settings',
+    'description' => 'Configure persistent storage backend and view '
+      . 'active lists managed by StateList.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['state_list_admin_settings_form'],
+    'access arguments' => ['administer site configuration'],
+    'file' => 'state_list.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  ];
+
+  return $items;
+}

@@ -15,15 +15,14 @@
  */
 function tpps_report_organism_synonym_gbif_accepted($reset = FALSE) {
   $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
-  $list_name = 'var_list_organism_synonym_gbif_accepted_list';
   $rows = [];
 
   // Clear list.
   if (isset($_GET['clear'])) {
-    variable_del($list_name);
+    GbifSpeciesApi::clearAcceptedSynynymList();
   }
   // Get list.
-  $list = variable_get($list_name, []);
+  $list = GbifSpeciesApi::getAcceptedSynynymList()
 
   if (!empty($list)) {
     // Mapping.

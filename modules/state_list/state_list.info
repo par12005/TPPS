@@ -1,0 +1,8 @@
+name = State List
+description = Manages persistent key-value and scalar lists across page requests with in-memory buffering and a dedicated database table.
+core = 7.x
+package = Web Services
+version = 7.x-1.1
+
+configure = admin/config/system/state-list
+files[] = src/StateList.class.inc
