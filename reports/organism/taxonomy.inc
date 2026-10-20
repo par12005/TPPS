@@ -12,10 +12,19 @@ function tpps_report_organism_taxonomy() {
   $report_name = 'organism_taxonomy';
   $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
   $query = db_select(Organism::TABLE, 'co');
+  // Join once for NCBI.
   $query->leftJoin(
-    'public.' . OrganismTaxonomy::TABLE, 'ot',
-    'ot.organism_id = co.organism_id'
+    'public.' . OrganismTaxonomy::TABLE,
+    'ot_ncbi',
+    "ot_ncbi.organism_id = co.organism_id AND ot_ncbi.source = 'ncbi'"
   );
+  // Join a second time for GBIF.
+  $query->leftJoin(
+    'public.' . OrganismTaxonomy::TABLE,
+    'ot_gbif',
+    "ot_gbif.organism_id = co.organism_id AND ot_gbif.source = 'gbif'"
+  );
+
   $query->fields('co', [
     'organism_id',
     'genus',
@@ -23,7 +32,11 @@ function tpps_report_organism_taxonomy() {
     'type_id',
     'infraspecific_name',
   ]);
-  $query->fields('ot', ['source', 'taxonomy_id']);
+
+  // Use addField() with explicit aliases so the two taxonomy_id columns
+  // remain distinct in the fetched result object.
+  $query->addField('ot_ncbi', 'taxonomy_id', 'ncbi_taxonomy_id');
+  $query->addField('ot_gbif', 'taxonomy_id', 'gbif_taxonomy_id');
 
   // Header.
   $header = [
@@ -32,8 +45,8 @@ function tpps_report_organism_taxonomy() {
     ['data' => t('Species'), 'field' => 'co.species'],
     ['data' => t('Infraspecific Rank'), 'field' => 'co.type_id'],
     ['data' => t('Infraspecific Name'), 'field' => 'co.infraspecific_name'],
-    ['data' => t('Source'), 'field' => 'ot.source'],
-    ['data' => t('Taxonomy Id'), 'field' => 'ot.taxonomy_id'],
+    ['data' => t('NCBI Taxonomy Id'), 'field' => 'ot_ncbi.taxonomy_id'],
+    ['data' => t('GBIF Taxonomy Id'), 'field' => 'ot_gbif.taxonomy_id'],
   ];
 
   return Report::print([
@@ -77,6 +90,16 @@ function tpps_report_organism_taxonomy_formatter(string $name, $value, array &$r
       }
       break;
 
+    case 'genus':
+    case 'species':
+      if (!empty($row['ncbi_taxonomy_id'])) {
+        $formatted = '<span style="color:green">' . $formatted . '</span>';
+      }
+      elseif (empty($row['gbif_taxonomy_id'])) {
+        $formatted = '<span style="color:red">' . $formatted . '</span>';
+      }
+      break;
+
     case 'type_id':
       if (!empty($formatted)) {
         $formatted = InfraspecificRank::getName($formatted);
@@ -98,9 +121,22 @@ function tpps_report_organism_taxonomy_formatter(string $name, $value, array &$r
       }
       break;
 
-    case 'taxonomy_id':
+    case 'gbif_taxonomy_id':
       if (!empty($value)) {
-        $formatted = l($formatted, NcbiTaxonomy::getUrl($row['taxonomy_id']));
+        $formatted = l(
+          $formatted,
+          GbifSpeciesApi::getUrl($row['gbif_taxonomy_id'])
+        );
+        $formatted = '<em>' . $formatted . '</em>';
+      }
+      break;
+
+    case 'ncbi_taxonomy_id':
+      if (!empty($value)) {
+        $formatted = l(
+          $formatted,
+          NcbiTaxonomy::getUrl($row['ncbi_taxonomy_id'])
+        );
         $formatted = '<em>' . $formatted . '</em>';
       }
       break;
