@@ -63,18 +63,20 @@ class GbifSpeciesApi {
    *
    * @return array
    *   Returns associative arrayn with keys:
-   *   - 'primary_name': (string) Primary (accepted, canonical) organism name.
    *   - 'taxonomy_id': (int) Taxonomy id.
+   *   - 'primary_name': (string|null) Primary (accepted) organism name.
+   *   - 'primary_id': (int) Primary organism id.
    *
    * @throws Exception
    *   When request to GBIF API fails.
    */
   public static function getId($organism_key) {
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // The same code.
     $organism_key = check_plain($organism_key);
     try {
       // Get taxonomy id from local DB.
       $organism = new Organism($organism_key);
-      // Get previously saved taxonomy id from local DB.
       $taxonomy = OrganismTaxonomy::load($organism->id, static::KEY);
       $taxonomy_id = $taxonomy[static::KEY] ?? NULL;
       if (!empty($taxonomy_id)) {
@@ -82,13 +84,17 @@ class GbifSpeciesApi {
           throw new Exception('Debug.');
         }
         $output = [
-          'primary_name' => $organism_key,
+          'primary_name' => $organism->name,
+          'primary_id' => $organism->id,
           'taxonomy_id' => (int) $taxonomy_id,
         ];
         return $output;
       }
       else {
+        // If Taxonomy Id wasn't found we load organism to get it's id which
+        // will be used later.
         $organism->load();
+        $organism_id = $organism->id;
         $organism_key = $organism->name;
         throw new Exception('Taxonomy Id not found in local DB.');
       }
@@ -107,15 +113,24 @@ class GbifSpeciesApi {
         $output = NULL;
         // Organism wasn't found in local DB but it's not a problem.
         $organism_name = $organism_key;
-        // Let's search it in NCBI database.
+        // Let's search it in external taxonomy database.
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // Below custom code.
+
         $response = static::getInfo($organism_name);
         if (($response['diagnostics']['matchType'] ?? NULL) == 'NONE') {
+          // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+          // Custom code ends.
+
           // Taxonomy Id not found.
           OrganismTaxonomy::save($organism->id, static::KEY, NULL);
           return NULL;
         }
         else {
           // Item was found.
+          // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+          // >>> Custom code starts.
+
           // Note:
           // To get primary name for synonyms we could simply use
           // 'acceptedUsage' if it's present in the API-response.
@@ -162,38 +177,57 @@ class GbifSpeciesApi {
               // Need a different strategy.
               return NULL;
           }
+          // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+          // <<< Custom code ends.
 
-          // Get organism primary name.
-          if (!empty($output['primary_name'])) {
-            $primary_organism = new Organism();
-            $primary_organism->setName($output['primary_name'])->findId();
-            if (
-              !empty($primary_organism->species)
-              && !empty($primary_organism->genus)
-            ) {
-              // No need to store if only $id property was set because it was
-              // already found in DB by findId() method.
-              $primary_organism->save();
-            }
+          $primary_name = $output['primary_name'] ?? NULL;
+          $taxonomy_id = $output['taxonomy_id'] ?? NULL;
 
-            // Save relation between taxonomy_id and organism name.
-            OrganismTaxonomy::save(
-              $primary_organism->id,
-              static::KEY,
-              $output['taxonomy_id']
-            );
-            if ($organism_name != $output['primary_name']) {
-              // Save synonym-relation.
-              // $organism is the synonym of the $primary_name.
-              VarList::add(
-                'organism_synonym_gbif_accepted_list',
-                // Value => Key,
-                // Synonym Id -> Primary Id.
-                $primary_organism->id,
-                $organism->id
+          if (!empty($primary_name)) {
+            if ($organism_name == $primary_name) {
+              $primary_id = $organism->id;
+              VarList::remove(
+                'organism_synonym_ncbi_accepted_list',
+                $primary_id
               );
             }
+            else {
+              // Primary name and organism name (synonym) are different.
+              $primary_organism = new Organism();
+              $primary_organism->setName($primary_name)->findId();
+              if (empty($primary_organism->id)) {
+                if (
+                  !empty($primary_organism->species)
+                  && !empty($primary_organism->genus)
+                ) {
+                  // No need to store if only $id property was set because
+                  // it was already found in DB by findId() method.
+                  $primary_organism->save();
+                }
+              }
+              $primary_id = $primary_organism->id ?? NULL;
+              if (!empty($primary_id)) {
+                VarList::add(
+                  'organism_synonym_ncbi_accepted_list',
+                  // Value => Key,
+                  // Synonym Id -> Primary Id.
+                  $primary_id,
+                  $organism->id
+                );
+              }
+            }
+            // Save relation between taxonomy_id and organism name.
+            OrganismTaxonomy::save(
+              $primary_id,
+              static::KEY,
+              $taxonomy_id
+            );
           }
+          $output = [
+            'taxonomy_id' => $taxonomy_id,
+            'primary_name' => $primary_name,
+            'primary_id' => $primary_id,
+          ];
           return $output;
         }
       }

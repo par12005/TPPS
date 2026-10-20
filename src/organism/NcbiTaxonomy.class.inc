@@ -136,7 +136,7 @@ class NcbiTaxonomy {
   }
 
   /**
-   * Request NCBI Taxonomy Term Id for given organism name.
+   * Gets Taxonomy Id.
    *
    * @param mixed $organism_key
    *   Organism Name or Organism Id.
@@ -144,19 +144,21 @@ class NcbiTaxonomy {
    *
    * @return array
    *   Returns associative arrayn with keys:
-   *   - 'primary_name': (string) Primary (accepted, canonical) organism name.
    *   - 'taxonomy_id': (int) Taxonomy id.
+   *   - 'primary_name': (string|null) Primary (accepted) organism name.
+   *   - 'primary_id': (int|null) Primary organism id.
    *
    * @throws Exception
    *   When request to NCBI API fails.
    */
   public static function getId($organism_key) {
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // The same code.
     $organism_key = check_plain($organism_key);
 
     try {
       // Get taxonomy id from local DB.
       $organism = new Organism($organism_key);
-      // Get previously saved taxonomy id from local DB.
       $taxonomy = OrganismTaxonomy::load($organism->id, static::KEY);
       $taxonomy_id = $taxonomy[static::KEY] ?? NULL;
       if (!empty($taxonomy_id)) {
@@ -171,7 +173,8 @@ class NcbiTaxonomy {
         return $output;
       }
       else {
-        // @todo check if load() is necessary here.
+        // If Taxonomy Id wasn't found we load organism to get it's id which
+        // will be used later.
         $organism->load();
         $organism_id = $organism->id;
         $organism_key = $organism->name;
@@ -189,23 +192,35 @@ class NcbiTaxonomy {
       }
       else {
         // Organism name.
+        $output = NULL;
         // Organism wasn't found in local DB but it's not a problem.
         $organism_name = $organism_key;
-        // Let's search it in NCBI database.
+        // Let's search it in external taxonomy database.
+
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // Custom code starts.
         $xml = static::getInfo($organism_name);
         if (preg_match('/<OutputMessage>No items found\.<\/OutputMessage>/', $xml)) {
+          // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+          // Custom code ends.
+
           // Taxonomy Id not found.
           OrganismTaxonomy::save($organism->id, static::KEY, NULL);
           return NULL;
         }
         else {
           // Item was found.
+          // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+          // >>> Custom code starts.
+
           preg_match('/<Id>(\d+)<\/Id>/', $xml, $matches);
           $id = $matches[1] ?? '';
           $taxonomy_id = (empty($id) ? NULL : (int) $id);
           // Get organism primary name.
           // WARNING: Primary name could be different from given organism name.
           $primary_name = static::getPrimaryName($taxonomy_id);
+          // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+          // <<< Custom code ends.
 
           if (!empty($primary_name)) {
             if ($organism_name == $primary_name) {
@@ -410,6 +425,27 @@ class NcbiTaxonomy {
     // Process response.
     // The other pattern: '<OutputMessage>No items found.</OutputMessage>'.
     return (bool) preg_match('/<Count>1<\/Count>/', $xml);
+  }
+
+  /**
+   * Loads Taxonomy Id from database.
+   *
+   * @param mixed $organism_key
+   *   Organism Name or Organism Id.
+   *   AJAX-requests from browser uses name but Batch Update uses id.
+   *
+   * @return int|null
+   *   Returns Taxonomy Id or NULL if not found.
+   *
+   * @throws Exception
+   *   When ogranism wasn't found.
+   */
+  public static function loadTaxonomyId($organism_key) {
+    $organism_key = check_plain($organism_key);
+    $organism = new Organism($organism_key);
+    $taxonomy = OrganismTaxonomy::load($organism->id, static::KEY);
+    $taxonomy_id = $taxonomy[static::KEY] ?? NULL;
+    return $taxonomy_id;
   }
 
 }
