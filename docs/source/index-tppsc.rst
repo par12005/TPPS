@@ -59,6 +59,9 @@ Here you have the opportunity to create a new TPPSc Submission and the
 chance to continue working on any unfinished submissions. Simply use the
 dropdown to select your option and proceed to the next page.
 
+.. image:: _static/screenshots/TPPSc_NewSub.jpeg
+   :width: 480
+
 Author and Species Information (Page 1)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -71,6 +74,9 @@ https://datadryad.org/resource/doi:10.5061/dryad.5jn04, enter only
 10.5061/dryad.5jn04. If the full pubilcation DOI link was
 https://link.springer.com/article/10.1007/s11295-014-0779-0, enter only
 10.1007/s11295-014-0779-0.
+
+.. image:: _static/screenshots/TPPSc_PubInfo.jpeg
+   :width: 360
 
 Next, fill in the related information about the study, such as the
 **author name, publication year, title, abstract, journal name, and
@@ -90,6 +96,9 @@ show you all the names it has for that species. If you still cannot find
 the correct name, you may need to check with the curation team. We will
 likely need to let Emily know so she can add it to our database.
 
+.. image:: _static/screenshots/TPPSc_SpeciesInfo.jpeg
+   :width: 400
+
 Experimental Conditions (Page 2)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -101,6 +110,9 @@ what kind of study you are uploading. The options for this field are
 Natural Population, Growth Chamber, Greenhouse, Experimental/Common
 Garden, and Plantation. The Data Type selection directly affects page 4
 and the Study Type selection directly affects page 3.
+
+.. image:: _static/screenshots/TPPSc_ExperimentalDesign.jpeg
+   :width: 400
 
 Tree Accession (Page 3)
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -118,6 +130,16 @@ considered anything centriod or when you only have population location
 information and not exact tree location. An example of a well curated
 Tree Accession file is linked
 `here <https://treegenesdb.org/sites/default/files/tpps_accession/TGDR001_Tree_Accession_Populus_trichocarpa.csv>`__.
+
+.. image:: _static/screenshots/TPPSc_TreeAccession.jpeg
+   :width: 350
+
+.. image:: _static/screenshots/TPPSc_TreeAccession2.jpeg
+   :width: 420
+
+.. image:: _static/screenshots/treeACCsample.PNG
+   :width: 350
+
 
 Phenotype, Genotype, and Environmental Data (Page 4)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -166,6 +188,12 @@ what, just as done previously. An example of a well curated phenotype
 file is
 `here <https://treegenesdb.org/sites/default/files/tpps_phenotype/TGDR001_Phenotype_Data_Populus_trichocarpa.xlsx>`__.
 
+.. image:: _static/screenshots/TPPSc_Phenotype.jpeg
+   :width: 450
+
+.. image:: _static/screenshots/TPPSc_Phenotype2.jpeg
+   :width: 450
+
 Genotype
 ^^^^^^^^
 
@@ -197,6 +225,13 @@ very important SNP Association file. This file type associated the
 phenotypic traits and environmental variables to specific SNP locations.
 An example of a SNP Genotype Assay file is
 `here <https://treegenesdb.org/sites/default/files/tpps_genotype/TGDR001_Genotype_SNPs_Assay_Populus_trichocarpa.xlsx>`__.
+
+.. image:: _static/screenshots/TPPSc_SNP.jpeg
+   :width: 450
+
+.. image:: _static/screenshots/tppscSNPsampledata.PNG
+   :width: 450
+
 
 **VCF:** \* When uploading a VCF file there are two options: upload the
 VCF from your local device or provide a path to the UCONN-xanadu
@@ -234,6 +269,9 @@ reference genome SNP assay. An example of a well curated Assay Design
 file is
 `here <https://treegenesdb.org/sites/default/files/tpps_genotype/snp%20data_0.xlsx>`__.
 
+.. image:: _static/screenshots/TPPSc_SNP_AssayDesign.jpeg
+   :width: 450
+
 -  For .vcf files, the metadata is already included within the original
    file.
 
@@ -245,6 +283,9 @@ example of the data we are looking for is below. There is a minimum
 amount of data needed for this file to be useful, and any additional
 information is denoted with (optional) in the header.
 
+.. image:: _static/screenshots/association.png
+   :width: 450
+
 **SSR:** When dealing with an SSR study, first you describe what type of
 SSR/cpSSR in the provided drop down. Another field labeled Ploidy then
 appears which is very important when uploading the SSR/cpSSR
@@ -252,6 +293,12 @@ spreadsheet. If an organism is diploid, then there would be two columns
 for each SSR. If the SSR is of haploid chloroplast genes, then there
 would be one column for each SSR. Below is a sample data set for SSR
 markers where the ploidy would be diploid.
+
+.. image:: _static/screenshots/TPPSc_SSR.jpeg
+   :width: 450
+
+.. image:: _static/screenshots/tppscSSRsampledata.PNG
+   :width: 450
 
 Environment
 ^^^^^^^^^^^
@@ -268,6 +315,12 @@ layers you specifically have. When uploading a custom environmental
 layer that is not loaded on our database, ensure to upload the DB URL,
 layer name, and the specific parameters used in that layer.
 
+.. image:: _static/screenshots/TPPSc_Layer.jpeg
+   :width: 450
+
+.. image:: _static/screenshots/TPPSc_CustomLayer.jpeg
+   :width: 450
+
 Review Page and Post Submission
 ===============================
 
@@ -278,6 +331,10 @@ protocol <https://gitlab.com/TreeGenes/data-curation/-/blob/master/Species%20Ima
 to find an image (if possible). Name the species genus_species.jpg, and
 upload the relevant species image information (image + licensing info)
 in the fields that populate at the end of the tppsc submission!
+
+.. image:: _static/screenshots/TPPSc_SpeciesImage.jpeg
+   :width: 750
+
 
 There are a few things to do after submission of the study. First, and
 most importantly, approve the study into the database. Head to the
