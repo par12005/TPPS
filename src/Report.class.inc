@@ -263,7 +263,13 @@ class Report {
     // $cid = __METHOD__;
     $cache_bin = TPPS_CACHE_BIN ?? 'cache';
     $cache = cache_get($cid, $cache_bin);
-    $key = md5(json_encode($report));
+
+    // To have 'reset' parameter working in URL we need to remove it from the
+    // data used to build unique key.
+    $key_data = $report;
+    unset($key_data['table_sort']['query']['reset']);
+    $key = md5(json_encode($key_data));
+
     if ($reset || empty($cache) || empty($cache->data[$key])) {
       $content = $default_value;
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
