@@ -132,6 +132,19 @@ class StateList {
   }
 
   /**
+   * Gets value from the list.
+   *
+   * @param string $list_name
+   *   The name of the list.
+   * @param mixed $key
+   *   Key.
+   */
+  public static function get($list_name, $key) {
+    $list = self::getList($list_name);
+    return $list[$key] ?? NULL;
+  }
+
+  /**
    * Removes an item from a list in memory (flushed to storage on shutdown).
    *
    * @param string $list_name

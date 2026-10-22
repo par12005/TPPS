@@ -277,8 +277,8 @@ class NcbiTaxonomy {
                     static::ACCEPTED_SYNONYM_LIST,
                     // Value => Key,
                     // Synonym Id -> Primary Id.
-                    $primary_id,
-                    $organism->id
+                    (int) $primary_id,
+                    (int) $organism->id
                   );
                 }
               }
