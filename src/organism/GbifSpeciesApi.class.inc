@@ -143,7 +143,6 @@ class GbifSpeciesApi {
           // Item was found.
           // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
           // >>> Custom code starts.
-
           // Note:
           // To get primary name for synonyms we could simply use
           // 'acceptedUsage' if it's present in the API-response.
@@ -159,10 +158,8 @@ class GbifSpeciesApi {
                   // The name you searched for is the primary name.
                   // Note: $response['synonym'] == FALSE.
                   if ($response['usage']['rank'] == 'SPECIES') {
-                    $output = [
-                      'taxonomy_id' => (int) $response['usage']['key'] ?? NULL,
-                      'primary_name' => $response['usage']['name'] ?? NULL,
-                    ];
+                    $taxonomy_id = $response['usage']['key'] ?? NULL;
+                    $primary_name = $response['usage']['name'] ?? NULL;
                   }
                   break;
 
@@ -175,10 +172,8 @@ class GbifSpeciesApi {
                   // so we could just parse 'name' to save oranism name later
                   // instead of parsing 'rank: VARIETY' which could have
                   // different infraspecific rank.
-                  $output = [
-                    'taxonomy_id' => (int) $response['acceptedUsage']['key'] ?? NULL,
-                    'primary_name' => $response['acceptedUsage']['name'] ?? NULL,
-                  ];
+                  $taxonomy_id = $response['acceptedUsage']['key'] ?? NULL;
+                  $primary_name = $response['acceptedUsage']['name'] ?? NULL;
                   break;
               }
               break;
@@ -192,11 +187,11 @@ class GbifSpeciesApi {
           }
           // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
           // <<< Custom code ends.
-
-          $primary_name = $output['primary_name'] ?? NULL;
-          $taxonomy_id = $output['taxonomy_id'] ?? NULL;
-
-          if (!empty($primary_name)) {
+          if (empty($primary_name)) {
+            return NULL;
+          }
+          else {
+            $primary_id = NULL;
             if ($organism_name == $primary_name) {
               $primary_id = $organism->id;
               StateList::remove(
@@ -207,26 +202,41 @@ class GbifSpeciesApi {
             else {
               // Primary name and organism name (synonym) are different.
               $primary_organism = new Organism();
-              $primary_organism->setName($primary_name)->findId();
-              if (empty($primary_organism->id)) {
-                if (
-                  !empty($primary_organism->species)
-                  && !empty($primary_organism->genus)
-                ) {
-                  // No need to store if only $id property was set because
-                  // it was already found in DB by findId() method.
-                  $primary_organism->save();
-                }
-              }
-              $primary_id = $primary_organism->id ?? NULL;
-              if (!empty($primary_id)) {
-                StateList::add(
+              $primary_organism->setName($primary_name);
+              if (
+                $organism->getShortName() == $primary_organism->getShortName()
+              ) {
+                // Short names are equal but full names (including authority,
+                // year) are different.
+                $primary_id = $organism->id;
+                StateList::remove(
                   static::ACCEPTED_SYNONYM_LIST,
-                  // Value => Key,
-                  // Synonym Id -> Primary Id.
-                  $primary_id,
-                  $organism->id
+                  $primary_id
                 );
+              }
+              else {
+                // Primary name is totally different.
+                $primary_organism->findId();
+                if (empty($primary_organism->id)) {
+                  if (
+                    !empty($primary_organism->species)
+                    && !empty($primary_organism->genus)
+                  ) {
+                    // No need to store if only $id property was set because
+                    // it was already found in DB by findId() method.
+                    $primary_organism->save();
+                  }
+                }
+                $primary_id = $primary_organism->id ?? NULL;
+                if (!empty($primary_id)) {
+                  StateList::add(
+                    static::ACCEPTED_SYNONYM_LIST,
+                    // Value => Key,
+                    // Synonym Id -> Primary Id.
+                    $primary_id,
+                    $organism->id
+                  );
+                }
               }
             }
             // Save relation between taxonomy_id and organism name.
@@ -357,7 +367,7 @@ class GbifSpeciesApi {
    *   Returns list of organism ids.
    *   Returns FALSE if class 'StateList' not found.
    */
-  public static function getAcceptedSynynymList() {
+  public static function getAcceptedSynonymList() {
     if (class_exists('StateList')) {
       return StateList::getList(static::ACCEPTED_SYNONYM_LIST);
     }
@@ -372,7 +382,7 @@ class GbifSpeciesApi {
    * @return bool
    *   Returns TRUE if list was really cleared and FALSE otherwise.
    */
-  public static function clearAcceptedSynynymList() {
+  public static function clearAcceptedSynonymList() {
     if (class_exists('StateList')) {
       StateList::clearList(static::ACCEPTED_SYNONYM_LIST);
       return TRUE;

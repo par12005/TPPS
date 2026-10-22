@@ -19,10 +19,10 @@ function tpps_report_organism_synonym_ncbi_accepted($reset = FALSE) {
 
   // Clear list.
   if (isset($_GET['clear'])) {
-    NcbiTaxonomy::clearAcceptedSynynymList();
+    NcbiTaxonomy::clearAcceptedSynonymList();
   }
   // Get list.
-  $list = NcbiTaxonomy::getAcceptedSynynymList();
+  $list = NcbiTaxonomy::getAcceptedSynonymList();
 
   if (!empty($list)) {
     // Mapping.
@@ -113,7 +113,6 @@ function tpps_report_organism_synonym_ncbi_accepted($reset = FALSE) {
  *   Empty value will not be formatted and returned as is.
  */
 function tpps_report_organism_synonym_ncbi_accepted_formatter(string $name, $value, array &$row) {
-$debug_mode = 0;
   $formatted = check_plain($value);
   if (empty($name) || empty($value)) {
     return $formatted;

@@ -257,10 +257,15 @@ class Organism {
    */
   public function getDump() {
     $caller = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1];
-    $caller_method = $caller['class']. $caller['type'] . $caller['function'];
+    if (empty($caller['class'])) {
+      $caller_name = $caller['function'];
+    }
+    else {
+      $caller_name = $caller['class'] . $caller['type'] . $caller['function'];
+    }
     return array_merge(
-      ['CALLER_METHOD' => $caller_method],
-      var_export(get_object_vars($this), 1)
+      ['CALLER' => $caller_name],
+      get_object_vars($this)
     );
   }
 
@@ -506,6 +511,8 @@ class Organism {
     $result = Organism::getEmptyParsedName();
     $name = trim($name);
     // Check if name is valid.
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // First genus letter is '?' or in lowercase.
     if (
       preg_match('/^([a-z\?])/', $name, $matches)
@@ -524,7 +531,14 @@ class Organism {
       $result['genus'] = $matches[1];
       return $result;
     }
-
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Handle "Genus sp." / "Genus sp" / "Genus spp." / "Genus spp"
+    // (species unknown/unspecified).
+    if (preg_match('/^([A-Z][a-z]+)\s+((?:sp|spp)\.?)$/u', $name, $matches)) {
+      $result['genus'] = $matches[1];
+      $result['species'] = $matches[2];
+      return $result;
+    }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // 'Genus species' or
     // 'Genus species 2nd-word'.
@@ -1151,6 +1165,24 @@ class Organism {
       return FALSE;
     }
     return TRUE;
+  }
+
+  /**
+   * Gets short organism name.
+   *
+   * Short name contains only genus and species. No authority and year data.
+   *
+   * @return string|false
+   *   Returns organism name.
+   *   Returns fALSE if organism name is not valid: genus or species is empty.
+   */
+  public function getShortName() {
+    if ($this->isValidName()) {
+      return $this->genus . ' ' . strtolower($this->species);
+    }
+    else {
+      return FALSE;
+    }
   }
 
 }

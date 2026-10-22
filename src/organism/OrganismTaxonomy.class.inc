@@ -243,7 +243,7 @@ class OrganismTaxonomy {
     if (!empty($source_class = static::getSourceClassName($source))) {
       // Get list of the synonym organism ids (not primary id).
       $accepted_synonym_id_list = array_keys(
-        $source_class::getAcceptedSynynymList()
+        $source_class::getAcceptedSynonymList()
       );
       if (!empty($accepted_synonym_id_list)) {
         $query->condition('o.organism_id', $accepted_synonym_id_list, 'NOT IN');
@@ -295,7 +295,7 @@ class OrganismTaxonomy {
    */
   public static function clearAcceptedSynonymList($source) {
     if (!empty($class_name = static::getSourceClassName($source))) {
-      return $class_name::clearAcceptedSynynymList();
+      return $class_name::clearAcceptedSynonymList();
     }
     return FALSE;
   }
