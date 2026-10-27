@@ -46,6 +46,24 @@ class Organism {
   const TABLE = 'chado.organism';
 
   /**
+   * CvTerm Id for the hybrids (crosses).
+   *
+   * Name: "speciesaggregate".
+   */
+  const HYBRID_CVTERM_ID = 56;
+
+  /**
+   * CvTerm Id for the 'aff.'.
+   *
+   * In biodiversity and taxonomy contexts, "aff." is an abbreviation for
+   * the Latin affinis, meaning "related to" or "similar to."
+   * It is commonly used as an Identification Qualifier to express doubt about
+   * a specimen's exact identity (e.g., "Quercus aff. agrifolia" means a
+   * specimen is closely related to, but not definitively, Quercus agrifolia).
+   */
+  const AFF_CVTERM_ID = 33333333333;
+
+  /**
    * NCBI Taxonomy Id.
    *
    * Stored in NcbiTaxonomy::TABLE.id field.

@@ -82,19 +82,11 @@ function tpps_report_organism_taxonomy_formatter(string $name, $value, array &$r
   switch ($name) {
     case 'organism_id':
       if (!empty($value)) {
-        $formatted = l($formatted, 'admin/reports/db/chado.organism',
-          ['query' => ['chado.organism.organism_id' => $formatted]]
-        );
-      }
-      break;
-
-    case 'genus':
-    case 'species':
-      if (!empty($row['ncbi_taxonomy_id'])) {
-        $formatted = '<span style="color:green">' . $formatted . '</span>';
-      }
-      elseif (empty($row['gbif_taxonomy_id'])) {
-        $formatted = '<span style="color:red">' . $formatted . '</span>';
+        $formatted = '<div id="' . $formatted . '"></div>'
+          . l(
+            $formatted, 'admin/reports/db/chado.organism',
+            ['query' => ['chado.organism.organism_id' => $formatted]]
+          );
       }
       break;
 
@@ -134,12 +126,9 @@ function tpps_report_organism_taxonomy_formatter(string $name, $value, array &$r
         );
         if (!empty($primary_id)) {
           $primary_organism = new Organism($primary_id);
-          $formatted = $right_arrow . ' ' . $primary_organism->name . ' (#'
-            . l(
-              $primary_organism->id,
-              'admin/reports/db/chado.organism',
-              ['query' => ['chado.organism.organism_id' => $primary_organism->id]]
-            ) . ')';
+          $formatted = $right_arrow . ' ' . $primary_organism->name
+            . ' (#<a href="#' . $primary_organism->id . '">'
+            . $primary_organism->id . '</a>)';
         }
       }
       break;
@@ -159,16 +148,57 @@ function tpps_report_organism_taxonomy_formatter(string $name, $value, array &$r
         );
         if (!empty($primary_id)) {
           $primary_organism = new Organism($primary_id);
-          $formatted = $right_arrow . ' ' . $primary_organism->name . ' (#'
-            . l(
-              $primary_organism->id,
-              'admin/reports/db/chado.organism',
-              ['query' => ['chado.organism.organism_id' => $primary_organism->id]]
-            ) . ')';
+          $formatted = $right_arrow . ' ' . $primary_organism->name
+            . ' (#<a href="#' . $primary_organism->id . '">'
+            . $primary_organism->id . '</a>)';
         }
       }
       break;
 
   }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Color.
+  $list = [
+    'ncbi' => StateList::getList(NcbiTaxonomy::ACCEPTED_SYNONYM_LIST),
+    'gbif' => StateList::getList(GbifSpeciesApi::ACCEPTED_SYNONYM_LIST),
+  ];
+  switch ($name) {
+    case 'organism_id':
+      if (!empty($formatted)) {
+        $synonym_list['ncbi'] = array_search($value, $list['ncbi']);
+        $synonym_list['gbif'] = array_search($value, $list['gbif']);
+
+        $synonym_list = array_filter($synonym_list);
+        if (!empty($synonym_list)) {
+          $items = [];
+          foreach ($synonym_list as $source => $synonym_id) {
+            //$items[$source] = l($synonym_id, 'admin/reports/db/chado.organism', [
+            //  'attributes' => ['title' => 'Synonym (by NCBI)'],
+            //  'query' => ['chado.organism.organism_id' => $synonym_id],
+            //]);
+            $items[$source] = '#<a href="#' . $synonym_id . '">'
+              . $synonym_id . '</a>';
+          }
+          $formatted = '<span title="Primary">' . $formatted
+            . '</span>&nbsp;(<-' . implode(',&nbsp;', $items) . ')';
+        }
+      }
+      break;
+
+    case 'infraspecific_name':
+    case 'type_id':
+    case 'genus':
+    case 'species':
+      if (!empty($row['ncbi_taxonomy_id'])) {
+        $formatted = '<span style="color:green">' . $formatted . '</span>';
+      }
+      elseif (empty($row['gbif_taxonomy_id'])) {
+        $formatted = '<span style="color:red">' . $formatted . '</span>';
+      }
+      break;
+
+  }
+
   return $formatted;
 }
