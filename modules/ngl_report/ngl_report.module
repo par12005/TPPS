@@ -1,0 +1,33 @@
+<?php
+
+/**
+ * @file
+ * Manages reports.
+ */
+
+/**
+ * Implements hook_permission().
+ */
+function ngl_report_permission() {
+  return [
+    'administer ngl_report' => [
+      'title' => t('Administer NGL Report'),
+      'description' => t('Configure NGL Report.'),
+    ],
+  ];
+}
+
+/**
+ * Implements hook_menu().
+ */
+function ngl_report_menu() {
+  $items['admin/config/workflow/ngl_report'] = [
+    'title' => 'NGL Report',
+    'description' => 'NGL Report Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['ngl_report_settings_form'],
+    'access arguments' => ['administer ngl_report'],
+    'file' => 'admin/ngl_report.inc',
+  ];
+  return $items;
+}

@@ -2582,6 +2582,7 @@ function tpps_update_7134() {
       'gemini',
       'state_list',
       //'rest_api',
+      'ngl_report',
     ],
     $enable_dependencies = TRUE
   );

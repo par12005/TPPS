@@ -33,6 +33,7 @@
  * 1. Settings page.
  * 2. Menu items using Drupal-hooks.
  * 3. Menu titles.
+ * 4. Use own cache bin.
  */
 
 /**
@@ -247,7 +248,7 @@ class Report {
     $debug_mode = check_plain(
       $_GET['debug_mode'] ?? $report['debug_mode'] ?? FALSE
     );
-    $pager = $report['pager'] = check_plain(
+    $report['pager'] = check_plain(
       $_GET['pager'] ?? $report['pager'] ?? 'none'
     );
     $report['items_per_page'] = check_plain(
@@ -360,7 +361,7 @@ class Report {
             }
             elseif (strpos($value, '*') !== FALSE) {
               // Like.
-              $value = str_replace('*', '%', db_like($value));
+              $value = str_replace('*', '%', (string) db_like($value));
               $query->condition($key, $value, 'LIKE');
             }
             else {
@@ -426,7 +427,7 @@ class Report {
       }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Content.
-      $content .= theme('table', [
+      $content .= (string) theme('table', [
         'header' => $report['header'] ?? [],
         'rows' => $rows,
         // Note:
@@ -448,7 +449,7 @@ class Report {
         $content = $rendered_pager . $content;
       }
       if (!empty($report['submission_cache'])) {
-        $content .= SubmissionCache::showClearCacheWidget();
+        $content .= (string) SubmissionCache::showClearCacheWidget();
       }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       $cache->data[$key] = $content;
@@ -488,12 +489,12 @@ class Report {
       switch ($report['filter']) {
         case 'top':
         case 'above':
-          $content = render($filter_form) . $content;
+          $content = (string) render($filter_form) . $content;
           break;
 
         case 'bottom':
         case 'below':
-          $content .= render($filter_form);
+          $content .= (string) render($filter_form);
           break;
       }
     }
@@ -623,12 +624,13 @@ class Report {
     $query = [];
     switch ($form_state['triggering_element']['#name']) {
       case 'filter':
+        $filter_query = [];
         $field_list = $form_state['values'][static::FILTER_FORM_CONTAINER];
         foreach ($field_list as $key => $value) {
           $key = str_replace('.', '__', $key);
           $filter_query[$key] = $value;
         }
-        $query = array_merge($current_query, $filter_query);
+        $query = array_merge((array) $current_query, $filter_query);
         break;
 
       default:
@@ -679,7 +681,7 @@ class Report {
       if (empty($value['title'])) {
         $output = static::buildOverviewPage($value, array_merge($parents, [$key]), $admin_panel);
         // This a list and it requires some text before to be shown correctly.
-        $items[] = '<strong>' . check_plain(strtoupper($key)) . ':</strong> ' . $output;
+        $items[] = '<strong>' . check_plain(strtoupper($key)) . ':</strong> ' . (string) $output;
       }
       else {
         // Build URL.

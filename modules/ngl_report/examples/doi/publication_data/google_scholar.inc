@@ -1,0 +1,41 @@
+<?php
+
+/**
+ * @file
+ * Shows publication data publication_data from Gooble Scholar web-site.
+ */
+
+/**
+ * Menu callback. Shows DOI publidation data publication_data from Google Scholar.
+ */
+function tpps_report_doi_publication_data_google_scholar() {
+  return drupal_get_form('tpps_report_doi_publication_data_google_scholar_form');
+}
+
+/**
+ * Bulds form 'tpps_report_doi_publication_data_google_scholar'.
+ *
+ * Form shows DOI publication data in tables under fieldset.
+ */
+function tpps_report_doi_publication_data_google_scholar_form(array $form, array &$form_state) {
+  $report = [];
+  $source = 'GoogleScholar';
+  $result = db_select(PublicationDoi::TABLE, 't')
+    ->fields('t', [])
+    ->condition('source', $source)
+    ->execute()
+    ->fetchAllAssoc('doi', PDO::FETCH_ASSOC);
+
+  if (!empty($result)) {
+    // Build 2 level structure for report.
+    foreach ($result as $item) {
+      $doi = $item['doi'];
+      $source = $item['source'];
+      unset($item['doi']);
+      unset($item['source']);
+      $report[$doi][$source] = $item;
+    }
+  }
+  Report::print2Level($form, $report);
+  return $form;
+}
