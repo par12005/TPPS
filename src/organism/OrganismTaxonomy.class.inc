@@ -23,6 +23,7 @@ class OrganismTaxonomy {
    * List of the supported sources.
    *
    * Key is a short name of source and value is a class name.
+   * Example: $class = OrganismTaxonomy::SOURCE_LIST[$source].
    */
   const SOURCE_LIST = [
     'ncbi' => 'NcbiTaxonomy',
