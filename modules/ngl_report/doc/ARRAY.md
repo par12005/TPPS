@@ -1,7 +1,15 @@
 ## How to add row counter
 
-- Use ```['data' => '#', 'field' => '#']``` to have sorting.
 - Loop all the data to add row counter column.
+
+```
+  $header = [
+    ['data' => '#', 'field' => '#'],
+    // ...
+  ];
+  // ...
+  $report['row_counter'] = TRUE;
+```
 
 Example:
 ```

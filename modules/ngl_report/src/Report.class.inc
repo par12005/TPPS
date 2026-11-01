@@ -259,7 +259,6 @@ class Report {
       $_GET['filter'] ?? $report['filter'] ?? 'none'
     );
 
-    $default_value = '';
     $cid = __FUNCTION__;
     // $cid = __METHOD__;
     $cache_bin = TPPS_CACHE_BIN ?? 'cache';
@@ -271,191 +270,14 @@ class Report {
     unset($key_data['table_sort']['query']['reset']);
     $key = md5(json_encode($key_data));
 
-    if ($reset || empty($cache) || empty($cache->data[$key])) {
-      $content = $default_value;
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Default values.
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Formatter.
-      if (
-        !empty($report['name'])
-        && ($formatter_function = 'tpps_report_' . $report['name'] . '_formatter')
-        && function_exists($formatter_function)
-      ) {
-        $formatter = check_plain($formatter_function);
-        $is_formatter = TRUE;
-      }
-      else {
-        $formatter = check_plain($report['formatter'] ?? 'Report::formatter');
-        $is_formatter = (!empty($formatter) && function_exists($formatter));
-      }
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Data.
-      if (empty($report['query'])) {
-        // Data in an array.
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        // Sorting.
-        if (isset($report['table_sort']['sql'])) {
-          $sort_field = $report['table_sort']['sql'];
-          uasort($report['rows'], function($a, $b) use ($sort_field) {
-            $valA = is_array($a[$sort_field])
-              ? implode(' ', $a[$sort_field])
-              : (string) $a[$sort_field];
-            $valB = is_array($b[$sort_field])
-              ? implode(' ', $b[$sort_field])
-              : (string) $b[$sort_field];
-            return strnatcmp($valA, $valB);
-          });
-          // Reverse the array if the sort direction is 'desc'.
-          if (strtolower($report['table_sort']['sort']) == 'desc') {
-            $report['rows'] = array_reverse($report['rows'], TRUE);
-          }
-        }
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        // Filter.
-        if (!empty($filter = static::getFilterFromUrl())) {
-          $filtered_rows = [];
-          foreach ($filter as $key => $value) {
-            if ($value == '*') {
-              $regex = '.+';
-            }
-            elseif ($value == 'NULL') {
-              $regex = '';
-            }
-            else {
-              // Escape special regex characters except '*'.
-              $escaped = preg_quote($value, '/');
-              // Replace escaped \* with .* (any chars).
-              $regex = str_replace('\*', '.*', $escaped);
-            }
-            foreach ($report['rows'] as $id => $row) {
-              // Process correctly array values.
-              $list = is_array($row[$key]) ? $row[$key] : [$row[$key]];
-              $loop_result = [];
-              foreach ($list as $item) {
-                $loop_result[] = preg_match('/^' . $regex . '$/i', $item);
-              }
-              if (!TppsArray::isAnyNotEmpty($loop_result)) {
-                unset($report['rows'][$id]);
-              }
-            }
-          }
-        }
-      }
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      else {
-        // Data in SQL-query.
-        $query = $report['query'];
-        if (!empty($report['debug_mode'])) {
-          $query->addTag('debug');
-        }
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        // Filter.
-        if (!empty($filter = static::getFilterFromUrl())) {
-          foreach ($filter as $key => $value) {
-            if ($value == '*') {
-              $query->isNotNull($key);
-            }
-            elseif ($value == 'NULL') {
-              $query->isNull($key);
-            }
-            elseif (strpos($value, '*') !== FALSE) {
-              // Like.
-              $value = str_replace('*', '%', (string) db_like($value));
-              $query->condition($key, $value, 'LIKE');
-            }
-            else {
-              // Equal.
-              $query->condition($key, $value);
-            }
-          }
-        }
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        // Pager and sorting.
-        if ($report['pager'] == 'none' || $report['pager'] === FALSE) {
-          // No pager at all.
-          if (isset($report['table_sort']['sql'])) {
-            $query->orderBy(
-              $report['table_sort']['sql'],
-              $report['table_sort']['sort']
-            );
-          }
-          $report['rows'] = $query->execute()->fetchAll();
-        }
-        else {
-          $report_query = $query->extend('PagerDefault')
-            ->limit($report['items_per_page'])
-            ->extend('TableSort')
-            ->orderByHeader($report['header']);
-          $report['rows'] = $report_query->execute()->fetchAll();
-        }
-      }
-
-      // Prepare rows for report. Formatter.
-      $rows = [];
-      foreach ($report['rows'] as $row_id => $row) {
-        foreach ($row as $field_id => $field_value) {
-          $rows[$row_id][$field_id] = [
-            'data' => (!$is_formatter ? $field_value
-              : call_user_func($formatter, $field_id, $field_value, (array) $row)
-            ),
-            'style' => 'vertical-align:top;min-width:10px;',
-          ];
-        }
-      }
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Pager.
-      if ($report['pager'] == 'none' || $report['pager'] === FALSE) {
-        // No pager.
-        $rendered_pager = '';
-      }
-      else {
-        // Pager.
-        if (!empty($report['query'])) {
-          // SQL-query.
-          $rendered_pager = theme('pager');
-        }
-        else {
-          // Array.
-          $current_page = pager_default_initialize(
-            count($rows), $report['items_per_page']
-          );
-          $chunks = array_chunk($rows, $report['items_per_page'], TRUE);
-          $rendered_pager = theme('pager', ['quantity', count($rows) ?? 0]);
-          $rows = $chunks[$current_page] ?? [];
-        }
-      }
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Content.
-      $content .= (string) theme('table', [
-        'header' => $report['header'] ?? [],
-        'rows' => $rows,
-        // Note:
-        // CSS-class is required to have vertical align to top of the cell.
-        'attributes' => ['class' => ['view', 'tpps_table']],
-        'empty' => $report['empty'] ?? t('No data found.'),
-        'sticky' => TRUE,
-      ]);
-
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Pager position.
-      if (in_array($report['pager'], ['both', 'full']) || is_null($report['pager'])) {
-        $content = $rendered_pager . $content . $rendered_pager;
-      }
-      elseif (in_array($report['pager'], ['below', 'bottom'])) {
-        $content = $content . $rendered_pager;
-      }
-      elseif (in_array($report['pager'], ['above', 'top'])) {
-        $content = $rendered_pager . $content;
-      }
-      if (!empty($report['submission_cache'])) {
-        $content .= (string) SubmissionCache::showClearCacheWidget();
-      }
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      $cache->data[$key] = $content;
+    // Get content.
+    if ($reset || empty($cache) || empty($cache->data[$report['name']][$key])) {
+      // Note: Reset all report's data.
+      $cache->data[$report['name']] = NULL;
+      $cache->data[$report['name']][$key] = Report::buildContent($report);
       cache_set($cid, $cache->data, $cache_bin);
     }
-    $content = $cache->data[$key] ?? $default_value;
+    $content = $cache->data[$report['name']][$key] ?? '';
 
     // Add 'main' JS and CSS.
     tpps_add_css_js();
@@ -498,7 +320,6 @@ class Report {
           break;
       }
     }
-
     return $content;
   }
 
@@ -557,7 +378,7 @@ class Report {
       '#tree' => TRUE,
     ];
     foreach ($report['header'] as $item) {
-      if (!is_array($item)) {
+      if (!is_array($item) || empty($item['field']) || $item['field'] === '#') {
         continue;
       }
       $is_required = TRUE;
@@ -1338,6 +1159,237 @@ class Report {
         ];
       }
     }
+  }
+
+  /**
+   * Builds main content of the report.
+   *
+   * Note: This content will be cached in method print().
+   *
+   * @param array $report
+   *   Report's metadata. See method print().
+   *
+   * @return string
+   *   Returns rendered report's content.
+   */
+  public static function buildContent(array $report) {
+    $content = '';
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Default values.
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Formatter.
+    if (
+      !empty($report['name'])
+      && ($formatter_function = 'tpps_report_' . $report['name'] . '_formatter')
+      && function_exists($formatter_function)
+    ) {
+      $formatter = check_plain($formatter_function);
+      $is_formatter = TRUE;
+    }
+    else {
+      $formatter = check_plain($report['formatter'] ?? 'Report::formatter');
+      $is_formatter = (!empty($formatter) && function_exists($formatter));
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Data.
+    if (empty($report['query'])) {
+      // Data in an array.
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Sorting.
+      if (isset($report['table_sort']['sql'])) {
+        $sort_field = $report['table_sort']['sql'];
+        uasort($report['rows'], function($a, $b) use ($sort_field) {
+          $valA = is_array($a[$sort_field])
+            ? implode(' ', $a[$sort_field])
+            : (string) $a[$sort_field];
+          $valB = is_array($b[$sort_field])
+            ? implode(' ', $b[$sort_field])
+            : (string) $b[$sort_field];
+          return strnatcmp($valA, $valB);
+        });
+        // Reverse the array if the sort direction is 'desc'.
+        if (strtolower($report['table_sort']['sort']) == 'desc') {
+          $report['rows'] = array_reverse($report['rows'], TRUE);
+        }
+      }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Filter.
+      if (!empty($filter = static::getFilterFromUrl())) {
+        $filtered_rows = [];
+        foreach ($filter as $key => $value) {
+          if ($value == '*') {
+            $regex = '.+';
+          }
+          elseif ($value == 'NULL') {
+            $regex = '';
+          }
+          else {
+            // Escape special regex characters except '*'.
+            $escaped = preg_quote($value, '/');
+            // Replace escaped \* with .* (any chars).
+            $regex = str_replace('\*', '.*', $escaped);
+          }
+          foreach ($report['rows'] as $id => $row) {
+            // Process correctly array values.
+            $list = is_array($row[$key]) ? $row[$key] : [$row[$key]];
+            $loop_result = [];
+            foreach ($list as $item) {
+              $loop_result[] = preg_match('/^' . $regex . '$/i', $item);
+            }
+            if (!TppsArray::isAnyNotEmpty($loop_result)) {
+              unset($report['rows'][$id]);
+            }
+          }
+        }
+      }
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    else {
+      // Data in SQL-query.
+      $query = $report['query'];
+      if (!empty($report['debug_mode'])) {
+        $query->addTag('debug');
+      }
+      // If the user clicked sorting on the '#' column in the SQL query:
+      // remove 'sql' == '#', so that SQL doesn't fail with an error (since
+      // there is no '#' column in the DB).
+      if (($report['table_sort']['sql'] ?? '') === '#') {
+        unset($report['table_sort']['sql']);
+      }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Filter.
+      if (!empty($filter = static::getFilterFromUrl())) {
+        foreach ($filter as $key => $value) {
+          if ($value == '*') {
+            $query->isNotNull($key);
+          }
+          elseif ($value == 'NULL') {
+            $query->isNull($key);
+          }
+          elseif (strpos($value, '*') !== FALSE) {
+            // Like.
+            $value = str_replace('*', '%', (string) db_like($value));
+            $query->condition($key, $value, 'LIKE');
+          }
+          else {
+            // Equal.
+            $query->condition($key, $value);
+          }
+        }
+      }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Pager and sorting.
+      if ($report['pager'] == 'none' || $report['pager'] === FALSE) {
+        // No pager at all.
+        if (isset($report['table_sort']['sql'])) {
+          $query->orderBy(
+            $report['table_sort']['sql'],
+            $report['table_sort']['sort']
+          );
+        }
+        $report['rows'] = $query->execute()->fetchAll();
+      }
+      else {
+        $report_query = $query->extend('PagerDefault')
+          ->limit($report['items_per_page'])
+          ->extend('TableSort')
+          ->orderByHeader($report['header']);
+        $report['rows'] = $report_query->execute()->fetchAll();
+      }
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Determine whether the automatic counter column '#' is needed.
+    // It is added if the first column in the header has data == '#'
+    // and does not contain data in the row itself,
+    // or if 'row_counter' => TRUE is passed.
+    $has_counter_header = (
+      isset($report['header'][0]['data'])
+      && $report['header'][0]['data'] === '#'
+    );
+    if ($has_counter_header) {
+       unset($report['header'][0]['field']);
+    }
+    $use_row_counter = $report['row_counter'] ?? $has_counter_header;
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Prepare rows for report. Formatter.
+    $rows = [];
+    // Row counter.
+    $page = isset($_GET['page']) ? (int) $_GET['page'] : 0;
+    $offset = ($report['pager'] == 'none' || $report['pager'] === FALSE || empty($report['query']))
+      ? 0
+      : $page * (int) $report['items_per_page'];
+    $counter = $offset;
+
+    foreach ($report['rows'] as $row_id => $row) {
+      $row = (array) $row;
+      // If there is a '#' in the header, but the row data (for example,
+      // from an SQL query) has no '#' or 'counter' key.
+      if ($use_row_counter && !isset($row['#']) && !isset($row['counter'])) {
+        $rows[$row_id]['#'] = [
+          'data' => ++$counter,
+          'style' => 'vertical-align:top;min-width:10px;',
+        ];
+      }
+      foreach ($row as $field_id => $field_value) {
+        $data = $field_value;
+        if ($is_formatter) {
+          $data = $formatter($field_id, $field_value, $row);
+        }
+        $rows[$row_id][$field_id] = [
+          'data' => $data, 'style' => 'vertical-align:top;min-width:10px;',
+        ];
+      }
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Pager.
+    if ($report['pager'] == 'none' || $report['pager'] === FALSE) {
+      // No pager.
+      $rendered_pager = '';
+    }
+    else {
+      // Pager.
+      if (!empty($report['query'])) {
+        // SQL-query.
+        $rendered_pager = theme('pager');
+      }
+      else {
+        // Array.
+        $current_page = pager_default_initialize(
+          count($rows), $report['items_per_page']
+        );
+        $chunks = array_chunk($rows, $report['items_per_page'], TRUE);
+        $rendered_pager = theme('pager', ['quantity', count($rows) ?? 0]);
+        $rows = $chunks[$current_page] ?? [];
+      }
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Content.
+    $content .= (string) theme('table', [
+      'header' => $report['header'] ?? [],
+      'rows' => $rows,
+      // Note:
+      // CSS-class is required to have vertical align to top of the cell.
+      'attributes' => ['class' => ['view', 'tpps_table']],
+      'empty' => $report['empty'] ?? t('No data found.'),
+      'sticky' => TRUE,
+    ]);
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Pager position.
+    if (in_array($report['pager'], ['both', 'full']) || is_null($report['pager'])) {
+      $content = $rendered_pager . $content . $rendered_pager;
+    }
+    elseif (in_array($report['pager'], ['below', 'bottom'])) {
+      $content = $content . $rendered_pager;
+    }
+    elseif (in_array($report['pager'], ['above', 'top'])) {
+      $content = $rendered_pager . $content;
+    }
+    if (!empty($report['submission_cache'])) {
+      $content .= (string) SubmissionCache::showClearCacheWidget();
+    }
+    return $content;
   }
 
 }

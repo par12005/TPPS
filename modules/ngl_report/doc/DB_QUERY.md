@@ -1,7 +1,11 @@
 ## How to add rows counter
 
-- Use addExpression() instead of addField() of fields().
-- Do NOT Use ```['data' => '#', 'field' => '#']``` because sortring won't work.
+```
+  $header = [
+    ['data' => '#'],
+    // ...
+  ];
+```
 
 Example:
 ```
@@ -26,23 +30,20 @@ function tpps_report_organism_gbif_missing() {
     'cvt.cvterm_id = t.type_id AND cvt.cv_id = :cv_id',
     [':cv_id' => InfraspecificRank::CV_ID]
   );
-  // Add the row number expression
-  $query->addExpression('ROW_NUMBER() OVER ()', 'counter');
-  // Drupal's SelectQuery builder (db_select) always renders table fields
-  // (addField / fields) before calculated expressions (addExpression) when
-  // compiling the SELECT clause, regardless of the order in which you call
-  // the methods in PHP.
-  $query->addExpression('t.organism_id', 'organism_id');
-  $query->addExpression('t.genus', 'genus');
-  $query->addExpression('t.species', 'species');
-  $query->addExpression('cvt.name', 'name');
-  $query->addExpression('t.infraspecific_name', 'infraspecific_name');
 
+  $query->fields('t', [
+    'organism_id',
+    'genus',
+    'species',
+  ]);
+  // Infraspecific Rank.
+  $query->fields('cvt', ['name']);
+  $query->fields('t', ['infraspecific_name']);
   $query->isNull('ot.taxonomy_id');
 
   $header = [
-    ['data' => '#'],
-    ['data' => t('Organism Id'), 'field' => 't.organism_id'],
+    ['data' => '#', 'field' => '#'],
+    ['data' => t('Organism Id'), 'field' => 't.organism_id', 'sort' => 'asc'],
     ['data' => t('Genus'), 'field' => 't.genus'],
     ['data' => t('Species'), 'field' => 't.species'],
     ['data' => t('Infraspecific Rank'), 'field' => 'cvt.name'],
@@ -55,5 +56,4 @@ function tpps_report_organism_gbif_missing() {
     'query' => $query,
   ], $reset);
 }
-
 ```
