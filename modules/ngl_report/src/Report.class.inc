@@ -1190,114 +1190,16 @@ class Report {
       $formatter = check_plain($report['formatter'] ?? 'Report::formatter');
       $is_formatter = (!empty($formatter) && function_exists($formatter));
     }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Data.
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Build content.
     if (empty($report['query'])) {
-      // Data in an array.
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Sorting.
-      if (isset($report['table_sort']['sql'])) {
-        $sort_field = $report['table_sort']['sql'];
-        uasort($report['rows'], function($a, $b) use ($sort_field) {
-          $valA = is_array($a[$sort_field])
-            ? implode(' ', $a[$sort_field])
-            : (string) $a[$sort_field];
-          $valB = is_array($b[$sort_field])
-            ? implode(' ', $b[$sort_field])
-            : (string) $b[$sort_field];
-          return strnatcmp($valA, $valB);
-        });
-        // Reverse the array if the sort direction is 'desc'.
-        if (strtolower($report['table_sort']['sort']) == 'desc') {
-          $report['rows'] = array_reverse($report['rows'], TRUE);
-        }
-      }
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Filter.
-      if (!empty($filter = static::getFilterFromUrl())) {
-        $filtered_rows = [];
-        foreach ($filter as $key => $value) {
-          if ($value == '*') {
-            $regex = '.+';
-          }
-          elseif ($value == 'NULL') {
-            $regex = '';
-          }
-          else {
-            // Escape special regex characters except '*'.
-            $escaped = preg_quote($value, '/');
-            // Replace escaped \* with .* (any chars).
-            $regex = str_replace('\*', '.*', $escaped);
-          }
-          foreach ($report['rows'] as $id => $row) {
-            // Process correctly array values.
-            $list = is_array($row[$key]) ? $row[$key] : [$row[$key]];
-            $loop_result = [];
-            foreach ($list as $item) {
-              $loop_result[] = preg_match('/^' . $regex . '$/i', $item);
-            }
-            if (!TppsArray::isAnyNotEmpty($loop_result)) {
-              unset($report['rows'][$id]);
-            }
-          }
-        }
-      }
+      $report['rows'] = Report::buildArrayContent($report);
     }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     else {
-      // Data in SQL-query.
-      $query = $report['query'];
-      if (!empty($report['debug_mode'])) {
-        $query->addTag('debug');
-      }
-      // If the user clicked sorting on the '#' column in the SQL query:
-      // remove 'sql' == '#', so that SQL doesn't fail with an error (since
-      // there is no '#' column in the DB).
-      if (($report['table_sort']['sql'] ?? '') === '#') {
-        unset($report['table_sort']['sql']);
-      }
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Filter.
-      if (!empty($filter = static::getFilterFromUrl())) {
-        foreach ($filter as $key => $value) {
-          if ($value == '*') {
-            $query->isNotNull($key);
-          }
-          elseif ($value == 'NULL') {
-            $query->isNull($key);
-          }
-          elseif (strpos($value, '*') !== FALSE) {
-            // Like.
-            $value = str_replace('*', '%', (string) db_like($value));
-            $query->condition($key, $value, 'LIKE');
-          }
-          else {
-            // Equal.
-            $query->condition($key, $value);
-          }
-        }
-      }
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Pager and sorting.
-      if ($report['pager'] == 'none' || $report['pager'] === FALSE) {
-        // No pager at all.
-        if (isset($report['table_sort']['sql'])) {
-          $query->orderBy(
-            $report['table_sort']['sql'],
-            $report['table_sort']['sort']
-          );
-        }
-        $report['rows'] = $query->execute()->fetchAll();
-      }
-      else {
-        $report_query = $query->extend('PagerDefault')
-          ->limit($report['items_per_page'])
-          ->extend('TableSort')
-          ->orderByHeader($report['header']);
-        $report['rows'] = $report_query->execute()->fetchAll();
-      }
+      $report['rows'] = Report::buildQueryContent($report);
     }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Determine whether the automatic counter column '#' is needed.
     // It is added if the first column in the header has data == '#'
     // and does not contain data in the row itself,
@@ -1325,13 +1227,16 @@ class Report {
       $row = (array) $row;
       // If there is a '#' in the header, but the row data (for example,
       // from an SQL query) has no '#' or 'counter' key.
-      if ($use_row_counter && !isset($row['#']) && !isset($row['counter'])) {
+      if ($use_row_counter) {
         $rows[$row_id]['#'] = [
           'data' => ++$counter,
           'style' => 'vertical-align:top;min-width:10px;',
         ];
       }
       foreach ($row as $field_id => $field_value) {
+        if ($field_id == '#' && $use_row_counter) {
+          continue;
+        }
         $data = $field_value;
         if ($is_formatter) {
           $data = $formatter($field_id, $field_value, $row);
@@ -1390,6 +1295,125 @@ class Report {
       $content .= (string) SubmissionCache::showClearCacheWidget();
     }
     return $content;
+  }
+
+  /**
+   * Builds report content from array.
+   *
+   * @param array $report
+   *   Report's metadata. See method print().
+   *
+   * @return array
+   *   Returns report's rows.
+   */
+  public static function buildArrayContent(array $report) {
+    // Sorting.
+    if (isset($report['table_sort']['sql'])) {
+      $sort_field = $report['table_sort']['sql'];
+      uasort($report['rows'], function($a, $b) use ($sort_field) {
+        $valA = is_array($a[$sort_field])
+          ? implode(' ', $a[$sort_field])
+          : (string) $a[$sort_field];
+        $valB = is_array($b[$sort_field])
+          ? implode(' ', $b[$sort_field])
+          : (string) $b[$sort_field];
+        return strnatcmp($valA, $valB);
+      });
+      // Reverse the array if the sort direction is 'desc'.
+      if (strtolower($report['table_sort']['sort']) == 'desc') {
+        $report['rows'] = array_reverse($report['rows'], TRUE);
+      }
+    }
+    // Filter.
+    if (!empty($filter = static::getFilterFromUrl())) {
+      foreach ($filter as $key => $value) {
+        if ($value == '*') {
+          $regex = '.+';
+        }
+        elseif ($value == 'NULL') {
+          $regex = '';
+        }
+        else {
+          // Escape special regex characters except '*'.
+          $escaped = preg_quote($value, '/');
+          // Replace escaped \* with .* (any chars).
+          $regex = str_replace('\*', '.*', $escaped);
+        }
+        foreach ($report['rows'] as $id => $row) {
+          // Process correctly array values.
+          $list = is_array($row[$key]) ? $row[$key] : [$row[$key]];
+          $loop_result = [];
+          foreach ($list as $item) {
+            $loop_result[] = preg_match('/^' . $regex . '$/i', $item);
+          }
+          if (!TppsArray::isAnyNotEmpty($loop_result)) {
+            unset($report['rows'][$id]);
+          }
+        }
+      }
+    }
+    return $report['rows'];
+  }
+
+  /**
+   * Builds report content from db query.
+   *
+   * @param array $report
+   *   Report's metadata. See method print().
+   *
+   * @return array
+   *   Returns report's rows.
+   */
+  public static function buildQueryContent(array $report) {
+    $query = $report['query'];
+    if (!empty($report['debug_mode'])) {
+      $query->addTag('debug');
+    }
+    // If the user clicked sorting on the '#' column in the SQL query:
+    // remove 'sql' == '#', so that SQL doesn't fail with an error (since
+    // there is no '#' column in the DB).
+    if (($report['table_sort']['sql'] ?? '') === '#') {
+      unset($report['table_sort']['sql']);
+    }
+    // Filter.
+    if (!empty($filter = static::getFilterFromUrl())) {
+      foreach ($filter as $key => $value) {
+        if ($value == '*') {
+          $query->isNotNull($key);
+        }
+        elseif ($value == 'NULL') {
+          $query->isNull($key);
+        }
+        elseif (strpos($value, '*') !== FALSE) {
+          // Like.
+          $value = str_replace('*', '%', (string) db_like($value));
+          $query->condition($key, $value, 'LIKE');
+        }
+        else {
+          // Equal.
+          $query->condition($key, $value);
+        }
+      }
+    }
+    // Pager and sorting.
+    if ($report['pager'] == 'none' || $report['pager'] === FALSE) {
+      // No pager at all.
+      if (isset($report['table_sort']['sql'])) {
+        $query->orderBy(
+          $report['table_sort']['sql'],
+          $report['table_sort']['sort']
+        );
+      }
+      $report['rows'] = $query->execute()->fetchAll();
+    }
+    else {
+      $report_query = $query->extend('PagerDefault')
+        ->limit($report['items_per_page'])
+        ->extend('TableSort')
+        ->orderByHeader($report['header']);
+      $report['rows'] = $report_query->execute()->fetchAll();
+    }
+    return $report['rows'];
   }
 
 }
