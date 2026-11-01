@@ -334,7 +334,6 @@ class GbifSpeciesApi {
    * @param string $organism_name
    *   Organism name (canonical or synonym).
    *
-   * @return array
    *   Returns API response.
    */
   public static function getInfo($organism_name) {

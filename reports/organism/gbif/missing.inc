@@ -9,43 +9,9 @@
  * Menu callback.
  */
 function tpps_report_organism_gbif_missing() {
-  $report_name = 'organism_gbif_missing';
-  $table = 'public.' . GbifSpeciesApi::TABLE;
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
-  $query = db_select('chado.organism', 't');
-  // Taxonomy Id.
-  $query->leftJoin($table, 't2', 't.organism_id = t2.organism_id');
-  // Infraspecific Rank.
-  $query->leftJoin(
-    'chado.cvterm',
-    'cvt',
-    'cvt.cvterm_id = t.type_id AND cvt.cv_id = :cv_id',
-    [':cv_id' => InfraspecificRank::CV_ID]
+  module_load_include('inc', 'tpps', 'reports/organism/ncbi/missing');
+  return tpps_report_organism_missing_helper(
+    'organism_gbif_missing',
+    GbifSpeciesApi::KEY
   );
-
-  $query->fields('t', [
-    'organism_id',
-    'genus',
-    'species',
-  ]);
-  // Infraspecific Rank.
-  $query->fields('cvt', ['name']);
-  $query->fields('t', ['infraspecific_name']);
-  $query->isNull('t2.taxonomy_id');
-
-  $header = [
-    ['data' => t('Organism Id'), 'field' => 't.organism_id'],
-    ['data' => t('Genus'), 'field' => 't.genus'],
-    ['data' => t('Species'), 'field' => 't.species'],
-    ['data' => t('Infraspecific Rank'), 'field' => 'cvt.name'],
-    ['data' => t('Infraspecific Name'), 'field' => 't.infraspecific_name'],
-  ];
-
-  return Report::print([
-    'name' => $report_name,
-    'header' => $header,
-    'query' => $query,
-  ], $reset);
 }

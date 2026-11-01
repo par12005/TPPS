@@ -15,83 +15,15 @@
  */
 function tpps_report_organism_synonym_gbif_accepted($reset = FALSE) {
   $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
-  $rows = [];
-
-  // Clear list.
   if (isset($_GET['clear'])) {
     GbifSpeciesApi::clearAcceptedSynonymList();
   }
-  // Get list.
-  $list = GbifSpeciesApi::getAcceptedSynonymList();
-
-  if (!empty($list)) {
-    // Mapping.
-    $fields = [
-      // DB field name => Class property name.
-      'organism_id' => 'id',
-      'genus' => 'genus',
-      'species' => 'species',
-      'infraspecific_name' => 'infraspecificName',
-      'type_id' => 'infraspecificRank',
-    ];
-
-    // Get all (synonym and primary) organism names.
-    $organism_id_list = array_merge(array_keys($list), array_values($list));
-    $names = db_select('chado.organism', 'co')
-      ->condition('co.organism_id', $organism_id_list, 'IN')
-      ->fields('co', array_keys($fields))
-      ->execute()->fetchAllAssoc('organism_id', PDO::FETCH_ASSOC);
-
-    // Build table.
-    $i = 0;
-    foreach ($list as $synonym_id => $primary_id) {
-      $id_list = [
-        'synonym' => $synonym_id,
-        'primary' => $primary_id,
-      ];
-      $row['#'] = ++$i;
-      foreach ($id_list as $type => $id) {
-        if (empty($names[$id])) {
-          $row[$type . '_id'] = NULL;
-          $row[$type . '_name'] = NULL;
-          continue;
-        }
-        $organism = new Organism();
-        foreach ($fields as $field_name => $property_name) {
-          if ($field_name == 'type_id') {
-            if (!empty($rank = $names[$id][$field_name])) {
-              $organism->{$property_name} = InfraspecificRank::getName($rank);
-            }
-            else {
-              // Just skip.
-            }
-          }
-          else {
-            $organism->{$property_name} = ($names[$id][$field_name] ?? NULL);
-          }
-        }
-        $organism->generateName();
-        $row[$type . '_id'] = $id;
-        $row[$type . '_name'] = $organism->name;
-      }
-      $rows[] = $row;
-    }
-  }
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Output.
-  $header = [
-    ['data' => '#', 'field' => '#'],
-    ['data' => t('Synonym Id'), 'field' => 'synonym_id'],
-    ['data' => t('Synonym Name'), 'field' => 'syonym_name'],
-    ['data' => t('Primary Id'), 'field' => 'primary_id'],
-    ['data' => t('Primary Name'), 'field' => 'primary_name'],
-  ];
-  return Report::print([
-    'name' => 'organism_synonym_gbif_accepted',
-    'header' => $header,
-    'rows' => $rows,
-    'pager' => 'both',
-  ], $reset);
+  module_load_include('inc', 'tpps', 'reports/organism/synonym/ncbi/accepted');
+  return tpps_report_organism_synonym_accepted_helper(
+    'organism_synonym_gbif_accepted',
+    GbifSpeciesApi::getAcceptedSynonymList(),
+    $reset
+  );
 }
 
 /**
@@ -134,23 +66,11 @@ function tpps_report_organism_synonym_gbif_accepted_formatter(string $name, $val
       // Add Taxonomy Id in brackets.
       if (!empty($value)) {
         $response = GbifSpeciesApi::getInfo($formatted);
-        if (($response['diagnostics']['matchType'] ?? NULL) == 'NONE') {
-        }
-        else {
-          // Name was found.
-          //preg_match('/<Id>(\d+)<\/Id>/', $xml, $matches);
-          //if (!empty($taxonomy_id = ($matches[1] ?? NULL))) {
-          //  $formatted = l(
-          //    $formatted . ' (' . $taxonomy_id . ')',
-          //    NcbiTaxonomy::getUrl($taxonomy_id)
-          //  );
-          //  $formatted = '<em>' . $formatted . '</em>';
-          //}
-          //else {
-          //  if ($debug_mode ?? FALSE) {
-          //    dpm(var_export(NcbiTaxonomy::printXml($xml), 1));
-          //  }
-          //}
+        if (($response['diagnostics']['matchType'] ?? NULL) != 'NONE') {
+          $taxonomy_id = $response['usage']['key'];
+          $formatted = $formatted . ' (<em>'
+            . l($taxonomy_id, GbifSpeciesApi::getUrl($taxonomy_id))
+            . '</em>)';
         }
       }
       break;

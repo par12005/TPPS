@@ -15,14 +15,31 @@
  */
 function tpps_report_organism_synonym_ncbi_accepted($reset = FALSE) {
   $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
-  $rows = [];
-
-  // Clear list.
   if (isset($_GET['clear'])) {
     NcbiTaxonomy::clearAcceptedSynonymList();
   }
-  // Get list.
-  $list = NcbiTaxonomy::getAcceptedSynonymList();
+  return tpps_report_organism_synonym_accepted_helper(
+    'organism_synonym_ncbi_accepted',
+    NcbiTaxonomy::getAcceptedSynonymList(),
+    $reset
+  );
+}
+
+/**
+ * Builds report 'report_organism_synonym_N_accepted'.
+ *
+ * @param string $report_name
+ *   Report name.
+ * @param array $list
+ *   List of the accepted synonym ids and corresponding primary id.
+ * @param bool $reset
+ *   When TRUE report will be rebuilt.
+ *
+ * @return string
+ *   Returns rendered report.
+ */
+function tpps_report_organism_synonym_accepted_helper($report_name, $list, $reset = FALSE) {
+  $rows = [];
 
   if (!empty($list)) {
     // Mapping.
@@ -43,13 +60,12 @@ function tpps_report_organism_synonym_ncbi_accepted($reset = FALSE) {
       ->execute()->fetchAllAssoc('organism_id', PDO::FETCH_ASSOC);
 
     // Build table.
-    $i = 0;
     foreach ($list as $synonym_id => $primary_id) {
+      $row = [];
       $id_list = [
         'synonym' => $synonym_id,
         'primary' => $primary_id,
       ];
-      $row['#'] = ++$i;
       foreach ($id_list as $type => $id) {
         if (empty($names[$id])) {
           $row[$type . '_id'] = NULL;
@@ -80,17 +96,18 @@ function tpps_report_organism_synonym_ncbi_accepted($reset = FALSE) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output.
   $header = [
-    ['data' => '#', 'field' => '#'],
-    ['data' => t('Synonym Id'), 'field' => 'synonym_id'],
+    ['data' => '#'],
+    ['data' => t('Synonym Id'), 'field' => 'synonym_id', 'sort' => 'asc'],
     ['data' => t('Synonym Name'), 'field' => 'syonym_name'],
     ['data' => t('Primary Id'), 'field' => 'primary_id'],
     ['data' => t('Primary Name'), 'field' => 'primary_name'],
   ];
   return Report::print([
-    'name' => 'organism_synonym_ncbi_accepted',
+    'name' => $report_name,
     'header' => $header,
     'rows' => $rows,
     'pager' => 'both',
+    'row_counter' => TRUE,
   ], $reset);
 }
 
@@ -146,11 +163,9 @@ function tpps_report_organism_synonym_ncbi_accepted_formatter(string $name, $val
             // Name was found.
             preg_match('/<Id>(\d+)<\/Id>/', $xml, $matches);
             if (!empty($taxonomy_id = ($matches[1] ?? NULL))) {
-              $formatted = l(
-                $formatted . ' (' . $taxonomy_id . ')',
-                NcbiTaxonomy::getUrl($taxonomy_id)
-              );
-              $formatted = '<em>' . $formatted . '</em>';
+              $formatted = $formatted . ' (<em>'
+                . l($taxonomy_id, NcbiTaxonomy::getUrl($taxonomy_id))
+                . '</em>)';
             }
             else {
               if ($debug_mode ?? FALSE) {

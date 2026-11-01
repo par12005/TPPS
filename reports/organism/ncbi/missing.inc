@@ -9,15 +9,34 @@
  * Menu callback.
  */
 function tpps_report_organism_ncbi_missing() {
-  $report_name = 'organism_ncbi_missing';
-  $table = 'public.' . OrganismTaxonomy::TABLE;
+  return tpps_report_organism_missing_helper(
+    'organism_ncbi_missing',
+    NcbiTaxonomy::KEY
+  );
+}
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+/**
+ * Helper to build 'organism_N_missing' report content.
+ *
+ * @param string $report_name
+ *   Report name.
+ * @param string $source
+ *   Taxonomy data source. Possible values: 'ncbi' and 'gbif'.
+ *
+ * @return string
+ *   Returns rendered report.
+ */
+function tpps_report_organism_missing_helper($report_name, $source) {
+
   $reset = isset($_GET['reset']) ? TRUE : ($reset ?? FALSE);
   $query = db_select('chado.organism', 't');
-  // Taxonomy Id.
-  $query->leftJoin($table, 'ot', 't.organism_id = ot.organism_id');
-  $query->condition('ot.source', NcbiTaxonomy::KEY);
+  //Get taxonomy id.
+  $query->leftJoin(
+    'public.' . OrganismTaxonomy::TABLE,
+    'ot',
+    't.organism_id = ot.organism_id AND ot.source = :source',
+    [':source' => $source]
+  );
   // Infraspecific Rank.
   $query->leftJoin(
     'chado.cvterm',
@@ -34,9 +53,9 @@ function tpps_report_organism_ncbi_missing() {
   $query->fields('cvt', ['name']);
   $query->fields('t', ['infraspecific_name']);
   $query->isNull('ot.taxonomy_id');
-
   $header = [
-    ['data' => t('Organism Id'), 'field' => 't.organism_id'],
+    ['data' => '#', 'field' => '#'],
+    ['data' => t('Organism Id'), 'field' => 't.organism_id', 'sort' => 'asc'],
     ['data' => t('Genus'), 'field' => 't.genus'],
     ['data' => t('Species'), 'field' => 't.species'],
     ['data' => t('Infraspecific Rank'), 'field' => 'cvt.name'],
