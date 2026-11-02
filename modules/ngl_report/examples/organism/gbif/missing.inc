@@ -23,20 +23,10 @@ function tpps_report_organism_gbif_missing() {
     [':source' => $source]
   );
   // Infraspecific Rank.
-  $query->leftJoin(
-    'chado.cvterm',
-    'cvt',
-    'cvt.cvterm_id = t.type_id AND cvt.cv_id = :cv_id',
-    [':cv_id' => InfraspecificRank::CV_ID]
-  );
-  $query->addField(
-    't',
-    'organism_id',
-    'counter'
-  );
+  $query->leftJoin('chado.cvterm', 'cvt', 'cvt.cvterm_id = t.type_id');
+  $query->addField('t', 'organism_id', 'counter');
   // Add the row number expression
   $query->addExpression('ROW_NUMBER() OVER ()', 'counter');
-
 
   $query->fields('t', [
     'organism_id',

@@ -19,9 +19,6 @@ class InfraspecificRank {
   // Name of the DB table which stores infraspecific ranks.
   const TABLE = 'chado.cvterm';
 
-  // DB Table: chado.cv.name = 'taxonomic_rank'.
-  const CV_ID = 5;
-
   const LIST = [
     // Key is a canonical name of the rank which used in 'chado.cvterm' table.
     'varietas' => [
@@ -30,41 +27,64 @@ class InfraspecificRank {
       'name' => 'var.',
       // Regex used to detect/replace rank in the organism name.
       'regex' => 'varietas|variety|var.',
+      'cv_id' => 5,
     ],
     'subspecies' => [
       'cvterm_id' => 29,
       'name' => 'subsp.',
       'regex' => 'subspecies|subsp.|ssp.',
+      'cv_id' => 5,
     ],
     'forma' => [
       'cvterm_id' => 32,
       'name' => 'f.',
       'regex' => 'forma|form|f.|fa.',
+      'cv_id' => 5,
     ],
     'cultivar' => [
       'cvterm_id' => 40,
       'name' => 'cv.',
       'regex' => 'cultivar|cv.',
+      'cv_id' => 5,
     ],
     'subvariety' => [
       'cvterm_id' => 57,
       'name' => 'subvar.',
       'regex' => 'subvariety|subvarietas|subvar.',
+      'cv_id' => 5,
     ],
     'subsubvariety' => [
       'cvterm_id' => 58,
       'name' => 'subsubvar.',
       'regex' => 'subsubvariety|sub-subvariety|subsubvar.|ssubvar.',
+      'cv_id' => 5,
     ],
     'subsubform' => [
       'cvterm_id' => 62,
       'name' => 'subsubf.',
       'regex' => 'subsubform|sub-subform|subsubf.|ssubf.',
+      'cv_id' => 5,
     ],
     'subform' => [
       'cvterm_id' => 65,
       'name' => 'subf.',
       'regex' => 'subform|subforma|subf.',
+      'cv_id' => 5,
+    ],
+    // In biodiversity and taxonomy contexts, "aff." is an abbreviation for
+    // the Latin affinis, meaning "related to" or "similar to."
+    // It is commonly used as an Identification Qualifier to express doubt about
+    // a specimen's exact identity (e.g., "Quercus aff. agrifolia" means a
+    // specimen is closely related to, but not definitively, Quercus agrifolia).
+    // Description of the db field:
+    // Indicates that available material or evidence suggests that the
+    // proposed species is related to, has an affinity to, but is not
+    // identical to, the species with the binomial name it comes after.
+    'affinis' => [
+      'cvterm_id' => 290335,
+      'name' => 'aff.',
+      'regex' => 'aff|aff.|affinis',
+      'cv_id' => 2,
     ],
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Ranks without CVTerm Id.
@@ -76,6 +96,7 @@ class InfraspecificRank {
       'cvterm_id' => NULL,
       'name' => 'proles',
       'regex' => 'proles',
+      'cv_id' => 5,
     ],
     'nothosubsp' => [
       // Meghan Miles:
@@ -84,6 +105,7 @@ class InfraspecificRank {
       'cvterm_id' => NULL,
       'name' => 'nothosubsp',
       'regex' => 'nothosubsp|nothosubsp.',
+      'cv_id' => 5,
     ],
     'nothovar' => [
       // Meghan Miles:
@@ -93,6 +115,7 @@ class InfraspecificRank {
       'cvterm_id' => NULL,
       'name' => 'nothovar',
       'regex' => 'nothovar|nothovar.',
+      'cv_id' => 5,
     ],
   ];
 

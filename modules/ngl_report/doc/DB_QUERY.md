@@ -27,8 +27,7 @@ function tpps_report_organism_gbif_missing() {
   $query->leftJoin(
     'chado.cvterm',
     'cvt',
-    'cvt.cvterm_id = t.type_id AND cvt.cv_id = :cv_id',
-    [':cv_id' => InfraspecificRank::CV_ID]
+    'cvt.cvterm_id = t.type_id',
   );
 
   $query->fields('t', [

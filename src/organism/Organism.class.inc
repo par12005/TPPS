@@ -55,13 +55,8 @@ class Organism {
   /**
    * CvTerm Id for the 'aff.'.
    *
-   * In biodiversity and taxonomy contexts, "aff." is an abbreviation for
-   * the Latin affinis, meaning "related to" or "similar to."
-   * It is commonly used as an Identification Qualifier to express doubt about
-   * a specimen's exact identity (e.g., "Quercus aff. agrifolia" means a
-   * specimen is closely related to, but not definitively, Quercus agrifolia).
    */
-  const AFF_CVTERM_ID = 33333333333;
+  const AFF_CVTERM_ID = 403381;
 
   /**
    * NCBI Taxonomy Id.

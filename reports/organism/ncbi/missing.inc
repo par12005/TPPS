@@ -38,17 +38,8 @@ function tpps_report_organism_missing_helper($report_name, $source) {
     [':source' => $source]
   );
   // Infraspecific Rank.
-  $query->leftJoin(
-    'chado.cvterm',
-    'cvt',
-    'cvt.cvterm_id = t.type_id AND cvt.cv_id = :cv_id',
-    [':cv_id' => InfraspecificRank::CV_ID]
-  );
-  $query->fields('t', [
-    'organism_id',
-    'genus',
-    'species',
-  ]);
+  $query->leftJoin('chado.cvterm', 'cvt', 'cvt.cvterm_id = t.type_id');
+  $query->fields('t', ['organism_id', 'genus', 'species']);
   // Infraspecific Rank.
   $query->fields('cvt', ['name']);
   $query->fields('t', ['infraspecific_name']);
