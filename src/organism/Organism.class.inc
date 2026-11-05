@@ -55,8 +55,21 @@ class Organism {
   /**
    * CvTerm Id for the 'aff.'.
    *
+   * Note: cv_id = 2 (not 5 as infraspecific ranks has).
+   *
+   * In biodiversity and taxonomy contexts, "aff." is an abbreviation for the
+   * Latin affinis, meaning "related to" or "similar to." It is commonly used
+   * as an Identification Qualifier to express doubt about a specimen's exact
+   * identity (e.g., "Quercus aff. agrifolia" means a specimen is closely
+   * related to, but not definitively, Quercus agrifolia).
+   *
+   * Description of the db field:
+   * Indicates that available material or evidence suggests that the proposed
+   * species is related to, has an affinity to, but is not identical to, the
+   * species with the binomial name it comes after.
    */
-  const AFF_CVTERM_ID = 403381;
+  const AFF_CVTERM_ID = 290335;
+      // (?:\s+(aff|aff.|affinis))?    # 2. Affinis
 
   /**
    * NCBI Taxonomy Id.
@@ -547,7 +560,8 @@ class Organism {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Handle "Genus sp." / "Genus sp" / "Genus spp." / "Genus spp"
     // (species unknown/unspecified).
-    if (preg_match('/^([A-Z][a-z]+)\s+((?:sp|spp)\.?)$/u', $name, $matches)) {
+    $pattern = '/^([A-Z][a-z]+)\s+((?:sp|spp)\.?)$/u';
+    if (preg_match($pattern, $name, $matches)) {
       $result['genus'] = $matches[1];
       $result['species'] = $matches[2];
       return $result;
