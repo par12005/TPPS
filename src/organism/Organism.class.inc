@@ -69,7 +69,11 @@ class Organism {
    * species with the binomial name it comes after.
    */
   const AFF_CVTERM_ID = 290335;
-      // (?:\s+(aff|aff.|affinis))?    # 2. Affinis
+
+  /**
+   * Full name for 'aff.'
+   */
+  const AFF_NAME = 'affinis';
 
   /**
    * NCBI Taxonomy Id.
@@ -566,6 +570,21 @@ class Organism {
       $result['species'] = $matches[2];
       return $result;
     }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Special case: optional 'aff.', 'aff', and 'affinis'.
+    $pattern = '/^(?:[A-Z][a-z]+)\s+((?:affinis|aff\.?))\s+/u';
+    $infraspecific_rank = NULL;
+    if (preg_match($pattern, $name, $matches)) {
+      // Note:
+      // 'affinis' is not infraspecific rank but existing structure is used to
+      // store this data. Later infraspecific rank will be converted into
+      // correct cvterm and stored into chado.organism.type_id.
+      $result['infraspecific_rank'] = Organism::AFF_NAME;
+      $name = str_replace($matches[1], '', $name);
+      $name = preg_replace('/\s+/u', ' ', trim($name));
+    }
+
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // 'Genus species' or
     // 'Genus species 2nd-word'.
@@ -766,7 +785,7 @@ class Organism {
         "Organism '@name' with empty genus can't be saved.",
         ['@name' => $this->name]
       );
-      throw new Exception($message);
+      throw new Exception((string) $message);
     }
     if (empty($this->species)) {
       watchdog('tpps', $watchdog_message, $params);
@@ -774,12 +793,21 @@ class Organism {
         "Organism '@name' with empty species can't be saved.",
         ['@name' => $this->name]
       );
-      throw new Exception($message);
+      throw new Exception((string) $message);
     }
+
     // Get cvterm id for infraspecific rank.
     if (!empty($this->infraspecificRank)) {
-      $rank_cvterm_id = InfraspecificRank::getCvtermId($this->infraspecificRank);
+      if ($this->infraspecificRank == 'aff.') {
+        // Special case. It's not actually infraspecific_rank but a special
+        // type which has own cv_term id.
+        $rank_cvterm_id = Organism::AFF_CVTERM_ID;
+      }
+      else {
+        $rank_cvterm_id = InfraspecificRank::getCvtermId($this->infraspecificRank);
+      }
     }
+
     $this->generateAbbreviation();
     $fields = [
       'abbreviation' => $this->abbreviation,
@@ -1141,7 +1169,10 @@ class Organism {
    */
   public function buildSelectQuery(&$query) {
     // @todo Major. Some names has only genus + authority.
-    if (empty($this->infraspecificName)) {
+    if ($this->infraspecificRank == Organism::AFF_NAME) {
+      $query->condition('type_id', Organism::AFF_CVTERM_ID);
+    }
+    elseif (empty($this->infraspecificName)) {
       $query->isNull('infraspecific_name');
     }
     else {
