@@ -1326,8 +1326,25 @@ class Report {
     }
     // Filter.
     if (!empty($filter = static::getFilterFromUrl())) {
+      // WARNING:
+      // Doesn't handle escaped quotes inside quoted values (e.g. "va\"l").
+      $pattern = '/\s*(?:([\'"])(.*?)\1|([^\[\],\s]+))\s*/';
       foreach ($filter as $key => $value) {
-        if ($value == '*') {
+        if (preg_match_all($pattern, $value, $matches, PREG_SET_ORDER)) {
+          $value_list = [];
+          foreach ($matches as $m) {
+            // $m[2] = quoted content (if matched), $m[3] = unquoted token
+            $value_list[] = $m[2] !== '' ? $m[2] : $m[3];
+          }
+          if (!empty($value_list)) {
+            $regex = '(' . implode('|',
+              array_map(function ($v) {
+                return preg_quote($v, '/');
+              }, $value_list)
+            ) . ')';
+          }
+        }
+        elseif ($value == '*') {
           $regex = '.+';
         }
         elseif ($value == 'NULL') {
@@ -1377,8 +1394,19 @@ class Report {
     }
     // Filter.
     if (!empty($filter = static::getFilterFromUrl())) {
+      // WARNING:
+      // Doesn't handle escaped quotes inside quoted values (e.g. "va\"l").
+      $pattern = '/\s*(?:([\'"])(.*?)\1|([^\[\],\s]+))\s*/';
       foreach ($filter as $key => $value) {
-        if ($value == '*') {
+        if (preg_match_all($pattern, $value, $matches, PREG_SET_ORDER)) {
+          $value_list = [];
+          foreach ($matches as $m) {
+            // $m[2] = quoted content (if matched), $m[3] = unquoted token
+            $value_list[] = $m[2] !== '' ? $m[2] : $m[3];
+          }
+          $query->condition($key, $value_list, 'IN');
+        }
+        elseif ($value == '*') {
           $query->isNotNull($key);
         }
         elseif ($value == 'NULL') {
