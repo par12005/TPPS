@@ -134,23 +134,12 @@ function tpps_report_organism_synonym_gbif_accepted_formatter(string $name, $val
       // Add Taxonomy Id in brackets.
       if (!empty($value)) {
         $response = GbifSpeciesApi::getInfo($formatted);
-        if (($response['diagnostics']['matchType'] ?? NULL) == 'NONE') {
-        }
-        else {
-          // Name was found.
-          //preg_match('/<Id>(\d+)<\/Id>/', $xml, $matches);
-          //if (!empty($taxonomy_id = ($matches[1] ?? NULL))) {
-          //  $formatted = l(
-          //    $formatted . ' (' . $taxonomy_id . ')',
-          //    NcbiTaxonomy::getUrl($taxonomy_id)
-          //  );
-          //  $formatted = '<em>' . $formatted . '</em>';
-          //}
-          //else {
-          //  if ($debug_mode ?? FALSE) {
-          //    dpm(var_export(NcbiTaxonomy::printXml($xml), 1));
-          //  }
-          //}
+        $match_type = $response['diagnostics']['matchType'] ?? NULL;
+        if ($match_type != 'NONE') {
+          $taxonomy_id = $response['usage']['key'] ?? NULL;
+          $formatted = $formatted . ' (<em>'
+            . l($taxonomy_id, GbifSpeciesApi::getUrl($taxonomy_id))
+            . '</em>)';
         }
       }
       break;

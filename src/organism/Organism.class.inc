@@ -48,7 +48,8 @@ class Organism {
   /**
    * CvTerm Id for the hybrids (crosses).
    *
-   * Name: "speciesaggregate".
+   * 'name': "speciesaggregate".
+   * 'cv_id': 5,
    */
   const HYBRID_CVTERM_ID = 56;
 

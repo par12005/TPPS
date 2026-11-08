@@ -71,21 +71,6 @@ class InfraspecificRank {
       'regex' => 'subform|subforma|subf.',
       'cv_id' => 5,
     ],
-    // In biodiversity and taxonomy contexts, "aff." is an abbreviation for
-    // the Latin affinis, meaning "related to" or "similar to."
-    // It is commonly used as an Identification Qualifier to express doubt about
-    // a specimen's exact identity (e.g., "Quercus aff. agrifolia" means a
-    // specimen is closely related to, but not definitively, Quercus agrifolia).
-    // Description of the db field:
-    // Indicates that available material or evidence suggests that the
-    // proposed species is related to, has an affinity to, but is not
-    // identical to, the species with the binomial name it comes after.
-    'affinis' => [
-      'cvterm_id' => 290335,
-      'name' => 'aff.',
-      'regex' => 'aff|aff.|affinis',
-      'cv_id' => 2,
-    ],
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Ranks without CVTerm Id.
     'proles' => [
