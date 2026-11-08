@@ -88,8 +88,8 @@ class InfraspecificRank {
       // nothosubsp: I think we should handle this - these are hybrids
       // created by two different subspecies of the same species.
       'cvterm_id' => NULL,
-      'name' => 'nothosubsp',
-      'regex' => 'nothosubsp|nothosubsp.',
+      'name' => 'nothosubsp.',
+      'regex' => 'nothosubsp|nothosubsp.|nothosubspecies',
       'cv_id' => 5,
     ],
     'nothovar' => [
@@ -98,8 +98,8 @@ class InfraspecificRank {
       // should handle this too, maybe - depends on difficult level,
       // although I see that this applies to a cultivar of willow).
       'cvterm_id' => NULL,
-      'name' => 'nothovar',
-      'regex' => 'nothovar|nothovar.',
+      'name' => 'nothovar.',
+      'regex' => 'nothovar|nothovar.|nothovariety',
       'cv_id' => 5,
     ],
   ];
