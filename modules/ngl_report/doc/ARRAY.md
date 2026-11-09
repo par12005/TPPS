@@ -64,23 +64,22 @@ function tpps_report_organism_synonym_gbif_accepted($reset = FALSE) {
           $row[$type . '_name'] = NULL;
           continue;
         }
-        $organism = new Organism();
+        $parsed_name = [];
         foreach ($fields as $field_name => $property_name) {
           if ($field_name == 'type_id') {
             if (!empty($rank = $names[$id][$field_name])) {
-              $organism->{$property_name} = InfraspecificRank::getName($rank);
+              $parsed_name[$property_name] = InfraspecificRank::getName($rank);
             }
             else {
               // Just skip.
             }
           }
           else {
-            $organism->{$property_name} = ($names[$id][$field_name] ?? NULL);
+            $parsed_name[$property_name] = ($names[$id][$field_name] ?? NULL);
           }
         }
-        $organism->generateName();
         $row[$type . '_id'] = $id;
-        $row[$type . '_name'] = $organism->name;
+        $row[$type . '_name'] = Organism::generateName($parsed_name);
       }
       $rows[] = $row;
     }

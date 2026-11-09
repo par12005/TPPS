@@ -325,6 +325,8 @@ class Organism {
    *
    * It's safe to call this method because existing data won't be overwritten.
    * Note: data from db table 'chado.organism' will be loaded.
+   *
+   * @todo Minor. There is also columns: common_name, comment.
    */
   public function load() {
     if ($this->isLoaded()) {
@@ -409,10 +411,31 @@ class Organism {
     }
 
     $this->generateAbbreviationName();
-    // @todo Minor. There is also columns:
-    // common_name,
-    // comment.
-    $this->generateName();
+
+    $old_name = $this->name;
+    $this->name = Organism::generateName([
+      'genus' => $this->genus,
+      'species' => $this->species,
+      'infraspecific_rank' => $this->infraspecificRank,
+      'infraspecific_name' => $this->infraspecificName,
+    ]);
+
+    // Check if old name and new name differs.
+    if ($this->name != $old_name) {
+      // If $name is different it should be another organism with
+      // different $id.
+      watchdog('tpps', 'Existing organism name and generated name differs:'
+        . '<br />Existing name: "@existing_name" (@existing_name_len).'
+        . '<br />Generated name: "@existing_name" (@new_name_len).',
+        [
+          '@existing_name' => json_encode($old_name),
+          '@existing_name_len' => strlen($old_name),
+          '@new_name' => json_encode($this->name),
+          '@new_name_len' => strlen($this->name),
+        ],
+        WATCHDOG_ERROR
+      );
+    }
 
     // Check if abbreviation uses the same rank.
     // @todo they could use different forms and it's better to compare ids.
@@ -490,53 +513,30 @@ class Organism {
   /**
    * Builds full organism name using name parts stored in DB table.
    *
-   * Result will be stored in $name property.
+   * @param array $parsed_name
+   *   Parsed organism name.
+   *   See property $parsedName and method parseName().
+   *
+   * @return string
+   *   Returns generated organism name.
    */
-  public function generateName() {
-    if (!empty($this->genus) && !empty($this->species)) {
-      // @todo Minor. Use $this->parsedName if not empty.
-      $name_parts = [
-        $this->genus,
-        $this->species,
-      ];
-      if (!empty($this->infraspecificName)) {
-        if (!empty($this->infraspecificRank)) {
-          $name_parts[] = $this->infraspecificRank;
-        }
-        $name_parts[] = $this->infraspecificName;
-      }
-      $name_parts = array_filter($name_parts);
-      $name = trim(implode(' ', $name_parts));
-
-      // Check if $this->name and new name differs.
-      if (empty($this->id)) {
-        $this->name = $name;
-      }
-      else {
-        if (empty($this->name)) {
-          $this->name = $name;
-        }
-        else {
-          // $id and $name are not empty.
-          if ($this->name != $name) {
-            // If $name is different it should be another organism with
-            // different $id.
-            watchdog('tpps', 'Existing organism name and generated name differs:'
-              . '<br />Existing name: "@existing_name" (@existing_name_len).'
-              . '<br />Generated name: "@existing_name" (@new_name_len).',
-              [
-                '@existing_name' => json_encode($this->name),
-                '@new_name' => json_encode($name),
-                '@existing_name_len' => strlen($this->name),
-                '@new_name_len' => strlen($name),
-              ],
-              WATCHDOG_ERROR
-            );
-          }
-        }
-      }
+  public static function generateName(array $parsed_name) {
+    $name_parts = [];
+    if (!empty($parsed_name['genus'])) {
+      $name_parts[] = $parsed_name['genus'];
     }
-    return $this;
+    if (!empty($parsed_name['species'])) {
+      $name_parts[] = $parsed_name['species'];
+    }
+    // Infraspecific Name.
+    if (!empty($parsed_name['infraspecific_name'])) {
+      if (!empty($parsed_name['infraspecific_rank'])) {
+        $name_parts[] = $parsed_name['infraspecific_rank'];
+      }
+      $name_parts[] = $parsed_name['infraspecific_name'];
+    }
+    $name_parts = array_filter($name_parts);
+    return trim(implode(' ', $name_parts));
   }
 
   /**
