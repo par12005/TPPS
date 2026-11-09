@@ -105,6 +105,10 @@ class Organism {
   /**
    * Parsed Organism Name.
    *
+   * Genus will be full name (not abbreviation).
+   * Hybrids will be array of arrays where each 2nd level array represents
+   * single organism name.
+   *
    * See getEmptyParsedName() method for keys.
    *
    * @var array
@@ -158,7 +162,7 @@ class Organism {
   /**
    * Organism name abbreviation.
    *
-   * See method generateAbbreviation().
+   * See method generateAbbreviationName().
    * Stored in 'chado.organism.abbreviation'.
    *
    * @var string
@@ -184,7 +188,7 @@ class Organism {
         // Key is a full organism name.
         // @todo Minor. Validate organism name.
         $this->setName($organism_key);
-        $this->generateAbbreviation();
+        $this->generateAbbreviationName();
       }
       $this->load();
     }
@@ -404,7 +408,7 @@ class Organism {
       );
     }
 
-    $this->generateAbbreviation();
+    $this->generateAbbreviationName();
     // @todo Minor. There is also columns:
     // common_name,
     // comment.
@@ -449,8 +453,10 @@ class Organism {
    *
    * @return object
    *   Returns $this to allow method's chaining.
+   *
+   * @TODO Minor. Convert into static method.
    */
-  public function generateAbbreviation() {
+  public function generateAbbreviationName() {
     if (
       empty($this->abbreviation)
       && !empty($this->species)
@@ -464,6 +470,21 @@ class Organism {
       ]));
     }
     return $this;
+  }
+
+  /**
+   * Restores full genus in the abbreviated organism name.
+   *
+   * @param string $genus
+   *   Genus name.
+   * @param string $organism_name
+   *   Abbreviated organism name.
+   *
+   * @return string
+   *   Returns restored organism name.
+   */
+  public static function restoreAbbreviationName($genus, $organism_name) {
+    return str_replace($genus[0] . '.', $genus, $organism_name);
   }
 
   /**
@@ -521,39 +542,43 @@ class Organism {
   /**
    * Extracts genus, species and extra parts from the organism name.
    *
-   * Note: this method do not validate parsed data.
+   * @param string $name
+   *   Organism name.
+   *
+   * @return array
+   *   Returns an accosiative array with result of the parsing.
+   */
+  public static function parseName($name) {
+    if (empty($name)) {
+      return Organism::getEmptyParsedName();
+    }
+    else {
+      // Parse.
+      if (static::isHybridName($name)) {
+        return static::parseHybridName($name);
+      }
+      else {
+        return static::parseSingleName($name);
+      }
+    }
+  }
+
+  /**
+   * Extracts genus, species and extra parts from the organism name.
    *
    * @param string $name
    *   Organism name.
    *
    * @return array
    *   Returns an accosiative array with result of the parsing.
-   *
-   * @throws Exception
-   *   When organism name is empty.
    */
-  public static function parseName($name) {
-
-    // Allow to parse crossed ('Larix x marschlinsii') as:
-    // 'genus': Larix,
-    // 'species': 'x marschlinsii'.
-    $allow_crosses = TRUE;
-
-    $result = Organism::getEmptyParsedName();
+  public static function parseSingleName($name) {
     $name = trim($name);
-    // Check if name is valid.
-
+    $result = Organism::getEmptyParsedName();
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // First genus letter is '?' or in lowercase.
-    if (
-      preg_match('/^([a-z\?])/', $name, $matches)
-      // Reject 'x ' as first token. E.g., 'x Something'.
-      || preg_match('/^x\s+/', $name, $matches)
-    ) {
-      return $result;
-    }
-    // Crosses which has ' x ' substring.
-    if (!$allow_crosses && preg_match('/(\s+x\s+)/', $name, $matches)) {
+    // Validate.
+    // Invalid: first genus letter is '?' or in lowercase.
+    if (preg_match('/^([a-z\?])/', $name, $matches)) {
       return $result;
     }
 
@@ -562,6 +587,7 @@ class Organism {
       $result['genus'] = $matches[1];
       return $result;
     }
+
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Handle "Genus sp." / "Genus sp" / "Genus spp." / "Genus spp"
     // (species unknown/unspecified).
@@ -640,7 +666,6 @@ class Organism {
       ([\×a-z-]+(?:\s*[\×a-z-.]+)?)          # 2. Species (including ×)
       /xu';
     if (preg_match($pattern, trim($parts[0]), $matches)) {
-
       $result['genus'] = $matches[1] ?? NULL;
       $result['species'] = $matches[2] ?? NULL;
     }
@@ -688,6 +713,63 @@ class Organism {
         $result['genus'] . ' ' . $result['species'], '', $parts[0])
       );
       $result['authority'] = (empty($extra) ? '' : $extra . ' ') . trim($parts[1]);
+    }
+    return $result;
+  }
+
+  /**
+   * Check is given name is a hybrid organism name.
+   *
+   * @param string $name
+   *   Organism name.
+   *
+   * @return bool
+   *   Returns TRUE if hybrid name and FALSE otherwise.
+   *
+   * @TODO Check if name is valid.
+   */
+  public static function isHybridName($name) {
+    // Multiplication sign: The standard symbol is "×" (U+00D7). In cases where
+    // character support is limited, lowercase letter "x" may be used instead,
+    // but this is not standard practice.
+    $pattern = '/ (x|\×|X) /u';
+    return preg_match($pattern, $name);
+  }
+
+  /**
+   * Extracts genus, species and extra parts from the organism name.
+   *
+   * 'Larix x marschlinsii',
+   * 'x Genus'.
+   *
+   * @param string $name
+   *   Hybrid organism name.
+   *
+   * @return array
+   *   Returns an accosiative array with result of the parsing.
+   */
+  public static function parseHybridName($name) {
+    $name = trim($name);
+    $result = [];
+    if (!static::isHybridName($name)) {
+      return [Organism::getEmptyParsedName()];
+    }
+    // Split by 'x'.
+    $pattern = '/ (x|\×|X) /u';
+    $organism_list = preg_split($pattern, $name);
+    foreach($organism_list as $organism_name) {
+      if (empty($organism_name)) {
+        continue;
+      }
+
+      if (count($result)) {
+        // Non-first organism name.
+        $organism_name = Organism::restoreAbbreviationName(
+          $result[0]['genus'],
+          $organism_name
+        );
+      }
+      $result[] = static::parseSingleName($organism_name);
     }
     return $result;
   }
@@ -809,7 +891,7 @@ class Organism {
       }
     }
 
-    $this->generateAbbreviation();
+    $this->generateAbbreviationName();
     $fields = [
       'abbreviation' => $this->abbreviation,
       'genus' => $this->genus,
