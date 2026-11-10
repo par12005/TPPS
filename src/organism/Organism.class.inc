@@ -170,6 +170,40 @@ class Organism {
   protected $abbreviation;
 
   /**
+   * Status of the hybrid organism name.
+   *
+   * Uses the plus sign “x”.
+   *
+   * TRUE if organism name belongs to hybrid and FALSE otherwise.
+   *
+   * @var bool
+   */
+  protected $isHybrid = FALSE;
+
+  /**
+   * Status of the graft-chimaera organism name.
+   *
+   * Uses the plus sign “+”.
+   * Graft-chimaeras are not hybrids resulting from sexual reproduction, but
+   * rather chimeras formed by grafting tissues from two different taxa
+   * together. Their naming format is similar to that of hybrids, but the
+   * connector is “+”.
+   *
+   * @var bool
+   */
+  protected $isGraft = FALSE;
+
+  /**
+   * Status of the organism.
+   *
+   * When organism loaded from the DB it has id and some extra data.
+   * Not loaded organism could have id or name but not both.
+   *
+   * @var bool
+   */
+  protected $isLoaded = FALSE;
+
+  /**
    * Class constructor.
    *
    * @param mixed $organism_key
@@ -187,6 +221,8 @@ class Organism {
       else {
         // Key is a full organism name.
         // @todo Minor. Validate organism name.
+        $this->isHybrid = Organism::isHybridName($organism_key);
+        $this->isGraft = Organism::isGraftName($organism_key);
         $this->setName($organism_key);
         $this->generateAbbreviationName();
       }
@@ -273,12 +309,55 @@ class Organism {
    */
   public function setName($name) {
     if (!empty($name)) {
-      $this->name = trim(preg_replace('/\s+/', ' ', $name));
-      $this->parsedName = Organism::parseName($this->name);
-      $this->genus = $this->parsedName['genus'] ?? NULL;
-      $this->species = $this->parsedName['species'] ?? NULL;
-      $this->infraspecificRank = $this->parsedName['infraspecific_rank'] ?? NULL;
-      $this->infraspecificName = $this->parsedName['infraspecific_name'] ?? NULL;
+      $this->parsedName = Organism::parseName(
+        trim(preg_replace('/\s+/', ' ', $name))
+      );
+      if ($this->isHybrid || $this->isGraft) {
+        // Hybrid or Graft.
+        // Get separator.
+        $separator = ' x ';
+        if ($this->isGraft) {
+          $separator = ' + ';
+        }
+        // No infraspecific rank and name in this case.
+        $this->infraspecificRank = NULL;
+        $this->infraspecificName = NULL;
+
+        // Genus.
+        $this->genus = $this->parsedName[0]['genus'] ?? NULL;
+
+        // Species.
+        $parsed_name = $this->parsedName[0];
+        unset($parsed_name['genus']);
+        // 1st organism name excluding 'Genus'.
+        $this->species = Organism::generateName($parsed_name);
+
+        // Build 'species'.
+        foreach (array_slice($this->parsedName, 1, null, true) as $sub_name) {
+          if (!empty($sub_name)) {
+            // Use abbreviation when Genus the same as 1st organism has.
+            $new_name = str_replace(
+              $this->genus,
+              substr($this->genus, 0, 1) . ".",
+              Organism::generateName($sub_name)
+            );
+            $this->species .= $separator . $new_name;
+          }
+        }
+      }
+      else {
+        // Regular (single name).
+        $this->genus = $this->parsedName['genus'] ?? NULL;
+        $this->species = $this->parsedName['species'] ?? NULL;
+        $this->infraspecificRank = $this->parsedName['infraspecific_rank'] ?? NULL;
+        $this->infraspecificName = $this->parsedName['infraspecific_name'] ?? NULL;
+      }
+      $this->name = Organism::generateName([
+        'genus' => $this->genus,
+        'species' => $this->species,
+        'infraspecific_rank' => $this->infraspecificRank,
+        'infraspecific_name' => $this->infraspecificName,
+      ]);
     }
     return $this;
   }
@@ -329,7 +408,7 @@ class Organism {
    * @todo Minor. There is also columns: common_name, comment.
    */
   public function load() {
-    if ($this->isLoaded()) {
+    if ($this->isLoaded) {
       // Do not load multiple times. See $this->reload().
       return;
     }
@@ -355,6 +434,12 @@ class Organism {
     }
     $organism = $query->execute()->fetchAssoc();
 
+    if (empty($organism)) {
+      $this->isLoaded = FALSE;
+      return $this;
+    }
+
+    $this->isLoaded = TRUE;
     // Set properties.
     $this->id = $this->id ?? $organism['organism_id'] ?? NULL;
     $this->genus = $organism['genus'] ?? NULL;
@@ -459,19 +544,6 @@ class Organism {
   }
 
   /**
-   * Checks if organism was loaded from DB.
-   *
-   * @return bool
-   *   Returns TRUE if organism was loaded and FALSE otherwise.
-   */
-  public function isLoaded() {
-    // When organism loaded then property 'name' will be generated and there
-    // is no other way to generate. This could be used to check if organism
-    // was loaded.
-    return (bool) (!empty($this->name) && !empty($this->id));
-  }
-
-  /**
    * Generates organism name abbreviation.
    *
    * @return object
@@ -556,6 +628,9 @@ class Organism {
       // Parse.
       if (static::isHybridName($name)) {
         return static::parseHybridName($name);
+      }
+      elseif (static::isGraftName($name)) {
+        return static::parseGraftName($name);
       }
       else {
         return static::parseSingleName($name);
@@ -718,13 +793,13 @@ class Organism {
   }
 
   /**
-   * Check is given name is a hybrid organism name.
+   * Check if a hybrid organism name.
    *
    * @param string $name
    *   Organism name.
    *
    * @return bool
-   *   Returns TRUE if hybrid name and FALSE otherwise.
+   *   Returns TRUE if hybrid organism name and FALSE otherwise.
    *
    * @TODO Check if name is valid.
    */
@@ -737,13 +812,50 @@ class Organism {
   }
 
   /**
-   * Extracts genus, species and extra parts from the organism name.
-   *
-   * 'Larix x marschlinsii',
-   * 'x Genus'.
+   * Check if a graft organism name.
    *
    * @param string $name
-   *   Hybrid organism name.
+   *   Organism name.
+   *
+   * @return bool
+   *   Returns TRUE if graft organism name and FALSE otherwise.
+   *
+   * @TODO Check if name is valid.
+   * @TODO Add support for 'Genus1 + Genus2' (note 2nd genus is in uppercase).
+   *
+   * According to the International Code of Nomenclature for Cultivated Plants
+   * (ICNCP), the application of this symbol is as follows:
+   *
+   * - Indicating the Nature of the Chimera: The plus sign (+) is used to
+   * distinguish graft-chimaeras from sexual hybrids. Sexual hybrids are
+   * typically indicated by the multiplication sign (×) or the lowercase letter
+   * "x".
+   *
+   * - Position of the Symbol: The plus sign is usually placed before the genus
+   * name of the plant. For example, the graft-chimaera formed by Crataegus and
+   * Mespilus is denoted as + Crataegomespilus (to distinguish it from the
+   * sexual hybrid × Crataemespilus).
+   *
+   * - Formula Representation: In written formulas, the plus sign is used to
+   * connect the names of the two parents. For example: Crataegus + Mespilus.
+   *
+   * - Special Cases (Same Genus): If both parents belong to the same genus, the
+   * graft-chimaera is typically given a cultivar name, and the plus sign is not
+   * used. For example, the graft-chimaera of Syringa vulgaris and Syringa ×
+   * chinensis is denoted as Syringa 'Correlata'.
+   */
+  public static function isGraftName($name) {
+    $pattern = '/\s+\+\s+/';
+    return preg_match($pattern, $name);
+  }
+
+  /**
+   * Extracts genus, species and extra parts from the hybrid organism name.
+   *
+   * Organism name examples: 'Larix x marschlinsii', 'x Genus'.
+   *
+   * @param string $name
+   *   Organism name.
    *
    * @return array
    *   Returns an accosiative array with result of the parsing.
@@ -754,8 +866,45 @@ class Organism {
     if (!static::isHybridName($name)) {
       return [Organism::getEmptyParsedName()];
     }
-    // Split by 'x'.
+    // Split by 'x' sign.
     $pattern = '/ (x|\×|X) /u';
+    $organism_list = preg_split($pattern, $name);
+    foreach($organism_list as $organism_name) {
+      if (empty($organism_name)) {
+        continue;
+      }
+
+      if (count($result)) {
+        // Non-first organism name.
+        $organism_name = Organism::restoreAbbreviationName(
+          $result[0]['genus'],
+          $organism_name
+        );
+      }
+      $result[] = static::parseSingleName($organism_name);
+    }
+    return $result;
+  }
+
+  /**
+   * Extracts genus, species and extra parts from the graft organism name.
+   *
+   * Organism names examples: 'Larix + Genus2', '+ Genus species'.
+   *
+   * @param string $name
+   *   Organism name.
+   *
+   * @return array
+   *   Returns an accosiative array with result of the parsing.
+   */
+  public static function parseGraftName($name) {
+    $name = trim($name);
+    $result = [];
+    if (!static::isGraftName($name)) {
+      return [Organism::getEmptyParsedName()];
+    }
+    // Split by '+' sign.
+    $pattern = '/\s+\+\s+/';
     $organism_list = preg_split($pattern, $name);
     foreach($organism_list as $organism_name) {
       if (empty($organism_name)) {

@@ -2194,7 +2194,7 @@ class Submission {
     }
     foreach ($organism_id_list as $organism_id) {
       $organism = new Organism($organism_id);
-      if ($organism->isLoaded()) {
+      if ($organism->isLoaded) {
         $organism->processTaxonomyId($this);
       }
     }

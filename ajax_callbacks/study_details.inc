@@ -53,7 +53,7 @@ function tpps_ajax_get_species_details_tab(array $data) {
     if (empty($family_exists) || empty($order_exists)) {
       if (variable_get('tpps_ncbi_allow_fix_missing_data', FALSE)) {
         $organism = new Organism($id);
-        if ($organism->isLoaded()) {
+        if ($organism->isLoaded) {
           $organism->processTaxonomyId($submission);
           $message = t('Updated NCBI Taxonomy data for organism: @name (@id).',
             ['@id' => $organism->id, '@name' => $organism->name]
