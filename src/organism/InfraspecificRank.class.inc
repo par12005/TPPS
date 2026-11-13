@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains 'InfraspecificRank' class.
+ * Contains static 'InfraspecificRank' class.
  *
  * CV Term for 'Infraspecific Rank'.
  * chado.cvterm.name = 'speciesaggregate'.

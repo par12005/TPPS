@@ -1381,7 +1381,7 @@ class Organism {
    * @return array
    *   Returns initial state of the $parsedName property filled with NULL.
    */
-  private static function getEmptyParsedName() {
+  public static function getEmptyParsedName() {
     return [
       'genus' => NULL,
       'species' => NULL,
