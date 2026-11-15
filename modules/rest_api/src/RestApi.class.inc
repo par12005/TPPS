@@ -72,18 +72,31 @@ class RestApi {
    * List of supported HTTP methods.
    *
    * Used to validate value of the $method property.
+   *
+   * @var array
    */
   const METHOD_LIST = ['GET', 'POST', 'PUT', 'DELETE'];
 
   /**
    * Allowed URL schemes to prevent SSRF via file://, gopher://, dict://.
+   *
+   * @var array
    */
   const ALLOWED_SCHEMES = ['http', 'https'];
 
   /**
    * In-process DNS resolution cache TTL in seconds.
+   *
+   * @var int
    */
   const DNS_CACHE_TTL = 60;
+
+  /**
+   * Maximum allowed wait time (both for the lock and the scheduled slot).
+   *
+   * @var float
+   */
+  const MAX_WAIT_SECONDS = 10.0;
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Persistent cURL connection pool properties.
@@ -129,6 +142,16 @@ class RestApi {
    * @var string
    */
   protected $url;
+
+  /**
+   * Host of the Rest API.
+   *
+   * Format: no schema and no trailing slash.
+   * Example: www.example.com
+   *
+   * @var string
+   */
+  protected $host;
 
   /**
    * Optional. Query part of the URL.
@@ -368,6 +391,24 @@ class RestApi {
   protected static $memoryLocks = [];
 
   /**
+   * Delay (in milliseconds) between requests to the same host.
+   *
+   * Default is 0 (no delay).
+   *
+   * @var int
+   */
+  protected $delay = 0;
+
+  /**
+   * Track whether the current object instance actually owns the lock.
+   *
+   * Used to block parallel the same requests.
+   *
+   * @var bool
+   */
+  protected $lockAcquired = FALSE;
+
+  /**
    * Checks whether private/reserved IP blocking is enabled for this request.
    *
    * @return bool
@@ -405,6 +446,18 @@ class RestApi {
   }
 
   /**
+   * Sets $host property using $url property.
+   *
+   * This property will be use to check delay.
+   *
+   * @return string
+   */
+  public function setHost() {
+    $host = parse_url($this->url, PHP_URL_HOST);
+    $this->host = ($host !== FALSE ? $host : NULL);
+  }
+
+  /**
    * Creates request from $context data.
    *
    * @param array $context
@@ -439,6 +492,7 @@ class RestApi {
     // Required (but could be set later).
     $this->url = $context['url'] ?? $this->url ?? '';
     $this->validateUrl();
+    $this->setHost();
 
     $this->method = strtoupper($context['method'] ?? $this->method ?? '');
     if (!empty($this->method)) {
@@ -450,6 +504,7 @@ class RestApi {
     $raw_headers = $context['header'] ?? $this->header ?? [];
     $this->header = $this->normalizeHeaders((array) $raw_headers);
     $this->query = $context['query'] ?? $this->query ?? [];
+    $this->delay = $context['delay'] ?? $this->delay ?? 0;
 
     // Optional.
     $this->tag = $context['tag'] ?? $this->tag ?? NULL;
@@ -681,7 +736,7 @@ class RestApi {
 
     $parts = @parse_url($this->url);
     if (empty($parts['host'])) {
-      throw new Exception(t(
+      throw new Exception((string) t(
         'URL is missing a valid host: "@url"',
         ['@url' => $this->url]
       ));
@@ -696,7 +751,7 @@ class RestApi {
 
     if (filter_var($bare_host, FILTER_VALIDATE_IP)) {
       if ($block_private && !static::isPublicIp($bare_host)) {
-        throw new Exception(t(
+        throw new Exception((string) t(
           'Requests to private or reserved IP addresses are blocked: "@ip"',
           ['@ip' => $bare_host]
         ));
@@ -752,7 +807,7 @@ class RestApi {
 
     if (empty($ips)) {
       if ($block_private) {
-        throw new Exception(t(
+        throw new Exception((string) t(
           'Unable to resolve hostname: "@host"',
           ['@host' => $bare_host]
         ));
@@ -763,7 +818,7 @@ class RestApi {
     if ($block_private) {
       foreach ($ips as $ip) {
         if (!static::isPublicIp($ip)) {
-          throw new Exception(t(
+          throw new Exception((string) t(
             'Host "@host" resolved to a disallowed private/reserved IP: "@ip"',
             ['@host' => $bare_host, '@ip' => $ip]
           ));
@@ -799,9 +854,10 @@ class RestApi {
         $this->createRequest($context);
       }
       else {
-        // WARNING: Cached Response is missing 'curlInfo'.
+        $request_id = $context;
+        // Note: Cached Response is missing 'curlInfo'.
         // See method isCachedResponse().
-        $this->loadRequest($context);
+        $this->loadRequest($request_id);
       }
     }
   }
@@ -849,6 +905,7 @@ class RestApi {
     if ($prop === 'url') {
       $this->url = $value;
       $this->validateUrl();
+      $this->setHost();
     }
     elseif ($prop === 'method') {
       $this->method = strtoupper((string) $value);
@@ -1226,64 +1283,60 @@ class RestApi {
   }
 
   /**
-   * Checks if requests could be run in parallel (multithreading).
+   * Sets lock for current request.
    *
-   * Semaphore property: $this->parallel.
-   * Uses Drupal's native lock subsystem when available to avoid database writes
-   * and variable cache invalidation on every request.
+   * Blocks identical requests from running in parallel while allowing
+   * different requests to run simultaneously.
    *
    * @return bool
-   *   Returns TRUE if running in parallel is allowed and FALSE otherwise.
+   *   Returns TRUE if lock was set and parallel requests are allowed.
+   *   Returns FALSE otherwise.
    */
-  public function isRequestAllowed() {
-    if ($this->parallel) {
+  public function acquireRequestLock($timeout = 30.0) {
+    // If parallel is enabled, OR if this exact object instance already
+    // holds the lock, allow it to proceed immediately.
+    if ($this->parallel || $this->lockAcquired) {
       return TRUE;
     }
+    // Get request's hash.
+    // Identical requests will generate the same hash, while different
+    // requests will generate different hashes.
     if (empty($this->hash)) {
       $this->generateHash();
     }
     if (function_exists('lock_may_be_available')) {
-      return (bool) lock_may_be_available('rest_api:' . $this->hash);
+      $this->lockAcquired = (bool) lock_acquire('rest_api:' . $this->hash, $timeout);
+      return $this->lockAcquired;
     }
+    // If Drupal's lock system isn't loaded yet (e.g., during an early bootstrap
+    // phase), it falls back to checking a static class array to see if the same
+    // hash was recorded within the last 2 seconds. (Note: In standard
+    // PHP-FPM/Apache setups, static properties are not shared across separate
+    // HTTP processes, so this fallback only prevents duplicate execution within
+    // the exact same PHP process or sub-request).
+    $now = time();
     if (
       !empty(static::$memoryLocks[$this->hash])
-      && (time() - static::$memoryLocks[$this->hash] < 2)
+      && ($now - static::$memoryLocks[$this->hash] < $timeout)
     ) {
       return FALSE;
     }
+
+    static::$memoryLocks[$this->hash] = $now;
+    $this->lockAcquired = TRUE;
+
     return TRUE;
   }
 
   /**
-   * Sets lock for current request.
-   *
-   * Uses Drupal's native lock_acquire() when available instead of
-   * variable_set() to prevent bootstrap variable cache invalidations.
-   *
-   * @return $this
-   *   Returns current object to allow method chaining.
-   */
-  public function setLock() {
-    if (empty($this->hash)) {
-      $this->generateHash();
-    }
-    if (function_exists('lock_acquire')) {
-      lock_acquire('rest_api:' . $this->hash, 2.0);
-    }
-    else {
-      static::$memoryLocks[$this->hash] = time();
-    }
-
-    return $this;
-  }
-
-  /**
    * Removes lock for current request.
-   *
-   * @return $this
-   *   Returns current object to allow method chaining.
    */
-  public function removeLock() {
+  public function releaseRequestLock() {
+    // Crucial: Only release the lock if THIS instance acquired it.
+    if ($this->parallel || !$this->lockAcquired) {
+      return;
+    }
+
     if (empty($this->hash)) {
       $this->generateHash();
     }
@@ -1293,12 +1346,23 @@ class RestApi {
     else {
       unset(static::$memoryLocks[$this->hash]);
     }
+    $this->lockAcquired = FALSE;
+  }
 
-    return $this;
+  /**
+   * Destructor.
+   */
+  public function __destruct() {
+    // Release the lock if the object is destroyed prematurely.
+    $this->releaseRequestLock();
   }
 
   /**
    * Normalizes request method, payload, query URL, hash, and tag once.
+   *
+   * WARNING:
+   * This code prepares data for the generateHash().
+   * DO NOT merge with prepareRequestExecution() method!
    */
   protected function prepareRequestState() {
     $this->validateRequest();
@@ -1336,11 +1400,6 @@ class RestApi {
       $this->prepareRequestState();
     }
     $this->created = time();
-
-    // Restore 'Request Id' by 'Request Hash'.
-    if (empty($this->requestId)) {
-      $this->requestId = RestApiRequest::getRequestId($this->hash);
-    }
 
     $context = [
       'request_id' => $this->requestId ?? NULL,
@@ -1438,7 +1497,7 @@ class RestApi {
       );
     }
     if ($this->code == 0 && empty($this->body)) {
-      throw new Exception($this->message);
+      throw new Exception((string) $this->message);
     }
     if ($this->code < 200 || $this->code > 299) {
       $decoded_payload = $this->payload;
@@ -1495,49 +1554,53 @@ class RestApi {
    */
   public function doRequest() {
     $this->prepareRequestState();
-
-    if (!$this->isRequestAllowed()) {
-      $message = 'Running the same requests in parallel is not allowed';
-      watchdog('rest_api', $message, [], WATCHDOG_ERROR);
-
-      return FALSE;
+    // Restore 'Request Id' by 'Request Hash'.
+    if (empty($this->requestId)) {
+      $this->requestId = RestApiRequest::getRequestId($this->hash);
     }
+    if (
+      $this->cache
+      && variable_get('rest_api_use_cache', TRUE)
+      && !empty($this->requestId)
+      && ($response_data = RestApiResponse::loadValid($this->requestId))
+    ) {
+      // Cached response exists and will be used.
+      // WARNING: Cached Response is missing 'curlInfo'.
+      foreach ($response_data as $key => $value) {
+        switch ($key) {
+          case 'created':
+          case 'request_id':
+            break;
 
-    $this->setLock();
-    try {
-      $request_context = $this->prepareRequestExecution(TRUE);
+          case 'response_id':
+            $this->responseId = $value;
+            break;
 
-      if (
-        $this->cache
-        && variable_get('rest_api_use_cache', TRUE)
-        && !empty($this->requestId)
-        && ($response_data = RestApiResponse::loadValid($this->requestId))
-      ) {
-        // Cached response exists and will be used.
-        // WARNING: Cached Response is missing 'curlInfo'.
-        foreach ($response_data as $key => $value) {
-          switch ($key) {
-            case 'created':
-            case 'request_id':
-              break;
-
-            case 'response_id':
-              $this->responseId = $value;
-              break;
-
-            case 'duration':
-            case 'code':
-            case 'body':
-              $this->$key = $value;
-              break;
-          }
+          case 'duration':
+          case 'code':
+          case 'body':
+            $this->$key = $value;
+            break;
         }
-        $this->curlErrno = 0;
-        $this->curlError = '';
-        $this->message = HttpCode::getMessage($this->code);
-        $this->validateResponseStatus();
       }
-      else {
+      $this->curlErrno = 0;
+      $this->curlError = '';
+      $this->message = HttpCode::getMessage($this->code);
+      $this->validateResponseStatus();
+    }
+    else {
+      if (!$this->acquireRequestLock()) {
+        throw new Exception('The same request is already in progress.', 429);
+      }
+      try {
+        if (!$this->throttleHostRequest()) {
+          $message = t(
+            'Too many requests to the @host.',
+            ['@host' => $this->host]
+          );
+          throw new Exception((string) $message);
+        }
+        $request_context = $this->prepareRequestExecution(TRUE);
         // Real HTTP request using persistent cURL handle with connection reuse.
         $use_keep_alive = $this->keepAlive
           && variable_get('rest_api_keep_alive', TRUE);
@@ -1558,11 +1621,11 @@ class RestApi {
 
         $this->processCurlResponse($response, $request_context);
       }
+      finally {
+        // Always free the lock as soon as the request finishes.
+        $this->releaseRequestLock();
+      }
     }
-    finally {
-      $this->removeLock();
-    }
-
     return $this;
   }
 
@@ -1619,6 +1682,10 @@ class RestApi {
         }
       }
       $api->prepareRequestState();
+      // Restore 'Request Id' by 'Request Hash'.
+      if (empty($api->requestId)) {
+        $api->requestId = RestApiRequest::getRequestId($api->hash);
+      }
       $contexts[$idx] = $api->prepareRequestExecution(TRUE);
 
       if (
@@ -1728,7 +1795,7 @@ class RestApi {
     }
     if (!filter_var($this->url, FILTER_VALIDATE_URL)) {
       $message = t('URL is invalid: "@url"', ['@url' => $this->url]);
-      throw new Exception($message);
+      throw new Exception((string) $message);
     }
 
     $parts = @parse_url($this->url);
@@ -1738,12 +1805,12 @@ class RestApi {
         'URL scheme "@scheme" is not allowed. Only HTTP and HTTPS are allowed.',
         ['@scheme' => $scheme]
       );
-      throw new Exception($message);
+      throw new Exception((string) $message);
     }
 
     if (empty($parts['host'])) {
       $message = t('URL is missing a host: "@url"', ['@url' => $this->url]);
-      throw new Exception($message);
+      throw new Exception((string) $message);
     }
 
     if ($this->shouldBlockPrivateIps()) {
@@ -1758,7 +1825,7 @@ class RestApi {
           'Requests to internal host "@host" are blocked.',
           ['@host' => $bare_host]
         );
-        throw new Exception($message);
+        throw new Exception((string) $message);
       }
 
       if (
@@ -1769,7 +1836,7 @@ class RestApi {
           'Requests to private or reserved IP "@ip" are blocked.',
           ['@ip' => $bare_host]
         );
-        throw new Exception($message);
+        throw new Exception((string) $message);
       }
     }
   }
@@ -1791,8 +1858,83 @@ class RestApi {
         'Unsupported HTTP-method: "@method"',
         ['@method' => $this->method]
       );
-      throw new Exception($message);
+      throw new Exception((string) $message);
     }
+  }
+
+  /**
+   * Reserves the next available time slot for a host and sleeps outside the lock.
+   *
+   * @return bool
+   *   Returns TRUE when this request's reserved time slot arrives.
+   *   Returns FALSE if the queue is too full.
+   */
+  public function throttleHostRequest() {
+    $name = 'rest_api_host_lock:' . $this->host;
+    $delaySeconds = $this->delay / 1000.0;
+    $now = microtime(TRUE);
+
+    // Atomically calculate the next available time slot in {semaphore}.
+    //
+    // Note: Using 'rate_limit' as value prevents Drupal's lock_release_all() from
+    // deleting this row on shutdown.
+    // Multiplying by 10000 inside LAST_INSERT_ID() passes the float timestamp
+    // back to this specific DB connection as a 0.1ms-precision integer.
+    if (db_driver() === 'pgsql') {
+      $mySlot = (float) db_query("
+        INSERT INTO {semaphore} (name, value, expire)
+        VALUES (:name, 'rate_limit', :now)
+        ON CONFLICT (name) DO UPDATE
+          SET expire = GREATEST(CAST(:now AS double precision),
+            {semaphore}.expire + CAST(:delay AS double precision))
+        RETURNING expire
+      ", [
+        ':name' => $name,
+        ':now' => $now,
+        ':delay' => $delaySeconds,
+      ])->fetchField();
+    }
+    else {
+      db_query("
+        INSERT INTO {semaphore} (name, value, expire)
+        VALUES (:name, 'rate_limit',
+          LAST_INSERT_ID( ROUND(:now * 10000) ) / 10000)
+        ON DUPLICATE KEY UPDATE
+          expire = LAST_INSERT_ID( ROUND( GREATEST(:now, expire + :delay) * 10000 ) ) / 10000
+      ", [
+        ':name' => $name,
+        ':now' => $now,
+        ':delay' => $delaySeconds,
+      ]);
+      $mySlot = ((float) db_query("SELECT LAST_INSERT_ID()")->fetchField()) / 10000.0;
+    }
+    // Sleep if our assigned slot is in the future.
+    $waitSeconds = $mySlot - microtime(TRUE);
+    if ($waitSeconds > 0) {
+      usleep((int) round($waitSeconds * 1000000));
+    }
+    return TRUE;
+  }
+
+  /**
+   * Dumps instance (object) properties.
+   *
+   * @return array
+   *   Returns associative array where keys are object property name and
+   *   value is property's value.
+   */
+  public function getDump() {
+    $caller = debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1];
+    if (empty($caller['class'])) {
+      $caller_name = $caller['function'];
+    }
+    else {
+      $caller_name = $caller['class'] . $caller['type'] . $caller['function'];
+    }
+    return array_merge(
+      ['CALLER' => $caller_name],
+      get_object_vars($this)
+    );
   }
 
 }
