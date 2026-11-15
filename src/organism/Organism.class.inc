@@ -506,16 +506,16 @@ class Organism {
     ]);
 
     // Check if old name and new name differs.
-    if ($this->name != $old_name) {
+    if (!empty($old_name) && $this->name != $old_name) {
       // If $name is different it should be another organism with
       // different $id.
       watchdog('tpps', 'Existing organism name and generated name differs:'
         . '<br />Existing name: "@existing_name" (@existing_name_len).'
-        . '<br />Generated name: "@existing_name" (@new_name_len).',
+        . '<br />Generated name: "@new_name" (@new_name_len).',
         [
-          '@existing_name' => json_encode($old_name),
+          '@existing_name' => $old_name,
           '@existing_name_len' => strlen($old_name),
-          '@new_name' => json_encode($this->name),
+          '@new_name' => $this->name,
           '@new_name_len' => strlen($this->name),
         ],
         WATCHDOG_ERROR

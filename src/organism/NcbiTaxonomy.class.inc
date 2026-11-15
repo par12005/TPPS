@@ -186,13 +186,15 @@ class NcbiTaxonomy {
         // If Taxonomy Id wasn't found we load organism to get it's id which
         // will be used later.
         $organism->load();
-        $organism_id = $organism->id;
         $organism_key = $organism->name;
         throw new Exception('Taxonomy Id not found in local DB.');
       }
     }
     catch (Exception $e) {
       // Get taxonomy id from remote DB.
+
+
+
       if (is_numeric($organism_key)) {
         // Organism id.
         // Organism wasn't found in local DB.
@@ -349,6 +351,7 @@ class NcbiTaxonomy {
         'query' => $query,
         'tag' => 'NCBI Taxonomy: ' . $organism_name,
         'cache' => variable_get('tpps_organism_ncbi_use_cache', TRUE),
+        'delay' => variable_get('tpps_ncbi_api_delay', 300),
       ]))->get()->response();
       if (!is_array($xml)) {
         $xml = trim(str_replace("\r\n", "\n", $xml));
@@ -370,7 +373,7 @@ class NcbiTaxonomy {
           $params = ['@message' => var_export($xml, 1)];
         }
         // watchdog('tpps', $message, $params, WATCHDOG_ERROR);
-        throw new Exception(t($message, $params));
+        throw new Exception((string) t($message, $params));
       }
     }
     catch (Exception $e) {
