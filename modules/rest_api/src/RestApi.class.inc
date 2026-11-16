@@ -1911,6 +1911,12 @@ class RestApi {
     // Sleep if our assigned slot is in the future.
     $waitSeconds = $mySlot - microtime(TRUE);
     if ($waitSeconds > 0) {
+      if ($debug_mode ?? FALSE) {
+        watchdog('rest_api', 'Waiting @delay.<pre>@dump</pre>', [
+          '@delay' => $waitSeconds,
+          '@dump' => $this->getDump(),
+        ]);
+      }
       usleep((int) round($waitSeconds * 1000000));
     }
     return TRUE;
