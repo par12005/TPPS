@@ -177,8 +177,8 @@ function tpps_details_tab_list($submission) {
   $content = [];
   // Required tabs.
   $tabs_list = [
-    'species' => 'Species',
     'study' => 'Study Details',
+    'species' => 'Species',
     'trees' => 'Plants',
   ];
   // Conditional tabs.

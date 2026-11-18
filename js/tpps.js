@@ -444,7 +444,7 @@
       $.each(details_tabs, function() {
         $(this).click(detailsTab);
       });
-      $('[href="#species"]').trigger('click');
+      $('[href="#study"]').trigger('click');
       $('a:contains("Return to TPPS List")').hide();
       $('#edit-details-search').attr('type', 'button');
       $('#edit-details-search').click(detailSearch);
