@@ -163,6 +163,7 @@ function tpps_ajax_get_study_details_tab(array $data) {
   }
   $page1_values = $state['saved_values'][TPPS_PAGE_1] ?? NULL;
   $page2_values = $state['saved_values'][TPPS_PAGE_2] ?? NULL;
+  $page4_values = $state['saved_values'][TPPS_PAGE_4] ?? NULL;
   $pub_link = $submission->sharedState['saved_values'][TPPS_PAGE_1]['publication']['title'];
   $pub_id = db_select('chado.project_pub', 'p')
     ->fields('p', ['pub_id'])
@@ -194,10 +195,23 @@ function tpps_ajax_get_study_details_tab(array $data) {
   $rows[] = [t('Authors'), theme('item_list', ['items' => $author_list])];
   $rows[] = [t('Species'), theme('item_list', ['items' => $species_list])];
   $rows[] = [t('Data Type'), $page2_values['data_type']];
+
+  // Check for reference genomes
+  $ref_genomes = [];
+  for ($i = 1; $i <= $submission->getOrganismNumber(); $i++) {
+    if (isset($page4_values['organism-' . $i]['genotype']['ref-genome'])) {
+      $ref_genomes[] = check_plain($page4_values['organism-' . $i]['genotype']['ref-genome']);
+    }
+  }
+  if (!empty($ref_genomes)) {
+    $rows[] = [t('Reference Genomes'), theme('item_list', ['items' => $ref_genomes])];
+  }
+
   $rows[] = [
     'Study Type',
     TppsForm::getStudyType($page2_values['study_type']),
   ];
+
   if (!empty($files)) {
     unset($params['attributes']['title']);
     $rows[] = [t('File Downloads'),
