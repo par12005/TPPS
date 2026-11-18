@@ -187,7 +187,7 @@ function tpps_ajax_get_study_details_tab(array $data) {
   // Build list of species.
   $species_list = [];
   for ($i = 1; $i <= $submission->getOrganismNumber(); $i++) {
-    $species_list[] = $i . ': ' . check_plain($page1_values['organism'][$i]['name']);
+    $species_list[] = check_plain($page1_values['organism'][$i]['name']);
   }
   $rows[] = [t('Accession'), $state['accession']];
   $rows[] = [t('Title'), $pub_link];
