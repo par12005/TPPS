@@ -174,9 +174,10 @@ function tpps_submission_import_review_dump(array $form, array &$form_state) {
  *   Returns Managed File Object.
  */
 function tpps_submission_import_download_file(array $state, array $file) {
-  $staging_domain = 'https://tgwebdev.cam.uchc.edu';
-  $username = variable_get('tpps_staging_http_username', '');
-  $password = variable_get('tpps_staging_http_password', '');
+  // $staging_domain = 'https://tgwebdev.cam.uchc.edu';
+  // $username = variable_get('tpps_staging_http_username', '');
+  // $password = variable_get('tpps_staging_http_password', '');
+
   $url = $file['url'] ?? NULL;
   $site = $state['saved_values']['tpps_submission_import']['site'] ?? NULL;
   if (
@@ -188,7 +189,7 @@ function tpps_submission_import_download_file(array $state, array $file) {
   ) {
     // Trailing filename allows to get original filename when downloading.
     $url = $site . '/api/file/' . $file['fid'] . '/get/' . $file['filename'];
-    $url .= '?token=' . variable_get('tpps_api_token');
+    $url .= '?token=' . (string) variable_get('tpps_api_token');
   }
   if (empty($content = tpps_file_get_contents($url))) {
     return NULL;
@@ -351,7 +352,7 @@ function tpps_submission_import_process_files(array &$state, $new_accession) {
       $new_file = tpps_submission_import_download_file($state, $file);
       if (empty($new_file)) {
         $message = t('File @url is empty.', ['@url' => $file['url']]);
-        throw new Exception($message);
+        throw new Exception((string) $message);
       }
       // To avoid errors when page navigation used we need to have
       // temporary stored files until final form submit ('summarypage').
@@ -427,12 +428,12 @@ function tpps_submission_import(array $data) {
   // string representation of a variable", the output of stdClass
   // objects is not "a parsable string".
   tpps_submission_import_fix_stdclass($state_raw);
-
+  $state = NULL;
   try {
     eval('$state = ' . $state_raw . ';');
   }
   catch (Exception $e) {
-    drupal_set_message($e->errorMessage());
+    drupal_set_message($e->getMessage());
     drupal_set_message('<pre>' . print_r($state, 1) . '</pre>');
     return;
   }

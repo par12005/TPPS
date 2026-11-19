@@ -337,8 +337,9 @@ class SubmissionCache {
     for ($n = 1; $n <= $submission->getOrganismNumber(); $n++) {
       $organism_key = 'organism-' . $n;
       // @TODO Use AssayDesign::getValue() if possible.
+      $shared_state = $submission->getSharedState();
       $assay_design_fid = TppsArray::get(
-        $submission->sharedState,
+        $shared_state,
         [
           'saved_values',
           TPPS_PAGE_4,
