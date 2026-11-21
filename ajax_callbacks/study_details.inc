@@ -360,6 +360,11 @@ function tpps_ajax_get_trees_details_tab(array $data) {
       tpps_entity_link($info['stock_id'], $name, 'Stock'),
       tpps_entity_link($id, $submission->getOrganismName($form_number), 'Organism'),
     ];
+    $coordinate_type = 'exact';
+    if (isset($submission->sharedState['3']['tree-accession']['species-1']['location_accuracy'])) {
+      $coordinate_type = $submission->sharedState['3']['tree-accession']['species-1']['location_accuracy'];
+    }
+    $row[] = strtoupper($coordinate_type);
     $row[] = $info['lat'];
     $row[] = $info['lng'];
     $rows[] = $row;
@@ -368,6 +373,7 @@ function tpps_ajax_get_trees_details_tab(array $data) {
     t('TreeGenes Identifier'),
     t('Identifier'),
     t('Species'),
+    t('Coordinate type'),
     t('Latitude'),
     t('Longitude'),
   ];
