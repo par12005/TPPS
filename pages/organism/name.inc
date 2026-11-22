@@ -9,7 +9,8 @@
  * TPPS Organism Name parsing tool.
  */
 function tpps_organism_name_form(array $form, array &$form_state) {
-  $organism_name = $form_state['input']['organism_name'] ?? '';
+
+  $organism_name = $form_state['input']['organism_name'] ?? arg(3) ?? '';
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Suggestions.
@@ -71,12 +72,20 @@ function tpps_organism_name_form(array $form, array &$form_state) {
       $organism->infraspecificName,
       InfraspecificRank::getCvtermId($organism->infraspecificRank),
     ];
+    $header = [
+      t('Abbreviation'),
+      t('genus'),
+      t('species'),
+      t('Common name'),
+      t('Infraspecific name'),
+      t('Type Id'),
+    ];
     $form['parsed_name'] = [
-      '#markup' => '<h3>' . (string) t('Name parsing result')
-      . '</h3>' . (string) theme('table', [
-        'header' => array_keys(Organism::getEmptyParsedName()),
-          'rows' => $organism->parsedName,
-      ]),
+      '#markup' => '<h3>' . (string) t('DB Record')
+      . '</h3>' . (string) theme('table', ['header' => $header, 'rows' => $rows]),
+    ];
+    $form['raw_parsed_data'] = [
+      '#markup' => TppsArray::print($organism->parsedName, t('Raw parsed data')),
     ];
   }
 
@@ -99,6 +108,13 @@ function tpps_organism_name_form(array $form, array &$form_state) {
  */
 function tpps_organism_name_form_submit(array &$form, array &$form_state) {
   if ($form_state['triggering_element']['#name'] == 'parse') {
-    $form_state['rebuild'] = TRUE;
+    $current_organism_name = arg(3);
+    $new_organism_name = $form_state['input']['organism_name'];
+    if ($current_organism_name != $new_organism_name) {
+      drupal_goto('tpps/organism/name/' . $new_organism_name);
+    }
+    else {
+      $form_state['rebuild'] = TRUE;
+    }
   }
 }
