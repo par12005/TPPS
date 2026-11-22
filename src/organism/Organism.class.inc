@@ -660,6 +660,7 @@ class Organism {
     // Handle cases where there's no species (just genus).
     if (preg_match('/^([A-Z][a-z]+)$/', $name, $matches)) {
       $result['genus'] = $matches[1];
+      $result['species'] = 'sp.';
       return $result;
     }
 
