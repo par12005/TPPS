@@ -107,14 +107,18 @@ function tpps_organism_name_form(array $form, array &$form_state) {
  * Form submitter for 'tpps_organism_name_form' form.
  */
 function tpps_organism_name_form_submit(array &$form, array &$form_state) {
+  $path = 'tpps/organism/name';
   if ($form_state['triggering_element']['#name'] == 'parse') {
     $current_organism_name = arg(3);
     $new_organism_name = $form_state['input']['organism_name'];
     if ($current_organism_name != $new_organism_name) {
-      drupal_goto('tpps/organism/name/' . $new_organism_name);
+      drupal_goto($path . '/' . $new_organism_name);
     }
     else {
       $form_state['rebuild'] = TRUE;
     }
+  }
+  elseif ($form_state['triggering_element']['#name'] == 'reset') {
+    drupal_goto($path);
   }
 }
