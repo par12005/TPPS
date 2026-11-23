@@ -77,7 +77,7 @@ class Organism {
   const AFF_NAME = 'affinis';
 
   /**
-   * Regex to find hybrid ogranism name divider.
+   * Regex to find hybrid organism name divider.
    *
    * Note: Use '/u' modifier to allow unicode chars.
    * See Organism::getHybridDivRegex().
@@ -86,7 +86,7 @@ class Organism {
   const HYBRID_DIV_REGEX = '\s+(x|\×|X)\s+';
 
   /**
-   * Regex to find hybrid ogranism name divider.
+   * Regex to find hybrid organism name divider.
    *
    * WARNING:Use '/u' modifier to allow unicode chars.
    * Could be used to determine hybrid organism names.

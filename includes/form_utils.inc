@@ -20,7 +20,7 @@
  * @param array $form_state
  *   The form state array of the provided form.
  * @param string $id
- *   The id of the dynamic list. E.g., 'ogranism'.
+ *   The id of the dynamic list. E.g., 'organism'.
  * @param array $repeat
  *   The field to be repeated.
  * @param array $options

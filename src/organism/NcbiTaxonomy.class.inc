@@ -469,7 +469,7 @@ class NcbiTaxonomy {
    *   Returns Taxonomy Id or NULL if not found.
    *
    * @throws Exception
-   *   When ogranism wasn't found.
+   *   When organism wasn't found.
    */
   public static function loadTaxonomyId($organism_key) {
     $organism_key = check_plain($organism_key);
