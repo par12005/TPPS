@@ -77,6 +77,25 @@ class Organism {
   const AFF_NAME = 'affinis';
 
   /**
+   * Regex to find hybrid ogranism name divider.
+   *
+   * Note: Use '/u' modifier to allow unicode chars.
+   * See Organism::getHybridDivRegex().
+   * Could be used to determine hybrid organism names.
+   */
+  const HYBRID_DIV_REGEX = '\s+(x|\×|X)\s+';
+
+  /**
+   * Regex to find hybrid ogranism name divider.
+   *
+   * WARNING:Use '/u' modifier to allow unicode chars.
+   * Could be used to determine hybrid organism names.
+   */
+  const GRAFT_DIV_REGEX = '\s+\+\s+';
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+  /**
    * NCBI Taxonomy Id.
    *
    * Stored in NcbiTaxonomy::TABLE.id field.
@@ -694,7 +713,7 @@ class Organism {
     $pattern = '/^
       ([A-Z][a-z]+)                  # 1. Genus
       \s+
-      ([\×a-z-]+(?:\s*[\×a-z-.]+)?)  # 2. Species (1 or 2 words, incl. ×)
+      ([\×xa-z-]+(?:\s*[\×a-z-.]+)?)  # 2. Species (1 or 2 words, incl. × or x)
       $/xu';
     if (preg_match($pattern, $name, $matches)) {
       $result['genus'] = $matches[1] ?? NULL;
@@ -794,6 +813,32 @@ class Organism {
   }
 
   /**
+   * Gets regex to find graft name divider in the organism name.
+   *
+   * @return string
+   *   Returns regex
+   */
+  public static function getGraftDivRegex() {
+    // Multiplication sign: The standard symbol is "×" (U+00D7). In cases where
+    // character support is limited, lowercase letter "x" may be used instead,
+    // but this is not standard practice.
+    return '/' . Organism::GRAFT_DIV_REGEX . '/';
+  }
+
+  /**
+   * Gets regex to find hybrid name divider in the organism name.
+   *
+   * @return string
+   *   Returns regex which supports unicode chars.
+   */
+  public static function getHybridDivRegex() {
+    // Multiplication sign: The standard symbol is "×" (U+00D7). In cases where
+    // character support is limited, lowercase letter "x" may be used instead,
+    // but this is not standard practice.
+    return '/' . Organism::HYBRID_DIV_REGEX . '/u';
+  }
+
+  /**
    * Check if a hybrid organism name.
    *
    * @param string $name
@@ -802,14 +847,10 @@ class Organism {
    * @return bool
    *   Returns TRUE if hybrid organism name and FALSE otherwise.
    *
-   * @TODO Check if name is valid.
+   * @TODO Minor. Check if $name contains a valid organism name.
    */
   public static function isHybridName($name) {
-    // Multiplication sign: The standard symbol is "×" (U+00D7). In cases where
-    // character support is limited, lowercase letter "x" may be used instead,
-    // but this is not standard practice.
-    $pattern = '/ (x|\×|X) /u';
-    return preg_match($pattern, $name);
+    return preg_match(Organism::getHybridDivRegex(), $name);
   }
 
   /**
@@ -846,14 +887,60 @@ class Organism {
    * chinensis is denoted as Syringa 'Correlata'.
    */
   public static function isGraftName($name) {
-    $pattern = '/\s+\+\s+/';
-    return preg_match($pattern, $name);
+    return preg_match(Organism::getGraftDivRegex(), $name);
+  }
+
+  /**
+   * Parses complex (hybrid and graft) names.
+   *
+   * @param array $organism_list
+   *   Complex name splitted into several single names.
+   *
+   * @return array
+   *   Returns an accosiative array with result of the parsing.
+   */
+  public static function parseComplexName(array $organism_list) {
+    $result = [];
+    foreach ($organism_list as $index => $organism_name) {
+      if (empty($organism_name = trim($organism_name))) {
+        continue;
+      }
+
+      if ($index == 0) {
+        // First organism name.
+        $result[$index] = static::parseSingleName($organism_name);
+        if ($result[$index]['species'] == 'sp.') {
+          $result[$index]['species'] = NULL;
+        }
+      }
+      else {
+        // Not first organism name.
+        if (preg_match('/^[a-z]+/', $organism_name)) {
+          // Name starts from the lowercase letter - it's a 'species' name.
+          // E.g., 'Populus x tomentiglandulosa'. Use it as is.
+          $result[$index] = Organism::getEmptyParsedName();
+          $result[$index]['species'] = $organism_name;
+        }
+        else {
+          $result[$index] = static::parseSingleName(
+            Organism::restoreAbbreviationName(
+              $result[0]['genus'],
+              $organism_name
+            )
+          );
+        }
+      }
+    }
+    return $result;
   }
 
   /**
    * Extracts genus, species and extra parts from the hybrid organism name.
    *
-   * Organism name examples: 'Larix x marschlinsii', 'x Genus'.
+   * Organism name examples:
+   * - 'Larix x marschlinsii';
+   * - 'x Genus';
+   * - 'Genus x species'.
    *
    * @param string $name
    *   Organism name.
@@ -862,29 +949,12 @@ class Organism {
    *   Returns an accosiative array with result of the parsing.
    */
   public static function parseHybridName($name) {
-    $name = trim($name);
-    $result = [];
-    if (!static::isHybridName($name)) {
+    if (!Organism::isHybridName($name)) {
       return [Organism::getEmptyParsedName()];
     }
-    // Split by 'x' sign.
-    $pattern = '/ (x|\×|X) /u';
-    $organism_list = preg_split($pattern, $name);
-    foreach($organism_list as $organism_name) {
-      if (empty($organism_name)) {
-        continue;
-      }
-
-      if (count($result)) {
-        // Non-first organism name.
-        $organism_name = Organism::restoreAbbreviationName(
-          $result[0]['genus'],
-          $organism_name
-        );
-      }
-      $result[] = static::parseSingleName($organism_name);
-    }
-    return $result;
+    return Organism::parseComplexName(
+      preg_split(Organism::getHybridDivRegex(), trim($name))
+    );
   }
 
   /**
@@ -899,29 +969,12 @@ class Organism {
    *   Returns an accosiative array with result of the parsing.
    */
   public static function parseGraftName($name) {
-    $name = trim($name);
-    $result = [];
-    if (!static::isGraftName($name)) {
+    if (!Organism::isGraftName($name)) {
       return [Organism::getEmptyParsedName()];
     }
-    // Split by '+' sign.
-    $pattern = '/\s+\+\s+/';
-    $organism_list = preg_split($pattern, $name);
-    foreach($organism_list as $organism_name) {
-      if (empty($organism_name)) {
-        continue;
-      }
-
-      if (count($result)) {
-        // Non-first organism name.
-        $organism_name = Organism::restoreAbbreviationName(
-          $result[0]['genus'],
-          $organism_name
-        );
-      }
-      $result[] = static::parseSingleName($organism_name);
-    }
-    return $result;
+    return Organism::parseComplexName(
+      preg_split(Organism::getGraftDivRegex(), trim($name))
+    );
   }
 
   /**
