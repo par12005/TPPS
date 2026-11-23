@@ -86,12 +86,26 @@ class Organism {
   const HYBRID_DIV_REGEX = '\s+(x|\×|X)\s+';
 
   /**
+   * Divider for hybrid organisms.
+   *
+   * Used to build organism name from the parts.
+   */
+  const HYBRID_DIV = ' x ';
+
+  /**
    * Regex to find hybrid organism name divider.
    *
    * WARNING:Use '/u' modifier to allow unicode chars.
    * Could be used to determine hybrid organism names.
    */
   const GRAFT_DIV_REGEX = '\s+\+\s+';
+
+  /**
+   * Divider for graft organisms.
+   *
+   * Used to build organism name from the parts.
+   */
+  const GRAFT_DIV = ' + ';
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -331,12 +345,13 @@ class Organism {
       $this->parsedName = Organism::parseName(
         trim(preg_replace('/\s+/', ' ', $name))
       );
-      if ($this->isHybrid || $this->isGraft) {
+
+      if (Organism::isHybridName($name) || Organism::isGraftName($name)) {
         // Hybrid or Graft.
         // Get separator.
-        $separator = ' x ';
+        $separator = Organism::HYBRID_DIV;
         if ($this->isGraft) {
-          $separator = ' + ';
+          $separator = organism::GRAFT_DIV;
         }
         // No infraspecific rank and name in this case.
         $this->infraspecificRank = NULL;
@@ -350,7 +365,6 @@ class Organism {
         unset($parsed_name['genus']);
         // 1st organism name excluding 'Genus'.
         $this->species = Organism::generateName($parsed_name);
-
         // Build 'species'.
         foreach (array_slice($this->parsedName, 1, null, true) as $sub_name) {
           if (!empty($sub_name)) {
@@ -363,6 +377,7 @@ class Organism {
             $this->species .= $separator . $new_name;
           }
         }
+        $this->species = trim(preg_replace('/\s+/', ' ', $this->species));
       }
       else {
         // Regular (single name).
@@ -695,6 +710,7 @@ class Organism {
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Special case: optional 'aff.', 'aff', and 'affinis'.
+    // Example: 'Genus affinis species'.
     $pattern = '/^(?:[A-Z][a-z]+)\s+((?:affinis|aff\.?))\s+/u';
     $infraspecific_rank = NULL;
     if (preg_match($pattern, $name, $matches)) {
@@ -1050,7 +1066,7 @@ class Organism {
    */
   public function save() {
 
-//dpm($this->getDump());
+    //dpm($this->getDump());
 
     if ($this->isRecordExists()) {
       return;

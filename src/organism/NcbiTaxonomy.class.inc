@@ -165,6 +165,7 @@ class NcbiTaxonomy {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // The same code.
     $organism_key = check_plain($organism_key);
+    $organism = NULL;
 
     try {
       // Get taxonomy id from local DB.
@@ -212,7 +213,7 @@ class NcbiTaxonomy {
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Custom code starts.
         $xml = static::getInfo($organism_name);
-        if (preg_match('/<OutputMessage>No items found\.<\/OutputMessage>/', $xml)) {
+        if (preg_match('/<OutputMessage>No items found\.<\/OutputMessage>/', (string) $xml)) {
           // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
           // Custom code ends.
 
@@ -225,7 +226,7 @@ class NcbiTaxonomy {
           // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
           // >>> Custom code starts.
 
-          preg_match('/<Id>(\d+)<\/Id>/', $xml, $matches);
+          preg_match('/<Id>(\d+)<\/Id>/', (string) $xml, $matches);
           $id = $matches[1] ?? '';
           $taxonomy_id = (empty($id) ? NULL : (int) $id);
           // Get organism primary name.
